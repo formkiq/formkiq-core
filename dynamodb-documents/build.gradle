@@ -1,0 +1,54 @@
+
+description = "DocumentStore Dynamodb"
+
+dependencies {
+
+	implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.15.25'
+	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.15.25'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
+    
+	testImplementation project(':aws-ssm')
+	testImplementation 'org.slf4j:slf4j-api:1.8.0-beta4'
+    testImplementation group: 'junit', name: 'junit', version:'4.+'
+	testImplementation group: 'com.google.guava', name: 'guava', version: '30.0-jre'
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
+	
+	configurations.all {
+   		exclude group: 'software.amazon.awssdk', module: 'apache-client'
+   		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+	}
+}
+
+jar {
+    archiveBaseName = 'dynamodb-documents'
+}
+
+task createZip(type: Zip) {   
+   from "nodejs"
+   include "*"
+   include "*/*"
+   archiveName "documentsmetrics-${project.version}.zip"
+   destinationDir(file("$buildDir/distributions"))
+}
+
+createZip.dependsOn check
+build.dependsOn createZip
+
+test {
+  failFast = true
+  exclude 'com/formkiq/stacks/dynamodb/awstest/**'
+  
+  doFirst {
+    macroDynamoDbStart()
+  }
+  
+  doLast {
+    macroDockerComposeDown()
+  }
+}
+
+task testaws(type: Test) {
+	outputs.upToDateWhen {false}
+    description = 'Runs AWS integration tests.'
+    include 'com/formkiq/stacks/dynamodb/awstest/**'
+}

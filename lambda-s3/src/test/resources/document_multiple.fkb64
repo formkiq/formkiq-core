@@ -1,0 +1,36 @@
+{
+  "documentId": "0d1a788d-9a70-418a-8c33-a9ee9c1a0173",
+  "tags": [
+    {
+      "key": "formName",
+      "value": "Job Application Form"
+    }
+  ],
+  "documents": [
+    {
+      "documentId": "24af57ca-f61d-4ff8-b8a0-d7666073560e",
+      "tags": [
+        {
+          "key": "formData"
+        }
+      ],
+      "isBase64": false,
+      "path": "resumemetadata",
+      "contentType": "application/json",
+      "content": "{\"firstName\": \"Jan\",\"lastName\": \"Doe\",\"email\": \"me@mycompany.com\",\"attachmentFields\": [\"resume\",\"coverLetter\"]}"
+    },
+    {
+      "documentId": "f2416702-6b3c-4d29-a217-82a43b16b964",
+      "path": "resume",
+      "tags": [
+        {
+          "key": "attachmentField",
+          "value": "resume"
+        },
+        {
+        	"key":"category"
+        }
+      ]
+    }
+  ]
+}

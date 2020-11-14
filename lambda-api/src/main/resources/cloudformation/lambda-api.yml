@@ -1,0 +1,479 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Cloud - Document Stack - API Gateway.
+
+Parameters:
+              
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The Document Stack Environment
+
+  CognitoPoolId:
+    Type: String
+    Description: The Cognito Pool ID
+    AllowedPattern: ".+"
+           
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 512
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 60
+
+  EnablePublicUrls:
+    Description: Whether to enable public urls
+    Default: "false"
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  HostedZone:
+    Type: String
+    Description: The website domain name (must exist as a ‘Hosted Zone’ in Route53)Required for custom domains - see https://console.aws.amazon.com/route53/v2/HostedZones
+    Default: ''
+    
+  CertificateLambdaArn:
+    Type: String
+    Description: The Certificate Lambda Arn
+    Default: ''
+    
+Conditions:
+  HasCertificate: !Not [ !Equals [ !Ref HostedZone, "" ]]
+  HasNoCertificate: !Equals [ !Ref HostedZone, "" ]
+
+Resources:
+
+  Route53:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCertificate
+    Properties:
+      Name: !Sub "api-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
+      HostedZoneName: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}."
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt DocumentsDomainName.RegionalHostedZoneId
+        DNSName: !GetAtt DocumentsDomainName.RegionalDomainName
+
+  IamRoute53:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCertificate
+    Properties:
+      Name: !Sub "iamapi-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
+      HostedZoneName: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}."
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt IamDocumentsDomainName.RegionalHostedZoneId
+        DNSName: !GetAtt IamDocumentsDomainName.RegionalDomainName
+  
+  IamDocumentsDomainName:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: HasCertificate
+    DependsOn:
+    - IamApiCertificate
+    Properties: 
+      DomainName: !Sub "iamapi-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
+      DomainNameConfigurations:
+      - CertificateArn: !GetAtt IamApiCertificate.CertificateArn
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  IamDocumentsDomainMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: HasCertificate
+    DependsOn:
+    - IamDocumentsStage
+    - DocumentsIamApi
+    - IamRoute53
+    Properties:
+      ApiId: !Ref DocumentsIamApi
+      DomainName: !Sub "iamapi-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
+      Stage: "$default"
+      
+  DocumentsDomainMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: HasCertificate
+    DependsOn:
+    - DocumentsStage
+    - DocumentsHttpApi
+    - Route53
+    Properties:
+      ApiId: !Ref DocumentsHttpApi
+      DomainName: !Sub "api-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
+      Stage: "$default"
+
+  DocumentsDomainName:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: HasCertificate
+    DependsOn:
+    - HttpApiCertificate
+    Properties: 
+      DomainName: !Sub "api-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
+      DomainNameConfigurations:
+      - CertificateArn: !GetAtt HttpApiCertificate.CertificateArn
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+    
+  DocumentsApiRequests:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - DocumentsApiRequestsRole
+    Properties:
+      Handler: com.formkiq.stacks.api.ApiRequestHandler
+      Runtime: provided
+      Timeout: !Sub "${LambdaTimeout}"
+      MemorySize: !Sub "${LambdaMemory}"
+      CodeUri: ../../../../build/distributions/lambda-api-graalvm.zip
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: !Sub "${AppEnvironment}"
+          DEBUG: false
+          DOCUMENTS_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
+          CACHE_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName:1}}"
+          DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}"
+          STAGE_DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}"
+          ENABLE_PUBLIC_URLS: !Sub "${EnablePublicUrls}"
+      Role: !GetAtt [DocumentsApiRequestsRole, Arn]
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        
+  DocumentsApiInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - DocumentsIamApi
+    - DocumentsApiRequests
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DocumentsApiRequests
+      Principal: apigateway.amazonaws.com
+  
+  DocumentsStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref DocumentsHttpApi
+      AutoDeploy: true
+      Description: !Sub "Documents API ${AppEnvironment}"
+      StageName: "$default"
+    
+  IamDocumentsStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref DocumentsIamApi
+      AutoDeploy: true
+      Description: !Sub "Documents IAM API ${AppEnvironment}"
+      StageName: "$default"
+          
+  DocumentsHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Body:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: api.yml
+
+  DocumentsIamApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Body:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: api-iam.yml
+            
+  DocumentsHttpApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The endpoint url for the Http API"
+      Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
+      Type: String
+      Value: !If [HasCertificate, !Sub "https://${DocumentsDomainName}/", !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+      
+  DocumentsApiRequestsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Stacks - Document"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: apigatewaylambdarole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:ListBucketVersions
+              Resource:
+              - !Sub
+                - 'arn:aws:s3:::${Bucket}'
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}" }
+              - !Sub
+                - 'arn:aws:s3:::${Bucket}/*'
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}" }
+              - !Sub
+                - 'arn:aws:s3:::${Bucket}'
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}" }
+              - !Sub
+                - 'arn:aws:s3:::${Bucket}/*'
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}" }
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              Resource: 
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
+            - Effect: Allow
+              Action:
+              - dynamodb:Query
+              - dynamodb:Scan
+              Resource:
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}/index/*"
+            - Effect: Allow
+              Action:
+              - dynamodb:Get*
+              - dynamodb:Put*
+              Resource: 
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName:1}}"
+            - Effect: Allow
+              Action:
+              - ssm:GetParameter
+              - ssm:PutParameter
+              Resource: 
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Effect: Allow
+              Action:
+              - sqs:SendMessage
+              Resource:
+              - !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              
+  DocumentsIamApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The endpoint url for the IAM API"
+      Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
+      Type: String
+      Value: !If [HasCertificate, !Sub "https://${IamDocumentsDomainName}/", !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        
+  DocumentsApiRequestsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for processing API Requests"
+      Name: !Sub "/formkiq/${AppEnvironment}/lambda/DocumentsApiRequests"
+      Type: String
+      Value: !Ref DocumentsApiRequests
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  CloudWatchRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Stacks - Document"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      
+  ApiGatewayAccount:
+    Type: 'AWS::ApiGateway::Account'
+    Properties:
+      CloudWatchRoleArn: !GetAtt [CloudWatchRole, Arn] 
+
+  ApiGatewayInvokeRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Stacks - Document"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+
+  ApiGatewayInvokeGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+
+  ApiGatewayInvokeGroupParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "API Gateway Group that allows invoking of endpoints"
+      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroup"
+      Type: String
+      Value: !Ref ApiGatewayInvokeGroup
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  ApiGatewayInvokeGroupArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "API Gateway Group Arn that allows invoking of endpoints"
+      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroupArn"
+      Type: String
+      Value: !GetAtt [ApiGatewayInvokeGroup, Arn]
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+    
+  ApiGatewayInvokeRoleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "API Gateway Role that allows invoking of endpoints"
+      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeRole"
+      Type: String
+      Value: !Ref ApiGatewayInvokeRole
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  ApiGatewayInvokeRoleArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "API Gateway Role Arn that allows invoking of endpoints"
+      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeRoleArn"
+      Type: String
+      Value: !GetAtt [ApiGatewayInvokeRole, Arn]
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  HttpApiCertificate:
+    Type: Custom::HttpApiCertificate
+    Condition: HasCertificate
+    Properties:
+      ServiceToken: !Ref CertificateLambdaArn
+      DomainName: !Sub "api-${AppEnvironment}.${HostedZone}"
+      HostedZoneName: !Ref HostedZone
+      StackName: !Ref 'AWS::StackName'
+      OutputParameter: CertificateForHttpApi
+
+  IamApiCertificate:
+    Type: Custom::IamApiCertificate
+    Condition: HasCertificate
+    Properties:
+      ServiceToken: !Ref CertificateLambdaArn
+      DomainName: !Sub "iamapi-${AppEnvironment}.${HostedZone}"
+      HostedZoneName: !Ref HostedZone
+      StackName: !Ref 'AWS::StackName'
+      OutputParameter: CertificateForIamApi
+
+  HttpApiCertificateParameter:
+    Type: AWS::SSM::Parameter
+    Condition: HasCertificate
+    DependsOn:
+    - HttpApiCertificate
+    Properties:
+      Description: "Certificate used by the Http API"
+      Name: !Sub "/formkiq/${AppEnvironment}/certificate/HttpApiArn"
+      Type: String
+      Value: !GetAtt HttpApiCertificate.CertificateArn
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+                
+  IamApiCertificateParameter:
+    Type: AWS::SSM::Parameter
+    Condition: HasCertificate
+    DependsOn:
+    - IamApiCertificate
+    Properties:
+      Description: "Certificate used by the IAM API"
+      Name: !Sub "/formkiq/${AppEnvironment}/certificate/IamApiArn"
+      Type: String
+      Value: !GetAtt IamApiCertificate.CertificateArn
+      Tags:
+        Application: "FormKiQ Stacks - Document"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        
+Outputs:
+  ApiGatewayInvokeRole:
+    Description: "API Gateway Role that allows invoking of endpoints"
+    Value: !Ref ApiGatewayInvokeRole
+  ApiGatewayInvokeRoleArn:
+    Description: "API Gateway Role Arn that allows invoking of endpoints"
+    Value: !GetAtt [ApiGatewayInvokeRole, Arn]
+  ApiGatewayInvokeGroup:
+    Description: "API Gateway Group that allows invoking of endpoints"
+    Value: !Ref ApiGatewayInvokeGroup
+  ApiGatewayInvokeGroup:
+    Description: "API Gateway Group ARN that allows invoking of endpoints"
+    Value: !GetAtt [ApiGatewayInvokeGroup, Arn]    
+  DocumentsApiRequests:
+    Description: "FormKiQ Api Request Handler"
+    Value: !Ref DocumentsApiRequests
+  DocumentsIamApiUrl:
+    Description: "The endpoint url for the IAM API"
+    Value: !If [HasCertificate, !Sub "https://${IamDocumentsDomainName}/", !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+  DocumentsHttpApiUrl:
+    Description: "The endpoint url for the Http API"
+    Value: !If [HasCertificate, !Sub "https://${DocumentsDomainName}/", !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+  CertificateForHttpApi:
+    Value: !If [HasCertificate, !GetAtt HttpApiCertificate.CertificateArn, '']
+  CertificateForIamApi:
+    Value: !If [HasCertificate, !GetAtt IamApiCertificate.CertificateArn, '']    

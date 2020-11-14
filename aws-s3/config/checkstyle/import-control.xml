@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.aws">
+	
+	<subpackage name="s3">
+	
+		<allow pkg="java.io" />
+		<allow pkg="java.net" />
+		<allow pkg="java.nio" />
+		<allow pkg="java.time" />
+		<allow pkg="java.util" />
+		
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.auth.signer" />
+		<allow pkg="software.amazon.awssdk.core" />
+		<allow pkg="software.amazon.awssdk.http" />
+		<allow pkg="software.amazon.awssdk.regions" />
+		<allow pkg="software.amazon.awssdk.services.s3" />
+		<allow pkg="software.amazon.awssdk.utils" />
+		
+	</subpackage>
+	
+</import-control>

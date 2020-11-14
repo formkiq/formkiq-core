@@ -1,0 +1,20 @@
+{
+  "Records": [
+    {
+      "messageId": "7fefd1fa-51a5-4f8e-8f64-06b92fdfe2d5",
+      "receiptHandle": "AQEByD6W3bMX3hgrwmj1rN3u31SWi+NkZU0vCfNxCtqoZDZU9JDX9DJAkeWkqIicZH+Cl5XZJ7/sRGkmPAqhdGkQo+0uiiaUrLj8D5giIxww0Io88Ht0vFJ7DoSl7EymjDtSszRxODN95VszUcBloJGpdTIzsV0diE8nl0CP6l6UW3VoJp8Bbd6UcN8WvZbAPEJiyjXuBCXcokaDnowjA/c7Vwb43f1pjp+h80LAKUDmqAEUw45ZDwkmodqOW9wZttCAa0Dz5lpiOr+gTzZSjE1BKXU5YRA1bSajVH4V6Hv+AlvzKLm4/l0a3BZk3Z9XTtKpEkddI1zovkWtYkmyPdLrSJFYz1v1GAaZOj5vgT11YxF5qPWK6aiRZ+hZP1RYb3gAMgIo7jiagzsSx1ao/aeviEbr9jeTRHLtssCEWmQn2Lw=",
+      "body": "{\"Records\":[{\"eventVersion\":\"2.1\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-1\",\"eventTime\":\"2019-12-19T04:57:43.975Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"A7X4DSYK97C32\"},\"requestParameters\":{\"sourceIPAddress\":\"104.246.140.89\"},\"responseElements\":{\"x-amz-request-id\":\"E7FE94F67EB3AFAE\",\"x-amz-id-2\":\"W1PrYOlmWO2Efwe5Zvv/CueN4GKZ4DpSzsNuD8zpEz3lk7saE9ikN6S0OOSloSG5kWV/xViLEtE=\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"c968fe24-e367-4f72-8b57-bc1101655d4d\",\"bucket\":{\"name\":\"example-bucket\",\"ownerIdentity\":{\"principalId\":\"A7X4DSYK97C32\"},\"arn\":\"arn:aws:s3:::example-bucket\"},\"object\":{\"key\":\"b53c92cf-f7b9-4787-9541-76574ec70d71\",\"size\":1326,\"eTag\":\"934451c21d56b556b5b0c5f0580a9299\",\"sequencer\":\"005DFB0347E917F51D\"}}}]}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1576731464019",
+        "SenderId": "AIDAJHIPRHEMV73VRJEBU",
+        "ApproximateFirstReceiveTimestamp": "1576731464024"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "ae6bfc56ec0e9fb28c981fc96d7be16e",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:111111111111111:docstack-test-s3-create-eventhandler",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}

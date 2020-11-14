@@ -1,0 +1,107 @@
+{
+    "version": "1.0",
+    "resource": "/documents/{documentId}",
+    "path": "/documents/1a1d1938-451e-4e20-bf95-e0e7a749505a",
+    "httpMethod": "GET",
+    "headers": {
+        "Content-Length": "0",
+        "Host": "9yx9hn594a.execute-api.us-east-1.amazonaws.com",
+        "User-Agent": "Java-http-client/11.0.2",
+        "X-Amzn-Trace-Id": "Root=1-5f15e7e1-8c1120f2b890d87e00e5d17c",
+        "X-Forwarded-For": "104.246.140.89",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https",
+        "access-control-request-method": "GET",
+        "authorization": "eyJraWQiOiJwY280YUJ2OHhLdjRYbkpCOUJVejM4Rk1laWNPQUFXUW16Z0pSN0hiTm5ZPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIzYzVmZWFhNS1iZGM5LTQ0NjUtOTI4Yy0xMGJlNzUyMjM2YzIiLCJjb2duaXRvOmdyb3VwcyI6WyJkZWZhdWx0IiwiQWRtaW5zIl0sImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJjb2duaXRvOnByZWZlcnJlZF9yb2xlIjoiYXJuOmF3czppYW06OjYyMjY1Mzg2NTI3Nzpyb2xlXC9mb3Jta2lxLXN0YWNrcy1kb2N1bWVudC11bml0dGVzdC1jby1BZG1pbkdyb3VwUm9sZS0xVzJMTEZBTFdBSkpGIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfWThmb2k1T0RjIiwiY29nbml0bzp1c2VybmFtZSI6InRlc3RhZG1pbnVzZXJAZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1zdGFja3MtZG9jdW1lbnQtdW5pdHRlc3QtY28tQWRtaW5Hcm91cFJvbGUtMVcyTExGQUxXQUpKRiJdLCJhdWQiOiJpamR0czBmbWJpcmozanBvZmJ1czgyMjRuIiwiZXZlbnRfaWQiOiI0NTQwYTIyZS05NGMwLTRjZDAtOWU3Mi1mNTUxY2YwYWVkNmMiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU5NTI3MTEyNywiZXhwIjoxNTk1Mjc0NzI3LCJpYXQiOjE1OTUyNzExMjcsImVtYWlsIjoidGVzdGFkbWludXNlckBmb3Jta2lxLmNvbSJ9.LDwfoqHsanWU_AhiI9djPtPthtceVj3X4IuKGgrp1JoJdTbvqS2aiiA3OCsZx9b0EJHdCgrcG7wE4sx-3jS5yvQFsaYemUkJUVKdQ5B0WVyJcuYU3DFZuU7S7Einn5gwUwWQBTIsszZFuon6YlVVRS8z3gR8f-SM9_apPzBzMarTZxPuSeWTzjdAlDaUMWrQvLYnS_a_ivYM4hBUeVXSlnkHpBRuTKiFZ72aZk_eSNOMeXwYuHzonZ6p9-D3rPDmkqdTIYOjITl0pxuVbAtZojOIA2LmS7zVxxMBo_WVF6R9HoK0G2rYlsAOXljkF7Y57-v3ixVJzrGxekYowxDIjQ",
+        "origin": "http://localhost"
+    },
+    "multiValueHeaders": {
+        "Content-Length": [
+            "0"
+        ],
+        "Host": [
+            "9yx9hn594a.execute-api.us-east-1.amazonaws.com"
+        ],
+        "User-Agent": [
+            "Java-http-client/11.0.2"
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-5f15e7e1-8c1120f2b890d87e00e5d17c"
+        ],
+        "X-Forwarded-For": [
+            "104.246.140.89"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ],
+        "access-control-request-method": [
+            "GET"
+        ],
+        "authorization": [
+            "eyJraWQiOiJwY280YUJ2OHhLdjRYbkpCOUJVejM4Rk1laWNPQUFXUW16Z0pSN0hiTm5ZPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIzYzVmZWFhNS1iZGM5LTQ0NjUtOTI4Yy0xMGJlNzUyMjM2YzIiLCJjb2duaXRvOmdyb3VwcyI6WyJkZWZhdWx0IiwiQWRtaW5zIl0sImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJjb2duaXRvOnByZWZlcnJlZF9yb2xlIjoiYXJuOmF3czppYW06OjYyMjY1Mzg2NTI3Nzpyb2xlXC9mb3Jta2lxLXN0YWNrcy1kb2N1bWVudC11bml0dGVzdC1jby1BZG1pbkdyb3VwUm9sZS0xVzJMTEZBTFdBSkpGIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfWThmb2k1T0RjIiwiY29nbml0bzp1c2VybmFtZSI6InRlc3RhZG1pbnVzZXJAZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1zdGFja3MtZG9jdW1lbnQtdW5pdHRlc3QtY28tQWRtaW5Hcm91cFJvbGUtMVcyTExGQUxXQUpKRiJdLCJhdWQiOiJpamR0czBmbWJpcmozanBvZmJ1czgyMjRuIiwiZXZlbnRfaWQiOiI0NTQwYTIyZS05NGMwLTRjZDAtOWU3Mi1mNTUxY2YwYWVkNmMiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU5NTI3MTEyNywiZXhwIjoxNTk1Mjc0NzI3LCJpYXQiOjE1OTUyNzExMjcsImVtYWlsIjoidGVzdGFkbWludXNlckBmb3Jta2lxLmNvbSJ9.LDwfoqHsanWU_AhiI9djPtPthtceVj3X4IuKGgrp1JoJdTbvqS2aiiA3OCsZx9b0EJHdCgrcG7wE4sx-3jS5yvQFsaYemUkJUVKdQ5B0WVyJcuYU3DFZuU7S7Einn5gwUwWQBTIsszZFuon6YlVVRS8z3gR8f-SM9_apPzBzMarTZxPuSeWTzjdAlDaUMWrQvLYnS_a_ivYM4hBUeVXSlnkHpBRuTKiFZ72aZk_eSNOMeXwYuHzonZ6p9-D3rPDmkqdTIYOjITl0pxuVbAtZojOIA2LmS7zVxxMBo_WVF6R9HoK0G2rYlsAOXljkF7Y57-v3ixVJzrGxekYowxDIjQ"
+        ],
+        "origin": [
+            "http://localhost"
+        ]
+    },
+    "queryStringParameters": null,
+    "multiValueQueryStringParameters": null,
+    "requestContext": {
+        "accountId": "111111111111",
+        "apiId": "9yx9hn594a",
+        "authorizer": {
+            "claims": {
+                "aud": "ijdts0fmbirj3jpofbus8224n",
+                "auth_time": "1595271127",
+                "cognito:groups": "[default Admins]",
+                "cognito:preferred_role": "arn:aws:iam::111111111111:role/formkiq-stacks-document-unittest-co-AdminGroupRole-1W2LLFALWAJJF",
+                "cognito:roles": "[arn:aws:iam::111111111111:role/formkiq-stacks-document-unittest-co-AdminGroupRole-1W2LLFALWAJJF]",
+                "cognito:username": "testadminuser@formkiq.com",
+                "email": "testadminuser@formkiq.com",
+                "email_verified": "true",
+                "event_id": "4540a22e-94c0-4cd0-9e72-f551cf0aed6c",
+                "exp": "1595274727",
+                "iat": "1595271127",
+                "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_Y8foi5ODc",
+                "sub": "3c5feaa5-bdc9-4465-928c-10be752236c2",
+                "token_use": "id"
+            },
+            "scopes": null
+        },
+        "domainName": "9yx9hn594a.execute-api.us-east-1.amazonaws.com",
+        "domainPrefix": "9yx9hn594a",
+        "extendedRequestId": "P_ErPiNqIAMEMuw=",
+        "httpMethod": "GET",
+        "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "104.246.140.89",
+            "user": null,
+            "userAgent": "Java-http-client/11.0.2",
+            "userArn": null
+        },
+        "path": "/documents/1a1d1938-451e-4e20-bf95-e0e7a749505a",
+        "protocol": "HTTP/1.1",
+        "requestId": "P_ErPiNqIAMEMuw=",
+        "requestTime": "20/Jul/2020:18:52:17 +0000",
+        "requestTimeEpoch": 1595271137474,
+        "resourceId": "GET /documents/{documentId}",
+        "resourcePath": "/documents/{documentId}",
+        "stage": "$default"
+    },
+    "pathParameters": {
+        "documentId": "1a1d1938-451e-4e20-bf95-e0e7a749505a"
+    },
+    "stageVariables": null,
+    "body": null,
+    "isBase64Encoded": false
+}

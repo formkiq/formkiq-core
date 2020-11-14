@@ -1,0 +1,20 @@
+{
+    "Records": [
+        {
+            "messageId": "c664d81f-2e98-4b57-b65c-7321ea3b1f45",
+            "receiptHandle": "AQEB6kI5AuLJKriIckXooBXtYWw1GHshUq9iFdLIgHwVr5oajSlApGDVMhg+lm5Pas/drv+LbCKo/OevzaxwBzM82nBnS8lyoBLJLZvl1xsQkD8RqWoB+l/RdqPvoC1YI4yILBbLqlDmqy0eis9w9fz1Zr5KoGp6ht/KOEOiO39fJAsLVUTimTDY/A7F/xQDQ+h+1qHB+tShATdHFy2YTNkLqwwzY++Qpbl8n4Fss/C9YOijmSj57Moc+lAv7EiwHrk6FJTSjaIzvAsMwVo/RbN9FB8Vmld1xyCyJYiDmtgN2FP0R4/iyCLdqr9HpKQ8uVaQUWUz/vIObAaC/VZkC6Uue8MdBnz2mOD7+/rUuwvPFjOFWfZCYhcijZhhxfYEUl8ljUvvdfFVlJVD4h9k0iNyTqvwItm/lIR6gJJTGTqlpEl8Eb+eaTTGa/xWbGwr4/MeAM9ydBbMV3NCgIVAnRTD/A==",
+            "body": "{\n  \"Type\" : \"Notification\",\n  \"MessageId\" : \"c89ffeb3-89fb-5d0b-ac7d-a86c98d146b7\",\n  \"TopicArn\" : \"arn:aws:sns:us-east-1:111111111111:formkiq-docstack-unittest-lambda-s3-to-dynamodb-snsDocumentsCreateEventTopic-NUF07HS4PA62\",\n  \"Subject\" : \"Amazon S3 Notification\",\n  \"Message\" : \"{\\\"Records\\\":[{\\\"eventVersion\\\":\\\"2.1\\\",\\\"eventSource\\\":\\\"aws:s3\\\",\\\"awsRegion\\\":\\\"us-east-1\\\",\\\"eventTime\\\":\\\"2020-03-08T15:27:34.234Z\\\",\\\"eventName\\\":\\\"ObjectCreated:Put\\\",\\\"userIdentity\\\":{\\\"principalId\\\":\\\"A7X4DSYK97C32\\\"},\\\"requestParameters\\\":{\\\"sourceIPAddress\\\":\\\"104.246.140.89\\\"},\\\"responseElements\\\":{\\\"x-amz-request-id\\\":\\\"947FD1E0B71C8088\\\",\\\"x-amz-id-2\\\":\\\"1VUQINjcHnwc305hLmKJywLuEfmkE5rzH294bLzBo+7CNQqQLqRxpn371xZw4B2nna7szlMJm4Dj6IwAF+H13bsCIbpuHc4pg0lQcpWD5wQ=\\\"},\\\"s3\\\":{\\\"s3SchemaVersion\\\":\\\"1.0\\\",\\\"configurationId\\\":\\\"4671f549-a417-4ac2-837f-ce3f37c8b43e\\\",\\\"bucket\\\":{\\\"name\\\":\\\"example-bucket\\\",\\\"ownerIdentity\\\":{\\\"principalId\\\":\\\"A7X4DSYK97C32\\\"},\\\"arn\\\":\\\"arn:aws:s3:::example-bucket\\\"},\\\"object\\\":{\\\"key\\\":\\\"eicar_com.zip\\\",\\\"size\\\":184,\\\"eTag\\\":\\\"6ce6f415d8475545be5ba114f208b0ff\\\",\\\"versionId\\\":\\\"7tfahtKvo_Kx8jRqpd2iLocLhBIGbUJq\\\",\\\"sequencer\\\":\\\"005E650EE9BD367D3B\\\"}}}]}\",\n  \"Timestamp\" : \"2020-03-08T15:27:38.454Z\",\n  \"SignatureVersion\" : \"1\",\n  \"Signature\" : \"lBCeGtrafSUlgkisJdRW+D1ArTvvrXgT8qRsz8SXNrR0XXDzG1g0olkOWUpevzuXAeQ000qfMWEsECprV/PPxpdc++egjF0SAV7LX3ybj7Zguqpff6tYx32PXmDSk3F6H3GAI/E2bJEJvKqH9naRbBuB4HnCOcgW5ttHQfLMarQfTW/Zgk9IrsOxfv8/2YZUjDn0abACgyghc+WQHQJmH9K+Oa2S306IrLydO26ckoMPUNhYW2roXmhAYtYhhBS40cey8LDCDyOHVLVdTRJjN9XSfbdQx/Ho2S0aMFfKarK5S1Fa/bgFLQNaP3bmoUf4iTYEEJimw2kpfhqeI/q8CQ==\",\n  \"SigningCertURL\" : \"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem\",\n  \"UnsubscribeURL\" : \"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:111111111111:formkiq-docstack-unittest-lambda-s3-to-dynamodb-snsDocumentsCreateEventTopic-NUF07HS4PA62:f71a3037-f25c-4557-9e42-5f9f2fca35d6\"\n}",
+            "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1583681258551",
+                "SenderId": "AIDAIT2UOQQY3AUEKVGXU",
+                "ApproximateFirstReceiveTimestamp": "1583681258564"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "a926dc7c308cdb87903109ec9b0444fa",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-1:111111111111:formkiq-docstack-unittest-clamav-ClamAvScanQueue-1TENUZTPBF8F6",
+            "awsRegion": "us-east-1"
+        }
+    ]
+}

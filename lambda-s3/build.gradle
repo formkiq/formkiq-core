@@ -1,0 +1,76 @@
+description = "FormKiQ Cloud - Lambda S3 to Dynamodb"
+
+dependencies {
+
+ 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.0.0'
+ 
+	implementation project(':aws-s3')
+	implementation project(':aws-sns')
+	implementation project(':aws-sqs')
+	implementation project(':aws-ssm')
+	implementation project(':dynamodb-documents')
+	
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
+    
+	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.1'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
+    
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
+	
+    testImplementation group: 'junit', name: 'junit', version:'4.+'
+    testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
+
+	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.15.25'
+}
+
+compileJava {
+    options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage { 
+	outputFileName = "server"
+	javaVersion = "java11"
+	imageVersion = "20.2.0"
+	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+    enableHttp = true
+    enableHttps = true
+    enableDocker = true
+	reflectionConfig = "$buildDir/classes/java/main/META-INF/graal/reflect.json"
+	systemProperty = ["java.net.preferIPv4Stack=true"]
+}
+
+test {
+  failFast = true
+  exclude 'com/formkiq/stacks/lambda/s3/awstest/**'
+  
+  doFirst {
+    macroLocalStackStart()
+	macroDynamoDbStart()
+  }
+  
+  doLast {
+	macroDockerComposeDown()
+  }  
+}
+
+task testaws(type: Test) {
+  description = 'Runs AWS integration tests.'
+  outputs.upToDateWhen {false}
+  include 'com/formkiq/stacks/lambda/s3/awstest/**'    
+}
+
+task buildZip(type: Zip) {
+	archiveName "lambda-s3-graalvm.zip"
+    destinationDir(file("${buildDir}/distributions"))
+    from("${project.projectDir}/runtime") {
+        include 'bootstrap'
+    }
+    from("${buildDir}/graalvm") {
+        include 'server'
+    }
+}
+
+buildZip.dependsOn graalvmNativeImage
+graalvmNativeImage.dependsOn check
+build.dependsOn buildZip

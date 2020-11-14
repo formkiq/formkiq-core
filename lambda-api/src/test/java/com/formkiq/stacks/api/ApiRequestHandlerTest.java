@@ -1,0 +1,407 @@
+/**
+ *
+ * FormKiQ License
+ *
+ * Copyright (c) 2018 FormKiQ, INC
+ * 
+ * This code is the property of FormKiQ, INC. In the Software Development Agreement signed by both
+ * FormKiQ and your company, FormKiQ grants you a limited license to use, modify, and create
+ * derivative works of this code. Please consult the Software Development Agreement for the complete
+ * terms under which you may use this code.
+ *
+ */
+package com.formkiq.stacks.api;
+
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.Test;
+import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.DocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentTag;
+import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
+
+/** Unit Tests for {@link ApiRequestHandler} class. */
+public class ApiRequestHandlerTest extends AbstractRequestHandler {
+
+  /**
+   * Get Document Request, Document not found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetRequest01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+
+      String expected =
+          "{" + getHeaders() + ",\"body\":\"{\\\"message\\\":\\\"Document 142 not found.\\\"}\","
+              + "\"statusCode\":404}";
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+
+  /**
+   * Get Document Request, Document found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetRequest02() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      Date date = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String userId = "jsmith";
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      assertEquals(documentId, resp.getString("documentId"));
+      assertEquals(userId, resp.getString("userId"));
+      assertNotNull(resp.get("insertedDate"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+    }
+  }
+
+  /**
+   * Invalid Request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetRequest03() throws Exception {
+    // given
+    String input = "";
+    final InputStream instream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
+    final String expected = "{" + getHeaders() + ","
+        + "\"body\":\"{\\\"message\\\":\\\"Invalid Request\\\"}\",\"statusCode\":404}";
+
+    // when
+    getHandler().handleRequest(instream, getOutstream(), getMockContext());
+
+    // then
+    assertEquals(expected, new String(getOutstream().toByteArray(), "UTF-8"));
+    assertTrue(getLogger().containsString("response: " + expected));
+  }
+
+  /**
+   * unknown resource.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetRequest04() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
+      addParameter(event, "siteId", siteId);
+
+      String expected =
+          "{" + getHeaders() + ",\"body\":\"{\\\"message\\\":\\\"Invalid resource /unknown\\\"}\","
+              + "\"statusCode\":404}";
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+
+  /**
+   * Get Document Request, Document found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetRequest05() throws Exception {
+    newOutstream();
+
+    // given
+    Date date = new Date();
+    String documentId = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
+    String userId = "jsmith";
+
+    DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+    getDocumentService().saveDocument(null, item, new ArrayList<>());
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, String> m = fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+    assertEquals(documentId, resp.get("documentId"));
+    assertEquals(userId, resp.get("userId"));
+    assertNotNull(documentId, resp.get("insertedDate"));
+    assertEquals(DEFAULT_SITE_ID, resp.get("siteId"));
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+  }
+
+  /**
+   * Get Document Request, Document with sub docs found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetRequest06() throws Exception {
+    newOutstream();
+
+    // given
+    Date date = new Date();
+    String documentId0 = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
+    String documentId1 = UUID.randomUUID().toString();
+    String userId = "jsmith";
+
+    DocumentItem item = new DocumentItemDynamoDb(documentId0, date, userId);
+    DocumentItem citem = new DocumentItemDynamoDb(documentId1, date, userId);
+
+    DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
+    doc.put("documents", Arrays.asList(new DocumentItemToDynamicDocumentItem().apply(citem)));
+
+    getDocumentService().saveDocumentItemWithTag(null, doc);
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, String> m = fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+    assertEquals(documentId0, resp.get("documentId"));
+    assertEquals(userId, resp.get("userId"));
+    assertNotNull(resp.get("insertedDate"));
+    assertEquals(DEFAULT_SITE_ID, resp.get("siteId"));
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+
+    List<Map<String, Object>> children = (List<Map<String, Object>>) resp.get("documents");
+    assertEquals(1, children.size());
+
+    assertEquals(documentId1, children.get(0).get("documentId"));
+    assertEquals(userId, children.get(0).get("userId"));
+    assertEquals(documentId0, children.get(0).get("belongsToDocumentId"));
+    assertNotNull(children.get(0).get("insertedDate"));
+    assertNull(children.get(0).get("siteId"));
+  }
+
+  /**
+   * Invalid search.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search-invalid.json");
+      addParameter(event, "siteId", siteId);
+
+      String expected = "{" + getHeaders() + ",\"body\":"
+          + "\"{\\\"message\\\":\\\"request body is required\\\"}\"," + "\"statusCode\":400}";
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+
+  /**
+   * Valid GET search.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest02() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-search.json");
+      addParameter(event, "siteId", siteId);
+
+      final String expected = "{" + getHeaders() + ","
+          + "\"body\":\"{\\\"message\\\":\\\"Invalid resource /search\\\"}\""
+          + ",\"statusCode\":404}";
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+
+  /**
+   * Valid POST search.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest03() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      String documentId = UUID.randomUUID().toString();
+      String tagKey = "category";
+      String tagvalue = "person";
+      String username = "jsmith";
+      Date now = new Date();
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+
+      DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
+      item.setUserId(UUID.randomUUID().toString());
+
+      getDocumentService().saveDocument(siteId, new DocumentItemDynamoDb(documentId, now, username),
+          Arrays.asList(item));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0).get("documentId"));
+      assertEquals(username, documents.get(0).get("userId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+
+      Map<String, Object> matchedTag = (Map<String, Object>) documents.get(0).get("matchedTag");
+      assertEquals("category", matchedTag.get("key"));
+      assertEquals("person", matchedTag.get("value"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+    }
+  }
+
+  /**
+   * InValid POST search body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest04() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+      // given
+      final String expected = "{" + getHeaders() + ",\"body\":\""
+          + "{\\\"message\\\":\\\"Invalid JSON body.\\\"}\",\"statusCode\":400}";
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search02.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+    }
+  }
+
+  /**
+   * /version request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testVersion01() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = toRequestEvent("/request-version.json");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, String> m = fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    ApiMessageResponse resp = fromJson(m.get("body"), ApiMessageResponse.class);
+
+    assertEquals("1.1", resp.getMessage());
+  }
+}

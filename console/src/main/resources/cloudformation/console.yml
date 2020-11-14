@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Dev Console.
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: The Document Stack Environment
+    AllowedPattern: ".+"
+          
+  ConsoleVersion:
+    Type: String
+    Description: Version of FormKiQ console to deploy
+    Default: v1.2
+    
+  DistributionBucket:
+    Type: String
+    Description: FormKiQ Distribution BucketName
+    Default: "formkiq-distribution-us-east-pro"
+     
+Resources:
+    
+  Console:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration: 
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+
+  ConsoleVersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console Version"
+      Name: !Sub "/formkiq/${AppEnvironment}/console/version"
+      Type: String
+      Value: !Ref ConsoleVersion
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+  
+  ConsoleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket"
+      Name: !Sub "/formkiq/${AppEnvironment}/s3/Console"
+      Type: String
+      Value: !Ref Console
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        
+  ConsoleArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket Arn"
+      Name: !Sub "/formkiq/${AppEnvironment}/s3/ConsoleArn"
+      Type: String
+      Value: !GetAtt Console.Arn
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  ConsoleDomainNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket Domain Name"
+      Name: !Sub "/formkiq/${AppEnvironment}/s3/ConsoleDomainName"
+      Type: String
+      Value: !GetAtt Console.DomainName
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  ConsoleRegionalDomainNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket Regional Domain Name"
+      Name: !Sub "/formkiq/${AppEnvironment}/s3/ConsoleRegionalDomainName"
+      Type: String
+      Value: !GetAtt Console.RegionalDomainName
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        
+  ConsoleInstallerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for Console Installation"
+      Name: !Sub "/formkiq/${AppEnvironment}/lambda/ConsoleInstaller"
+      Type: String
+      Value: !Ref ConsoleInstaller
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  ConsoleInstaller:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - ConsoleParameter
+    - Console
+    Properties:
+      Handler: com.formkiq.stacks.console.ConsoleInstallHandler
+      Runtime: java11
+      Timeout: 300
+      MemorySize: 512
+      Role:
+        Fn::GetAtt:
+        - ConsoleInstallRole
+        - Arn
+      CodeUri: ../../../../build/distributions/console-installer.zip
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+      Environment:
+        Variables:
+          appenvironment: !Sub "${AppEnvironment}"
+          consoleversion: !Sub "${ConsoleVersion}"
+          distributionbucket: !Sub "${DistributionBucket}"
+          REGION: !Sub "${AWS::Region}"
+
+  ConsoleInstallRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: !Sub "${AWS::StackName}-ConsoleInstallPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ssm:GetParameter
+              Resource: 
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              Resource: 
+              - !Join ['', ['arn:aws:s3:::', !Ref 'Console', /]]
+              - !Join ['', ['arn:aws:s3:::', !Ref 'Console', /*]]
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              Resource: 
+              - !Join ['', ['arn:aws:s3:::', !Ref 'DistributionBucket', /*]]  
+            - Effect: Allow
+              Action:
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:ReEncrypt*'
+              - 'kms:GenerateDataKey*'
+              - 'kms:DescribeKey'
+              Resource: '*'
+
+  ConsoleInstallerRef:
+    Type: Custom::ConsoleInstallerRef
+    Properties:
+      Nonce: !Ref ConsoleVersion
+      ServiceToken:
+        Fn::GetAtt:
+        - ConsoleInstaller
+        - Arn
+
+Outputs:
+  
+  ConsoleInstaller:
+    Description: Lambda for Console Installation
+    Value: !Ref ConsoleInstaller
+    
+  ConsoleDomainName:
+    Value: !GetAtt 
+      - Console
+      - DomainName
+  
+  ConsoleRegionalDomainName:
+    Value: !GetAtt
+      - Console
+      - RegionalDomainName
+
+  ConsoleArn:
+    Value: !GetAtt 
+      - Console
+      - Arn
+          
+  Console:
+    Value:
+      !Ref Console
+       
+  ConsoleVersion:
+    Value:
+      !Ref ConsoleVersion

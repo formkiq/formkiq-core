@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.stacks">
+
+	<subpackage name="dynamodb">
+	
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.core.client.config" />
+		<allow pkg="software.amazon.awssdk.regions" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb" />
+		<allow pkg="com.amazonaws.util" />
+		<allow pkg="com.amazonaws.xray" />
+		
+		<allow pkg="com.formkiq.graalvm.annotations" />
+		<allow pkg="com.formkiq.stacks.common.objects" />
+		<allow pkg="com.formkiq.stacks.dynamodb" />
+		
+		<allow pkg="java.io" />
+		<allow pkg="java.net" />
+		<allow pkg="java.text" />
+		<allow pkg="java.time" />
+		<allow pkg="java.util" />
+		
+		<subpackage name="query">
+			<allow pkg="software.amazon.awssdk.services.dynamodb" />
+			<allow pkg="java.io" />
+		</subpackage>
+		
+	</subpackage>
+
+	<subpackage name="common">
+		<subpackage name="formats">
+			<allow pkg="com.formkiq.stacks.common.formats" />
+			<allow pkg="java.util" />
+		</subpackage>
+		<subpackage name="objects">
+			<allow pkg="java.util" />
+		</subpackage>
+	</subpackage>
+	
+	<subpackage name="util">
+		<allow pkg="java.text" />
+		<allow pkg="java.time" />
+		<allow pkg="java.util" />
+		<allow pkg="software.amazon.awssdk.utils" />
+	</subpackage>
+		
+</import-control>

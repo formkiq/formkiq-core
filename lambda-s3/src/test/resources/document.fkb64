@@ -1,0 +1,15 @@
+{
+  "content": "VGhpcyBpcyBzb21lIGNvbnRlbnQ=",
+  "contentType": "application/pdf",
+  "userId": "111111111",
+  "tags": [
+    {
+      "key": "securityLevel",
+      "value": "secret"
+    },
+    {
+      "key": "auditStatus",
+      "value": "pending"
+    }
+  ]
+}
