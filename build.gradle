@@ -174,10 +174,12 @@ task cloudFormationDelete {
   		exec {
 			commandLine "bash", "-c", "aws iam list-groups --profile ${testprofile} | jq -r '.Groups[].GroupName' | grep '^formkiq-core-${testappenvironment}'"
 			standardOutput = group
+			ignoreExitValue = true
   		}
   		// remove all users in ApiGatewayInvokeGroup
   		exec {
 			commandLine "bash", "-c", "aws iam get-group --group-name ${group.toString().trim()} --profile ${testprofile} | jq -r '.Users[].UserName' | xargs -I{} aws iam remove-user-from-group --group-name ${group.toString().trim()} --user-name {} --region ${testregion} --profile ${testprofile}"
+			ignoreExitValue = true
   		}
 		exec {
 			commandLine "bash", "-c", "aws cloudformation delete-stack --stack-name formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}"

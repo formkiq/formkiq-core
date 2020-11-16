@@ -21,7 +21,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiResponseError;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 

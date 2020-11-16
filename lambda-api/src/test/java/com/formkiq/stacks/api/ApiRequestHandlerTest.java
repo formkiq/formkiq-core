@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -35,7 +37,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 
-/** Unit Tests for {@link ApiRequestHandler} class. */
+/** Unit Tests for {@link CoreRequestHandler} class. */
 public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
   /**
@@ -141,9 +143,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
       addParameter(event, "siteId", siteId);
 
-      String expected =
-          "{" + getHeaders() + ",\"body\":\"{\\\"message\\\":\\\"Invalid resource /unknown\\\"}\","
-              + "\"statusCode\":404}";
+      String expected = "{" + getHeaders()
+          + ",\"body\":\"{\\\"message\\\":\\\"/unknown not found\\\"}\"," + "\"statusCode\":404}";
 
       // when
       String response = handleRequest(event);
@@ -290,7 +291,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       addParameter(event, "siteId", siteId);
 
       final String expected = "{" + getHeaders() + ","
-          + "\"body\":\"{\\\"message\\\":\\\"Invalid resource /search\\\"}\""
+          + "\"body\":\"{\\\"message\\\":\\\"GET for /search not found\\\"}\""
           + ",\"statusCode\":404}";
 
       // when

@@ -12,14 +12,18 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_OK;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.stacks.api.ApiAuthorizer;
-import com.formkiq.stacks.api.ApiGatewayRequestEvent;
-import com.formkiq.stacks.api.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
 
-/** {@link RequestHandler} for GET "/version". */
-public class VersionRequestHandler implements RequestHandler {
+/** {@link ApiGatewayRequestHandler} for "/version". */
+public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -27,7 +31,7 @@ public class VersionRequestHandler implements RequestHandler {
   public VersionRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse process(final LambdaLogger logger,
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
@@ -38,7 +42,7 @@ public class VersionRequestHandler implements RequestHandler {
   }
 
   @Override
-  public boolean isReadonly(final String method) {
-    return true;
+  public String getRequestUrl() {
+    return "/version";
   }
 }

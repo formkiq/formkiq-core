@@ -12,9 +12,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getParameter;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getSiteId;
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_OK;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
@@ -24,17 +22,22 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.stacks.api.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.api.ApiDocumentVersion;
 import com.formkiq.stacks.api.ApiDocumentVersionsResponse;
-import com.formkiq.stacks.api.ApiGatewayRequestEvent;
-import com.formkiq.stacks.api.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 
-/** {@link RequestHandler} for GET "/documents/{documentId}/versions". */
-public class DocumentVersionsRequestHandler implements RequestHandler {
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/versions". */
+public class DocumentVersionsRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -43,7 +46,7 @@ public class DocumentVersionsRequestHandler implements RequestHandler {
   public DocumentVersionsRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse process(final LambdaLogger logger,
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
@@ -85,7 +88,7 @@ public class DocumentVersionsRequestHandler implements RequestHandler {
   }
 
   @Override
-  public boolean isReadonly(final String method) {
-    return true;
+  public String getRequestUrl() {
+    return "/documents/{documentId}/versions";
   }
 }

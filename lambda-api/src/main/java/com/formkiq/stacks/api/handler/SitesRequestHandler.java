@@ -12,18 +12,22 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_OK;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.stacks.api.ApiAuthorizer;
-import com.formkiq.stacks.api.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.stacks.api.ApiSitesResponse;
 import com.formkiq.stacks.api.Site;
 
-/** {@link RequestHandler} for GET "/version". */
-public class SitesRequestHandler implements RequestHandler {
+/** {@link ApiGatewayRequestHandler} for "/sites". */
+public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -96,12 +100,7 @@ public class SitesRequestHandler implements RequestHandler {
   }
 
   @Override
-  public boolean isReadonly(final String method) {
-    return true;
-  }
-
-  @Override
-  public ApiRequestHandlerResponse process(final LambdaLogger logger,
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
@@ -165,5 +164,10 @@ public class SitesRequestHandler implements RequestHandler {
 
       });
     }
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/sites";
   }
 }

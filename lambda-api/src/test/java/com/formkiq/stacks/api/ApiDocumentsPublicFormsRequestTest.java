@@ -16,7 +16,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 
 /** Unit Tests for request POST /public/forms. */
 public class ApiDocumentsPublicFormsRequestTest extends AbstractRequestHandler {

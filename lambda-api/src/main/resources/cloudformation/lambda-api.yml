@@ -125,7 +125,7 @@ Resources:
     DependsOn:
     - DocumentsApiRequestsRole
     Properties:
-      Handler: com.formkiq.stacks.api.ApiRequestHandler
+      Handler: com.formkiq.stacks.api.CoreRequestHandler
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"

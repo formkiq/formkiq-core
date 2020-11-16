@@ -223,9 +223,9 @@ public class DocumentsRequestTest extends AbstractApiTest {
         client.getDocumentsAsHttpResponse(request.siteId(siteId));
 
     // then
-    assertEquals(STATUS_OK, responseNoSiteId.statusCode());
+    assertEquals(STATUS_FORBIDDEN, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().contains("\"documents\":["));
+    assertEquals("{\"message\":\"Access Denied\"}", responseSiteId.body());
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());

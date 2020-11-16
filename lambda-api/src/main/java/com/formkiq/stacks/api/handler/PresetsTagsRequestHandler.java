@@ -12,16 +12,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.createPagination;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getLimit;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getPagination;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getPathParameter;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getSiteId;
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_OK;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_CREATED;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -31,13 +23,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.stacks.api.ApiAuthorizer;
-import com.formkiq.stacks.api.ApiGatewayRequestEvent;
-import com.formkiq.stacks.api.ApiMapResponse;
-import com.formkiq.stacks.api.ApiMessageResponse;
-import com.formkiq.stacks.api.ApiResponse;
-import com.formkiq.stacks.api.BadException;
-import com.formkiq.stacks.api.NotFoundException;
+import com.formkiq.lambda.apigateway.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiMapResponse;
+import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.ApiPagination;
+import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
+import com.formkiq.lambda.apigateway.ApiResponse;
+import com.formkiq.lambda.apigateway.ApiResponseStatus;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
 import com.formkiq.stacks.dynamodb.PaginationResults;
@@ -45,10 +42,10 @@ import com.formkiq.stacks.dynamodb.Preset;
 import com.formkiq.stacks.dynamodb.PresetTag;
 
 /**
- * {@link RequestHandler} for GET / POST "/presets/{preset}/tags" & DELETE
- * /presets/{preset}/tags/{tagKey}.
+ * {@link ApiGatewayRequestHandler} for GET / POST "/presets/{preset}/tags".
  */
-public class PresetsTagsRequestHandler implements RequestHandler {
+public class PresetsTagsRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -57,23 +54,7 @@ public class PresetsTagsRequestHandler implements RequestHandler {
   public PresetsTagsRequestHandler() {}
 
   @Override
-  public boolean isReadonly(final String method) {
-    return "get".equalsIgnoreCase(method);
-  }
-
-  /**
-   * Processes GET {@link ApiGatewayRequestEvent} request.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorizer {@link ApiAuthorizer}
-   * @param awsservice {@link AwsServiceCache}
-   * 
-   * @return {@link ApiRequestHandlerResponse}
-   * 
-   * @throws Exception Exception
-   */
-  private ApiRequestHandlerResponse get(final LambdaLogger logger,
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
     ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
@@ -111,60 +92,17 @@ public class PresetsTagsRequestHandler implements RequestHandler {
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
-  /**
-   * Processes DELETE {@link ApiGatewayRequestEvent} request.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorizer {@link ApiAuthorizer}
-   * @param awsservice {@link AwsServiceCache}
-   * 
-   * @return {@link ApiRequestHandlerResponse}
-   * 
-   * @throws Exception Exception
-   */
-  private ApiRequestHandlerResponse delete(final LambdaLogger logger,
+
+  @Override
+  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = getSiteId(event);
-    String presetId = getPathParameter(event, "presetId");
-    String tagKey = getPathParameter(event, "tagKey");
-
-    if (presetId == null || tagKey == null) {
-      throw new BadException("missing 'presetId' or 'tagKey'");
-    }
-
-    String decodedTagKey = URLDecoder.decode(tagKey, StandardCharsets.UTF_8);
-    Optional<PresetTag> o =
-        awsservice.documentService().findPresetTag(siteId, presetId, decodedTagKey);
-
-    if (!o.isPresent()) {
-      throw new NotFoundException(
-          MessageFormat.format("{0} is not found on preset {1}", tagKey, presetId));
-    }
-
-    awsservice.documentService().deletePresetTag(siteId, presetId, decodedTagKey);
-
-    ApiResponse resp = new ApiMessageResponse("Removed '" + tagKey + "'");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return post(logger, event, authorizer, awsservice);
   }
 
-  /**
-   * Processes POST {@link ApiGatewayRequestEvent} request.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorizer {@link ApiAuthorizer}
-   * @param awsservice {@link AwsServiceCache}
-   * 
-   * @return {@link ApiRequestHandlerResponse}
-   * 
-   * @throws Exception Exception
-   */
+  @Override
   @SuppressWarnings("unchecked")
-  private ApiRequestHandlerResponse post(final LambdaLogger logger,
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
@@ -209,30 +147,7 @@ public class PresetsTagsRequestHandler implements RequestHandler {
   }
 
   @Override
-  public ApiRequestHandlerResponse process(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    ApiRequestHandlerResponse response = null;
-    String method = event.getHttpMethod().toLowerCase();
-
-    switch (method) {
-      case "get":
-        response = get(logger, event, authorizer, awsservice);
-        break;
-
-      case "delete":
-        response = delete(logger, event, authorizer, awsservice);
-        break;
-
-      case "post":
-      case "patch":
-        response = post(logger, event, authorizer, awsservice);
-        break;
-      default:
-        throw new BadException("Unsupport method " + method);
-    }
-
-    return response;
+  public String getRequestUrl() {
+    return "/presets/{preset}/tags";
   }
 }

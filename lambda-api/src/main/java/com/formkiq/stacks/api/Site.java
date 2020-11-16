@@ -13,6 +13,7 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.lambda.apigateway.ApiResponse;
 
 /** /sites {@link ApiResponse}. */
 @Reflectable

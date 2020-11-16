@@ -104,9 +104,9 @@
             "accessKey": null,
             "cognitoAuthenticationType": null,
             "cognitoAuthenticationProvider": null,
-            "userArn": null,
             "userAgent": "PostmanRuntime/7.4.0",
-            "user": null
+            "user": null,
+            "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK"
         },
         "domainName": "xc38c278ak.execute-api.us-east-1.amazonaws.com",
         "apiId": "xc38c278ak"

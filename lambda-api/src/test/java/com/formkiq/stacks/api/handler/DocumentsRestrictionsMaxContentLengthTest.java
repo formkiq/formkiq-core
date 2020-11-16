@@ -20,6 +20,7 @@ import java.util.UUID;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;

@@ -20,7 +20,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.junit.Test;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 
 /** Unit Tests for request /sites. */
 public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {

@@ -12,24 +12,29 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_OK;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.stacks.api.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.stacks.api.ApiEmptyResponse;
-import com.formkiq.stacks.api.ApiGatewayRequestEvent;
 
-/** {@link RequestHandler} for OPTIONS "/documents". */
-public class DocumentsOptionsRequestHandler implements RequestHandler {
+/** {@link ApiGatewayRequestHandler} for OPTIONS request handler. */
+public class DocumentsOptionsRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
-  public ApiRequestHandlerResponse process(final LambdaLogger logger,
+  public ApiRequestHandlerResponse options(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
     return new ApiRequestHandlerResponse(SC_OK, new ApiEmptyResponse());
   }
 
   @Override
-  public boolean isReadonly(final String method) {
-    return true;
+  public String getRequestUrl() {
+    return null;
   }
 }

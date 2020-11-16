@@ -21,7 +21,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/versions. */

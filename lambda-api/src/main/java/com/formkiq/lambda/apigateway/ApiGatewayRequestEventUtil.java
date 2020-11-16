@@ -1,0 +1,411 @@
+/**
+ *
+ * FormKiQ License
+ *
+ * Copyright (c) 2018 FormKiQ, INC
+ * 
+ * This code is the property of FormKiQ, INC. In the Software Development Agreement signed by both
+ * FormKiQ and your company, FormKiQ grants you a limited license to use, modify, and create
+ * derivative works of this code. Please consult the Software Development Agreement for the complete
+ * terms under which you may use this code.
+ *
+ */
+package com.formkiq.lambda.apigateway;
+
+import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.lambda.apigateway.exception.BadException;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.CacheService;
+import com.formkiq.stacks.dynamodb.PaginationMapToken;
+import com.formkiq.stacks.dynamodb.PaginationResults;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+
+/**
+ * 
+ * {@link ApiGatewayRequestEvent} helper utilities.
+ *
+ */
+public interface ApiGatewayRequestEventUtil {
+
+  /** {@link Gson}. */
+  Gson GSON = GsonUtil.getInstance();
+
+  /**
+   * Create Pagination.
+   * 
+   * @param cacheService {@link CacheService}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param lastPagination {@link ApiPagination}
+   * @param results {@link PaginationResults}
+   * @param limit int
+   * 
+   * @return {@link ApiPagination}
+   */
+  default ApiPagination createPagination(final CacheService cacheService,
+      final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
+      final PaginationResults<?> results, final int limit) {
+
+    ApiPagination current = null;
+    final Map<String, String> q = getQueryParameterMap(event);
+
+    Gson gson = GsonUtil.getInstance();
+    PaginationMapToken token = results.getToken();
+
+    if (isPaginationPrevious(q)) {
+
+      String json = cacheService.read(q.get("previous"));
+      current = gson.fromJson(json, ApiPagination.class);
+
+    } else {
+
+      current = new ApiPagination();
+
+      current.setLimit(limit);
+      current.setPrevious(lastPagination != null ? lastPagination.getNext() : null);
+      current.setStartkey(token);
+      current.setHasNext(token != null);
+
+      cacheService.write(current.getNext(), gson.toJson(current));
+    }
+
+    return current;
+  }
+
+  /**
+   * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link DynamicObject}.
+   *
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link DynamicObject}
+   * @throws BadException BadException
+   */
+  @SuppressWarnings("unchecked")
+  default DynamicObject fromBodyToDynamicObject(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event) throws BadException {
+    return new DynamicObject(fromBodyToObject(logger, event, Map.class));
+  }
+
+  /**
+   * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link Map}.
+   *
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Map}
+   * @throws BadException BadException
+   */
+  @SuppressWarnings("unchecked")
+  default Map<String, Object> fromBodyToMap(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event) throws BadException {
+    return fromBodyToObject(logger, event, Map.class);
+  }
+
+  /**
+   * Get the Body from {@link ApiGatewayRequestEvent} and transform to Object.
+   *
+   * @param <T> Type of {@link Class}
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param classOfT {@link Class}
+   * @return T
+   * @throws BadException BadException
+   */
+  default <T> T fromBodyToObject(final LambdaLogger logger, final ApiGatewayRequestEvent event,
+      final Class<T> classOfT) throws BadException {
+
+    String body = event.getBody();
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    byte[] data = event.getBody().getBytes(StandardCharsets.UTF_8);
+
+    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
+      data = Base64.getDecoder().decode(body);
+    }
+
+    Reader reader = new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8);
+    try {
+      return GSON.fromJson(reader, classOfT);
+    } catch (JsonSyntaxException e) {
+      throw new BadException("invalid JSON body");
+    } finally {
+      try {
+        reader.close();
+      } catch (IOException e) {
+        logger.log("Cannot close DocumentItemJSON: " + e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Get the calling Cognito Username.
+   *
+   * @param event {@link ApiGatewayRequestEvent}.
+   * @return {@link String}
+   */
+  @SuppressWarnings("unchecked")
+  default String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
+
+    String username = null;
+
+    ApiGatewayRequestContext requestContext = event.getRequestContext();
+
+    if (requestContext != null) {
+
+      Map<String, Object> authorizer = requestContext.getAuthorizer();
+      Map<String, Object> identity = requestContext.getIdentity();
+
+      if (identity != null) {
+
+        Object user = identity.getOrDefault("user", null);
+        if (user != null) {
+          username = user.toString();
+        }
+
+        Object userArn = identity.getOrDefault("userArn", null);
+        if (userArn != null && userArn.toString().contains(":user/")) {
+          username = userArn.toString();
+        }
+      }
+
+      if (authorizer != null && authorizer.containsKey("claims")) {
+
+        Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
+        if (claims.containsKey("username")) {
+          username = claims.get("username").toString();
+        } else if (claims.containsKey("cognito:username")) {
+          username = claims.get("cognito:username").toString();
+        }
+      }
+    }
+
+    return username;
+  }
+
+  /**
+   * Get ContentType from {@link ApiGatewayRequestEvent}.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   */
+  default String getContentType(final ApiGatewayRequestEvent event) {
+
+    String contentType = null;
+    Map<String, String> headers = event.getHeaders();
+
+    if (headers != null) {
+      contentType = headers.get("Content-Type");
+      if (contentType == null) {
+        contentType = headers.get("content-type");
+      }
+    }
+
+    return contentType;
+  }
+
+  /**
+   * Get Limit Parameter.
+   *
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return int
+   */
+  default int getLimit(final LambdaLogger logger, final ApiGatewayRequestEvent event) {
+
+    int limit = MAX_RESULTS;
+
+    Map<String, String> q = getQueryParameterMap(event);
+
+    if (q != null && q.containsKey("limit")) {
+      try {
+        limit = Integer.parseInt(q.get("limit"));
+      } catch (NumberFormatException e) {
+        logger.log(e.getMessage());
+      }
+    }
+
+    if (limit < 1) {
+      limit = MAX_RESULTS;
+    }
+
+    return limit;
+  }
+
+  /**
+   * Find Query Parameter 'next' or 'prev' and convert to {@link ApiPagination}.
+   *
+   * @param cacheService {@link CacheService}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link ApiPagination}
+   */
+  default ApiPagination getPagination(final CacheService cacheService,
+      final ApiGatewayRequestEvent event) {
+
+    ApiPagination pagination = null;
+    Map<String, String> q = getQueryParameterMap(event);
+
+    if (isPaginationNext(q)) {
+
+      pagination = toPaginationToken(cacheService, q.get("next"));
+
+    } else if (isPaginationPrevious(q)) {
+
+      pagination = toPaginationToken(cacheService, q.get("previous"));
+
+      if (pagination.getPrevious() != null) {
+
+        pagination = toPaginationToken(cacheService, pagination.getPrevious());
+
+      } else {
+        // if @ start of list, preserve the limit
+        int limit = pagination.getLimit();
+        pagination = new ApiPagination();
+        pagination.setLimit(limit);
+      }
+    }
+
+    if (pagination != null && pagination.getLimit() < 1) {
+      pagination.setLimit(MAX_RESULTS);
+    }
+
+    return pagination;
+  }
+
+
+  /**
+   * Get Query Parameter.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  default String getParameter(final ApiGatewayRequestEvent event, final String key) {
+    Map<String, String> q = getQueryParameterMap(event);
+    String value = q.getOrDefault(key, null);
+    return value != null ? value.trim() : null;
+  }
+
+  /**
+   * Get Path Parameter.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  default String getPathParameter(final ApiGatewayRequestEvent event, final String key) {
+    Map<String, String> q = event.getPathParameters();
+    String value = q != null ? q.getOrDefault(key, null) : null;
+    return value != null ? value.trim() : null;
+  }
+
+  /**
+   * Get Query Parameter Map.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Map}
+   */
+  default Map<String, String> getQueryParameterMap(final ApiGatewayRequestEvent event) {
+    Map<String, String> q =
+        event.getQueryStringParameters() != null ? event.getQueryStringParameters()
+            : Collections.emptyMap();
+    return q;
+  }
+
+  /**
+   * Get Site Id.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   */
+  default String getSiteId(final ApiGatewayRequestEvent event) {
+
+    String siteId = null;
+    Map<String, String> map = event.getQueryStringParameters();
+
+    if (map != null && map.containsKey("siteId")) {
+      siteId = map.get("siteId");
+    }
+
+    return siteId;
+  }
+
+  /**
+   * Is String NOT empty.
+   * 
+   * @param s {@link String}
+   * @return boolean
+   */
+  default boolean isNotBlank(final String s) {
+    return s != null && s.length() > 0;
+  }
+
+  /**
+   * Is has Next Pagination Token.
+   * 
+   * @param q {@link Map}
+   * @return boolean
+   */
+  default boolean isPaginationNext(final Map<String, String> q) {
+    return isNotBlank(q.getOrDefault("next", null));
+  }
+
+  /**
+   * Is has Previous Pagination Token.
+   * 
+   * @param q {@link Map}
+   * @return boolean
+   */
+  default boolean isPaginationPrevious(final Map<String, String> q) {
+    return isNotBlank(q.getOrDefault("previous", null));
+  }
+
+  /**
+   * Sub list to a max limit.
+   * 
+   * @param <T> Type
+   * @param list {@link List}
+   * @param limit int
+   * 
+   * @return {@link List}
+   */
+  default <T> List<T> subList(final List<T> list, final int limit) {
+    return list.size() > limit ? list.subList(0, limit) : list;
+  }
+
+  /**
+   * Convert {@link String} to {@link ApiPagination}.
+   *
+   * @param cacheService {@link CacheService}
+   * @param key {@link String}
+   * 
+   * @return {@link ApiPagination}
+   */
+  default ApiPagination toPaginationToken(final CacheService cacheService, final String key) {
+
+    ApiPagination pagination = null;
+
+    if (isNotBlank(key)) {
+
+      String json = cacheService.read(key);
+
+      if (isNotBlank(json)) {
+        Gson gson = GsonUtil.getInstance();
+        pagination = gson.fromJson(json, ApiPagination.class);
+      }
+    }
+
+    return pagination;
+  }
+}

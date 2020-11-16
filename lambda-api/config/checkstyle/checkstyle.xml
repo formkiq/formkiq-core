@@ -13,6 +13,7 @@
   <property name="charset" value="UTF-8"/>
   <property name="fileExtensions" value="java, properties, xml"/>
   <module name="TreeWalker">
+    <module name="SuppressWarningsHolder"/>
     <module name="OuterTypeFilename"/>
     <module name="IllegalTokenText">
       <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
@@ -214,7 +215,9 @@
       <property name="constantWaiverParentToken" value="TYPECAST,METHOD_CALL,EXPR,ARRAY_INIT,UNARY_MINUS,UNARY_PLUS,ELIST,STAR,ASSIGN,PLUS,MINUS,DIV,LITERAL_NEW"/>
     </module>
     <module name="ReturnCount"/>
-    <module name="CyclomaticComplexity"/>
+    <module name="CyclomaticComplexity">
+    	<property name="tokens" value=" LITERAL_WHILE, LITERAL_DO, LITERAL_FOR, LITERAL_IF, LITERAL_SWITCH, LITERAL_CATCH, QUESTION, LAND, LOR" />
+    </module>
     <module name="BooleanExpressionComplexity"/>
     <module name="JavaNCSS"/>
     <module name="FinalParameters"/>
@@ -236,4 +239,5 @@
     <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
     <property name="max" value="100"/>
   </module>
+  <module name="SuppressWarningsFilter" />
 </module>

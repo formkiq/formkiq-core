@@ -38,7 +38,7 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.formkiq.aws.sts.Aws4SignerParamsBuilder;
 import com.formkiq.aws.sts.StsConnectionBuilder;
 import com.formkiq.aws.sts.StsService;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;

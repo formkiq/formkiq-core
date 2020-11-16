@@ -14,6 +14,7 @@ package com.formkiq.stacks.api;
 
 import java.util.Date;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.lambda.apigateway.ApiResponse;
 
 /** API Response Object. */
 @Reflectable

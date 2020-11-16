@@ -33,8 +33,10 @@ import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmServiceImpl;
-import com.formkiq.stacks.api.handler.AwsServiceCache;
-import com.formkiq.stacks.api.util.GsonUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestContext;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
@@ -161,8 +163,8 @@ public abstract class AbstractRequestHandler {
 
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
-  /** {@link ApiRequestHandler}. */
-  private ApiRequestHandler handler;
+  /** {@link CoreRequestHandler}. */
+  private CoreRequestHandler handler;
   /** {@link ByteArrayOutputStream}. */
   private ByteArrayOutputStream outstream = new ByteArrayOutputStream();
 
@@ -278,8 +280,8 @@ public abstract class AbstractRequestHandler {
    * @param prop {@link Map}
    */
   public void createApiRequestHandler(final Map<String, String> prop) {
-    ApiRequestHandler.setUpHandler(prop, dbConnection, s3Connection, ssmConnection, sqsConnection);
-    this.handler = new ApiRequestHandler();
+    CoreRequestHandler.setUpHandler(prop, dbConnection, s3Connection, ssmConnection, sqsConnection);
+    this.handler = new CoreRequestHandler();
   }
 
   /**
@@ -331,11 +333,11 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get {@link ApiRequestHandler}.
+   * Get {@link CoreRequestHandler}.
    *
-   * @return {@link ApiRequestHandler}
+   * @return {@link CoreRequestHandler}
    */
-  public ApiRequestHandler getHandler() {
+  public CoreRequestHandler getHandler() {
     return this.handler;
   }
 

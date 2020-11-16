@@ -13,14 +13,7 @@ Parameters:
     Type: String
     Description: Unique Application Environment Identifier, IE dev/staging/prod
     Default: prod
-    
-  AppVersion:
-    Type: String
-    Description: Version of FormKiQ Stacks to deploy
-    Default: "2.0.0"
-    AllowedValues: 
-      - "2.0.0"
-      
+        
   LambdaMemoryForApiGateway:
     Type: Number
     Description: Memory (in MB) of the API Gateway Lambda - 512 MB is recommended
@@ -80,7 +73,7 @@ Resources:
       Description: "FormKiQ Stacks Version"
       Name: !Sub "/formkiq/${AppEnvironment}/version"
       Type: String
-      Value: !Sub "${AppVersion}"
+      Value: "2.0.0"
       
   RegionParameter:
     Type: AWS::SSM::Parameter

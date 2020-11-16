@@ -12,27 +12,28 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.createPagination;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getLimit;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getPagination;
-import static com.formkiq.stacks.api.ApiGatewayRequestEventUtil.getSiteId;
-import static com.formkiq.stacks.api.handler.ApiResponseStatus.SC_OK;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.stacks.api.ApiAuthorizer;
-import com.formkiq.stacks.api.ApiGatewayRequestEvent;
-import com.formkiq.stacks.api.ApiMapResponse;
-import com.formkiq.stacks.api.BadException;
+import com.formkiq.lambda.apigateway.ApiAuthorizer;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiMapResponse;
+import com.formkiq.lambda.apigateway.ApiPagination;
+import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
+import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamoDbCacheService;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
 import com.formkiq.stacks.dynamodb.PaginationResults;
 
-/** {@link RequestHandler} for POST "/search". */
-public class SearchRequestHandler implements RequestHandler {
+/** {@link ApiGatewayRequestHandler} for "/search". */
+public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -41,7 +42,7 @@ public class SearchRequestHandler implements RequestHandler {
   public SearchRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse process(final LambdaLogger logger,
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
@@ -75,6 +76,11 @@ public class SearchRequestHandler implements RequestHandler {
 
   @Override
   public boolean isReadonly(final String method) {
-    return true;
+    return "post".equals(method) || "get".equals(method) || "head".equals(method);
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/search";
   }
 }

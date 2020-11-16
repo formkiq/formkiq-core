@@ -12,6 +12,8 @@
  */
 package com.formkiq.stacks.api;
 
+import com.formkiq.lambda.apigateway.ApiResponse;
+
 /** Empty {@link ApiResponse}. */
 public class ApiEmptyResponse implements ApiResponse {
 

@@ -1,82 +1,58 @@
-# FormKiQ - Document Stack
+![FormKiQ](https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/logo.png)
 
-The Document Stack gives you full control of your organization's documents,
-including storage, search, data extraction, and workflows.
-All in your cloud, using the latest in Amazon Web Services technologies. 
+# 🥷 FormKiQ
 
-## Install FormKiQ Stacks - Document
+FormKiQ is an open source Headless Document Management System (DMS) that run in your [Amazon Web Services(AWS)](https://aws.amazon.com) that gives you full control of your organization's documents. Built using AWS serverless services like [AWS Lambda](https://aws.amazon.com/lambda/), [Amazon API Gateway](https://aws.amazon.com/api-gateway/), [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) and [Amazon S3](https://aws.amazon.com/s3/) there are no servers for your to maintain or manage.
 
-```bash
-aws cloudformation create-stack \
-  --stack-name <STACK_NAME> \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-  --template-url https://formkiq-distribution-customer.s3.amazonaws.com/formkiq-cloud/<FORMKIQ_VERSION>/documentstack.yml \
-  --parameters ParameterKey=AppEnvironment,ParameterValue=<ENVIRONMENT> \
-  --region <REGION>
-```
+## Features
 
-Here's a full example of a production deployment:
+✅ Api First and Cloud-Native Architecture
+✅ Easy Integration with existing Applications
+✅ Built using serverless service (no servers to maintain or manage)
+✅ Supports Unlimited Document Tagging & Versioning
+✅ Document processing through subscribing to Document Events
+✅ Supports both Multi-Tenant or Multi-Instance
 
-```bash
-aws cloudformation create-stack \
-  --stack-name FormKiQProd \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-  --template-url https://formkiq-distribution-customer.s3.amazonaws.com/formkiq-cloud/1.0/documentstack.yml \
-  --parameters ParameterKey=AppEnvironment,ParameterValue=prod \
-  --region us-east-1
-```
+## Table of Contents
 
-## Install FormKiQ Stacks - Document on Custom Domain
+<details open>
+<summary>Table of Contents</summary>
 
-### Install Certificate Manager's Certificate
+- [Table of Contents](#table-of-contents)
+- [Getting Started](#getting-started)
+  - [Installation](#basic-usage)
+  - [API Reference](#api-reference)
+  - [Console](#console)
+  - [Document Events](#document-events)
+  - [License](#license)
 
-```bash
-aws cloudformation create-stack \
-  --stack-name <STACK_NAME> \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-  --template-url https://formkiq-distribution-customer.s3.amazonaws.com/formkiq-cloud/<FORMKIQ_VERSION>/certificate.yml \
-  --parameters ParameterKey=DomainName,ParameterValue=<DOMAIN_NAME> \
-  --region <REGION>
-```
+</details>
 
-where <DOMAIN_NAME> is the name of the domain, IE: example.formkiq.com or +.formkiq.com for a wildcard certificate.
+## Getting Started
 
-```bash
-aws cloudformation create-stack \
-  --stack-name <STACK_NAME> \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-  --template-url https://formkiq-distribution-customer.s3.amazonaws.com/formkiq-cloud/<FORMKIQ_VERSION>/documentstack.yml \
-  --parameters ParameterKey=AppEnvironment,ParameterValue=<ENVIRONMENT> ParameterKey=DomainName,ParameterValue=<DOMAIN_NAME> ParameterKey=AcmCertificateArn,ParameterValue=<CERTIFICATE_ARN> \  
-  --region <REGION>
-```
+FormKiQ has been architected using [Amazon Web Services(AWS)](https://aws.amazon.com) serverless technologies. This provides several benefits:
 
-where <DOMAIN_NAME> is the name of the domain and <CERTIFICATE_ARN> is the ARN for the certificate
+✅ Only pay AWS for usage (all services come with a generous monthly free tier)
+✅ Easy scales to thousands of concurrent requests
+✅ No servers to maintain or manage
 
-## Update FormKiQ Stacks - Document
+FormKiQ uses the following AWS technologies:
 
-```bash
-aws cloudformation update-stack \
-  --stack-name <STACK_NAME> \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-  --template-url https://formkiq-distribution-customer.s3.amazonaws.com/formkiq-cloud/<FORMKIQ_VERSION>/documentstack.yml \
-  --parameters ParameterKey=AppEnvironment,ParameterValue=<ENVIRONMENT> \
-  --region <REGION>
-```
+- Amazon S3 - for storage of files / documents
+- AWS Lambda - for document processing
+- Amazon DynamoDB - storing of document metadata
+- API Gateway - to serve the RESTful API platform
+- Amazon Simple Notification Service(SNS) - document status notify system, allows applications to be notified that a document has been create/deleted or updated
+- AWS IAM / Amazon Cognito - User / System authentication
 
-Here's a full example of a production deployment:
+### Installation
 
-```bash
-aws cloudformation update-stack \
-  --stack-name FormKiQProd \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-  --template-url https://formkiq-distribution-customer.s3.amazonaws.com/formkiq-cloud/1.1/documentstack.yml \
-  --parameters ParameterKey=AppEnvironment,ParameterValue=prod \
-  --region us-east-1
-```
+### API Reference
 
-## Build
-The Document Stack is a Java Application built on using Gradle.
+### Console
 
-To Build:
-1. Clone repository
-2. ./gradlew clean build
+### Document Events
+
+### License
+
+Apache 2 - 2020 (c) FormKiq Inc. More details see LICENSE file.
