@@ -32,10 +32,6 @@ import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
-import com.formkiq.stacks.api.handler.PresetsIdRequestHandler;
-import com.formkiq.stacks.api.handler.PresetsRequestHandler;
-import com.formkiq.stacks.api.handler.PresetsTagsKeyRequestHandler;
-import com.formkiq.stacks.api.handler.PresetsTagsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
@@ -133,18 +129,6 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
 
       case "/documents/{documentId}/tags/{tagKey}":
         return new DocumentTagRequestHandler();
-
-      case "/presets":
-        return new PresetsRequestHandler();
-
-      case "/presets/{presetId}":
-        return new PresetsIdRequestHandler();
-
-      case "/presets/{presetId}/tags":
-        return new PresetsTagsRequestHandler();
-
-      case "/presets/{presetId}/tags/{tagKey}":
-        return new PresetsTagsKeyRequestHandler();
 
       case "/documents/{documentId}/url":
         return new DocumentIdUrlRequestHandler();
