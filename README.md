@@ -22,9 +22,14 @@ FormKiQ is an open source Headless Document Management System (DMS) that run in 
 - [Getting Started](#getting-started)
   - [Installation](#basic-usage)
   - [API Reference](#api-reference)
-  - [Console](#console)
   - [Document Events](#document-events)
-  - [Users](#users)
+    - [Create](#create-event)
+    - [Update](#update-event)
+    - [Delete](#delete-event)  
+  - [Console](#console)
+    - [Users](#users)
+    - [Groups](#groups)
+  - [SiteId](#siteid)
   - [License](#license)
 
 </details>
@@ -82,15 +87,58 @@ Below is a summary of the Document API. The API was built using the [OpenAPI Spe
 | POST | /search | Document Search. |
 | POST | /public/documents | Unauthenticated URL for saving a document. |
 
-### Console
-
-A console comes with FormKiQ Core. The console supports adding/removing Documents, adding/removing Tags from Documents and searching for Documents.
-
-The console code is also open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
-
 ### Document Events
 
-### Users
+### Console
+
+While FormKiQ Core was built using an API first design methodology, which allows easy integration with existing applications. Users can have the option to instead use the console that comes with FormKiQ Core.
+
+The console supports:
+
+✅ Adding / Removing Documents
+✅ Adding / Removing Document Tags
+✅ Search Documents
+✅ Testing API - you can test using APIs directly from the console
+
+The console's code is open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
+
+#### Users
+
+FormKiQ Core uses [Amazon Cognito](https://aws.amazon.com/cognito/) for authentication and authorization. All users maintenance operations can be done via the Amazon Cognito console.
+
+Each FormKiQ Core installation creates it's own user pool. By default FormKiq Core uses the "AdminEmail" to create an Administrator user. FormKiq Core sends a confirmation link to the "AdminEmail" during installation.
+
+To learn how to add additional users see [Amazon Cognito's Developer Guide](https://docs.aws.amazon.com/cognito/latest/developerguide/managing-users.html) for instructions.
+
+#### Groups
+
+FormKiQ Core uses [Amazon Cognito](https://aws.amazon.com/cognito/) for authentication and authorization. All group maintenance operations can be done via the Amazon Cognito console.
+
+During installation, FormKiQ Core creates 3 groups:
+
+- Admins
+- default
+- default_read
+
+Users in the "Admins" group have full access to all documents in FormKiQ Core.
+
+Users in the "default" group will have read/write access to documents in the default siteid.
+
+Users in the "default_read" group will have read only access to documents in the default siteid.
+
+To learn 
+
+To learn how to add users to a cognito group see [Amazon Cognito's Developer Guide](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html) for instructions.
+
+### SiteId
+
+FormKiQ Core supports running as a multi-tenant application. After installation a "default" SiteId is created and all documents are stored in that tenant.
+
+To create another SiteId is as simple as adding a [Cognito group to the user pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
+
+Creating a Cognito Group with the same name as the SiteId but ending in "_read" will create a readonly group. Where the users in this group will have readonly access to that SiteId.
+
+Each API requests has a "SiteId" parameter you can pass to specify which SiteId you would like to use. **NOTE:** This parameter is only needed if a user belongs to multiple SiteId or if the user is in the "Admins" group and wants to perform an operation in a SiteId other than "default".
 
 ### License
 
