@@ -7,10 +7,15 @@ FormKiQ is an open source Headless Document Management System (DMS) that run in 
 ## Features
 
 ✅ Api First and Cloud-Native Architecture
+
 ✅ Easy Integration with existing Applications
+
 ✅ Built using serverless service (no servers to maintain or manage)
+
 ✅ Supports Unlimited Document Tagging & Versioning
+
 ✅ Document processing through subscribing to Document Events
+
 ✅ Supports both Multi-Tenant or Multi-Instance
 
 ## Table of Contents
