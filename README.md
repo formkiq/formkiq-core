@@ -41,7 +41,9 @@ FormKiQ is an open source Headless Document Management System (DMS) that run in 
 FormKiQ has been architected using [Amazon Web Services(AWS)](https://aws.amazon.com) serverless technologies. This provides several benefits:
 
 ✅ Only pay AWS for usage (all services come with a generous monthly free tier)
+
 ✅ Easy scales to thousands of concurrent requests
+
 ✅ No servers to maintain or manage
 
 FormKiQ uses the following AWS technologies:
@@ -115,8 +117,11 @@ While FormKiQ Core was built using an API first design methodology, which allows
 The console supports:
 
 ✅ Adding / Removing Documents
+
 ✅ Adding / Removing Document Tags
+
 ✅ Search Documents
+
 ✅ Testing API - you can test using APIs directly from the console
 
 The console's code is open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
