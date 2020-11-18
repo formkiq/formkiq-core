@@ -22,10 +22,7 @@ FormKiQ is an open source Headless Document Management System (DMS) that run in 
 - [Getting Started](#getting-started)
   - [Installation](#basic-usage)
   - [API Reference](#api-reference)
-  - [Document Events](#document-events)
-    - [Create](#create-event)
-    - [Update](#update-event)
-    - [Delete](#delete-event)  
+  - [Document Events](#document-events) 
   - [Console](#console)
     - [Users](#users)
     - [Groups](#groups)
@@ -88,6 +85,23 @@ Below is a summary of the Document API. The API was built using the [OpenAPI Spe
 | POST | /public/documents | Unauthenticated URL for saving a document. |
 
 ### Document Events
+
+Document events are a powerful feature of key FormKiQ Core. This allows operations to be triggered on documents automatically. For example when a document is created it could automatically:
+
+- Send an email notification
+- Scan for viruses
+- Insert data into a database
+- etc 
+
+Document event are created through [Amazon Simple Notification Service (SNS)](https://aws.amazon.com/sns/). [Amazon Simple Notification Service](https://aws.amazon.com/sns/) is a messaging service that can be used for application to application communication. FormKiQ Core uses it as a publish/subscribe service, where applications can listen to the SNS service and be notified when that event has been created.
+
+FormKiQ Core creates the following SNS topics:
+
+- SnsDocumentsCreateEventTopic
+- SnsDocumentsDeleteEventTopic
+- SnsDocumentsUpdateEventTopic
+
+These SNS topics allow your application to be notified when a document is create / deleted or updated. This makes it really easy to add your own customization and automate your document processing.
 
 ### Console
 
