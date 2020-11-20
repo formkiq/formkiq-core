@@ -13,12 +13,13 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.lambda.apigateway.ApiAuthorizer;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
-import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 
@@ -37,8 +38,8 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     String key = "/formkiq/" + awsservice.appEnvironment() + "/version";
     String version = awsservice.ssmService().getParameterValue(key);
-    ApiMessageResponse resp = new ApiMessageResponse(version);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("version", version, "type", awsservice.formkiqType())));
   }
 
   @Override

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItem;
@@ -401,8 +400,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiMessageResponse resp = fromJson(m.get("body"), ApiMessageResponse.class);
-
-    assertEquals("1.1", resp.getMessage());
+    Map<String, String> resp = fromJson(m.get("body"), Map.class);
+    assertEquals("1.1", resp.get("version"));
+    assertEquals("core", resp.get("type"));
   }
 }

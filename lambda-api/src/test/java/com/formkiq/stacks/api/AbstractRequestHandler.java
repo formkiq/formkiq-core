@@ -90,7 +90,7 @@ public abstract class AbstractRequestHandler {
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
 
     appenvironment = System.getProperty("testappenvironment");
-    awsRegion = Region.of(System.getProperty("testregion"));
+    awsRegion = Region.of("us-east-1"/* System.getProperty("testregion") */);
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
@@ -256,6 +256,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("DEBUG", "true");
     this.map.put("SQS_DOCUMENT_FORMATS", sqsDocumentFormatsQueueUrl);
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
+    this.map.put("FORMKIQ_TYPE", "core");
 
     createApiRequestHandler(this.map);
 

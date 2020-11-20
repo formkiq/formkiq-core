@@ -71,7 +71,7 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
         .dbConnection(builder, map.get("DOCUMENTS_TABLE"), map.get("CACHE_TABLE")).s3Connection(s3)
         .sqsConnection(sqs).ssmConnection(ssm).stages3bucket(map.get("STAGE_DOCUMENTS_S3_BUCKET"))
         .debug("true".equals(map.get("DEBUG"))).appEnvironment(map.get("APP_ENVIRONMENT"))
-        .documents3bucket(map.get("DOCUMENTS_S3_BUCKET"));
+        .formkiqType(map.get("FORMKIQ_TYPE")).documents3bucket(map.get("DOCUMENTS_S3_BUCKET"));
 
     awsServices.init();
   }

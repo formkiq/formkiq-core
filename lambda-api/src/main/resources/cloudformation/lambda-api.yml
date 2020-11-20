@@ -1,7 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FormKiQ Cloud - Document Stack - API Gateway.
+Description: FormKiQ Core - API
 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: FormKiQ-Core-Api
+    Description: API component of FormKiQ-Core
+    Author: FormKiQ Inc
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: file://../../../../../LICENSE
+    ReadmeUrl: file://../../../../../../README.md
+    Labels: ['formkiq-core']
+    HomePageUrl: https://github.com/formkiq/formkiq-core
+    SourceCodeUrl: https://github.com/formkiq/formkiq-core
+    
 Parameters:
               
   AppEnvironment:
@@ -9,11 +21,12 @@ Parameters:
     AllowedPattern: ".+"
     Description: The Document Stack Environment
 
-  CognitoPoolId:
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
     Type: String
-    Description: The Cognito Pool ID
-    AllowedPattern: ".+"
-           
+    AllowedValues: ["core", "pro"]
+    
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
@@ -31,94 +44,44 @@ Parameters:
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
-
-  HostedZone:
-    Type: String
-    Description: The website domain name (must exist as a ‘Hosted Zone’ in Route53)Required for custom domains - see https://console.aws.amazon.com/route53/v2/HostedZones
-    Default: ''
     
-  CertificateLambdaArn:
+  AllowAdminCreateUserOnly:
+    Default: "true"
     Type: String
-    Description: The Certificate Lambda Arn
-    Default: ''
+    AllowedValues: ["true", "false"]
+     
+  PasswordMinimumLength:
+    Type: Number
+    Description: The minimum password length.
+    MinValue: "6"
+    MaxValue: "99"
+    Default: "8"
     
-Conditions:
-  HasCertificate: !Not [ !Equals [ !Ref HostedZone, "" ]]
-  HasNoCertificate: !Equals [ !Ref HostedZone, "" ]
+  PasswordRequireLowercase:
+    Description: Password requires at least one lowercase letter.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordRequireNumbers:
+    Description: Password requires at least one number.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordRequireSymbols:
+    Description: Password requires at least one symbol.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordRequireUppercase:
+    Description: Password requires at least one uppercase letter.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]    
 
 Resources:
-
-  Route53:
-    Type: AWS::Route53::RecordSet
-    Condition: HasCertificate
-    Properties:
-      Name: !Sub "api-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
-      HostedZoneName: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}."
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt DocumentsDomainName.RegionalHostedZoneId
-        DNSName: !GetAtt DocumentsDomainName.RegionalDomainName
-
-  IamRoute53:
-    Type: AWS::Route53::RecordSet
-    Condition: HasCertificate
-    Properties:
-      Name: !Sub "iamapi-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
-      HostedZoneName: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}."
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt IamDocumentsDomainName.RegionalHostedZoneId
-        DNSName: !GetAtt IamDocumentsDomainName.RegionalDomainName
-  
-  IamDocumentsDomainName:
-    Type: AWS::ApiGatewayV2::DomainName
-    Condition: HasCertificate
-    DependsOn:
-    - IamApiCertificate
-    Properties: 
-      DomainName: !Sub "iamapi-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
-      DomainNameConfigurations:
-      - CertificateArn: !GetAtt IamApiCertificate.CertificateArn
-      Tags:
-        Application: "FormKiQ Stacks - Document"
-        AppEnvironment: !Sub "${AppEnvironment}"
-
-  IamDocumentsDomainMapping:
-    Type: AWS::ApiGatewayV2::ApiMapping
-    Condition: HasCertificate
-    DependsOn:
-    - IamDocumentsStage
-    - DocumentsIamApi
-    - IamRoute53
-    Properties:
-      ApiId: !Ref DocumentsIamApi
-      DomainName: !Sub "iamapi-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
-      Stage: "$default"
-      
-  DocumentsDomainMapping:
-    Type: AWS::ApiGatewayV2::ApiMapping
-    Condition: HasCertificate
-    DependsOn:
-    - DocumentsStage
-    - DocumentsHttpApi
-    - Route53
-    Properties:
-      ApiId: !Ref DocumentsHttpApi
-      DomainName: !Sub "api-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
-      Stage: "$default"
-
-  DocumentsDomainName:
-    Type: AWS::ApiGatewayV2::DomainName
-    Condition: HasCertificate
-    DependsOn:
-    - HttpApiCertificate
-    Properties: 
-      DomainName: !Sub "api-${AppEnvironment}.{{resolve:ssm:/formkiq/${AppEnvironment}/certificate/HostedZone:1}}"
-      DomainNameConfigurations:
-      - CertificateArn: !GetAtt HttpApiCertificate.CertificateArn
-      Tags:
-        Application: "FormKiQ Stacks - Document"
-        AppEnvironment: !Sub "${AppEnvironment}"
     
   DocumentsApiRequests:
     Type: AWS::Serverless::Function
@@ -139,10 +102,12 @@ Resources:
           DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}"
           STAGE_DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}"
           ENABLE_PUBLIC_URLS: !Sub "${EnablePublicUrls}"
+          FORMKIQ_TYPE: !Ref FormKiQType
       Role: !GetAtt [DocumentsApiRequestsRole, Arn]
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -180,7 +145,7 @@ Resources:
             Location: api.yml
 
   DocumentsIamApi:
-    Type: AWS::ApiGatewayV2::Api
+    Type: AWS::ApiGatewayV2::Api  
     Properties:
       Body:
         'Fn::Transform':
@@ -194,10 +159,11 @@ Resources:
       Description: "The endpoint url for the Http API"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
-      Value: !If [HasCertificate, !Sub "https://${DocumentsDomainName}/", !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
       
   DocumentsApiRequestsRole:
     Type: AWS::IAM::Role
@@ -291,10 +257,11 @@ Resources:
       Description: "The endpoint url for the IAM API"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
-      Value: !If [HasCertificate, !Sub "https://${IamDocumentsDomainName}/", !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+      Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   DocumentsApiRequestsParameter:
     Type: AWS::SSM::Parameter
@@ -306,6 +273,7 @@ Resources:
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   CloudWatchRole:
     Type: 'AWS::IAM::Role'
@@ -340,6 +308,8 @@ Resources:
           Value: "FormKiQ Stacks - Document"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -369,6 +339,7 @@ Resources:
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   ApiGatewayInvokeGroupArnParameter:
     Type: AWS::SSM::Parameter
@@ -380,6 +351,7 @@ Resources:
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
     
   ApiGatewayInvokeRoleParameter:
     Type: AWS::SSM::Parameter
@@ -391,6 +363,7 @@ Resources:
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   ApiGatewayInvokeRoleArnParameter:
     Type: AWS::SSM::Parameter
@@ -402,55 +375,315 @@ Resources:
       Tags:
         Application: "FormKiQ Stacks - Document"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
-  HttpApiCertificate:
-    Type: Custom::HttpApiCertificate
-    Condition: HasCertificate
-    Properties:
-      ServiceToken: !Ref CertificateLambdaArn
-      DomainName: !Sub "api-${AppEnvironment}.${HostedZone}"
-      HostedZoneName: !Ref HostedZone
-      StackName: !Ref 'AWS::StackName'
-      OutputParameter: CertificateForHttpApi
-
-  IamApiCertificate:
-    Type: Custom::IamApiCertificate
-    Condition: HasCertificate
-    Properties:
-      ServiceToken: !Ref CertificateLambdaArn
-      DomainName: !Sub "iamapi-${AppEnvironment}.${HostedZone}"
-      HostedZoneName: !Ref HostedZone
-      StackName: !Ref 'AWS::StackName'
-      OutputParameter: CertificateForIamApi
-
-  HttpApiCertificateParameter:
-    Type: AWS::SSM::Parameter
-    Condition: HasCertificate
+  CognitoUserPool:
+    Type: "AWS::Cognito::UserPool"
     DependsOn:
-    - HttpApiCertificate
+    - CognitoCustomMessage
     Properties:
-      Description: "Certificate used by the Http API"
-      Name: !Sub "/formkiq/${AppEnvironment}/certificate/HttpApiArn"
-      Type: String
-      Value: !GetAtt HttpApiCertificate.CertificateArn
-      Tags:
-        Application: "FormKiQ Stacks - Document"
+      UserPoolName: !Sub "${AWS::StackName} - ${AppEnvironment}"
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: "OFF"
+      Policies:
+        PasswordPolicy:
+          MinimumLength: !Sub "${PasswordMinimumLength}"
+          RequireLowercase: !Sub "${PasswordRequireLowercase}"
+          RequireNumbers: !Sub "${PasswordRequireNumbers}"
+          RequireSymbols: !Sub "${PasswordRequireSymbols}"
+          RequireUppercase: !Sub "${PasswordRequireUppercase}"          
+      LambdaConfig:
+        CustomMessage: !GetAtt CognitoCustomMessage.Arn
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: !Sub "${AllowAdminCreateUserOnly}"
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+      UserPoolTags:
         AppEnvironment: !Sub "${AppEnvironment}"
-                
-  IamApiCertificateParameter:
-    Type: AWS::SSM::Parameter
-    Condition: HasCertificate
-    DependsOn:
-    - IamApiCertificate
+        Application: "FormKiQ DocumentStack"
+        StackName: !Sub "${AWS::StackName}"
+       
+  AdminGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
     Properties:
-      Description: "Certificate used by the IAM API"
-      Name: !Sub "/formkiq/${AppEnvironment}/certificate/IamApiArn"
-      Type: String
-      Value: !GetAtt IamApiCertificate.CertificateArn
+      Precedence: 0
+      GroupName: "Admins"
+      RoleArn: !GetAtt AdminGroupRole.Arn
+      UserPoolId: !Ref CognitoUserPool
+  
+  CognitoIdentityPool:
+    Type: "AWS::Cognito::IdentityPool"
+    Properties:
+      IdentityPoolName: !Sub "${AWS::StackName}-IdentityPool"
+      CognitoIdentityProviders: 
+        -
+          ClientId: !Ref CognitoUserPoolClient
+          ProviderName: !GetAtt CognitoUserPool.ProviderName
+      AllowUnauthenticatedIdentities: false
+
+  AdminGroupRole: 
+    Type: "AWS::IAM::Role"
+    Properties:
       Tags:
-        Application: "FormKiQ Stacks - Document"
-        AppEnvironment: !Sub "${AppEnvironment}"
+        - Key: "Application"
+          Value: "FormKiQ Core"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Federated: 
+                - "cognito-identity.amazonaws.com"
+            Action: 
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: 
+                - !Ref CognitoIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr:
+                - "authenticated"
+      Path: "/"
+      Policies: 
+        - 
+          PolicyName: !Sub "${AWS::StackName}-AdminGroupRole"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Effect: "Allow"
+                Action: [ "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminCreateUser", "cognito-idp:AdminDeleteUser", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminRemoveUserFromGroup", "cognito-idp:AdminResetUserPassword", "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup" ]
+                Resource: !GetAtt CognitoUserPool.Arn
+
+  DefaultGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
+    Properties:
+      Precedence: 0
+      GroupName: "default"
+      UserPoolId: !Ref CognitoUserPool
+
+  DefaultReadGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
+    Properties:
+      Precedence: 0
+      GroupName: "default_read"
+      UserPoolId: !Ref CognitoUserPool
+                      
+  CognitoNoAccessRole: 
+    Type: "AWS::IAM::Role"
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Federated: 
+                - "cognito-identity.amazonaws.com"
+            Action: 
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: 
+                - !Ref CognitoIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr:
+                - "authenticated"
+      Path: "/"
+      Policies: 
+        - PolicyName: !Sub "${AWS::StackName}-CognitoNoAccessRole"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Effect: "Deny"
+                Action: [ "*" ]
+                Resource: "*"
+                              
+  # Creates a User Pool Client to be used by the identity pool
+  CognitoUserPoolClient:
+    Type: "AWS::Cognito::UserPoolClient"
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      PreventUserExistenceErrors: ENABLED 
+      ExplicitAuthFlows:
+      - ALLOW_ADMIN_USER_PASSWORD_AUTH
+      - ALLOW_USER_PASSWORD_AUTH
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+
+  CognitoIdentityPoolRoleMapping:
+    Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+    Properties:
+      IdentityPoolId: !Ref CognitoIdentityPool
+      RoleMappings:
+        cognitoProvider:
+          IdentityProvider: !Join [ "", ["cognito-idp.", !Sub "${AWS::Region}", ".amazonaws.com/", !Ref CognitoUserPool, ":", !Ref CognitoUserPoolClient] ]
+          Type: Token
+          AmbiguousRoleResolution: Deny
+      Roles:
+        authenticated: !GetAtt CognitoNoAccessRole.Arn
+        unauthenticated: !GetAtt CognitoNoAccessRole.Arn
         
+  CognitoUserPoolIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolId"
+      Type: String
+      Value: !Ref CognitoUserPool
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+  CognitoUserPoolArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool Arn"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolArn"
+      Type: String
+      Value: !GetAtt CognitoUserPool.Arn
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoUserPoolProviderUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool Provider URL"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolProviderUrl"
+      Type: String
+      Value: !GetAtt CognitoUserPool.ProviderURL
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoUserPoolProviderNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool Provider Name"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolProviderName"
+      Type: String
+      Value: !GetAtt CognitoUserPool.ProviderName
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoUserPoolClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool Client"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolClientId"
+      Type: String
+      Value: !Ref CognitoUserPoolClient
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoIdentityPoolIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Identity Pool"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/IdentityPoolId"
+      Type: String
+      Value: !Ref CognitoIdentityPool
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  AdminGroupParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Admin Group"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/AdminGroup"
+      Type: String
+      Value: !Ref AdminGroup
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+  CognitoCustomMessage:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt CognitoCustomMessageRole.Arn
+      Runtime: nodejs10.x
+      CodeUri: ../../../../../lambda-cognito-user-signup/build/distributions/cognito-user-signup.zip
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: !Sub "${AppEnvironment}"
+      Tags:
+        AppEnvironment: !Sub "${AppEnvironment}"
+        Application: "FormKiQ Core"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoCustomMessageRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: !Sub "${AWS::StackName}-CognitoCustomMessageRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - ssm:GetParameter
+            Resource: 
+            - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            
+  CognitoCustomMessagePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - CognitoCustomMessage
+    - CognitoUserPool
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CognitoCustomMessage
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt CognitoUserPool.Arn
+      
 Outputs:
   ApiGatewayInvokeRole:
     Description: "API Gateway Role that allows invoking of endpoints"
@@ -469,11 +702,28 @@ Outputs:
     Value: !Ref DocumentsApiRequests
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
-    Value: !If [HasCertificate, !Sub "https://${IamDocumentsDomainName}/", !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"]
+    Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
-    Value: !If [HasCertificate, !Sub "https://${DocumentsDomainName}/", !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"]
-  CertificateForHttpApi:
-    Value: !If [HasCertificate, !GetAtt HttpApiCertificate.CertificateArn, '']
-  CertificateForIamApi:
-    Value: !If [HasCertificate, !GetAtt IamApiCertificate.CertificateArn, '']    
+    Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  CognitoUserPoolId:
+    Description: "Cognito User Pool"
+    Value: !Ref CognitoUserPool
+  CognitoUserPoolArn:
+    Description: "Cognito User Pool Arn"
+    Value: !GetAtt CognitoUserPool.Arn
+  CognitoUserPoolProviderUrl:
+    Description: "Cognito User Pool Provider URL"
+    Value: !GetAtt CognitoUserPool.ProviderURL
+  CognitoUserPoolProviderName:
+    Description: "Cognito User Pool Provider Name"
+    Value: !GetAtt CognitoUserPool.ProviderName
+  CognitoUserPoolClientId:
+    Description: "Cognito User Pool Client"
+    Value: !Ref CognitoUserPoolClient
+  CognitoIdentityPoolId:
+    Description: "Cognito Identity Pool"
+    Value: !Ref CognitoIdentityPool
+  CognitoAdminGroup:
+    Description: "FormKiQ Cognito Admin Group"
+    Value: !Ref AdminGroup    

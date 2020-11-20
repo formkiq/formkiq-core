@@ -152,19 +152,67 @@ task testaws {
 task cloudFormationPackage {
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws cloudformation package --template-file ./src/main/resources/cloudformation/documentstack.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/documentstack.yml"
+			commandLine "bash", "-c", "sam package --template-file ./lambda-s3/src/main/resources/cloudformation/data.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-data.yml"
+		}
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-data.yml > build/formkiq-core-data.yml.bak ; mv build/formkiq-core-data.yml.bak build/formkiq-core-data.yml"
+		}	
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ./lambda-api/src/main/resources/cloudformation/lambda-api.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
+		}
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-api.yml > build/formkiq-core-api.yml.bak ; mv build/formkiq-core-api.yml.bak build/formkiq-core-api.yml"
+		}	
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ./console/src/main/resources/cloudformation/console.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-console.yml"
+		}		
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-console.yml > build/formkiq-core-console.yml.bak ; mv build/formkiq-core-console.yml.bak build/formkiq-core-console.yml"
+		}
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" ./src/main/resources/cloudformation/formkiq-core.yml > build/formkiq-core.yml.bak"
+		}	
+		exec {
+			commandLine "bash", "-c", "sam package --template-file build/formkiq-core.yml.bak --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core.yml"
 		}
 	}
 }
 
-task cloudFormationDeploy {
+task createApplicationData {
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws cloudformation deploy --template-file build/documentstack.yml --stack-name formkiq-core-${testappenvironment} --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM --region ${testregion} --parameter-overrides AdminEmail=${testadminemail} AppEnvironment=test EnablePublicUrls=true --profile ${testprofile}"
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-data.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 	}
 }
-cloudFormationDeploy.dependsOn cloudFormationPackage
+createApplicationData.dependsOn cloudFormationPackage
+
+task createApplicationApi {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-api.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplicationApi.dependsOn cloudFormationPackage
+
+task createApplicationConsole {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-console.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplicationConsole.dependsOn cloudFormationPackage
+
+task createApplication {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplication.dependsOn cloudFormationPackage, createApplicationData, createApplicationApi, createApplicationConsole
 
 task cloudFormationDelete {
 	doLast {
