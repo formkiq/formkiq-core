@@ -12,7 +12,7 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 ## Features
 
-✅ API First (Document Stack API) and Cloud-Native Architecture
+✅ API First (FormKiQ API) and Cloud-Native Architecture
 
 ✅ Easy Integration with Existing Applications
 
@@ -24,7 +24,7 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 ✅ Supports Both Multi-Tenant and Multi-Instance
 
-✅ Includes an Intuitive User Interface (FormKiQ Stacks Console) for Document Management
+✅ Includes an Intuitive User Interface (FormKiQ Console) for Document Management
 
 ## Table of Contents
 
@@ -51,7 +51,7 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 **Coming Soon**
 
-- **FormKiQ Stacks Console with API Explorer:** Coming Soon
+- **FormKiQ Console with API Explorer:** Coming Soon
 
 - **FormKiQ Core Website Contact Form Example:** Coming Soon
 
@@ -83,13 +83,13 @@ FormKiQ Core can be installed from the [AWS Serverless Application Repository](h
 
 [Install FormKiQ Core](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/create/app?applicationId=arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core)
 
-After installation is completed, you will receive an email with a link to the FormKiQ Stacks Console that has been installed in your AWS Cloud as part of the setup. You will be asked to login to your account, and once you do, you will be prompted to change your password.
+After installation is completed, you will receive an email with a link to the FormKiQ Console that has been installed in your AWS Cloud as part of the setup. You will be asked to login to your account, and once you do, you will be prompted to change your password.
 
 Once you have set your password, you are ready to use FormKiQ Core.
 
 ### API Reference
 
-Below is a summary of the FormKiQ Core Document Stack API. The API was built using the [OpenAPI Specification](https://swagger.io/specification/).
+Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the [OpenAPI Specification](https://swagger.io/specification/).
 
 [Full FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/lambda-api/src/main/resources/cloudformation/api.yml)
 
@@ -136,7 +136,7 @@ These SNS topics allow your application to be notified when a document is create
 
 While FormKiQ Core was built using an API First design methodology that allows easy integration with existing applications, you can also use the console interface that is set up with FormKiQ Core.
 
-The FormKiQ Stacks Console supports:
+The FormKiQ Console supports:
 
 ✅ Adding / Removing Documents
 
@@ -144,13 +144,13 @@ The FormKiQ Stacks Console supports:
 
 ✅ Search Documents
 
-✅ Executing Document Stack API Calls within the API Explorer - you can use API methods directly from the console
+✅ Executing FormKiQ API Calls within the API Explorer - you can use API methods directly from the console
 
-The FormKiQ Stacks Console is open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
+The FormKiQ Console is open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
 
 ### Authentication
 
-FormKiQ Core uses [Amazon Cognito](https://aws.amazon.com/cognito/) for its default authentication and authorization for the Document Stack API and the FormKiQ Stacks Console. ([IAM](#iam) is also available for accessing the API.)
+FormKiQ Core uses [Amazon Cognito](https://aws.amazon.com/cognito/) for its default authentication and authorization for the FormKiQ API and the FormKiQ Console. ([IAM](#iam) is also available for accessing the API.)
 
 #### Users
 
@@ -176,7 +176,7 @@ All group maintenance operations can be done via the Amazon Cognito console. To 
 
 #### IAM
 
-While the FormKiQ Stacks Console requires users to login, the Document Stack API can also use IAM for authorization. This enables functionality like OAuth within a safe framework.
+While the FormKiQ Console requires users to login, the FormKiQ API can also use IAM for authorization. This enables functionality like OAuth within a safe framework.
 
 MORE DETAILS TO COME...
 
