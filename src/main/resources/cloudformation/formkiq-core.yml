@@ -7,7 +7,7 @@ Metadata:
     Name: FormKiQ-Core
     Description: Headless Document Management System that gives you full control of your organization's documents
     Author: FormKiQ Inc
-    SpdxLicenseId: Apache-2.0
+    SpdxLicenseId: MIT
     LicenseUrl: ../LICENSE
     ReadmeUrl: ../README.md
     Labels: ['dms', 'documents', 'management', 'api']

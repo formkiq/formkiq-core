@@ -7,7 +7,7 @@ Metadata:
     Name: FormKiQ-Core-Data
     Description: Data component of FormKiQ-Core
     Author: FormKiQ Inc
-    SpdxLicenseId: Apache-2.0
+    SpdxLicenseId: MIT
     LicenseUrl: file://../../../../../LICENSE
     ReadmeUrl: file://../../../../../../README.md
     Labels: ['formkiq-core']
