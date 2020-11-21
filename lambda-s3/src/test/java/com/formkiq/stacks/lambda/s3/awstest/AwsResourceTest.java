@@ -344,9 +344,9 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testSsmParameters() {
     String appenvironment = getAppenvironment();
 
-    assertEquals("formkiq-core-" + appenvironment + "-622653865277-documents",
+    assertEquals("formkiq-core-" + appenvironment + "-documents-622653865277",
         getDocumentsbucketname());
-    assertEquals("formkiq-core-" + appenvironment + "-622653865277-staging",
+    assertEquals("formkiq-core-" + appenvironment + "-staging-622653865277",
         getStagingdocumentsbucketname());
     assertTrue(getSsmService()
         .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsCreateEventTopicArn")
