@@ -105,7 +105,7 @@ Resources:
           FORMKIQ_TYPE: !Ref FormKiQType
       Role: !GetAtt [DocumentsApiRequestsRole, Arn]
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -161,7 +161,7 @@ Resources:
       Type: String
       Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
       
@@ -170,7 +170,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Stacks - Document"
+          Value: "FormKiQ Core"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       AssumeRolePolicyDocument:
@@ -259,7 +259,7 @@ Resources:
       Type: String
       Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -271,7 +271,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsApiRequests
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -280,7 +280,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Stacks - Document"        
+          Value: "FormKiQ Core"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       AssumeRolePolicyDocument:
@@ -305,7 +305,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Stacks - Document"        
+          Value: "FormKiQ Core"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -337,7 +337,7 @@ Resources:
       Type: String
       Value: !Ref ApiGatewayInvokeGroup
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -349,7 +349,7 @@ Resources:
       Type: String
       Value: !GetAtt [ApiGatewayInvokeGroup, Arn]
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
     
@@ -361,7 +361,7 @@ Resources:
       Type: String
       Value: !Ref ApiGatewayInvokeRole
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -373,7 +373,7 @@ Resources:
       Type: String
       Value: !GetAtt [ApiGatewayInvokeRole, Arn]
       Tags:
-        Application: "FormKiQ Stacks - Document"
+        Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 

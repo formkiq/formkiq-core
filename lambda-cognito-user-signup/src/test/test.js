@@ -32,9 +32,9 @@ describe('event', () => {
         let event = JSON.parse(json);
 
         lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq("Welcome to FormKiQ Stacks");
+            expect(data.response.emailSubject).to.eq("Welcome to FormKiQ");
             expect(data.response.emailMessage).to.include("Hello test@formkiq.com,");
-            expect(data.response.emailMessage).to.include('Log into your FormKiQ Stacks account<br />Console Url: https://prod.tryformkiq.com');
+            expect(data.response.emailMessage).to.include('Log into your FormKiQ account<br />Console Url: https://prod.tryformkiq.com');
             expect(data.response.emailMessage).to.include('Username: {username}');
             expect(data.response.emailMessage).to.include('Temporary Password: {####}');
 
@@ -47,9 +47,9 @@ describe('event', () => {
         let event = JSON.parse(json);
 
         lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq("Welcome to FormKiQ Stacks");
+            expect(data.response.emailSubject).to.eq("Welcome to FormKiQ");
             expect(data.response.emailMessage).to.include("Hello test@formkiq.com,");
-            expect(data.response.emailMessage).to.include('Log into your FormKiQ Stacks account<br />Console Url: https://prod.tryformkiq.com');
+            expect(data.response.emailMessage).to.include('Log into your FormKiQ account<br />Console Url: https://prod.tryformkiq.com');
             expect(data.response.emailMessage).to.include('Username: {username}');
             expect(data.response.emailMessage).to.include('Temporary Password: {####}');
 
@@ -62,7 +62,7 @@ describe('event', () => {
         let event = JSON.parse(json);
 
         lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq("FormKiQ Stacks - Lost Password");
+            expect(data.response.emailSubject).to.eq("FormKiQ - Lost Password");
             expect(data.response.emailMessage).to.include("Hello test@formkiq.com,");
             expect(data.response.emailMessage).to.include('A password reset request has been made for your account.');
             expect(data.response.emailMessage).to.include('To Reset your password, please click on following link');

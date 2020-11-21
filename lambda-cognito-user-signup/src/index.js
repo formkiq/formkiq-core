@@ -43,12 +43,12 @@ function sendCreateUserEmail(event, consoleurl) {
   const email = event.userName;
 
   var text = "Hello " + email + ",<br /><br />";
-  text += "Welcome to FormKiQ Stacks.<br /><br />"
-  text += "FormKiQ Stacks gives you full control of your organization's documents, including storage, search, data extraction, and workflows.<br />"
+  text += "Welcome to FormKiQ.<br /><br />"
+  text += "FormKiQ gives you full control of your organization's documents, including storage, search, data extraction, and workflows.<br />"
   text += "All in YOUR AWS cloud.<br /><br />";
-  text += "Log into your FormKiQ Stacks account<br />Console Url: " + consoleurl + "<br />Username: {username}<br />Temporary Password: {####}";
+  text += "Log into your FormKiQ account<br />Console Url: " + consoleurl + "<br />Username: {username}<br />Temporary Password: {####}";
 
-  event.response.emailSubject = "Welcome to FormKiQ Stacks";
+  event.response.emailSubject = "Welcome to FormKiQ";
   event.response.emailMessage = text;
 }
 
@@ -67,7 +67,7 @@ function sendForgotPasswordEmail(event, consoleurl) {
     text += consoleurl + "/resetPassword?code=" + code + "&user_name=" + username + "<br /><br />";
     text += "Regards<br />FormKiQ Team";
 
-    event.response.emailSubject = "FormKiQ Stacks - Lost Password";
+    event.response.emailSubject = "FormKiQ - Lost Password";
     event.response.emailMessage = text;
   }
 }

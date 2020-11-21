@@ -84,9 +84,9 @@ public class AwsResourceTest {
   public void testSsmParameters() {
     assertTrue(
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName")
-            .contains("-Documents-"));
+            .contains("-documents"));
     assertTrue(
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/CacheTableName")
-            .contains("-Cache-"));
+            .contains("-cache"));
   }
 }

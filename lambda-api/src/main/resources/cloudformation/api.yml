@@ -1,8 +1,8 @@
 openapi: "3.0.1"
 info:
   title: 
-    Fn::Sub: "FormKiQ Documents HTTP API - ${AppEnvironment}"
-  description: "FormKiQ Stacks - Document HTTP API"
+    Fn::Sub: "FormKiQ HTTP API - ${AppEnvironment}"
+  description: "FormKiQ HTTP API"
   version: "1.4.7"
 paths:
   /version:
@@ -1142,7 +1142,7 @@ x-amazon-apigateway-cors:
   - "*"
 tags:
 - name: Application
-  x-amazon-apigateway-tag-value: "FormKiQ Stacks - Document"
+  x-amazon-apigateway-tag-value: "FormKiQ Core"
 - name: AppEnvironment
   x-amazon-apigateway-tag-value: 
     Fn::Sub: "${AppEnvironment}"

@@ -41,7 +41,8 @@ public class VersionRequestTest extends AbstractApiTest {
   public void testVersion01() throws Exception {
     // given
     for (FormKiqClientV1 c : getFormKiqClients()) {
-      assertNotNull(c.getVersion());
+      assertNotNull(c.getVersion().version());
+      assertNotNull(c.getVersion().type());
     }
   }
 
