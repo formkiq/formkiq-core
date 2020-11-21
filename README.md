@@ -51,11 +51,11 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 **Coming Soon**
 
-- **FormKiQ Console with API Explorer:** Coming Soon
-
 - **FormKiQ Core Website Contact Form Example:** Coming Soon
 
 - **FormKiQ Core Website Job Application Form Example:** Coming Soon
+
+- **FormKiQ Console with API Explorer:** Coming Soon
 
 
 ## Getting Started
