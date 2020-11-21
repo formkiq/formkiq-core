@@ -156,7 +156,7 @@ Resources:
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "The endpoint url for the Http API"
+      Description: "The URL for the API endpoint that uses Cognito authorization"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
       Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
@@ -254,7 +254,7 @@ Resources:
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "The endpoint url for the IAM API"
+      Description: "The URL for the API endpoint that uses IAM authorization"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
       Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"

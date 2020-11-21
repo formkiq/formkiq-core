@@ -38,7 +38,7 @@ Resources:
   SnsDocumentsCreateEventTopicArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "SNS Topic for processing Document Create Events"
+      Description: "SNS Topic for Document Create Events"
       Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn"
       Type: String
       Value: !Ref SnsDocumentsCreateEventTopic
@@ -50,7 +50,7 @@ Resources:
   SnsDocumentsUpdateEventTopicParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "SNS Topic for processing Document Update Events"
+      Description: "SNS Topic for Document Update Events"
       Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsUpdateEventTopicArn"
       Type: String
       Value: !Ref SnsDocumentsUpdateEventTopic
@@ -62,7 +62,7 @@ Resources:
   SnsDocumentsDeleteEventTopicParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "SNS Topic for processing Document Delete Events"
+      Description: "SNS Topic for Document Delete Events"
       Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsDeleteEventTopicArn"
       Type: String
       Value: !Ref SnsDocumentsDeleteEventTopic

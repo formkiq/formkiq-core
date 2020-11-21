@@ -142,12 +142,11 @@ Resources:
         
 Outputs:
   IamApiUrl:
-    Description: "The endpoint url for the IAM API"
+    Description: "The URL for the API endpoint that uses IAM authorization"
     Value: !GetAtt CoreApi.Outputs.DocumentsIamApiUrl
   HttpApiUrl:
-    Description: "The endpoint url for the Http API"
+    Description: "The URL for the API endpoint that uses Cognito authorization"
     Value: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
   ConsoleUrl:
-    Description: Console URL
+    Description: The URL for the FormKiQ Console
     Value: !GetAtt CoreConsole.Outputs.ConsoleUrl
-  

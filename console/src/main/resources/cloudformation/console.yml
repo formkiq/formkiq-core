@@ -264,7 +264,7 @@ Resources:
   ConsoleUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "Console URL"
+      Description: "The URL for the FormKiQ Console"
       Name: !Sub "/formkiq/${AppEnvironment}/console/Url"
       Type: String
       Value: !Join ['', ['https://', !GetAtt CloudFrontDistribution.DomainName]]
