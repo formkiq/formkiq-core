@@ -50,7 +50,7 @@ subprojects {
   spotless { 
     java { 
       eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
-      licenseHeaderFile 'LICENSE', 'package' 
+      licenseHeaderFile project.rootProject.file("LICENSE")  
     } 
   }
 
