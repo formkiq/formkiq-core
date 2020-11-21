@@ -3,7 +3,7 @@ info:
   title: 
     Fn::Sub: "FormKiQ Documents HTTP API - ${AppEnvironment}"
   description: "FormKiQ Stacks - Document HTTP API"
-  version: "1.4.6"
+  version: "1.4.7"
 paths:
   /version:
     get:
@@ -26,7 +26,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Message"
+                "$ref": "#/components/schemas/Version"
       security:
       - AuthorizationCognito: []
       x-amazon-apigateway-integration:
@@ -1057,11 +1057,13 @@ components:
             type: "integer"
           versionId:
             type: "string"
-    Message:
+    Version:
       type: object
       properties:
-        message:
+        version:
           type: string
+        type:
+          type: string          
     Sites:
       type: object
       properties:
@@ -1085,9 +1087,9 @@ components:
         type: jwt
         jwtConfiguration:
           issuer:
-            Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/{{resolve:ssm:/formkiq/${AppEnvironment}/cognito/UserPoolId:1}}
+            Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
           audience:
-          - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/cognito/UserPoolClientId:1}}"
+          - Fn::Sub: "${CognitoUserPoolClient}"
         identitySource: "$request.header.Authorization"
     sigv4:
       type: "apiKey"

@@ -1,7 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FormKiQ Core - S3.
+Description: FormKiQ Core - Data
 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: FormKiQ-Core-Data
+    Description: Data component of FormKiQ-Core
+    Author: FormKiQ Inc
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: file://../../../../../LICENSE
+    ReadmeUrl: file://../../../../../../README.md
+    Labels: ['formkiq-core']
+    HomePageUrl: https://github.com/formkiq/formkiq-core
+    SourceCodeUrl: https://github.com/formkiq/formkiq-core
+    
 Parameters:
     
   AppEnvironment:
@@ -33,6 +45,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   SnsDocumentsUpdateEventTopicParameter:
     Type: AWS::SSM::Parameter
@@ -44,6 +57,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   SnsDocumentsDeleteEventTopicParameter:
     Type: AWS::SSM::Parameter
@@ -55,6 +69,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   DocumentsS3BucketParameter:
     Type: AWS::SSM::Parameter
@@ -66,6 +81,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   DocumentsStageS3BucketParameter:
     Type: AWS::SSM::Parameter
@@ -77,14 +93,14 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
                       
   DocumentsStageS3Bucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
     DependsOn:
     - StagingS3Create
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-staging"
+      BucketName: !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"
       BucketEncryption: 
         ServerSideEncryptionConfiguration: 
         - ServerSideEncryptionByDefault:
@@ -108,6 +124,8 @@ Resources:
           Value: "FormKiQ Core"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
 
   SnsDocumentsCreateEventTopic:
     Type: "AWS::SNS::Topic"
@@ -117,6 +135,8 @@ Resources:
             Value: "FormKiQ Core"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
+          - Key: "StackName"
+            Value: !Sub "${AWS::StackName}"            
             
   SnsDocumentsCreateEventTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -142,6 +162,8 @@ Resources:
             Value: "FormKiQ Core"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
+          - Key: "StackName"
+            Value: !Sub "${AWS::StackName}"            
             
   SnsDocumentsUpdateEventTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -171,6 +193,8 @@ Resources:
             Value: "FormKiQ Core"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
+          - Key: "StackName"
+            Value: !Sub "${AWS::StackName}"
             
   SnsDocumentsDeleteEventTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -194,11 +218,10 @@ Resources:
       
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
     DependsOn:
     - DocumentsS3Update
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-documents"
+      BucketName: !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
@@ -226,6 +249,8 @@ Resources:
           Value: "FormKiQ Core"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
 
   StagingS3Create:
     Type: AWS::Serverless::Function
@@ -239,14 +264,15 @@ Resources:
       CodeUri: ../../../../build/distributions/lambda-s3-graalvm.zip
       Environment:
         Variables:
-          DOCUMENTS_S3_BUCKET: !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-documents"
-          DOCUMENTS_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
+          DOCUMENTS_S3_BUCKET: !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"
+          DOCUMENTS_TABLE: !Ref Documents
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
       Role: !GetAtt [S3LambdaRole, Arn]
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
         Application: "FormKiQ Core"
+        StackName: !Sub "${AWS::StackName}"
 
   StagingCreateObjectParameter:
     Type: AWS::SSM::Parameter
@@ -258,6 +284,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   StagingCreateObjectPermission:
     DependsOn:
@@ -268,7 +295,7 @@ Resources:
       FunctionName: !GetAtt StagingS3Create.Arn
       Principal: s3.amazonaws.com
       SourceAccount: !Sub "${AWS::AccountId}"
-      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-staging"]]
+      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"]]
               
   DocumentsS3Update:
     Type: AWS::Serverless::Function
@@ -282,7 +309,7 @@ Resources:
       CodeUri: ../../../../build/distributions/lambda-s3-graalvm.zip
       Environment:
         Variables:
-          DOCUMENTS_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
+          DOCUMENTS_TABLE: !Ref Documents
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
           SNS_UPDATE_TOPIC_ARN: !Ref SnsDocumentsUpdateEventTopic
@@ -292,6 +319,7 @@ Resources:
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
         Application: "FormKiQ Core"
+        StackName: !Sub "${AWS::StackName}"
       Events:
         CreateSQSEvent:
           Type: SQS
@@ -309,6 +337,8 @@ Resources:
             Value: "FormKiQ Core"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
+          - Key: "StackName"
+            Value: !Sub "${AWS::StackName}"
             
   DocumentsUpdateObjectParameter:
     Type: AWS::SSM::Parameter
@@ -320,6 +350,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   DocumentsUpdateQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -350,6 +381,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   DocumentsUpdateQueueArnParameter:
     Type: AWS::SSM::Parameter
@@ -361,6 +393,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   DocumentsUpdateObjectPermission:
     DependsOn:
@@ -371,7 +404,7 @@ Resources:
       FunctionName: !GetAtt DocumentsS3Update.Arn
       Principal: s3.amazonaws.com
       SourceAccount: !Sub "${AWS::AccountId}"
-      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-documents"]]
+      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"]]
 
   S3LambdaRole:
     Type: AWS::IAM::Role
@@ -381,6 +414,8 @@ Resources:
           Value: "FormKiQ Core"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -412,16 +447,16 @@ Resources:
             Action:
             - s3:ListBucket
             Resource:
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-documents"]]
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-staging"]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"]]
           - Effect: Allow
             Action:
             - s3:GetObject*
             - s3:PutObject*
             - s3:DeleteObject
             Resource:
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-documents", /*]]
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-${AWS::AccountId}-staging", /*]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}", /*]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}", /*]]
           - Effect: Allow
             Action:
             - dynamodb:BatchGetItem
@@ -433,13 +468,13 @@ Resources:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
             Resource: 
-            - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
+            - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
           - Effect: Allow
             Action:
             - dynamodb:Query
             - dynamodb:Scan
             Resource:
-            - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}/index/*"
+            - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
           - Effect: Allow
             Action:
             - sqs:ReceiveMessage
@@ -455,8 +490,141 @@ Resources:
             - !Ref SnsDocumentsUpdateEventTopic
             - !Ref SnsDocumentsDeleteEventTopic
 
+  DocumentsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: !Sub "/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName"
+      Type: String
+      Value: !Ref Documents
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  Documents:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "formkiq-core-${AppEnvironment}-documents"
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI2PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI2SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "GSI1"
+          KeySchema: 
+            - 
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+            - inserteddate
+            - documentId
+            - tagKey
+            - tagValue
+        - 
+          IndexName: "GSI2"
+          KeySchema: 
+            - 
+              AttributeName: "GSI2PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI2SK"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+            - inserteddate
+            - documentId
+            - tagKey
+            - tagValue
+
+  CacheParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Cache table name
+      Name: !Sub "/formkiq/${AppEnvironment}/dynamodb/CacheTableName"
+      Type: String
+      Value: !Ref Cache
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+      
+  Cache:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "formkiq-core-${AppEnvironment}-cache"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
 Outputs:
 
+  DocumentsTableName:
+    Value:
+      !Ref Documents
+
+  CacheTableName:
+    Value:
+      !Ref Cache
+      
   DocumentsS3Buckets:
     Description: Document Bucket.
     Value: !Ref DocumentsS3Buckets

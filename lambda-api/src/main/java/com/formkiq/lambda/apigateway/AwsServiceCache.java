@@ -67,6 +67,8 @@ public class AwsServiceCache {
   private String stages3bucket;
   /** App Environment. */
   private String appEnvironment;
+  /** FormKiQ Type. */
+  private String formkiqType;
   /** Is Debug Mode. */
   private boolean debug;
   /** Documents S3 Bucket. */
@@ -96,6 +98,26 @@ public class AwsServiceCache {
    */
   public AwsServiceCache appEnvironment(final String env) {
     this.appEnvironment = env;
+    return this;
+  }
+
+  /**
+   * Get FormKiQ Type.
+   * 
+   * @return {@link String}
+   */
+  public String formkiqType() {
+    return this.formkiqType;
+  }
+
+  /**
+   * Set FormKiQ Type Environment.
+   * 
+   * @param type {@link String}
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache formkiqType(final String type) {
+    this.formkiqType = type;
     return this;
   }
 

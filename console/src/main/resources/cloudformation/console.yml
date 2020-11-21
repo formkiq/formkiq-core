@@ -1,9 +1,26 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FormKiQ Core - Dev Console.
+Description: FormKiQ Core - Console
 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: FormKiQ-Core-Console
+    Description: Console component of FormKiQ-Core
+    Author: FormKiQ Inc
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: file://../../../../../LICENSE
+    ReadmeUrl: file://../../../../../README.md
+    Labels: ['formkiq-core']
+    HomePageUrl: https://github.com/formkiq/formkiq-core
+    SourceCodeUrl: https://github.com/formkiq/formkiq-core
+    
 Parameters:
 
+  AdminEmail:
+    Type: String
+    Description: Administrator Email
+    AllowedPattern: ".+"
+    
   AppEnvironment:
     Type: String
     Description: The Document Stack Environment
@@ -20,11 +37,11 @@ Parameters:
     Default: "formkiq-distribution-us-east-pro"
      
 Resources:
-    
+
   Console:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
     Properties:
+      BucketName: !Sub "formkiq-core-${AppEnvironment}-console-${AWS::AccountId}"
       AccessControl: Private
       BucketEncryption: 
         ServerSideEncryptionConfiguration: 
@@ -38,6 +55,10 @@ Resources:
       Tags:
         - Key: Application
           Value: FormKiQ
+        - Key: AppEnvironment
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
 
   ConsoleVersionParameter:
     Type: AWS::SSM::Parameter
@@ -49,6 +70,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
   
   ConsoleParameter:
     Type: AWS::SSM::Parameter
@@ -60,6 +82,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   ConsoleArnParameter:
     Type: AWS::SSM::Parameter
@@ -71,6 +94,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   ConsoleDomainNameParameter:
     Type: AWS::SSM::Parameter
@@ -82,6 +106,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   ConsoleRegionalDomainNameParameter:
     Type: AWS::SSM::Parameter
@@ -93,6 +118,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
         
   ConsoleInstallerParameter:
     Type: AWS::SSM::Parameter
@@ -104,6 +130,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
 
   ConsoleInstaller:
     Type: AWS::Serverless::Function
@@ -123,6 +150,7 @@ Resources:
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
       Environment:
         Variables:
           appenvironment: !Sub "${AppEnvironment}"
@@ -196,26 +224,132 @@ Resources:
         - ConsoleInstaller
         - Arn
 
-Outputs:
-  
-  ConsoleInstaller:
-    Description: Lambda for Console Installation
-    Value: !Ref ConsoleInstaller
-    
-  ConsoleDomainName:
-    Value: !GetAtt 
-      - Console
-      - DomainName
-  
-  ConsoleRegionalDomainName:
-    Value: !GetAtt
-      - Console
-      - RegionalDomainName
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !GetAtt Console.RegionalDomainName
+          Id: s3origin
+          OriginPath: !Sub "/${ConsoleVersion}"
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          Compress: true
+          DefaultTTL: 600
+          MaxTTL: 600
+          MinTTL: 0
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: s3origin
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        CustomErrorResponses:
+        - ErrorCode: '403'
+          ResponsePagePath: "/index.html"
+          ResponseCode: '200'
+        - ErrorCode: '404'
+          ResponsePagePath: "/index.html"
+          ResponseCode: '200'
+      Tags:
+        - Key: Application
+          Value: "FormKiQ Core"
+        - Key: AppEnvironment
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
 
-  ConsoleArn:
-    Value: !GetAtt 
-      - Console
-      - Arn
+  ConsoleUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console URL"
+      Name: !Sub "/formkiq/${AppEnvironment}/console/Url"
+      Type: String
+      Value: !Join ['', ['https://', !GetAtt CloudFrontDistribution.DomainName]]
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "FormKiQ Console CloudFront Identity"
+
+  ConsoleBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties: 
+      Bucket: !Ref Console
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+        - 
+          Action: 
+            - "s3:GetObject"
+          Effect: "Allow"
+          Resource: 
+            Fn::Join: 
+              - ""
+              - 
+                -  !GetAtt Console.Arn
+                - "/*"
+          Principal:
+            CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  ConsoleAdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    DependsOn:
+    - CloudFrontDistribution
+    - ConsoleUrlParameter
+    Properties:
+      DesiredDeliveryMediums: 
+        - EMAIL
+      Username: !Sub "${AdminEmail}"
+      UserPoolId: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/cognito/UserPoolId:1}}"
+      UserAttributes:
+        - Name: email
+          Value: !Sub "${AdminEmail}"
+        - Name: email_verified
+          Value: "true"
+
+  ConsoleAddUserToGroup:
+    Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    DependsOn:
+    - ConsoleAdminUser
+    Properties: 
+      GroupName: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/cognito/AdminGroup:1}}"
+      Username: !Sub "${AdminEmail}"
+      UserPoolId: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/cognito/UserPoolId:1}}"
+
+  ConsoleAddUserToDefaultGroup:
+    Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    DependsOn:
+    - ConsoleAdminUser
+    Properties: 
+      GroupName: "default"
+      Username: !Sub "${AdminEmail}"
+      UserPoolId: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/cognito/UserPoolId:1}}"
+      
+  ConsoleAdminEmailParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console Admin Email"
+      Name: !Sub "/formkiq/${AppEnvironment}/console/AdminEmail"
+      Type: String
+      Value: !Ref AdminEmail
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+Outputs:
+
+  ConsoleUrl:
+    Description: Console URL
+    Value: !Join ['', ['https://', !GetAtt CloudFrontDistribution.DomainName]]
           
   Console:
     Value:
