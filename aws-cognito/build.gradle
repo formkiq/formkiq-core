@@ -1,0 +1,13 @@
+
+description = "AWS Cognito"
+
+dependencies {
+	api group: 'software.amazon.awssdk', name: 'cognitoidentity', version: '2.15.25'
+	api group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.15.25'
+	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.15.25'
+	
+	configurations.all {
+   		exclude group: 'software.amazon.awssdk', module: 'apache-client'
+   		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+	}
+}

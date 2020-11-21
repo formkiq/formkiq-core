@@ -1,0 +1,22 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:111111111111:formkiq-docstack-unittest-lambda-s3-snsDocumentsCreateEventTopic-NUF07HS4PA62:96cf9777-0d23-4a0e-a526-e7da1796a926",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "62fc92c3-2f94-5b99-a3da-c41e0a69eba2",
+        "TopicArn": "arn:aws:sns:us-east-1:111111111111:formkiq-docstack-unittest-lambda-s3-snsDocumentsCreateEventTopic-NUF07HS4PA62",
+        "Subject": "Amazon S3 Notification",
+        "Message": "{\"Records\":[{\"eventVersion\":\"2.1\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-1\",\"eventTime\":\"2020-03-07T04:31:54.423Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"A7X4DSYK97C32\"},\"requestParameters\":{\"sourceIPAddress\":\"199.116.115.136\"},\"responseElements\":{\"x-amz-request-id\":\"30BD1CFDD5285963\",\"x-amz-id-2\":\"8L2ti7BJq9mhdeWyHNsb1Y3UlTfQtrVwHTSBWkVxewo4Yos7JN1lG9OT2MTr4h923uo6SB11mw41ffIw7F9KhHGdY/L2qdDZ\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"4671f549-a417-4ac2-837f-ce3f37c8b43e\",\"bucket\":{\"name\":\"example-bucket\",\"ownerIdentity\":{\"principalId\":\"A7X4DSYK97C32\"},\"arn\":\"arn:aws:s3:::example-bucket\"},\"object\":{\"key\":\"bleh.yml\",\"size\":4157,\"eTag\":\"6a9d36b427ab7f09ec64a0baa39818f5\",\"versionId\":\"ct06xa.J3MXAL7gO3AKsMv1_7oKrDV_L\",\"sequencer\":\"005E6323BC89D57083\"}}}]}",
+        "Timestamp": "2020-03-07T04:31:57.853Z",
+        "SignatureVersion": "1",
+        "Signature": "g4XmtjiUXO/iTZBtEIeFxWG22TfYjw1xsBk0ctHgDE7QG8+96w9ZtP2WIwXmK22SDZU/Eg8h2JWWgWs0hEuT4rB2itTjUQo8PAoAY11wqCJAlNfsd/JS1qNYQ41k4SDZGlPEEv/yHEjT1TeUZCLPmfTj0XbA8PMh7XJ5NdHR12dvzoLAL3hwePu+a34I53+uNa6iP4IJ8aN0gt0pKxdJjHWtPdePOG39ztIfaUaMc0i0+CZpZ6MXM22TQvXEs5dvGuincXnPi4UPaMADJh3YOF01m6fYJ+cNzg4OHlWzxva9QS7DNGFD1IbuW4GcORxiXxDTYSs22rIyt9FHLg7ntQ==",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:111111111111:formkiq-docstack-unittest-lambda-s3-snsDocumentsCreateEventTopic-NUF07HS4PA62:96cf9777-0d23-4a0e-a526-e7da1796a926",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}

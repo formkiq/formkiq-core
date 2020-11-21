@@ -1,0 +1,29 @@
+	
+description = "FormKiQ Cloud - Cognito User Signup"
+
+dependencies {
+}
+
+task npmtest {
+  inputs.files("${project.projectDir}/src/index.js", "${project.projectDir}/src/test/index.js")
+  outputs.file("$buildDir/${project.name}_index.js_${project.version}")
+
+  doLast {
+    exec {
+      commandLine "bash", "-c", "cd src ; npm install ; npm test"
+    }
+  }
+}
+
+task createZipCognitoUserSignup(type: Zip) {   
+   from "src"
+   include "*"
+   include "*/*"
+   exclude "test", "coverage"
+   archiveName "cognito-user-signup.zip"
+   destinationDir(file("${buildDir}/distributions"))
+}
+
+test.dependsOn npmtest
+createZipCognitoUserSignup.dependsOn check
+build.dependsOn createZipCognitoUserSignup

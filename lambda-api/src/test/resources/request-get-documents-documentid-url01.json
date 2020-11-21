@@ -1,0 +1,60 @@
+{
+    "resource": "/documents/{documentId}/url",
+    "path": "/documents/39da0052-3cb3-47a6-94c7-7b97cd43f1ee/url",
+    "httpMethod": "GET",
+    "headers": null,
+    "multiValueHeaders": null,
+    "queryStringParameters": null,
+    "multiValueQueryStringParameters": null,
+    "pathParameters": {
+        "documentId": "39da0052-3cb3-47a6-94c7-7b97cd43f1ee"
+    },
+    "stageVariables": null,
+    "requestContext": {
+        "path": "/documents/{documentId}/url",
+        "accountId": "228203493010",
+        "resourceId": "jt0wbu",
+        "stage": "test-invoke-stage",
+        "domainPrefix": "testPrefix",
+        "requestId": "7742ee45-706a-11e9-ad2f-f5884b0745a7",
+         "authorizer": {
+      "claims": {
+        "sub": "6aaaba31-ac0e-459f-bb2f-cebbf4c9eeba",
+        "aud": "23cakansoqhfk3mpuvg3bdsd26",
+        "email_verified": "true",
+        "event_id": "56df06d2-8026-11e9-abcc-339966f2508d",
+        "token_use": "id",
+        "auth_time": "1558923776",
+        "cognito:groups": "[default]",
+        "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4dlHNdF5d",
+        "cognito:username": "7b87c0e2-5f20-403b-bcc6-d35cb491d3b7@formkiq.com",
+        "exp": "Mon May 27 03:22:56 UTC 2019",
+        "iat": "Mon May 27 02:22:56 UTC 2019",
+        "email": "7b87c0e2-5f20-403b-bcc6-d35cb491d3b7@formkiq.com"
+      }
+    },
+        "identity": {
+            "cognitoIdentityPoolId": null,
+            "cognitoIdentityId": null,
+            "apiKey": "test-invoke-api-key",
+            "principalOrgId": null,
+            "cognitoAuthenticationType": null,
+            "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+            "apiKeyId": "test-invoke-api-key-id",
+            "userAgent": "aws-internal/3 aws-sdk-java/1.11.534 Linux/4.9.137-0.1.ac.218.74.329.metal1.x86_64 OpenJDK_64-Bit_Server_VM/25.202-b08 java/1.8.0_202 vendor/Oracle_Corporation",
+            "accountId": "228203493010",
+            "caller": "228203493010",
+            "sourceIp": "test-invoke-source-ip",
+            "accessKey": "ASIATKIP462JODF6RBO5",
+            "cognitoAuthenticationProvider": null,
+            "user": "228203493010"
+        },
+        "domainName": "testPrefix.testDomainName",
+        "resourcePath": "/documents/{documentId}/url",
+        "httpMethod": "GET",
+        "extendedRequestId": "ZSieFHk4IAMFwww=",
+        "apiId": "dx6sclldu6"
+    },
+    "body": null,
+    "isBase64Encoded": false
+}

@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - DynamoDB.
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The API Gateway Stage
+         
+Resources:
+  
+  DocumentsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: !Sub "/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName"
+      Type: String
+      Value: !Ref Documents
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+
+  Documents:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI2PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI2SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "GSI1"
+          KeySchema: 
+            - 
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+            - inserteddate
+            - documentId
+            - tagKey
+            - tagValue
+        - 
+          IndexName: "GSI2"
+          KeySchema: 
+            - 
+              AttributeName: "GSI2PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI2SK"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+            - inserteddate
+            - documentId
+            - tagKey
+            - tagValue
+
+  CacheParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Cache table name
+      Name: !Sub "/formkiq/${AppEnvironment}/dynamodb/CacheTableName"
+      Type: String
+      Value: !Ref Cache
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+      
+  Cache:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Core"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+
+Outputs:
+
+  DocumentsTableName:
+    Value:
+      !Ref Documents
+
+  CacheTableName:
+    Value:
+      !Ref Cache

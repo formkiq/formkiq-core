@@ -1,0 +1,101 @@
+{
+    "version": "1.0",
+    "resource": "/documents",
+    "path": "/documents",
+    "httpMethod": "POST",
+    "headers": {
+        "Content-Length": "118",
+        "Content-Type": "text/plain",
+        "Host": "api-demo.tryformkiq.com",
+        "User-Agent": "curl/7.64.1",
+        "X-Amzn-Trace-Id": "Root=1-5e861bfd-3b69e48261dcfcd7458f9d3d",
+        "X-Forwarded-For": "104.246.140.89",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https",
+        "accept": "*/*",
+        "authorization": "eyJraWQiOiJMUjlzbkZEdGNGeHR1SkJ1WXdjNDZ6dElYdjFDSDlLTFkyNXA4dXUwSmNrPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI5NjJhZmFhMC0yZGU2LTRhMjgtYjZiYS02YzUzMzAzYWY0OWEiLCJldmVudF9pZCI6IjcyNDIyNzY3LWNjZWEtNDhjZi1iMGI4LWI5MDQyOTllZTNhMCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4iLCJhdXRoX3RpbWUiOjE1ODU4NDcyODYsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX3BjTEw2aGFwSyIsImV4cCI6MTU4NTg1MDg4NiwiaWF0IjoxNTg1ODQ3Mjg2LCJqdGkiOiI1ZDExNDNlNC01OGFmLTQwZjktYWM1MC0yMmIwYjliZjgwZjciLCJjbGllbnRfaWQiOiI0ZHBvNzVrcWdscmU0a2pqcG9sdTZpZ2wyYyIsInVzZXJuYW1lIjoiZGVtb0Bmb3Jta2lxLmNvbSJ9.DlRkRomahZPQRGNgu_MQxdWPLQNJxqwdEDyxsB2LYiRHamWJNTw2V_wvKjwCOkhosmPiw_q7OHxZk-YYQqHTsFfsEEaPcivMnM0R3WzRQgnn0royooddRcaIkpTkH0mUF5o74C36IzsiXC9bkoaN2s6tm6oVnlV7iFz_BJe_DsR3u72sR5bsOH_EL4Q_Li0mxSurloqC-_JC7htU0SJUURU8xTt7hrHYsi9VAX3AwIxb5ID0y-y5ODlXaO7FiqePRrFmDyVKD1gV-llXdvvyH0aLmGjjGmCUV6zCwqr-sX34U3N_gCUHhk0FlhNicbQMtOJL7Zd_FILV99rGBbRnTQ"
+    },
+    "multiValueHeaders": {
+        "Content-Length": [
+            "118"
+        ],
+        "Content-Type": [
+            "text/plain"
+        ],
+        "Host": [
+            "api-demo.tryformkiq.com"
+        ],
+        "User-Agent": [
+            "curl/7.64.1"
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-5e861bfd-3b69e48261dcfcd7458f9d3d"
+        ],
+        "X-Forwarded-For": [
+            "104.246.140.89"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ],
+        "accept": [
+            "*/*"
+        ],
+        "authorization": [
+            "eyJraWQiOiJMUjlzbkZEdGNGeHR1SkJ1WXdjNDZ6dElYdjFDSDlLTFkyNXA4dXUwSmNrPSIsImFsZyI6IlJTMjU2In0"
+        ]
+    },
+    "queryStringParameters": null,
+    "multiValueQueryStringParameters": null,
+    "requestContext": {
+        "accountId": "111111111111",
+        "apiId": "7rggg3jqbb",
+        "authorizer": {
+            "claims": {
+                "auth_time": "1585847286",
+                "client_id": "4dpo75kqglre4kjjpolu6igl2c",
+                "event_id": "72422767-ccea-48cf-b0b8-b904299ee3a0",
+                "exp": "1585850886",
+                "iat": "1585847286",
+                "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_pcLL6hapK",
+                "jti": "5d1143e4-58af-40f9-ac50-22b0b9bf80f7",
+                "sub": "962afaa0-2de6-4a28-b6ba-6c53303af49a",
+                "token_use": "access",
+                "username": "demo@formkiq.com"
+            },
+            "scopes": null
+        },
+        "domainName": "api-demo.tryformkiq.com",
+        "domainPrefix": "api-demo",
+        "extendedRequestId": "KXlPkg3KoAMEMHw=",
+        "httpMethod": "POST",
+        "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "104.246.140.89",
+            "user": null,
+            "userAgent": "curl/7.64.1",
+            "userArn": null
+        },
+        "path": "/demo/documents",
+        "protocol": "HTTP/1.1",
+        "requestId": "KXlPkg3KoAMEMHw=",
+        "requestTime": "02/Apr/2020:17:08:13 +0000",
+        "requestTimeEpoch": 1585847293138,
+        "resourceId": "POST /documents",
+        "resourcePath": "/documents",
+        "stage": "demo"
+    },
+    "pathParameters": null,
+    "stageVariables": null,
+    "body": "{ \"path\": \"/temp/test.txt\",\"content\": \"VGhpcyBpcyBhIHRlc3QgY29udGVudA==\",\"tags\": [{\"key\": \"content\",\"value\": \"text\"}]}",
+    "isBase64Encoded": false
+}

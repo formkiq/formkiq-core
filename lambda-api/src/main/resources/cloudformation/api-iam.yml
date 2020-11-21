@@ -1,0 +1,1148 @@
+openapi: "3.0.1"
+info:
+  title: 
+    Fn::Sub: "FormKiQ IAM API - ${AppEnvironment}"
+  description: "FormKiQ IAM API"
+  version: "1.4.7"
+paths:
+  /version:
+    get:
+      description: Return the version of FormKiQ.
+      tags:
+      - Miscellaneous    
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Version"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Return the version of FormKiQ Options.
+      tags:
+      - Miscellaneous      
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"        
+  /sites:
+    get:
+      description: Sites User belongs to
+      tags:
+      - Miscellaneous
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Sites"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Sites User belongs to Options.
+      tags:
+      - Miscellaneous     
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"        
+  /documents:
+    get:
+      tags:
+      - Documents
+      description: Returns a list of documents in reverse inserted date order.
+      parameters:
+      - name: "date"
+        in: "query"
+        schema:
+          type: "string"
+      - name: "limit"
+        in: "query"
+        schema:
+          type: "string"
+      - name: "tz"
+        in: "query"
+        schema:
+          type: "string"
+      - name: "next"
+        in: "query"
+        schema:
+          type: "string"
+      - name: "previous"
+        in: "query"
+        schema:
+          type: "string"
+      - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DocumentItemsResults"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      description: Save document.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentBody'
+      responses:
+        '201':
+          description: 201 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPostResponse'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    options:
+      description: Save document Options.
+      tags:
+      - Documents      
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/{documentId}:
+    get:
+      description: Get document details.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentItem'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    patch:
+      description: Update document details.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentBody'
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPostResponse'      
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Get document details Options.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      description: Delete document.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/{documentId}/versions:
+    get:
+      description: Get document versions.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      - name: "tz"
+        in: "query"
+        schema:
+          type: "string"
+      - name: next
+        in: query
+        description: Next Page Token.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentItemsVersions'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Get document versions Options.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/{documentId}/content:
+    get:
+      description: Get document content.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/versionIdParam'
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentContent'              
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Get document tags Options.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/{documentId}/tags:
+    get:
+      description: Get document tags.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      - name: next
+        in: query
+        description: Next Page Token.
+        schema:
+          type: string
+      - name: previous
+        in: query
+        description: Previous Page Token.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: The number of results to return.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentItemsTags'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Get document tags Options.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      description: Add Tag to document.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentItemTag'
+            examples:
+              Add_Key_Only_Tag:
+                value:
+                  key: category
+              Add_Key_and_Value_Tag:
+                value:
+                  key: category
+                  value: person
+      responses:
+        '201':
+          $ref: '#/components/responses/200Cors'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+  /documents/{documentId}/tags/{tagKey}:
+    get:
+      description: Get document tags.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/tagkeyParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentItemTag'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      description: Replace Tag value.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/tagkeyParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentItemTagValueBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Delete document tags Options.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/tagkeyParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      description: Delete document tags.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/tagkeyParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/{documentId}/url:
+    get:
+      description: Returns a URL to fetch the document.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/versionIdParam'
+      - $ref: '#/components/parameters/durationParam'
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUrl'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Returns a URL to fetch the document Options.
+      tags:
+      - Documents      
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/upload:
+    get:
+      description: Returns URL that can accept uploads largers than 5 MB.
+      tags:
+      - Documents      
+      parameters:
+        - name: path
+          in: query
+          description: The upload file's path.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/contentLengthParam'
+        - $ref: '#/components/parameters/durationParam'
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUrl'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      description: Returns URL that can accept uploads largers than 5 MB Options.
+      tags:
+      - Documents      
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /documents/{documentId}/upload:
+    get:
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/contentLengthParam'
+      - $ref: '#/components/parameters/durationParam'
+      description: Returns URL to upload content larger than 5 MB.
+      tags:
+      - Documents      
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUrl'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    options:
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      description: Searches for Documents Options.
+      tags:
+      - Documents      
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /search:
+    options:
+      description: Searches for Documents Options.
+      tags:
+      - Search      
+      responses:
+        '200':
+          $ref: '#/components/responses/200Cors'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      description: Searches for Documents.
+      tags:
+      - Search      
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - name: next
+        in: query
+        description: Next Page Token.
+        schema:
+          type: string
+      - name: previous
+        in: query
+        description: Previous Page Token.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: The number of results to return.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentSearchBody'
+            examples:
+              Search_By_Key:
+                value:
+                  query:
+                    tag:
+                      key: category
+              Search_By_Value:
+                value:
+                  query:
+                    tag:
+                      key: category
+                      eq: person
+              Tag_Value_Begins_With:
+                value:
+                  query:
+                    tag:
+                      key: firstname
+                      beginsWith: jo
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentItemsResults'
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  /public/documents:
+    post:
+      description: Save document.
+      tags:
+      - Public      
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentBody'
+      responses:
+        '201':
+          description: 201 response
+          headers:
+            Access-Control-Allow-Origin:
+               $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+               $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentId'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    options:
+      description: Save document Options.
+      tags:
+      - Public      
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"        
+components:
+  headers:
+    AccessControlAllowOrigin:
+      schema:
+        type: string
+    AccessControlAllowMethods:
+      schema:
+        type: string
+    AccessControlAllowHeaders:
+      schema:
+        type: string
+    Location:
+      schema:
+        type: string        
+  responses:
+    200Cors:
+      description: Options Response.
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+        Access-Control-Allow-Methods:
+          schema:
+            type: string
+        Access-Control-Allow-Headers:
+          schema:
+            type: string
+      content: {}
+  parameters:
+    versionIdParam:
+      name: versionId
+      in: query
+      description: Version Identifier
+      required: false
+      schema:
+        type: string
+    presetIdParam:
+      name: presetId
+      in: path
+      description: Preset Identifier.
+      required: true
+      schema:
+        type: string	     
+    siteIdParam:
+      name: siteId
+      in: query
+      description: Site Identifier.
+      required: false
+      schema:
+        type: string  
+    documentIdParam:
+      name: documentId
+      in: path
+      description: Document Identifier.
+      required: true
+      schema:
+        type: string
+    tagkeyParam:
+      name: tagKey
+      in: path
+      description: Tag Key.
+      required: true
+      schema:
+        type: string
+    contentLengthParam:
+      name: contentLength
+      in: query
+      description: Indicates the size of the entity-body.
+      required: false
+      schema:
+        type: integer
+    durationParam:
+      name: duration
+      in: query
+      description: Indicates the number of hours request is valid for.
+      required: true
+      schema:
+        type: integer
+  schemas:
+    DocumentItemTagValueBody:
+      required:
+      - "value"
+      type: "object"
+      properties:
+        value:
+          type: "string"
+    DocumentContent:
+      type: "object"
+      properties:
+        content:
+          type: "string"
+        contentUrl:
+          type: "string"
+        contentType:
+          type: "string"
+        isBase64:
+          type: "boolean"
+    DocumentItemsVersions:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+        versions:
+          $ref: "#/components/schemas/DocumentItemVersions"    
+    DocumentItemsTags:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+        previous:
+          type: "string"
+        tags:
+          $ref: "#/components/schemas/DocumentItemTags"
+    DocumentItemTags:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/DocumentItemTag"
+    DocumentItemVersions:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/DocumentItemVersion"
+    DocumentSearchTag:
+      required:
+      - "tag"
+      type: "object"
+      properties:
+        tag:
+          $ref: "#/components/schemas/DocumentSearchItemTag"
+    DocumentId:
+      required:
+      - "documentId"
+      type: "object"
+      properties:
+        documentId:
+          type: "string"
+          format: "uuid"
+        siteId:
+          type: "string"
+    DocumentPostResponse:
+      type: "object"
+      properties:
+        documentId:
+          type: "string"
+          format: "uuid"
+        siteId:
+          type: "string"
+        uploadUrl:
+          type: "string"
+        documents:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              documentId:
+                type: "string"
+              uploadUrl:
+                type: "string"
+    DocumentUrl:
+      type: "object"
+      properties:
+        documentId:
+          type: "string"
+        url:
+          type: "string"
+    DocumentItem:
+      required:
+      - "documentId"
+      - "path"
+      type: "object"
+      properties:
+        siteId:
+          type: "string"
+        path:
+          type: "string"
+        insertedDate:
+          type: "string"
+          format: "date-time"
+        checksum:
+          type: "string"
+        documentId:
+          type: "string"
+          format: "uuid"
+        contentType:
+          type: "string"
+        userId:
+          type: "string"
+        contentLength:
+          type: "integer"
+        versionId:
+          type: "string"
+        belongsToDocumentId:
+          type: "string"
+        documents:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              documentId:
+                type: "string"
+    DocumentSearchBody:
+      required:
+      - "query"
+      type: "object"
+      properties:
+        query:
+          $ref: "#/components/schemas/DocumentSearchTag"
+    DocumentSearchItemTag:
+      required:
+      - "key"
+      type: "object"
+      properties:
+        beginsWith:
+          type: "string"
+        eq:
+          type: "string"
+        key:
+          type: "string"
+    DocumentBody:
+      required:
+      - "content"
+      type: "object"
+      properties:
+        path:
+          type: "string"
+        contentType:
+          type: "string"
+        isBase64:
+          type: "boolean"
+        content:
+          type: "string"
+        tags:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              key:
+                type: "string"
+              value:
+                type: "string"
+        documents:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              path:
+                type: "string"
+              contentType:
+                type: "string"
+              isBase64:
+                type: "boolean"
+              content:
+                type: "string"
+              tags:
+                type: "array"
+                items:
+                  type: "object"
+                  properties:
+                    key:
+                      type: "string"
+                    value:
+                      type: "string"
+    DocumentItemVersion:
+      required:
+      - "versionId"
+      type: "object"
+      properties:
+        versionId:
+          type: "string"
+        lastModifiedDate:
+          type: "string"
+    DocumentItemTag:
+      required:
+      - "key"
+      - "value"
+      type: "object"
+      properties:
+        insertedDate:
+          type: "string"
+        documentId:
+          type: "string"
+        type:
+          type: "string"
+        userId:
+          type: "string"
+        value:
+          type: "string"
+        key:
+          type: "string"
+    DocumentItemsResults:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+        previous:
+          type: "string"
+        documents:
+          $ref: "#/components/schemas/DocumentItems"
+    DocumentItems:
+      type: "array"
+      items:
+        type: "object"
+        properties:
+          siteId:
+            type: "string"
+          path:
+            type: "string"
+          insertedDate:
+            type: "string"
+            format: "date-time"
+          checksum:
+            type: "string"
+          documentId:
+            type: "string"
+            format: "uuid"
+          contentType:
+            type: "string"
+          userId:
+            type: "string"
+          contentLength:
+            type: "integer"
+          versionId:
+            type: "string"
+    Version:
+      type: object
+      properties:
+        version:
+          type: string
+        type:
+          type: string          
+    Sites:
+      type: object
+      properties:
+        sites:
+          $ref: "#/components/schemas/SitesList"
+    SitesList:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/Site"
+    Site:
+      type: "object"
+      properties:
+        siteId:
+          type: "string"
+        uploadEmail:
+          type: "string"
+  securitySchemes:
+    AuthorizationCognito:
+      type: oauth2
+      x-amazon-apigateway-authorizer:
+        type: jwt
+        jwtConfiguration:
+          issuer:
+            Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+          audience:
+          - Fn::Sub: "${CognitoUserPoolClient}"
+        identitySource: "$request.header.Authorization"
+    sigv4:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      x-amazon-apigateway-authtype: "awsSigv4"        
+  x-amazon-apigateway-integrations:
+    lambdaApi200:
+      uri:
+        Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+      responses:
+        default:
+          statusCode: "200"
+          responseParameters:
+            method.response.header.Access-Control-Allow-Methods: "'*'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+      passthroughBehavior: "when_no_templates"
+      httpMethod: "POST"
+      type: "aws_proxy"
+      payloadFormatVersion: "1.0"
+    lambdaApi201:
+      uri:
+        Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+      responses:
+        default:
+          statusCode: "201"
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Methods: '''*'''
+            method.response.header.Access-Control-Allow-Origin: '''*'''
+      passthroughBehavior: WHEN_NO_TEMPLATES
+      httpMethod: POST
+      type: aws_proxy
+      payloadFormatVersion: "1.0"
+x-amazon-apigateway-gateway-responses:
+  UNAUTHORIZED:
+    statusCode: 401
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+x-amazon-apigateway-cors:
+  allowOrigins:
+  - "*"
+  maxAge: 3600
+  allowMethods:
+  - "*"
+  allowHeaders:
+  - "*"
+tags:
+- name: Application
+  x-amazon-apigateway-tag-value: "FormKiQ"
+- name: AppEnvironment
+  x-amazon-apigateway-tag-value: 
+    Fn::Sub: "${AppEnvironment}"

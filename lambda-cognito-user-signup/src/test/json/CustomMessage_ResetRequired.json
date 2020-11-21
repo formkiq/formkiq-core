@@ -1,0 +1,27 @@
+{
+  "version": "1",
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_fC9EAO1D0",
+  "userName": "regan.wolfrom+test3@gmail.com",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-unknown-unknown",
+    "clientId": null
+  },
+  "triggerSource": "CustomMessage_ForgotPassword",
+  "request": {
+    "userAttributes": {
+      "sub": "029f17f8-9761-491c-bb6c-9d719a913b51",
+      "email_verified": "true",
+      "cognito:user_status": "RESET_REQUIRED",
+      "email": "regan.wolfrom+test3@gmail.com"
+    },
+    "codeParameter": "{####}",
+    "linkParameter": "{##Click Here##}",
+    "usernameParameter": null
+  },
+  "response": {
+    "smsMessage": null,
+    "emailMessage": null,
+    "emailSubject": null
+  }
+}

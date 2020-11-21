@@ -1,0 +1,17 @@
+{
+  "content": "VGhpcyBpcyBzb21lIGNvbnRlbnQ=",
+  "contentType": "application/pdf",
+  "documentId" : "bc0950fe-b4b1-494a-a0ba-d711737d6d7c",
+  "userId": "111111111",
+  "path": "/mydocs/forms/thisthing.pdf",
+  "tags": [
+    {
+      "key": "securityLevel",
+      "value": "secret"
+    },
+    {
+      "key": "auditStatus",
+      "value": "pending"
+    }
+  ]
+}

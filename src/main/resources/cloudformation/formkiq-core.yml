@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: FormKiQ-Core
+    Description: Headless Document Management System that gives you full control of your organization's documents
+    Author: FormKiQ Inc
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../LICENSE
+    ReadmeUrl: ../README.md
+    Labels: ['dms', 'documents', 'management', 'api']
+    HomePageUrl: https://github.com/formkiq/formkiq-core
+    SourceCodeUrl: https://github.com/formkiq/formkiq-core
+    
+Parameters:
+
+  AdminEmail:
+    Type: String
+    Description: Administrator Email (required)
+    AllowedPattern: ".+"
+
+  AppEnvironment:
+    Type: String
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    AllowedPattern: "[a-zA-Z0-9_.-/]+"
+    Default: prod
+  
+  EnablePublicUrls:
+    Description: Enables /public urls (unauthenticated urls)
+    Default: "false"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordMinimumLength:
+    Type: Number
+    Description: The minimum password length for FormKiQ Stacks Cognito Users
+    MinValue: "6"
+    MaxValue: "99"
+    Default: "8"
+    
+  PasswordRequireLowercase:
+    Description: Whether FormKiQ Stacks Cognito Users password requires at least one lowercase letter
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordRequireNumbers:
+    Description: Whether FormKiQ Stacks Cognito Users password requires at least one number
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordRequireSymbols:
+    Description: Whether FormKiQ Stacks Cognito Users password requires at least one symbol
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+    
+  PasswordRequireUppercase:
+    Description: Whether FormKiQ Stacks Cognito Users password requires at least one uppercase letter
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+     
+Resources:
+
+  VersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "FormKiQ Stacks Version"
+      Name: !Sub "/formkiq/${AppEnvironment}/version"
+      Type: String
+      Value: "{{version}}"
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+      
+  RegionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Installation Region"
+      Name: !Sub "/formkiq/${AppEnvironment}/region"
+      Type: String
+      Value: !Ref "AWS::Region"
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CoreData:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        SemanticVersion: "{{version}}"
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core-Data
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CoreApi:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreData
+    Properties:
+      Location:
+        SemanticVersion: "{{version}}"
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core-Api
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        EnablePublicUrls: !Ref EnablePublicUrls
+        PasswordMinimumLength: !Ref PasswordMinimumLength
+        PasswordRequireLowercase: !Ref PasswordRequireLowercase
+        PasswordRequireNumbers: !Ref PasswordRequireNumbers
+        PasswordRequireSymbols: !Ref PasswordRequireSymbols
+        PasswordRequireUppercase: !Ref PasswordRequireUppercase
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+          
+  CoreConsole:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreApi
+    Properties:
+      Location:
+        SemanticVersion: "{{version}}"
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core-Console
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        AdminEmail: !Ref AdminEmail
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+Outputs:
+  IamApiUrl:
+    Description: "The URL for the API endpoint that uses IAM authorization"
+    Value: !GetAtt CoreApi.Outputs.DocumentsIamApiUrl
+  HttpApiUrl:
+    Description: "The URL for the API endpoint that uses Cognito authorization"
+    Value: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
+  ConsoleUrl:
+    Description: The URL for the FormKiQ Console
+    Value: !GetAtt CoreConsole.Outputs.ConsoleUrl

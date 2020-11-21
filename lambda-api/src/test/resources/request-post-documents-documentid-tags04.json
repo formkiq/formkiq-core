@@ -1,0 +1,83 @@
+{
+  "resource": "/documents/{documentId}/tags",
+  "path": "/documents/c7a9233b-9b5d-4c2d-a358-ff9a3a87cfd5/tags",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept-Encoding": "gzip,deflate",
+    "Host": "bngatio6bi.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
+    "X-Amz-Date": "20200327T184031Z",
+    "X-Amz-Security-Token": "IQoJb3JpZ2luX2VjELP//////////wEaCXVzLWVhc3QtMSJGMEQCIFTOv2zk4yGla8YQFYp+jwetDRGqD3g7y0XJqkyL3aoQAiBHX8pDyQizjpkZ2pRd1aI4GQJTCPbshxL5tdZbGFtPKyqPAgis//////////8BEAEaDDYyMjY1Mzg2NTI3NyIMtn72lcrosGhOdzTNKuMBSZX+FwzdcazEVHjC0uwEr91fB99NWKpBMj77W6RdAiQOig5tEFZQfMnWreaEmqePb9gYLdhF9nxiDPj8m44SuhbHEU5subcnZp0Bgb4Jpqf6m5+aB3PuMkFOxLBO2cSF8Fs06gtYLU4qLfwQCBQ3svbFxTt4XorwpfTYe1gGlEPdg/zlIfMpa6gUoiLa2jbrsTO0dc2McaFt0SlQUhxF1OjIAUSc9x7uDNsSpIsa4Ap0sTFrtBF5UNw6F1a6CDVmODBq4m7eLb0Rou2enD2FJP4oh++EXUYZzH94CSqbEAb2HkQwipH58wU65AHY8mownRm9AY8ml9cGEp2mnNdhcBI4b4/vv+btBy0E4efKZmOhebHMDbkmhwmpj/NoRVgVl/yndSgKz07OY009vxqtbBunRzU9e3xtnwSDDFn3odwlJB5/AYaBdjmwsbFDnOGNACtt5pTwnnu9iPt/UwOcQwF1+LSOp4OdulB/qU6AYLMxPTxFMj/TQs5z57AsWYgr1YcPvl0TDna78P3x73psaO3+Mu/poqdAhi1xwbBXKhwaSv47jo8AGDOLGcg8t3HThYGigZI0cj5W9Hgt07sLzjo33uCLtTaZ91V2ZX7MF1U=",
+    "X-Amzn-Trace-Id": "Root=1-5e7e48a1-84f8cda89b99d0640cd07504",
+    "X-Forwarded-For": "104.246.140.89",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept-Encoding": [
+      "gzip,deflate"
+    ],
+    "Host": [
+      "bngatio6bi.execute-api.us-east-1.amazonaws.com"
+    ],
+    "User-Agent": [
+      "Apache-HttpClient/4.5.11 (Java/11.0.2)"
+    ],
+    "X-Amz-Date": [
+      "20200327T184031Z"
+    ],
+    "X-Amz-Security-Token": [
+      "IQoJb3JpZ2luX2VjELP//////////wEaCXVzLWVhc3QtMSJGMEQCIFTOv2zk4yGla8YQFYp+jwetDRGqD3g7y0XJqkyL3aoQAiBHX8pDyQizjpkZ2pRd1aI4GQJTCPbshxL5tdZbGFtPKyqPAgis//////////8BEAEaDDYyMjY1Mzg2NTI3NyIMtn72lcrosGhOdzTNKuMBSZX+FwzdcazEVHjC0uwEr91fB99NWKpBMj77W6RdAiQOig5tEFZQfMnWreaEmqePb9gYLdhF9nxiDPj8m44SuhbHEU5subcnZp0Bgb4Jpqf6m5+aB3PuMkFOxLBO2cSF8Fs06gtYLU4qLfwQCBQ3svbFxTt4XorwpfTYe1gGlEPdg/zlIfMpa6gUoiLa2jbrsTO0dc2McaFt0SlQUhxF1OjIAUSc9x7uDNsSpIsa4Ap0sTFrtBF5UNw6F1a6CDVmODBq4m7eLb0Rou2enD2FJP4oh++EXUYZzH94CSqbEAb2HkQwipH58wU65AHY8mownRm9AY8ml9cGEp2mnNdhcBI4b4/vv+btBy0E4efKZmOhebHMDbkmhwmpj/NoRVgVl/yndSgKz07OY009vxqtbBunRzU9e3xtnwSDDFn3odwlJB5/AYaBdjmwsbFDnOGNACtt5pTwnnu9iPt/UwOcQwF1+LSOp4OdulB/qU6AYLMxPTxFMj/TQs5z57AsWYgr1YcPvl0TDna78P3x73psaO3+Mu/poqdAhi1xwbBXKhwaSv47jo8AGDOLGcg8t3HThYGigZI0cj5W9Hgt07sLzjo33uCLtTaZ91V2ZX7MF1U="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-5e7e48a1-84f8cda89b99d0640cd07504"
+    ],
+    "X-Forwarded-For": [
+      "104.246.140.89"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": {
+    "documentId": "c7a9233b-9b5d-4c2d-a358-ff9a3a87cfd5"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "adbt5q",
+    "resourcePath": "/documents/{documentId}/tags",
+    "httpMethod": "POST",
+    "extendedRequestId": "KEBJQFYxoAMF-TA=",
+    "requestTime": "27/Mar/2020:18:40:33 +0000",
+    "path": "/unittest/documents/c7a9233b-9b5d-4c2d-a358-ff9a3a87cfd5/tags",
+    "accountId": "111111111111",
+    "protocol": "HTTP/1.1",
+    "stage": "unittest",
+    "domainPrefix": "bngatio6bi",
+    "requestTimeEpoch": 1585334433503,
+    "requestId": "547ac1f5-67e5-4ad9-8a01-e63e20f61117",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": "111111111111",
+      "cognitoIdentityId": null,
+      "caller": "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+      "sourceIp": "104.246.140.89",
+      "principalOrgId": null,
+      "accessKey": "ASIAZB6IP7U6YBPGRMEV",
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+      "userAgent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
+      "user": "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK"
+    },
+    "domainName": "bngatio6bi.execute-api.us-east-1.amazonaws.com",
+    "apiId": "bngatio6bi"
+  },
+  "body": "{\"value\":\"somevalue\",\"key\":\"category\"}",
+  "isBase64Encoded": false
+}

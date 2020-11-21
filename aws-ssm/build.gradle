@@ -1,0 +1,26 @@
+
+description = "AWS SSM"
+
+dependencies {
+	api group: 'software.amazon.awssdk', name: 'ssm', version: '2.15.25'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.15.25'
+	
+	configurations.all {
+   		exclude group: 'software.amazon.awssdk', module: 'apache-client'
+   		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+	}
+	
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.26'
+	testImplementation group: 'junit', name: 'junit', version:'4.+'
+}
+
+test {
+  
+  doFirst {
+	macroLocalStackStart()
+  }  
+  
+  doLast {
+	macroDockerComposeDown()
+  } 
+}

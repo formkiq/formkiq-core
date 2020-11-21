@@ -1,0 +1,260 @@
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+
+buildscript {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        mavenLocal()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.diffplug.spotless:spotless-plugin-gradle:5.7.0"
+        classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.6.0"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.36.0"
+        classpath 'software.amazon.awssdk:dynamodb:2.15.25'
+        classpath 'com.formkiq.gradle:graalvm-native-plugin:1.0.1'
+    }
+}
+
+allprojects {
+  version = '2.0.0'
+}
+
+subprojects {
+
+  group = 'com.formkiq.stacks'
+
+  repositories {
+  	mavenLocal()
+    mavenCentral()
+  }
+
+  apply plugin: 'java-library'
+  apply plugin: 'checkstyle'
+  apply plugin: 'com.github.spotbugs'
+  apply plugin: 'com.diffplug.spotless'
+  apply plugin: 'com.github.ben-manes.versions'
+  apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
+
+  sourceCompatibility = "11"
+  targetCompatibility = "11"
+  
+  compileJava.dependsOn 'spotlessCheck'
+
+
+  tasks.withType(Test) {
+    systemProperties['testregion'] = project.getProperty('testregion')
+    systemProperties['testprofile'] = project.getProperty('testprofile')
+    systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
+  }
+
+  spotless { 
+    java { 
+      eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
+      licenseHeaderFile 'LICENSE', 'package' 
+    } 
+  }
+
+  spotbugs {
+    excludeFilter = file("$rootDir/config/gradle/spotbugs-exclude.xml")
+  }
+     
+  spotbugsMain {
+    reports {
+        html {
+            enabled = true
+        }
+    }
+  } 
+  
+  spotbugsTest {
+    reports {
+        html {
+            enabled = true
+        }
+    }
+  } 
+  
+  checkstyle {
+    toolVersion '8.29'
+    configFile file("config/checkstyle/checkstyle.xml")
+    configProperties = [project_loc: "${projectDir}"]
+  }
+
+  tasks.withType(Checkstyle).each { checkstyleTask ->
+    checkstyleTask.doLast {
+        reports.all { report ->
+            def outputFile = report.destination
+            if (outputFile.exists() && outputFile.text.contains("<error ")) {
+                throw new GradleException("There were checkstyle warnings! For more info check $outputFile")
+            }
+        }
+    }
+  }
+  
+  ext.macroLocalStackStart = {
+	exec {
+	  commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml up -d localstack"
+	}
+	exec {
+	  commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh"
+	}
+  }
+  
+  ext.macroDynamoDbStart = {
+  	exec {
+	  commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml up -d dynamodb"
+	}
+	exec {
+	  commandLine "bash", "-c", "${project.rootDir}/wait-for-dynamodb.sh"
+	}
+  }
+  
+  ext.macroDynamoDbCreateTables = {
+	exec {
+	  commandLine "bash", "-c", "for f in \$(find ${project.rootDir}/dynamodb-documents/src/test/resources -name \"*.json\"); do aws dynamodb create-table --region ${awsregion} --endpoint=${dynamodbEndpoint} --profile ${awsprofile} --cli-input-json \"\$(cat \$f)\"; done"
+	}
+  }
+  
+  ext.macroDynamoDbDeleteAllTables = {
+    exec {
+      commandLine "bash", "-c", "aws dynamodb list-tables --endpoint=${dynamodbEndpoint} --profile ${awsprofile} --region ${awsregion} | jq -r '.TableNames[]' | xargs -I {} aws dynamodb delete-table --table-name {} --region ${awsregion} --profile ${awsprofile} --endpoint=${dynamodbEndpoint}"
+    }
+  }
+  
+  ext.macroDockerComposeDown = {
+    exec {
+      commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml down"
+    }
+  }
+
+  task dockerComposeUp {
+    doLast {
+      macroLocalStackStart()
+	  macroDynamoDbStart()
+    }
+  }
+
+  task dockerComposeDown {
+    doLast {
+      macroDockerComposeDown()
+    }
+  }
+}
+
+description = "FormKiQ Core"
+
+task testaws {
+  dependsOn subprojects.collect { subproject ->
+    subproject.tasks.matching { it.name == "testaws" }
+  }
+}
+
+task cloudFormationPackage {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ./lambda-s3/src/main/resources/cloudformation/data.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-data.yml"
+		}
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-data.yml > build/formkiq-core-data.yml.bak ; mv build/formkiq-core-data.yml.bak build/formkiq-core-data.yml"
+		}	
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ./lambda-api/src/main/resources/cloudformation/lambda-api.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
+		}
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-api.yml > build/formkiq-core-api.yml.bak ; mv build/formkiq-core-api.yml.bak build/formkiq-core-api.yml"
+		}	
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ./console/src/main/resources/cloudformation/console.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-console.yml"
+		}		
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-console.yml > build/formkiq-core-console.yml.bak ; mv build/formkiq-core-console.yml.bak build/formkiq-core-console.yml"
+		}
+		exec {
+			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" ./src/main/resources/cloudformation/formkiq-core.yml > build/formkiq-core.yml.bak"
+		}	
+		exec {
+			commandLine "bash", "-c", "sam package --template-file build/formkiq-core.yml.bak --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core.yml"
+		}
+	}
+}
+
+task createApplicationData {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-data.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplicationData.dependsOn cloudFormationPackage
+
+task createApplicationApi {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-api.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplicationApi.dependsOn cloudFormationPackage
+
+task createApplicationConsole {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-console.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplicationConsole.dependsOn cloudFormationPackage
+
+task createApplication {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+createApplication.dependsOn cloudFormationPackage, createApplicationData, createApplicationApi, createApplicationConsole
+
+task cloudFormationDelete {
+	doLast {
+	  	def group = new ByteArrayOutputStream()
+
+  		// find ApiGatewayInvokeGroup Name
+  		exec {
+			commandLine "bash", "-c", "aws iam list-groups --profile ${testprofile} | jq -r '.Groups[].GroupName' | grep '^formkiq-core-${testappenvironment}'"
+			standardOutput = group
+			ignoreExitValue = true
+  		}
+  		// remove all users in ApiGatewayInvokeGroup
+  		exec {
+			commandLine "bash", "-c", "aws iam get-group --group-name ${group.toString().trim()} --profile ${testprofile} | jq -r '.Users[].UserName' | xargs -I{} aws iam remove-user-from-group --group-name ${group.toString().trim()} --user-name {} --region ${testregion} --profile ${testprofile}"
+			ignoreExitValue = true
+  		}
+		exec {
+			commandLine "bash", "-c", "aws cloudformation delete-stack --stack-name formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}"
+		}
+		// delete dynamodb tables
+		exec {
+			commandLine "bash", "-c", "aws dynamodb list-tables --region ${testregion} --profile ${testprofile} | jq -r '.TableNames[]' | grep '^formkiq-core-${testappenvironment}' | xargs -I {} aws dynamodb delete-table --table-name {} --region ${testregion} --profile ${testprofile}"
+		}
+		// disable s3 bucket versioning
+		exec {
+			commandLine "bash", "-c", "aws s3api list-buckets --query \"Buckets[].Name\" --profile ${testprofile} | jq -r '.[]' | grep '^formkiq-core-${testappenvironment}' | xargs -I{} aws s3api put-bucket-versioning --bucket {} --versioning-configuration Status=Suspended --region ${testregion} --profile ${testprofile}"
+  		}
+  		// delete all s3 objects
+  		exec {
+	  		commandLine "bash", "-c", "aws s3api list-buckets --query \"Buckets[].Name\" --profile ${testprofile} | jq -r '.[]' | grep '^formkiq-core-${testappenvironment}' | xargs -I {} ${project.projectDir}/delete_all_s3_object_versions.sh {} ${testprofile}"
+	  	}
+  		// delete s3 buckets
+		exec {
+			commandLine "bash", "-c", "aws s3api list-buckets --query \"Buckets[].Name\" --profile ${testprofile} | jq -r '.[]' | grep '^formkiq-core-${testappenvironment}' | xargs -I{} aws s3 rb s3://{} --force --region ${testregion} --profile ${testprofile}"
+  		}
+  		// delete cloudwatch logs
+		exec {
+			commandLine "bash", "-c", "aws logs describe-log-groups --log-group-name-prefix /aws/lambda/formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}  | jq -r '.logGroups[].logGroupName' | xargs -I{} aws logs delete-log-group --log-group-name {} --region ${testregion} --profile ${testprofile}"
+  		}
+  		// wait for stack to be deleted
+  		exec {
+	  		commandLine "bash", "-c", "aws cloudformation wait stack-delete-complete --stack-name formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}

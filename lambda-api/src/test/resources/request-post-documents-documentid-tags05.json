@@ -1,0 +1,79 @@
+{
+    "resource": "/documents/{documentId}/tags",
+    "path": "/documents/27debf71-0b7d-4ec7-9221-32aeddf39d6c/tags",
+    "httpMethod": "POST",
+    "headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Host": "y7c3qo3mu4.execute-api.us-east-1.amazonaws.com",
+        "User-Agent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
+        "X-Amz-Date": "20200328T185049Z",
+        "X-Amzn-Trace-Id": "Root=1-5e7f9c89-ccd44a40e18c16407953dd80",
+        "X-Forwarded-For": "104.246.140.89",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https"
+    },
+    "multiValueHeaders": {
+        "Accept-Encoding": [
+            "gzip,deflate"
+        ],
+        "Host": [
+            "y7c3qo3mu4.execute-api.us-east-1.amazonaws.com"
+        ],
+        "User-Agent": [
+            "Apache-HttpClient/4.5.11 (Java/11.0.2)"
+        ],
+        "X-Amz-Date": [
+            "20200328T185049Z"
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-5e7f9c89-ccd44a40e18c16407953dd80"
+        ],
+        "X-Forwarded-For": [
+            "104.246.140.89"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ]
+    },
+    "queryStringParameters": null,
+    "multiValueQueryStringParameters": null,
+    "pathParameters": {
+        "documentId": "27debf71-0b7d-4ec7-9221-32aeddf39d6c"
+    },
+    "stageVariables": null,
+    "requestContext": {
+        "resourceId": "oqb0d3",
+        "resourcePath": "/documents/{documentId}/tags",
+        "httpMethod": "POST",
+        "extendedRequestId": "KHVldH8VoAMFzWg=",
+        "requestTime": "28/Mar/2020:18:50:49 +0000",
+        "path": "/unittest/documents/27debf71-0b7d-4ec7-9221-32aeddf39d6c/tags",
+        "accountId": "111111111111",
+        "protocol": "HTTP/1.1",
+        "stage": "unittest",
+        "domainPrefix": "y7c3qo3mu4",
+        "requestTimeEpoch": 1585421449296,
+        "requestId": "2a84744b-d70c-49fd-aed9-9a094f2a9391",
+        "identity": {
+            "cognitoIdentityPoolId": null,
+            "accountId": "111111111111",
+            "cognitoIdentityId": null,
+            "caller": "AIDAI576HTOBFSGWZOWMC",
+            "sourceIp": "104.246.140.89",
+            "principalOrgId": null,
+            "accessKey": "AKIAJKVZ4QYZEOC5SDDA",
+            "cognitoAuthenticationType": null,
+            "cognitoAuthenticationProvider": null,
+            "userArn": "arn:aws:iam::111111111111:user/mike",
+            "userAgent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
+            "user": "AIDAI576HTOBFSGWZOWMC"
+        },
+        "domainName": "y7c3qo3mu4.execute-api.us-east-1.amazonaws.com",
+        "apiId": "y7c3qo3mu4"
+    },
+    "body": "{\"value\":\"somevalue\",\"key\":\"test\"}",
+    "isBase64Encoded": false
+}

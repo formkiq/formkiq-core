@@ -1,0 +1,121 @@
+{
+    "version": "1.0",
+    "resource": "/documents/{documentId}/url",
+    "path": "/dev/documents/7682eb6c-7d68-4c8a-bd96-b1a5c9ef62b5/url",
+    "httpMethod": "GET",
+    "headers": {
+        "Content-Length": "0",
+        "Host": "api-dev.tryformkiq.com",
+        "Postman-Token": "ba69e36a-8a2e-4584-a585-008799cf6dfa",
+        "User-Agent": "PostmanRuntime/7.24.0",
+        "X-Amzn-Trace-Id": "Root=1-5e84010e-ae421c98f5eeebf2ed94152c",
+        "X-Forwarded-For": "104.246.140.89",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https",
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br",
+        "authorization": "eyJraWQiOiIyaHNLRjJVNGUxS0w2SWpVckx1NWVRUFNpbEQrWHpJbjhyZVF1MTgzUndJPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4YTY1YTJmMC04YjkyLTQzMTYtYWEzZC0wNzBkMDQ0NDgwYzgiLCJjb2duaXRvOmdyb3VwcyI6WyJDb2duaXRvQWRtaW5Hcm91cC1WamZMN051VGxvS3oiXSwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNvZ25pdG86cHJlZmVycmVkX3JvbGUiOiJhcm46YXdzOmlhbTo6NjIyNjUzODY1Mjc3OnJvbGVcL2Zvcm1raXEtZG9jc3RhY2stZGV2LURvY3VtZW4tQ29nbml0b0FkbWluR3JvdXBSb2xlLUdTNzNFVUZKMDBKMiIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX2k4bVRQeXhjaSIsImNvZ25pdG86dXNlcm5hbWUiOiJtZnJpZXNlbkBnbWFpbC5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZXYtRG9jdW1lbi1Db2duaXRvQWRtaW5Hcm91cFJvbGUtR1M3M0VVRkowMEoyIl0sImF1ZCI6IjFoZXI4MnVybGJrdWphdDZpZWNvdTc0cGYyIiwiZXZlbnRfaWQiOiI0MDUwMDczYS0yNjhkLTQzMWEtYTllMS01ZDYzNGI0ZTQ2ODIiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4NTcwOTIxMiwiZXhwIjoxNTg1NzEyODEyLCJpYXQiOjE1ODU3MDkyMTIsImVtYWlsIjoibWZyaWVzZW5AZ21haWwuY29tIn0.VG73Nuy3OjwgxFSPe7SXpvQPqnhin3HgXb1IkTyphoI8s967XnjV5-h5rfaiLIGtYIPcKNI1uq6V0wp3SA81W4-1k3Ua6stUId4Uv7j9bemKVM-Gy0aoeJviwf69iCW_mzUvzf-hHz_tIXzXLHMiKQUEUQy9vkQF1fmj1av7PlJm4KwNggW-F6m6LXKWlTHBVgjmJhKx86EoxgaPdAWOSWifs-uWz6Ngj4ka8dIsgZOZuhT3uXQdgVv0QM_4sbi2OupiMuoeCJ1mbVLtsmB2c5MM8eIGPKrbEosm5PyxgwCTFV34taDYHlR6dM8vgtVadOh9AWYL85q1_v57QrwrCA",
+        "cache-control": "no-cache"
+    },
+    "multiValueHeaders": {
+        "Content-Length": [
+            "0"
+        ],
+        "Host": [
+            "api-dev.tryformkiq.com"
+        ],
+        "Postman-Token": [
+            "ba69e36a-8a2e-4584-a585-008799cf6dfa"
+        ],
+        "User-Agent": [
+            "PostmanRuntime/7.24.0"
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-5e84010e-ae421c98f5eeebf2ed94152c"
+        ],
+        "X-Forwarded-For": [
+            "104.246.140.89"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ],
+        "accept": [
+            "*/*"
+        ],
+        "accept-encoding": [
+            "gzip, deflate, br"
+        ],
+        "authorization": [
+            "1234"
+        ],
+        "cache-control": [
+            "no-cache"
+        ]
+    },
+    "queryStringParameters": {
+        "duration": "8"
+    },
+    "multiValueQueryStringParameters": {
+        "duration": [
+            "8"
+        ]
+    },
+    "requestContext": {
+        "accountId": "622653865277",
+        "apiId": "i77rbvi8ni",
+        "authorizer": {
+            "claims": {
+                "aud": "1her82urlbkujat6iecou74pf2",
+                "auth_time": "1585709212",
+                "cognito:groups": "[Admins]",
+                "cognito:preferred_role": "arn:aws:iam::622653865277:role/formkiq-docstack-dev-Documen-CognitoAdminGroupRole-GS73EUFJ00J2",
+                "cognito:roles": "[arn:aws:iam::622653865277:role/formkiq-docstack-dev-Documen-CognitoAdminGroupRole-GS73EUFJ00J2]",
+                "cognito:username": "mfriesen@gmail.com",
+                "email": "mfriesen@gmail.com",
+                "email_verified": "true",
+                "event_id": "4050073a-268d-431a-a9e1-5d634b4e4682",
+                "exp": "1585712812",
+                "iat": "1585709212",
+                "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_i8mTPyxci",
+                "sub": "8a65a2f0-8b92-4316-aa3d-070d044480c8",
+                "token_use": "id"
+            },
+            "scopes": null
+        },
+        "domainName": "api-dev.tryformkiq.com",
+        "domainPrefix": "api-dev",
+        "extendedRequestId": "KSUaUjHgIAMEMIQ=",
+        "httpMethod": "GET",
+        "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "104.246.140.89",
+            "user": null,
+            "userAgent": "PostmanRuntime/7.24.0",
+            "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK"
+        },
+        "path": "/dev/documents/7682eb6c-7d68-4c8a-bd96-b1a5c9ef62b5/url",
+        "protocol": "HTTP/1.1",
+        "requestId": "KSUaUjHgIAMEMIQ=",
+        "requestTime": "01/Apr/2020:02:48:46 +0000",
+        "requestTimeEpoch": 1585709326755,
+        "resourceId": "GET /documents/{documentId}/url",
+        "resourcePath": "/documents/{documentId}/url",
+        "stage": "dev"
+    },
+    "pathParameters": {
+        "documentId": "7682eb6c-7d68-4c8a-bd96-b1a5c9ef62b5"
+    },
+    "stageVariables": null,
+    "body": null,
+    "isBase64Encoded": false
+}

@@ -1,0 +1,10 @@
+.gradle
+build
+bin
+.DS_Store
+*.tgz
+*.zip
+.nyc_output
+lambda-cognito-user-signup/src/coverage
+lambda-dlq/src/coverage
+node_modules

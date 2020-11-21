@@ -1,0 +1,277 @@
+/**
+ *
+ * FormKiQ License
+ *
+ * Copyright (c) 2018 FormKiQ, INC
+ * 
+ * This code is the property of FormKiQ, INC. In the Software Development Agreement signed by both
+ * FormKiQ and your company, FormKiQ grants you a limited license to use, modify, and create
+ * derivative works of this code. Please consult the Software Development Agreement for the complete
+ * terms under which you may use this code.
+ *
+ */
+package com.formkiq.stacks.dynamodb;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.stream.Collectors;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.Projection;
+import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+
+/** Test Helper utility class for DynamoDB. */
+public class DynamoDbHelper {
+
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient db;
+  /** {@link DocumentService}. */
+  private DocumentService service;
+  /** {@link DocumentSearchService}. */
+  private DocumentSearchService searchService;
+  /** {@link CacheService}. */
+  private CacheService cacheService;
+  /** {@link String}. */
+  private String documentTable;
+  /** {@link String}. */
+  private String cacheTable;
+
+  /**
+   * constructor.
+   *
+   * @param builder {@link DynamoDbConnectionBuilder}
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public DynamoDbHelper(final DynamoDbConnectionBuilder builder)
+      throws IOException, URISyntaxException {
+    this(builder, "Documents", "Cache");
+  }
+
+  /**
+   * constructor.
+   *
+   * @param builder {@link DynamoDbConnectionBuilder}
+   * @param documentTableName {@link String}
+   * @param cacheTableName {@link String}
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public DynamoDbHelper(final DynamoDbConnectionBuilder builder, final String documentTableName,
+      final String cacheTableName) throws IOException, URISyntaxException {
+    this.db = builder.build();
+    this.documentTable = documentTableName;
+    this.cacheTable = cacheTableName;
+    this.service = new DocumentServiceImpl(builder, documentTableName);
+    this.cacheService = new DynamoDbCacheService(builder, cacheTableName);
+    this.searchService = new DocumentSearchServiceImpl(this.service, builder, documentTableName);
+  }
+
+  /**
+   * Create Cache Table.
+   */
+  public void createCacheTable() {
+    final Long capacity = Long.valueOf(10);
+
+    KeySchemaElement pk =
+        KeySchemaElement.builder().attributeName("PK").keyType(KeyType.HASH).build();
+    KeySchemaElement sk =
+        KeySchemaElement.builder().attributeName("SK").keyType(KeyType.RANGE).build();
+
+    AttributeDefinition a1 = AttributeDefinition.builder().attributeName("PK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    CreateTableRequest table = CreateTableRequest.builder().tableName(this.cacheTable)
+        .keySchema(pk, sk).attributeDefinitions(a1, a2).provisionedThroughput(ProvisionedThroughput
+            .builder().writeCapacityUnits(capacity).readCapacityUnits(capacity).build())
+        .build();
+
+    this.db.createTable(table);
+  }
+
+  /**
+   * Create Documents Table.
+   */
+  public void createDocumentsTable() {
+    final Long capacity = Long.valueOf(10);
+
+    KeySchemaElement pk =
+        KeySchemaElement.builder().attributeName("PK").keyType(KeyType.HASH).build();
+    KeySchemaElement sk =
+        KeySchemaElement.builder().attributeName("SK").keyType(KeyType.RANGE).build();
+
+    AttributeDefinition a1 = AttributeDefinition.builder().attributeName("PK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a3 = AttributeDefinition.builder().attributeName("GSI1PK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a4 = AttributeDefinition.builder().attributeName("GSI1SK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a5 = AttributeDefinition.builder().attributeName("GSI2PK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a6 = AttributeDefinition.builder().attributeName("GSI2SK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    GlobalSecondaryIndex si1 = GlobalSecondaryIndex.builder().indexName("GSI1")
+        .keySchema(KeySchemaElement.builder().attributeName("GSI1PK").keyType(KeyType.HASH).build(),
+            KeySchemaElement.builder().attributeName("GSI1SK").keyType(KeyType.RANGE).build())
+        .projection(Projection.builder().projectionType(ProjectionType.INCLUDE)
+            .nonKeyAttributes("inserteddate", "documentId", "tagKey", "tagValue").build())
+        .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(capacity)
+            .readCapacityUnits(capacity).build())
+        .build();
+
+    GlobalSecondaryIndex si2 = GlobalSecondaryIndex.builder().indexName("GSI2")
+        .keySchema(KeySchemaElement.builder().attributeName("GSI2PK").keyType(KeyType.HASH).build(),
+            KeySchemaElement.builder().attributeName("GSI2SK").keyType(KeyType.RANGE).build())
+        .projection(Projection.builder().projectionType(ProjectionType.INCLUDE)
+            .nonKeyAttributes("inserteddate", "documentId", "tagKey", "tagValue").build())
+        .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(capacity)
+            .readCapacityUnits(capacity).build())
+        .build();
+
+    CreateTableRequest table = CreateTableRequest.builder().tableName(this.documentTable)
+        .keySchema(pk, sk).attributeDefinitions(a1, a2, a3, a4, a5, a6)
+        .globalSecondaryIndexes(si1, si2).provisionedThroughput(ProvisionedThroughput.builder()
+            .writeCapacityUnits(capacity).readCapacityUnits(capacity).build())
+        .build();
+
+    this.db.createTable(table);
+  }
+
+  /**
+   * Find All Documents.
+   *
+   * @param token {@link PaginationMapToken}
+   * @param maxPageSize int
+   * @return {@link PaginationResults} {@link DocumentItemDynamoDb}
+   */
+  private PaginationResults<String> findRecords(final PaginationMapToken token,
+      final int maxPageSize) {
+
+    final int maxresults = 1000;
+    ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
+        .limit(Integer.valueOf(maxresults)).build();
+
+    ScanResponse result = this.db.scan(sr);
+
+    List<String> documents = result.items().stream().filter(i -> i.get("SK").s().equals("document"))
+        .map(i -> i.get("PK").s()).collect(Collectors.toList());
+
+    return new PaginationResults<String>(documents, token);
+  }
+
+  /**
+   * Get {@link CacheService}.
+   * 
+   * @return {@link CacheService}
+   */
+  public CacheService getCacheService() {
+    return this.cacheService;
+  }
+
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @return {@link DynamoDbClient}
+   */
+  public DynamoDbClient getDb() {
+    return this.db;
+  }
+
+  /**
+   * Get Document Item Count.
+   *
+   * @return int
+   */
+  public int getDocumentItemCount() {
+    final int maxresults = 1000;
+
+    ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
+        .limit(Integer.valueOf(maxresults)).build();
+
+    ScanResponse result = this.db.scan(sr);
+    return result.count().intValue();
+  }
+
+  /**
+   * Get {@link DocumentSearchService}.
+   * 
+   * @return {@link DocumentSearchService}
+   */
+  public DocumentSearchService getSearchService() {
+    return this.searchService;
+  }
+
+  /**
+   * Get {@link DocumentService}.
+   *
+   * @return {@link DocumentService}
+   */
+  public DocumentService getService() {
+    return this.service;
+  }
+
+  /**
+   * Is Documents Table Exist.
+   * 
+   * @return boolean
+   */
+  public boolean isDocumentsTableExists() {
+    try {
+      return this.db
+          .describeTable(DescribeTableRequest.builder().tableName(this.documentTable).build())
+          .table() != null;
+    } catch (ResourceNotFoundException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Truncate Documents Table.
+   * 
+   */
+  public void truncateDocumentsTable() {
+    final int maxPageSize = 100;
+    PaginationMapToken startkey = null;
+
+    while (true) {
+
+      PaginationResults<String> results = findRecords(startkey, maxPageSize);
+
+      for (String documentId : results.getResults()) {
+
+        String siteId = SiteIdKeyGenerator.getSiteId(documentId);
+        String id = SiteIdKeyGenerator.resetDatabaseKey(siteId, documentId);
+        this.service.deleteDocument(siteId, id);
+      }
+
+      startkey = results.getToken();
+
+      if (results.getResults().isEmpty()) {
+        break;
+      }
+    }
+  }
+}
