@@ -8,3 +8,4 @@ bin
 lambda-cognito-user-signup/src/coverage
 lambda-dlq/src/coverage
 node_modules
+*.tmp

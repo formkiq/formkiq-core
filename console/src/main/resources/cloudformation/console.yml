@@ -34,7 +34,7 @@ Parameters:
   DistributionBucket:
     Type: String
     Description: FormKiQ Distribution BucketName
-    Default: "formkiq-distribution-us-east-pro"
+    Default: "formkiq-distribution-console"
      
 Resources:
 
