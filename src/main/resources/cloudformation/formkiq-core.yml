@@ -29,7 +29,7 @@ Parameters:
   
   EnablePublicUrls:
     Description: Enables /public urls (unauthenticated urls)
-    Default: "false"
+    Default: "true"
     Type: String
     AllowedValues: ["true", "false"]
     
