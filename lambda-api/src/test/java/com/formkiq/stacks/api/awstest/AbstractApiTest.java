@@ -529,4 +529,13 @@ public abstract class AbstractApiTest {
     Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
     return m;
   }
+
+  /**
+   * Get Aws Region.
+   * 
+   * @return {@link Region}
+   */
+  public Region getAwsRegion() {
+    return this.awsregion;
+  }
 }

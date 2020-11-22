@@ -53,6 +53,7 @@ subprojects {
       licenseHeaderFile project.rootProject.file("LICENSE")  
     } 
   }
+  spotlessJavaCheck.dependsOn 'spotlessJavaApply'
 
   spotbugs {
     excludeFilter = file("$rootDir/config/gradle/spotbugs-exclude.xml")
@@ -158,7 +159,10 @@ task cloudFormationPackage {
 			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-data.yml > build/formkiq-core-data.yml.bak ; mv build/formkiq-core-data.yml.bak build/formkiq-core-data.yml"
 		}	
 		exec {
-			commandLine "bash", "-c", "sam package --template-file ./lambda-api/src/main/resources/cloudformation/lambda-api.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
+			commandLine "bash", "-c", "sed -e '/{{API}}/r ./lambda-api/src/main/resources/cloudformation/api.yml' -e '/{{APIIAM}}/r ./lambda-api/src/main/resources/cloudformation/api-iam.yml' ./lambda-api/src/main/resources/cloudformation/lambda-api.yml | grep -Ev '{{API}}|{{APIIAM}}' > ./lambda-api/src/main/resources/cloudformation/api.yml.tmp"
+		}
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ./lambda-api/src/main/resources/cloudformation/api.yml.tmp --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
 		}
 		exec {
 			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-api.yml > build/formkiq-core-api.yml.bak ; mv build/formkiq-core-api.yml.bak build/formkiq-core-api.yml"

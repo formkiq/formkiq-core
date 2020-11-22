@@ -56,7 +56,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private Map<String, String> mimeTypes = new HashMap<>();
   /** {@link S3Service}. */
   private S3Service s3;
-
+  /** {@link S3Service}. */
+  private S3Service s3UsEast1;
   /** {@link SsmService}. */
   private SsmService ssm;
 
@@ -65,7 +66,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /** constructor. */
   public ConsoleInstallHandler() {
-    this(System.getenv(), new S3ConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))),
+    this(System.getenv(), new S3ConnectionBuilder().setRegion(Region.US_EAST_1),
+        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))),
         new SsmConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))));
   }
 
@@ -73,11 +75,14 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * constructor.
    *
    * @param map {@link Map}
+   * @param s3builderUsEast1 {@link S3ConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
    * @param ssmBuilder {@link SsmConnectionBuilder}
    */
-  public ConsoleInstallHandler(final Map<String, String> map, final S3ConnectionBuilder s3builder,
+  public ConsoleInstallHandler(final Map<String, String> map,
+      final S3ConnectionBuilder s3builderUsEast1, final S3ConnectionBuilder s3builder,
       final SsmConnectionBuilder ssmBuilder) {
+
     this.environmentMap = map;
 
     this.mimeTypes.put(".woff2", "font/woff2");
@@ -90,6 +95,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     this.mimeTypes.put(".css", "text/css");
 
     this.s3 = new S3Service(s3builder);
+    this.s3UsEast1 = new S3Service(s3builderUsEast1);
     this.ssm = new SsmServiceImpl(ssmBuilder);
   }
 
@@ -205,8 +211,10 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     logger.log("unpacking " + consoleZipKey + " from bucket " + distributionBucket + " to bucket "
         + destinationBucket);
 
-    try (S3Client s = this.s3.buildClient()) {
-      InputStream stream = this.s3.getContentAsInputStream(s, distributionBucket, consoleZipKey);
+    try (S3Client s = this.s3UsEast1.buildClient()) {
+
+      InputStream stream =
+          this.s3UsEast1.getContentAsInputStream(s, distributionBucket, consoleZipKey);
 
       try {
 

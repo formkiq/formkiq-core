@@ -10,7 +10,7 @@ Metadata:
     SpdxLicenseId: MIT
     LicenseUrl: ../LICENSE
     ReadmeUrl: ../README.md
-    Labels: ['dms', 'documents', 'management', 'api']
+    Labels: ['formkiq', 'formkiq-core', 'dms', 'documents', 'management', 'api']
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
     

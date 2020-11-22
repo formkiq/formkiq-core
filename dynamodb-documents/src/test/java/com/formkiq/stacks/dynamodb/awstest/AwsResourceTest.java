@@ -43,7 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 public class AwsResourceTest {
 
   /** AWS Region. */
-  private static Region awsregion = Region.US_EAST_1;
+  private static Region awsregion;
   /** App Environment Name. */
   private static String appenvironment;
   /** {@link SsmService}. */
@@ -61,6 +61,7 @@ public class AwsResourceTest {
 
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
+    awsregion = Region.of(System.getProperty("testregion"));
 
     final SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);

@@ -5,12 +5,12 @@ Description: FormKiQ Core - Data
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: FormKiQ-Core-Data
-    Description: Data component of FormKiQ-Core
+    Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
     LicenseUrl: file://../../../../../LICENSE
     ReadmeUrl: file://../../../../../../README.md
-    Labels: ['formkiq-core']
+    Labels: ['formkiq-core-data']
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
     

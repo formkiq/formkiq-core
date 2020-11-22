@@ -116,7 +116,7 @@ public class ConsoleInstallHandlerTest {
     map.put("REGION", "us-east-1");
     map.put("distributionbucket", "distrobucket");
 
-    this.handler = new ConsoleInstallHandler(map, s3Connection, ssmConnection) {
+    this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection, ssmConnection) {
 
       @Override
       protected HttpURLConnection getConnection(final String responseUrl) throws IOException {

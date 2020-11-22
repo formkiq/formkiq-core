@@ -5,12 +5,12 @@ Description: FormKiQ Core - Console
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: FormKiQ-Core-Console
-    Description: Console component of FormKiQ-Core
+    Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
     LicenseUrl: file://../../../../../LICENSE
     ReadmeUrl: file://../../../../../README.md
-    Labels: ['formkiq-core']
+    Labels: ['formkiq-core-console']
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
