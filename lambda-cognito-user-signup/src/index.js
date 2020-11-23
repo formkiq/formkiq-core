@@ -45,7 +45,7 @@ function sendCreateUserEmail(event, consoleurl) {
   var text = "Hello " + email + ",<br /><br />";
   text += "Welcome to FormKiQ.<br /><br />"
   text += "FormKiQ gives you full control of your organization's documents, including storage, search, data extraction, and workflows.<br />"
-  text += "All in YOUR AWS cloud.<br /><br />";
+  text += "All in Your AWS Cloud.<br /><br />";
   text += "Log into your FormKiQ account<br />Console Url: " + consoleurl + "<br />Username: {username}<br />Temporary Password: {####}";
 
   event.response.emailSubject = "Welcome to FormKiQ";
