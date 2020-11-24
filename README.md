@@ -32,7 +32,6 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 <details open>
 <summary>Table of Contents</summary>
 
-- [Table of Contents](#table-of-contents)
 - [Getting Started](#getting-started)
   - [List of AWS Services](#list-of-aws-services)
   - [Installation](#installation)
