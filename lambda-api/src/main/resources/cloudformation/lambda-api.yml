@@ -8,7 +8,7 @@ Metadata:
     Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../../../../LICENSE
+    LicenseUrl: file://../../../../../../LICENSE
     ReadmeUrl: file://../../../../../../README.md
     Labels: ['formkiq-core-api']
     HomePageUrl: https://github.com/formkiq/formkiq-core
@@ -135,17 +135,9 @@ Resources:
       Description: !Sub "Documents IAM API ${AppEnvironment}"
       StageName: "$default"
           
-  DocumentsHttpApi:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Body:
-{{API}}
-
-  DocumentsIamApi:
-    Type: AWS::ApiGatewayV2::Api  
-    Properties:
-      Body:
-{{APIIAM}}
+  DocumentsHttpApi: empty
+    
+  DocumentsIamApi: empty
             
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter

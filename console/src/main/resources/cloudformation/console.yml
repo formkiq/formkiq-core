@@ -8,8 +8,8 @@ Metadata:
     Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../../../../LICENSE
-    ReadmeUrl: file://../../../../../README.md
+    LicenseUrl: file://../../../../../../LICENSE
+    ReadmeUrl: file://../../../../../../README.md
     Labels: ['formkiq-core-console']
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
@@ -35,13 +35,19 @@ Parameters:
     Type: String
     Description: FormKiQ Distribution BucketName
     Default: "formkiq-distribution-console"
-     
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+
 Resources:
 
   Console:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-console-${AWS::AccountId}"
+      BucketName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-console-${AWS::AccountId}"
       AccessControl: Private
       BucketEncryption: 
         ServerSideEncryptionConfiguration: 
@@ -68,7 +74,7 @@ Resources:
       Type: String
       Value: !Ref ConsoleVersion
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
   
@@ -80,7 +86,7 @@ Resources:
       Type: String
       Value: !Ref Console
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -92,7 +98,7 @@ Resources:
       Type: String
       Value: !GetAtt Console.Arn
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -104,7 +110,7 @@ Resources:
       Type: String
       Value: !GetAtt Console.DomainName
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -116,7 +122,7 @@ Resources:
       Type: String
       Value: !GetAtt Console.RegionalDomainName
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -128,7 +134,7 @@ Resources:
       Type: String
       Value: !Ref ConsoleInstaller
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -148,7 +154,7 @@ Resources:
         - Arn
       CodeUri: ../../../../build/distributions/console-installer.zip
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
       Environment:
@@ -163,7 +169,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       AssumeRolePolicyDocument:
@@ -255,7 +261,7 @@ Resources:
           ResponseCode: '200'
       Tags:
         - Key: Application
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: AppEnvironment
           Value: !Sub "${AppEnvironment}"
         - Key: StackName
@@ -269,7 +275,7 @@ Resources:
       Type: String
       Value: !Join ['', ['https://', !GetAtt CloudFrontDistribution.DomainName]]
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -341,7 +347,7 @@ Resources:
       Type: String
       Value: !Ref AdminEmail
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         

@@ -1,3 +1,8 @@
+Resources:
+  DocumentsHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Body:
         openapi: "3.0.1"
         info:
           title: 

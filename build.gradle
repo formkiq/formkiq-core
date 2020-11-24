@@ -11,7 +11,7 @@ buildscript {
         classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.6.0"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.36.0"
         classpath 'software.amazon.awssdk:dynamodb:2.15.25'
-        classpath 'com.formkiq.gradle:graalvm-native-plugin:1.0.1'
+        classpath 'com.formkiq.gradle:graalvm-native-plugin:1.0.3'
     }
 }
 
@@ -156,28 +156,19 @@ task cloudFormationPackage {
 			commandLine "bash", "-c", "sam package --template-file ./lambda-s3/src/main/resources/cloudformation/data.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-data.yml"
 		}
 		exec {
-			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-data.yml > build/formkiq-core-data.yml.bak ; mv build/formkiq-core-data.yml.bak build/formkiq-core-data.yml"
-		}	
-		exec {
-			commandLine "bash", "-c", "sed -e '/{{API}}/r ./lambda-api/src/main/resources/cloudformation/api.yml' -e '/{{APIIAM}}/r ./lambda-api/src/main/resources/cloudformation/api-iam.yml' ./lambda-api/src/main/resources/cloudformation/lambda-api.yml | grep -Ev '{{API}}|{{APIIAM}}' > ./lambda-api/src/main/resources/cloudformation/api.yml.tmp"
-		}
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ./lambda-api/src/main/resources/cloudformation/api.yml.tmp --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
-		}
-		exec {
-			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-api.yml > build/formkiq-core-api.yml.bak ; mv build/formkiq-core-api.yml.bak build/formkiq-core-api.yml"
+			commandLine "bash", "-c", "yq m --overwrite ./lambda-api/src/main/resources/cloudformation/lambda-api.yml ./lambda-api/src/main/resources/cloudformation/api.yml ./lambda-api/src/main/resources/cloudformation/api-iam.yml > ./lambda-api/src/main/resources/cloudformation/lambda-api.yml.tmp ; sam package --template-file ./lambda-api/src/main/resources/cloudformation/lambda-api.yml.tmp --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
 		}	
 		exec {
 			commandLine "bash", "-c", "sam package --template-file ./console/src/main/resources/cloudformation/console.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-console.yml"
 		}		
 		exec {
-			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" build/formkiq-core-console.yml > build/formkiq-core-console.yml.bak ; mv build/formkiq-core-console.yml.bak build/formkiq-core-console.yml"
+			commandLine "bash", "-c", "cp ./src/main/resources/cloudformation/formkiq-core.yml build/formkiq-core.yml"
 		}
 		exec {
-			commandLine "bash", "-c", "sed -e \"s/{{version}}/${project.version}/\" ./src/main/resources/cloudformation/formkiq-core.yml > build/formkiq-core.yml.bak"
-		}	
+			commandLine "bash", "-c", "box tokenReplace path=build/formkiq-core.yml token=\"{{version}}\" replacement=\"${project.version}\""
+		}
 		exec {
-			commandLine "bash", "-c", "sam package --template-file build/formkiq-core.yml.bak --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core.yml"
+			commandLine "bash", "-c", "sam package --template-file build/formkiq-core.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core.yml"
 		}
 	}
 }
