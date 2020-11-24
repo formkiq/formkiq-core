@@ -1,6 +1,7 @@
 ![FormKiQ](https://raw.githubusercontent.com/formkiq/formkiq-core/master/logo.png)
 
 # FormKiQ Core
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **FormKiQ Core is an Open Source Headless Document Management System (DMS) that runs in your [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).**
 
@@ -32,7 +33,7 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 <summary>Table of Contents</summary>
 
 - [Table of Contents](#table-of-contents)
-- [Demos](#demos)
+- [Demos and Examples](#demos-and-examples)
 - [Getting Started](#getting-started)
   - [Installation](#installation)
     - [Outputs](#outputs)
@@ -48,15 +49,21 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 </details>
 
-## Demos
+## Demos and Examples
 
-**Coming Soon**
+### Demo: FormKiQ Console with API Explorer
 
-- **FormKiQ Core Website Contact Form Example:** Coming Soon
+**https://demo.tryformkiq.com/**
 
-- **FormKiQ Core Website Job Application Form Example:** Coming Soon
+Email: demo@formkiq.com
 
-- **FormKiQ Console with API Explorer:** Coming Soon
+Password: Tryformkiq1!
+
+### Example: FormKiQ Core Website Contact Form Example
+**https://github.com/formkiq/formkiq-webform-examples-contact**
+
+### Example: FormKiQ Web Form Example - Job Application Form
+**https://github.com/formkiq/formkiq-webform-examples-jobapplication**
 
 
 ## Getting Started
