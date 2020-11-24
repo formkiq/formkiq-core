@@ -1,6 +1,7 @@
 ![FormKiQ](https://raw.githubusercontent.com/formkiq/formkiq-core/master/logo.png)
 
 # FormKiQ Core
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **FormKiQ Core is an Open Source Headless Document Management System (DMS) that runs in your [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).**
 
