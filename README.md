@@ -51,13 +51,20 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 ## Demos
 
-**Coming Soon**
+### FormKiQ Core Website Contact Form Example###
 
-- **FormKiQ Core Website Contact Form Example:** Coming Soon
+Coming Soon
 
-- **FormKiQ Core Website Job Application Form Example:** Coming Soon
+### FormKiQ Web Form Example - Job Application Form
+**https://github.com/formkiq/formkiq-webform-examples-jobapplication**
 
-- **FormKiQ Console with API Explorer:** Coming Soon
+### FormKiQ Console with API Explorer
+
+**https://demo.tryformkiq.com/**
+
+Email: demo@formkiq.com
+
+Password: Tryformkiq1!
 
 
 ## Getting Started
