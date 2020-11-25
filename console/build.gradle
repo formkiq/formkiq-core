@@ -24,19 +24,6 @@ task buildZip(type: Zip) {
     }           
 }
 
-jar.dependsOn buildZip
-
-task deployfunction {
-
-  doLast {
-    exec {
-      commandLine "bash", "-c", "aws lambda update-function-code --function-name ${awsstackname}-${appenvironment}-installer-console --zip-file fileb://build/distributions/console-installer-${project.version}.zip --profile ${awsprofile} --region ${awsregion}"
-    } 
-  }
-}
-
-deployfunction.dependsOn build
-
 test {
   failFast = true
   exclude 'com/formkiq/stacks/console/awstest/**'
@@ -56,106 +43,15 @@ task testaws(type: Test) {
   include 'com/formkiq/stacks/console/awstest/**'
   outputs.upToDateWhen {false}    
 }
-/*
-ext.macroCloudFormationDeploy = {
-	exec {
-	  commandLine "bash", "-c", "aws ssm put-parameter --cli-input-json '{\"Type\": \"String\", \"Name\": \"/formkiq/${appenvironment}/api/DocumentsHttpUrl\", \"Value\": \"http://localhost/apigatewayurl\"}' --overwrite --region ${awsregion} --profile ${awsprofile}"
-	}
-	exec {
-	  commandLine "bash", "-c", "aws ssm put-parameter --cli-input-json '{\"Type\": \"String\", \"Name\": \"/formkiq/${appenvironment}/api/DocumentsRestUrl\", \"Value\": \"http://localhost/apigatewayurl\"}' --overwrite --region ${awsregion} --profile ${awsprofile}"
-	}
-	  
-	exec {
-	  commandLine "bash", "-c", "aws cloudformation deploy --template-file ../lambda-api/src/main/resources/cloudformation/cognito-api-gateway.yml --stack-name ${awsstackname}-${appenvironment}-cognito --capabilities CAPABILITY_NAMED_IAM --parameter-overrides AppVersion=${project.version} AppEnvironment=${appenvironment} DistributionBucket=${distrobucket} AppRelease=${apprelease} --region ${awsregion} --profile ${awsprofile}"
-	}
-	exec {
-	    commandLine "bash", "-c", "aws cloudformation deploy --template-file src/main/resources/cloudformation/console.yml --stack-name ${awsstackname}-${appenvironment}-console --capabilities CAPABILITY_NAMED_IAM --parameter-overrides AppVersion=${project.version} AppEnvironment=${appenvironment} DistributionBucket=${distrobucket} AppRelease=${apprelease} --region ${awsregion} --profile ${awsprofile}"
-	}
-	exec {
-	  commandLine "bash", "-c", "aws ssm get-parameter --name /formkiq/${appenvironment}/console/version --region ${awsregion} --profile ${awsprofile} | jq -r '.Parameter.Value' | xargs -I {} aws cloudformation deploy --template-file src/main/resources/cloudformation/cloudfront.yml --stack-name ${awsstackname}-${appenvironment}-cloudfront --parameter-overrides AppVersion=${project.version} AppEnvironment=${appenvironment} DistributionBucket=${distrobucket} AppRelease=${apprelease} ConsoleVersion={} --capabilities CAPABILITY_NAMED_IAM --region ${awsregion} --profile ${awsprofile}"
-	}
-}
 
-ext.macroCloudFormationDelete = {
-	exec {
-	  commandLine "bash", "-c", "aws ssm delete-parameter --name \"/formkiq/unittest/api/DocumentsHttpUrl\" --region ${awsregion} --profile ${awsprofile}"
-	  ignoreExitValue true
-	}
-	exec {
-	  commandLine "bash", "-c", "aws ssm delete-parameter --name \"/formkiq/unittest/api/DocumentsRestUrl\" --region ${awsregion} --profile ${awsprofile}"
-	  ignoreExitValue true
-	}
-    exec {
-    	commandLine "bash", "-c", "aws cloudformation describe-stacks --stack-name ${awsstackname}-${appenvironment}-console --region ${awsregion} --profile ${awsprofile} | jq -r '.Stacks[].Outputs[] | select(.OutputKey|test(\".*S3Bucket\")) | .OutputValue' | xargs -I {} aws s3 rm s3://{} --recursive --profile ${awsprofile}"
-		ignoreExitValue true
-    }
-    
-    exec {
-      	commandLine "bash", "-c", "aws cloudformation describe-stacks --stack-name ${awsstackname}-${appenvironment}-console --region ${awsregion} --profile ${awsprofile} | jq -r '.Stacks[].Outputs[] | select(.OutputKey|test(\".*S3Bucket\")) | .OutputValue' | xargs -I {} aws s3 rb s3://{} --profile ${awsprofile}"
-		ignoreExitValue true
-    }
-
-    exec {
-		commandLine "bash", "-c", "aws cloudformation delete-stack --stack-name ${awsstackname}-${appenvironment}-cloudfront --region ${awsregion} --profile ${awsprofile}"
-		ignoreExitValue true
-	}
-   
-    exec {
-		commandLine "bash", "-c", "aws cloudformation delete-stack --stack-name ${awsstackname}-${appenvironment}-cognito --region ${awsregion} --profile ${awsprofile}"
-		ignoreExitValue true
-	}
-	
-	exec {
-		commandLine "bash", "-c", "aws cloudformation delete-stack --stack-name ${awsstackname}-${appenvironment}-console --region ${awsregion} --profile ${awsprofile}"
-		ignoreExitValue true
-	}
-	
-	exec {
-  		commandLine "bash", "-c", "aws cloudformation wait stack-delete-complete --stack-name ${awsstackname}-${appenvironment}-cognito --region ${awsregion} --profile ${awsprofile}"
-  		ignoreExitValue true
-	}
-	
-	exec {
-  		commandLine "bash", "-c", "aws cloudformation wait stack-delete-complete --stack-name ${awsstackname}-${appenvironment}-cloudfront --region ${awsregion} --profile ${awsprofile}"
-  		ignoreExitValue true
-	}
-}
-
-task cloudFormationDeploy {
-  outputs.upToDateWhen {false}
-  doLast {
-    macroCloudFormationDeploy()
-  }
-}
-
-task cloudFormationDelete {
-  outputs.upToDateWhen {false}
-}
-
-task cloudFormationDeleteInternal {
-  outputs.upToDateWhen {false}
-  doFirst {
-    macroCloudFormationDelete()
-  }
-}*/
-/*
-task publish {
-	inputs.dir("${buildDir}/distributions")
-	outputs.upToDateWhen {file("${buildDir}/distributions/console-installer-${project.version}.zip").exists()}
- 	outputs.file file("${buildDir}/distributions/console-installer-${project.version}.zip")
-	
-
+task uploadToS3 {
 	doLast {
-  	    exec {
-          commandLine "bash", "-c", "aws s3 sync ${buildDir}/distributions s3://${distrobucket}/formkiq-cloud/${apprelease}/${project.version} ${distroparams} --profile ${awsprofile}"
-        }
-    }
-}*/
+		exec {
+			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/console-installer.zip s3://${distrobucket}/formkiq-core/${project.version}/console-installer.zip --profile ${testprofile}"
+		}
+	}
+}
 
-//publish.dependsOn build, publishCloudFormation
-
-//testaws.dependsOn cloudFormationDeploy
-//testaws.finalizedBy cloudFormationDelete
-
-//cloudFormationDeploy.dependsOn ':lambda-s3:cloudFormationDeploy'
-//cloudFormationDelete.dependsOn 'cloudFormationDeleteInternal', ':lambda-s3:cloudFormationDelete'
+buildZip.dependsOn check
+uploadToS3.dependsOn buildZip
+build.dependsOn uploadToS3

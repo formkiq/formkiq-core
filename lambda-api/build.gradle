@@ -82,8 +82,18 @@ task buildJava11Zip(type: Zip) {
     }           
 }
 
+task uploadToS3 {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/lambda-api-graalvm.zip s3://${distrobucket}/formkiq-core/${project.version}/lambda-api-graalvm.zip --profile ${testprofile}"
+		}
+	}
+}
+
 buildJava11Zip.dependsOn jar
 
 buildZip.dependsOn graalvmNativeImage
+uploadToS3.dependsOn buildZip
+
 graalvmNativeImage.dependsOn check
-build.dependsOn buildZip
+build.dependsOn uploadToS3

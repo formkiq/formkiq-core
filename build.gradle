@@ -1,27 +1,26 @@
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 
-buildscript {
-    repositories {
-        maven { url "https://plugins.gradle.org/m2/" }
-        mavenLocal()
-        jcenter()
-    }
-    dependencies {
-        classpath "com.diffplug.spotless:spotless-plugin-gradle:5.7.0"
-        classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.6.0"
-        classpath "com.github.ben-manes:gradle-versions-plugin:0.36.0"
-        classpath 'software.amazon.awssdk:dynamodb:2.15.25'
-        classpath 'com.formkiq.gradle:graalvm-native-plugin:1.0.3'
-    }
+plugins {
+  id 'java-library'
+  id 'checkstyle'
+  id 'com.github.spotbugs'  version '4.6.0'
+  id 'com.diffplug.spotless' version '5.8.2'
+  id 'com.github.ben-manes.versions' version '0.36.0'
+  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.0.3'
+}
+
+spotless { 
+  java { 
+    eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
+    licenseHeaderFile project.rootProject.file("LICENSE")  
+  } 
 }
 
 allprojects {
   version = '2.0.0'
+  group = 'com.formkiq.stacks'
 }
 
 subprojects {
-
-  group = 'com.formkiq.stacks'
 
   repositories {
   	mavenLocal()
@@ -34,12 +33,11 @@ subprojects {
   apply plugin: 'com.diffplug.spotless'
   apply plugin: 'com.github.ben-manes.versions'
   apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
-
+  
   sourceCompatibility = "11"
   targetCompatibility = "11"
   
   compileJava.dependsOn 'spotlessCheck'
-
 
   tasks.withType(Test) {
     systemProperties['testregion'] = project.getProperty('testregion')
@@ -47,12 +45,6 @@ subprojects {
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
   }
 
-  spotless { 
-    java { 
-      eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
-      licenseHeaderFile project.rootProject.file("LICENSE")  
-    } 
-  }
   spotlessJavaCheck.dependsOn 'spotlessJavaApply'
 
   spotbugs {
