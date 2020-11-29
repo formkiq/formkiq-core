@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - Email Notify Module
+
+#Metadata:
+#  AWS::ServerlessRepo::Application:
+ #   Name: FormKiQ-Module-Email-Nodify
+ #   Description: Base component of FormKiQ-Core
+ #   Author: FormKiQ Inc
+ #   SpdxLicenseId: MIT
+ #   LicenseUrl: file://../../../../../../LICENSE
+ #   ReadmeUrl: file://../../../../../../README.md
+ #   Labels: []
+ #   HomePageUrl: https://github.com/formkiq/formkiq-core
+ #   SourceCodeUrl: https://github.com/formkiq/formkiq-core
+    
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+    
+  Email:
+    Type: String
+    Description: Email (required)
+    AllowedPattern: ".+"
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+    
+Resources:
+            
+  DocumentsCreateNotification:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"      
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}" 
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties: 
+      Endpoint: !Ref Email
+      Protocol: "email"
+      TopicArn: !Ref DocumentsCreateNotification
+      
+  SnsDocumentsCreateNotificationTopicArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SNS Topic for Document Create Events"
+      Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentsCreateNotificationTopicArn"
+      Type: String
+      Value: !Ref DocumentsCreateNotification
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+  SnsDocumentsCreateSubscriptionSqs:
+    Type: AWS::SNS::Subscription
+    DependsOn:
+    - EmailNotify
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt EmailNotifyQueue.Arn
+      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn:1}}"
+
+  EmailNotifyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 500
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ DocumentStack"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
+
+  EmailNotify:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - ClamAvRole
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 60
+      MemorySize: 256
+      CodeUri: ../../../../../module-email-notify/build/distributions/module-email-notify.zip
+      Environment:
+        Variables:
+          TOPIC_ARN: !Ref DocumentsCreateNotification
+      Role: !GetAtt [ClamAvRole, Arn]
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+      Events:
+        CreateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt EmailNotifyQueue.Arn
+            BatchSize: 10
+                      
+  EmailNotifyQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: EmailNotifyQueue
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: sendMessagesToQueue
+          Effect: Allow
+          Principal:
+            AWS: '*'
+          Action: sqs:SendMessage
+          Resource: !GetAtt [EmailNotifyQueue, Arn]
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn:1}}"
+      Queues:
+      - Ref: EmailNotifyQueue
+      
+  ClamAvRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ Stacks - Document"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: EmailNotificationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              Resource:
+              - !GetAtt EmailNotifyQueue.Arn

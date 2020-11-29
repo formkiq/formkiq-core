@@ -1,5 +1,5 @@
 	
-description = "FormKiQ Core - Cognito User Signup"
+description = "FormKiQ Core - Email Notify Module"
 
 dependencies {
 }
@@ -15,24 +15,24 @@ task npmtest {
   }
 }
 
-task createZipCognitoUserSignup(type: Zip) {   
+task createZip(type: Zip) {   
    from "src"
    include "*"
    include "*/*"
    exclude "test", "coverage"
-   archiveName "cognito-user-signup.zip"
+   archiveName "module-email-notify.zip"
    destinationDir(file("${buildDir}/distributions"))
 }
 
 task uploadToS3 {
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/cognito-user-signup.zip s3://${distrobucket}/formkiq-core/${project.version}/cognito-user-signup.zip --profile ${testprofile}"
+			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/module-email-notify.zip s3://${distrobucket}/formkiq-core/${project.version}/module-email-notify.zip --profile ${testprofile}"
 		}
 	}
 }
 
 test.dependsOn npmtest
-createZipCognitoUserSignup.dependsOn check
-uploadToS3.dependsOn createZipCognitoUserSignup
+createZip.dependsOn check
+uploadToS3.dependsOn createZip
 build.dependsOn uploadToS3

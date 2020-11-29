@@ -1,0 +1,22 @@
+{
+    "name": "EmailNotifyModule",
+    "version": "1.0.0",
+    "description": "Send Email Notification on Document Events",
+    "main": "index.js",
+    "scripts": {
+        "test": "nyc --reporter=html --reporter=text mocha --check-coverage --lines 85 --per-file"
+    },
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "aws-sdk-mock": "^4.5.0",
+        "chai": "^4.2.0",
+        "mocha": "^6.2.2",
+        "sinon": "^7.5.0"
+    },
+    "dependencies": {
+        "aws-sdk": "^2.573.0",
+        "nyc": "^14.1.1",
+        "test": "^0.6.0"
+    }
+}

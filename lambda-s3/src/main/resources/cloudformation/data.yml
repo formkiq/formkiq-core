@@ -10,7 +10,7 @@ Metadata:
     SpdxLicenseId: MIT
     LicenseUrl: file://../../../../../../LICENSE
     ReadmeUrl: file://../../../../../../README.md
-    Labels: ['formkiq-core-data']
+    Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
@@ -32,7 +32,13 @@ Parameters:
     Type: String
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
-              
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+    
 Resources:
 
   SnsDocumentsCreateEventTopicArnParameter:
@@ -43,7 +49,7 @@ Resources:
       Type: String
       Value: !Ref SnsDocumentsCreateEventTopic
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -55,7 +61,7 @@ Resources:
       Type: String
       Value: !Ref SnsDocumentsUpdateEventTopic
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -67,7 +73,7 @@ Resources:
       Type: String
       Value: !Ref SnsDocumentsDeleteEventTopic
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -79,7 +85,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsS3Buckets
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -91,7 +97,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsStageS3Bucket
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
                       
@@ -100,7 +106,7 @@ Resources:
     DependsOn:
     - StagingS3Create
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"
+      BucketName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
       BucketEncryption: 
         ServerSideEncryptionConfiguration: 
         - ServerSideEncryptionByDefault:
@@ -121,7 +127,7 @@ Resources:
           Function: !GetAtt [StagingS3Create, Arn]
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -132,7 +138,7 @@ Resources:
     Properties:
       Tags:
           - Key: "Application"
-            Value: "FormKiQ Core"      
+            Value: !Sub "FormKiQ ${FormKiQType}"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
           - Key: "StackName"
@@ -159,7 +165,7 @@ Resources:
     Properties:
       Tags:
           - Key: "Application"
-            Value: "FormKiQ Core"      
+            Value: !Sub "FormKiQ ${FormKiQType}"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
           - Key: "StackName"
@@ -190,7 +196,7 @@ Resources:
     Properties:
       Tags:
           - Key: "Application"
-            Value: "FormKiQ Core"      
+            Value: !Sub "FormKiQ ${FormKiQType}"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
           - Key: "StackName"
@@ -221,7 +227,7 @@ Resources:
     DependsOn:
     - DocumentsS3Update
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"
+      BucketName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
@@ -246,7 +252,7 @@ Resources:
           Function: !GetAtt [DocumentsS3Update, Arn]
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -264,14 +270,14 @@ Resources:
       CodeUri: ../../../../build/distributions/lambda-s3-graalvm.zip
       Environment:
         Variables:
-          DOCUMENTS_S3_BUCKET: !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"
+          DOCUMENTS_S3_BUCKET: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENTS_TABLE: !Ref Documents
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
       Role: !GetAtt [S3LambdaRole, Arn]
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         StackName: !Sub "${AWS::StackName}"
 
   StagingCreateObjectParameter:
@@ -282,7 +288,7 @@ Resources:
       Type: String
       Value: !Ref StagingS3Create
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -295,7 +301,7 @@ Resources:
       FunctionName: !GetAtt StagingS3Create.Arn
       Principal: s3.amazonaws.com
       SourceAccount: !Sub "${AWS::AccountId}"
-      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"]]
+      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"]]
               
   DocumentsS3Update:
     Type: AWS::Serverless::Function
@@ -318,7 +324,7 @@ Resources:
       Role: !GetAtt [S3LambdaRole, Arn]
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         StackName: !Sub "${AWS::StackName}"
       Events:
         CreateSQSEvent:
@@ -334,7 +340,7 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
           - Key: "Application"
-            Value: "FormKiQ Core"      
+            Value: !Sub "FormKiQ ${FormKiQType}"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
           - Key: "StackName"
@@ -348,7 +354,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsS3Update
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -379,7 +385,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsUpdateQueue
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -391,7 +397,7 @@ Resources:
       Type: String
       Value: !GetAtt DocumentsUpdateQueue.Arn
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -404,14 +410,14 @@ Resources:
       FunctionName: !GetAtt DocumentsS3Update.Arn
       Principal: s3.amazonaws.com
       SourceAccount: !Sub "${AWS::AccountId}"
-      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"]]
+      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"]]
 
   S3LambdaRole:
     Type: AWS::IAM::Role
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -447,16 +453,16 @@ Resources:
             Action:
             - s3:ListBucket
             Resource:
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"]]
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"]]
           - Effect: Allow
             Action:
             - s3:GetObject*
             - s3:PutObject*
             - s3:DeleteObject
             Resource:
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}", /*]]
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}", /*]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}", /*]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}", /*]]
           - Effect: Allow
             Action:
             - dynamodb:BatchGetItem
@@ -498,14 +504,14 @@ Resources:
       Type: String
       Value: !Ref Documents
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
   Documents:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "formkiq-core-${AppEnvironment}-documents"
+      TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents"
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
         StreamViewType: NEW_IMAGE
@@ -513,7 +519,7 @@ Resources:
         PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       KeySchema: 
@@ -584,21 +590,21 @@ Resources:
       Type: String
       Value: !Ref Cache
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
       
   Cache:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "formkiq-core-${AppEnvironment}-cache"
+      TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-cache"
       BillingMode: PAY_PER_REQUEST
       TimeToLiveSpecification:
         AttributeName: TimeToLive
         Enabled: TRUE
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       KeySchema: 

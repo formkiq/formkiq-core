@@ -1,4 +1,4 @@
-description = "FormKiQ Cloud - Lambda S3 to Dynamodb"
+description = "FormKiQ Core - Lambda S3 to Dynamodb"
 
 dependencies {
 

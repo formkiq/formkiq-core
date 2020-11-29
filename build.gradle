@@ -16,7 +16,7 @@ spotless {
 }
 
 allprojects {
-  version = '1.0.0'
+  version = '1.0.1'
   group = 'com.formkiq.stacks'
 }
 
@@ -144,6 +144,9 @@ task testaws {
 
 task cloudFormationPackage {
 	doLast {
+    exec {
+      commandLine "bash", "-c", "sam package --template-file ./module-email-notify/src/cloudformation/module.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-module-email-notify.yml"
+    }
 		exec {
 			commandLine "bash", "-c", "sam package --template-file ./lambda-s3/src/main/resources/cloudformation/data.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-data.yml"
 		}

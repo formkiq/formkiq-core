@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>formkiq-core</name>
-	<comment>Project formkiq-core created by Buildship.</comment>
+	<name>module-email-notify</name>
+	<comment>Project CognitoUserSignup created by Buildship.</comment>
 	<projects>
 	</projects>
 	<buildSpec>
