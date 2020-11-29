@@ -95,7 +95,7 @@ Resources:
     Properties:
       Location:
         SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core-Data
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Core-Data
       Parameters:
         AppEnvironment: !Ref AppEnvironment
       Tags:
@@ -110,7 +110,7 @@ Resources:
     Properties:
       Location:
         SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core-Api
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Core-Api
       Parameters:
         AppEnvironment: !Ref AppEnvironment
         EnablePublicUrls: !Ref EnablePublicUrls
@@ -131,10 +131,26 @@ Resources:
     Properties:
       Location:
         SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core-Console
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Core-Console
       Parameters:
         AppEnvironment: !Ref AppEnvironment
         AdminEmail: !Ref AdminEmail
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CoreEmailNotify:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreConsole
+    Properties:
+      Location:
+        SemanticVersion: "{{version}}"
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Module-Email-Nodify
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        Email: !Ref AdminEmail
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
