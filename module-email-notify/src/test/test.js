@@ -1,86 +1,36 @@
-const expect = require('chai').expect;
+const AWS = require('aws-sdk');
+const assert = require('assert');
 const lambda = require('../index');
-const sinon = require('sinon');
-const fs = require('fs');
+
+const fs = require('fs').promises;
 const path = require('path');
 
-describe('event', () => {
-	/*
-    let ssmStub;
-
-    beforeEach(function() {
-        const result = {
-            Parameter: {
-                Value: "https://prod.tryformkiq.com"
-            }
-        };
-
-        ssmStub = sinon.stub(lambda, 'getParameter');
-        ssmStub.callsFake(function(param) {
-            return new Promise((res, rej) => {
-                return res(result);
-            });
-        });
-    });
-
-    afterEach(function() {
-        ssmStub.restore();
-    });
-
-    it('Create User Email', function(done) {
-        let json = fs.readFileSync(path.join(__dirname, "json/CustomMessage_AdminCreateUser.json"));
-        let event = JSON.parse(json);
-
-        lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq("Welcome to FormKiQ");
-            expect(data.response.emailMessage).to.include("Hello test@formkiq.com,");
-            expect(data.response.emailMessage).to.include('Log into your FormKiQ account<br />Console Url: https://prod.tryformkiq.com');
-            expect(data.response.emailMessage).to.include('Username: {username}');
-            expect(data.response.emailMessage).to.include('Temporary Password: {####}');
-
-            done();
-        });
-    });
-
-    it('Create Admin User Email', function(done) {
-        let json = fs.readFileSync(path.join(__dirname, "json/CustomMessage_AdminUser.json"));
-        let event = JSON.parse(json);
-
-        lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq("Welcome to FormKiQ");
-            expect(data.response.emailMessage).to.include("Hello test@formkiq.com,");
-            expect(data.response.emailMessage).to.include('Log into your FormKiQ account<br />Console Url: https://prod.tryformkiq.com');
-            expect(data.response.emailMessage).to.include('Username: {username}');
-            expect(data.response.emailMessage).to.include('Temporary Password: {####}');
-
-            done();
-        });
-    });
-
-    it('Forgot Password Email', function(done) {
-        let json = fs.readFileSync(path.join(__dirname, "json/CustomMessage_ForgotPassword.json"));
-        let event = JSON.parse(json);
-
-        lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq("FormKiQ - Lost Password");
-            expect(data.response.emailMessage).to.include("Hello test@formkiq.com,");
-            expect(data.response.emailMessage).to.include('A password reset request has been made for your account.');
-            expect(data.response.emailMessage).to.include('To Reset your password, please click on following link');
-            expect(data.response.emailMessage).to.include('https://prod.tryformkiq.com/resetPassword?code={####}&user_name=test%40formkiq.com<br /><br />Regards<br />FormKiQ Team');
-
-            done();
-        });
-    });
-    
-    it('Reset Required Email', function(done) {
-        let json = fs.readFileSync(path.join(__dirname, "json/CustomMessage_ResetRequired.json"));
-        let event = JSON.parse(json);
-
-        lambda.handler(event, null).then((data) => {
-            expect(data.response.emailSubject).to.eq(null);
-            expect(data.response.emailMessage).to.eq(null);
-
-            done();
-        });
-    });*/
+AWS.config.update({
+  accessKeyId: 'asdjsadkskdskskdk',
+  secretAccessKey: 'sdsadsissdiidicdsi',
+  region: 'us-east-1',
+  endpoint: 'http://localhost:4566'
 });
+
+describe('event', () => {
+
+	before(async() => {
+		let obj = await new AWS.SNS().createTopic({Name:"test"}).promise();
+		process.env.EMAIL_TOPIC_ARN = obj.TopicArn;
+		process.env.CONSOLE_URL = "http://localhost:8080/";
+	});
+	
+	it('SQS Event 1', async() => {
+		let text = await readFile('./test/json/sqs-event1.json');
+		let response = await lambda.handler(JSON.parse(text), {logStreamName:"test"});
+		assert.equal("arn:aws:sns:us-east-1:000000000000:test", process.env.EMAIL_TOPIC_ARN);
+		assert.equal(1, response.length);
+		assert(response[0].MessageId != null);
+	});
+});
+
+async function readFile(filePath) {
+    return fs.readFile(filePath).then((data) => {
+		return data.toString();
+    });
+}

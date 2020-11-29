@@ -8,10 +8,15 @@ task npmtest {
   inputs.files("${project.projectDir}/src/index.js", "${project.projectDir}/src/test/index.js")
   outputs.file("$buildDir/${project.name}_index.js_${project.version}")
 
+  doFirst {
+	macroLocalStackStart()
+  }
+  
   doLast {
     exec {
       commandLine "bash", "-c", "cd src ; npm install ; npm test"
     }
+    macroDockerComposeDown()
   }
 }
 
@@ -25,11 +30,12 @@ task createZip(type: Zip) {
 }
 
 task uploadToS3 {
-	doLast {
-		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/module-email-notify.zip s3://${distrobucket}/formkiq-core/${project.version}/module-email-notify.zip --profile ${testprofile}"
-		}
+  outputs.dir("${buildDir}/distributions")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/module-email-notify.zip s3://${distrobucket}/formkiq-core/${project.version}/module-email-notify.zip --profile ${testprofile}"
 	}
+  }
 }
 
 test.dependsOn npmtest

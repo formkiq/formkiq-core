@@ -1,0 +1,20 @@
+{
+  "Records": [
+    {
+      "messageId": "14add6d7-36ef-4ced-ba40-6668bb693cf8",
+      "receiptHandle": "AQEBVfJkgqsYX0dOcy+/chV8BLllx8ai3ecS2qQG8Ov4dbOgpf3pk8bcaPf2a19KSivwAxb/hy6PS4nmZn104QM/dJrOg8TGyQsXRUDMh9c/GDWw/vF22ZhlFhnRr4fneQNBCTTMSzYJFEzF9GnkufSlrT3aERFmU4f0qJ2tiJOgFu/9hex7/SyCDbjp3pzd8+qi685pfpEY/ecNiIgvIeYSkvDhFuWzLLkVOb8vT/b3BxtBi4sylkd0PRvyxjgDWFXIJ4wCAYL/U0hIj9NZrZtyu/hz+1r+8VFAJn+mkkmwUK3PZ4k7Zw9rNdpY+GDo9du7gyRYOMhPXYmCCw8HVdy66EYgTsttcmJ3ir3NDOutQmNupVrmwg/T9md5sMmSUo8I2wOifo07nbN6hTKlhkpWKRq6YwpX0qtcNZ91Qpcqs5Mk/1Xl+CuOOcwj2aoj+2+VaSSMfNEONNSkIJUulDq0Iip9yWZ0khmbp4bqkX/uuFk=",
+      "body": "{\n  \"Type\" : \"Notification\",\n  \"MessageId\" : \"b4e75c17-b9d8-5ed2-b461-042dc4ac731e\",\n  \"TopicArn\" : \"arn:aws:sns:us-east-1:000000000000:test\",\n  \"Message\" : \"{\\\"documentId\\\":\\\"45c8df22-f1fc-4444-a070-a474db940cc0\\\",\\\"s3key\\\":\\\"45c8df22-f1fc-4444-a070-a474db940cc0\\\",\\\"s3bucket\\\":\\\"formkiq-core-test-documents-XXXXXXXXXXXX\\\",\\\"type\\\":\\\"create\\\"}\",\n  \"Timestamp\" : \"2020-11-27T04:06:12.815Z\",\n  \"SignatureVersion\" : \"1\",\n  \"Signature\" : \"kQVB3ULlYN/jH1156GaMw7w54X2KvNh2x4uwEIUJjnMxTVZ3f1ZHaeVm2BHEd9T+lGDvLHfyS3pws17RKXsdulCJHR9nl7d/gbGMEizB2EVTnnJmwjAE9kjOnZJrYt8PyEPzey2Hc1uhi26P7Qk1Bgpb7QxjeNnSttmoCAPMj1iUfvJmx9jWVoYam6bMl8YmaeYcTto/UsOP2e4tAHonwziIIP/a/l+D/HVjOwSXHIOuR03dHM4wi441pCEIEbdvcTsFyPdPBRPVntrH5LBhEArTJRQ1xv+mLS/U4ws0PyCHJUekdzZdo9P7gXCnqJ6QwP7FfiHJGqR4GGv0i+vPWw==\",\n  \"SigningCertURL\" : \"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-010a507c1833636cd94bdb98bd93083a.pem\",\n  \"UnsubscribeURL\" : \"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:XXXXXXXXXXXX:serverlessrepo-FormKiQ-Core-CoreData-80R5DRAE7JMF-SnsDocumentsCreateEventTopic-3G3FXJRGS160:c331fe3a-2302-4a07-b55e-cf375d0a051b\"\n}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1606449972862",
+        "SenderId": "AIDAIT2UOQQY3AUEKVGXU",
+        "ApproximateFirstReceiveTimestamp": "1606449972867"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "584025cf904ef0ab5f44c7962995099f",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:XXXXXXXXXXXX:serverlessrepo-FormKiQ-Core-CoreEmailNotify-1C60U-EmailNotifyQueue-C69U3W3KP7GY",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}
