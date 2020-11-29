@@ -144,17 +144,17 @@ task testaws {
 
 task cloudFormationPackage {
 	doLast {
-    exec {
-      commandLine "bash", "-c", "sam package --template-file ./module-email-notify/src/cloudformation/module.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-module-email-notify.yml"
-    }
+    	exec {
+      		commandLine "bash", "-c", "sam package --template-file ./module-email-notify/src/cloudformation/module.yml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-module-email-notify.yml"
+    	}
 		exec {
-			commandLine "bash", "-c", "sam package --template-file ./lambda-s3/src/main/resources/cloudformation/data.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-data.yml"
+			commandLine "bash", "-c", "sam package --template-file ./lambda-s3/src/main/resources/cloudformation/data.yml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-data.yml"
 		}
 		exec {
-			commandLine "bash", "-c", "yq m --overwrite ./lambda-api/src/main/resources/cloudformation/lambda-api.yml ./lambda-api/src/main/resources/cloudformation/api.yml ./lambda-api/src/main/resources/cloudformation/api-iam.yml > ./lambda-api/src/main/resources/cloudformation/lambda-api.yml.tmp ; sam package --template-file ./lambda-api/src/main/resources/cloudformation/lambda-api.yml.tmp --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
+			commandLine "bash", "-c", "yq m --overwrite ./lambda-api/src/main/resources/cloudformation/lambda-api.yml ./lambda-api/src/main/resources/cloudformation/api.yml ./lambda-api/src/main/resources/cloudformation/api-iam.yml > ./lambda-api/src/main/resources/cloudformation/lambda-api.yml.tmp ; sam package --template-file ./lambda-api/src/main/resources/cloudformation/lambda-api.yml.tmp --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-api.yml"
 		}	
 		exec {
-			commandLine "bash", "-c", "sam package --template-file ./console/src/main/resources/cloudformation/console.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core-console.yml"
+			commandLine "bash", "-c", "sam package --template-file ./console/src/main/resources/cloudformation/console.yml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-console.yml"
 		}		
 		exec {
 			commandLine "bash", "-c", "cp ./src/main/resources/cloudformation/formkiq-core.yml build/formkiq-core.yml"
@@ -163,46 +163,54 @@ task cloudFormationPackage {
 			commandLine "bash", "-c", "box tokenReplace path=build/formkiq-core.yml token=\"{{version}}\" replacement=\"${project.version}\""
 		}
 		exec {
-			commandLine "bash", "-c", "sam package --template-file build/formkiq-core.yml --s3-bucket ${distrobucket} --profile ${testprofile} --output-template-file build/formkiq-core.yml"
+			commandLine "bash", "-c", "box tokenReplace path=build/formkiq-core.yml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
+		}
+		exec {
+			commandLine "bash", "-c", "sam package --template-file build/formkiq-core.yml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core.yml"
 		}
 	}
 }
 
-task createApplicationData {
+task createApplication {
 	doLast {
 		exec {
 			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-data.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
-	}
-}
-createApplicationData.dependsOn cloudFormationPackage
-
-task createApplicationApi {
-	doLast {
 		exec {
 			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-api.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
-	}
-}
-createApplicationApi.dependsOn cloudFormationPackage
-
-task createApplicationConsole {
-	doLast {
 		exec {
 			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-console.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
-	}
-}
-createApplicationConsole.dependsOn cloudFormationPackage
-
-task createApplication {
-	doLast {
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-module-email-notify.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+		}
 		exec {
 			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core.yml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 	}
 }
-createApplication.dependsOn cloudFormationPackage, createApplicationData, createApplicationApi, createApplicationConsole
+createApplication.dependsOn cloudFormationPackage
+
+task deleteApplication {
+	doLast {
+		exec {
+			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core-Data --region ${testregion} --profile ${testprofile}"
+		}
+		exec {
+			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core-Api --region ${testregion} --profile ${testprofile}"
+		}
+		exec {
+			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core-Console --region ${testregion} --profile ${testprofile}"
+		}
+		exec {
+			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Module-Email-Nodify --region ${testregion} --profile ${testprofile}"
+		}
+		exec {
+			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core --region ${testregion} --profile ${testprofile}"
+		}		
+	}
+}
 
 task cloudFormationDelete {
 	doLast {
@@ -248,3 +256,5 @@ task cloudFormationDelete {
 		}
 	}
 }
+
+cloudFormationPackage.dependsOn check

@@ -45,11 +45,12 @@ task testaws(type: Test) {
 }
 
 task uploadToS3 {
-	doLast {
-		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/console-installer.zip s3://${distrobucket}/formkiq-core/${project.version}/console-installer.zip --profile ${testprofile}"
-		}
+  outputs.dir("${buildDir}/distributions")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/console-installer.zip s3://${distrobucket}/formkiq-core/${project.version}/console-installer.zip --profile ${testprofile}"
 	}
+  }
 }
 
 buildZip.dependsOn check

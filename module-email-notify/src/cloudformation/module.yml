@@ -2,17 +2,17 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ - Email Notify Module
 
-#Metadata:
-#  AWS::ServerlessRepo::Application:
- #   Name: FormKiQ-Module-Email-Nodify
- #   Description: Base component of FormKiQ-Core
- #   Author: FormKiQ Inc
- #   SpdxLicenseId: MIT
- #   LicenseUrl: file://../../../../../../LICENSE
- #   ReadmeUrl: file://../../../../../../README.md
- #   Labels: []
- #   HomePageUrl: https://github.com/formkiq/formkiq-core
- #   SourceCodeUrl: https://github.com/formkiq/formkiq-core
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: FormKiQ-Module-Email-Nodify
+    Description: Base component of FormKiQ-Core
+    Author: FormKiQ Inc
+    SpdxLicenseId: MIT
+    LicenseUrl: file://../../../../LICENSE
+    ReadmeUrl: file://../../../../README.md
+    Labels: []
+    HomePageUrl: https://github.com/formkiq/formkiq-core
+    SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
 Parameters:
 
@@ -95,7 +95,7 @@ Resources:
       Runtime: nodejs12.x
       Timeout: 60
       MemorySize: 256
-      CodeUri: ../../../../../module-email-notify/build/distributions/module-email-notify.zip
+      CodeUri: ../../../module-email-notify/build/distributions/module-email-notify.zip
       Environment:
         Variables:
           TOPIC_ARN: !Ref DocumentsCreateNotification

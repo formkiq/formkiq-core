@@ -25,11 +25,12 @@ task createZipCognitoUserSignup(type: Zip) {
 }
 
 task uploadToS3 {
-	doLast {
-		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/cognito-user-signup.zip s3://${distrobucket}/formkiq-core/${project.version}/cognito-user-signup.zip --profile ${testprofile}"
-		}
+  outputs.dir("${buildDir}/distributions")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/cognito-user-signup.zip s3://${distrobucket}/formkiq-core/${project.version}/cognito-user-signup.zip --profile ${testprofile}"
 	}
+  }
 }
 
 test.dependsOn npmtest

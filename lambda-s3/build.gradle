@@ -61,6 +61,9 @@ task testaws(type: Test) {
 }
 
 task buildZip(type: Zip) {
+	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
+  	outputs.dir("${buildDir}/distributions")
+  	
 	archiveName "lambda-s3-graalvm.zip"
     destinationDir(file("${buildDir}/distributions"))
     from("${project.projectDir}/runtime") {
@@ -72,11 +75,13 @@ task buildZip(type: Zip) {
 }
 
 task uploadToS3 {
-	doLast {
-		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/lambda-s3-graalvm.zip s3://${distrobucket}/formkiq-core/${project.version}/lambda-s3-graalvm.zip --profile ${testprofile}"
-		}
+  inputs.files("${buildDir}/distributions/lambda-s3-graalvm.zip")
+  outputs.dir("${buildDir}/distributions")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/lambda-s3-graalvm.zip s3://${distrobucket}/formkiq-core/${project.version}/lambda-s3-graalvm.zip --profile ${testprofile}"
 	}
+  }
 }
 
 buildZip.dependsOn graalvmNativeImage
