@@ -20,7 +20,7 @@ task npmtest {
   }
 }
 
-task createZip(type: Zip) {   
+task buildZip(type: Zip) {   
    from "src"
    include "*"
    include "*/*"
@@ -38,7 +38,23 @@ task uploadToS3 {
   }
 }
 
+task assembleTemplate {
+    dependsOn buildZip
+	inputs.files("*.yaml")
+	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml")
+	doLast {
+		// build SAM distribution
+		exec {
+			commandLine "bash", "-c", "yq d template-sar.yaml 'Metadata' > template.yaml"
+		}	
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+		}
+	}
+}
+
 test.dependsOn npmtest
-createZip.dependsOn check
-uploadToS3.dependsOn createZip
-build.dependsOn uploadToS3
+buildZip.dependsOn check
+uploadToS3.dependsOn buildZip
+build.dependsOn uploadToS3, assembleTemplate

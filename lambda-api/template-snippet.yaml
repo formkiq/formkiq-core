@@ -8,8 +8,8 @@ Metadata:
     Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../../../../../LICENSE
-    ReadmeUrl: file://../../../../../../README.md
+    LicenseUrl: file://../../LICENSE
+    ReadmeUrl: file://../../README.md
     Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
@@ -92,7 +92,7 @@ Resources:
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
-      CodeUri: ../../../../build/distributions/lambda-api-graalvm.zip
+      CodeUri: ./build/distributions/lambda-api-graalvm.zip
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
@@ -617,7 +617,7 @@ Resources:
       Handler: index.handler
       Role: !GetAtt CognitoCustomMessageRole.Arn
       Runtime: nodejs10.x
-      CodeUri: ../../../../../lambda-cognito-user-signup/build/distributions/cognito-user-signup.zip
+      CodeUri: ../lambda-cognito-user-signup/build/distributions/cognito-user-signup.zip
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
@@ -712,4 +712,4 @@ Outputs:
     Value: !Ref CognitoIdentityPool
   CognitoAdminGroup:
     Description: "FormKiQ Cognito Admin Group"
-    Value: !Ref AdminGroup    
+    Value: !Ref AdminGroup

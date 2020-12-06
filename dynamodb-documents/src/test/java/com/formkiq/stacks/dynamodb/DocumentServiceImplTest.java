@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -832,7 +829,7 @@ public class DocumentServiceImplTest {
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(docid, "untagged", null, new Date(), "jsmith"));
+          Arrays.asList(new DocumentTag(docid, "untagged", "true", new Date(), "jsmith"));
       this.service.saveDocument(prefix, item, tags);
 
       // when
@@ -869,7 +866,7 @@ public class DocumentServiceImplTest {
           this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertNull(tags.getResults().get(0).getValue());
+      assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertEquals(username, tags.getResults().get(0).getUserId());
       assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
@@ -962,6 +959,7 @@ public class DocumentServiceImplTest {
           .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
       assertEquals(1, tags.size());
       assertEquals("untagged", tags.get(0).getKey());
+      assertEquals("true", tags.get(0).getValue());
 
       item = this.service.findDocument(siteId, doc1.getDocumentId());
       assertNotNull(item);

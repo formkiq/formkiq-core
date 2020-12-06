@@ -116,7 +116,7 @@ public class DocumentsIdUploadRequestHandler
 
     if (!documentExists && item != null) {
 
-      tags.add(new DocumentTag(documentId, "untagged", null, date, username,
+      tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
           DocumentTagType.SYSTEMDEFINED));
 
       String value = this.restrictionMaxDocuments.getSsmValue(awsservice, siteId);

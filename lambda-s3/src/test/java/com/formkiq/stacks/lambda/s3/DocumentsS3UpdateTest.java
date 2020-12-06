@@ -454,7 +454,7 @@ public class DocumentsS3UpdateTest {
 
       assertEquals(1, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertNull(tags.getResults().get(0).getValue());
+      assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertNull(tags.getResults().get(0).getUserId());

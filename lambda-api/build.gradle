@@ -95,10 +95,30 @@ task uploadToS3 {
   }
 }
 
+task assembleTemplate {
+    dependsOn buildZip
+	inputs.files("template-snippet.yaml", "api.yaml", "api-iam.yaml")
+	outputs.files("template.yaml", "template-sar.yaml")
+	doLast {
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "yq m --overwrite ./template-snippet.yaml ./api.yaml ./api-iam.yaml > ./template-sar.yaml"
+		}
+		// build SAM distribution
+		exec {
+			commandLine "bash", "-c", "yq d ./template-sar.yaml 'Metadata' > ./template.yaml"
+		}		
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+		}
+	}
+}
+
 buildJava11Zip.dependsOn jar
 
 buildZip.dependsOn graalvmNativeImage
 uploadToS3.dependsOn buildZip
 
 graalvmNativeImage.dependsOn check
-build.dependsOn uploadToS3
+build.dependsOn uploadToS3, assembleTemplate

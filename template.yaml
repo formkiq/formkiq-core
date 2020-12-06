@@ -1,18 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core
-
-Metadata:
-  AWS::ServerlessRepo::Application:
-    Name: FormKiQ-Core
-    Description: Headless Document Management System that gives you full control of your organization's documents
-    Author: FormKiQ Inc
-    SpdxLicenseId: MIT
-    LicenseUrl: ../LICENSE
-    ReadmeUrl: ../README.md
-    Labels: ['formkiq', 'formkiq-core']
-    HomePageUrl: https://github.com/formkiq/formkiq-core
-    SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
 Parameters:
 
@@ -90,12 +78,10 @@ Resources:
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
-  CoreData:
+  CoreStorage:
     Type: AWS::Serverless::Application
     Properties:
-      Location:
-        SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Core-Data
+      Location: lambda-s3/template.yaml
       Parameters:
         AppEnvironment: !Ref AppEnvironment
       Tags:
@@ -106,11 +92,9 @@ Resources:
   CoreApi:
     Type: AWS::Serverless::Application
     DependsOn:
-      - CoreData
+      - CoreStorage
     Properties:
-      Location:
-        SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Core-Api
+      Location: lambda-api/template.yaml
       Parameters:
         AppEnvironment: !Ref AppEnvironment
         EnablePublicUrls: !Ref EnablePublicUrls
@@ -129,9 +113,7 @@ Resources:
     DependsOn:
       - CoreApi
     Properties:
-      Location:
-        SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Core-Console
+      Location: console/template.yaml
       Parameters:
         AppEnvironment: !Ref AppEnvironment
         AdminEmail: !Ref AdminEmail
@@ -140,14 +122,12 @@ Resources:
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
-  CoreEmailNotify:
+  ModuleEmailNotify:
     Type: AWS::Serverless::Application
     DependsOn:
       - CoreConsole
     Properties:
-      Location:
-        SemanticVersion: "{{version}}"
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:{{aws_accountid}}:applications/FormKiQ-Module-Email-Nodify
+      Location: module-email-notify/template.yaml
       Parameters:
         AppEnvironment: !Ref AppEnvironment
         Email: !Ref AdminEmail
