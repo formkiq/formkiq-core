@@ -25,6 +25,8 @@ import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.PK;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_DOCS;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
 import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAGS;
 import static com.formkiq.stacks.dynamodb.DbKeys.SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
@@ -91,17 +93,18 @@ public class DocumentTagToAttributeValueMap
     Map<String, AttributeValue> pkvalues = new HashMap<String, AttributeValue>();
 
     pkvalues.put(PK,
-        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAGS + documentId)).build());
-    pkvalues.put(SK, AttributeValue.builder().s(tagKey).build());
+        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_DOCS + documentId)).build());
+    pkvalues.put(SK, AttributeValue.builder().s(PREFIX_TAGS + tagKey).build());
 
     pkvalues.put(GSI1_PK, AttributeValue.builder()
-        .s(createDatabaseKey(siteId, tagKey + TAG_DELIMINATOR + tagValue)).build());
+        .s(createDatabaseKey(siteId, PREFIX_TAG + tagKey + TAG_DELIMINATOR + tagValue)).build());
     pkvalues.put(GSI1_SK,
         AttributeValue.builder().s(fulldate + TAG_DELIMINATOR + documentId).build());
 
-    pkvalues.put(GSI2_PK, AttributeValue.builder().s(createDatabaseKey(siteId, tagKey)).build());
-    pkvalues.put(GSI2_SK,
-        AttributeValue.builder().s(tagValue + TAG_DELIMINATOR + documentId).build());
+    pkvalues.put(GSI2_PK,
+        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + tagKey)).build());
+    pkvalues.put(GSI2_SK, AttributeValue.builder()
+        .s(tagValue + TAG_DELIMINATOR + fulldate + TAG_DELIMINATOR + documentId).build());
 
     pkvalues.put("documentId", AttributeValue.builder().s(documentId).build());
 

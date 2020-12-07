@@ -103,12 +103,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentTag> tags) {
 
     if (tags != null) {
-      tags.forEach(tag -> {
-        if (tag.getKey().contains(TAG_DELIMINATOR)) {
-          throw new InvalidConditionsException("Tabs are not allowed in Tag Name");
-        }
-      });
-
       Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
           || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
 
@@ -569,7 +563,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public PaginationResults<DocumentTag> findDocumentTags(final String siteId,
       final String documentId, final PaginationMapToken token, final int maxresults) {
-
     Map<String, AttributeValue> keys = keysDocumentTag(siteId, documentId, null);
     return findAndTransform(keys, token, maxresults, new AttributeValueToDocumentTag(siteId));
   }

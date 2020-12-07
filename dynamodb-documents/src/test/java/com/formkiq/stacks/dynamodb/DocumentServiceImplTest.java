@@ -20,6 +20,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static org.junit.Assert.assertArrayEquals;
@@ -28,7 +29,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -164,29 +164,46 @@ public class DocumentServiceImplTest {
     return items;
   }
 
-  /** Add Invalid Tag Name. */
+  /** Add Tag Name with TAG DELIMINATOR. */
   @Test
   public void testAddTags01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      DocumentItem document = createTestData(prefix).get(0);
+      DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
-      String tagName = "tag\t";
+      String tagKey = "tag" + TAG_DELIMINATOR;
       String tagValue = UUID.randomUUID().toString();
       String userId = "jsmith";
 
       List<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, tagName, tagValue, document.getInsertedDate(), userId));
+          new DocumentTag(documentId, tagKey, tagValue, document.getInsertedDate(), userId));
 
       // when
-      try {
-        this.service.addTags(prefix, documentId, tags);
-        fail();
+      this.service.addTags(siteId, documentId, tags);
 
-      } catch (Exception e) {
-        // then
-        assertEquals("Tabs are not allowed in Tag Name", e.getMessage());
-      }
+      // then
+      PaginationResults<DocumentTag> results =
+          this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertNull(results.getToken());
+      assertEquals(2, results.getResults().size());
+      assertEquals("status", results.getResults().get(0).getKey());
+      assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
+      assertEquals("active", results.getResults().get(0).getValue());
+
+      assertEquals(tagKey, results.getResults().get(1).getKey());
+      assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(1).getType());
+      assertEquals(tagValue, results.getResults().get(1).getValue());
+      
+      assertEquals(tagValue,  this.service.findDocumentTag(siteId, documentId, tagKey).getValue());
+
+      SearchTagCriteria s = new SearchTagCriteria(tagKey);
+      PaginationResults<DynamicDocumentItem> list =
+          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
+      assertNull(list.getToken());
+      assertEquals(1, list.getResults().size());
+      assertEquals(documentId, list.getResults().get(0).getDocumentId());
+      assertEquals(tagKey, list.getResults().get(0).getMap("matchedTag").get("key"));
+      assertEquals(tagValue, list.getResults().get(0).getMap("matchedTag").get("value"));
     }
   }
 
@@ -194,7 +211,7 @@ public class DocumentServiceImplTest {
   @Test
   public void testAddTags02() {
 
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String tagKey = "tag";
       String tagValue = null;
@@ -209,23 +226,23 @@ public class DocumentServiceImplTest {
       List<DocumentTag> tags = Arrays.asList(ti);
 
       // when
-      this.service.saveDocument(prefix, item, tags);
+      this.service.saveDocument(siteId, item, tags);
 
       // then
       PaginationResults<DocumentTag> results =
-          this.service.findDocumentTags(prefix, documentId, null, MAX_RESULTS);
+          this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertNull(results.getToken());
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey, results.getResults().get(0).getKey());
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
       assertNull(results.getResults().get(0).getValue());
 
-      tagValue = this.service.findDocumentTag(prefix, documentId, tagKey).getValue();
+      tagValue = this.service.findDocumentTag(siteId, documentId, tagKey).getValue();
       assertNull(tagValue);
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(prefix, s, null, MAX_RESULTS);
+          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -648,7 +665,7 @@ public class DocumentServiceImplTest {
         // when
         PaginationResults<Preset> p0 =
             this.service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
-
+        
         // then
         assertEquals(MAX_RESULTS, p0.getResults().size());
         assertNotNull(p0.getToken());

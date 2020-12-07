@@ -3,29 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_PK;
-import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Function;
@@ -41,8 +35,8 @@ public class AttributeValueToDocumentTag
   /** {@link AttributeValueToInsertedDate}. */
   private AttributeValueToInsertedDate toDate = new AttributeValueToInsertedDate();
 
-  /** Site Id. */
-  private String site;
+  // /** Site Id. */
+  // private String site;
 
   /**
    * constructor.
@@ -50,25 +44,32 @@ public class AttributeValueToDocumentTag
    * @param siteId {@link String}
    */
   public AttributeValueToDocumentTag(final String siteId) {
-    this.site = siteId;
+    // this.site = siteId;
   }
 
   @Override
   public DocumentTag apply(final Map<String, AttributeValue> map) {
-
+    String tagKey = null;
     String tagValue = null;
-    String pk = map.get(GSI1_PK).s();
-    String[] strs = pk.split(TAG_DELIMINATOR);
+    // String pk = map.get(GSI1_PK).s();
+    // String[] strs = pk.split(TAG_DELIMINATOR);
 
-    String tagKey = resetDatabaseKey(this.site, strs[0]);
-
-    if (strs.length > 1) {
-      tagValue = strs[1];
-
-      if (strs[1].equals("null")) {
-        tagValue = null;
-      }
+    if (map.containsKey("tagKey")) {
+      tagKey = map.get("tagKey").s();
     }
+
+    if (map.containsKey("tagValue")) {
+      tagValue = map.get("tagValue").s();
+    }
+    // String tagKey = resetDatabaseKey(this.site, strs[0]);
+    //
+    // if (strs.length > 1) {
+    // tagValue = strs[1];
+    //
+    // if (strs[1].equals("null")) {
+    // tagValue = null;
+    // }
+    // }
 
     Date date = this.toDate.apply(map);
     String userId = map.containsKey("userId") ? map.get("userId").s() : null;
