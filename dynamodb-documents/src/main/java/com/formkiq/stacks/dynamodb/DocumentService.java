@@ -48,7 +48,7 @@ public interface DocumentService {
    * @param tags {@link Collection} {@link DocumentTag}
    */
   void addTags(String siteId, String documentId, Collection<DocumentTag> tags);
-
+  
   /**
    * Delete Document.
    *
@@ -211,6 +211,21 @@ public interface DocumentService {
       PaginationMapToken pagination, int maxresults);
 
   /**
+   * Find most recent inserted document {@link ZonedDateTime}.
+   * @return {@link ZonedDateTime}
+   */
+  ZonedDateTime findMostDocumentDate();
+
+  /**
+   * Find Preset.
+   * 
+   * @param siteId {@link String}
+   * @param id {@link String}
+   * @return {@link Optional} {@link PresetTag}
+   */
+  Optional<Preset> findPreset(String siteId, String id);
+
+  /**
    * Get Presets.
    * 
    * @param siteId {@link String}
@@ -223,15 +238,6 @@ public interface DocumentService {
    */
   PaginationResults<Preset> findPresets(String siteId, String id, String type, String name,
       PaginationMapToken token, int maxresults);
-
-  /**
-   * Find Preset.
-   * 
-   * @param siteId {@link String}
-   * @param id {@link String}
-   * @return {@link Optional} {@link PresetTag}
-   */
-  Optional<Preset> findPreset(String siteId, String id);
 
   /**
    * Find Preset Tag.

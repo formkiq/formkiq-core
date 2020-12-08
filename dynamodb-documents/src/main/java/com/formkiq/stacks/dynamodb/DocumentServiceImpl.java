@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Get;
@@ -303,11 +304,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param sk {@link String}
    * @param indexName {@link String}
    * @param token {@link PaginationMapToken}
+   * @param scanIndexForward {@link Boolean}
    * @param maxresults int
    * @return {@link PaginationResults} {@link DocumentFormat}
    */
   private PaginationResults<Map<String, AttributeValue>> find(final String pk, final String sk,
-      final String indexName, final PaginationMapToken token, final int maxresults) {
+      final String indexName, final PaginationMapToken token, final Boolean scanIndexForward,
+      final int maxresults) {
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
     Map<String, AttributeValue> values = queryKeys(keysGeneric(pk, sk));
@@ -319,7 +322,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(indexName)
         .keyConditionExpression(expression).expressionAttributeValues(values)
-        .limit(Integer.valueOf(maxresults)).exclusiveStartKey(startkey).build();
+        .scanIndexForward(scanIndexForward).limit(Integer.valueOf(maxresults))
+        .exclusiveStartKey(startkey).build();
 
     QueryResponse result = this.dynamoDB.query(q);
     return new PaginationResults<>(result.items(), new QueryResponseToPagination().apply(result));
@@ -361,7 +365,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     String indexName = getIndexName(pkKey);
 
     PaginationResults<Map<String, AttributeValue>> results =
-        find(pk, sk, indexName, token, maxresults);
+        find(pk, sk, indexName, token, null, maxresults);
 
     List<T> list =
         results.getResults().stream().map(s -> func.apply(s)).collect(Collectors.toList());
@@ -568,6 +572,20 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public ZonedDateTime findMostDocumentDate() {
+    ZonedDateTime date = null;
+    PaginationResults<Map<String, AttributeValue>> result =
+        find(PREFIX_DOCUMENT_DATE, null, null, null, Boolean.FALSE, 1);
+    
+    if (!result.getResults().isEmpty()) {
+      String dateString = result.getResults().get(0).get(SK).s();
+      date = DateUtil.toDateTimeFromString(dateString, null);      
+    }
+    
+    return date;
+  }
+
+  @Override
   public Optional<Preset> findPreset(final String siteId, final String id) {
     Map<String, AttributeValue> keyMap = keysPreset(siteId, id);
     Optional<Map<String, AttributeValue>> result = find(keyMap.get("PK").s(), keyMap.get("SK").s());
@@ -619,8 +637,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
-    String pk1 = startDate.format(this.yyyymmddFormatter);
-    String pk2 = endDate.format(this.yyyymmddFormatter);
+    String pk1 = PREFIX_DOCUMENT_DATE_TS + startDate.format(this.yyyymmddFormatter);
+    String pk2 = PREFIX_DOCUMENT_DATE_TS + endDate.format(this.yyyymmddFormatter);
     boolean nextDayPagination = isNextDayPagination(siteId, pk1, startkey);
 
     if (!nextDayPagination) {
@@ -701,7 +719,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     String expr = GSI1_PK + " = :pk";
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
-    values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, pk)).build());
+    values.put(":pk", AttributeValue.builder()
+        .s(createDatabaseKey(siteId, pk)).build());
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
@@ -781,8 +800,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     Map<String, AttributeValue> pkvalues = new HashMap<>(keys);
 
     if (saveGsi1) {
-      addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, shortdate));
-      addS(pkvalues, GSI1_SK, fulldate);
+      addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_DOCUMENT_DATE_TS + shortdate));
+      addS(pkvalues, GSI1_SK, fulldate + TAG_DELIMINATOR + document.getDocumentId());
     }
 
     addS(pkvalues, "documentId", document.getDocumentId());
@@ -807,14 +826,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     save(pkvalues);
   }
-
-  @Override
-  public void saveDocument(final String siteId, final DocumentItem document,
-      final Collection<DocumentTag> tags) {
-    Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(keys, siteId, document, tags, true);
-  }
-
+  
   /**
    * Save Document.
    * 
@@ -826,9 +838,42 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    */
   private void saveDocument(final Map<String, AttributeValue> keys, final String siteId,
       final DocumentItem document, final Collection<DocumentTag> tags, final boolean saveGsi1) {
-    // TODO save both inside transaction.
+    // TODO save Document/Tags inside transaction.
     saveDocument(keys, siteId, document, saveGsi1);
     addTags(siteId, document.getDocumentId(), tags);
+    
+    if (saveGsi1) {
+      saveDocumentDate(document);
+    }
+  }
+
+  @Override
+  public void saveDocument(final String siteId, final DocumentItem document,
+      final Collection<DocumentTag> tags) {
+    Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
+    saveDocument(keys, siteId, document, tags, true);
+  }
+
+  /** 
+   * Save Document Date record, if it already doesn't exist.
+   * @param document {@link DocumentItem}
+   */
+  private void saveDocumentDate(final DocumentItem document) {
+    Date insertedDate = document.getInsertedDate();
+    String shortdate = this.yyyymmddFormat.format(insertedDate);
+    
+    Map<String, AttributeValue> values =
+        Map.of(PK, AttributeValue.builder().s(PREFIX_DOCUMENT_DATE).build(), SK,
+            AttributeValue.builder().s(shortdate).build());
+    String conditionExpression = "attribute_not_exists(" + PK + ")";
+    PutItemRequest put = PutItemRequest.builder().tableName(this.documentTableName)
+        .conditionExpression(conditionExpression).item(values).build();
+    
+    try {
+      this.dynamoDB.putItem(put).attributes();
+    } catch (ConditionalCheckFailedException e) {
+      // Conditional Check Fails on second insert attempt
+    }
   }
 
   @Override

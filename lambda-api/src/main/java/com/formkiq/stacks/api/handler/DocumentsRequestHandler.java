@@ -103,7 +103,7 @@ public class DocumentsRequestHandler
       }
     }
 
-    ZonedDateTime date = transformToDate(logger, dateString, tz);
+    ZonedDateTime date = transformToDate(logger, awsservice, dateString, tz);
 
     final String siteId = getSiteId(event);
     final PaginationResults<DocumentItem> results =
@@ -118,12 +118,6 @@ public class DocumentsRequestHandler
         .map(m -> new DocumentItemToDynamicDocumentItem().apply(m)).collect(Collectors.toList());
     items.forEach(i -> i.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID));
 
-    // DocumentItemToApiDocumentItemResponse convert =
-    // new DocumentItemToApiDocumentItemResponse(siteId != null ? siteId : DEFAULT_SITE_ID);
-
-    // List<ApiDocumentItemResponse> items =
-    // documents.stream().map(d -> convert.apply(d)).collect(Collectors.toList());
-
     Map<String, Object> map = new HashMap<>();
     map.put("documents", items);
     map.put("previous", current.getPrevious());
@@ -136,21 +130,28 @@ public class DocumentsRequestHandler
    * Transform {@link String} to {@link ZonedDateTime}.
    *
    * @param logger {@link LambdaLogger}
+   * @param awsservice {@link AwsServiceCache}
    * @param dateString {@link String}
    * @param tz {@link String}
    * @return {@link Date}
    * @throws BadException BadException
    */
-  private ZonedDateTime transformToDate(final LambdaLogger logger, final String dateString,
-      final String tz) throws BadException {
+  private ZonedDateTime transformToDate(final LambdaLogger logger, final AwsServiceCache awsservice,
+      final String dateString, final String tz) throws BadException {
 
-    ZonedDateTime date = ZonedDateTime.now();
+    ZonedDateTime date = null;
 
     if (dateString != null) {
       try {
         date = DateUtil.toDateTimeFromString(dateString, tz);
       } catch (ZoneRulesException e) {
         throw new BadException("Invalid date string: " + dateString);
+      }
+    } else {
+      
+      date = awsservice.documentService().findMostDocumentDate();
+      if (date == null) {
+        date = ZonedDateTime.now();
       }
     }
 

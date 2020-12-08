@@ -23,10 +23,13 @@ package com.formkiq.stacks.dynamodb;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
@@ -178,9 +181,8 @@ public class DynamoDbHelper {
   private PaginationResults<String> findRecords(final PaginationMapToken token,
       final int maxPageSize) {
 
-    final int maxresults = 1000;
     ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
-        .limit(Integer.valueOf(maxresults)).build();
+        .limit(Integer.valueOf(maxPageSize)).build();
 
     ScanResponse result = this.db.scan(sr);
 
@@ -282,5 +284,23 @@ public class DynamoDbHelper {
         break;
       }
     }
+  }
+  
+  /**
+   * Truncate Document Dates.
+   * 
+   */
+  public void truncateDocumentDates() {
+    final int maxresults = 1000;
+    ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
+        .limit(Integer.valueOf(maxresults)).build();
+    ScanResponse result = this.db.scan(sr);
+    
+    List<Map<String, AttributeValue>> list =
+        result.items().stream().filter(i -> i.get("PK").s().equals(DbKeys.PREFIX_DOCUMENT_DATE))
+            .collect(Collectors.toList());
+    
+    list.forEach(i -> this.db.deleteItem(DeleteItemRequest.builder().tableName(this.documentTable)
+        .key(i).build()));
   }
 }

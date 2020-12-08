@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Month;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,8 +108,9 @@ public class DocumentServiceImplTest {
     this.service = dbhelper.getService();
 
     dbhelper.truncateDocumentsTable();
+    dbhelper.truncateDocumentDates();
 
-    // assertEquals(0, dbhelper.getDocumentItemCount());
+    assertEquals(0, dbhelper.getDocumentItemCount());
   }
 
   /**
@@ -136,10 +139,10 @@ public class DocumentServiceImplTest {
   /**
    * Create Test {@link DocumentItem}.
    *
-   * @param prefix DynamoDB PK Prefix
+   * @param siteId DynamoDB PK Prefix
    * @return {@link List} {@link DocumentItem}
    */
-  private List<DocumentItem> createTestData(final String prefix) {
+  private List<DocumentItem> createTestData(final String siteId) {
 
     List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
         "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
@@ -158,7 +161,7 @@ public class DocumentServiceImplTest {
     items.forEach(item -> {
       Collection<DocumentTag> tags = Arrays.asList(
           new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
-      this.service.saveDocument(prefix, item, tags);
+      this.service.saveDocument(siteId, item, tags);
     });
 
     return items;
@@ -275,7 +278,7 @@ public class DocumentServiceImplTest {
   /** Delete Document. */
   @Test
   public void testDeleteDocument01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
@@ -285,15 +288,15 @@ public class DocumentServiceImplTest {
       DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
       tag.setUserId(UUID.randomUUID().toString());
 
-      this.service.saveDocument(prefix, item, Arrays.asList(tag));
+      this.service.saveDocument(siteId, item, Arrays.asList(tag));
 
       // when
-      this.service.deleteDocument(prefix, documentId);
+      this.service.deleteDocument(siteId, documentId);
 
       // then
-      assertNull(this.service.findDocument(prefix, documentId));
+      assertNull(this.service.findDocument(siteId, documentId));
       PaginationResults<DocumentTag> results =
-          this.service.findDocumentTags(prefix, documentId, null, MAX_RESULTS);
+          this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
     }
   }
@@ -301,13 +304,13 @@ public class DocumentServiceImplTest {
   /** Find valid document. */
   @Test
   public void testFindDocument01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      DocumentItem document = createTestData(prefix).get(0);
+      DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
 
       // when
-      DocumentItem item = this.service.findDocument(prefix, documentId);
+      DocumentItem item = this.service.findDocument(siteId, documentId);
 
       // then
       assertEquals(documentId, item.getDocumentId());
@@ -324,9 +327,9 @@ public class DocumentServiceImplTest {
   /** Find documents. */
   @Test
   public void testFindDocuments01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      Iterator<DocumentItem> itr = createTestData(prefix).iterator();
+      Iterator<DocumentItem> itr = createTestData(siteId).iterator();
       DocumentItem d0 = itr.next();
       DocumentItem d1 = itr.next();
       DocumentItem d2 = itr.next();
@@ -337,7 +340,7 @@ public class DocumentServiceImplTest {
           Arrays.asList(d0.getDocumentId(), d1.getDocumentId(), d2.getDocumentId());
 
       // when
-      List<DocumentItem> items = this.service.findDocuments(prefix, documentIds);
+      List<DocumentItem> items = this.service.findDocuments(siteId, documentIds);
 
       // then
       int i = 0;
@@ -359,14 +362,14 @@ public class DocumentServiceImplTest {
   /** Find all documents. */
   @Test
   public void testFindDocuments02() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
       List<String> documentIds =
-          createTestData(prefix).stream().map(k -> k.getDocumentId()).collect(Collectors.toList());
+          createTestData(siteId).stream().map(k -> k.getDocumentId()).collect(Collectors.toList());
 
       // when
-      List<DocumentItem> items = this.service.findDocuments(prefix, documentIds);
+      List<DocumentItem> items = this.service.findDocuments(siteId, documentIds);
 
       // then
       assertEquals(items.size(), documentIds.size());
@@ -383,9 +386,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate01() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
       createTestData("finance");
 
       List<String> expected = Arrays.asList("2020-01-30T00:00Z[UTC]", "2020-01-30T01:20Z[UTC]",
@@ -397,7 +400,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, MAX_RESULTS);
+          this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -418,9 +421,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate02() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
 
       final int max = 3;
       List<String> expected0 = Arrays.asList("2020-01-30T00:00Z[UTC]", "2020-01-30T01:20Z[UTC]",
@@ -430,7 +433,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, max);
+          this.service.findDocumentsByDate(siteId, date, null, max);
 
       // then
       assertEquals(max, results.getResults().size());
@@ -441,13 +444,16 @@ public class DocumentServiceImplTest {
           .collect(Collectors.toList());
 
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
-
-      if (prefix == null) {
+      
+      String documentId = results.getResults().get(results.getResults().size() - 1).getDocumentId();
+      if (siteId == null) {
         assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=2020-01-30, GSI1SK=2020-01-30T02:20:00+0000, SK=document, PK="));
+            .startsWith("{GSI1PK=docts#2020-01-30, GSI1SK=2020-01-30T02:20:00+0000#" + documentId
+                + ", SK=document, PK="));
       } else {
-        assertTrue(results.getToken().toString().startsWith("{GSI1PK=" + prefix
-            + "/2020-01-30, GSI1SK=2020-01-30T02:20:00+0000, SK=document, PK="));
+        assertTrue(results.getToken().toString()
+            .startsWith("{GSI1PK=" + siteId + "/docts#2020-01-30, GSI1SK=2020-01-30T02:20:00+0000#"
+                + documentId + ", SK=document, PK="));
       }
 
       // given
@@ -455,7 +461,7 @@ public class DocumentServiceImplTest {
           "2020-01-30T11:45Z[UTC]", "2020-01-30T13:22Z[UTC]");
 
       // when - get next page
-      results = this.service.findDocumentsByDate(prefix, date, results.getToken(), max);
+      results = this.service.findDocumentsByDate(siteId, date, results.getToken(), max);
 
       // then
       assertEquals(max, results.getResults().size());
@@ -476,9 +482,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate03() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
 
       List<String> expected0 = Arrays.asList("2020-01-30T19:10Z[UTC]", "2020-01-30T20:54Z[UTC]",
           "2020-01-30T23:59:59Z[UTC]", "2020-01-31T00:00Z[UTC]", "2020-01-31T03:00Z[UTC]",
@@ -489,7 +495,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, MAX_RESULTS);
+          this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
       assertEquals(expected0.size(), results.getResults().size());
@@ -499,20 +505,24 @@ public class DocumentServiceImplTest {
               .ofInstant(r.getInsertedDate().toInstant(), ZoneId.of("UTC")).toString())
           .collect(Collectors.toList());
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
+      
+      String documentId = results.getResults().get(results.getResults().size() - 1).getDocumentId();
 
-      if (prefix == null) {
+      if (siteId == null) {
         assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=2020-01-31, GSI1SK=2020-01-31T10:00:00+0000, SK=document, PK="));
+            .startsWith("{GSI1PK=docts#2020-01-31, GSI1SK=2020-01-31T10:00:00+0000#" + documentId
+                + ", SK=document, PK="));
       } else {
-        assertTrue(results.getToken().toString().startsWith("{GSI1PK=" + prefix
-            + "/2020-01-31, GSI1SK=2020-01-31T10:00:00+0000, SK=document, PK="));
+        assertTrue(results.getToken().toString()
+            .startsWith("{GSI1PK=" + siteId + "/docts#2020-01-31, GSI1SK=2020-01-31T10:00:00+0000#"
+                + documentId + ", SK=document, PK="));
       }
 
       // given
       List<String> expected1 = Arrays.asList("2020-01-31T11:00Z[UTC]");
 
       // when
-      results = this.service.findDocumentsByDate(prefix, date, results.getToken(), MAX_RESULTS);
+      results = this.service.findDocumentsByDate(siteId, date, results.getToken(), MAX_RESULTS);
 
       // then
       assertEquals(expected1.size(), results.getResults().size());
@@ -533,9 +543,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate04() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
 
       List<String> expected0 = Arrays.asList("2020-01-30T20:54Z[UTC]", "2020-01-30T23:59:59Z[UTC]",
           "2020-01-31T00:00Z[UTC]", "2020-01-31T03:00Z[UTC]", "2020-01-31T05:00Z[UTC]",
@@ -546,7 +556,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, MAX_RESULTS);
+          this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
       assertEquals(expected0.size(), results.getResults().size());
@@ -564,15 +574,15 @@ public class DocumentServiceImplTest {
   /** Test Finding Document's Tag && Remove one. */
   @Test
   public void testFindDocumentTags01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       PaginationMapToken startkey = null;
       createTestData("finance");
-      String documentId = createTestData(prefix).get(0).getDocumentId();
+      String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
       PaginationResults<DocumentTag> results =
-          this.service.findDocumentTags(prefix, documentId, startkey, MAX_RESULTS);
+          this.service.findDocumentTags(siteId, documentId, startkey, MAX_RESULTS);
 
       // then
       assertNull(results.getToken());
@@ -588,27 +598,27 @@ public class DocumentServiceImplTest {
       List<String> tags = Arrays.asList("status");
 
       // when
-      this.service.removeTags(prefix, documentId, tags);
+      this.service.removeTags(siteId, documentId, tags);
 
       // then
-      results = this.service.findDocumentTags(prefix, documentId, startkey, MAX_RESULTS);
+      results = this.service.findDocumentTags(siteId, documentId, startkey, MAX_RESULTS);
 
       assertNull(results.getToken());
       assertEquals(0, results.getResults().size());
     }
   }
-
+  
   /** Test Finding Document's particular Tag. */
   @Test
   public void testFindDocumentTags02() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String tagKey = "status";
       String tagValue = "active";
-      String documentId = createTestData(prefix).get(0).getDocumentId();
+      String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
-      String result = this.service.findDocumentTag(prefix, documentId, tagKey).getValue();
+      String result = this.service.findDocumentTag(siteId, documentId, tagKey).getValue();
 
       // then
       assertEquals(tagValue, result);
@@ -618,19 +628,59 @@ public class DocumentServiceImplTest {
   /** Test Finding Document's Tag does not exist. */
   @Test
   public void testFindDocumentTags03() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String tagKey = "status";
-      String documentId = createTestData(prefix).get(0).getDocumentId();
+      String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
-      DocumentTag result = this.service.findDocumentTag(prefix, documentId, tagKey + "!");
+      DocumentTag result = this.service.findDocumentTag(siteId, documentId, tagKey + "!");
 
       // then
       assertNull(result);
     }
   }
 
+  /**
+   * Test finding most recent documents date.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testFindMostDocumentDate01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      createTestData(siteId);
+      createTestData("finance");
+
+      // when
+      ZonedDateTime date = this.service.findMostDocumentDate();
+      
+      // then
+      final int year = 2020;
+      final int day = 31;
+      assertEquals(year, date.getYear());
+      assertEquals(Month.JANUARY, date.getMonth());
+      assertEquals(day, date.getDayOfMonth());
+      assertEquals(ZoneOffset.UTC, date.getZone());
+    }
+  }
+
+  /**
+   * Test finding most recent documents date (no data).
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testFindMostDocumentDate02() throws Exception {
+    // given
+    // when
+    ZonedDateTime date = this.service.findMostDocumentDate();
+
+    // then
+    assertNull(date);
+  }
+  
   /**
    * Find / Save Presets.
    */
@@ -840,21 +890,21 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testRemoveTags01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String docid = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       Collection<DocumentTag> tags =
           Arrays.asList(new DocumentTag(docid, "untagged", "true", new Date(), "jsmith"));
-      this.service.saveDocument(prefix, item, tags);
+      this.service.saveDocument(siteId, item, tags);
 
       // when
-      this.service.removeTags(prefix, docid, Arrays.asList(tags.iterator().next().getKey()));
+      this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
 
       // then
       assertEquals(0,
-          this.service.findDocumentTags(prefix, docid, null, MAX_RESULTS).getResults().size());
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
     }
   }
 

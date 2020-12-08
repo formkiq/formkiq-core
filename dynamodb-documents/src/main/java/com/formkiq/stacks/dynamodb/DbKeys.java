@@ -67,7 +67,11 @@ public interface DbKeys {
   String PREFIX_TAG = "tag" + TAG_DELIMINATOR;  
   /** TAGS Partition Keys Prefix. */
   String PREFIX_TAGS = "tags" + TAG_DELIMINATOR;
-
+  /** Document Date Time Series Partition Keys Prefix. */
+  String PREFIX_DOCUMENT_DATE_TS = "docts" + TAG_DELIMINATOR;
+  /** Document Date Partition Keys Prefix. */
+  String PREFIX_DOCUMENT_DATE = "docdate";
+  
   /** FORMATS Partition Key Prefix. */
   String PREFIX_FORMATS = "formats_";
 
