@@ -63,7 +63,9 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param contentType {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deleteDocumentFormat(String siteId, String documentId, String contentType);
 
   /**
@@ -96,7 +98,9 @@ public interface DocumentService {
    *
    * @param siteId Optional Grouping siteId
    * @param id {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePreset(String siteId, String id);
 
   /**
@@ -104,7 +108,9 @@ public interface DocumentService {
    *
    * @param siteId Optional Grouping siteId
    * @param type {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePresets(String siteId, String type);
 
   /**
@@ -113,7 +119,9 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param id {@link String}
    * @param tag {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePresetTag(String siteId, String id, String tag);
 
   /**
@@ -121,7 +129,9 @@ public interface DocumentService {
    * 
    * @param siteId {@link String}
    * @param id {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePresetTags(String siteId, String id);
 
   /**
@@ -222,7 +232,9 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param id {@link String}
    * @return {@link Optional} {@link PresetTag}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   Optional<Preset> findPreset(String siteId, String id);
 
   /**
@@ -235,7 +247,9 @@ public interface DocumentService {
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link Preset}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   PaginationResults<Preset> findPresets(String siteId, String id, String type, String name,
       PaginationMapToken token, int maxresults);
 
@@ -246,7 +260,9 @@ public interface DocumentService {
    * @param id {@link String}
    * @param tagKey {@link String}
    * @return {@link Optional} {@link PresetTag}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   Optional<PresetTag> findPresetTag(String siteId, String id, String tagKey);
 
   /**
@@ -257,7 +273,9 @@ public interface DocumentService {
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link PresetTag}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   PaginationResults<PresetTag> findPresetTags(String siteId, String id, PaginationMapToken token,
       int maxresults);
 
@@ -306,6 +324,8 @@ public interface DocumentService {
    * @param preset {@link Preset}
    * @param tags {@link List} {@link PresetTag}
    * @return {@link Preset}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   Preset savePreset(String siteId, String id, String type, Preset preset, List<PresetTag> tags);
 }

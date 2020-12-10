@@ -178,7 +178,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
         .keyConditionExpression(expression).expressionAttributeValues(values)
-        .exclusiveStartKey(startkey).limit(Integer.valueOf(maxresults)).build();
+        .exclusiveStartKey(startkey).scanIndexForward(Boolean.FALSE)
+        .limit(Integer.valueOf(maxresults)).build();
 
     QueryResponse result = this.dynamoDB.query(q);
 

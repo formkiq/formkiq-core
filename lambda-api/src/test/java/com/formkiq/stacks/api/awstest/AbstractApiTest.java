@@ -391,8 +391,9 @@ public abstract class AbstractApiTest {
     assertNotNull(map.get("url"));
 
     String s3url = map.get("url").toString();
-    response = this.http.send(HttpRequest.newBuilder(new URI(s3url))
-        .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
+    response =
+        this.http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", "text/plain")
+            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
 
     assertEquals(status, response.statusCode());
 

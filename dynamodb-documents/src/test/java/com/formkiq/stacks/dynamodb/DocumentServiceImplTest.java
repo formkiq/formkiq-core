@@ -58,7 +58,9 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-/** Unit Tests for {@link DocumentServiceImpl}. */
+/** 
+ * Unit Tests for {@link DocumentServiceImpl}. 
+ */
 public class DocumentServiceImplTest {
 
   /** {@link DynamoDbConnectionBuilder}. */
@@ -683,8 +685,11 @@ public class DocumentServiceImplTest {
   
   /**
    * Find / Save Presets.
+    * @deprecated method needs to be updated
    */
+  @SuppressWarnings("deprecation")
   @Test
+  @Deprecated
   public void testFindPresets01() {
 
     String type = "tagging";
@@ -759,8 +764,10 @@ public class DocumentServiceImplTest {
 
   /**
    * Test Find Preset Tag.
+    * @deprecated method needs to be updated
    */
   @Test
+  @Deprecated
   public void testFindPresetTags01() {
     // given
     String type = "tagging";
@@ -996,59 +1003,71 @@ public class DocumentServiceImplTest {
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+      doc.setContentType("text/plain");
 
       DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+      doc1.setContentType("text/html");
       doc1.put("tags", Arrays.asList(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
           "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
       DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+      doc2.setContentType("application/json");
       doc2.put("tags", Arrays.asList(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
           "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
       doc.put("documents", Arrays.asList(doc1, doc2));
 
       // when
-      DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
+      this.service.saveDocumentItemWithTag(siteId, doc);
 
       // then
-      item = this.service.findDocument(siteId, doc.getDocumentId(), true);
-      assertNotNull(item);
-      assertEquals(2, item.getDocuments().size());
-      List<String> ids = Arrays.asList(doc1.getDocumentId(), doc2.getDocumentId());
-      Collections.sort(ids);
-
-      assertEquals(ids.get(0), item.getDocuments().get(0).getDocumentId());
-      assertEquals(ids.get(1), item.getDocuments().get(1).getDocumentId());
-
-      List<DocumentTag> tags = this.service
-          .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
-      assertEquals(1, tags.size());
-      assertEquals("untagged", tags.get(0).getKey());
-      assertEquals("true", tags.get(0).getValue());
-
-      item = this.service.findDocument(siteId, doc1.getDocumentId());
-      assertNotNull(item);
-      assertEquals(doc.getDocumentId(), item.getBelongsToDocumentId());
-
-      tags = this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS)
-          .getResults();
-      assertEquals(1, tags.size());
-      assertEquals("category1", tags.get(0).getKey());
-
-      item = this.service.findDocument(siteId, doc2.getDocumentId());
-      assertNotNull(item);
-      assertEquals(doc.getDocumentId(), item.getBelongsToDocumentId());
-
-      tags = this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS)
-          .getResults();
-      assertEquals(1, tags.size());
-      assertEquals("category2", tags.get(0).getKey());
-
-      assertEquals(1,
-          this.service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
+      testSaveDocumentItemWithTag03(nowDate, siteId, doc, doc1, doc2);
     }
+  }
+
+  private void testSaveDocumentItemWithTag03(final ZonedDateTime nowDate, final String siteId,
+      final DynamicDocumentItem doc, final DynamicDocumentItem doc1,
+      final DynamicDocumentItem doc2) {
+    DocumentItem item = this.service.findDocument(siteId, doc.getDocumentId(), true);
+    assertNotNull(item);
+    assertEquals("text/plain", item.getContentType());
+    assertEquals(2, item.getDocuments().size());
+    List<String> ids = Arrays.asList(doc1.getDocumentId(), doc2.getDocumentId());
+    Collections.sort(ids);
+
+    assertEquals(ids.get(0), item.getDocuments().get(0).getDocumentId());
+    assertEquals(ids.get(1), item.getDocuments().get(1).getDocumentId());
+
+    List<DocumentTag> tags = this.service
+        .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
+    assertEquals(1, tags.size());
+    assertEquals("untagged", tags.get(0).getKey());
+    assertEquals("true", tags.get(0).getValue());
+
+    item = this.service.findDocument(siteId, doc1.getDocumentId());
+    assertNotNull(item);
+    assertEquals("text/html", item.getContentType());
+    assertEquals(doc.getDocumentId(), item.getBelongsToDocumentId());
+
+    tags = this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS)
+        .getResults();
+    assertEquals(1, tags.size());
+    assertEquals("category1", tags.get(0).getKey());
+
+    item = this.service.findDocument(siteId, doc2.getDocumentId());
+    assertNotNull(item);
+    assertEquals("application/json", item.getContentType());
+    assertEquals(doc.getDocumentId(), item.getBelongsToDocumentId());
+
+    tags = this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS)
+        .getResults();
+    assertEquals(1, tags.size());
+    assertEquals("category2", tags.get(0).getKey());
+
+    assertEquals(1,
+        this.service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
   }
 
   /**
@@ -1066,6 +1085,7 @@ public class DocumentServiceImplTest {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
       doc.setBelongsToDocumentId(belongsToDocumentId);
+      doc.setContentType("text/plain");
 
       // when
       DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
@@ -1074,6 +1094,7 @@ public class DocumentServiceImplTest {
       item = this.service.findDocument(siteId, doc.getDocumentId(), true);
       assertNotNull(item);
       assertNotNull(item.getBelongsToDocumentId());
+      assertEquals("text/plain", item.getContentType());
     }
   }
 }

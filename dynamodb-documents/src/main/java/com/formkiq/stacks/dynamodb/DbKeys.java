@@ -71,7 +71,8 @@ public interface DbKeys {
   String PREFIX_DOCUMENT_DATE_TS = "docts" + TAG_DELIMINATOR;
   /** Document Date Partition Keys Prefix. */
   String PREFIX_DOCUMENT_DATE = "docdate";
-  
+  /** Document Format Prefix. */
+  String PREFIX_DOCUMENT_FORMAT = "format" + TAG_DELIMINATOR;
   /** FORMATS Partition Key Prefix. */
   String PREFIX_FORMATS = "formats_";
 
@@ -161,8 +162,8 @@ public interface DbKeys {
    */
   default Map<String, AttributeValue> keysDocumentFormats(String siteId, String documentId,
       final String contentType) {
-    String sk = contentType != null ? "format_" + contentType : "format_";
-    return keysGeneric(siteId, PREFIX_FORMATS + documentId, sk);
+    String sk = contentType != null ? PREFIX_DOCUMENT_FORMAT + contentType : PREFIX_DOCUMENT_FORMAT;
+    return keysGeneric(siteId, PREFIX_DOCS + documentId, sk);
   }
 
   /**
