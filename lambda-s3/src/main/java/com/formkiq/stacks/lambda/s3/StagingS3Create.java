@@ -405,11 +405,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * Writes File to S3.
    *
    * @param s3Client {@link S3Client}
-   * @param prefix {@link String}
+   * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @return boolean
    */
-  private boolean writeS3File(final S3Client s3Client, final String prefix,
+  private boolean writeS3File(final S3Client s3Client, final String siteId,
       final DynamicDocumentItem doc) {
 
     boolean wrote = false;
@@ -417,6 +417,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     updateDocumentIdIfNeeded(doc);
 
     Map<String, String> contentMap = createContentMap(doc);
+    Map<String, String> contentTypeMap = createContentTypeMap(doc);
 
     for (Map.Entry<String, String> e : contentMap.entrySet()) {
 
@@ -425,10 +426,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
           isBase64 ? Base64.getDecoder().decode(e.getValue().getBytes(StandardCharsets.UTF_8))
               : e.getValue().getBytes(StandardCharsets.UTF_8);
 
-      String key = createDatabaseKey(prefix, e.getKey());
-
+      String key = createDatabaseKey(siteId, e.getKey());
+      String contentType = contentTypeMap.get(e.getKey());
+      
       PutObjectResponse response =
-          this.s3.putObject(s3Client, this.documentsBucket, key, bytes, doc.getContentType());
+          this.s3.putObject(s3Client, this.documentsBucket, key, bytes, contentType);
       doc.setChecksum(response.eTag());
       doc.setContentLength(Long.valueOf(bytes.length));
       wrote = true;
@@ -455,6 +457,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
   }
 
+  /**
+   * Generate {@link Map} of DocumentId / Content.
+   * @param doc {@link DynamicDocumentItem}
+   * @return {@link Map}
+   */
   private Map<String, String> createContentMap(final DynamicDocumentItem doc) {
 
     Map<String, String> map = new HashMap<>();
@@ -469,6 +476,29 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     for (DynamicObject document : documents) {
       if (document.hasString("content") && document.hasString("documentId")) {
         map.put(document.getString("documentId"), document.getString("content"));
+      }
+    }
+
+    return map;
+  }
+  
+  /**
+   * Generate {@link Map} of DocumentId / Content Type.
+   * @param doc {@link DynamicDocumentItem}
+   * @return {@link Map}
+   */
+  private Map<String, String> createContentTypeMap(final DynamicDocumentItem doc) {
+
+    Map<String, String> map = new HashMap<>();
+
+    if (doc.hasString("documentId") && doc.getContentType() != null) {
+      map.put(doc.getString("documentId"), doc.getContentType());
+    }
+
+    List<DynamicObject> documents = doc.getList("documents");
+    for (DynamicObject document : documents) {
+      if (document.hasString("contentType") && document.hasString("documentId")) {
+        map.put(document.getString("documentId"), document.getString("contentType"));
       }
     }
 

@@ -629,7 +629,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
         AddDocument post = new AddDocument()
             .tags(Arrays.asList(new DocumentTag().key("formName").value("Job Application Form")))
             .documents(Arrays.asList(new AddDocument().contentType("application/json")
-                .content("{\"firstName\": \"Jan\",\"lastName\": \"Doe\"")
+                .content("{\"firstName\": \"Jan\",\"lastName\": \"Doe\"}")
                 .tags(Arrays.asList(new DocumentTag().key("formData")))));
 
         AddDocumentRequest req =

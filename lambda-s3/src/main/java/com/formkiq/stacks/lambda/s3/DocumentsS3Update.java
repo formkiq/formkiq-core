@@ -337,13 +337,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         logger.log("saving document " + createDatabaseKey(siteId, item.getDocumentId()));
 
-        if (debug) {
-          logger.log(this.gson.toJson(item));
-        }
-
         List<DynamicDocumentTag> tags = getObjectTags(s3, item, s3bucket, key);
         doc.put("tags", tags);
 
+        if (debug) {
+          logger.log("original " + this.gson.toJson(item));
+          logger.log("new " + this.gson.toJson(doc));
+        }
+        
         this.service.saveDocumentItemWithTag(siteId, doc);
 
         this.service.deleteDocumentFormats(siteId, item.getDocumentId());

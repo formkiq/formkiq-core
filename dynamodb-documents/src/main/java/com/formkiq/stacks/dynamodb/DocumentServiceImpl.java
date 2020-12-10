@@ -794,8 +794,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final DocumentItem document, final boolean saveGsi1) {
 
     Date insertedDate = document.getInsertedDate();
-    String shortdate = this.yyyymmddFormat.format(insertedDate);
-    String fulldate = this.df.format(insertedDate);
+    String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
+    String fulldate = insertedDate != null ? this.df.format(insertedDate) : null;
 
     Map<String, AttributeValue> pkvalues = new HashMap<>(keys);
 
@@ -805,7 +805,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     addS(pkvalues, "documentId", document.getDocumentId());
-    addS(pkvalues, "inserteddate", fulldate);
+    
+    if (fulldate != null) {
+      addS(pkvalues, "inserteddate", fulldate);
+    }
 
     addS(pkvalues, "userId", document.getUserId());
     addS(pkvalues, "path", document.getPath());
@@ -970,10 +973,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentItem document = new DynamicDocumentItem(subdoc);
       document.setBelongsToDocumentId(item.getDocumentId());
 
+      DocumentItem dockey = new DynamicDocumentItem(new HashMap<>());
+      dockey.setDocumentId(subdoc.getString("documentId"));
+      dockey.setBelongsToDocumentId(item.getDocumentId());
+      
       // save child document
       keys =
           keysDocument(siteId, item.getDocumentId(), Optional.of(subdoc.getString("documentId")));
-      saveDocument(keys, siteId, document, null, false);
+      saveDocument(keys, siteId, dockey, null, false);
 
       List<DynamicObject> doctags = subdoc.getList("tags");
       tags = doctags.stream().map(t -> new DynamicObjectToDocumentTag().apply(t))
