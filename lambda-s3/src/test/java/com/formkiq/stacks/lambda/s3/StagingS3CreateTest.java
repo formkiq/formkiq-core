@@ -615,7 +615,7 @@ public class StagingS3CreateTest {
     
     for (int i = 0; i < documentIds.size(); i++) {
       assertEquals(documentIds.get(i), item.getDocuments().get(i).getDocumentId());
-      assertEquals(documentId, item.getDocuments().get(i).getBelongsToDocumentId());
+      assertNull(item.getDocuments().get(i).getBelongsToDocumentId());
     }
   }
 

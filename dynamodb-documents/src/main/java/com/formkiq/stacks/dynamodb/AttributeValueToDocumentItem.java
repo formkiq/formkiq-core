@@ -64,6 +64,7 @@ public class AttributeValueToDocumentItem
 
       if (!documents.isEmpty()) {
         item.setDocuments(documents);
+        documents.forEach(d -> d.setBelongsToDocumentId(null));
       }
     }
 
