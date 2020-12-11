@@ -350,7 +350,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       ApiDocumentTagItemResponse resp =
           GsonUtil.getInstance().fromJson(m.get("body"), ApiDocumentTagItemResponse.class);
       assertEquals("category", resp.getKey());
-      assertNull(resp.getValue());
+      assertEquals("", resp.getValue());
     }
   }
 
@@ -467,7 +467,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
       final String tagname = "category";
-      final String tagvalue = null;
+      final String tagvalue = "";
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-documents-documentid-tags03.json");

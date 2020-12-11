@@ -223,7 +223,7 @@ public class DocumentsS3UpdateTest {
     sqsService.deleteMessage(sqsQueueUrl, msgs.get(0).receiptHandle());
     Map<String, String> map = this.gson.fromJson(msgs.get(0).body(), Map.class);
     String message = map.get("Message");
-
+    
     map = this.gson.fromJson(message, Map.class);
     assertNotNull(map.get("documentId"));
     assertEquals(eventType, map.get("type"));

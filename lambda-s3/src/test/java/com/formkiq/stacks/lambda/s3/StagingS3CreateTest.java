@@ -587,7 +587,7 @@ public class StagingS3CreateTest {
         tags = service.findDocumentTags(siteId, documentId1, null, MAX_RESULTS).getResults();
         assertEquals(1, tags.size());
         assertEquals("formData", tags.get(0).getKey());
-        assertNull(tags.get(0).getValue());
+        assertEquals("", tags.get(0).getValue());
 
         k = createDatabaseKey(siteId, i.getDocumentId());
         assertEquals("application/json",
@@ -601,7 +601,7 @@ public class StagingS3CreateTest {
         assertEquals("attachmentField", tags.get(0).getKey());
         assertEquals("resume", tags.get(0).getValue());
         assertEquals("category", tags.get(1).getKey());
-        assertNull(tags.get(1).getValue());
+        assertEquals("", tags.get(1).getValue());
         
         k = createDatabaseKey(siteId, i.getDocumentId());
         assertFalse(s3.getObjectMetadata(c, DOCUMENTS_BUCKET, k).isObjectExists());

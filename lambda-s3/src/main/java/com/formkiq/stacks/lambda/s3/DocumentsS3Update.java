@@ -436,19 +436,18 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       final String siteId, final String documentId, final String s3Bucket, final String s3Key) {
 
     DocumentEvent event = new DocumentEvent().siteId(siteId)
-        .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key);
+        .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key)
+        .type(delete ? "delete" : (create ? "create" : "update"));
+    String eventJson = this.gson.toJson(event);
 
     if (delete) {
-      event.type("delete");
       logger.log("publishing delete document message to " + this.snsDeleteTopicArn);
-      this.snsService.publish(this.snsDeleteTopicArn, this.gson.toJson(event));
+      this.snsService.publish(this.snsDeleteTopicArn, eventJson);
     } else if (create) {
-      event.type("create");
       logger.log("publishing create document message to " + this.snsCreateTopicArn);
-      this.snsService.publish(this.snsCreateTopicArn, this.gson.toJson(event));
+      this.snsService.publish(this.snsCreateTopicArn, eventJson);
     } else {
-      event.type("update");
-      this.snsService.publish(this.snsUpdateTopicArn, this.gson.toJson(event));
+      this.snsService.publish(this.snsUpdateTopicArn, eventJson);
       logger.log("publishing update document message to " + this.snsUpdateTopicArn);
     }
   }

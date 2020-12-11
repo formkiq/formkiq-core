@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
@@ -85,7 +86,7 @@ public class DocumentTagToAttributeValueMap
       final String documentId, final DocumentTag tag) {
 
     String tagKey = tag.getKey();
-    String tagValue = tag.getValue();
+    String tagValue = !StringUtils.isBlank(tag.getValue()) ? tag.getValue() : "";
     String fulldate = this.df.format(tag.getInsertedDate());
 
     DocumentTagType type = tag.getType() != null ? tag.getType() : DocumentTagType.USERDEFINED;

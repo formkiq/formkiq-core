@@ -240,10 +240,9 @@ public class DocumentServiceImplTest {
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey, results.getResults().get(0).getKey());
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
-      assertNull(results.getResults().get(0).getValue());
+      assertEquals("", results.getResults().get(0).getValue());
 
-      tagValue = this.service.findDocumentTag(siteId, documentId, tagKey).getValue();
-      assertNull(tagValue);
+      assertEquals("", this.service.findDocumentTag(siteId, documentId, tagKey).getValue());
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
       PaginationResults<DynamicDocumentItem> list =
@@ -252,7 +251,7 @@ public class DocumentServiceImplTest {
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
       assertEquals("tag", list.getResults().get(0).getMap("matchedTag").get("key"));
-      assertNull(list.getResults().get(0).getMap("matchedTag").get("value"));
+      assertEquals("", list.getResults().get(0).getMap("matchedTag").get("value"));
     }
   }
 

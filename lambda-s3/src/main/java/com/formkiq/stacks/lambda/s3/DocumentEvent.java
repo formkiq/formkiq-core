@@ -143,8 +143,10 @@ public class DocumentEvent {
    * Set {@link DocumentEvent} type.
    * 
    * @param eventtype {@link String}
+   * @return {@link DocumentEvent}
    */
-  public void type(final String eventtype) {
+  public DocumentEvent type(final String eventtype) {
     this.type = eventtype;
+    return this;
   }
 }
