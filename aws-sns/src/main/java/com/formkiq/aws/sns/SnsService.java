@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.sns;
 
+import java.util.Map;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest;
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse;
@@ -30,6 +31,7 @@ import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
 import software.amazon.awssdk.services.sns.model.ListTopicsRequest;
 import software.amazon.awssdk.services.sns.model.ListTopicsResponse;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.PublishResponse;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
@@ -93,11 +95,13 @@ public class SnsService {
    * 
    * @param topicArn {@link String}
    * @param message {@link String}
+   * @param messageAttributes {@link Map}
    * @return {@link PublishResponse}
    */
-  public PublishResponse publish(final String topicArn, final String message) {
-    return this.snsClient
-        .publish(PublishRequest.builder().topicArn(topicArn).message(message).build());
+  public PublishResponse publish(final String topicArn, final String message,
+      final Map<String, MessageAttributeValue> messageAttributes) {
+    return this.snsClient.publish(PublishRequest.builder().topicArn(topicArn).message(message)
+        .messageAttributes(messageAttributes).build());
   }
 
   /**

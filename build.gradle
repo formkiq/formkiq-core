@@ -191,6 +191,11 @@ task undeploy {
 			standardOutput = group
 			ignoreExitValue = true
   		}
+  		// remove any temp queues.
+  		exec {
+			commandLine "bash", "-c", "aws sqs list-queues --region ${testregion} --profile ${testprofile} | jq -r '.QueueUrls[]' | grep '/createtest' | xargs -I{} aws sqs delete-queue --queue-url {} --region ${testregion} --profile ${testprofile}"
+			ignoreExitValue = true
+  		}
   		// remove all users in ApiGatewayInvokeGroup
   		exec {
 			commandLine "bash", "-c", "aws iam get-group --group-name ${group.toString().trim()} --profile ${testprofile} | jq -r '.Users[].UserName' | xargs -I{} aws iam remove-user-from-group --group-name ${group.toString().trim()} --user-name {} --region ${testregion} --profile ${testprofile}"
@@ -209,7 +214,7 @@ task undeploy {
   		}
   		// delete all s3 objects
   		exec {
-	  		commandLine "bash", "-c", "aws s3api list-buckets --query \"Buckets[].Name\" --profile ${testprofile} | jq -r '.[]' | grep '^formkiq-core-${testappenvironment}' | xargs -I {} ${project.projectDir}/delete_all_s3_object_versions.sh {} ${testprofile}"
+	  		commandLine "bash", "-c", "aws s3api list-buckets --query \"Buckets[].Name\" --profile ${testprofile} | jq -r '.[]' | grep '^formkiq-core-${testappenvironment}' | xargs -I {} python3 ${project.projectDir}/emptyVersionedBucket.py -b {} -p ${testprofile}"
 	  	}
   		// delete s3 buckets
 		exec {

@@ -95,7 +95,6 @@ public class AwsResourceTest extends AbstractAwsTest {
     while (receiveMessages.size() != 1) {
       Thread.sleep(SLEEP);
       receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
-      System.out.println("RECEIVED: " + receiveMessages.size());
     }
 
     assertEquals(1, receiveMessages.size());
@@ -136,9 +135,9 @@ public class AwsResourceTest extends AbstractAwsTest {
     String queueArn = getSqsService().getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
-    attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"QueuePolicy\","
-        + "\"Statement\":{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"sns.amazonaws.com\"},"
-        + "\"Action\": \"sqs:SendMessage\",\"Resource\": \"*\"}}}");
+    attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","
+        + "\"Statement\":{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"sqs:SendMessage\","
+        + "\"Resource\":\"*\"}}");
 
     SetQueueAttributesRequest setAttributes =
         SetQueueAttributesRequest.builder().queueUrl(queueUrl).attributes(attributes).build();
@@ -153,7 +152,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test//(timeout = TEST_TIMEOUT * 2)
+  @Test(timeout = TEST_TIMEOUT * 2)
   public void testAddDeleteFile01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();

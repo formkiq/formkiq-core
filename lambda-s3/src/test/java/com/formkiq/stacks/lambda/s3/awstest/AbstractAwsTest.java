@@ -66,10 +66,8 @@ public abstract class AbstractAwsTest {
   private static String documentsbucketname;
   /** Documents Bucket Name. */
   private static String stagingdocumentsbucketname;
-  /** SNS Document Create Event Topic Arn. */
-  private static String snsDocumentsCreateEventTopicArn;
-  /** SNS Document Delete Event Topic Arn. */
-  private static String snsDocumentsDeleteEventTopicArn;
+  /** SNS Document Event Topic Arn. */
+  private static String snsDocumentEventArn;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
 
@@ -80,7 +78,7 @@ public abstract class AbstractAwsTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-
+    
     awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
@@ -108,10 +106,8 @@ public abstract class AbstractAwsTest {
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsS3Bucket");
     stagingdocumentsbucketname =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsStageS3Bucket");
-    snsDocumentsCreateEventTopicArn = ssmService
-        .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsCreateEventTopicArn");
-    snsDocumentsDeleteEventTopicArn = ssmService
-        .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsDeleteEventTopicArn");
+    snsDocumentEventArn =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn");
 
     String documentsTable =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
@@ -179,17 +175,8 @@ public abstract class AbstractAwsTest {
    * 
    * @return {@link String}
    */
-  public static String getSnsDocumentsCreateEventTopicArn() {
-    return snsDocumentsCreateEventTopicArn;
-  }
-
-  /**
-   * Get Documents Delete Topic Arn.
-   * 
-   * @return {@link String}
-   */
-  public static String getSnsDocumentsDeleteEventTopicArn() {
-    return snsDocumentsDeleteEventTopicArn;
+  public static String getSnsDocumentEventArn() {
+    return snsDocumentEventArn;
   }
 
   /**

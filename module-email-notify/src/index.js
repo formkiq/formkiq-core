@@ -2,7 +2,9 @@ const AWS = require('aws-sdk');
 
 module.exports.handler = async(event, context) => {
 
-  console.log('Received event:', JSON.stringify(event));
+  if (process.env.DEBUG) {
+	  console.log('Received event:', JSON.stringify(event));
+  }
   
   var topicArn = process.env.EMAIL_TOPIC_ARN;
   var consoleUrl = process.env.CONSOLE_URL;
@@ -24,7 +26,7 @@ module.exports.handler = async(event, context) => {
   	params.push({
       Subject: 'A document has been created in FormKiQ',
       Message: 'A document has been created in FormKiq with ID ' + r.documentId 
-      	+ '.\n\nClick the following <a href="' + consoleUrl + 'documents/' + r.documentId + '">link</a> to view the document in the console.',
+      	+ '.\n\nClick the following link ' + consoleUrl + '/documents/' + r.documentId + ' to view the document in the console.',
       TopicArn: topicArn
   	});
   });

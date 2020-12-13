@@ -41,37 +41,13 @@ Parameters:
     
 Resources:
 
-  SnsDocumentsCreateEventTopicArnParameter:
+  SnsDocumentEventArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "SNS Topic for Document Create Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn"
+      Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentEventArn"
       Type: String
-      Value: !Ref SnsDocumentsCreateEventTopic
-      Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
-        
-  SnsDocumentsUpdateEventTopicParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "SNS Topic for Document Update Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsUpdateEventTopicArn"
-      Type: String
-      Value: !Ref SnsDocumentsUpdateEventTopic
-      Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
-
-  SnsDocumentsDeleteEventTopicParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "SNS Topic for Document Delete Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsDeleteEventTopicArn"
-      Type: String
-      Value: !Ref SnsDocumentsDeleteEventTopic
+      Value: !Ref SnsDocumentEvent
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -133,7 +109,7 @@ Resources:
         - Key: "StackName"
           Value: !Sub "${AWS::StackName}"
 
-  SnsDocumentsCreateEventTopic:
+  SnsDocumentEvent:
     Type: "AWS::SNS::Topic"
     Properties:
       Tags:
@@ -144,10 +120,10 @@ Resources:
           - Key: "StackName"
             Value: !Sub "${AWS::StackName}"            
             
-  SnsDocumentsCreateEventTopicPolicy:
+  SnsDocumentEventPolicy:
     Type: AWS::SNS::TopicPolicy
     DependsOn:
-    - SnsDocumentsCreateEventTopic
+    - SnsDocumentEvent
     Properties:
       PolicyDocument:
         Version: '2012-10-17'
@@ -156,71 +132,9 @@ Resources:
           Principal:
             Service: lambda.amazonaws.com
           Action: sns:Publish
-          Resource: !Ref SnsDocumentsCreateEventTopic
+          Resource: !Ref SnsDocumentEvent
       Topics:
-      - Ref: SnsDocumentsCreateEventTopic
-
-  SnsDocumentsUpdateEventTopic:
-    Type: "AWS::SNS::Topic"
-    Properties:
-      Tags:
-          - Key: "Application"
-            Value: !Sub "FormKiQ ${FormKiQType}"      
-          - Key: "AppEnvironment"
-            Value: !Sub "${AppEnvironment}"
-          - Key: "StackName"
-            Value: !Sub "${AWS::StackName}"            
-            
-  SnsDocumentsUpdateEventTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    DependsOn:
-    - SnsDocumentsUpdateEventTopic
-    - DocumentsS3Update
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: lambda.amazonaws.com
-          Action: sns:Publish
-          Resource: !Ref SnsDocumentsUpdateEventTopic
-          Condition:
-            ArnLike:
-              aws:SourceArn: !GetAtt [DocumentsS3Update, Arn]
-      Topics:
-      - Ref: SnsDocumentsUpdateEventTopic
-
-  SnsDocumentsDeleteEventTopic:
-    Type: "AWS::SNS::Topic"
-    Properties:
-      Tags:
-          - Key: "Application"
-            Value: !Sub "FormKiQ ${FormKiQType}"      
-          - Key: "AppEnvironment"
-            Value: !Sub "${AppEnvironment}"
-          - Key: "StackName"
-            Value: !Sub "${AWS::StackName}"
-            
-  SnsDocumentsDeleteEventTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    DependsOn:
-    - SnsDocumentsDeleteEventTopic
-    - DocumentsS3Update
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: lambda.amazonaws.com
-          Action: sns:Publish
-          Resource: !Ref SnsDocumentsDeleteEventTopic
-          Condition:
-            ArnLike:
-              aws:SourceArn: !GetAtt [DocumentsS3Update, Arn]
-      Topics:
-      - Ref: SnsDocumentsDeleteEventTopic
+      - Ref: SnsDocumentEvent
       
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
@@ -318,9 +232,7 @@ Resources:
           DOCUMENTS_TABLE: !Ref Documents
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
-          SNS_UPDATE_TOPIC_ARN: !Ref SnsDocumentsUpdateEventTopic
-          SNS_CREATE_TOPIC: !Ref SnsDocumentsCreateEventTopic
-          SNS_DELETE_TOPIC: !Ref SnsDocumentsDeleteEventTopic          
+          SNS_DOCUMENT_EVENT: !Ref SnsDocumentEvent          
       Role: !GetAtt [S3LambdaRole, Arn]
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -362,7 +274,7 @@ Resources:
     Type: AWS::SQS::QueuePolicy
     DependsOn: 
     - DocumentsUpdateQueue
-    - SnsDocumentsCreateEventTopic
+    - SnsDocumentEvent
     Properties:
       PolicyDocument:
         Version: '2012-10-17'
@@ -492,9 +404,7 @@ Resources:
             Action:
             - sns:Publish
             Resource:
-            - !Ref SnsDocumentsCreateEventTopic
-            - !Ref SnsDocumentsUpdateEventTopic
-            - !Ref SnsDocumentsDeleteEventTopic
+            - !Ref SnsDocumentEvent
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter
@@ -647,17 +557,9 @@ Outputs:
     Description: Documents S3 Update Documents Queue Arn
     Value: !GetAtt DocumentsUpdateQueue.Arn
         
-  SnsDocumentsCreateEventTopicArn:
-    Description: SNS Documents Create Event Handler
-    Value: !Ref SnsDocumentsCreateEventTopic
-
-  SnsDocumentsUpdateEventTopicArn:
-    Description: SNS Documents Update Event Handler
-    Value: !Ref SnsDocumentsUpdateEventTopic
-
-  SnsDocumentsDeleteEventTopicArn:
-    Description: SNS Documents Delete Event Handler
-    Value: !Ref SnsDocumentsDeleteEventTopic
+  SnsDocumentEventArn:
+    Description: SNS Topic for Document Events
+    Value: !Ref SnsDocumentEvent
     
   DocumentsS3Update:
     Description: Documents MetaData Object Lambda

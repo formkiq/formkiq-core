@@ -2412,7 +2412,7 @@ Resources:
       Description: "The URL for the API endpoint that uses Cognito authorization"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
-      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -2507,7 +2507,7 @@ Resources:
       Description: "The URL for the API endpoint that uses IAM authorization"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
-      Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -2917,10 +2917,10 @@ Outputs:
     Value: !Ref DocumentsApiRequests
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
-    Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
-    Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
   CognitoUserPoolId:
     Description: "Cognito User Pool"
     Value: !Ref CognitoUserPool

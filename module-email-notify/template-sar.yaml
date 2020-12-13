@@ -34,7 +34,7 @@ Parameters:
     
 Resources:
             
-  DocumentsCreateNotification:
+  DocumentsEmailNotification:
     Type: "AWS::SNS::Topic"
     Properties:
       Tags:
@@ -50,15 +50,15 @@ Resources:
     Properties: 
       Endpoint: !Ref Email
       Protocol: "email"
-      TopicArn: !Ref DocumentsCreateNotification
+      TopicArn: !Ref DocumentsEmailNotification
       
-  SnsDocumentsCreateNotificationTopicArnParameter:
+  SnsDocumentsEmailNotificationArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "SNS Topic for Document Create Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentsCreateNotificationTopicArn"
+      Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentsEmailNotificationArn"
       Type: String
-      Value: !Ref DocumentsCreateNotification
+      Value: !Ref DocumentsEmailNotification
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -71,7 +71,10 @@ Resources:
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt EmailNotifyQueue.Arn
-      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn:1}}"
+      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn:1}}"
+      FilterPolicy: 
+        type:
+          - create
 
   EmailNotifyQueue:
     Type: AWS::SQS::Queue
@@ -98,7 +101,9 @@ Resources:
       CodeUri: ./build/distributions/module-email-notify.zip
       Environment:
         Variables:
-          TOPIC_ARN: !Ref DocumentsCreateNotification
+          DEBUG: false
+          EMAIL_TOPIC_ARN: !Ref DocumentsEmailNotification
+          CONSOLE_URL: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url:1}}" 
       Role: !GetAtt [EmailNotifyRole, Arn]
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
@@ -118,15 +123,15 @@ Resources:
         Version: '2012-10-17'
         Id: QueuePolicy
         Statement:
-        - Sid: sendMessagesToQueue
+        - Sid: snsSeendMessage
           Effect: Allow
           Principal:
-            AWS: '*'
+            Service: sns.amazonaws.com
           Action: sqs:SendMessage
           Resource: !GetAtt [EmailNotifyQueue, Arn]
           Condition:
             ArnLike:
-              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn:1}}"
+              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn:1}}"
       Queues:
       - Ref: EmailNotifyQueue
       
@@ -169,3 +174,8 @@ Resources:
               - sqs:GetQueueAttributes
               Resource:
               - !GetAtt EmailNotifyQueue.Arn
+            - Effect: Allow
+              Action:
+              - sns:Publish
+              Resource:
+              - !Ref DocumentsEmailNotification              

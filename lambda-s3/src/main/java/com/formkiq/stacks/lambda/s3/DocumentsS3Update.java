@@ -59,6 +59,7 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
@@ -105,12 +106,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return SdkHttpUtils.urlDecode(value);
   }
 
-  /** SNS Document Update Topic Arn. */
-  private String snsUpdateTopicArn;
-  /** SNS Document Create Topic Arn. */
-  private String snsCreateTopicArn;
-  /** SNS Document Delete Topic Arn. */
-  private String snsDeleteTopicArn;
+  /** SNS Document Event Arn. */
+  private String snsDocumentEvent;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
   /** {@link DocumentService}. */
@@ -150,9 +147,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       final SnsConnectionBuilder snsBuilder) {
 
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
-    this.snsDeleteTopicArn = map.get("SNS_DELETE_TOPIC");
-    this.snsCreateTopicArn = map.get("SNS_CREATE_TOPIC");
-    this.snsUpdateTopicArn = map.get("SNS_UPDATE_TOPIC_ARN");
+    this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
 
     this.service = documentService;
     this.s3service = new S3Service(s3builder);
@@ -439,16 +434,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key)
         .type(delete ? "delete" : (create ? "create" : "update"));
     String eventJson = this.gson.toJson(event);
-
-    if (delete) {
-      logger.log("publishing delete document message to " + this.snsDeleteTopicArn);
-      this.snsService.publish(this.snsDeleteTopicArn, eventJson);
-    } else if (create) {
-      logger.log("publishing create document message to " + this.snsCreateTopicArn);
-      this.snsService.publish(this.snsCreateTopicArn, eventJson);
-    } else {
-      this.snsService.publish(this.snsUpdateTopicArn, eventJson);
-      logger.log("publishing update document message to " + this.snsUpdateTopicArn);
+    
+    boolean debug = "true".equals(System.getenv("DEBUG"));
+    if (debug) {
+      logger.log("event: " + eventJson);
     }
+
+    logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
+    this.snsService.publish(this.snsDocumentEvent, eventJson, Map.of("type",
+        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build()));
   }
 }
