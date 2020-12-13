@@ -13,7 +13,7 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v1.3.0
+    Default: v1.3.1
   DistributionBucket:
     Type: String
     Description: FormKiQ Distribution BucketName

@@ -84,15 +84,18 @@ public class AwsResourceTest extends AbstractAwsTest {
    * Assert Received Message.
    * 
    * @param queueUrl {@link String}
+   * @param type {@link String}
    * @throws InterruptedException InterruptedException
    */
   @SuppressWarnings("unchecked")
-  private static void assertSnsMessage(final String queueUrl) throws InterruptedException {
+  private static void assertSnsMessage(final String queueUrl, final String type)
+      throws InterruptedException {
 
     List<Message> receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
     while (receiveMessages.size() != 1) {
       Thread.sleep(SLEEP);
       receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
+      System.out.println("RECEIVED: " + receiveMessages.size());
     }
 
     assertEquals(1, receiveMessages.size());
@@ -133,9 +136,9 @@ public class AwsResourceTest extends AbstractAwsTest {
     String queueArn = getSqsService().getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
-    attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","
-        + "\"Statement\":{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"sqs:SendMessage\","
-        + "\"Resource\":\"*\"}}");
+    attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"QueuePolicy\","
+        + "\"Statement\":{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"sns.amazonaws.com\"},"
+        + "\"Action\": \"sqs:SendMessage\",\"Resource\": \"*\"}}}");
 
     SetQueueAttributesRequest setAttributes =
         SetQueueAttributesRequest.builder().queueUrl(queueUrl).attributes(attributes).build();
@@ -150,21 +153,15 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT * 2)
+  @Test//(timeout = TEST_TIMEOUT * 2)
   public void testAddDeleteFile01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();
 
-    String createQueue = "createtest-" + UUID.randomUUID();
-    String createQueueUrl = createSqsQueue(createQueue).queueUrl();
-    String subscriptionCreateArn =
-        subscribeToSns(getSnsDocumentsCreateEventTopicArn(), createQueueUrl);
-
-    String deleteQueue = "deletetest-" + UUID.randomUUID();
-    String deleteQueueUrl = createSqsQueue(deleteQueue).queueUrl();
-    String subscriptionDeleteArn =
-        subscribeToSns(getSnsDocumentsDeleteEventTopicArn(), deleteQueueUrl);
     String contentType = "text/plain";
+    String createQueue = "createtest-" + UUID.randomUUID();
+    String documentEventQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String snsDocumentEventArn = subscribeToSns(getSnsDocumentEventArn(), documentEventQueueUrl);
 
     try {
 
@@ -176,7 +173,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         // then
         verifyFileExistsInDocumentsS3(s3, key, contentType);
         verifyFileNotExistInStagingS3(s3, key);
-        assertSnsMessage(createQueueUrl);
+        assertSnsMessage(documentEventQueueUrl, "create");
 
         // when
         key = writeToStaging(s3, key, contentType);
@@ -184,21 +181,18 @@ public class AwsResourceTest extends AbstractAwsTest {
         // then
         verifyFileExistsInDocumentsS3(s3, key, contentType);
         verifyFileNotExistInStagingS3(s3, key);
-        assertSnsMessage(createQueueUrl);
+        assertSnsMessage(documentEventQueueUrl, "create");
 
         // when
         getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
         // then
-        assertSnsMessage(deleteQueueUrl);
+        assertSnsMessage(documentEventQueueUrl, "delete");
       }
 
     } finally {
-      getSnsService().unsubscribe(subscriptionCreateArn);
-      getSqsService().deleteQueue(createQueueUrl);
-
-      getSnsService().unsubscribe(subscriptionDeleteArn);
-      getSqsService().deleteQueue(deleteQueueUrl);
+      getSnsService().unsubscribe(snsDocumentEventArn);
+      getSqsService().deleteQueue(documentEventQueueUrl);
     }
   }
 
@@ -254,14 +248,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     String key = UUID.randomUUID().toString();
 
     String createQueue = "createtest-" + UUID.randomUUID();
-    String createQueueUrl = createSqsQueue(createQueue).queueUrl();
-    String subscriptionCreateArn =
-        subscribeToSns(getSnsDocumentsCreateEventTopicArn(), createQueueUrl);
+    String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String subscriptionDocumentArn =
+        subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
-    String deleteQueue = "deletetest-" + UUID.randomUUID();
-    String deleteQueueUrl = createSqsQueue(deleteQueue).queueUrl();
-    String subscriptionDeleteArn =
-        subscribeToSns(getSnsDocumentsDeleteEventTopicArn(), deleteQueueUrl);
     String contentType = "text/plain";
     String content = "test content";
 
@@ -284,21 +274,18 @@ public class AwsResourceTest extends AbstractAwsTest {
         // then
         assertEquals(statusCode, put.statusCode());
         verifyFileExistsInDocumentsS3(s3, key, contentType);
-        assertSnsMessage(createQueueUrl);
+        assertSnsMessage(documentQueueUrl, "create");
 
         // when
         getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
         // then
-        assertSnsMessage(deleteQueueUrl);
+        assertSnsMessage(documentQueueUrl, "delete");
       }
 
     } finally {
-      getSnsService().unsubscribe(subscriptionCreateArn);
-      getSqsService().deleteQueue(createQueueUrl);
-
-      getSnsService().unsubscribe(subscriptionDeleteArn);
-      getSqsService().deleteQueue(deleteQueueUrl);
+      getSnsService().unsubscribe(subscriptionDocumentArn);
+      getSqsService().deleteQueue(documentQueueUrl);
     }
   }
 
@@ -346,11 +333,8 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertTrue(
         getStagingdocumentsbucketname().startsWith("formkiq-core-" + appenvironment + "-staging-"));
     assertTrue(getSsmService()
-        .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsCreateEventTopicArn")
-        .contains("SnsDocumentsCreateEventTopic"));
-    assertTrue(getSsmService()
-        .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsUpdateEventTopicArn")
-        .contains("SnsDocumentsUpdateEventTopic"));
+        .getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn")
+        .contains("SnsDocumentEvent"));
     assertTrue(getSsmService()
         .getParameterValue("/formkiq/" + appenvironment + "/lambda/StagingCreateObject")
         .contains("StagingS3Create"));

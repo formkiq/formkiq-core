@@ -85,12 +85,8 @@ public class DocumentsS3UpdateTest {
   private static final String DYNAMODB_ENDPOINT = "http://localhost:8000";
   /** SQS Error Queue. */
   private static final String ERROR_SQS_QUEUE = "sqserror";
-  /** SQS Sns Queue. */
-  private static final String SNS_SQS_DELETE_QUEUE = "sqssnsDelete";
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate";
-  /** SQS Sns Update Queue. */
-  private static final String SNS_SQS_UPDATE_QUEUE = "sqssnsUpdate";
 
   /** 500 Milliseconds. */
   private static final long SLEEP = 500L;
@@ -111,18 +107,10 @@ public class DocumentsS3UpdateTest {
   private static S3Service s3service;
   /** {@link SnsService}. */
   private static SnsService snsService;
-  /** SNS Update Topic Arn. */
-  private static String snsUpdateTopic;
-  /** SNS Update Topic Arn. */
-  private static String snsDeleteTopic;
   /** SQS Create Url. */
-  private static String snsCreateTopic;
-  /** SQS Sns Delete QueueUrl. */
-  private static String snsSqsDeleteQueueUrl;
+  private static String snsDocumentEvent;
   /** SQS Sns Create QueueUrl. */
-  private static String snsSqsCreateQueueUrl;
-  /** SQS Sns Create QueueUrl. */
-  private static String snsSqsUpdateQueueUrl;
+  private static String sqsDocumentEventUrl;
 
   /**
    * Before Class.
@@ -157,16 +145,8 @@ public class DocumentsS3UpdateTest {
       sqsService.createQueue(ERROR_SQS_QUEUE);
     }
 
-    if (!sqsService.exists(SNS_SQS_DELETE_QUEUE)) {
-      snsSqsDeleteQueueUrl = sqsService.createQueue(SNS_SQS_DELETE_QUEUE).queueUrl();
-    }
-
     if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
-      snsSqsCreateQueueUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
-    }
-
-    if (!sqsService.exists(SNS_SQS_UPDATE_QUEUE)) {
-      snsSqsUpdateQueueUrl = sqsService.createQueue(SNS_SQS_UPDATE_QUEUE).queueUrl();
+      sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
     s3service = new S3Service(s3Builder);
@@ -176,14 +156,8 @@ public class DocumentsS3UpdateTest {
 
     snsService = new SnsService(snsBuilder);
 
-    snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
-    snsService.subscribe(snsDeleteTopic, "sqs", snsSqsDeleteQueueUrl);
-
-    snsCreateTopic = snsService.createTopic("createDocument").topicArn();
-    snsService.subscribe(snsCreateTopic, "sqs", snsSqsCreateQueueUrl);
-
-    snsUpdateTopic = snsService.createTopic("testtopic").topicArn();
-    snsService.subscribe(snsUpdateTopic, "sqs", snsSqsUpdateQueueUrl);
+    snsDocumentEvent = snsService.createTopic("createDocument").topicArn();
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
     if (!dbHelper.isDocumentsTableExists()) {
@@ -252,15 +226,13 @@ public class DocumentsS3UpdateTest {
 
     Map<String, String> map = new HashMap<>();
     map.put("SQS_ERROR_URL", LOCALSTACK_ENDPOINT + "/queue/" + ERROR_SQS_QUEUE);
-    map.put("SNS_UPDATE_TOPIC_ARN", snsUpdateTopic);
-    map.put("SNS_DELETE_TOPIC", snsDeleteTopic);
-    map.put("SNS_CREATE_TOPIC", snsCreateTopic);
+    map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
     this.handler = new DocumentsS3Update(map, service, s3Builder, sqsBuilder, snsBuilder);
 
-    for (String queue : Arrays.asList(snsSqsCreateQueueUrl, snsSqsDeleteQueueUrl)) {
+    for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
       while (response.messages().size() > 0) {
         for (Message msg : response.messages()) {
@@ -318,7 +290,7 @@ public class DocumentsS3UpdateTest {
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item);
-      assertPublishSnsMessage(siteId, snsSqsCreateQueueUrl, "create");
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create");
     }
   }
 
@@ -376,7 +348,7 @@ public class DocumentsS3UpdateTest {
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
 
       verifyDocumentSaved(siteId, item);
-      assertPublishSnsMessage(siteId, snsSqsUpdateQueueUrl, "update");
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "update");
     }
   }
 
@@ -411,7 +383,7 @@ public class DocumentsS3UpdateTest {
 
       // then
       assertNull(item);
-      assertPublishSnsMessage(siteId, snsSqsDeleteQueueUrl, "delete");
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "delete");
     }
   }
 
@@ -463,7 +435,7 @@ public class DocumentsS3UpdateTest {
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item);
-      assertPublishSnsMessage(siteId, snsSqsCreateQueueUrl, "create");
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create");
     }
   }
 
