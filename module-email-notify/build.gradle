@@ -71,7 +71,17 @@ task assembleTemplate {
 	}
 }
 
+task buildDockerImage {
+  dependsOn buildZip
+  inputs.files("Dockerfile", "src/index.js")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "docker build -t formkiq-core-module-email-notify ."
+	}
+  }
+}
+
 test.dependsOn npmtest
 buildZip.dependsOn check
 uploadToS3.dependsOn buildZip
-build.dependsOn uploadToS3, assembleTemplate
+build.dependsOn uploadToS3, assembleTemplate, buildDockerImage

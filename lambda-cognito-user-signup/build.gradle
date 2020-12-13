@@ -15,7 +15,7 @@ task npmtest {
   }
 }
 
-task createZipCognitoUserSignup(type: Zip) {   
+task buildZip(type: Zip) {   
    from "src"
    include "*"
    include "*/*"
@@ -33,7 +33,17 @@ task uploadToS3 {
   }
 }
 
+task buildDockerImage {
+  dependsOn buildZip
+  inputs.files("Dockerfile", "src/index.js")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "docker build -t formkiq-core-module-email-notify ."
+	}
+  }
+}
+
 test.dependsOn npmtest
-createZipCognitoUserSignup.dependsOn check
-uploadToS3.dependsOn createZipCognitoUserSignup
-build.dependsOn uploadToS3
+buildZip.dependsOn check
+uploadToS3.dependsOn buildZip
+build.dependsOn uploadToS3, buildDockerImage

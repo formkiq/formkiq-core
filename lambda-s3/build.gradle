@@ -100,8 +100,19 @@ task assembleTemplate {
 	}
 }
 
+task buildDockerImage {
+  dependsOn buildZip
+  inputs.files("Dockerfile", "src/main")
+  outputs.dir("${buildDir}/distributions")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "docker build -t formkiq-core-lambda-s3 ."
+	}
+  }
+}
+
 buildZip.dependsOn graalvmNativeImage
 graalvmNativeImage.dependsOn check
 uploadToS3.dependsOn buildZip
 
-build.dependsOn uploadToS3, assembleTemplate
+build.dependsOn uploadToS3, assembleTemplate, buildDockerImage

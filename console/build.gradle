@@ -24,6 +24,15 @@ task buildZip(type: Zip) {
     }           
 }
 
+task buildUnzip(type: Copy) {
+  dependsOn buildZip
+  def zipFile = file("${buildDir}/distributions/console-installer.zip")
+  def outputDir = file("${buildDir}/tmp/console")
+
+  from zipTree(zipFile)
+  into outputDir
+}
+
 test {
   failFast = true
   exclude 'com/formkiq/stacks/console/awstest/**'
@@ -69,6 +78,16 @@ task assembleTemplate {
 	}
 }
 
+task buildDockerImage {
+  dependsOn buildUnzip
+  inputs.files("Dockerfile", "src/main")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "docker build -t formkiq-core-console ."
+	}
+  }
+}
+
 buildZip.dependsOn check
 uploadToS3.dependsOn buildZip
-build.dependsOn uploadToS3, assembleTemplate
+build.dependsOn uploadToS3, assembleTemplate, buildDockerImage

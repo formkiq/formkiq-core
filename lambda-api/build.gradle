@@ -85,7 +85,8 @@ task buildJava11Zip(type: Zip) {
     }           
 }
 
-task uploadToS3 {
+task uploadZipToS3 {
+  dependsOn buildZip
   inputs.files("${buildDir}/distributions/lambda-api-graalvm.zip")
   outputs.dir("${buildDir}/distributions")
   doLast {
@@ -115,10 +116,20 @@ task assembleTemplate {
 	}
 }
 
+task buildDockerImage {
+  dependsOn buildZip
+  inputs.files("Dockerfile", "src/main")
+  outputs.dir("${buildDir}/distributions")
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "docker build -t formkiq-core-lambda-api ."
+	}
+  }
+}
+
 buildJava11Zip.dependsOn jar
 
 buildZip.dependsOn graalvmNativeImage
-uploadToS3.dependsOn buildZip
 
 graalvmNativeImage.dependsOn check
-build.dependsOn uploadToS3, assembleTemplate
+build.dependsOn uploadZipToS3, assembleTemplate, buildDockerImage
