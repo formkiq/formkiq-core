@@ -209,7 +209,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     if (siteId != null) {
       assertEquals(siteId, map.get("siteId"));
     } else {
-      assertNull(map.get("siteId"));
+      assertEquals("default", map.get("siteId"));
     }
   }
 

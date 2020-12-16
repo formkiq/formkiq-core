@@ -54,6 +54,7 @@ import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.stacks.dynamodb.SiteIdKeyGenerator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
@@ -430,7 +431,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private void sendSnsMessage(final LambdaLogger logger, final boolean create, final boolean delete,
       final String siteId, final String documentId, final String s3Bucket, final String s3Key) {
 
-    DocumentEvent event = new DocumentEvent().siteId(siteId)
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    DocumentEvent event = new DocumentEvent().siteId(site)
         .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key)
         .type(delete ? "delete" : (create ? "create" : "update"));
     String eventJson = this.gson.toJson(event);
@@ -441,8 +443,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
 
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
-    Map<String, MessageAttributeValue> tags = Map.of("type",
-        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build());
+    MessageAttributeValue typeAttr =
+        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
+    MessageAttributeValue siteIdAttr =
+        MessageAttributeValue.builder().dataType("String").stringValue(event.siteId()).build();    
+    Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
     this.snsService.publish(this.snsDocumentEvent, eventJson, tags);
   }
 }
