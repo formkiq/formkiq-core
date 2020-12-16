@@ -113,16 +113,10 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
 
         Map<String, Object> map = toMap(response);
         List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("tags");
-        assertEquals(2, list.size());
+        assertEquals(1, list.size());
         map = list.get(0);
         assertEquals("test", map.get("key"));
         assertEquals("somevalue", map.get("value"));
-        verifyUserId(map);
-        assertNotNull(map.get("insertedDate"));
-
-        map = list.get(1);
-        assertEquals("untagged", map.get("key"));
-        assertEquals("true", map.get("value"));
         verifyUserId(map);
         assertNotNull(map.get("insertedDate"));
 
