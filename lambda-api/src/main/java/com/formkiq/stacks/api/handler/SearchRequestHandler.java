@@ -72,7 +72,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     PaginationResults<DynamicDocumentItem> results =
         awsservice.documentSearchService().search(siteId, q.getQuery().getTag(), ptoken, limit);
 
-    ApiPagination current = createPagination(cacheService, event, pagination, results, limit);
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
 
     List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
 

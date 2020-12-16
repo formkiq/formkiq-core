@@ -67,7 +67,7 @@ public interface DocumentService {
    */
   @Deprecated
   void deleteDocumentFormat(String siteId, String documentId, String contentType);
-
+  
   /**
    * Delete All Document Formats.
    *
@@ -135,6 +135,14 @@ public interface DocumentService {
   void deletePresetTags(String siteId, String id);
 
   /**
+   * Returns whether document exists.
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean exists(String siteId, String documentId);
+
+  /**
    * Find {@link DocumentItem}.
    *
    * @param siteId Optional Grouping siteId
@@ -150,9 +158,12 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param includeChildDocuments boolean
-   * @return {@link DocumentItem}
+   * @param token {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResult} {@link DocumentItem}
    */
-  DocumentItem findDocument(String siteId, String documentId, boolean includeChildDocuments);
+  PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
+      boolean includeChildDocuments, PaginationMapToken token, int limit);
 
   /**
    * Get Document Format.
@@ -180,10 +191,10 @@ public interface DocumentService {
    * Find {@link DocumentItem}.
    *
    * @param siteId Optional Grouping siteId
-   * @param documentIds {@link String}
+   * @param documentIds {@link List} {@link String}
    * @return {@link List} {@link DocumentItem}
    */
-  List<DocumentItem> findDocuments(String siteId, Collection<String> documentIds);
+  List<DocumentItem> findDocuments(String siteId, List<String> documentIds);
 
   /**
    * Find {@link DocumentItem} by Inserted Date. Order in descending order.

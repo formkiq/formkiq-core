@@ -46,9 +46,8 @@ public class AttributeValueToDocumentItem
   public DocumentItem apply(final List<Map<String, AttributeValue>> items) {
 
     DocumentItem item = null;
-
-    Optional<Map<String, AttributeValue>> r =
-        items.stream().filter(i -> "document".equals(i.get("SK").s())).findFirst();
+    Optional<Map<String, AttributeValue>> r = items.stream()
+        .filter(i -> i.containsKey("SK") && "document".equals(i.get("SK").s())).findFirst();
 
     if (r.isPresent()) {
 
@@ -71,7 +70,12 @@ public class AttributeValueToDocumentItem
     return item;
   }
 
-  private DocumentItem apply(final Map<String, AttributeValue> map) {
+  /**
+   * Convert {@link Map} {@link String} {@link AttributeValue} to {@link DocumentItem}.
+   * @param map {@link Map} {@link String} {@link AttributeValue}
+   * @return {@link DocumentItem}
+   */
+  public DocumentItem apply(final Map<String, AttributeValue> map) {
 
     String id = map.get("documentId").s();
     String userId = map.containsKey("userId") ? map.get("userId").s() : null;

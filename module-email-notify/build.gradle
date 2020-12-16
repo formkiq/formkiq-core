@@ -57,7 +57,7 @@ task uploadToS3 {
 
 task assembleTemplate {
     dependsOn buildZip
-	inputs.files("template.yaml", "template-sar.yaml")
+	inputs.files("template-sar.yaml")
 	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml")
 	doLast {
 		// build SAM distribution

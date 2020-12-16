@@ -100,8 +100,10 @@ public abstract class AbstractRequestHandler {
   @BeforeClass
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
 
+    System.setProperty("testregion", "us-east-1");
+    System.setProperty("testappenvironment", "test");
     appenvironment = System.getProperty("testappenvironment");
-    awsRegion = Region.of("us-east-1"/* System.getProperty("testregion") */);
+    awsRegion = Region.of(System.getProperty("testregion"));
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));

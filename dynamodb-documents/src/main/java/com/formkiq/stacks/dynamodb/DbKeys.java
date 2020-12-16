@@ -74,7 +74,7 @@ public interface DbKeys {
   /** Document Format Prefix. */
   String PREFIX_DOCUMENT_FORMAT = "format" + TAG_DELIMINATOR;
   /** FORMATS Partition Key Prefix. */
-  String PREFIX_FORMATS = "formats_";
+  String PREFIX_FORMATS = "formats" + TAG_DELIMINATOR;
 
   /** Preset Partition Key Prefix. */
   String PREFIX_PRESETS = "pre";
@@ -148,7 +148,8 @@ public interface DbKeys {
   default Map<String, AttributeValue> keysDocument(String siteId, String documentId,
       Optional<String> childdocument) {
     return childdocument.isPresent()
-        ? keysGeneric(siteId, PREFIX_DOCS + documentId, "document_" + childdocument.get())
+        ? keysGeneric(siteId, PREFIX_DOCS + documentId,
+            "document" + TAG_DELIMINATOR + childdocument.get())
         : keysGeneric(siteId, PREFIX_DOCS + documentId, "document");
   }
 
@@ -244,7 +245,7 @@ public interface DbKeys {
     if (id == null) {
       throw new IllegalArgumentException("'id' required");
     }
-    return keysGeneric(siteId, PREFIX_PRESETS + "_" + id, sk);
+    return keysGeneric(siteId, PREFIX_PRESETS + TAG_DELIMINATOR + id, sk);
   }
 
   /**
@@ -286,7 +287,7 @@ public interface DbKeys {
     if (id == null) {
       throw new IllegalArgumentException("'id' required");
     }
-    return keysGeneric(siteId, PREFIX_PRESETTAGS + "_" + id, tag);
+    return keysGeneric(siteId, PREFIX_PRESETTAGS + TAG_DELIMINATOR + id, tag);
   }
 
   /**

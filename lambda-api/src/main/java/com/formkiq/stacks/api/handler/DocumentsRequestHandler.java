@@ -109,8 +109,8 @@ public class DocumentsRequestHandler
     final PaginationResults<DocumentItem> results =
         awsservice.documentService().findDocumentsByDate(siteId, date, ptoken, limit);
 
-    final ApiPagination current =
-        createPagination(awsservice.documentCacheService(), event, pagination, results, limit);
+    ApiPagination current = createPagination(awsservice.documentCacheService(), event,
+        pagination, results.getToken(), limit);
 
     List<DocumentItem> documents = subList(results.getResults(), limit);
 

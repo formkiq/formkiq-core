@@ -125,7 +125,7 @@ Resources:
           title:
             Fn::Sub: "FormKiQ HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.4.7"
+          version: "1.4.8"
         paths:
           /version:
             get:
@@ -217,10 +217,6 @@ Resources:
                   in: "query"
                   schema:
                     type: "string"
-                - name: "limit"
-                  in: "query"
-                  schema:
-                    type: "string"
                 - name: "tz"
                   in: "query"
                   schema:
@@ -234,6 +230,7 @@ Resources:
                   schema:
                     type: "string"
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
               responses:
                 "200":
                   description: "200 response"
@@ -307,6 +304,15 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/documentIdParam'
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
+                - name: "next"
+                  in: "query"
+                  schema:
+                    type: "string"
+                - name: "previous"
+                  in: "query"
+                  schema:
+                    type: "string"
               responses:
                 "200":
                   description: 200 response
@@ -475,6 +481,7 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/documentIdParam'
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
                 - name: next
                   in: query
                   description: Next Page Token.
@@ -483,11 +490,6 @@ Resources:
                 - name: previous
                   in: query
                   description: Previous Page Token.
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  description: The number of results to return.
                   schema:
                     type: string
               responses:
@@ -757,6 +759,7 @@ Resources:
                 - Search
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
                 - name: next
                   in: query
                   description: Next Page Token.
@@ -765,11 +768,6 @@ Resources:
                 - name: previous
                   in: query
                   description: Previous Page Token.
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  description: The number of results to return.
                   schema:
                     type: string
               requestBody:
@@ -900,6 +898,13 @@ Resources:
               required: false
               schema:
                 type: string
+            limitParam:
+              name: limit
+              in: query
+              description: Limit Results
+              required: false
+              schema:
+                type: string
             documentIdParam:
               name: documentId
               in: path
@@ -1020,6 +1025,10 @@ Resources:
                 - "path"
               type: "object"
               properties:
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
                 siteId:
                   type: "string"
                 path:
@@ -1047,7 +1056,25 @@ Resources:
                   items:
                     type: "object"
                     properties:
+                      path:
+                        type: "string"
+                      insertedDate:
+                        type: "string"
+                        format: "date-time"
+                      checksum:
+                        type: "string"
                       documentId:
+                        type: "string"
+                        format: "uuid"
+                      contentType:
+                        type: "string"
+                      userId:
+                        type: "string"
+                      contentLength:
+                        type: "integer"
+                      versionId:
+                        type: "string"
+                      belongsToDocumentId:
                         type: "string"
             DocumentSearchBody:
               required:
@@ -1270,7 +1297,7 @@ Resources:
           title:
             Fn::Sub: "FormKiQ IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.4.7"
+          version: "1.4.8"
         paths:
           /version:
             get:
@@ -1362,10 +1389,6 @@ Resources:
                   in: "query"
                   schema:
                     type: "string"
-                - name: "limit"
-                  in: "query"
-                  schema:
-                    type: "string"
                 - name: "tz"
                   in: "query"
                   schema:
@@ -1379,6 +1402,7 @@ Resources:
                   schema:
                     type: "string"
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
               responses:
                 "200":
                   description: "200 response"
@@ -1452,6 +1476,15 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/documentIdParam'
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
+                - name: "next"
+                  in: "query"
+                  schema:
+                    type: "string"
+                - name: "previous"
+                  in: "query"
+                  schema:
+                    type: "string"
               responses:
                 "200":
                   description: 200 response
@@ -1620,6 +1653,7 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/documentIdParam'
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
                 - name: next
                   in: query
                   description: Next Page Token.
@@ -1628,11 +1662,6 @@ Resources:
                 - name: previous
                   in: query
                   description: Previous Page Token.
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  description: The number of results to return.
                   schema:
                     type: string
               responses:
@@ -1902,6 +1931,7 @@ Resources:
                 - Search
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/limitParam'
                 - name: next
                   in: query
                   description: Next Page Token.
@@ -1910,11 +1940,6 @@ Resources:
                 - name: previous
                   in: query
                   description: Previous Page Token.
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  description: The number of results to return.
                   schema:
                     type: string
               requestBody:
@@ -2045,6 +2070,13 @@ Resources:
               required: false
               schema:
                 type: string
+            limitParam:
+              name: limit
+              in: query
+              description: Limit Results
+              required: false
+              schema:
+                type: string
             documentIdParam:
               name: documentId
               in: path
@@ -2165,6 +2197,10 @@ Resources:
                 - "path"
               type: "object"
               properties:
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
                 siteId:
                   type: "string"
                 path:
@@ -2192,7 +2228,25 @@ Resources:
                   items:
                     type: "object"
                     properties:
+                      path:
+                        type: "string"
+                      insertedDate:
+                        type: "string"
+                        format: "date-time"
+                      checksum:
+                        type: "string"
                       documentId:
+                        type: "string"
+                        format: "uuid"
+                      contentType:
+                        type: "string"
+                      userId:
+                        type: "string"
+                      contentLength:
+                        type: "integer"
+                      versionId:
+                        type: "string"
+                      belongsToDocumentId:
                         type: "string"
             DocumentSearchBody:
               required:

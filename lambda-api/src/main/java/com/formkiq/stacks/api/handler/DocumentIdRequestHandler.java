@@ -43,6 +43,7 @@ import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
 import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.ApiPagination;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.ApiResponse;
 import com.formkiq.lambda.apigateway.ApiResponseStatus;
@@ -53,6 +54,7 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.PaginationResult;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -234,16 +236,28 @@ public class DocumentIdRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
+    
     String siteId = getSiteId(event);
+    int limit = getLimit(logger, event);
+    ApiPagination token = getPagination(awsservice.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
-    DocumentItem result = awsservice.documentService().findDocument(siteId, documentId, true);
+    ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
+    
+    PaginationResult<DocumentItem> presult = awsservice.documentService().findDocument(siteId,
+        documentId, true, token != null ? token.getStartkey() : null, limit);
+    DocumentItem result = presult.getResult();
 
     if (result == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
+    ApiPagination current = createPagination(awsservice.documentCacheService(), event, pagination,
+        presult.getToken(), limit);
+    
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
     item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    item.put("previous", current.getPrevious());
+    item.put("next", current.hasNext() ? current.getNext() : null);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
   }

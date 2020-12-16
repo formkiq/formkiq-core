@@ -483,9 +483,6 @@ public class StagingS3CreateTest {
         Arrays.asList(Map.of("documentId", item.getDocumentId(), "key", "category", "value",
             "person", "insertedDate", new Date(), "userId", "joe", "type",
             DocumentTagType.USERDEFINED.name())));
-    //
-    // item.setTags(Arrays.asList(new DocumentTag(item.getDocumentId(), "category", "person",
-    // new Date(), "joe", DocumentTagType.USERDEFINED)));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       processFkB64File(siteId, item);
@@ -568,7 +565,8 @@ public class StagingS3CreateTest {
         assertEquals(1,
             service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
 
-        DocumentItem i = service.findDocument(siteId, documentId0, true);
+        DocumentItem i =
+            service.findDocument(siteId, documentId0, true, null, MAX_RESULTS).getResult();
         assertNull(i.getContentType());
         verifyBelongsToDocument(i, documentId0, Arrays.asList(documentId1, documentId2));
 
@@ -581,7 +579,7 @@ public class StagingS3CreateTest {
         String k = createDatabaseKey(siteId, i.getDocumentId());
         assertFalse(s3.getObjectMetadata(c, DOCUMENTS_BUCKET, k).isObjectExists());
 
-        i = service.findDocument(siteId, documentId1, true);
+        i = service.findDocument(siteId, documentId1, true, null, MAX_RESULTS).getResult();
         assertEquals("application/json", i.getContentType());
         assertEquals(documentId0, i.getBelongsToDocumentId());
         tags = service.findDocumentTags(siteId, documentId1, null, MAX_RESULTS).getResults();
@@ -615,7 +613,8 @@ public class StagingS3CreateTest {
     
     for (int i = 0; i < documentIds.size(); i++) {
       assertEquals(documentIds.get(i), item.getDocuments().get(i).getDocumentId());
-      assertNull(item.getDocuments().get(i).getBelongsToDocumentId());
+      assertNotNull(item.getDocuments().get(i).getInsertedDate());
+      assertNotNull(item.getDocuments().get(i).getBelongsToDocumentId());
     }
   }
 

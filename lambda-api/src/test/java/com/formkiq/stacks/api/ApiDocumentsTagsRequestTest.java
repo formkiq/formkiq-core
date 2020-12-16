@@ -39,6 +39,7 @@ import com.formkiq.lambda.apigateway.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
+import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.PaginationResults;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
@@ -530,6 +531,56 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
           tags.getResults().get(0).getUserId());
+
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+  
+  /**
+   * POST /documents/{documentId}/tags testing "untagged" gets removed.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentTags06() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
+      
+      String username = UUID.randomUUID() + "@formkiq.com";
+      
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+          documentId, "userId", username, "insertedDate", new Date()));
+      getDocumentService().saveDocumentItemWithTag(siteId, doc);
+      
+      PaginationResults<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals("untagged", tags.getResults().get(0).getKey());
+      
+      final String tagname = "category";
+      final String tagvalue = "";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-documents-documentid-tags03.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+
+      String expected = "{" + getHeaders() + ",\"body\":\""
+          + "{\\\"message\\\":\\\"Created Tag 'category'.\\\"}\",\"statusCode\":201}";
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+
+      tags = getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals(tagname, tags.getResults().get(0).getKey());
+      assertEquals(tagvalue, tags.getResults().get(0).getValue());
 
       assertTrue(getLogger().containsString("response: " + expected));
     }

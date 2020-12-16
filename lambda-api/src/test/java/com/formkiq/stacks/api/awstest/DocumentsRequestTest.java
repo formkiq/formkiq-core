@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 import org.junit.AfterClass;
 import org.junit.Test;
+import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.HttpService;
@@ -52,11 +53,13 @@ import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.stacks.client.models.AddDocument;
 import com.formkiq.stacks.client.models.AddDocumentResponse;
 import com.formkiq.stacks.client.models.DocumentTag;
+import com.formkiq.stacks.client.models.DocumentTags;
 import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.models.UpdateDocument;
 import com.formkiq.stacks.client.requests.AddDocumentRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
+import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.GetDocumentsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
@@ -664,19 +667,23 @@ public class DocumentsRequestTest extends AbstractApiTest {
         String documentId = response.documentId();
 
         // when - fetch document
-        DocumentWithChildren document = getDocument(client, documentId, true);
+        final DocumentWithChildren documentc = getDocument(client, documentId, true);
+        DocumentTags tags = getDocumentTags(client, documentId);
+        assertEquals(1, tags.tags().size());
+        assertEquals("formName", tags.tags().get(0).key());
+        assertEquals("Job Application Form", tags.tags().get(0).value());
 
         // then
-        assertNotNull(document);
-        assertEquals(1, document.documents().size());
+        assertNotNull(documentc);
+        assertEquals(1, documentc.documents().size());
         assertEquals(response.documents().get(0).documentId(),
-            document.documents().get(0).documentId());
+            documentc.documents().get(0).documentId());
 
         // given
         documentId = response.documents().get(0).documentId();
 
         // when
-        document = getDocument(client, documentId, false);
+        DocumentWithChildren document = getDocument(client, documentId, false);
 
         // then
         assertNotNull(document);
@@ -684,6 +691,19 @@ public class DocumentsRequestTest extends AbstractApiTest {
         assertEquals(response.documentId(), document.belongsToDocumentId());
       }
     }
+  }
+
+  /**
+   * Get Document Tags.
+   * @param client {@link FormKiqClient}
+   * @param documentId {@link String}
+   * @return {@link DocumentTags}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
+  private DocumentTags getDocumentTags(final FormKiqClient client, final String documentId)
+      throws IOException, InterruptedException {
+    return client.getDocumentTags(new GetDocumentTagsRequest().documentId(documentId));
   }
 
   /**

@@ -76,7 +76,8 @@ public class DocumentTagsRequestHandler
 
     results.getResults().forEach(r -> r.setDocumentId(null));
 
-    ApiPagination current = createPagination(cacheService, event, pagination, results, limit);
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
     List<DocumentTag> tags = subList(results.getResults(), limit);
 
     List<ApiDocumentTagItemResponse> list = tags.stream().map(t -> {
@@ -91,7 +92,6 @@ public class DocumentTagsRequestHandler
 
       return r;
     }).collect(Collectors.toList());
-
 
     ApiDocumentTagsItemResponse resp = new ApiDocumentTagsItemResponse();
     resp.setTags(list);
@@ -118,6 +118,8 @@ public class DocumentTagsRequestHandler
 
     String documentId = event.getPathParameters().get("documentId");
     String siteId = getSiteId(event);
+    
+    awsservice.documentService().deleteDocumentTag(siteId, documentId, "untagged");
     awsservice.documentService().addTags(siteId, documentId, Arrays.asList(tag));
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");

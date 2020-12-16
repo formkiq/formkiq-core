@@ -20,7 +20,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.stacks.common.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import java.text.SimpleDateFormat;
@@ -159,20 +158,28 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void deleteDocument(final String siteId, final String documentId) {
 
-    deleteDocumentFormats(siteId, documentId);
+    Map<String, AttributeValue> startkey = null;
 
-    deleteDocumentTags(siteId, documentId);
+    do {
+      Map<String, AttributeValue> values =
+          queryKeys(keysGeneric(siteId, PREFIX_DOCS + documentId, null));
+      
+      QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
+          .keyConditionExpression(PK + " = :pk")
+          .expressionAttributeValues(values).limit(Integer.valueOf(MAX_RESULTS)).build();
 
-    DocumentItem item = findDocument(siteId, documentId, true);
-
-    if (item != null) {
-      for (DocumentItem child : notNull(item.getDocuments())) {
-        deleteItem(keysDocument(siteId, documentId, Optional.of(child.getDocumentId())));
-        deleteItem(keysDocument(siteId, child.getDocumentId()));
+      QueryResponse response = this.dynamoDB.query(q);
+      List<Map<String, AttributeValue>> results = response.items();
+      
+      for (Map<String, AttributeValue> map : results) {
+        deleteItem(Map.of("PK", map.get("PK"), "SK", map.get("SK")));
       }
-    }
+      
+      startkey = response.lastEvaluatedKey();
 
-    deleteItem(keysDocument(siteId, documentId));
+    } while (startkey != null && !startkey.isEmpty());
+    
+    deleteItem(keysDocument(siteId, documentId, Optional.empty()));
   }
 
   @Override
@@ -280,6 +287,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   }
 
+  @Override
+  public boolean exists(final String siteId, final String documentId) {
+    GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
+        .tableName(this.documentTableName).projectionExpression("PK").build();
+    return this.dynamoDB.getItem(r).hasItem();
+  }
+
   /**
    * Get Record.
    * 
@@ -375,40 +389,50 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public DocumentItem findDocument(final String siteId, final String documentId) {
-    return findDocument(siteId, documentId, false);
+    return findDocument(siteId, documentId, false, null, 0).getResult();
   }
 
   @Override
-  public DocumentItem findDocument(final String siteId, final String documentId,
-      final boolean includeChildDocuments) {
+  public PaginationResult<DocumentItem> findDocument(final String siteId, final String documentId,
+      final boolean includeChildDocuments, final PaginationMapToken token, final int limit) {
 
-    Map<String, AttributeValue> keyMap = keysDocument(siteId, documentId);
+    DocumentItem item = null;
+    PaginationMapToken pagination = null;
+    
+    GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
+        .tableName(this.documentTableName).build();
+    
+    Map<String, AttributeValue> result = this.dynamoDB.getItem(r).item();
 
-    List<Map<String, AttributeValue>> results = null;
+    if (result != null && !result.isEmpty()) {
+      
+      item = new AttributeValueToDocumentItem().apply(result);
+      
+      if (includeChildDocuments) {
 
-    if (includeChildDocuments) {
+        Map<String, AttributeValue> values =
+            queryKeys(keysDocument(siteId, documentId, Optional.of("")));
+        
+        Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+        
+        QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
+            .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ",:sk)")
+            .expressionAttributeValues(values).exclusiveStartKey(startkey)
+            .limit(Integer.valueOf(limit)).build();
 
-      Map<String, AttributeValue> values = queryKeys(keyMap);
-      QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-          .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ",:sk)")
-          .expressionAttributeValues(values).build();
-
-      results = this.dynamoDB.query(q).items();
-
-    } else {
-
-      GetItemRequest r =
-          GetItemRequest.builder().key(keyMap).tableName(this.documentTableName).build();
-
-      Map<String, AttributeValue> result = this.dynamoDB.getItem(r).item();
-
-      results = new ArrayList<>();
-      if (result != null && !result.isEmpty()) {
-        results.add(result);
+        QueryResponse response = this.dynamoDB.query(q);
+        List<Map<String, AttributeValue>> results = response.items();
+        List<String> ids =
+            results.stream().map(s -> s.get("documentId").s()).collect(Collectors.toList());
+        
+        List<DocumentItem> childDocs = findDocuments(siteId, ids);
+        item.setDocuments(childDocs);
+        
+        pagination = new QueryResponseToPagination().apply(response);
       }
     }
-
-    return !results.isEmpty() ? new AttributeValueToDocumentItem().apply(results) : null;
+    
+    return new PaginationResult<>(item, pagination);
   }
 
   @Override
@@ -430,7 +454,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public List<DocumentItem> findDocuments(final String siteId, final Collection<String> ids) {
+  public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
     final int chunkSize = 10;
     final AtomicInteger counter = new AtomicInteger();
@@ -460,6 +484,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
     List<DocumentItem> items = result.stream().map(a -> toDocumentItem.apply(Arrays.asList(a)))
         .collect(Collectors.toList());
+    items = items.stream().filter(i -> i != null).collect(Collectors.toList());
 
     return !items.isEmpty() ? items : null;
   }
@@ -781,7 +806,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     return this.dynamoDB.putItem(put).attributes();
   }
-
+  
   /**
    * Save {@link DocumentItemDynamoDb}.
    * 
@@ -829,7 +854,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     save(pkvalues);
   }
-  
+
   /**
    * Save Document.
    * 
@@ -901,14 +926,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Generate Tags for {@link DocumentItemWithTags}.
    * 
+   * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @param date {@link Date}
    * @param username {@link String}
    * @return {@link List} {@link DocumentTag}
    */
-  private List<DocumentTag> saveDocumentItemGenerateTags(final DynamicDocumentItem doc,
-      final Date date, final String username) {
+  private List<DocumentTag> saveDocumentItemGenerateTags(final String siteId,
+      final DynamicDocumentItem doc, final Date date, final String username) {
 
+    boolean docexists = exists(siteId, doc.getDocumentId());
     List<DocumentTag> tags = new ArrayList<>();
     List<DynamicObject> doctags = doc.getList("tags");
 
@@ -921,7 +948,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       return new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
     }).collect(Collectors.toList()));
 
-    if (tags.isEmpty()) {
+    if (!docexists && tags.isEmpty()) {
       tags.add(
           new DocumentTag(null, "untagged", "true", date, username, DocumentTagType.SYSTEMDEFINED));
     }
@@ -940,7 +967,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     Date date = new Date();
     String username = doc.getUserId();
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
-
+    
     if (isDocumentUserTagged(doc.getList("tags"))) {
       deleteDocumentTag(siteId, documentId, "untagged");
     }
@@ -958,10 +985,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setInsertedDate(doc.getInsertedDate() != null ? doc.getInsertedDate() : date);
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
 
-    List<DocumentTag> tags = saveDocumentItemGenerateTags(doc, date, username);
+    List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
 
+    boolean saveGsi1 = doc.getBelongsToDocumentId() == null;
     Map<String, AttributeValue> keys = keysDocument(siteId, item.getDocumentId());
-    saveDocument(keys, siteId, item, tags, true);
+    saveDocument(keys, siteId, item, tags, saveGsi1);
 
     List<DynamicObject> documents = doc.getList("documents");
     for (DynamicObject subdoc : documents) {

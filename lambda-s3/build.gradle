@@ -21,6 +21,7 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version:'4.+'
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
 
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.15.25'
 	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.15.25'
 }
 
@@ -86,7 +87,7 @@ task uploadToS3 {
 
 task assembleTemplate {
     dependsOn buildZip
-	inputs.files("template.yaml", "template-sar.yaml")
+	inputs.files("template-sar.yaml")
 	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml")
 	doLast {
 		// build SAM distribution

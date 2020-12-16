@@ -48,6 +48,7 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.stacks.dynamodb.DbKeys;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -67,13 +68,16 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** {@link DocumentsS3Update} Unit Tests. */
-public class DocumentsS3UpdateTest {
+public class DocumentsS3UpdateTest implements DbKeys {
 
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30000L;
@@ -92,7 +96,7 @@ public class DocumentsS3UpdateTest {
   private static final long SLEEP = 500L;
 
   /** {@link DocumentService}. */
-  private static DocumentService service;
+  private static DocumentServiceImpl service;
   /** {@link SnsConnectionBuilder}. */
   private static SnsConnectionBuilder snsBuilder;
   /** {@link SqsConnectionBuilder}. */
@@ -266,26 +270,19 @@ public class DocumentsS3UpdateTest {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map, key);
+      final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map, key, false);
 
       // then
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      assertEquals(2, tags.getResults().size());
-      assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(0).getKey());
-      assertEquals("GOOD", tags.getResults().get(0).getValue());
+      assertEquals(1, tags.getResults().size());
+      assertEquals("untagged", tags.getResults().get(0).getKey());
+      assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertNull(tags.getResults().get(0).getUserId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
-
-      assertEquals("sample", tags.getResults().get(1).getKey());
-      assertEquals("12345", tags.getResults().get(1).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(1).getDocumentId());
-      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(1).getType());
-      assertNull(tags.getResults().get(1).getUserId());
-      assertNotNull(tags.getResults().get(1).getInsertedDate());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
@@ -327,7 +324,7 @@ public class DocumentsS3UpdateTest {
       service.saveDocumentFormat(siteId, format);
 
       // when
-      final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map, key);
+      final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map, key, true);
 
       // then
       PaginationResults<DocumentTag> tags =
@@ -379,7 +376,7 @@ public class DocumentsS3UpdateTest {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map, key);
+      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map, key, false);
 
       // then
       assertNull(item);
@@ -417,13 +414,20 @@ public class DocumentsS3UpdateTest {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      final DocumentItem item = handleRequest(siteId, child.getDocumentId(), map, key);
+      final DocumentItem item = handleRequest(siteId, child.getDocumentId(), map, key, false);
 
       // then
       assertNotNull(item.getBelongsToDocumentId());
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
+      try (DynamoDbClient client = DocumentsS3UpdateTest.service.getDynamoDB()) {
+        Map<String, AttributeValue> m =
+            client.getItem(GetItemRequest.builder().tableName("Documents")
+                .key(keysDocument(siteId, child.getDocumentId())).build()).item();
+        assertNull(m.get(GSI1_PK)); 
+      }
+      
       assertEquals(1, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
       assertEquals("true", tags.getResults().get(0).getValue());
@@ -436,9 +440,69 @@ public class DocumentsS3UpdateTest {
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item);
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create");
+      
+      tags = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(0, tags.getResults().size());
     }
   }
+  
+  /**
+   * Test Processing Document with sub documents.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testHandleRequest05() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      this.logger.getRecordedMessages().clear();
+      Date now = new Date();
+      DynamicDocumentItem doc = createSubDocuments(now);
+      service.saveDocumentItemWithTag(siteId, doc);
 
+      String key = createDatabaseKey(siteId, doc.getDocumentId());
+      final Map<String, Object> map =
+          loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
+      
+      // when
+      DocumentItem item = handleRequest(siteId, doc.getDocumentId(), map, key, false);
+      DocumentItem itemchild =
+          handleRequest(siteId, doc.getDocuments().get(0).getDocumentId(), map, key, false);
+
+      // then
+      try (DynamoDbClient client = DocumentsS3UpdateTest.service.getDynamoDB()) {
+        Map<String, AttributeValue> m = client.getItem(GetItemRequest.builder()
+            .tableName("Documents").key(keysDocument(siteId, doc.getDocumentId())).build()).item();
+        assertNotNull(m.get(GSI1_PK)); 
+        
+        Map<String, AttributeValue> mchild =
+            client.getItem(GetItemRequest.builder().tableName("Documents")
+                .key(keysDocument(siteId, itemchild.getDocumentId())).build()).item();
+        assertNull(mchild.get(GSI1_PK));
+      }
+      
+      assertEquals(doc.getDocumentId(), item.getDocumentId());
+      PaginationResults<DocumentTag> tags =
+          service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals("category", tags.getResults().get(0).getKey());
+      assertEquals("none", tags.getResults().get(0).getValue());
+      assertEquals(doc.getDocumentId(), tags.getResults().get(0).getDocumentId());
+      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(0).getType());
+      assertNotNull(tags.getResults().get(0).getUserId());
+      assertNotNull(tags.getResults().get(0).getInsertedDate());
+      
+      tags = service.findDocumentTags(siteId, itemchild.getDocumentId(), null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals("category1", tags.getResults().get(0).getKey());
+      assertEquals("", tags.getResults().get(0).getValue());
+      assertEquals(itemchild.getDocumentId(), tags.getResults().get(0).getDocumentId());
+      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(0).getType());
+      assertNotNull(tags.getResults().get(0).getUserId());
+      assertNotNull(tags.getResults().get(0).getInsertedDate());
+    }
+  }
+  
   /**
    * Handle Request.
    * 
@@ -446,12 +510,13 @@ public class DocumentsS3UpdateTest {
    * @param documentId {@link String}
    * @param map {@link Map}
    * @param key {@link String}
+   * @param addTags boolean
    * 
    * @return {@link DocumentItem}
    * @throws IOException IOException
    */
   private DocumentItem handleRequest(final String siteId, final String documentId,
-      final Map<String, Object> map, final String key) throws IOException {
+      final Map<String, Object> map, final String key, final boolean addTags) throws IOException {
 
     Map<String, String> metadata = new HashMap<>();
     metadata.put("Content-Type", "pdf");
@@ -459,9 +524,12 @@ public class DocumentsS3UpdateTest {
     try (S3Client s3 = s3service.buildClient()) {
       s3service.putObject(s3, "example-bucket", key, "testdata".getBytes(StandardCharsets.UTF_8),
           "pdf", metadata);
-      s3service.setObjectTags(s3, "example-bucket", key,
-          Arrays.asList(Tag.builder().key("sample").value("12345").build(),
-              Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
+      
+      if (addTags) {
+        s3service.setObjectTags(s3, "example-bucket", key,
+            Arrays.asList(Tag.builder().key("sample").value("12345").build(),
+                Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
+      }
     }
 
     // when
@@ -492,5 +560,37 @@ public class DocumentsS3UpdateTest {
     }
 
     return item;
+  }
+  
+  /**
+   * Create {@link DynamicDocumentItem} with Child Documents.
+   * @param now {@link Date}
+   * @return {@link DynamicDocumentItem}
+   */
+  private DynamicDocumentItem createSubDocuments(final Date now) {
+    String username = UUID.randomUUID() + "@formkiq.com";
+    
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc.setContentType("text/plain");
+    doc.put("tags",
+        Arrays.asList(Map.of("documentId", doc.getDocumentId(), "key", "category", "value", "none",
+            "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc1.setContentType("text/html");
+    doc1.put("tags", Arrays.asList(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
+        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc2.setContentType("application/json");
+    doc2.put("tags", Arrays.asList(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
+        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    doc.put("documents", Arrays.asList(doc1, doc2));
+
+    return doc;
   }
 }

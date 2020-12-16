@@ -144,7 +144,7 @@ task testaws {
 
 task assembleTemplate {
     dependsOn subprojects.build
-	inputs.files("template-snippet.yaml", "template-sar.yaml", "console/template.yaml", "console/template-sar.yaml", "lambda-api/template-snippet.yaml", "lambda-api/api.yaml", "lambda-api/api-iam.yaml", "lambda-s3/template.yaml", "lambda-s3/template-sar.yaml", "module-email-notify/template.yaml", "module-email.notify/template-sar.yaml")
+	inputs.files("template-snippet.yaml", "console/template.yaml", "console/template-sar.yaml", "lambda-api/template-snippet.yaml", "lambda-api/api.yaml", "lambda-api/api-iam.yaml", "lambda-s3/template.yaml", "lambda-s3/template-sar.yaml", "module-email-notify/template.yaml", "module-email.notify/template-sar.yaml")
   	outputs.files("template.yaml", "build/formkiq-core.yaml")
 	doLast {
 		// build SAM distribution

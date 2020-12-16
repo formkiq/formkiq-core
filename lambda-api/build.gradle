@@ -97,7 +97,7 @@ task uploadZipToS3 {
 }
 
 task assembleTemplate {
-    dependsOn buildZip
+    dependsOn buildZip, ':lambda-cognito-user-signup:build'
 	inputs.files("template-snippet.yaml", "api.yaml", "api-iam.yaml")
 	outputs.files("template.yaml", "template-sar.yaml")
 	doLast {

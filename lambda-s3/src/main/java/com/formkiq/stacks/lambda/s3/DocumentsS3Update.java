@@ -441,7 +441,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
 
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
-    this.snsService.publish(this.snsDocumentEvent, eventJson, Map.of("type",
-        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build()));
+    Map<String, MessageAttributeValue> tags = Map.of("type",
+        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build());
+    this.snsService.publish(this.snsDocumentEvent, eventJson, tags);
   }
 }
