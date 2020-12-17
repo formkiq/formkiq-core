@@ -87,13 +87,22 @@ task uploadToS3 {
 
 task assembleTemplate {
     dependsOn buildZip
-	inputs.files("template-sar.yaml")
-	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml")
+	inputs.files("template-sar.yaml", "template-docker-snippet.yaml")
+	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml", "build/formkiq-core-docker.yaml")
 	doLast {
 		// build SAM distribution
 		exec {
 			commandLine "bash", "-c", "yq d template-sar.yaml 'Metadata' > template.yaml"
-		}	
+		}
+		exec {
+			commandLine "bash", "-c", "yq m template.yaml template-docker-snippet.yaml > build/formkiq-core-docker.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d -i build/formkiq-core-docker.yaml 'Resources.StagingS3Create.Properties.CodeUri'"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d -i build/formkiq-core-docker.yaml 'Resources.DocumentsS3Update.Properties.CodeUri'"
+		}		
 		// build SAR distribution
 		exec {
 			commandLine "bash", "-c", "sam package --template-file template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
@@ -107,13 +116,29 @@ task buildDockerImage {
   outputs.dir("${buildDir}/distributions")
   doLast {
 	exec {
-	  commandLine "bash", "-c", "docker build -t formkiq-core-lambda-s3 ."
+	  commandLine "bash", "-c", "docker build -t formkiq-core-storage ."
 	}
   }
+}
+
+task dockerpush {
+  dependsOn buildDockerImage
+  outputs.upToDateWhen {false}
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws ecr-public get-login-password --region ${testregion} --profile ${testprofile} | docker login --username AWS --password-stdin public.ecr.aws/n3i8r5o8"
+	}
+	exec {
+	  commandLine "bash", "-c", "docker tag formkiq-core-storage:latest public.ecr.aws/n3i8r5o8/formkiq-core-storage:${project.version}"
+	}
+	exec {
+	  commandLine "bash", "-c", "docker push public.ecr.aws/n3i8r5o8/formkiq-core-storage:${project.version}"
+	}
+  }  
 }
 
 buildZip.dependsOn graalvmNativeImage
 graalvmNativeImage.dependsOn check
 uploadToS3.dependsOn buildZip
 
-build.dependsOn uploadToS3, assembleTemplate, buildDockerImage
+build.dependsOn uploadToS3, assembleTemplate

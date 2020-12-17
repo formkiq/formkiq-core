@@ -98,9 +98,12 @@ task uploadZipToS3 {
 
 task assembleTemplate {
     dependsOn buildZip, ':lambda-cognito-user-signup:build'
-	inputs.files("template-snippet.yaml", "api.yaml", "api-iam.yaml")
-	outputs.files("template.yaml", "template-sar.yaml")
+	inputs.files("template-snippet.yaml", "template-docker-snippet.yaml", "api.yaml", "api-iam.yaml")
+	outputs.dir("${buildDir}/distributions")
 	doLast {
+		exec {
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/console && mkdir -p ${buildDir}/distributions/formkiq-core/docker/console && mkdir -p ${buildDir}/distributions/formkiq-core/sar/console"
+		}
 		// build SAR distribution
 		exec {
 			commandLine "bash", "-c", "yq m --overwrite ./template-snippet.yaml ./api.yaml ./api-iam.yaml > ./template-sar.yaml"
@@ -108,7 +111,16 @@ task assembleTemplate {
 		// build SAM distribution
 		exec {
 			commandLine "bash", "-c", "yq d ./template-sar.yaml 'Metadata' > ./template.yaml"
-		}		
+		}
+		exec {
+			commandLine "bash", "-c", "yq m template.yaml template-docker-snippet.yaml > build/formkiq-core-docker.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d -i build/formkiq-core-docker.yaml 'Resources.DocumentsApiRequests.Properties.CodeUri'"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d -i build/formkiq-core-docker.yaml 'Resources.CognitoCustomMessage.Properties.CodeUri'"
+		}
 		// build SAR distribution
 		exec {
 			commandLine "bash", "-c", "sam package --template-file template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
@@ -122,9 +134,25 @@ task buildDockerImage {
   outputs.dir("${buildDir}/distributions")
   doLast {
 	exec {
-	  commandLine "bash", "-c", "docker build -t formkiq-core-lambda-api ."
+	  commandLine "bash", "-c", "docker build -t formkiq-core-api ."
 	}
   }
+}
+
+task dockerpush {
+  dependsOn buildDockerImage
+  outputs.upToDateWhen {false}
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws ecr-public get-login-password --region ${testregion} --profile ${testprofile} | docker login --username AWS --password-stdin public.ecr.aws/n3i8r5o8"
+	}
+	exec {
+	  commandLine "bash", "-c", "docker tag formkiq-core-api:latest public.ecr.aws/n3i8r5o8/formkiq-core-api:${project.version}"
+	}
+	exec {
+	  commandLine "bash", "-c", "docker push public.ecr.aws/n3i8r5o8/formkiq-core-api:${project.version}"
+	}
+  }  
 }
 
 buildJava11Zip.dependsOn jar
@@ -132,4 +160,4 @@ buildJava11Zip.dependsOn jar
 buildZip.dependsOn graalvmNativeImage
 
 graalvmNativeImage.dependsOn check
-build.dependsOn uploadZipToS3, assembleTemplate, buildDockerImage
+build.dependsOn uploadZipToS3, assembleTemplate

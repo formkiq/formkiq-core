@@ -142,10 +142,16 @@ task testaws {
   }
 }
 
+task dockerpush {
+  dependsOn subprojects.collect { subproject ->
+    subproject.tasks.matching { it.name == "dockerpush" }
+  }
+}
+
 task assembleTemplate {
     dependsOn subprojects.build
-	inputs.files("template-snippet.yaml", "console/template.yaml", "console/template-sar.yaml", "lambda-api/template-snippet.yaml", "lambda-api/api.yaml", "lambda-api/api-iam.yaml", "lambda-s3/template.yaml", "lambda-s3/template-sar.yaml", "module-email-notify/template.yaml", "module-email.notify/template-sar.yaml")
-  	outputs.files("template.yaml", "build/formkiq-core.yaml")
+	inputs.files("template.yaml", "template-docker-snippet.yaml", "template-sar-snippet.yaml", "console/template.yaml", "console/template-sar.yaml", "lambda-api/template-snippet.yaml", "lambda-api/api.yaml", "lambda-api/api-iam.yaml", "lambda-s3/template.yaml", "lambda-s3/template-sar.yaml", "module-email-notify/template.yaml", "module-email.notify/template-sar.yaml")
+  	outputs.files("build/formkiq-core.yaml")
 	doLast {
 		// build SAM distribution
 		exec {
@@ -153,11 +159,11 @@ task assembleTemplate {
 		}
 		// build SAR template
 		exec {
-			commandLine "bash", "-c", "yq m --overwrite ./build/formkiq-core.yaml ./template-sar-snippet.yaml > ./template.sar.yaml"
+			commandLine "bash", "-c", "yq m --overwrite ./build/formkiq-core.yaml ./template-sar-snippet.yaml > ./template-sar.yaml"
 		}
 		// build SAR distribution
 		exec {
-			commandLine "bash", "-c", "sam package --template-file ./template.sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+			commandLine "bash", "-c", "sam package --template-file ./template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
 		}		
 		exec {
 			commandLine "bash", "-c", "box tokenReplace path=build/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
@@ -168,7 +174,28 @@ task assembleTemplate {
 	}
 }
 
-check.dependsOn ':assembleTemplate'
+task buildDistribution(type: Copy) {
+	dependsOn subprojects.build
+	outputs.upToDateWhen {false}
+ 	//from('console/build/distributions/formkiq-core') {
+        //include '**/*'
+    //}
+    //into '${buildDir}/distributions/formkiq-core'
+    from 'console/build/distributions/formkiq-core'
+    into "${buildDir}/distributions/formkiq-core"
+}
+
+//task buildZip(type: Zip) {
+//	dependsOn ':assembleTemplate'
+//   from "src"
+//   include "*"
+   //include "*/**/template-docker.yaml"
+//   include 'lambda-api/build/formkiq-core-docker.yaml'
+   //archiveName "formkiq-core-${project.version}.zip"
+   //destinationDir(file("${buildDir}/distributions"))
+//}
+
+check.dependsOn ':buildDistribution'
 
 task deploy {
     dependsOn assembleTemplate

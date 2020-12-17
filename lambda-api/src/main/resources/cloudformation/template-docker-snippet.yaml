@@ -1,0 +1,7 @@
+Resources:
+  DocumentsApiRequests:
+    Properties:
+      ImageUri: public.ecr.aws/n3i8r5o8/formkiq-core-api:1.1.0
+  CognitoCustomMessage:
+    Properties:
+      ImageUri: public.ecr.aws/n3i8r5o8/formkiq-core-user-signup:1.1.0

@@ -1,0 +1,4 @@
+Resources:
+  EmailNotify:
+    Properties:
+      ImageUri: public.ecr.aws/n3i8r5o8/formkiq-core-module-email-notify:1.1.0

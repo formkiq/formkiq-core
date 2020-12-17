@@ -16,7 +16,7 @@ dependencies {
 
 task buildZip(type: Zip) {
 	archiveName "console-installer.zip"
-    destinationDir(file("${buildDir}/distributions"))
+    destinationDir(file("${buildDir}"))
     from compileJava
     from processResources              
     into('lib') {
@@ -26,7 +26,7 @@ task buildZip(type: Zip) {
 
 task buildUnzip(type: Copy) {
   dependsOn buildZip
-  def zipFile = file("${buildDir}/distributions/console-installer.zip")
+  def zipFile = file("${buildDir}/console-installer.zip")
   def outputDir = file("${buildDir}/tmp/console")
 
   from zipTree(zipFile)
@@ -53,27 +53,40 @@ task testaws(type: Test) {
   outputs.upToDateWhen {false}    
 }
 
+/*
 task uploadToS3 {
-  outputs.dir("${buildDir}/distributions")
+  outputs.dir("${buildDir}")
   doLast {
 	exec {
-	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/console-installer.zip s3://${distrobucket}/formkiq-core/${project.version}/console-installer.zip --profile ${testprofile}"
+	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/console-installer.zip s3://${distrobucket}/formkiq-core/${project.version}/console-installer.zip --profile ${testprofile}"
 	}
   }
-}
+}*/
 
 task assembleTemplate {
     dependsOn buildZip
-	inputs.files("template-sar.yaml")
-	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml")
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml", "src/main/resources/cloudformation/template-docker-snippet.yaml")
+	outputs.dir("${buildDir}/distributions")
 	doLast {
+		exec {
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/console && mkdir -p ${buildDir}/distributions/formkiq-core/docker/console && mkdir -p ${buildDir}/distributions/formkiq-core/sar/console"
+		}
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "yq d template-sar.yaml 'Metadata' > template.yaml"
+			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/console/template.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/console-installer.zip ${buildDir}/distributions/formkiq-core/sam/console/"
+		}
+		exec {
+			commandLine "bash", "-c", "yq m ${buildDir}/distributions/formkiq-core/sam/console/template.yaml src/main/resources/cloudformation/template-docker-snippet.yaml > ${buildDir}/distributions/formkiq-core/docker/console/template.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d -i ${buildDir}/distributions/formkiq-core/docker/console/template.yaml 'Resources.ConsoleInstaller.Properties.CodeUri'"
 		}
 		// build SAR distribution
 		exec {
-			commandLine "bash", "-c", "sam package --template-file template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+			commandLine "bash", "-c", "sam package --template-file src/main/resources/cloudformation/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml"
 		}
 	}
 }
@@ -88,6 +101,22 @@ task buildDockerImage {
   }
 }
 
+task dockerpush {
+  dependsOn buildDockerImage
+  outputs.upToDateWhen {false}
+  doLast {
+	exec {
+	  commandLine "bash", "-c", "aws ecr-public get-login-password --region ${testregion} --profile ${testprofile} | docker login --username AWS --password-stdin public.ecr.aws/n3i8r5o8"
+	}
+	exec {
+	  commandLine "bash", "-c", "docker tag formkiq-core-console:latest public.ecr.aws/n3i8r5o8/formkiq-core-console:${project.version}"
+	}
+	exec {
+	  commandLine "bash", "-c", "docker push public.ecr.aws/n3i8r5o8/formkiq-core-console:${project.version}"
+	}
+  }  
+}
+
 buildZip.dependsOn check
-uploadToS3.dependsOn buildZip
-build.dependsOn uploadToS3, assembleTemplate, buildDockerImage
+//uploadToS3.dependsOn buildZip
+build.dependsOn /*uploadToS3,*/ assembleTemplate

@@ -1,0 +1,10 @@
+
+Resources:
+
+  StagingS3Create:
+    Properties:
+      ImageUri: public.ecr.aws/n3i8r5o8/formkiq-core-storage:1.1.0
+              
+  DocumentsS3Update:
+    Properties:
+      ImageUri: public.ecr.aws/n3i8r5o8/formkiq-core-storage:1.1.0
