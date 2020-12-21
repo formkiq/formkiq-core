@@ -81,7 +81,7 @@ Resources:
   CoreStorage:
     Type: AWS::Serverless::Application
     Properties:
-      Location: lambda-s3/template.yaml
+      Location: storage/template.yaml
       Parameters:
         AppEnvironment: !Ref AppEnvironment
       Tags:
@@ -94,7 +94,7 @@ Resources:
     DependsOn:
       - CoreStorage
     Properties:
-      Location: lambda-api/template.yaml
+      Location: api/template.yaml
       Parameters:
         AppEnvironment: !Ref AppEnvironment
         EnablePublicUrls: !Ref EnablePublicUrls
@@ -147,8 +147,11 @@ Outputs:
     Description: The URL for the FormKiQ Console
     Value: !GetAtt CoreConsole.Outputs.ConsoleUrl
   CognitoUserPoolId:
-    Description: "The Cognito User Pool Id."
+    Description: "The Cognito User Pool Id"
     Value: !GetAtt CoreApi.Outputs.CognitoUserPoolId
   CognitoClientId:
-    Description: "The Cognito Client Id."
+    Description: "The Cognito Client Id"
     Value: !GetAtt CoreApi.Outputs.CognitoUserPoolClientId
+  FormKiQVersion:
+    Description: "The FormKiQ Version"
+    Value: {{version}}

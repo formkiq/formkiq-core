@@ -8,8 +8,8 @@ Metadata:
     Description: Storage Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../LICENSE
-    ReadmeUrl: file://../../README.md
+    LicenseUrl: file://../../../LICENSE
+    ReadmeUrl: file://../../../README.md
     Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
@@ -181,7 +181,7 @@ Resources:
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
-      CodeUri: ./build/distributions/lambda-s3-graalvm.zip
+      CodeUri: ./lambda-s3-graalvm.zip
       Environment:
         Variables:
           DOCUMENTS_S3_BUCKET: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
@@ -226,7 +226,7 @@ Resources:
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
-      CodeUri: ./build/distributions/lambda-s3-graalvm.zip
+      CodeUri: ./lambda-s3-graalvm.zip
       Environment:
         Variables:
           DOCUMENTS_TABLE: !Ref Documents

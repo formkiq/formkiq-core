@@ -37,73 +37,40 @@ task npmtest {
   }
 }
 
-task buildZip(type: Zip) {   
+task buildZip(type: Zip) {
+   dependsOn check
    from "src"
    include "*"
    include "*/*"
    exclude "test", "coverage"
    archiveName "module-email-notify.zip"
-   destinationDir(file("${buildDir}/distributions"))
-}
-
-task uploadToS3 {
-  outputs.dir("${buildDir}/distributions")
-  doLast {
-	exec {
-	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/module-email-notify.zip s3://${distrobucket}/formkiq-core/${project.version}/module-email-notify.zip --profile ${testprofile}"
-	}
-  }
+   destinationDir(file("${buildDir}"))
 }
 
 task assembleTemplate {
     dependsOn buildZip
-	inputs.files("template-sar.yaml", "template-docker-snippet.yaml")
-	outputs.files("build/formkiq-core.yaml", "build/formkiq-core-sar.yaml")
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	outputs.dir("${buildDir}/distributions/formkiq-core")
 	doLast {
+		exec {
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/module-email-notify && mkdir -p ${buildDir}/distributions/formkiq-core/sar/module-email-notify"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/module-email-notify.zip ${buildDir}/distributions/formkiq-core/sam/module-email-notify/"
+		}
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "yq d template-sar.yaml 'Metadata' > template.yaml"
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/template-sar.yaml"
 		}
 		exec {
-			commandLine "bash", "-c", "yq m template.yaml template-docker-snippet.yaml > build/formkiq-core-docker.yaml"
+			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/module-email-notify/template.yaml"
 		}
-		exec {
-			commandLine "bash", "-c", "yq d -i build/formkiq-core-docker.yaml 'Resources.EmailNotify.Properties.CodeUri'"
-		}	
 		// build SAR distribution
 		exec {
-			commandLine "bash", "-c", "sam package --template-file template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml"
 		}
 	}
-}
-
-task buildDockerImage {
-  dependsOn buildZip
-  inputs.files("Dockerfile", "src/index.js")
-  doLast {
-	exec {
-	  commandLine "bash", "-c", "docker build -t formkiq-core-module-email-notify ."
-	}
-  }
-}
-
-task dockerpush {
-  dependsOn buildDockerImage
-  outputs.upToDateWhen {false}
-  doLast {
-	exec {
-	  commandLine "bash", "-c", "aws ecr-public get-login-password --region ${testregion} --profile ${testprofile} | docker login --username AWS --password-stdin public.ecr.aws/n3i8r5o8"
-	}
-	exec {
-	  commandLine "bash", "-c", "docker tag formkiq-core-module-email-notify:latest public.ecr.aws/n3i8r5o8/formkiq-core-module-email-notify:${project.version}"
-	}
-	exec {
-	  commandLine "bash", "-c", "docker push public.ecr.aws/n3i8r5o8/formkiq-core-module-email-notify:${project.version}"
-	}
-  }  
 }
 
 test.dependsOn npmtest
-buildZip.dependsOn check
-uploadToS3.dependsOn buildZip
-build.dependsOn uploadToS3, assembleTemplate
+build.dependsOn assembleTemplate

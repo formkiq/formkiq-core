@@ -8,8 +8,8 @@ Metadata:
     Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../LICENSE
-    ReadmeUrl: file://../../README.md
+    LicenseUrl: file://../../../LICENSE
+    ReadmeUrl: file://../../../README.md
     Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
@@ -98,7 +98,7 @@ Resources:
       Runtime: nodejs12.x
       Timeout: 60
       MemorySize: 256
-      CodeUri: ./build/distributions/module-email-notify.zip
+      CodeUri: ./module-email-notify.zip
       Environment:
         Variables:
           DEBUG: false

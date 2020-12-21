@@ -8,8 +8,8 @@ Metadata:
     Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../../../../../LICENSE
-    ReadmeUrl: file://../../../../../../README.md
+    LicenseUrl: file://../../../LICENSE
+    ReadmeUrl: file://../../../README.md
     Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
@@ -29,7 +29,7 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v1.3.2
+    Default: v1.3.3
     
   DistributionBucket:
     Type: String
@@ -152,7 +152,7 @@ Resources:
         Fn::GetAtt:
         - ConsoleInstallRole
         - Arn
-      CodeUri: ../../../../build/console-installer.zip
+      CodeUri: ./console-installer.zip
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"

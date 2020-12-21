@@ -11,3 +11,4 @@ module-email-notify/src/coverage
 node_modules
 *.tmp
 gradle.properties
+!console/src/test/resources/test.zip

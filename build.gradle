@@ -142,67 +142,55 @@ task testaws {
   }
 }
 
-task dockerpush {
-  dependsOn subprojects.collect { subproject ->
-    subproject.tasks.matching { it.name == "dockerpush" }
-  }
-}
-
-task assembleTemplate {
-    dependsOn subprojects.build
-	inputs.files("template.yaml", "template-docker-snippet.yaml", "template-sar-snippet.yaml", "console/template.yaml", "console/template-sar.yaml", "lambda-api/template-snippet.yaml", "lambda-api/api.yaml", "lambda-api/api-iam.yaml", "lambda-s3/template.yaml", "lambda-s3/template-sar.yaml", "module-email-notify/template.yaml", "module-email.notify/template-sar.yaml")
-  	outputs.files("build/formkiq-core.yaml")
-	doLast {
-		// build SAM distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file template.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core.yaml"
-		}
-		// build SAR template
-		exec {
-			commandLine "bash", "-c", "yq m --overwrite ./build/formkiq-core.yaml ./template-sar-snippet.yaml > ./template-sar.yaml"
-		}
-		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ./template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
-		}		
-		exec {
-			commandLine "bash", "-c", "box tokenReplace path=build/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
-		}
-		exec {
-			commandLine "bash", "-c", "box tokenReplace path=build/*.yaml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
-		}
-	}
-}
-
 task buildDistribution(type: Copy) {
 	dependsOn subprojects.build
 	outputs.upToDateWhen {false}
- 	//from('console/build/distributions/formkiq-core') {
-        //include '**/*'
-    //}
-    //into '${buildDir}/distributions/formkiq-core'
+
     from 'console/build/distributions/formkiq-core'
+    from 'lambda-api/build/distributions/formkiq-core'
+    from 'lambda-s3/build/distributions/formkiq-core'
+    from 'module-email-notify/build/distributions/formkiq-core'
     into "${buildDir}/distributions/formkiq-core"
 }
 
-//task buildZip(type: Zip) {
-//	dependsOn ':assembleTemplate'
-//   from "src"
-//   include "*"
-   //include "*/**/template-docker.yaml"
-//   include 'lambda-api/build/formkiq-core-docker.yaml'
-   //archiveName "formkiq-core-${project.version}.zip"
-   //destinationDir(file("${buildDir}/distributions"))
-//}
+task assembleTemplate {
+    dependsOn buildDistribution
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-sar-snippet.yaml")
+  	outputs.dir("${buildDir}/distributions/formkiq-core")
+	doLast {
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template.yaml ${buildDir}/template.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar-snippet.yaml ${buildDir}/template-sar-snippet.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
+		}
+		exec {
+			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/*.yaml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
+		}		
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/template.yaml ${buildDir}/distributions/formkiq-core/sam/template.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "yq m --overwrite ${buildDir}/template.yaml ${buildDir}/template-sar-snippet.yaml > ${buildDir}/template-sar.yaml"
+		}
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml"
+		}		
+	}
+}
 
-check.dependsOn ':buildDistribution'
+check.dependsOn ':buildSamZip'
 
 task deploy {
     dependsOn assembleTemplate
     outputs.upToDateWhen { false }
 	doLast {
 		exec {
-			commandLine "bash", "-c", "sam deploy --template-file build/formkiq-core.yaml --stack-name formkiq-core-${testappenvironment} --parameter-overrides ParameterKey=AppEnvironment,ParameterValue=${testappenvironment} ParameterKey=AdminEmail,ParameterValue=${testadminemail} ParameterKey=EnablePublicUrls,ParameterValue=true --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam deploy --s3-bucket ${distrobucket} --template-file ${buildDir}/distributions/formkiq-core/sam/template.yaml --stack-name formkiq-core-${testappenvironment} --parameter-overrides ParameterKey=AppEnvironment,ParameterValue=${testappenvironment} ParameterKey=AdminEmail,ParameterValue=${testadminemail} ParameterKey=EnablePublicUrls,ParameterValue=true --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM --region ${testregion} --profile ${testprofile}"
 		}
 	}
 }
@@ -263,19 +251,22 @@ task createSar {
     outputs.upToDateWhen { false }
 	doLast {
 		exec {
-			commandLine "bash", "-c", "sam publish --template-file lambda-s3/build/formkiq-core-sar.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/storage/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 		exec {
-			commandLine "bash", "-c", "sam publish --template-file lambda-api/build/formkiq-core-sar.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/api/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 		exec {
-			commandLine "bash", "-c", "sam publish --template-file console/build/formkiq-core-sar.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 		exec {
-			commandLine "bash", "-c", "sam publish --template-file module-email-notify/build/formkiq-core-sar.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 		exec {
-			commandLine "bash", "-c", "sam publish --template-file build/formkiq-core-sar.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 	}
 }
@@ -304,4 +295,18 @@ task deleteSar {
 			ignoreExitValue = true
 		}		
 	}
+}
+
+task buildSamZip(type: Zip) {
+	dependsOn assembleTemplate
+	outputs.upToDateWhen { false }
+	archiveName "formkiq-core-${project.version}.zip"
+    destinationDir(file("${buildDir}/distributions/formkiq-core"))
+   	from("${buildDir}/distributions/formkiq-core/sam") {
+   		include '*'
+        include '*/*'
+    }
+	from("${projectDir}") {
+   		include 'INSTALL.md'
+    } 
 }

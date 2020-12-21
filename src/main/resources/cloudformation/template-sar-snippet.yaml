@@ -4,8 +4,8 @@ Metadata:
     Description: Headless Document Management System that gives you full control of your organization's documents
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: ./LICENSE
-    ReadmeUrl: ./README.md
+    LicenseUrl: ../LICENSE
+    ReadmeUrl: ../README.md
     Labels: ['formkiq', 'formkiq-core']
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core

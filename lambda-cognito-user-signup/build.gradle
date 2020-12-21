@@ -16,6 +16,7 @@ task npmtest {
 }
 
 task buildZip(type: Zip) {   
+   dependsOn check
    from "src"
    include "*"
    include "*/*"
@@ -24,42 +25,5 @@ task buildZip(type: Zip) {
    destinationDir(file("${buildDir}/distributions"))
 }
 
-task uploadToS3 {
-  outputs.dir("${buildDir}/distributions")
-  doLast {
-	exec {
-	  commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/cognito-user-signup.zip s3://${distrobucket}/formkiq-core/${project.version}/cognito-user-signup.zip --profile ${testprofile}"
-	}
-  }
-}
-
-task buildDockerImage {
-  dependsOn buildZip
-  inputs.files("Dockerfile", "src/index.js")
-  doLast {
-	exec {
-	  commandLine "bash", "-c", "docker build -t formkiq-core-user-signup ."
-	}
-  }
-}
-
-task dockerpush {
-  dependsOn buildDockerImage
-  outputs.upToDateWhen {false}
-  doLast {
-	exec {
-	  commandLine "bash", "-c", "aws ecr-public get-login-password --region ${testregion} --profile ${testprofile} | docker login --username AWS --password-stdin public.ecr.aws/n3i8r5o8"
-	}
-	exec {
-	  commandLine "bash", "-c", "docker tag formkiq-core-user-signup:latest public.ecr.aws/n3i8r5o8/formkiq-core-user-signup:${project.version}"
-	}
-	exec {
-	  commandLine "bash", "-c", "docker push public.ecr.aws/n3i8r5o8/formkiq-core-user-signup:${project.version}"
-	}
-  }  
-}
-
 test.dependsOn npmtest
-buildZip.dependsOn check
-uploadToS3.dependsOn buildZip
-build.dependsOn uploadToS3
+build.dependsOn buildZip
