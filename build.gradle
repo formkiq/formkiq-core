@@ -308,5 +308,6 @@ task buildSamZip(type: Zip) {
     }
 	from("${projectDir}") {
    		include 'INSTALL.md'
+   		include 'LICENSE'
     } 
 }
