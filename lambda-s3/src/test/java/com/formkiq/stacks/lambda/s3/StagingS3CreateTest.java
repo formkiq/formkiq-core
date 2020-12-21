@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -29,6 +26,7 @@ import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -36,7 +34,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -111,7 +108,7 @@ public class StagingS3CreateTest {
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Builder;
   /** {@link S3Service}. */
-  private static S3Service s3Service;
+  private static S3Service s3;
   /** {@link DynamoDbHelper}. */
   private static DynamoDbHelper dbHelper;
   /** {@link DocumentService}. */
@@ -160,11 +157,11 @@ public class StagingS3CreateTest {
     service = new DocumentServiceImpl(dbBuilder, "Documents");
     dbHelper = new DynamoDbHelper(dbBuilder);
 
-    s3Service = new S3Service(s3Builder);
+    s3 = new S3Service(s3Builder);
 
-    try (S3Client s3 = s3Service.buildClient()) {
-      s3Service.createBucket(s3, DOCUMENTS_BUCKET);
-      s3Service.createBucket(s3, STAGING_BUCKET);
+    try (S3Client c = s3.buildClient()) {
+      s3.createBucket(c, DOCUMENTS_BUCKET);
+      s3.createBucket(c, STAGING_BUCKET);
     }
 
     if (!sqsService.exists(SNS_SQS_DELETE_QUEUE)) {
@@ -223,9 +220,9 @@ public class StagingS3CreateTest {
 
     dbHelper.truncateDocumentsTable();
 
-    try (S3Client s3 = s3Service.buildClient()) {
-      s3Service.deleteAllFiles(s3, STAGING_BUCKET);
-      s3Service.deleteAllFiles(s3, DOCUMENTS_BUCKET);
+    try (S3Client c = s3.buildClient()) {
+      s3.deleteAllFiles(c, STAGING_BUCKET);
+      s3.deleteAllFiles(c, DOCUMENTS_BUCKET);
     }
 
     for (String queue : Arrays.asList(sqsErrorUrl, snsSqsCreateQueueUrl, snsSqsDeleteQueueUrl)) {
@@ -251,7 +248,7 @@ public class StagingS3CreateTest {
     DynamicDocumentItem item = new DynamicDocumentItem(Collections.emptyMap());
     item.setDocumentId(UUID.randomUUID().toString());
     item.put("content",
-        Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8)));
+        Base64.getEncoder().encodeToString(content.getBytes(UTF_8)));
     item.setContentLength(Long.valueOf(content.length()));
     item.setContentType("plain/text");
     item.setInsertedDate(new Date());
@@ -334,10 +331,10 @@ public class StagingS3CreateTest {
 
     Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-    try (S3Client s3 = s3Service.buildClient()) {
+    try (S3Client c = s3.buildClient()) {
 
-      byte[] content = this.gson.toJson(docitem).getBytes(StandardCharsets.UTF_8);
-      s3Service.putObject(s3, STAGING_BUCKET, key, content, null, null);
+      byte[] content = this.gson.toJson(docitem).getBytes(UTF_8);
+      s3.putObject(c, STAGING_BUCKET, key, content, null, null);
 
       // when
       handleRequest(map);
@@ -351,7 +348,7 @@ public class StagingS3CreateTest {
         assertTrue(this.logger.containsString("Inserted " + docitem.getPath()
             + " into bucket documentsbucket as " + createDatabaseKey(siteId, destDocumentId)));
 
-        assertFalse(s3Service.getObjectMetadata(s3, STAGING_BUCKET, documentId).isObjectExists());
+        assertFalse(s3.getObjectMetadata(c, STAGING_BUCKET, documentId).isObjectExists());
 
         DocumentItem item = service.findDocument(siteId, destDocumentId);
         assertEquals("20", item.getContentLength().toString());
@@ -385,7 +382,7 @@ public class StagingS3CreateTest {
 
           ptag = findTag(tags, "untagged");
           assertEquals(destDocumentId, ptag.getDocumentId());
-          assertNull(ptag.getValue());
+          assertEquals("true", ptag.getValue());
           assertNotNull(ptag.getInsertedDate());
           assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
           assertEquals(docitem.getUserId(), ptag.getUserId());
@@ -416,9 +413,9 @@ public class StagingS3CreateTest {
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event1.json", UUID1, key);
 
-      try (S3Client s3 = s3Service.buildClient()) {
+      try (S3Client c = s3.buildClient()) {
 
-        s3Service.putObject(s3, STAGING_BUCKET, key, "testdata".getBytes(StandardCharsets.UTF_8),
+        s3.putObject(c, STAGING_BUCKET, key, "testdata".getBytes(UTF_8),
             "application/pdf", metadata);
 
         // when
@@ -434,7 +431,7 @@ public class StagingS3CreateTest {
             + createDatabaseKey(siteId, destDocumentId) + " in bucket " + DOCUMENTS_BUCKET + "."));
         assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
 
-        assertFalse(s3Service.getObjectMetadata(s3, STAGING_BUCKET, documentId).isObjectExists());
+        assertFalse(s3.getObjectMetadata(c, STAGING_BUCKET, documentId).isObjectExists());
 
         DocumentItem item = service.findDocument(siteId, destDocumentId);
         assertNotNull(item);
@@ -486,9 +483,6 @@ public class StagingS3CreateTest {
         Arrays.asList(Map.of("documentId", item.getDocumentId(), "key", "category", "value",
             "person", "insertedDate", new Date(), "userId", "joe", "type",
             DocumentTagType.USERDEFINED.name())));
-    //
-    // item.setTags(Arrays.asList(new DocumentTag(item.getDocumentId(), "category", "person",
-    // new Date(), "joe", DocumentTagType.USERDEFINED)));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       processFkB64File(siteId, item);
@@ -559,11 +553,10 @@ public class StagingS3CreateTest {
       String key = createDatabaseKey(siteId, documentId0 + ".fkb64");
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      try (S3Client s3 = s3Service.buildClient()) {
+      try (S3Client c = s3.buildClient()) {
 
         String json = loadFile(this, "/document_multiple.fkb64");
-        s3Service.putObject(s3, STAGING_BUCKET, key, json.getBytes(StandardCharsets.UTF_8), null,
-            null);
+        s3.putObject(c, STAGING_BUCKET, key, json.getBytes(UTF_8), null, null);
 
         // when
         handleRequest(map);
@@ -572,38 +565,56 @@ public class StagingS3CreateTest {
         assertEquals(1,
             service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
 
-        DocumentItem i = service.findDocument(siteId, documentId0, true);
-        assertNotNull(i);
-        assertEquals(2, i.getDocuments().size());
-        assertEquals(documentId1, i.getDocuments().get(0).getDocumentId());
-        assertEquals(documentId0, i.getDocuments().get(0).getBelongsToDocumentId());
-        assertEquals(documentId2, i.getDocuments().get(1).getDocumentId());
-        assertEquals(documentId0, i.getDocuments().get(1).getBelongsToDocumentId());
+        DocumentItem i =
+            service.findDocument(siteId, documentId0, true, null, MAX_RESULTS).getResult();
+        assertNull(i.getContentType());
+        verifyBelongsToDocument(i, documentId0, Arrays.asList(documentId1, documentId2));
 
         List<DocumentTag> tags =
             service.findDocumentTags(siteId, documentId0, null, MAX_RESULTS).getResults();
         assertEquals(1, tags.size());
         assertEquals("formName", tags.get(0).getKey());
         assertEquals("Job Application Form", tags.get(0).getValue());
+        
+        String k = createDatabaseKey(siteId, i.getDocumentId());
+        assertFalse(s3.getObjectMetadata(c, DOCUMENTS_BUCKET, k).isObjectExists());
 
-        i = service.findDocument(siteId, documentId1, true);
-        assertNotNull(i);
+        i = service.findDocument(siteId, documentId1, true, null, MAX_RESULTS).getResult();
+        assertEquals("application/json", i.getContentType());
         assertEquals(documentId0, i.getBelongsToDocumentId());
         tags = service.findDocumentTags(siteId, documentId1, null, MAX_RESULTS).getResults();
         assertEquals(1, tags.size());
         assertEquals("formData", tags.get(0).getKey());
-        assertNull(tags.get(0).getValue());
+        assertEquals("", tags.get(0).getValue());
+
+        k = createDatabaseKey(siteId, i.getDocumentId());
+        assertEquals("application/json",
+            s3.getObjectMetadata(c, DOCUMENTS_BUCKET, k).getContentType());
 
         i = service.findDocument(siteId, documentId2);
         assertEquals(documentId0, i.getBelongsToDocumentId());
-        assertNotNull(i);
+        assertNull(i.getContentType());
         tags = service.findDocumentTags(siteId, documentId2, null, MAX_RESULTS).getResults();
         assertEquals(2, tags.size());
         assertEquals("attachmentField", tags.get(0).getKey());
         assertEquals("resume", tags.get(0).getValue());
         assertEquals("category", tags.get(1).getKey());
-        assertNull(tags.get(1).getValue());
+        assertEquals("", tags.get(1).getValue());
+        
+        k = createDatabaseKey(siteId, i.getDocumentId());
+        assertFalse(s3.getObjectMetadata(c, DOCUMENTS_BUCKET, k).isObjectExists());
       }
+    }
+  }
+
+  private void verifyBelongsToDocument(final DocumentItem item, final String documentId,
+      final List<String> documentIds) {
+    assertEquals(documentIds.size(), item.getDocuments().size());
+    
+    for (int i = 0; i < documentIds.size(); i++) {
+      assertEquals(documentIds.get(i), item.getDocuments().get(i).getDocumentId());
+      assertNotNull(item.getDocuments().get(i).getInsertedDate());
+      assertNotNull(item.getDocuments().get(i).getBelongsToDocumentId());
     }
   }
 

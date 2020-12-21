@@ -48,7 +48,7 @@ public interface DocumentService {
    * @param tags {@link Collection} {@link DocumentTag}
    */
   void addTags(String siteId, String documentId, Collection<DocumentTag> tags);
-
+  
   /**
    * Delete Document.
    *
@@ -63,9 +63,11 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param contentType {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deleteDocumentFormat(String siteId, String documentId, String contentType);
-
+  
   /**
    * Delete All Document Formats.
    *
@@ -96,7 +98,9 @@ public interface DocumentService {
    *
    * @param siteId Optional Grouping siteId
    * @param id {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePreset(String siteId, String id);
 
   /**
@@ -104,7 +108,9 @@ public interface DocumentService {
    *
    * @param siteId Optional Grouping siteId
    * @param type {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePresets(String siteId, String type);
 
   /**
@@ -113,7 +119,9 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param id {@link String}
    * @param tag {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePresetTag(String siteId, String id, String tag);
 
   /**
@@ -121,8 +129,18 @@ public interface DocumentService {
    * 
    * @param siteId {@link String}
    * @param id {@link String}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   void deletePresetTags(String siteId, String id);
+
+  /**
+   * Returns whether document exists.
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean exists(String siteId, String documentId);
 
   /**
    * Find {@link DocumentItem}.
@@ -140,9 +158,12 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param includeChildDocuments boolean
-   * @return {@link DocumentItem}
+   * @param token {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResult} {@link DocumentItem}
    */
-  DocumentItem findDocument(String siteId, String documentId, boolean includeChildDocuments);
+  PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
+      boolean includeChildDocuments, PaginationMapToken token, int limit);
 
   /**
    * Get Document Format.
@@ -170,10 +191,10 @@ public interface DocumentService {
    * Find {@link DocumentItem}.
    *
    * @param siteId Optional Grouping siteId
-   * @param documentIds {@link String}
+   * @param documentIds {@link List} {@link String}
    * @return {@link List} {@link DocumentItem}
    */
-  List<DocumentItem> findDocuments(String siteId, Collection<String> documentIds);
+  List<DocumentItem> findDocuments(String siteId, List<String> documentIds);
 
   /**
    * Find {@link DocumentItem} by Inserted Date. Order in descending order.
@@ -211,6 +232,23 @@ public interface DocumentService {
       PaginationMapToken pagination, int maxresults);
 
   /**
+   * Find most recent inserted document {@link ZonedDateTime}.
+   * @return {@link ZonedDateTime}
+   */
+  ZonedDateTime findMostDocumentDate();
+
+  /**
+   * Find Preset.
+   * 
+   * @param siteId {@link String}
+   * @param id {@link String}
+   * @return {@link Optional} {@link PresetTag}
+   * @deprecated method needs to be updated
+   */
+  @Deprecated
+  Optional<Preset> findPreset(String siteId, String id);
+
+  /**
    * Get Presets.
    * 
    * @param siteId {@link String}
@@ -220,18 +258,11 @@ public interface DocumentService {
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link Preset}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   PaginationResults<Preset> findPresets(String siteId, String id, String type, String name,
       PaginationMapToken token, int maxresults);
-
-  /**
-   * Find Preset.
-   * 
-   * @param siteId {@link String}
-   * @param id {@link String}
-   * @return {@link Optional} {@link PresetTag}
-   */
-  Optional<Preset> findPreset(String siteId, String id);
 
   /**
    * Find Preset Tag.
@@ -240,7 +271,9 @@ public interface DocumentService {
    * @param id {@link String}
    * @param tagKey {@link String}
    * @return {@link Optional} {@link PresetTag}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   Optional<PresetTag> findPresetTag(String siteId, String id, String tagKey);
 
   /**
@@ -251,7 +284,9 @@ public interface DocumentService {
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link PresetTag}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   PaginationResults<PresetTag> findPresetTags(String siteId, String id, PaginationMapToken token,
       int maxresults);
 
@@ -300,6 +335,8 @@ public interface DocumentService {
    * @param preset {@link Preset}
    * @param tags {@link List} {@link PresetTag}
    * @return {@link Preset}
+   * @deprecated method needs to be updated
    */
+  @Deprecated
   Preset savePreset(String siteId, String id, String type, Preset preset, List<PresetTag> tags);
 }

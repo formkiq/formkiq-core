@@ -54,11 +54,13 @@ import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.stacks.dynamodb.SiteIdKeyGenerator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
@@ -105,12 +107,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return SdkHttpUtils.urlDecode(value);
   }
 
-  /** SNS Document Update Topic Arn. */
-  private String snsUpdateTopicArn;
-  /** SNS Document Create Topic Arn. */
-  private String snsCreateTopicArn;
-  /** SNS Document Delete Topic Arn. */
-  private String snsDeleteTopicArn;
+  /** SNS Document Event Arn. */
+  private String snsDocumentEvent;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
   /** {@link DocumentService}. */
@@ -150,9 +148,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       final SnsConnectionBuilder snsBuilder) {
 
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
-    this.snsDeleteTopicArn = map.get("SNS_DELETE_TOPIC");
-    this.snsCreateTopicArn = map.get("SNS_CREATE_TOPIC");
-    this.snsUpdateTopicArn = map.get("SNS_UPDATE_TOPIC_ARN");
+    this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
 
     this.service = documentService;
     this.s3service = new S3Service(s3builder);
@@ -337,13 +333,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         logger.log("saving document " + createDatabaseKey(siteId, item.getDocumentId()));
 
-        if (debug) {
-          logger.log(this.gson.toJson(item));
-        }
-
         List<DynamicDocumentTag> tags = getObjectTags(s3, item, s3bucket, key);
         doc.put("tags", tags);
 
+        if (debug) {
+          logger.log("original " + this.gson.toJson(item));
+          logger.log("new " + this.gson.toJson(doc));
+        }
+        
         this.service.saveDocumentItemWithTag(siteId, doc);
 
         this.service.deleteDocumentFormats(siteId, item.getDocumentId());
@@ -434,21 +431,23 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private void sendSnsMessage(final LambdaLogger logger, final boolean create, final boolean delete,
       final String siteId, final String documentId, final String s3Bucket, final String s3Key) {
 
-    DocumentEvent event = new DocumentEvent().siteId(siteId)
-        .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key);
-
-    if (delete) {
-      event.type("delete");
-      logger.log("publishing delete document message to " + this.snsDeleteTopicArn);
-      this.snsService.publish(this.snsDeleteTopicArn, this.gson.toJson(event));
-    } else if (create) {
-      event.type("create");
-      logger.log("publishing create document message to " + this.snsCreateTopicArn);
-      this.snsService.publish(this.snsCreateTopicArn, this.gson.toJson(event));
-    } else {
-      event.type("update");
-      this.snsService.publish(this.snsUpdateTopicArn, this.gson.toJson(event));
-      logger.log("publishing update document message to " + this.snsUpdateTopicArn);
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    DocumentEvent event = new DocumentEvent().siteId(site)
+        .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key)
+        .type(delete ? "delete" : (create ? "create" : "update"));
+    String eventJson = this.gson.toJson(event);
+    
+    boolean debug = "true".equals(System.getenv("DEBUG"));
+    if (debug) {
+      logger.log("event: " + eventJson);
     }
+
+    logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
+    MessageAttributeValue typeAttr =
+        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
+    MessageAttributeValue siteIdAttr =
+        MessageAttributeValue.builder().dataType("String").stringValue(event.siteId()).build();    
+    Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
+    this.snsService.publish(this.snsDocumentEvent, eventJson, tags);
   }
 }

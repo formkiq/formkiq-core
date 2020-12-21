@@ -24,13 +24,16 @@
 package com.formkiq.stacks.api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 
-/** Unit Tests for request POST /public/forms. */
+/** Unit Tests for request POST /public/documents. */
 public class ApiDocumentsPublicFormsRequestTest extends AbstractRequestHandler {
 
   /**
@@ -40,7 +43,7 @@ public class ApiDocumentsPublicFormsRequestTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testPostPublicForms01() throws Exception {
+  public void testPostPublicDocuments01() throws Exception {
     // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
@@ -60,6 +63,21 @@ public class ApiDocumentsPublicFormsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    
+    Map<String, Object> body = fromJson(m.get("body"), Map.class);
+    assertNotNull(body.get("documentId"));
+    assertNotNull(body.get("uploadUrl"));
+    List<Map<String, Object>> documents = (List<Map<String, Object>>) body.get("documents");
+    assertEquals(mapsize, documents.size());
+    
+    assertNotNull(documents.get(0).get("documentId"));
+    assertNull(documents.get(0).get("uploadUrl"));
+    
+    assertNotNull(documents.get(1).get("uploadUrl"));
+    assertNotNull(documents.get(1).get("documentId"));
+    
+    assertNotNull(documents.get(2).get("uploadUrl"));
+    assertNotNull(documents.get(2).get("documentId"));
   }
 
   /**

@@ -47,7 +47,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void before() throws Exception {
     super.before();
 
-    removeSsmParameter("/formkiq/unittest/siteid/default/MaxContentLengthBytes");
+    removeSsmParameter("/formkiq/" + getAppenvironment() + "/siteid/default/MaxContentLengthBytes");
   }
 
   /**

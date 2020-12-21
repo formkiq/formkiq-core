@@ -256,8 +256,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     assertEquals(1, children.size());
 
     assertEquals(documentId1, children.get(0).get("documentId"));
-    assertEquals(userId, children.get(0).get("userId"));
-    assertEquals(documentId0, children.get(0).get("belongsToDocumentId"));
+    assertNotNull(userId, children.get(0).get("userId"));
+    assertNotNull(children.get(0).get("belongsToDocumentId"));
     assertNotNull(children.get(0).get("insertedDate"));
     assertNull(children.get(0).get("siteId"));
   }

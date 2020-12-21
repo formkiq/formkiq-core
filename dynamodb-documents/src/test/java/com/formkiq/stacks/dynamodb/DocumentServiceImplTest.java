@@ -3,26 +3,24 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static org.junit.Assert.assertArrayEquals;
@@ -31,12 +29,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Month;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +43,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,9 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-/** Unit Tests for {@link DocumentServiceImpl}. */
+/** 
+ * Unit Tests for {@link DocumentServiceImpl}. 
+ */
 public class DocumentServiceImplTest {
 
   /** {@link DynamoDbConnectionBuilder}. */
@@ -109,8 +111,9 @@ public class DocumentServiceImplTest {
     this.service = dbhelper.getService();
 
     dbhelper.truncateDocumentsTable();
+    dbhelper.truncateDocumentDates();
 
-    // assertEquals(0, dbhelper.getDocumentItemCount());
+    assertEquals(0, dbhelper.getDocumentItemCount());
   }
 
   /**
@@ -135,14 +138,43 @@ public class DocumentServiceImplTest {
     item.setContentLength(Long.valueOf(2));
     return item;
   }
+  
+  /**
+   * Create {@link DynamicDocumentItem} with Child Documents.
+   * @param now {@link Date}
+   * @return {@link DynamicDocumentItem}
+   */
+  private DynamicDocumentItem createSubDocuments(final Date now) {
+    String username = UUID.randomUUID() + "@formkiq.com";
+    
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc.setContentType("text/plain");
+
+    DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc1.setContentType("text/html");
+    doc1.put("tags", Arrays.asList(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
+        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc2.setContentType("application/json");
+    doc2.put("tags", Arrays.asList(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
+        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    doc.put("documents", Arrays.asList(doc1, doc2));
+
+    return doc;
+  }
 
   /**
    * Create Test {@link DocumentItem}.
    *
-   * @param prefix DynamoDB PK Prefix
+   * @param siteId DynamoDB PK Prefix
    * @return {@link List} {@link DocumentItem}
    */
-  private List<DocumentItem> createTestData(final String prefix) {
+  private List<DocumentItem> createTestData(final String siteId) {
 
     List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
         "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
@@ -161,35 +193,52 @@ public class DocumentServiceImplTest {
     items.forEach(item -> {
       Collection<DocumentTag> tags = Arrays.asList(
           new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
-      this.service.saveDocument(prefix, item, tags);
+      this.service.saveDocument(siteId, item, tags);
     });
 
     return items;
   }
 
-  /** Add Invalid Tag Name. */
+  /** Add Tag Name with TAG DELIMINATOR. */
   @Test
   public void testAddTags01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      DocumentItem document = createTestData(prefix).get(0);
+      DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
-      String tagName = "tag\t";
+      String tagKey = "tag" + TAG_DELIMINATOR;
       String tagValue = UUID.randomUUID().toString();
       String userId = "jsmith";
 
       List<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, tagName, tagValue, document.getInsertedDate(), userId));
+          new DocumentTag(documentId, tagKey, tagValue, document.getInsertedDate(), userId));
 
       // when
-      try {
-        this.service.addTags(prefix, documentId, tags);
-        fail();
+      this.service.addTags(siteId, documentId, tags);
 
-      } catch (Exception e) {
-        // then
-        assertEquals("Tabs are not allowed in Tag Name", e.getMessage());
-      }
+      // then
+      PaginationResults<DocumentTag> results =
+          this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertNull(results.getToken());
+      assertEquals(2, results.getResults().size());
+      assertEquals("status", results.getResults().get(0).getKey());
+      assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
+      assertEquals("active", results.getResults().get(0).getValue());
+
+      assertEquals(tagKey, results.getResults().get(1).getKey());
+      assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(1).getType());
+      assertEquals(tagValue, results.getResults().get(1).getValue());
+      
+      assertEquals(tagValue,  this.service.findDocumentTag(siteId, documentId, tagKey).getValue());
+
+      SearchTagCriteria s = new SearchTagCriteria(tagKey);
+      PaginationResults<DynamicDocumentItem> list =
+          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
+      assertNull(list.getToken());
+      assertEquals(1, list.getResults().size());
+      assertEquals(documentId, list.getResults().get(0).getDocumentId());
+      assertEquals(tagKey, list.getResults().get(0).getMap("matchedTag").get("key"));
+      assertEquals(tagValue, list.getResults().get(0).getMap("matchedTag").get("value"));
     }
   }
 
@@ -197,7 +246,7 @@ public class DocumentServiceImplTest {
   @Test
   public void testAddTags02() {
 
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String tagKey = "tag";
       String tagValue = null;
@@ -212,28 +261,27 @@ public class DocumentServiceImplTest {
       List<DocumentTag> tags = Arrays.asList(ti);
 
       // when
-      this.service.saveDocument(prefix, item, tags);
+      this.service.saveDocument(siteId, item, tags);
 
       // then
       PaginationResults<DocumentTag> results =
-          this.service.findDocumentTags(prefix, documentId, null, MAX_RESULTS);
+          this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertNull(results.getToken());
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey, results.getResults().get(0).getKey());
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
-      assertNull(results.getResults().get(0).getValue());
+      assertEquals("", results.getResults().get(0).getValue());
 
-      tagValue = this.service.findDocumentTag(prefix, documentId, tagKey).getValue();
-      assertNull(tagValue);
+      assertEquals("", this.service.findDocumentTag(siteId, documentId, tagKey).getValue());
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(prefix, s, null, MAX_RESULTS);
+          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
       assertEquals("tag", list.getResults().get(0).getMap("matchedTag").get("key"));
-      assertNull(list.getResults().get(0).getMap("matchedTag").get("value"));
+      assertEquals("", list.getResults().get(0).getMap("matchedTag").get("value"));
     }
   }
 
@@ -261,7 +309,7 @@ public class DocumentServiceImplTest {
   /** Delete Document. */
   @Test
   public void testDeleteDocument01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       Date now = new Date();
       String userId = "jsmith";
@@ -271,29 +319,50 @@ public class DocumentServiceImplTest {
       DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
       tag.setUserId(UUID.randomUUID().toString());
 
-      this.service.saveDocument(prefix, item, Arrays.asList(tag));
+      this.service.saveDocument(siteId, item, Arrays.asList(tag));
 
       // when
-      this.service.deleteDocument(prefix, documentId);
+      this.service.deleteDocument(siteId, documentId);
 
       // then
-      assertNull(this.service.findDocument(prefix, documentId));
+      assertNull(this.service.findDocument(siteId, documentId));
       PaginationResults<DocumentTag> results =
-          this.service.findDocumentTags(prefix, documentId, null, MAX_RESULTS);
+          this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /**
+   * Test document exists or not.
+   */
+  @Test
+  public void testExists01() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId0 = UUID.randomUUID().toString();
+      String documentId1 = UUID.randomUUID().toString();
+      DocumentItem item0 =
+          createDocument(documentId0, ZonedDateTime.now(), "text/plain", "test.txt");
+
+      // when
+      this.service.saveDocument(siteId, item0, null);
+
+      // then
+      assertTrue(this.service.exists(siteId, documentId0));
+      assertFalse(this.service.exists(siteId, documentId1));
     }
   }
 
   /** Find valid document. */
   @Test
   public void testFindDocument01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      DocumentItem document = createTestData(prefix).get(0);
+      DocumentItem document = createTestData(siteId).get(0);
       String documentId = document.getDocumentId();
 
       // when
-      DocumentItem item = this.service.findDocument(prefix, documentId);
+      DocumentItem item = this.service.findDocument(siteId, documentId);
 
       // then
       assertEquals(documentId, item.getDocumentId());
@@ -307,23 +376,71 @@ public class DocumentServiceImplTest {
     }
   }
 
+  /**
+   * Test FindDocument with child documents pagination.
+   */
+  @Test
+  public void testFindDocument02() {
+    Date now = new Date();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final Collection<String> list = new HashSet<>();
+      DynamicDocumentItem doc = createSubDocuments(now);
+      this.service.saveDocumentItemWithTag(siteId, doc);
+
+      // when
+      PaginationResult<DocumentItem> result =
+          this.service.findDocument(siteId, doc.getDocumentId(), true, null, 1);
+
+      // then
+      assertEquals(doc.getDocumentId(), result.getResult().getDocumentId());
+      List<DocumentItem> documents = result.getResult().getDocuments();
+      assertEquals(1, documents.size());
+      
+      list.add(documents.get(0).getDocumentId());
+      assertNotNull(result.getToken());
+
+      // when
+      result = this.service.findDocument(siteId, doc.getDocumentId(), true, result.getToken(), 1);
+
+      // then
+      assertEquals(doc.getDocumentId(), result.getResult().getDocumentId());
+      documents = result.getResult().getDocuments();
+      
+      list.add(documents.get(0).getDocumentId());
+      assertEquals(1, documents.size());
+      assertNotNull(result.getToken());
+      
+      // when
+      result = this.service.findDocument(siteId, doc.getDocumentId(), true, result.getToken(), 1);
+
+      // then
+      assertEquals(doc.getDocumentId(), result.getResult().getDocumentId());
+      documents = result.getResult().getDocuments();
+      assertNull(documents);
+      assertNull(result.getToken());
+      
+      assertEquals(2, list.size());
+    }
+  }
+
   /** Find documents. */
   @Test
   public void testFindDocuments01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      Iterator<DocumentItem> itr = createTestData(prefix).iterator();
+      Iterator<DocumentItem> itr = createTestData(siteId).iterator();
       DocumentItem d0 = itr.next();
       DocumentItem d1 = itr.next();
       DocumentItem d2 = itr.next();
 
       createTestData("finance");
 
-      Collection<String> documentIds =
+      List<String> documentIds =
           Arrays.asList(d0.getDocumentId(), d1.getDocumentId(), d2.getDocumentId());
 
       // when
-      List<DocumentItem> items = this.service.findDocuments(prefix, documentIds);
+      List<DocumentItem> items = this.service.findDocuments(siteId, documentIds);
 
       // then
       int i = 0;
@@ -345,14 +462,14 @@ public class DocumentServiceImplTest {
   /** Find all documents. */
   @Test
   public void testFindDocuments02() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
       List<String> documentIds =
-          createTestData(prefix).stream().map(k -> k.getDocumentId()).collect(Collectors.toList());
+          createTestData(siteId).stream().map(k -> k.getDocumentId()).collect(Collectors.toList());
 
       // when
-      List<DocumentItem> items = this.service.findDocuments(prefix, documentIds);
+      List<DocumentItem> items = this.service.findDocuments(siteId, documentIds);
 
       // then
       assertEquals(items.size(), documentIds.size());
@@ -369,9 +486,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate01() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
       createTestData("finance");
 
       List<String> expected = Arrays.asList("2020-01-30T00:00Z[UTC]", "2020-01-30T01:20Z[UTC]",
@@ -383,7 +500,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, MAX_RESULTS);
+          this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -404,9 +521,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate02() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
 
       final int max = 3;
       List<String> expected0 = Arrays.asList("2020-01-30T00:00Z[UTC]", "2020-01-30T01:20Z[UTC]",
@@ -416,7 +533,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, max);
+          this.service.findDocumentsByDate(siteId, date, null, max);
 
       // then
       assertEquals(max, results.getResults().size());
@@ -427,13 +544,16 @@ public class DocumentServiceImplTest {
           .collect(Collectors.toList());
 
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
-
-      if (prefix == null) {
+      
+      String documentId = results.getResults().get(results.getResults().size() - 1).getDocumentId();
+      if (siteId == null) {
         assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=2020-01-30, GSI1SK=2020-01-30T02:20:00+0000, SK=document, PK="));
+            .startsWith("{GSI1PK=docts#2020-01-30, GSI1SK=2020-01-30T02:20:00+0000#" + documentId
+                + ", SK=document, PK="));
       } else {
-        assertTrue(results.getToken().toString().startsWith("{GSI1PK=" + prefix
-            + "/2020-01-30, GSI1SK=2020-01-30T02:20:00+0000, SK=document, PK="));
+        assertTrue(results.getToken().toString()
+            .startsWith("{GSI1PK=" + siteId + "/docts#2020-01-30, GSI1SK=2020-01-30T02:20:00+0000#"
+                + documentId + ", SK=document, PK="));
       }
 
       // given
@@ -441,7 +561,7 @@ public class DocumentServiceImplTest {
           "2020-01-30T11:45Z[UTC]", "2020-01-30T13:22Z[UTC]");
 
       // when - get next page
-      results = this.service.findDocumentsByDate(prefix, date, results.getToken(), max);
+      results = this.service.findDocumentsByDate(siteId, date, results.getToken(), max);
 
       // then
       assertEquals(max, results.getResults().size());
@@ -454,7 +574,7 @@ public class DocumentServiceImplTest {
       assertArrayEquals(expected1.toArray(new String[0]), resultDates.toArray(new String[0]));
     }
   }
-
+  
   /**
    * Test paging through results over multiple days from a different TZ.
    * 
@@ -462,9 +582,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate03() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
 
       List<String> expected0 = Arrays.asList("2020-01-30T19:10Z[UTC]", "2020-01-30T20:54Z[UTC]",
           "2020-01-30T23:59:59Z[UTC]", "2020-01-31T00:00Z[UTC]", "2020-01-31T03:00Z[UTC]",
@@ -475,7 +595,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, MAX_RESULTS);
+          this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
       assertEquals(expected0.size(), results.getResults().size());
@@ -485,20 +605,24 @@ public class DocumentServiceImplTest {
               .ofInstant(r.getInsertedDate().toInstant(), ZoneId.of("UTC")).toString())
           .collect(Collectors.toList());
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
+      
+      String documentId = results.getResults().get(results.getResults().size() - 1).getDocumentId();
 
-      if (prefix == null) {
+      if (siteId == null) {
         assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=2020-01-31, GSI1SK=2020-01-31T10:00:00+0000, SK=document, PK="));
+            .startsWith("{GSI1PK=docts#2020-01-31, GSI1SK=2020-01-31T10:00:00+0000#" + documentId
+                + ", SK=document, PK="));
       } else {
-        assertTrue(results.getToken().toString().startsWith("{GSI1PK=" + prefix
-            + "/2020-01-31, GSI1SK=2020-01-31T10:00:00+0000, SK=document, PK="));
+        assertTrue(results.getToken().toString()
+            .startsWith("{GSI1PK=" + siteId + "/docts#2020-01-31, GSI1SK=2020-01-31T10:00:00+0000#"
+                + documentId + ", SK=document, PK="));
       }
 
       // given
       List<String> expected1 = Arrays.asList("2020-01-31T11:00Z[UTC]");
 
       // when
-      results = this.service.findDocumentsByDate(prefix, date, results.getToken(), MAX_RESULTS);
+      results = this.service.findDocumentsByDate(siteId, date, results.getToken(), MAX_RESULTS);
 
       // then
       assertEquals(expected1.size(), results.getResults().size());
@@ -519,9 +643,9 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testFindDocumentsByDate04() throws Exception {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      createTestData(prefix);
+      createTestData(siteId);
 
       List<String> expected0 = Arrays.asList("2020-01-30T20:54Z[UTC]", "2020-01-30T23:59:59Z[UTC]",
           "2020-01-31T00:00Z[UTC]", "2020-01-31T03:00Z[UTC]", "2020-01-31T05:00Z[UTC]",
@@ -532,7 +656,7 @@ public class DocumentServiceImplTest {
 
       // when
       PaginationResults<DocumentItem> results =
-          this.service.findDocumentsByDate(prefix, date, null, MAX_RESULTS);
+          this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
       assertEquals(expected0.size(), results.getResults().size());
@@ -546,19 +670,42 @@ public class DocumentServiceImplTest {
       assertNull(results.getToken());
     }
   }
+  
+  /**
+   * Find Documents by date with document that has child documents.
+   * @throws Exception Exception
+   */
+  @Test
+  public void testFindDocumentsByDate05() throws Exception {
+    // given
+    Date now = new Date();
+    String siteId = null;
+    DynamicDocumentItem doc = createSubDocuments(now);
+    this.service.saveDocumentItemWithTag(siteId, doc);
+    ZonedDateTime date = this.service.findMostDocumentDate();
+    assertNotNull(date);
+    
+    // when
+    PaginationResults<DocumentItem> results =
+        this.service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
+    
+    // then
+    assertEquals(1, results.getResults().size());
+    assertNull(results.getResults().get(0).getBelongsToDocumentId());
+  }
 
   /** Test Finding Document's Tag && Remove one. */
   @Test
   public void testFindDocumentTags01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       PaginationMapToken startkey = null;
       createTestData("finance");
-      String documentId = createTestData(prefix).get(0).getDocumentId();
+      String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
       PaginationResults<DocumentTag> results =
-          this.service.findDocumentTags(prefix, documentId, startkey, MAX_RESULTS);
+          this.service.findDocumentTags(siteId, documentId, startkey, MAX_RESULTS);
 
       // then
       assertNull(results.getToken());
@@ -574,10 +721,10 @@ public class DocumentServiceImplTest {
       List<String> tags = Arrays.asList("status");
 
       // when
-      this.service.removeTags(prefix, documentId, tags);
+      this.service.removeTags(siteId, documentId, tags);
 
       // then
-      results = this.service.findDocumentTags(prefix, documentId, startkey, MAX_RESULTS);
+      results = this.service.findDocumentTags(siteId, documentId, startkey, MAX_RESULTS);
 
       assertNull(results.getToken());
       assertEquals(0, results.getResults().size());
@@ -587,14 +734,14 @@ public class DocumentServiceImplTest {
   /** Test Finding Document's particular Tag. */
   @Test
   public void testFindDocumentTags02() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String tagKey = "status";
       String tagValue = "active";
-      String documentId = createTestData(prefix).get(0).getDocumentId();
+      String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
-      String result = this.service.findDocumentTag(prefix, documentId, tagKey).getValue();
+      String result = this.service.findDocumentTag(siteId, documentId, tagKey).getValue();
 
       // then
       assertEquals(tagValue, result);
@@ -604,23 +751,66 @@ public class DocumentServiceImplTest {
   /** Test Finding Document's Tag does not exist. */
   @Test
   public void testFindDocumentTags03() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String tagKey = "status";
-      String documentId = createTestData(prefix).get(0).getDocumentId();
+      String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
-      DocumentTag result = this.service.findDocumentTag(prefix, documentId, tagKey + "!");
+      DocumentTag result = this.service.findDocumentTag(siteId, documentId, tagKey + "!");
 
       // then
       assertNull(result);
     }
   }
+  
+  /**
+   * Test finding most recent documents date.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testFindMostDocumentDate01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      createTestData(siteId);
+      createTestData("finance");
+
+      // when
+      ZonedDateTime date = this.service.findMostDocumentDate();
+      
+      // then
+      final int year = 2020;
+      final int day = 31;
+      assertEquals(year, date.getYear());
+      assertEquals(Month.JANUARY, date.getMonth());
+      assertEquals(day, date.getDayOfMonth());
+      assertEquals(ZoneOffset.UTC, date.getZone());
+    }
+  }
+
+  /**
+   * Test finding most recent documents date (no data).
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testFindMostDocumentDate02() throws Exception {
+    // given
+    // when
+    ZonedDateTime date = this.service.findMostDocumentDate();
+
+    // then
+    assertNull(date);
+  }
 
   /**
    * Find / Save Presets.
+    * @deprecated method needs to be updated
    */
+  @SuppressWarnings("deprecation")
   @Test
+  @Deprecated
   public void testFindPresets01() {
 
     String type = "tagging";
@@ -651,7 +841,7 @@ public class DocumentServiceImplTest {
         // when
         PaginationResults<Preset> p0 =
             this.service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
-
+        
         // then
         assertEquals(MAX_RESULTS, p0.getResults().size());
         assertNotNull(p0.getToken());
@@ -695,8 +885,10 @@ public class DocumentServiceImplTest {
 
   /**
    * Test Find Preset Tag.
+    * @deprecated method needs to be updated
    */
   @Test
+  @Deprecated
   public void testFindPresetTags01() {
     // given
     String type = "tagging";
@@ -826,21 +1018,21 @@ public class DocumentServiceImplTest {
    */
   @Test
   public void testRemoveTags01() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String docid = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
       Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(docid, "untagged", null, new Date(), "jsmith"));
-      this.service.saveDocument(prefix, item, tags);
+          Arrays.asList(new DocumentTag(docid, "untagged", "true", new Date(), "jsmith"));
+      this.service.saveDocument(siteId, item, tags);
 
       // when
-      this.service.removeTags(prefix, docid, Arrays.asList(tags.iterator().next().getKey()));
+      this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
 
       // then
       assertEquals(0,
-          this.service.findDocumentTags(prefix, docid, null, MAX_RESULTS).getResults().size());
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
     }
   }
 
@@ -869,14 +1061,14 @@ public class DocumentServiceImplTest {
           this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertNull(tags.getResults().get(0).getValue());
+      assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertEquals(username, tags.getResults().get(0).getUserId());
       assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
     }
   }
-
+  
   /**
    * Test Save {@link DocumentItem} with {@link DocumentTag} with tags.
    */
@@ -928,43 +1120,42 @@ public class DocumentServiceImplTest {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String username = UUID.randomUUID() + "@formkiq.com";
-
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
-
-      DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
-      doc1.put("tags", Arrays.asList(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
-          "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
-
-      DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
-          UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
-      doc2.put("tags", Arrays.asList(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
-          "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
-
-      doc.put("documents", Arrays.asList(doc1, doc2));
+      DynamicDocumentItem doc = createSubDocuments(now);
 
       // when
-      DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
+      this.service.saveDocumentItemWithTag(siteId, doc);
 
       // then
-      item = this.service.findDocument(siteId, doc.getDocumentId(), true);
+      final DocumentItem doc1 = doc.getDocuments().get(0);
+      final DocumentItem doc2 = doc.getDocuments().get(1);
+
+      PaginationResult<DocumentItem> result =
+          this.service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
+      assertNull(result.getToken());
+      
+      DocumentItem item = result.getResult();
       assertNotNull(item);
+      assertEquals("text/plain", item.getContentType());
       assertEquals(2, item.getDocuments().size());
       List<String> ids = Arrays.asList(doc1.getDocumentId(), doc2.getDocumentId());
       Collections.sort(ids);
 
       assertEquals(ids.get(0), item.getDocuments().get(0).getDocumentId());
+      assertEquals(doc.getDocumentId(), item.getDocuments().get(0).getBelongsToDocumentId());
+      assertNotNull("text/html", item.getDocuments().get(0).getContentType());
       assertEquals(ids.get(1), item.getDocuments().get(1).getDocumentId());
+      assertEquals(doc.getDocumentId(), item.getDocuments().get(1).getBelongsToDocumentId());
+      assertNotNull("application/json", item.getDocuments().get(1).getContentType());
 
       List<DocumentTag> tags = this.service
           .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
       assertEquals(1, tags.size());
       assertEquals("untagged", tags.get(0).getKey());
+      assertEquals("true", tags.get(0).getValue());
 
       item = this.service.findDocument(siteId, doc1.getDocumentId());
       assertNotNull(item);
+      assertEquals("text/html", item.getContentType());
       assertEquals(doc.getDocumentId(), item.getBelongsToDocumentId());
 
       tags = this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS)
@@ -974,6 +1165,7 @@ public class DocumentServiceImplTest {
 
       item = this.service.findDocument(siteId, doc2.getDocumentId());
       assertNotNull(item);
+      assertEquals("application/json", item.getContentType());
       assertEquals(doc.getDocumentId(), item.getBelongsToDocumentId());
 
       tags = this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS)
@@ -985,12 +1177,45 @@ public class DocumentServiceImplTest {
           this.service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
     }
   }
+  
+  /**
+   * Test Save Document with SubDocument and tags.
+   */
+  @Test
+  public void testSaveDocumentItemWithTag04() {
+    Date now = new Date();
 
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DynamicDocumentItem doc = createSubDocuments(now);
+      doc.put("tags",
+          Arrays
+              .asList(Map.of("documentId", doc.getDocumentId(), "key", "category2", "insertedDate",
+                  now, "userId", doc.getUserId(), "type", DocumentTagType.USERDEFINED.name())));
+
+      // when
+      this.service.saveDocumentItemWithTag(siteId, doc);
+
+      // then
+      PaginationResult<DocumentItem> result =
+          this.service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
+      assertNull(result.getToken());
+      
+      DocumentItem item = result.getResult();
+
+      List<DocumentTag> tags = this.service
+          .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
+      assertEquals(1, tags.size());
+      assertEquals("category2", tags.get(0).getKey());
+      assertEquals("", tags.get(0).getValue());
+    }
+  }
+  
   /**
    * Test Save sSubDocument.
    */
   @Test
-  public void testSaveDocumentItemWithTag04() {
+  public void testSaveDocumentItemWithTag05() {
     Date now = new Date();
     String belongsToDocumentId = UUID.randomUUID().toString();
 
@@ -1001,14 +1226,20 @@ public class DocumentServiceImplTest {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
       doc.setBelongsToDocumentId(belongsToDocumentId);
+      doc.setContentType("text/plain");
 
       // when
       DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
 
       // then
-      item = this.service.findDocument(siteId, doc.getDocumentId(), true);
+      PaginationResult<DocumentItem> result =
+          this.service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
+      assertNull(result.getToken());
+      item = result.getResult();
+      
       assertNotNull(item);
       assertNotNull(item.getBelongsToDocumentId());
+      assertEquals("text/plain", item.getContentType());
     }
   }
 }

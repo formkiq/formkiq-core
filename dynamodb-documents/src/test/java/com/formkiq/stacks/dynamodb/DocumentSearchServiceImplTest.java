@@ -99,6 +99,7 @@ public class DocumentSearchServiceImplTest {
     this.service = dbhelper.getService();
 
     dbhelper.truncateDocumentsTable();
+    dbhelper.truncateDocumentDates();
 
     assertEquals(0, dbhelper.getDocumentItemCount());
   }

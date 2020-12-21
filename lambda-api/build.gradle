@@ -24,7 +24,7 @@ dependencies {
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.15.25'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.15.25'
 	
-	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.0'
+	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.1'
     testImplementation group: 'junit', name: 'junit', version:'4.+'
 }
 
@@ -65,8 +65,12 @@ task testaws(type: Test) {
 }
 
 task buildZip(type: Zip) {
+	dependsOn graalvmNativeImage
+	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
+  	outputs.file("${buildDir}/lambda-api-graalvm.zip")
+    
 	archiveName "lambda-api-graalvm.zip"
-    destinationDir(file("${buildDir}/distributions"))
+    destinationDir(file("${buildDir}"))
     from("${project.projectDir}/runtime") {
         include 'bootstrap'
     }
@@ -82,18 +86,36 @@ task buildJava11Zip(type: Zip) {
     }           
 }
 
-task uploadToS3 {
+task assembleTemplate {
+    dependsOn buildZip, ':lambda-cognito-user-signup:build'
+	inputs.files("src/main/resources/cloudformation/template-snippet.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
+	outputs.dir("${buildDir}/distributions/formkiq-core")
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/lambda-api-graalvm.zip s3://${distrobucket}/formkiq-core/${project.version}/lambda-api-graalvm.zip --profile ${testprofile}"
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/api"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/../../lambda-cognito-user-signup/build/distributions/cognito-user-signup.zip ${buildDir}/"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/lambda-api-graalvm.zip ${buildDir}/cognito-user-signup.zip ${buildDir}/distributions/formkiq-core/sam/api/"
+		}
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/template-snippet.yaml src/main/resources/cloudformation/api.yaml src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/template-sar.yaml"
+		}
+		// build SAM distribution
+		exec {
+			commandLine "bash", "-c", "yq d ${buildDir}/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+		}
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/api/template.yaml"
 		}
 	}
 }
 
 buildJava11Zip.dependsOn jar
 
-buildZip.dependsOn graalvmNativeImage
-uploadToS3.dependsOn buildZip
-
 graalvmNativeImage.dependsOn check
-build.dependsOn uploadToS3
+build.dependsOn assembleTemplate

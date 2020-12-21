@@ -8,9 +8,9 @@ Metadata:
     Description: Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../../../../../LICENSE
-    ReadmeUrl: file://../../../../../../README.md
-    Labels: ['formkiq-core-api']
+    LicenseUrl: file://../../../LICENSE
+    ReadmeUrl: file://../../../README.md
+    Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
@@ -92,7 +92,7 @@ Resources:
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
-      CodeUri: ../../../../build/distributions/lambda-api-graalvm.zip
+      CodeUri: ./lambda-api-graalvm.zip
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
@@ -105,7 +105,7 @@ Resources:
           FORMKIQ_TYPE: !Ref FormKiQType
       Role: !GetAtt [DocumentsApiRequestsRole, Arn]
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -145,9 +145,9 @@ Resources:
       Description: "The URL for the API endpoint that uses Cognito authorization"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
-      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
       
@@ -156,7 +156,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       AssumeRolePolicyDocument:
@@ -243,9 +243,9 @@ Resources:
       Description: "The URL for the API endpoint that uses IAM authorization"
       Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
-      Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -257,7 +257,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsApiRequests
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -266,7 +266,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       AssumeRolePolicyDocument:
@@ -291,7 +291,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -323,7 +323,7 @@ Resources:
       Type: String
       Value: !Ref ApiGatewayInvokeGroup
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -335,7 +335,7 @@ Resources:
       Type: String
       Value: !GetAtt [ApiGatewayInvokeGroup, Arn]
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
     
@@ -347,7 +347,7 @@ Resources:
       Type: String
       Value: !Ref ApiGatewayInvokeRole
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -359,7 +359,7 @@ Resources:
       Type: String
       Value: !GetAtt [ApiGatewayInvokeRole, Arn]
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -416,7 +416,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -469,7 +469,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -535,7 +535,7 @@ Resources:
       Type: String
       Value: !Ref CognitoUserPool
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -547,7 +547,7 @@ Resources:
       Type: String
       Value: !GetAtt CognitoUserPool.Arn
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -559,7 +559,7 @@ Resources:
       Type: String
       Value: !GetAtt CognitoUserPool.ProviderURL
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -571,7 +571,7 @@ Resources:
       Type: String
       Value: !GetAtt CognitoUserPool.ProviderName
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -583,7 +583,7 @@ Resources:
       Type: String
       Value: !Ref CognitoUserPoolClient
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -595,7 +595,7 @@ Resources:
       Type: String
       Value: !Ref CognitoIdentityPool
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -607,7 +607,7 @@ Resources:
       Type: String
       Value: !Ref AdminGroup
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -617,13 +617,13 @@ Resources:
       Handler: index.handler
       Role: !GetAtt CognitoCustomMessageRole.Arn
       Runtime: nodejs10.x
-      CodeUri: ../../../../../lambda-cognito-user-signup/build/distributions/cognito-user-signup.zip
+      CodeUri: ./cognito-user-signup.zip
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         StackName: !Sub "${AWS::StackName}"
 
   CognitoCustomMessageRole:
@@ -631,7 +631,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       AssumeRolePolicyDocument:
@@ -688,10 +688,10 @@ Outputs:
     Value: !Ref DocumentsApiRequests
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
-    Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
-    Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
   CognitoUserPoolId:
     Description: "Cognito User Pool"
     Value: !Ref CognitoUserPool
@@ -712,4 +712,4 @@ Outputs:
     Value: !Ref CognitoIdentityPool
   CognitoAdminGroup:
     Description: "FormKiQ Cognito Admin Group"
-    Value: !Ref AdminGroup    
+    Value: !Ref AdminGroup

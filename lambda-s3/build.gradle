@@ -1,4 +1,4 @@
-description = "FormKiQ Cloud - Lambda S3 to Dynamodb"
+description = "FormKiQ Core - Lambda S3 to Dynamodb"
 
 dependencies {
 
@@ -21,6 +21,7 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version:'4.+'
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
 
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.15.25'
 	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.15.25'
 }
 
@@ -61,8 +62,12 @@ task testaws(type: Test) {
 }
 
 task buildZip(type: Zip) {
+	dependsOn graalvmNativeImage
+	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
+  	outputs.dir("${buildDir}")
+  	
 	archiveName "lambda-s3-graalvm.zip"
-    destinationDir(file("${buildDir}/distributions"))
+    destinationDir(file("${buildDir}"))
     from("${project.projectDir}/runtime") {
         include 'bootstrap'
     }
@@ -71,16 +76,31 @@ task buildZip(type: Zip) {
     }
 }
 
-task uploadToS3 {
+task assembleTemplate {
+    dependsOn buildZip
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	outputs.dir("${buildDir}/distributions/formkiq-core")
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/lambda-s3-graalvm.zip s3://${distrobucket}/formkiq-core/${project.version}/lambda-s3-graalvm.zip --profile ${testprofile}"
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/storage && mkdir -p ${buildDir}/distributions/formkiq-core/sar/storage"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/lambda-s3-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/storage/"
+		}
+		// build SAM distribution
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/template-sar.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
+		}
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/storage/template.yaml"
 		}
 	}
 }
 
-buildZip.dependsOn graalvmNativeImage
 graalvmNativeImage.dependsOn check
-uploadToS3.dependsOn buildZip
 
-build.dependsOn uploadToS3
+build.dependsOn assembleTemplate

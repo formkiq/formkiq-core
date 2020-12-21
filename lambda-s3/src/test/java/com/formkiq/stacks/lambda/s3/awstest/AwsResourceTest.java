@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
@@ -87,10 +84,12 @@ public class AwsResourceTest extends AbstractAwsTest {
    * Assert Received Message.
    * 
    * @param queueUrl {@link String}
+   * @param type {@link String}
    * @throws InterruptedException InterruptedException
    */
   @SuppressWarnings("unchecked")
-  private static void assertSnsMessage(final String queueUrl) throws InterruptedException {
+  private static void assertSnsMessage(final String queueUrl, final String type)
+      throws InterruptedException {
 
     List<Message> receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
     while (receiveMessages.size() != 1) {
@@ -158,16 +157,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     // given
     String key = UUID.randomUUID().toString();
 
-    String createQueue = "createtest-" + UUID.randomUUID();
-    String createQueueUrl = createSqsQueue(createQueue).queueUrl();
-    String subscriptionCreateArn =
-        subscribeToSns(getSnsDocumentsCreateEventTopicArn(), createQueueUrl);
-
-    String deleteQueue = "deletetest-" + UUID.randomUUID();
-    String deleteQueueUrl = createSqsQueue(deleteQueue).queueUrl();
-    String subscriptionDeleteArn =
-        subscribeToSns(getSnsDocumentsDeleteEventTopicArn(), deleteQueueUrl);
     String contentType = "text/plain";
+    String createQueue = "createtest-" + UUID.randomUUID();
+    String documentEventQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String snsDocumentEventArn = subscribeToSns(getSnsDocumentEventArn(), documentEventQueueUrl);
 
     try {
 
@@ -179,7 +172,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         // then
         verifyFileExistsInDocumentsS3(s3, key, contentType);
         verifyFileNotExistInStagingS3(s3, key);
-        assertSnsMessage(createQueueUrl);
+        assertSnsMessage(documentEventQueueUrl, "create");
 
         // when
         key = writeToStaging(s3, key, contentType);
@@ -187,21 +180,18 @@ public class AwsResourceTest extends AbstractAwsTest {
         // then
         verifyFileExistsInDocumentsS3(s3, key, contentType);
         verifyFileNotExistInStagingS3(s3, key);
-        assertSnsMessage(createQueueUrl);
+        assertSnsMessage(documentEventQueueUrl, "create");
 
         // when
         getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
         // then
-        assertSnsMessage(deleteQueueUrl);
+        assertSnsMessage(documentEventQueueUrl, "delete");
       }
 
     } finally {
-      getSnsService().unsubscribe(subscriptionCreateArn);
-      getSqsService().deleteQueue(createQueueUrl);
-
-      getSnsService().unsubscribe(subscriptionDeleteArn);
-      getSqsService().deleteQueue(deleteQueueUrl);
+      getSnsService().unsubscribe(snsDocumentEventArn);
+      getSqsService().deleteQueue(documentEventQueueUrl);
     }
   }
 
@@ -257,14 +247,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     String key = UUID.randomUUID().toString();
 
     String createQueue = "createtest-" + UUID.randomUUID();
-    String createQueueUrl = createSqsQueue(createQueue).queueUrl();
-    String subscriptionCreateArn =
-        subscribeToSns(getSnsDocumentsCreateEventTopicArn(), createQueueUrl);
+    String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String subscriptionDocumentArn =
+        subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
-    String deleteQueue = "deletetest-" + UUID.randomUUID();
-    String deleteQueueUrl = createSqsQueue(deleteQueue).queueUrl();
-    String subscriptionDeleteArn =
-        subscribeToSns(getSnsDocumentsDeleteEventTopicArn(), deleteQueueUrl);
     String contentType = "text/plain";
     String content = "test content";
 
@@ -287,21 +273,18 @@ public class AwsResourceTest extends AbstractAwsTest {
         // then
         assertEquals(statusCode, put.statusCode());
         verifyFileExistsInDocumentsS3(s3, key, contentType);
-        assertSnsMessage(createQueueUrl);
+        assertSnsMessage(documentQueueUrl, "create");
 
         // when
         getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
         // then
-        assertSnsMessage(deleteQueueUrl);
+        assertSnsMessage(documentQueueUrl, "delete");
       }
 
     } finally {
-      getSnsService().unsubscribe(subscriptionCreateArn);
-      getSqsService().deleteQueue(createQueueUrl);
-
-      getSnsService().unsubscribe(subscriptionDeleteArn);
-      getSqsService().deleteQueue(deleteQueueUrl);
+      getSnsService().unsubscribe(subscriptionDocumentArn);
+      getSqsService().deleteQueue(documentQueueUrl);
     }
   }
 
@@ -344,16 +327,13 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testSsmParameters() {
     String appenvironment = getAppenvironment();
 
-    assertEquals("formkiq-core-" + appenvironment + "-documents-622653865277",
-        getDocumentsbucketname());
-    assertEquals("formkiq-core-" + appenvironment + "-staging-622653865277",
-        getStagingdocumentsbucketname());
+    assertTrue(
+        getDocumentsbucketname().startsWith("formkiq-core-" + appenvironment + "-documents-"));
+    assertTrue(
+        getStagingdocumentsbucketname().startsWith("formkiq-core-" + appenvironment + "-staging-"));
     assertTrue(getSsmService()
-        .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsCreateEventTopicArn")
-        .contains("SnsDocumentsCreateEventTopic"));
-    assertTrue(getSsmService()
-        .getParameterValue("/formkiq/" + appenvironment + "/sns/SnsDocumentsUpdateEventTopicArn")
-        .contains("SnsDocumentsUpdateEventTopic"));
+        .getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn")
+        .contains("SnsDocumentEvent"));
     assertTrue(getSsmService()
         .getParameterValue("/formkiq/" + appenvironment + "/lambda/StagingCreateObject")
         .contains("StagingS3Create"));

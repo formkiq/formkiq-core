@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -28,6 +25,8 @@ import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.PK;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_DOCS;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
 import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAGS;
 import static com.formkiq.stacks.dynamodb.DbKeys.SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
@@ -37,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
@@ -86,22 +86,26 @@ public class DocumentTagToAttributeValueMap
       final String documentId, final DocumentTag tag) {
 
     String tagKey = tag.getKey();
-    String tagValue = tag.getValue();
+    String tagValue = !StringUtils.isBlank(tag.getValue()) ? tag.getValue() : "";
+    String fulldate = this.df.format(tag.getInsertedDate());
+
     DocumentTagType type = tag.getType() != null ? tag.getType() : DocumentTagType.USERDEFINED;
 
     Map<String, AttributeValue> pkvalues = new HashMap<String, AttributeValue>();
 
     pkvalues.put(PK,
-        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAGS + documentId)).build());
-    pkvalues.put(SK, AttributeValue.builder().s(tagKey).build());
+        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_DOCS + documentId)).build());
+    pkvalues.put(SK, AttributeValue.builder().s(PREFIX_TAGS + tagKey).build());
 
     pkvalues.put(GSI1_PK, AttributeValue.builder()
-        .s(createDatabaseKey(siteId, tagKey + TAG_DELIMINATOR + tagValue)).build());
-    pkvalues.put(GSI1_SK, AttributeValue.builder().s(documentId).build());
+        .s(createDatabaseKey(siteId, PREFIX_TAG + tagKey + TAG_DELIMINATOR + tagValue)).build());
+    pkvalues.put(GSI1_SK,
+        AttributeValue.builder().s(fulldate + TAG_DELIMINATOR + documentId).build());
 
-    pkvalues.put(GSI2_PK, AttributeValue.builder().s(createDatabaseKey(siteId, tagKey)).build());
-    pkvalues.put(GSI2_SK,
-        AttributeValue.builder().s(tagValue + TAG_DELIMINATOR + documentId).build());
+    pkvalues.put(GSI2_PK,
+        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + tagKey)).build());
+    pkvalues.put(GSI2_SK, AttributeValue.builder()
+        .s(tagValue + TAG_DELIMINATOR + fulldate + TAG_DELIMINATOR + documentId).build());
 
     pkvalues.put("documentId", AttributeValue.builder().s(documentId).build());
 
@@ -119,7 +123,6 @@ public class DocumentTagToAttributeValueMap
       pkvalues.put("userId", AttributeValue.builder().s(tag.getUserId()).build());
     }
 
-    String fulldate = this.df.format(tag.getInsertedDate());
     pkvalues.put("inserteddate", AttributeValue.builder().s(fulldate).build());
 
     return pkvalues;

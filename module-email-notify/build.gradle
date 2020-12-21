@@ -1,0 +1,76 @@
+	
+description = "FormKiQ Core - Email Notify Module"
+
+dependencies {
+    testImplementation project(':aws-s3')
+    testImplementation project(':aws-sqs')
+    testImplementation project(':aws-ssm')
+    testImplementation project(':aws-sns')
+    testImplementation group: 'junit', name: 'junit', version:'4.+'
+    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
+}
+
+test {
+  failFast = true
+  exclude 'com/formkiq/stacks/module/emailnotify/awstest/**' 
+}
+
+task testaws(type: Test) {
+  description = 'Runs AWS integration tests.'
+  outputs.upToDateWhen {false}
+  include 'com/formkiq/stacks/module/emailnotify/awstest/**'    
+}
+
+task npmtest {
+  inputs.files("${project.projectDir}/src/index.js", "${project.projectDir}/src/test/index.js")
+  outputs.file("$buildDir/${project.name}_index.js_${project.version}")
+
+  doFirst {
+	macroLocalStackStart()
+  }
+  
+  doLast {
+    exec {
+      commandLine "bash", "-c", "cd src ; npm install ; npm test"
+    }
+    macroDockerComposeDown()
+  }
+}
+
+task buildZip(type: Zip) {
+   dependsOn check
+   from "src"
+   include "*"
+   include "*/*"
+   exclude "test", "coverage"
+   archiveName "module-email-notify.zip"
+   destinationDir(file("${buildDir}"))
+}
+
+task assembleTemplate {
+    dependsOn buildZip
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	outputs.dir("${buildDir}/distributions/formkiq-core")
+	doLast {
+		exec {
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/module-email-notify && mkdir -p ${buildDir}/distributions/formkiq-core/sar/module-email-notify"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/module-email-notify.zip ${buildDir}/distributions/formkiq-core/sam/module-email-notify/"
+		}
+		// build SAM distribution
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/template-sar.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/module-email-notify/template.yaml"
+		}
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml"
+		}
+	}
+}
+
+test.dependsOn npmtest
+build.dependsOn assembleTemplate

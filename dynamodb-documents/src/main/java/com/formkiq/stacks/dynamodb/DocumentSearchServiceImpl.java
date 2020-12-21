@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -28,6 +25,7 @@ import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
 import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.util.HashMap;
@@ -110,7 +108,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     String expression = GSI2_PK + " = :pk and begins_with(" + GSI2_SK + ", :sk)";
 
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
-    values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, key)).build());
+    values.put(":pk",
+        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
     values.put(":sk", AttributeValue.builder().s(value).build());
 
     return searchForDocuments(siteId, GSI2, expression, values, token, maxresults);
@@ -132,7 +131,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     String expression = GSI2_PK + " = :pk";
 
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
-    values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, key)).build());
+    values.put(":pk",
+        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
 
     return searchForDocuments(siteId, GSI2, expression, values, token, maxresults);
   }
@@ -154,7 +154,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
     values.put(":pk", AttributeValue.builder()
-        .s(createDatabaseKey(siteId, key + TAG_DELIMINATOR + value)).build());
+        .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
 
     return searchForDocuments(siteId, GSI1, expression, values, token, maxresults);
   }
@@ -178,7 +178,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
         .keyConditionExpression(expression).expressionAttributeValues(values)
-        .exclusiveStartKey(startkey).limit(Integer.valueOf(maxresults)).build();
+        .exclusiveStartKey(startkey).scanIndexForward(Boolean.FALSE)
+        .limit(Integer.valueOf(maxresults)).build();
 
     QueryResponse result = this.dynamoDB.query(q);
 

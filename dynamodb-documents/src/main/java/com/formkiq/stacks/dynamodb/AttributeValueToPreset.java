@@ -46,7 +46,7 @@ public class AttributeValueToPreset
     Preset item = new Preset();
 
     if (map.containsKey(GSI2_SK)) {
-      String[] s = map.get(GSI2_SK).s().split("\t");
+      String[] s = map.get(GSI2_SK).s().split(DbKeys.TAG_DELIMINATOR);
       if (s.length == GSI2_SK_LENGTH) {
         item.setType(s[0]);
       }

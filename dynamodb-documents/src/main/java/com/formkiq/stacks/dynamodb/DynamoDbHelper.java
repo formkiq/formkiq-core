@@ -3,33 +3,33 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
@@ -181,9 +181,8 @@ public class DynamoDbHelper {
   private PaginationResults<String> findRecords(final PaginationMapToken token,
       final int maxPageSize) {
 
-    final int maxresults = 1000;
     ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
-        .limit(Integer.valueOf(maxresults)).build();
+        .limit(Integer.valueOf(maxPageSize)).build();
 
     ScanResponse result = this.db.scan(sr);
 
@@ -274,7 +273,8 @@ public class DynamoDbHelper {
       for (String documentId : results.getResults()) {
 
         String siteId = SiteIdKeyGenerator.getSiteId(documentId);
-        String id = SiteIdKeyGenerator.resetDatabaseKey(siteId, documentId);
+        String pk = SiteIdKeyGenerator.resetDatabaseKey(siteId, documentId);
+        String id = SiteIdKeyGenerator.getDeliminator(pk, 1);
         this.service.deleteDocument(siteId, id);
       }
 
@@ -284,5 +284,23 @@ public class DynamoDbHelper {
         break;
       }
     }
+  }
+  
+  /**
+   * Truncate Document Dates.
+   * 
+   */
+  public void truncateDocumentDates() {
+    final int maxresults = 1000;
+    ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
+        .limit(Integer.valueOf(maxresults)).build();
+    ScanResponse result = this.db.scan(sr);
+    
+    List<Map<String, AttributeValue>> list =
+        result.items().stream().filter(i -> i.get("PK").s().equals(DbKeys.PREFIX_DOCUMENT_DATE))
+            .collect(Collectors.toList());
+    
+    list.forEach(i -> this.db.deleteItem(DeleteItemRequest.builder().tableName(this.documentTable)
+        .key(i).build()));
   }
 }

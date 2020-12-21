@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -61,20 +58,29 @@ public interface DbKeys {
   /** Global Secondary Index 2 Sort Key. */
   String GSI2_SK = GSI2 + SK;
 
-  /** TAGS Partition Key Prefix. */
-  String PREFIX_TAGS = "tags_";
+  /** Composite Tag Key Deliminator. */
+  String TAG_DELIMINATOR = "#";
 
+  /** Documents Partition Key Prefix. */
+  String PREFIX_DOCS = "docs" + TAG_DELIMINATOR;
+  /** TAGS Partition Key Prefix. */
+  String PREFIX_TAG = "tag" + TAG_DELIMINATOR;  
+  /** TAGS Partition Keys Prefix. */
+  String PREFIX_TAGS = "tags" + TAG_DELIMINATOR;
+  /** Document Date Time Series Partition Keys Prefix. */
+  String PREFIX_DOCUMENT_DATE_TS = "docts" + TAG_DELIMINATOR;
+  /** Document Date Partition Keys Prefix. */
+  String PREFIX_DOCUMENT_DATE = "docdate";
+  /** Document Format Prefix. */
+  String PREFIX_DOCUMENT_FORMAT = "format" + TAG_DELIMINATOR;
   /** FORMATS Partition Key Prefix. */
-  String PREFIX_FORMATS = "formats_";
+  String PREFIX_FORMATS = "formats" + TAG_DELIMINATOR;
 
   /** Preset Partition Key Prefix. */
   String PREFIX_PRESETS = "pre";
 
   /** Preset Tag Partition Key Prefix. */
   String PREFIX_PRESETTAGS = "pretag";
-
-  /** Composite Tag Key Deliminator. */
-  String TAG_DELIMINATOR = "\t";
 
   /**
    * Add Number to {@link Map} {@link AttributeValue}.
@@ -142,8 +148,9 @@ public interface DbKeys {
   default Map<String, AttributeValue> keysDocument(String siteId, String documentId,
       Optional<String> childdocument) {
     return childdocument.isPresent()
-        ? keysGeneric(siteId, documentId, "document_" + childdocument.get())
-        : keysGeneric(siteId, documentId, "document");
+        ? keysGeneric(siteId, PREFIX_DOCS + documentId,
+            "document" + TAG_DELIMINATOR + childdocument.get())
+        : keysGeneric(siteId, PREFIX_DOCS + documentId, "document");
   }
 
   /**
@@ -156,8 +163,8 @@ public interface DbKeys {
    */
   default Map<String, AttributeValue> keysDocumentFormats(String siteId, String documentId,
       final String contentType) {
-    String sk = contentType != null ? "format_" + contentType : "format_";
-    return keysGeneric(siteId, PREFIX_FORMATS + documentId, sk);
+    String sk = contentType != null ? PREFIX_DOCUMENT_FORMAT + contentType : PREFIX_DOCUMENT_FORMAT;
+    return keysGeneric(siteId, PREFIX_DOCS + documentId, sk);
   }
 
   /**
@@ -170,7 +177,8 @@ public interface DbKeys {
    */
   default Map<String, AttributeValue> keysDocumentTag(String siteId, String documentId,
       final String tagKey) {
-    return keysGeneric(siteId, PREFIX_TAGS + documentId, tagKey);
+    return keysGeneric(siteId, PREFIX_DOCS + documentId,
+        tagKey != null ? PREFIX_TAGS + tagKey : PREFIX_TAGS);
   }
 
   /**
@@ -237,7 +245,7 @@ public interface DbKeys {
     if (id == null) {
       throw new IllegalArgumentException("'id' required");
     }
-    return keysGeneric(siteId, PREFIX_PRESETS + "_" + id, sk);
+    return keysGeneric(siteId, PREFIX_PRESETS + TAG_DELIMINATOR + id, sk);
   }
 
   /**
@@ -279,7 +287,7 @@ public interface DbKeys {
     if (id == null) {
       throw new IllegalArgumentException("'id' required");
     }
-    return keysGeneric(siteId, PREFIX_PRESETTAGS + "_" + id, tag);
+    return keysGeneric(siteId, PREFIX_PRESETTAGS + TAG_DELIMINATOR + id, tag);
   }
 
   /**

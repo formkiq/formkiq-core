@@ -39,7 +39,6 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.CacheService;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -59,20 +58,19 @@ public interface ApiGatewayRequestEventUtil {
    * @param cacheService {@link CacheService}
    * @param event {@link ApiGatewayRequestEvent}
    * @param lastPagination {@link ApiPagination}
-   * @param results {@link PaginationResults}
+   * @param token {@link PaginationMapToken}
    * @param limit int
    * 
    * @return {@link ApiPagination}
    */
   default ApiPagination createPagination(final CacheService cacheService,
       final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
-      final PaginationResults<?> results, final int limit) {
+      final PaginationMapToken token, final int limit) {
 
     ApiPagination current = null;
     final Map<String, String> q = getQueryParameterMap(event);
 
     Gson gson = GsonUtil.getInstance();
-    PaginationMapToken token = results.getToken();
 
     if (isPaginationPrevious(q)) {
 

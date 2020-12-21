@@ -1,5 +1,5 @@
 	
-description = "FormKiQ Cloud - Document Stack Console"
+description = "FormKiQ Core - Console"
 
 dependencies {
 
@@ -15,13 +15,23 @@ dependencies {
 }
 
 task buildZip(type: Zip) {
+	dependsOn check
 	archiveName "console-installer.zip"
-    destinationDir(file("${buildDir}/distributions"))
+    destinationDir(file("${buildDir}"))
     from compileJava
     from processResources              
     into('lib') {
         from configurations.default
     }           
+}
+
+task buildUnzip(type: Copy) {
+  dependsOn buildZip
+  def zipFile = file("${buildDir}/console-installer.zip")
+  def outputDir = file("${buildDir}/tmp/console")
+
+  from zipTree(zipFile)
+  into outputDir
 }
 
 test {
@@ -44,14 +54,29 @@ task testaws(type: Test) {
   outputs.upToDateWhen {false}    
 }
 
-task uploadToS3 {
+task assembleTemplate {
+    dependsOn buildZip
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	outputs.dir("${buildDir}/distributions")
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/console-installer.zip s3://${distrobucket}/formkiq-core/${project.version}/console-installer.zip --profile ${testprofile}"
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/console && mkdir -p ${buildDir}/distributions/formkiq-core/sar/console"
+		}
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/template-sar.yaml"
+		}
+		// build SAM distribution
+		exec {
+			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/console/template.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/console-installer.zip ${buildDir}/distributions/formkiq-core/sam/console/"
+		}
+		// build SAR distribution
+		exec {
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml"
 		}
 	}
 }
 
-buildZip.dependsOn check
-uploadToS3.dependsOn buildZip
-build.dependsOn uploadToS3
+build.dependsOn assembleTemplate

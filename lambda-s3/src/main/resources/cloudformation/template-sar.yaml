@@ -1,16 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FormKiQ Core - Data
+Description: FormKiQ Core - Storage
 
 Metadata:
   AWS::ServerlessRepo::Application:
-    Name: FormKiQ-Core-Data
-    Description: Base component of FormKiQ-Core
+    Name: FormKiQ-Core-Storage
+    Description: Storage Base component of FormKiQ-Core
     Author: FormKiQ Inc
     SpdxLicenseId: MIT
-    LicenseUrl: file://../../../../../../LICENSE
-    ReadmeUrl: file://../../../../../../README.md
-    Labels: ['formkiq-core-data']
+    LicenseUrl: file://../../../LICENSE
+    ReadmeUrl: file://../../../README.md
+    Labels: []
     HomePageUrl: https://github.com/formkiq/formkiq-core
     SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
@@ -32,42 +32,24 @@ Parameters:
     Type: String
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
-              
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+    
 Resources:
 
-  SnsDocumentsCreateEventTopicArnParameter:
+  SnsDocumentEventArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "SNS Topic for Document Create Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsCreateEventTopicArn"
+      Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentEventArn"
       Type: String
-      Value: !Ref SnsDocumentsCreateEventTopic
+      Value: !Ref SnsDocumentEvent
       Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
-        
-  SnsDocumentsUpdateEventTopicParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "SNS Topic for Document Update Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsUpdateEventTopicArn"
-      Type: String
-      Value: !Ref SnsDocumentsUpdateEventTopic
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
-
-  SnsDocumentsDeleteEventTopicParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "SNS Topic for Document Delete Events"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/SnsDocumentsDeleteEventTopicArn"
-      Type: String
-      Value: !Ref SnsDocumentsDeleteEventTopic
-      Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -79,7 +61,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsS3Buckets
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -91,7 +73,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsStageS3Bucket
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
                       
@@ -100,7 +82,7 @@ Resources:
     DependsOn:
     - StagingS3Create
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"
+      BucketName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
       BucketEncryption: 
         ServerSideEncryptionConfiguration: 
         - ServerSideEncryptionByDefault:
@@ -121,27 +103,27 @@ Resources:
           Function: !GetAtt [StagingS3Create, Arn]
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
           Value: !Sub "${AWS::StackName}"
 
-  SnsDocumentsCreateEventTopic:
+  SnsDocumentEvent:
     Type: "AWS::SNS::Topic"
     Properties:
       Tags:
           - Key: "Application"
-            Value: "FormKiQ Core"      
+            Value: !Sub "FormKiQ ${FormKiQType}"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
           - Key: "StackName"
             Value: !Sub "${AWS::StackName}"            
             
-  SnsDocumentsCreateEventTopicPolicy:
+  SnsDocumentEventPolicy:
     Type: AWS::SNS::TopicPolicy
     DependsOn:
-    - SnsDocumentsCreateEventTopic
+    - SnsDocumentEvent
     Properties:
       PolicyDocument:
         Version: '2012-10-17'
@@ -150,78 +132,16 @@ Resources:
           Principal:
             Service: lambda.amazonaws.com
           Action: sns:Publish
-          Resource: !Ref SnsDocumentsCreateEventTopic
+          Resource: !Ref SnsDocumentEvent
       Topics:
-      - Ref: SnsDocumentsCreateEventTopic
-
-  SnsDocumentsUpdateEventTopic:
-    Type: "AWS::SNS::Topic"
-    Properties:
-      Tags:
-          - Key: "Application"
-            Value: "FormKiQ Core"      
-          - Key: "AppEnvironment"
-            Value: !Sub "${AppEnvironment}"
-          - Key: "StackName"
-            Value: !Sub "${AWS::StackName}"            
-            
-  SnsDocumentsUpdateEventTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    DependsOn:
-    - SnsDocumentsUpdateEventTopic
-    - DocumentsS3Update
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: lambda.amazonaws.com
-          Action: sns:Publish
-          Resource: !Ref SnsDocumentsUpdateEventTopic
-          Condition:
-            ArnLike:
-              aws:SourceArn: !GetAtt [DocumentsS3Update, Arn]
-      Topics:
-      - Ref: SnsDocumentsUpdateEventTopic
-
-  SnsDocumentsDeleteEventTopic:
-    Type: "AWS::SNS::Topic"
-    Properties:
-      Tags:
-          - Key: "Application"
-            Value: "FormKiQ Core"      
-          - Key: "AppEnvironment"
-            Value: !Sub "${AppEnvironment}"
-          - Key: "StackName"
-            Value: !Sub "${AWS::StackName}"
-            
-  SnsDocumentsDeleteEventTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    DependsOn:
-    - SnsDocumentsDeleteEventTopic
-    - DocumentsS3Update
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: lambda.amazonaws.com
-          Action: sns:Publish
-          Resource: !Ref SnsDocumentsDeleteEventTopic
-          Condition:
-            ArnLike:
-              aws:SourceArn: !GetAtt [DocumentsS3Update, Arn]
-      Topics:
-      - Ref: SnsDocumentsDeleteEventTopic
+      - Ref: SnsDocumentEvent
       
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
     DependsOn:
     - DocumentsS3Update
     Properties:
-      BucketName: !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"
+      BucketName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
@@ -246,7 +166,7 @@ Resources:
           Function: !GetAtt [DocumentsS3Update, Arn]
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -261,17 +181,17 @@ Resources:
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
-      CodeUri: ../../../../build/distributions/lambda-s3-graalvm.zip
+      CodeUri: ./lambda-s3-graalvm.zip
       Environment:
         Variables:
-          DOCUMENTS_S3_BUCKET: !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"
+          DOCUMENTS_S3_BUCKET: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENTS_TABLE: !Ref Documents
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
       Role: !GetAtt [S3LambdaRole, Arn]
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         StackName: !Sub "${AWS::StackName}"
 
   StagingCreateObjectParameter:
@@ -282,7 +202,7 @@ Resources:
       Type: String
       Value: !Ref StagingS3Create
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -295,7 +215,7 @@ Resources:
       FunctionName: !GetAtt StagingS3Create.Arn
       Principal: s3.amazonaws.com
       SourceAccount: !Sub "${AWS::AccountId}"
-      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"]]
+      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"]]
               
   DocumentsS3Update:
     Type: AWS::Serverless::Function
@@ -306,19 +226,17 @@ Resources:
       Runtime: provided
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
-      CodeUri: ../../../../build/distributions/lambda-s3-graalvm.zip
+      CodeUri: ./lambda-s3-graalvm.zip
       Environment:
         Variables:
           DOCUMENTS_TABLE: !Ref Documents
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
-          SNS_UPDATE_TOPIC_ARN: !Ref SnsDocumentsUpdateEventTopic
-          SNS_CREATE_TOPIC: !Ref SnsDocumentsCreateEventTopic
-          SNS_DELETE_TOPIC: !Ref SnsDocumentsDeleteEventTopic          
+          SNS_DOCUMENT_EVENT: !Ref SnsDocumentEvent          
       Role: !GetAtt [S3LambdaRole, Arn]
       Tags:
         AppEnvironment: !Sub "${AppEnvironment}"
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         StackName: !Sub "${AWS::StackName}"
       Events:
         CreateSQSEvent:
@@ -334,7 +252,7 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
           - Key: "Application"
-            Value: "FormKiQ Core"      
+            Value: !Sub "FormKiQ ${FormKiQType}"      
           - Key: "AppEnvironment"
             Value: !Sub "${AppEnvironment}"
           - Key: "StackName"
@@ -348,7 +266,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsS3Update
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
@@ -356,7 +274,7 @@ Resources:
     Type: AWS::SQS::QueuePolicy
     DependsOn: 
     - DocumentsUpdateQueue
-    - SnsDocumentsCreateEventTopic
+    - SnsDocumentEvent
     Properties:
       PolicyDocument:
         Version: '2012-10-17'
@@ -379,7 +297,7 @@ Resources:
       Type: String
       Value: !Ref DocumentsUpdateQueue
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -391,7 +309,7 @@ Resources:
       Type: String
       Value: !GetAtt DocumentsUpdateQueue.Arn
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
         
@@ -404,14 +322,14 @@ Resources:
       FunctionName: !GetAtt DocumentsS3Update.Arn
       Principal: s3.amazonaws.com
       SourceAccount: !Sub "${AWS::AccountId}"
-      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"]]
+      SourceArn: !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"]]
 
   S3LambdaRole:
     Type: AWS::IAM::Role
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"        
+          Value: !Sub "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: "StackName"
@@ -447,16 +365,16 @@ Resources:
             Action:
             - s3:ListBucket
             Resource:
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}"]]
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}"]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"]]
           - Effect: Allow
             Action:
             - s3:GetObject*
             - s3:PutObject*
             - s3:DeleteObject
             Resource:
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-documents-${AWS::AccountId}", /*]]
-            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-core-${AppEnvironment}-staging-${AWS::AccountId}", /*]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}", /*]]
+            - !Join ['', ['arn:aws:s3:::', !Sub "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}", /*]]
           - Effect: Allow
             Action:
             - dynamodb:BatchGetItem
@@ -486,9 +404,7 @@ Resources:
             Action:
             - sns:Publish
             Resource:
-            - !Ref SnsDocumentsCreateEventTopic
-            - !Ref SnsDocumentsUpdateEventTopic
-            - !Ref SnsDocumentsDeleteEventTopic
+            - !Ref SnsDocumentEvent
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter
@@ -498,14 +414,14 @@ Resources:
       Type: String
       Value: !Ref Documents
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
   Documents:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "formkiq-core-${AppEnvironment}-documents"
+      TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents"
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
         StreamViewType: NEW_IMAGE
@@ -513,7 +429,7 @@ Resources:
         PointInTimeRecoveryEnabled: true
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       KeySchema: 
@@ -584,21 +500,21 @@ Resources:
       Type: String
       Value: !Ref Cache
       Tags:
-        Application: "FormKiQ Core"
+        Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
       
   Cache:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "formkiq-core-${AppEnvironment}-cache"
+      TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-cache"
       BillingMode: PAY_PER_REQUEST
       TimeToLiveSpecification:
         AttributeName: TimeToLive
         Enabled: TRUE
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Core"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
       KeySchema: 
@@ -641,17 +557,9 @@ Outputs:
     Description: Documents S3 Update Documents Queue Arn
     Value: !GetAtt DocumentsUpdateQueue.Arn
         
-  SnsDocumentsCreateEventTopicArn:
-    Description: SNS Documents Create Event Handler
-    Value: !Ref SnsDocumentsCreateEventTopic
-
-  SnsDocumentsUpdateEventTopicArn:
-    Description: SNS Documents Update Event Handler
-    Value: !Ref SnsDocumentsUpdateEventTopic
-
-  SnsDocumentsDeleteEventTopicArn:
-    Description: SNS Documents Delete Event Handler
-    Value: !Ref SnsDocumentsDeleteEventTopic
+  SnsDocumentEventArn:
+    Description: SNS Topic for Document Events
+    Value: !Ref SnsDocumentEvent
     
   DocumentsS3Update:
     Description: Documents MetaData Object Lambda

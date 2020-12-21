@@ -9,7 +9,8 @@
 	
 		<subpackage name="s3">
 		
-			<allow pkg="software.amazon.awssdk.auth.credentials" />			
+			<allow pkg="software.amazon.awssdk.auth.credentials" />	
+			<allow pkg="software.amazon.awssdk.services.sns.model" />			
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			
 			<allow pkg="com.formkiq.aws.s3" />

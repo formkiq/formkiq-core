@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -1138,6 +1135,53 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents gutenburg content-type with IAM Role.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocuments12() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      newOutstream();
+      // given
+
+      // when
+      DynamicObject obj = handleRequest("/request-post-documents05.json", siteId, null, null);
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNotNull(body.getString("documentId"));
+      assertNull(body.getString("uploadUrl"));
+
+      assertEquals("[]", body.getList("documents").toString());
+
+      String key = getKey(siteId, body);
+      String documentId = body.getString("documentId");
+
+      assertTrue(
+          getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+
+      assertNotNull(documentId);
+
+      DynamicObject verifyS3 = verifyS3(key, false, null);
+      assertNotNull(verifyS3.getString("documentId"));
+      assertNotNull(verifyS3.getString("userId"));
+      assertNull(verifyS3.getString("uploadUrl"));
+      assertEquals("text/html", verifyS3.getString("contentType"));
+
+      try (S3Client s3 = getS3().buildClient()) {
+        assertEquals("text/html",
+            getS3().getObjectMetadata(s3, getStages3bucket(), key).getContentType());
+      }
+    }
+  }
+
+  /**
    * Verify S3 File.
    * 
    * @param key {@link String}
@@ -1153,7 +1197,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
 
       assertTrue(obj.hasString("documentId"));
-      assertEquals(userId, obj.getString("userId"));
+
+      if (userId != null) {
+        assertEquals(userId, obj.getString("userId"));
+      } else {
+        assertNotNull(obj.getString("userId"));
+      }
 
       if (hasContent) {
         assertTrue(obj.hasString("content"));

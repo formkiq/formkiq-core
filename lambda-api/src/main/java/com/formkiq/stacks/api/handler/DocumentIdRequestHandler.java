@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -46,6 +43,7 @@ import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
 import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.lambda.apigateway.ApiPagination;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.ApiResponse;
 import com.formkiq.lambda.apigateway.ApiResponseStatus;
@@ -56,6 +54,7 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.PaginationResult;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -237,16 +236,28 @@ public class DocumentIdRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
+    
     String siteId = getSiteId(event);
+    int limit = getLimit(logger, event);
+    ApiPagination token = getPagination(awsservice.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
-    DocumentItem result = awsservice.documentService().findDocument(siteId, documentId, true);
+    ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
+    
+    PaginationResult<DocumentItem> presult = awsservice.documentService().findDocument(siteId,
+        documentId, true, token != null ? token.getStartkey() : null, limit);
+    DocumentItem result = presult.getResult();
 
     if (result == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
+    ApiPagination current = createPagination(awsservice.documentCacheService(), event, pagination,
+        presult.getToken(), limit);
+    
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
     item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    item.put("previous", current.getPrevious());
+    item.put("next", current.hasNext() ? current.getNext() : null);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
   }
@@ -277,6 +288,7 @@ public class DocumentIdRequestHandler
     String maxDocumentCount = null;
 
     DynamicObject item = fromBodyToDynamicObject(logger, event);
+    updateContentType(event, item);
 
     List<DynamicObject> documents = item.getList("documents");
 
@@ -306,7 +318,22 @@ public class DocumentIdRequestHandler
     Map<String, Object> map = buildResponse(siteId, documentId, documents, uploadUrls);
 
     ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
+
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
+  }
+
+  /**
+   * Update Content-Type on {@link DynamicObject} based on {@link ApiGatewayRequestEvent}.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param item {@link DynamicObject}
+   */
+  private void updateContentType(final ApiGatewayRequestEvent event, final DynamicObject item) {
+    String contentType = getContentType(event);
+
+    if (!item.containsKey("contentType") && contentType != null) {
+      item.put("contentType", contentType);
+    }
   }
 
   /**
@@ -333,7 +360,7 @@ public class DocumentIdRequestHandler
 
     S3Service s3 = awsservice.s3Service();
     try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, awsservice.stages3bucket(), key, bytes, null);
+      s3.putObject(client, awsservice.stages3bucket(), key, bytes, item.getString("contentType"));
 
       if (maxDocumentCount != null) {
         awsservice.documentCountService().incrementDocumentCount(siteId);
