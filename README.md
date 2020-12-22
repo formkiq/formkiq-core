@@ -83,7 +83,7 @@ You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples be
 
 ## 🏗️ Architecture
 
-![Architecture Diagram](https://raw.githubusercontent.com/formkiq/formkiq-core/readme/architecture.svg)
+![Architecture Diagram](https://raw.githubusercontent.com/formkiq/formkiq-core/master/architecture.svg)
 
 FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.amazon.com) Serverless technologies. This provides several benefits:
 
