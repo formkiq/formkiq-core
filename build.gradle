@@ -155,8 +155,7 @@ task buildDistribution(type: Copy) {
 
 task assembleTemplate {
     dependsOn buildDistribution
-	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-sar-snippet.yaml")
-  	outputs.dir("${buildDir}/distributions/formkiq-core")
+  	outputs.upToDateWhen { false }
 	doLast {
 		exec {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template.yaml ${buildDir}/template.yaml"

@@ -3,7 +3,39 @@
 # FormKiQ Core
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**FormKiQ Core is an Open Source Headless Document Management System (DMS) that runs in your [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).**
+## Table of Contents
+
+<details open>
+<summary>Table of Contents</summary>
+
+- [💥 What is FormKiQ Core](#-what-is-formkiq-core)
+  - [Features](#features)
+  - [Demo](#demo)
+  - [Examples](#examples)
+    - [Web Form Example - Contact Form](#web-form-example---contact-form)
+    - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
+- [🏗️ Architecture](#%EF%B8%8F-architecture)
+  - [List of AWS Services](#list-of-aws-services)
+- [🌀 Installation](#-installation)
+  - [AWS Serverless Application Repository](#aws-serverless-application-repository)
+  - [SAM CLI](#sam-cli)
+  - [Outputs](#outputs)
+- [🌐 API Reference](#-api-reference)
+- [🖥️ Console](#%EF%B8%8F-console)
+- [🔑 Authentication](#-authentication)
+  - [Users](#users)
+  - [Groups](#groups)
+  - [IAM](#iam)
+- [🗒️ Document Events](#%EF%B8%8F-document-events) 
+- [👥 Multi-Tenant Applications with SiteIds](#-multi-tenant-applications-with-siteids)
+- [🛠️ Building from source](#%EF%B8%8F-building-from-source)
+- [📜 License](#-license)
+
+</details>
+
+## 💥 What is FormKiQ Core?
+
+**FormKiQ Core is an Open Source Headless Document Management System (DMS) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).**
 
 FormKiQ Core is built for any size organization, from personal websites to large, enterprise organizations requiring full control of any number of internal and external documents. 
 
@@ -11,7 +43,7 @@ You can use FormKiQ Core to power the forms on your website, handling text and f
 
 FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aws.amazon.com/lambda/), [Amazon API Gateway](https://aws.amazon.com/api-gateway/), [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) and [Amazon S3](https://aws.amazon.com/s3/); this means that there are no servers for you to maintain or manage, and all of your data stays within your AWS cloud.
 
-## Features
+### Features
 
 ✅ API First (FormKiQ API) and Cloud-Native Architecture
 
@@ -27,35 +59,31 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 ✅ Includes an Intuitive User Interface (FormKiQ Console) for Document Management
 
-## Table of Contents
+### Demo
 
-<details open>
-<summary>Table of Contents</summary>
+⏱️ Coming Soon
 
-- [Getting Started](#getting-started)
-  - [List of AWS Services](#list-of-aws-services)
-  - [Installation](#installation)
-  - [Examples](#examples)
-    - [Web Form Example - Contact Form](#web-form-example---contact-form)
-    - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
-  - [API Reference](#api-reference)
-  - [Console](#console)
-  - [Authentication](#authentication)
-    - [Users](#users)
-    - [Groups](#groups)
-    - [IAM](#iam)
-- [Additional Features](#additional-features)
-  - [Document Events](#document-events) 
-  - [Multi-Tenant Applications with SiteIds](#multi-tenant-applications-with-siteids)
-- [What's Deployed](#whats-deployed)
-  - [Outputs](#outputs)
-    - [CloudFormation Outputs](#cloudformation-outputs)
-    - [SSM Parameter Store](#ssm-parameter-store)
-- [License](#license)
+### Examples
 
-</details>
+FormKiQ core can be used immediately after being deployed to handle web form submissions on your website. (In fact, you don't even need to be hosting your site in AWS to use FormKiQ for processing your site visitor's form submissions.)
 
-## Getting Started
+**The easiest way to include FormKiQ on your website is through the [FormKiQ Client SDK npm module](https://www.npmjs.com/package/formkiq-client-sdk-javascript).**
+
+You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples below:
+
+#### Web Form Example - Contact Form
+**https://github.com/formkiq/formkiq-webform-examples-contact**
+
+![Screenshot of Contact Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-contact/master/screenshot.png)
+
+#### Web Form Example - Job Application Form
+**https://github.com/formkiq/formkiq-webform-examples-jobapplication**
+
+![Screenshot of Job Application Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-jobapplication/master/screenshot.png)
+
+## 🏗️ Architecture
+
+![Architecture Diagram](https://raw.githubusercontent.com/formkiq/formkiq-core/readme/architecture.svg)
 
 FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.amazon.com) Serverless technologies. This provides several benefits:
 
@@ -77,11 +105,9 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 - Amazon Simple Notification Service (SNS) - document status notify system, allows applications to be notified that a document has been create/deleted or updated
 - AWS IAM and Amazon Cognito - User and System authentication
 
-### Installation
+## 🌀 Installation
 
-FormKiQ Core can be deployed from the [AWS Serverless Application Repository](https://aws.amazon.com/serverless/serverlessrepo). The Serverless Application Repository is an AWS-managed repository for serverless applications that allow for the easy distribution of applications from AWS Verified Authors. 
-
-[Install FormKiQ Core](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/create/app?applicationId=arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core)
+FormKiQ Core supports being installed using the [AWS Serverless Application Repository](#aws-serverless-application-repository) or manually using the [AWS SAM CLI](#sam-cli).
 
 After the deployment is completed, you will receive an email with a link to the [FormKiQ Console](#console), which has been installed in your AWS Cloud as part of the setup. You will be asked to login to your account, and once you do, you will be prompted to change your password.
 
@@ -89,160 +115,36 @@ Once you have set your password, you are ready to use FormKiQ Core.
 
 For more information on what is created by the deployment (including [Outputs](#outputs)), please see [What's Deployed](#whats-deployed).
 
-### Examples
+### AWS Serverless Application Repository
 
-FormKiQ core can be used immediately after being deployed to handle web form submissions on your website. (In fact, you don't even need to be hosting your site in AWS to use FormKiQ for processing your site visitor's form submissions.)
+The [AWS Serverless Application Repository](https://aws.amazon.com/serverless/serverlessrepo) is an AWS-managed repository for serverless applications that allow for the easy distribution/installation of applications from AWS Verified Authors. 
 
-**The easiest way to include FormKiQ on your website is through the [FormKiQ Client SDK npm module](https://www.npmjs.com/package/formkiq-client-sdk-javascript).**
+[Install FormKiQ Core](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/create/app?applicationId=arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core)
+    
+###  SAM CLI
 
-You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples below:
+The [AWS Serverless Application Model (SAM)](https://aws.amazon.com/serverless/sam/) is an open-source framework for building serverless applications.
 
-#### Web Form Example - Contact Form
-**https://github.com/formkiq/formkiq-webform-examples-contact**
+You can download the SAM zip file from the [FormKiQ Core Release](https://github.com/formkiq/formkiq-core/releases) page.
 
-![Screenshot of Contact Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-contact/master/screenshot.png)
-
-#### Web Form Example - Job Application Form
-**https://github.com/formkiq/formkiq-webform-examples-jobapplication**
-
-![Screenshot of Job Application Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-jobapplication/master/screenshot.png)
-
-### API Reference
-
-FormKiQ creates two APIs on deployment. One API uses Cognito authorization and the other uses IAM authorization. 
-
-See [CloudFormation Outputs](#cloudformation-outputs) for API URLs.
-
-Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the [OpenAPI Specification](https://swagger.io/specification/).
-
-[Full FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/lambda-api/src/main/resources/cloudformation/api.yml)
-
-|Method|Url|Description|
-|--------------|--------------------------|--------------------------|
-| GET | /documents | Returns a list of documents in reverse inserted date order |
-| POST | /documents | Create document |
-| GET | /documents/{documentId} | Get document details |
-| PATCH | /documents/{documentId} | Update document details |
-| DELETE | /documents/{documentId} | Delete document |
-| GET | /documents/{documentId}/versions | Get versions of document |
-| GET | /documents/{documentId}/content | Get document content |
-| GET | /documents/{documentId}/tags | Get document tags |
-| POST | /documents/{documentId}/tags | Add tag to document |
-| GET | /documents/{documentId}/tags/{tagKey} | Get a specific tag |
-| PUT | /documents/{documentId}/tags/{tagKey} | Update tag |
-| DELETE | /documents/{documentId}/tags/{tagKey} | Delete tag |
-| GET | /documents/{documentId}/url | Get document URL |
-| GET | /documents/upload | Returns URL that can accept uploads largers than 5 MB |
-| GET | /documents/{documentId}/upload | Returns URL that can accept uploads largers than 5 MB to update a specific document |
-| POST | /search | Document search |
-| POST | /public/documents | Public (unauthenticated) URL for creating a document, used for web forms |
-
-### Console
-
-While FormKiQ Core was built using an API First design methodology that allows easy integration with existing applications, you can also use the console interface that is set up with FormKiQ Core.
-
-The FormKiQ Console supports:
-
-✅ Adding / Removing Documents
-
-✅ Adding / Removing Document Tags
-
-✅ Search Documents
-
-✅ Executing FormKiQ API Calls within the API Explorer - you can use API methods directly from the console
-
-The FormKiQ Console is open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
-
-An email will be sent to your AdminEmail address with a link to the FormKiQ Console once the deployment has completed, but you can also find the Console URL in your [CloudFormation Outputs](#cloudformation-outputs).
-
-### Authentication
-
-FormKiQ Core follows AWS' best practices when it comes to protect data and services. [Amazon Cognito](https://aws.amazon.com/cognito/) is the default authentication and authorization for the FormKiQ API and the FormKiQ Console. ([AWS Identity and Access Management (IAM)](#iam) is also available for accessing the API.)
-
-#### Users
-
-Each FormKiQ Core deployment creates its own User Pool. By default, FormKiq Core uses the "AdminEmail" parameter to create a user with administrator privileges. FormKiq Core sends a confirmation link to the "AdminEmail" during deployment.
-
-All user maintenance operations can be done via the Amazon Cognito console. To learn how to add additional users see [Amazon Cognito's Developer Guide](https://docs.aws.amazon.com/cognito/latest/developerguide/managing-users.html) for instructions.
-
-See [Outputs](#Outputs) for FormKiQ configuration.
-
-#### Groups
-
-During deployment, FormKiQ Core creates three Cognito Groups within its Cognito User Pool:
-
-- Admins
-- default
-- default_read
-
-Users in the "Admins" group have full access to all documents in FormKiQ Core.
-
-Users in the "default" group will have read/write access to documents in the default siteid.
-
-Users in the "default_read" group will have read only access to documents in the default siteid.
-
-All group maintenance operations can be done via the Amazon Cognito console. To learn how to add users to a cognito group see [Amazon Cognito's Developer Guide](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html) for instructions.
-
-#### IAM
-
-When integrating FormKiQ with existing application or other AWS services, AWS Identity and Access Management (IAM) is a preferred authorization mechanism. For this reason FormKiQ creates 2 APIs, one uses Cognito authorization and the other uses IAM authorization.
-
-FormKiQ creates an IAM group that provides access to invoke FormKiQ APIs in Amazon API Gateway. Users added to this group and can [signing the request](https://docs.aws.amazon.com/apigateway/api-reference/signing-requests/) which authenticates it with API Gateway.
-
-See [Outputs](#Outputs) for more information on FormKiQ's IAM configuration.
-
-## Additional Features
-
-### Document Events
-
-Document events are a powerful feature of FormKiQ Core. This feature allows operations to be triggered on documents automatically on a change event. For example, when a document is created, a document event could trigger it to:
-
-- send an email notification
-- scan for viruses
-- insert data into a database
-- etc. 
-
-Document event are created through [Amazon Simple Notification Service (SNS)](https://aws.amazon.com/sns/). Amazon SNS is a messaging service that can be used for application to application communication. FormKiQ Core uses it as a publish/subscribe service, where applications can listen to the SNS service and be notified when that event has been created.
-
-FormKiQ Core creates the following SNS topics:
-
-- SnsDocumentsCreateEventTopic
-- SnsDocumentsDeleteEventTopic
-- SnsDocumentsUpdateEventTopic
-
-These SNS topics allow your application to be notified when a document is create, deleted, or updated, respectively. This makes it really easy to add your own customization and to automate your document processing.
-
-See the [SSM Parameter Store Outputs](#ssm-parameter-store) for SNS Topics
-
-### Multi-Tenant Applications with SiteIds
-
-FormKiQ Core supports running as a multi-tenant application. This can be used for internal departments or teams, or for external clients. During deployment, a "default" SiteId is created; all documents are stored in that tenant by default.
-
-To create another SiteId is as simple as adding a [Cognito group to the user pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
-
-Creating a Cognito Group with the same name as the SiteId but ending in "_read" will create a readonly group. The users in this group will have readonly access to that SiteId.
-
-Each API requests has a "SiteId" parameter you can pass to specify which SiteId you would like to use.
-
-**NOTE:** This parameter is only needed if a user belongs to multiple SiteIds or if the user is in the "Admins" Group (full access) and wants to perform an operation in a SiteId other than "default".
-
-## What's Deployed
-
-As mentioned above in the [List of AWS Services](#list-of-aws-services), the deployment from the [AWS Serverless Application Repository](https://aws.amazon.com/serverless/serverlessrepo) will create resources using multiple AWS Services, including Users and Groups. As FormKiQ Core is a serverless product, no server instances will be created.
+Once downloaded you can following the [Install](https://github.com/formkiq/formkiq-core/blob/master/INSTALL.md) document for instructions on how to install FormKiQ Core.
 
 ### Outputs
 
 After the FormKiQ Cloudformation Stack completes output values from the deployment are made available in the CloudFormation Outputs and in the SSM Parameter Store. Below you'll find a description of the outputs.
 
-#### CloudFormation Outputs
+**CloudFormation Outputs**
 
 |Key|Description|
 |--------------|--------------------------|
+| CognitoClientId | Cognito Client Id |
+| CognitoUserPoolId | Cognito User Pool Id |
 | ConsoleUrl | The URL for the FormKiQ Console |
+| FormKiQVersion | FormKiQ Version |
 | HttpApiUrl | The URL for the API endpoint that uses Cognito authorization |
 | IamApiUrl | The URL for the API endpoint that uses IAM authorization |
 
-#### SSM Parameter Store
+**SSM Parameter Store**
 
 SSM parameters made it easy for applications to automatically lookup FormKiQ configuration. All configuration keys start with '/formkiq/{AppEnvironment}'
 
@@ -284,6 +186,130 @@ SSM parameters made it easy for applications to automatically lookup FormKiQ con
 | sqs/DocumentsUpdateUrl | SQS URL for processing Document Update Events |
 | version | FormKiQ Stacks Version |
 
-## License
+## 🌐 API Reference
+
+FormKiQ creates two APIs on deployment. One API uses Cognito authorization and the other uses IAM authorization. 
+
+See [CloudFormation Outputs](#cloudformation-outputs) for API URLs.
+
+Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the [OpenAPI Specification](https://swagger.io/specification/).
+
+[Full FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/lambda-api/src/main/resources/cloudformation/api.yaml)
+
+|Method|Url|Description|
+|--------------|--------------------------|--------------------------|
+| GET | /documents | Returns a list of documents in reverse inserted date order |
+| POST | /documents | Create document |
+| GET | /documents/{documentId} | Get document details |
+| PATCH | /documents/{documentId} | Update document details |
+| DELETE | /documents/{documentId} | Delete document |
+| GET | /documents/{documentId}/versions | Get versions of document |
+| GET | /documents/{documentId}/content | Get document content |
+| GET | /documents/{documentId}/tags | Get document tags |
+| POST | /documents/{documentId}/tags | Add tag to document |
+| GET | /documents/{documentId}/tags/{tagKey} | Get a specific tag |
+| PUT | /documents/{documentId}/tags/{tagKey} | Update tag |
+| DELETE | /documents/{documentId}/tags/{tagKey} | Delete tag |
+| GET | /documents/{documentId}/url | Get document URL |
+| GET | /documents/upload | Returns URL that can accept uploads largers than 5 MB |
+| GET | /documents/{documentId}/upload | Returns URL that can accept uploads largers than 5 MB to update a specific document |
+| POST | /search | Document search |
+| POST | /public/documents | Public (unauthenticated) URL for creating a document, used for web forms |
+
+## 🖥️ Console
+
+While FormKiQ Core was built using an API First design methodology that allows easy integration with existing applications, you can also use the console interface that is set up with FormKiQ Core.
+
+The FormKiQ Console supports:
+
+✅ Adding / Removing Documents
+
+✅ Adding / Removing Document Tags
+
+✅ Search Documents
+
+✅ Executing FormKiQ API Calls within the API Explorer - you can use API methods directly from the console
+
+The FormKiQ Console is open source and can be found on [Github](https://github.com/formkiq/formkiq-console).
+
+An email will be sent to your AdminEmail address with a link to the FormKiQ Console once the deployment has completed, but you can also find the Console URL in your [CloudFormation Outputs](#outputs).
+
+## 🔑 Authentication
+
+FormKiQ Core follows AWS' best practices when it comes to protect data and services. [Amazon Cognito](https://aws.amazon.com/cognito/) is the default authentication and authorization for the FormKiQ API and the FormKiQ Console. ([AWS Identity and Access Management (IAM)](#iam) is also available for accessing the API.)
+
+### Users
+
+Each FormKiQ Core deployment creates its own User Pool. By default, FormKiq Core uses the "AdminEmail" parameter to create a user with administrator privileges. FormKiq Core sends a confirmation link to the "AdminEmail" during deployment.
+
+All user maintenance operations can be done via the Amazon Cognito console. To learn how to add additional users see [Amazon Cognito's Developer Guide](https://docs.aws.amazon.com/cognito/latest/developerguide/managing-users.html) for instructions.
+
+See [Outputs](#outputs) for FormKiQ configuration.
+
+### Groups
+
+During deployment, FormKiQ Core creates three Cognito Groups within its Cognito User Pool:
+
+- Admins
+- default
+- default_read
+
+Users in the "Admins" group have full access to all documents in FormKiQ Core.
+
+Users in the "default" group will have read/write access to documents in the default siteid.
+
+Users in the "default_read" group will have read only access to documents in the default siteid.
+
+All group maintenance operations can be done via the Amazon Cognito console. To learn how to add users to a cognito group see [Amazon Cognito's Developer Guide](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html) for instructions.
+
+### IAM
+
+When integrating FormKiQ with existing application or other AWS services, AWS Identity and Access Management (IAM) is a preferred authorization mechanism. For this reason FormKiQ creates 2 APIs, one uses Cognito authorization and the other uses IAM authorization.
+
+FormKiQ creates an IAM group that provides access to invoke FormKiQ APIs in Amazon API Gateway. Users added to this group and can [signing the request](https://docs.aws.amazon.com/apigateway/api-reference/signing-requests/) which authenticates it with API Gateway.
+
+See [Outputs](#outputs) for more information on FormKiQ's IAM configuration.
+
+## 🗒️ Document Events
+
+Document events are a powerful feature of FormKiQ Core. This feature allows operations to be triggered on documents automatically on a change event. For example, when a document is created, a document event could trigger it to:
+
+- send an email notification
+- scan for viruses
+- insert data into a database
+- etc. 
+
+Document event are created and sent through [Amazon Simple Notification Service (SNS)](https://aws.amazon.com/sns/). Amazon SNS is a messaging service that can be used for application to application communication. FormKiQ Core uses it as a publish/subscribe service, where applications can listen to the SNS service and be notified about different document events.
+
+FormKiQ Core creates a single `SnsDocumentEvent` topic where all documents events are sent. You can use [Amazon SNS subscription filter policies ](https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html).
+
+FormKiQ Core provides the following message attributes you can filter on.
+https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
+
+|Message Attribute|Possible Value(s)|Description|
+|--------------|--------------------------|--------------------------|
+| type | create, delete, update | Document Event(s) for create, update, or delete document|
+| siteId | default, (custom siteId) | Site Tenant Document Event was created in |
+
+
+See the [SSM Parameter Store Outputs](#outputs) for SNS Topics
+
+### 👥 Multi-Tenant Applications with SiteIds
+
+FormKiQ Core supports running as a multi-tenant application. This can be used for internal departments or teams, or for external clients. During deployment, a "default" SiteId is created; all documents are stored in that tenant by default.
+
+To create another SiteId is as simple as adding a [Cognito group to the user pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
+
+Creating a Cognito Group with the same name as the SiteId but ending in "_read" will create a readonly group. The users in this group will have readonly access to that SiteId.
+
+Each API requests has a "SiteId" parameter you can pass to specify which SiteId you would like to use.
+
+**NOTE:** This parameter is only needed if a user belongs to multiple SiteIds or if the user is in the "Admins" Group (full access) and wants to perform an operation in a SiteId other than "default".
+
+## 🛠️ Building from source
+
+Please see our [wiki](https://github.com/formkiq/formkiq-core/wiki/Building-from-source) for instructions.
+
+## 📜 License
 
 MIT - 2020 (c) FormKiq Inc. More details see LICENSE file.
