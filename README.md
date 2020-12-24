@@ -37,14 +37,12 @@
 
 **FormKiQ Core is an Open Source Headless Document Management System (DMS) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).**
 
-With **FormKiQ Core** you can:
-* Easily store Documents or capture any Content
+You can use **FormKiQ Core** to power:
+* Easily store Documents / Form data from your website
 * Quickly Tag and Organize your Documents
 * Flexible integrate into existing application or build custom workflows
 
 FormKiQ Core is built for any size organization, from personal websites to large, enterprise organizations requiring full control of any number of internal and external documents. 
-
-You can use FormKiQ Core to power the forms on your website, handling text and file attachments of any size. You can also use FormKiQ Core for file uploads and document tagging.
 
 FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aws.amazon.com/lambda/), [Amazon API Gateway](https://aws.amazon.com/api-gateway/), [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) and [Amazon S3](https://aws.amazon.com/s3/); this means that there are no servers for you to maintain or manage, and all of your data stays within your AWS cloud.
 
