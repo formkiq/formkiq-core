@@ -190,7 +190,11 @@ See [CloudFormation Outputs](#cloudformation-outputs) for API URLs.
 
 Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the [OpenAPI Specification](https://swagger.io/specification/).
 
-[Full FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/lambda-api/src/main/resources/cloudformation/api.yaml)
+[Full FormKiQ Api](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API)
+
+[JWT FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/openapi-jwt.yaml)
+
+[IAM FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/openapi-iam.yaml)
 
 |Method|Url|Description|
 |--------------|--------------------------|--------------------------|
