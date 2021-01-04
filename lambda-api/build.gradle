@@ -115,7 +115,32 @@ task assembleTemplate {
 	}
 }
 
+task assembleOpenApiTemplate {
+	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml")
+	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
+	doLast {
+		exec {
+			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/api.yaml src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-jwt.yaml > ${buildDir}/../../openapi-jwt.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-jwt.yaml -g asciidoc -o ${buildDir}/openapi-jwt"
+		}
+		exec {
+			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/api-iam.yaml src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../openapi-iam.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-iam.yaml -g asciidoc -o ${buildDir}/openapi-iam"
+		}
+	}
+}
+
 buildJava11Zip.dependsOn jar
 
 graalvmNativeImage.dependsOn check
-build.dependsOn assembleTemplate
+build.dependsOn assembleTemplate, assembleOpenApiTemplate
