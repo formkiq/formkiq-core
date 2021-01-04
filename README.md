@@ -17,7 +17,6 @@
 - [🏗️ Architecture](#%EF%B8%8F-architecture)
   - [List of AWS Services](#list-of-aws-services)
 - [🌀 Installation](#-installation)
-  - [AWS Serverless Application Repository](#aws-serverless-application-repository)
   - [SAM CLI](#sam-cli)
   - [Outputs](#outputs)
 - [🌐 API Reference](#-api-reference)
@@ -110,19 +109,13 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 
 ## 🌀 Installation
 
-FormKiQ Core supports being installed using the [AWS Serverless Application Repository](#aws-serverless-application-repository) or manually using the [AWS SAM CLI](#sam-cli).
+FormKiQ Core supports being installed using the [AWS SAM CLI](#sam-cli).
 
 After the deployment is completed, you will receive an email with a link to the [FormKiQ Console](#console), which has been installed in your AWS Cloud as part of the setup. You will be asked to login to your account, and once you do, you will be prompted to change your password.
 
 Once you have set your password, you are ready to use FormKiQ Core.
 
 For more information on what is created by the deployment (including [Outputs](#outputs)), please see [What's Deployed](#whats-deployed).
-
-### AWS Serverless Application Repository
-
-The [AWS Serverless Application Repository](https://aws.amazon.com/serverless/serverlessrepo) is an AWS-managed repository for serverless applications that allow for the easy distribution/installation of applications from AWS Verified Authors. 
-
-[Install FormKiQ Core](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/create/app?applicationId=arn:aws:serverlessrepo:us-east-1:622653865277:applications/FormKiQ-Core)
     
 ###  SAM CLI
 
