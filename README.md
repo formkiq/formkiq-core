@@ -63,6 +63,8 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 ### Demo
 
+Click the link below to see how you can run the FormKiQ Demo is **YOUR** AWS Account.
+
 [FormKiQ Core Demo](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-Core-Demo)
 
 ### Examples
