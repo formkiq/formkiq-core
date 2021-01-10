@@ -11,7 +11,7 @@
 - [💥 What is FormKiQ Core](#-what-is-formkiq-core)
   - [Features](#features)
   - [Demo](#demo)
-  - [How much does it cost to run?](#how-much-does-it-cost-to-run?)
+  - [How much does it cost to run?](#how-much-does-it-cost-to-run)
   - [Examples](#examples)
     - [Web Form Example - Contact Form](#web-form-example---contact-form)
     - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
@@ -70,7 +70,7 @@ Click the link below to see how you can run the FormKiQ Demo is **YOUR** AWS Acc
 
 [FormKiQ Core Demo](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-Core-Demo)
 
-### How much does it cost to run?
+### How much does it cost to run
 
 FormKiQ Core was created using [serverless technology](https://aws.amazon.com/serverless/). This means that there are no servers to manage; everything is managed by AWS. All AWS services FormKiQ uses pay-per-usage billing. You can start using FormKiQ with very little cost.
 AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. This means that some AWS services you can use for **free** pending you stay under the usage limits. Below is the list of services FormKiQ uses and their approximate usage costs, so give you an idea on how much it costs to run FormKiQ. (All costs in USD)
