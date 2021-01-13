@@ -20,7 +20,6 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.stacks.common.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -143,35 +142,6 @@ public class DocumentsRequestTest extends AbstractApiTest {
     }
 
     return map;
-  }
-
-  /**
-   * Get Document.
-   * 
-   * @param client {@link FormKiqClientV1}
-   * @param documentId {@link String}
-   * @param hasChildren boolean
-   * @return {@link DocumentWithChildren}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
-   */
-  private DocumentWithChildren getDocument(final FormKiqClientV1 client, final String documentId,
-      final boolean hasChildren) throws IOException, InterruptedException, URISyntaxException {
-
-    GetDocumentRequest request = new GetDocumentRequest().documentId(documentId);
-
-    while (true) {
-      try {
-        DocumentWithChildren document = client.getDocument(request);
-        if (hasChildren && notNull(document.documents()).isEmpty()) {
-          throw new IOException("documents not added yet");
-        }
-        return document;
-      } catch (IOException e) {
-        Thread.sleep(ONE_SECOND);
-      }
-    }
   }
 
   /**

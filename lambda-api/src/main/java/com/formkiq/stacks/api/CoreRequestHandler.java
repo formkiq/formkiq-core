@@ -44,6 +44,7 @@ import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
+import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
@@ -114,6 +115,10 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
 
     if (isEnablePublicUrls && "/public/documents".equals(s)) {
       return new PublicDocumentsRequestHandler();
+    }
+
+    if (s.startsWith("/public/webhooks")) {
+      return new PublicWebhooksRequestHandler();
     }
 
     switch (s) {

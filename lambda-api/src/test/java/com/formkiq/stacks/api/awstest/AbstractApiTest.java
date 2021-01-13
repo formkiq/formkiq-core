@@ -20,6 +20,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.stacks.common.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -50,7 +51,9 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
+import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
@@ -70,6 +73,8 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
  */
 public abstract class AbstractApiTest {
 
+  /** 1 Second. */
+  private static final int ONE_SECOND = 1000;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
   /** Cognito User Email. */
@@ -196,20 +201,6 @@ public abstract class AbstractApiTest {
   }
 
   /**
-   * Create {@link FormKiqClientV1} from {@link AuthenticationResultType}.
-   * 
-   * @param token {@link AuthenticationResultType}
-   * @return {@link FormKiqClientV1}
-   */
-  protected FormKiqClientV1 createHttpClient(final AuthenticationResultType token) {
-    FormKiqClientConnection connection = new FormKiqClientConnection(getRootHttpUrl())
-        .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
-        .header("Access-Control-Request-Method", Arrays.asList("GET"));
-
-    return new FormKiqClientV1(connection);
-  }
-
-  /**
    * Get Admin {@link CognitoService}.
    * 
    * @return {@link CognitoService}
@@ -237,6 +228,15 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Get FormKiq Clients.
+   * 
+   * @return {@link List} {@link FormKiqClient}
+   */
+  public static List<FormKiqClientV1> getFormKiqClients() {
+    return Arrays.asList(httpClient, restClient);
+  }
+
+  /**
    * Get API Root Http Url.
    * 
    * @return {@link String}
@@ -252,15 +252,6 @@ public abstract class AbstractApiTest {
    */
   private static String getRootRestUrl() {
     return rootRestUrl;
-  }
-
-  /**
-   * Get FormKiq Clients.
-   * 
-   * @return {@link List} {@link FormKiqClient}
-   */
-  public static List<FormKiqClientV1> getFormKiqClients() {
-    return Arrays.asList(httpClient, restClient);
   }
 
   /**
@@ -322,6 +313,19 @@ public abstract class AbstractApiTest {
    */
   public static AuthenticationResultType login(final String username, final String password) {
     return adminCognitoService.login(username, password);
+  }
+
+  /**
+   * Remove SSM Parameter.
+   * 
+   * @param key {@link String}
+   */
+  public static void removeParameterStoreValue(final String key) {
+    try {
+      ssmService.removeParameter(key);
+    } catch (ParameterNotFoundException e) {
+      // ignore error
+    }
   }
 
   /**
@@ -440,6 +444,20 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Create {@link FormKiqClientV1} from {@link AuthenticationResultType}.
+   * 
+   * @param token {@link AuthenticationResultType}
+   * @return {@link FormKiqClientV1}
+   */
+  protected FormKiqClientV1 createHttpClient(final AuthenticationResultType token) {
+    FormKiqClientConnection connection = new FormKiqClientConnection(getRootHttpUrl())
+        .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
+        .header("Access-Control-Request-Method", Arrays.asList("GET"));
+
+    return new FormKiqClientV1(connection);
+  }
+
+  /**
    * Delete Document.
    * 
    * @param client {@link FormKiqClient}
@@ -458,6 +476,44 @@ public abstract class AbstractApiTest {
     // then
     assertEquals(status, response.statusCode());
     assertRequestCorsHeaders(response.headers());
+  }
+
+  /**
+   * Get Aws Region.
+   * 
+   * @return {@link Region}
+   */
+  public Region getAwsRegion() {
+    return AbstractApiTest.awsregion;
+  }
+
+  /**
+   * Get Document.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param documentId {@link String}
+   * @param hasChildren boolean
+   * @return {@link DocumentWithChildren}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  protected DocumentWithChildren getDocument(final FormKiqClientV1 client, final String documentId,
+      final boolean hasChildren) throws IOException, InterruptedException, URISyntaxException {
+
+    GetDocumentRequest request = new GetDocumentRequest().documentId(documentId);
+
+    while (true) {
+      try {
+        DocumentWithChildren document = client.getDocument(request);
+        if (hasChildren && notNull(document.documents()).isEmpty()) {
+          throw new IOException("documents not added yet");
+        }
+        return document;
+      } catch (IOException e) {
+        Thread.sleep(ONE_SECOND);
+      }
+    }
   }
 
   /**
@@ -490,19 +546,6 @@ public abstract class AbstractApiTest {
   }
 
   /**
-   * Remove SSM Parameter.
-   * 
-   * @param key {@link String}
-   */
-  public static void removeParameterStoreValue(final String key) {
-    try {
-      ssmService.removeParameter(key);
-    } catch (ParameterNotFoundException e) {
-      // ignore error
-    }
-  }
-
-  /**
    * Convert {@link HttpResponse} to {@link Map}.
    * 
    * @param response {@link HttpResponse}
@@ -526,14 +569,5 @@ public abstract class AbstractApiTest {
   protected Map<String, Object> toMap(final String response) throws IOException {
     Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
     return m;
-  }
-
-  /**
-   * Get Aws Region.
-   * 
-   * @return {@link Region}
-   */
-  public Region getAwsRegion() {
-    return AbstractApiTest.awsregion;
   }
 }

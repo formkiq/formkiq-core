@@ -737,7 +737,54 @@ Resources:
                         type: string
                   content: {}
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"        
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /public/webhooks/{webhooks+}:
+            post:
+              description: Public Webhook.
+              tags:
+              - Public      
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhooksParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object                
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentId'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            options:
+              description: Public Webhook Options.
+              tags:
+              - Public
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhooksParam'
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                  content: {}
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -774,6 +821,13 @@ Resources:
               required: false
               schema:
                 type: string
+            webhooksParam:
+              name: webhooks+
+              in: path
+              required: true
+              description: Web Hook Param
+              schema:
+                type: string                
             siteIdParam:
               name: siteId
               in: query
