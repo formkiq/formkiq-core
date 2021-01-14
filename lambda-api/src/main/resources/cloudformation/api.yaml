@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "FormKiQ HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.4.9"
+          version: "1.5.0"
         paths:
           /version:
             get:
@@ -857,6 +857,32 @@ Resources:
                   content: {}
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /webhooks/{webhookId}:
+            options:
+              description: Get Webhook Options.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              description: Delete document.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
         components:
           headers:
             AccessControlAllowOrigin:
@@ -900,6 +926,13 @@ Resources:
               description: Web Hook Param
               schema:
                 type: string
+            webhookIdParam:
+              name: webhookId
+              in: path
+              required: true
+              description: Web Hook Param
+              schema:
+                type: string                
             siteIdParam:
               name: siteId
               in: query

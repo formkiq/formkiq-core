@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "FormKiQ IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.4.9"
+          version: "1.5.0"
         paths:
           /version:
             get:
@@ -856,7 +856,33 @@ Resources:
                         type: string
                   content: {}
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /webhooks/{webhookId}:
+            options:
+              description: Get Webhook Options.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              description: Delete document.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -899,7 +925,14 @@ Resources:
               required: true
               description: Web Hook Param
               schema:
-                type: string                
+                type: string 
+            webhookIdParam:
+              name: webhookId
+              in: path
+              required: true
+              description: Web Hook Param
+              schema:
+                type: string                               
             siteIdParam:
               name: siteId
               in: query

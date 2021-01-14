@@ -38,6 +38,66 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
   /**
+   * Delete /webhooks/{webhookId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testDeleteWebhooks01() throws Exception {
+    // given
+    String response = handleRequest(toRequestEvent("/request-post-webhooks01.json"));
+    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals("default", result.get("siteId"));
+    assertNotNull(result.get("id"));
+    final String id = result.get("id").toString();
+    
+    newOutstream();
+    
+    ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
+    setPathParameter(event, "webhookId", id);
+
+    // when 
+    response = handleRequest(event);
+    
+    // then
+    m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+  }
+  
+  /**
+   * Delete /webhooks/{webhookId} not found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testDeleteWebhooks02() throws Exception {
+    // given
+    String id = UUID.randomUUID().toString();
+    
+    ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
+    setPathParameter(event, "webhookId", id);
+
+    // when 
+    String response = handleRequest(event);
+    
+    // then
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("404.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+  }
+  
+  /**
    * Get /webhooks empty.
    *
    * @throws Exception an error has occurred
@@ -63,7 +123,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   }
   
   /**
-   * Get /webhooks.
+   * POST/Get /webhooks.
    *
    * @throws Exception an error has occurred
    */

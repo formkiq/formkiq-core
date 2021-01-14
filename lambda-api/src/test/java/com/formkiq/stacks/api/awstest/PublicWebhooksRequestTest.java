@@ -61,18 +61,16 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   private static final int TEST_TIMEOUT = 20000;
 
   /**
-   * Test POST /public/webhooks.
-   * 
-   * @throws Exception Exception
+   * Delete Webhook.
+   * @param id {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
    */
-  @SuppressWarnings("unchecked")
-  @Test(timeout = TEST_TIMEOUT)
-  public void testPublicWebhooks01() throws Exception {
-    // given
-    String id = postWebhooks();
-    String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
+  private void deleteWebhooks(final String id) throws IOException, InterruptedException {
+    String url = getRootHttpUrl() + "/webhooks/" + id;
 
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+    Map<String, List<String>> headers = Map.of("Authorization",
+        Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
     Optional<HttpHeaders> o =
         Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
           @Override
@@ -81,120 +79,14 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
           }
         }));
 
-    String content = "{\"name\":\"John Smith\"}";
-
     // when
     HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_OK, response.statusCode());
-    Map<String, Object> map = toMap(response);
-
-    for (FormKiqClientV1 client : getFormKiqClients()) {
-      DocumentWithChildren document = getDocument(client, map.get("documentId").toString(), false);
-      assertNotNull(document);
-    }
-    
-    Map<String, Object> webhooks = getWebhooks();
-    List<Map<String, Object>> list = (List<Map<String, Object>>) webhooks.get("webhooks");
-    assertFalse(list.isEmpty());
-    assertEquals("default", list.get(0).get("siteId"));
-    assertEquals("paypal", list.get(0).get("name"));
-    assertNotNull(list.get(0).get("url"));
-    assertNotNull(list.get(0).get("insertedDate"));
-    assertNotNull(list.get(0).get("id"));
-    assertEquals("testadminuser@formkiq.com", list.get(0).get("userId"));
-  }
-
-  /**
-   * Test POST /public/webhooks missing endpoint UUID.
-   * 
-   * @throws Exception Exception
-   */
-  @Test(timeout = TEST_TIMEOUT)
-  public void testPublicWebhooks02() throws Exception {
-    // given
-    String urlpath = getRootHttpUrl() + "/public/webhooks";
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    String content = "{\"name\":\"John Smith\"}";
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_NOT_FOUND, response.statusCode());
-    assertEquals("{\"message\":\"Not Found\"}", response.body());
-  }
-  
-  /**
-   * Test POST /public/webhook/invalid endpoint UUID.
-   * 
-   * @throws Exception Exception
-   */
-  @Test(timeout = TEST_TIMEOUT)
-  public void testPublicWebhooks03() throws Exception {
-    // given
-    String urlpath = getRootHttpUrl() + "/public/webhooks/asdffgdfg";
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    String content = "{\"name\":\"John Smith\"}";
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_BAD, response.statusCode());
-    assertEquals("{\"message\":\"invalid webhook url\"}", response.body());
-  }
-  
-  /**
-   * Options.
-   * 
-   * @throws Exception Exception
-   */
-  @Test(timeout = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-    // given
-    String url = getRootHttpUrl() + "/public/webhooks/" + UUID.randomUUID().toString();
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.options(url, o);
+    HttpResponse<String> response = hs.delete(url, o);
 
     // then
     assertEquals(STATUS_OK, response.statusCode());
   }
-  
+
   /**
    * Get new Webhooks.
    * @return {@link Map}
@@ -253,5 +145,142 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
     assertEquals(STATUS_OK, response.statusCode());
     Map<String, Object> map = toMap(response);
     return map.get("id").toString();
+  }
+  
+  /**
+   * Options.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testOptions01() throws Exception {
+    // given
+    String url = getRootHttpUrl() + "/public/webhooks/" + UUID.randomUUID().toString();
+
+    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+    Optional<HttpHeaders> o =
+        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
+          @Override
+          public boolean test(final String t, final String u) {
+            return true;
+          }
+        }));
+
+
+    // when
+    HttpService hs = new HttpServiceJava();
+    HttpResponse<String> response = hs.options(url, o);
+
+    // then
+    assertEquals(STATUS_OK, response.statusCode());
+  }
+  
+  /**
+   * Test POST /public/webhooks.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test(timeout = TEST_TIMEOUT)
+  public void testPublicWebhooks01() throws Exception {
+    // given
+    String id = postWebhooks();
+    String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
+
+    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+    Optional<HttpHeaders> o =
+        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
+          @Override
+          public boolean test(final String t, final String u) {
+            return true;
+          }
+        }));
+
+    String content = "{\"name\":\"John Smith\"}";
+
+    // when
+    HttpService hs = new HttpServiceJava();
+    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+
+    // then
+    assertEquals(STATUS_OK, response.statusCode());
+    Map<String, Object> map = toMap(response);
+
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      DocumentWithChildren document = getDocument(client, map.get("documentId").toString(), false);
+      assertNotNull(document);
+    }
+    
+    Map<String, Object> webhooks = getWebhooks();
+    List<Map<String, Object>> list = (List<Map<String, Object>>) webhooks.get("webhooks");
+    assertFalse(list.isEmpty());
+    assertEquals("default", list.get(0).get("siteId"));
+    assertEquals("paypal", list.get(0).get("name"));
+    assertNotNull(list.get(0).get("url"));
+    assertNotNull(list.get(0).get("insertedDate"));
+    assertNotNull(list.get(0).get("id"));
+    assertEquals("testadminuser@formkiq.com", list.get(0).get("userId"));
+    
+    deleteWebhooks(id);
+  }
+  
+  /**
+   * Test POST /public/webhooks missing endpoint UUID.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testPublicWebhooks02() throws Exception {
+    // given
+    String urlpath = getRootHttpUrl() + "/public/webhooks";
+
+    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+    Optional<HttpHeaders> o =
+        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
+          @Override
+          public boolean test(final String t, final String u) {
+            return true;
+          }
+        }));
+
+    String content = "{\"name\":\"John Smith\"}";
+
+    // when
+    HttpService hs = new HttpServiceJava();
+    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+
+    // then
+    assertEquals(STATUS_NOT_FOUND, response.statusCode());
+    assertEquals("{\"message\":\"Not Found\"}", response.body());
+  }
+  
+  /**
+   * Test POST /public/webhook/invalid endpoint UUID.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testPublicWebhooks03() throws Exception {
+    // given
+    String urlpath = getRootHttpUrl() + "/public/webhooks/asdffgdfg";
+
+    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+    Optional<HttpHeaders> o =
+        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
+          @Override
+          public boolean test(final String t, final String u) {
+            return true;
+          }
+        }));
+
+    String content = "{\"name\":\"John Smith\"}";
+
+    // when
+    HttpService hs = new HttpServiceJava();
+    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+
+    // then
+    assertEquals(STATUS_BAD, response.statusCode());
+    assertEquals("{\"message\":\"invalid webhook url\"}", response.body());
   }
 }
