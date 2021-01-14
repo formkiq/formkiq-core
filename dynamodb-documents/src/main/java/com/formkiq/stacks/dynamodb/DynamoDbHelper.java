@@ -49,6 +49,8 @@ public class DynamoDbHelper {
   private DynamoDbClient db;
   /** {@link DocumentService}. */
   private DocumentService service;
+  /** {@link DocumentService}. */
+  private WebhooksService webhookService;
   /** {@link DocumentSearchService}. */
   private DocumentSearchService searchService;
   /** {@link CacheService}. */
@@ -88,6 +90,7 @@ public class DynamoDbHelper {
     this.service = new DocumentServiceImpl(builder, documentTableName);
     this.cacheService = new DynamoDbCacheService(builder, cacheTableName);
     this.searchService = new DocumentSearchServiceImpl(this.service, builder, documentTableName);
+    this.webhookService = new WebhooksServiceImpl(builder, documentTableName);
   }
 
   /**
@@ -244,6 +247,15 @@ public class DynamoDbHelper {
   }
 
   /**
+   * Get {@link WebhooksService}.
+   * 
+   * @return {@link WebhooksService}
+   */
+  public WebhooksService getWebhookService() {
+    return this.webhookService;
+  }
+
+  /**
    * Is Documents Table Exist.
    * 
    * @return boolean
@@ -257,7 +269,25 @@ public class DynamoDbHelper {
       return false;
     }
   }
-
+  
+  /**
+   * Truncate Document Dates.
+   * 
+   */
+  public void truncateDocumentDates() {
+    final int maxresults = 1000;
+    ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
+        .limit(Integer.valueOf(maxresults)).build();
+    ScanResponse result = this.db.scan(sr);
+    
+    List<Map<String, AttributeValue>> list =
+        result.items().stream().filter(i -> i.get("PK").s().equals(DbKeys.PREFIX_DOCUMENT_DATE))
+            .collect(Collectors.toList());
+    
+    list.forEach(i -> this.db.deleteItem(DeleteItemRequest.builder().tableName(this.documentTable)
+        .key(i).build()));
+  }
+  
   /**
    * Truncate Documents Table.
    * 
@@ -285,20 +315,19 @@ public class DynamoDbHelper {
       }
     }
   }
-  
+
   /**
-   * Truncate Document Dates.
-   * 
+   * Truncate Webhooks.
    */
-  public void truncateDocumentDates() {
+  public void truncateWebhooks() {
     final int maxresults = 1000;
     ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
         .limit(Integer.valueOf(maxresults)).build();
     ScanResponse result = this.db.scan(sr);
     
     List<Map<String, AttributeValue>> list =
-        result.items().stream().filter(i -> i.get("PK").s().equals(DbKeys.PREFIX_DOCUMENT_DATE))
-            .collect(Collectors.toList());
+        result.items().stream().filter(i -> i.get("PK").s().contains(DbKeys.PREFIX_WEBHOOK))
+            .map(m -> Map.of("PK", m.get("PK"), "SK", m.get("SK"))).collect(Collectors.toList());
     
     list.forEach(i -> this.db.deleteItem(DeleteItemRequest.builder().tableName(this.documentTable)
         .key(i).build()));

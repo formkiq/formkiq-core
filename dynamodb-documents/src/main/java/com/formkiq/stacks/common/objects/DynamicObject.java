@@ -47,7 +47,6 @@ public class DynamicObject extends HashMap<String, Object> {
    */
   public DynamicObject(final Map<String, Object> map) {
     super(map);
-    // this.object = new HashMap<>(map);
   }
 
   /**

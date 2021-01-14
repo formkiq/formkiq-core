@@ -779,6 +779,78 @@
                   content: {}
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /webhooks:
+            get:
+              tags:
+                - Webhooks
+              description: Returns a list of webhooks
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                200:
+                  description: "200 response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/WebhookResults"
+              security:
+                - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Save Webhook.
+              tags:
+                - Webhooks
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/WebhookBody'
+              responses:
+                '201':
+                  description: 201 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/WebhookPostResponse'
+              security:
+                - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+            options:
+              description: Webhook Options.
+              tags:
+                - Webhooks
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                  content: {}
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -924,6 +996,14 @@
                   format: "uuid"
                 siteId:
                   type: "string"
+            WebhookPostResponse:
+              type: "object"
+              properties:
+                id:
+                  type: "string"
+                  format: "uuid"
+                siteId:
+                  type: "string"
             DocumentPostResponse:
               type: "object"
               properties:
@@ -1024,6 +1104,13 @@
                 eq:
                   type: "string"
                 key:
+                  type: "string"
+            WebhookBody:
+              required:
+                - "name"
+              type: "object"
+              properties:
+                name:
                   type: "string"
             DocumentBody:
               required:
@@ -1129,6 +1216,30 @@
                   contentLength:
                     type: "integer"
                   versionId:
+                    type: "string"
+            WebhookResults:
+              type: "object"
+              properties:
+                webhooks:
+                  $ref: "#/components/schemas/Webhooks"
+            Webhooks:
+              type: "array"
+              items:
+                type: "object"
+                properties:
+                  siteId:
+                    type: "string"
+                  name:
+                    type: "string"
+                  url:
+                    type: "string"
+                  insertedDate:
+                    type: "string"
+                    format: "date-time"
+                  id:
+                    type: "string"
+                    format: "uuid"
+                  userId:
                     type: "string"
             Version:
               type: object

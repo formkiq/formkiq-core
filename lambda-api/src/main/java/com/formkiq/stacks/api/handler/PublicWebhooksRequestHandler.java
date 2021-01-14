@@ -38,10 +38,11 @@ import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
 import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.s3.S3Client;
 
-/** {@link ApiGatewayRequestHandler} for "/public/documents". */
+/** {@link ApiGatewayRequestHandler} for "/public/webhooks". */
 public class PublicWebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -53,7 +54,8 @@ public class PublicWebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String documentId = UUID.randomUUID().toString();
+    final String siteId = getSiteId(event);
+    final String documentId = UUID.randomUUID().toString();
     
     DynamicObject item = new DynamicObject(new HashMap<>());
     
@@ -62,13 +64,19 @@ public class PublicWebhooksRequestHandler
       item.put("contentType", contentType);
     }
     
+    String webhookId = getPathParameter(event, "webhooks");
+    DynamicObject hook = awsservice.webhookService().findWebhook(siteId, webhookId);
+    
+    if (hook == null) {
+      throw new BadException("invalid webhook url");
+    }
+    
     String body = getBodyAsString(event);
     item.put("content", body);
     item.put("documentId", documentId);
     item.put("userId", "webhook");
-    item.put("path", "webhooks/" + getPathParameter(event, "webhooks+"));
+    item.put("path", "webhooks/" + webhookId);
     
-    String siteId = getSiteId(event);
     if (siteId != null) {
       item.put("siteId", siteId);
     }

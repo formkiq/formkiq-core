@@ -1,6 +1,6 @@
 {
-    "resource": "/public/webhooks/{webhooks+}",
-    "path": "/public/webhooks/d21c05cf-eba4-41a8-9625-fbdf79614288",
+    "resource": "/webhooks",
+    "path": "/webhooks",
     "httpMethod": "POST",
     "headers": {
         "Accept": "*/*",
@@ -81,22 +81,41 @@
     "queryStringParameters": null,
     "multiValueQueryStringParameters": null,
     "pathParameters": {
-        "webhooks": "d21c05cf-eba4-41a8-9625-fbdf79614288"
     },
     "stageVariables": null,
     "requestContext": {
         "resourceId": "lkhsvn",
-        "resourcePath": "/public/webhooks",
+        "resourcePath": "/webhooks",
         "httpMethod": "POST",
         "extendedRequestId": "SmMGTHUXoAMF55g=",
         "requestTime": "28/Dec/2018:02:41:31 +0000",
-        "path": "/public/webhooks/{webhooks+}",
+        "path": "/webhooks",
         "accountId": "228203493010",
         "protocol": "HTTP/1.1",
         "stage": "prod",
         "domainPrefix": "xc38c278ak",
         "requestTimeEpoch": 1545964891569,
         "requestId": "157a12e1-0a4a-11e9-968b-f3d29ef457da",
+    "authorizer": {
+      "claims": {
+        "aud": "man2qihb20eumvr55pqcuvp6n",
+        "auth_time": "1594265826",
+        "cognito:groups": "[default Admins finance]",
+        "cognito:preferred_role": "arn:aws:iam::622653865277:role/formkiq-stacks-document-unittest-Do-AdminGroupRole-FD83ZGMKR6KP",
+        "cognito:roles": "[arn:aws:iam::622653865277:role/formkiq-stacks-document-unittest-Do-AdminGroupRole-FD83ZGMKR6KP]",
+        "cognito:username": "test@formkiq.com",
+        "email": "test@formkiq.com",
+        "email_verified": "true",
+        "event_id": "665f0717-4fbc-4511-912b-6cb6f566e1c0",
+        "exp": "1594269426",
+        "iat": "1594265826",
+        "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_3vWU0jnGp",
+        "sub": "9d7e8352-2142-4363-9a66-45a65daaa0de",
+        "token_use": "id"
+      },
+      "scopes": null
+    },
+        
         "identity": {
             "cognitoIdentityPoolId": null,
             "accountId": null,

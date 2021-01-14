@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -46,13 +47,17 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks01() throws Exception {
-    // given
+    // given    
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     newOutstream();
 
+    String id =
+        getAwsServices().webhookService().saveWebhook(null, UUID.randomUUID().toString(), "joe");
+
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
+    setPathParameter(event, "webhooks", id);
     event.getRequestContext().setAuthorizer(new HashMap<>());
     event.getRequestContext().setIdentity(new HashMap<>());
 
@@ -77,7 +82,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       Map<String, Object> map = fromJson(json, Map.class);
       assertEquals(documentId, map.get("documentId"));
       assertEquals("webhook", map.get("userId"));
-      assertEquals("webhooks/d21c05cf-eba4-41a8-9625-fbdf79614288", map.get("path"));
+      assertEquals("webhooks/" + id, map.get("path"));
       assertEquals("{\"name\":\"john smith\"}", map.get("content"));
     }
   }
@@ -90,13 +95,17 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks02() throws Exception {
-    // given
+    // given    
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     newOutstream();
+    
+    String id =
+        getAwsServices().webhookService().saveWebhook(null, UUID.randomUUID().toString(), "joe");
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks02.json");
+    setPathParameter(event, "webhooks", id);
     event.getRequestContext().setAuthorizer(new HashMap<>());
     event.getRequestContext().setIdentity(new HashMap<>());
 
@@ -122,7 +131,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       assertEquals(documentId, map.get("documentId"));
       assertEquals("webhook", map.get("userId"));
-      assertEquals("webhooks/d21c05cf-eba4-41a8-9625-fbdf79614288", map.get("path"));
+      assertEquals("webhooks/" + id, map.get("path"));
       assertEquals("application/json", map.get("contentType"));
       assertEquals("{\"name\":\"john smith\"}", map.get("content"));
     }

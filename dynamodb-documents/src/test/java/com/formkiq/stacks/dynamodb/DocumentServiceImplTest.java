@@ -112,6 +112,7 @@ public class DocumentServiceImplTest {
 
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();
+    dbhelper.truncateWebhooks();
 
     assertEquals(0, dbhelper.getDocumentItemCount());
   }

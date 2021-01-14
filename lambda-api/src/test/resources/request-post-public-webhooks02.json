@@ -82,7 +82,7 @@
     "queryStringParameters": null,
     "multiValueQueryStringParameters": null,
     "pathParameters": {
-        "webhooks+": "d21c05cf-eba4-41a8-9625-fbdf79614288"
+        "webhooks": "d21c05cf-eba4-41a8-9625-fbdf79614288"
     },
     "stageVariables": null,
     "requestContext": {
