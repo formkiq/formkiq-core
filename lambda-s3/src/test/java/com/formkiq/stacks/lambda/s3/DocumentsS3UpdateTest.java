@@ -205,6 +205,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
     map = this.gson.fromJson(message, Map.class);
     assertNotNull(map.get("documentId"));
     assertEquals(eventType, map.get("type"));
+    
+    if (!"delete".equals(eventType)) {
+      assertNotNull(map.get("userId"));
+    }
 
     if (siteId != null) {
       assertEquals(siteId, map.get("siteId"));
@@ -267,6 +271,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
+      doc.setUserId("joe");
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
@@ -281,7 +286,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertNull(tags.getResults().get(0).getUserId());
+      assertEquals("joe", tags.getResults().get(0).getUserId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
 
       assertEquals(0,
@@ -310,6 +315,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
+      doc.setUserId("asd");
 
       DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
           "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
@@ -405,10 +411,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
+      doc.setUserId("joe");
 
       DynamicDocumentItem child = new DynamicDocumentItem(Map.of());
       child.setInsertedDate(new Date());
       child.setDocumentId(documentId);
+      child.setUserId("joe");
       doc.put("documents", Arrays.asList(child));
 
       service.saveDocumentItemWithTag(siteId, doc);
@@ -433,7 +441,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertNull(tags.getResults().get(0).getUserId());
+      assertEquals("joe", tags.getResults().get(0).getUserId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
 
       assertEquals(0,

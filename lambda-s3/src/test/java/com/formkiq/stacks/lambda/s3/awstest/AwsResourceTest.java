@@ -107,6 +107,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     assertNotNull(map.get("documentId"));
     assertNotNull(map.get("type"));
+    assertNotNull(map.get("userId"));
   }
 
   /**

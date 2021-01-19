@@ -61,7 +61,7 @@ public class WebhooksRequestHandler
       map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
       map.put("id", m.getString("documentId"));
       map.put("name", m.getString("path"));
-      map.put("url", url + "/wehooks/" + m.getString("documentId"));
+      map.put("url", url + "/public/webhooks/" + m.getString("documentId"));
       map.put("insertedDate", m.getString("inserteddate"));
       map.put("userId", m.getString("userId"));
       

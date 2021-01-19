@@ -42,6 +42,8 @@ public class DocumentEvent {
   private String s3bucket;
   /** Document Type. */
   private String type;
+  /** User Id. */
+  private String userId;
 
   /**
    * constructor.
@@ -147,6 +149,26 @@ public class DocumentEvent {
    */
   public DocumentEvent type(final String eventtype) {
     this.type = eventtype;
+    return this;
+  }
+  
+  /**
+   * Get {@link DocumentEvent} UserId.
+   * 
+   * @return {@link String}
+   */
+  public String userId() {
+    return this.userId;
+  }
+
+  /**
+   * Set {@link DocumentEvent} UserId.
+   * 
+   * @param user {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent userId(final String user) {
+    this.userId = user;
     return this;
   }
 }

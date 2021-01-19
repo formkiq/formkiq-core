@@ -166,6 +166,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("john smith", o.get().get("name"));
     assertEquals("default", o.get().get("siteId"));
     assertEquals("test@formkiq.com", o.get().get("userId"));
-    assertEquals("http://localhost:8080/wehooks/" + id, o.get().get("url"));
+    assertEquals("http://localhost:8080/public/webhooks/" + id, o.get().get("url"));
   }
 }

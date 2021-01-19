@@ -259,7 +259,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     logger.log(msg);
 
     this.service.deleteDocument(siteId, documentId);
-    sendSnsMessage(logger, false, true, siteId, documentId, bucket, key);
+    sendSnsMessage(logger, "delete", siteId, documentId, bucket, key, null);
   }
 
   /**
@@ -345,7 +345,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         this.service.deleteDocumentFormats(siteId, item.getDocumentId());
 
-        sendSnsMessage(logger, create, false, siteId, item.getDocumentId(), s3bucket, key);
+        sendSnsMessage(logger, create ? "create" : "update", siteId, item.getDocumentId(),
+            s3bucket, key, doc.getUserId());
 
       } else {
         logger.log("Cannot find document " + documentId + " in site " + siteId);
@@ -421,20 +422,21 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * Either sends the Create Message to SNS.
    * 
    * @param logger {@link LambdaLogger}
-   * @param create boolean
-   * @param delete boolean
+   * @param eventType {@link String}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param s3Bucket {@link String}
    * @param s3Key {@link String}
+   * @param userId {@link String}
    */
-  private void sendSnsMessage(final LambdaLogger logger, final boolean create, final boolean delete,
-      final String siteId, final String documentId, final String s3Bucket, final String s3Key) {
+  private void sendSnsMessage(final LambdaLogger logger, final String eventType,
+      final String siteId, final String documentId, final String s3Bucket, final String s3Key,
+      final String userId) {
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    DocumentEvent event = new DocumentEvent().siteId(site)
-        .documentId(resetDatabaseKey(siteId, documentId)).s3bucket(s3Bucket).s3key(s3Key)
-        .type(delete ? "delete" : (create ? "create" : "update"));
+    DocumentEvent event =
+        new DocumentEvent().siteId(site).documentId(resetDatabaseKey(siteId, documentId))
+            .s3bucket(s3Bucket).s3key(s3Key).type(eventType).userId(userId);
     String eventJson = this.gson.toJson(event);
     
     boolean debug = "true".equals(System.getenv("DEBUG"));
@@ -443,11 +445,20 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
 
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
+    
     MessageAttributeValue typeAttr =
         MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
     MessageAttributeValue siteIdAttr =
-        MessageAttributeValue.builder().dataType("String").stringValue(event.siteId()).build();    
+        MessageAttributeValue.builder().dataType("String").stringValue(event.siteId()).build();
+    
     Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
+    
+    if (userId != null) {
+      MessageAttributeValue userIdAttr =
+          MessageAttributeValue.builder().dataType("String").stringValue(event.userId()).build();
+      tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
+    }
+    
     this.snsService.publish(this.snsDocumentEvent, eventJson, tags);
   }
 }

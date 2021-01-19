@@ -52,9 +52,10 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     createApiRequestHandler(getMap());
 
     newOutstream();
+    String name = UUID.randomUUID().toString();
 
     String id =
-        getAwsServices().webhookService().saveWebhook(null, UUID.randomUUID().toString(), "joe");
+        getAwsServices().webhookService().saveWebhook(null, name, "joe");
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
     setPathParameter(event, "webhooks", id);
@@ -81,7 +82,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
           getS3().getContentAsString(s3, getStages3bucket(), documentId + FORMKIQ_DOC_EXT, null);
       Map<String, Object> map = fromJson(json, Map.class);
       assertEquals(documentId, map.get("documentId"));
-      assertEquals("webhook", map.get("userId"));
+      assertEquals("webhook/" + name, map.get("userId"));
       assertEquals("webhooks/" + id, map.get("path"));
       assertEquals("{\"name\":\"john smith\"}", map.get("content"));
     }
@@ -101,8 +102,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     newOutstream();
     
-    String id =
-        getAwsServices().webhookService().saveWebhook(null, UUID.randomUUID().toString(), "joe");
+    String name = UUID.randomUUID().toString();
+    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe");
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks02.json");
     setPathParameter(event, "webhooks", id);
@@ -130,7 +131,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       Map<String, Object> map = fromJson(json, Map.class);
 
       assertEquals(documentId, map.get("documentId"));
-      assertEquals("webhook", map.get("userId"));
+      assertEquals("webhook/" + name, map.get("userId"));
       assertEquals("webhooks/" + id, map.get("path"));
       assertEquals("application/json", map.get("contentType"));
       assertEquals("{\"name\":\"john smith\"}", map.get("content"));

@@ -74,7 +74,7 @@ public class PublicWebhooksRequestHandler
     String body = getBodyAsString(event);
     item.put("content", body);
     item.put("documentId", documentId);
-    item.put("userId", "webhook");
+    item.put("userId", "webhook/" + hook.getOrDefault("path", "webhook"));
     item.put("path", "webhooks/" + webhookId);
     
     if (siteId != null) {
