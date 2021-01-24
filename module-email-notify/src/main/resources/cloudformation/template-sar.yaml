@@ -140,7 +140,7 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: "FormKiQ Stacks - Document"
+          Value: !Sub "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
           Value: !Sub "${AppEnvironment}"
         - Key: StackName
