@@ -129,13 +129,34 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   /**
    * /documents/{documentId}/content request.
    * 
-   * Tests Text Content is returned.
+   * Tests Text Content is returned (content-type plain/text).
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentContent03() throws Exception {
+    testReturnContent("text/plain");
+  }
+  
+  /**
+   * /documents/{documentId}/content request.
+   * 
+   * Tests Text Content is returned (content-type application/x-www-form-urlencoded).
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContent04() throws Exception {
+    testReturnContent("application/x-www-form-urlencoded");
+  }
+  
+  /**
+   * Test Content is returned.
+   * @param contentType {@link String}
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  private void testReturnContent(final String contentType) throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       newOutstream();
@@ -157,7 +178,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
 
       String userId = "jsmith";
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      item.setContentType("text/plain");
+      item.setContentType(contentType);
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
@@ -172,7 +193,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
 
       Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
       assertEquals(content, body.get("content"));
-      assertEquals("text/plain", body.get("contentType"));
+      assertEquals(contentType, body.get("contentType"));
       assertEquals("false", body.get("isBase64").toString());
     }
   }

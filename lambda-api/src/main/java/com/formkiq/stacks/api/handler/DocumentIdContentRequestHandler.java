@@ -101,7 +101,8 @@ public class DocumentIdContentRequestHandler
    */
   private boolean isPlainText(final String contentType) {
     return contentType != null
-        && (contentType.startsWith("text/") || "application/json".equals(contentType));
+        && (contentType.startsWith("text/") || "application/json".equals(contentType)
+            || "application/x-www-form-urlencoded".equals(contentType));
   }
 
   @Override
