@@ -958,6 +958,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           DocumentTagType.SYSTEMDEFINED));
     }
 
+    if (doc.getUserId() != null) {
+      tags.add(new DocumentTag(null, "userId", doc.getUserId(), date, username,
+          DocumentTagType.SYSTEMDEFINED));
+    }
+    
     return tags;
   }
 

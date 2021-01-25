@@ -361,7 +361,7 @@ public class StagingS3CreateTest {
 
         List<DocumentTag> tags =
             service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
-        int tagcount = hasTags ? docitem.getList("tags").size() + 1 : 2;
+        int tagcount = hasTags ? docitem.getList("tags").size() + 2 : 2 + 1;
         assertEquals(tagcount, tags.size());
 
         DocumentTag ptag = findTag(tags, "path");

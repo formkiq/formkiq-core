@@ -1060,13 +1060,20 @@ public class DocumentServiceImplTest {
 
       PaginationResults<DocumentTag> tags =
           this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(1, tags.getResults().size());
+      assertEquals(2, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
       assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertEquals(username, tags.getResults().get(0).getUserId());
       assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
+      
+      assertEquals("userId", tags.getResults().get(1).getKey());
+      assertEquals(username, tags.getResults().get(1).getValue());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
+      assertEquals(username, tags.getResults().get(1).getUserId());
+      assertEquals(item.getDocumentId(), tags.getResults().get(1).getDocumentId());
+      assertNotNull(tags.getResults().get(1).getInsertedDate());
     }
   }
   
@@ -1100,13 +1107,20 @@ public class DocumentServiceImplTest {
 
         PaginationResults<DocumentTag> tags =
             this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
-        assertEquals(1, tags.getResults().size());
+        assertEquals(2, tags.getResults().size());
         assertEquals("category", tags.getResults().get(0).getKey());
         assertEquals(tagValue, tags.getResults().get(0).getValue());
         assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(0).getType());
         assertEquals(username, tags.getResults().get(0).getUserId());
         assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
         assertNotNull(tags.getResults().get(0).getInsertedDate());
+        
+        assertEquals("userId", tags.getResults().get(1).getKey());
+        assertEquals(username, tags.getResults().get(1).getValue());
+        assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
+        assertEquals(username, tags.getResults().get(1).getUserId());
+        assertEquals(item.getDocumentId(), tags.getResults().get(1).getDocumentId());
+        assertNotNull(tags.getResults().get(1).getInsertedDate());
       }
     }
   }
@@ -1150,9 +1164,12 @@ public class DocumentServiceImplTest {
 
       List<DocumentTag> tags = this.service
           .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
-      assertEquals(1, tags.size());
+      assertEquals(2, tags.size());
       assertEquals("untagged", tags.get(0).getKey());
       assertEquals("true", tags.get(0).getValue());
+      
+      assertEquals("userId", tags.get(1).getKey());
+      assertEquals(doc.getUserId(), tags.get(1).getValue());
 
       item = this.service.findDocument(siteId, doc1.getDocumentId());
       assertNotNull(item);
@@ -1206,9 +1223,12 @@ public class DocumentServiceImplTest {
 
       List<DocumentTag> tags = this.service
           .findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
-      assertEquals(1, tags.size());
+      assertEquals(2, tags.size());
       assertEquals("category2", tags.get(0).getKey());
       assertEquals("", tags.get(0).getValue());
+      
+      assertEquals("userId", tags.get(1).getKey());
+      assertEquals(doc.getUserId(), tags.get(1).getValue());
     }
   }
   

@@ -27,10 +27,10 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -292,13 +292,20 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      assertEquals(1, tags.getResults().size());
+      assertEquals(2, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
       assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertEquals("joe", tags.getResults().get(0).getUserId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
+
+      assertEquals("userId", tags.getResults().get(1).getKey());
+      assertEquals("joe", tags.getResults().get(1).getValue());
+      assertEquals(BUCKET_KEY, tags.getResults().get(1).getDocumentId());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
+      assertEquals("joe", tags.getResults().get(1).getUserId());
+      assertNotNull(tags.getResults().get(1).getInsertedDate());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
@@ -349,7 +356,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int size = 3;
+      final int size = 4;
       assertEquals(size, tags.getResults().size());
       assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(0).getKey());
       assertEquals("GOOD", tags.getResults().get(0).getValue());
@@ -359,6 +366,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals("12345", tags.getResults().get(2).getValue());
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(2).getType());
       assertEquals("12345", tags.getResults().get(2).getValue());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(size - 1).getType());
+      assertEquals("asd", tags.getResults().get(size - 1).getValue());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
@@ -453,13 +462,20 @@ public class DocumentsS3UpdateTest implements DbKeys {
         assertNull(m.get(GSI1_PK)); 
       }
       
-      assertEquals(1, tags.getResults().size());
+      assertEquals(2, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
       assertEquals("true", tags.getResults().get(0).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
       assertEquals("joe", tags.getResults().get(0).getUserId());
       assertNotNull(tags.getResults().get(0).getInsertedDate());
+      
+      assertEquals("userId", tags.getResults().get(1).getKey());
+      assertEquals("joe", tags.getResults().get(1).getValue());
+      assertEquals(BUCKET_KEY, tags.getResults().get(1).getDocumentId());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
+      assertEquals("joe", tags.getResults().get(1).getUserId());
+      assertNotNull(tags.getResults().get(1).getInsertedDate());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
@@ -511,23 +527,54 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(doc.getDocumentId(), item.getDocumentId());
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(1, tags.getResults().size());
-      assertEquals("category", tags.getResults().get(0).getKey());
-      assertEquals("none", tags.getResults().get(0).getValue());
-      assertEquals(doc.getDocumentId(), tags.getResults().get(0).getDocumentId());
-      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(0).getType());
-      assertNotNull(tags.getResults().get(0).getUserId());
-      assertNotNull(tags.getResults().get(0).getInsertedDate());
+      assertEquals(2, tags.getResults().size());
+      assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")
+          .setType(DocumentTagType.USERDEFINED).setDocumentId(doc.getDocumentId()),
+          tags.getResults().get(0));
+      assertDocumentTagEquals(new DocumentTag().setKey("userId").setValue(doc.getUserId())
+          .setType(DocumentTagType.SYSTEMDEFINED).setDocumentId(doc.getDocumentId()),
+          tags.getResults().get(1));
       
+      // assertEquals("userId", tags.getResults().get(1).getKey());
+      // assertEquals(doc.getUserId(), tags.getResults().get(1).getValue());
+      // assertEquals(doc.getDocumentId(), tags.getResults().get(1).getDocumentId());
+      // assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
+      // assertNotNull(tags.getResults().get(1).getUserId());
+      // assertNotNull(tags.getResults().get(1).getInsertedDate());
+
       tags = service.findDocumentTags(siteId, itemchild.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
-      assertEquals("category1", tags.getResults().get(0).getKey());
-      assertEquals("", tags.getResults().get(0).getValue());
-      assertEquals(itemchild.getDocumentId(), tags.getResults().get(0).getDocumentId());
-      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(0).getType());
-      assertNotNull(tags.getResults().get(0).getUserId());
-      assertNotNull(tags.getResults().get(0).getInsertedDate());
+      assertDocumentTagEquals(new DocumentTag().setKey("category1").setValue("")
+          .setType(DocumentTagType.USERDEFINED).setDocumentId(itemchild.getDocumentId()),
+          tags.getResults().get(0));
+      
+      // assertEquals("category1", tags.getResults().get(0).getKey());
+      // assertEquals("", tags.getResults().get(0).getValue());
+      // assertEquals(itemchild.getDocumentId(), tags.getResults().get(0).getDocumentId());
+      // assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(0).getType());
+      // assertNotNull(tags.getResults().get(0).getUserId());
+      // assertNotNull(tags.getResults().get(0).getInsertedDate());
     }
+  }
+  
+  /**
+   * Assert {@link DocumentTag}.
+   * @param expected {@link DocumentTag}
+   * @param actual {@link DocumentTag}
+   */
+  private void assertDocumentTagEquals(final DocumentTag expected, final DocumentTag actual) {
+    assertEquals(expected.getKey(), actual.getKey());
+    assertEquals(expected.getValue(), actual.getValue());
+    assertEquals(expected.getDocumentId(), actual.getDocumentId());
+    assertEquals(expected.getType(), actual.getType());
+    
+    if (expected.getUserId() != null) {
+      assertEquals(expected.getUserId(), actual.getUserId());
+    } else {
+      assertNotNull(actual.getUserId());
+    }
+    
+    assertNotNull(actual.getInsertedDate());
   }
   
   /**

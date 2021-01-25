@@ -104,10 +104,19 @@ public class AwsResourceTest extends AbstractAwsTest {
     Map<String, String> map = gson.fromJson(body, Map.class);
     String message = map.get("Message");
     map = gson.fromJson(message, Map.class);
-
+    
     assertNotNull(map.get("documentId"));
     assertNotNull(map.get("type"));
-    assertNotNull(map.get("userId"));
+    
+    if (type.equals(map.get("type"))) {
+    
+      if (!"delete".equals(type)) {
+        assertNotNull(map.get("userId"));
+      }
+      
+    } else {
+      assertSnsMessage(queueUrl, type);
+    }
   }
 
   /**
@@ -259,8 +268,8 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       try (S3Client s3 = getS3Service().buildClient()) {
 
-        DynamicDocumentItem doc =
-            new DynamicDocumentItem(Map.of("documentId", key, "insertedDate", new Date()));
+        DynamicDocumentItem doc = new DynamicDocumentItem(
+            Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
         getDocumentService().saveDocumentItemWithTag(null, doc);
 
         // when

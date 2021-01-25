@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.lambda.apigateway.ApiAuthorizer;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
@@ -36,10 +38,26 @@ public class PublicDocumentsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
 
+  @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
+    
+    Map<String, Object> auth = event.getRequestContext().getAuthorizer();
+    if (auth == null) {
+      auth = new HashMap<>();
+      event.getRequestContext().setAuthorizer(auth);
+    }
+    
+    Map<String, Object> claims = (Map<String, Object>) auth.get("claims");
+    if (claims == null) {
+      claims = new HashMap<>();
+      auth.put("claims", claims);
+    }
+
+    claims.put("cognito:username", "public");
+
     return new DocumentsRequestHandler().post(logger, event, authorizer, awsservice);
   }
 

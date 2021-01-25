@@ -38,7 +38,7 @@ public interface DocumentService {
   int MAX_RESULTS = 10;
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
-      Set.of("untagged", "path", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP");
+      Set.of("untagged", "path", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
 
   /**
    * Add Tags to Document.

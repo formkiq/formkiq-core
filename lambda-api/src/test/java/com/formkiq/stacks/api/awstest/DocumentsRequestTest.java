@@ -596,7 +596,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   public void testPost07() throws Exception {
 
     for (boolean enablePublicEndpoint : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
-
+      
       for (FormKiqClientV1 client : getFormKiqClients()) {
         // given
         AddDocument post = new AddDocument()
@@ -639,9 +639,11 @@ public class DocumentsRequestTest extends AbstractApiTest {
         // when - fetch document
         final DocumentWithChildren documentc = getDocument(client, documentId, true);
         DocumentTags tags = getDocumentTags(client, documentId);
-        assertEquals(1, tags.tags().size());
+        assertEquals(2, tags.tags().size());
         assertEquals("formName", tags.tags().get(0).key());
         assertEquals("Job Application Form", tags.tags().get(0).value());
+        assertEquals("userId", tags.tags().get(1).key());
+        assertNotNull(tags.tags().get(1).value());
 
         // then
         assertNotNull(documentc);
