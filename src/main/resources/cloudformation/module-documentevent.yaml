@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  FilterPolicy:
+    Type: String
+    Description: Document Event Filter Policy
+    AllowedPattern: ".+"
+    Default: '{"type": ["create"]}'
+
+Resources:
+
+  SqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 500
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ DocumentStack"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
+
+  SqsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: SqsQueue
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: snsSeendMessage
+          Effect: Allow
+          Principal:
+            Service: sns.amazonaws.com
+          Action: sqs:SendMessage
+          Resource: !GetAtt [SqsQueue, Arn]
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn:1}}"
+      Queues:
+      - Ref: SqsQueue
+      
+  SnsDocumentsCreateSubscriptionSqs:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt SqsQueue.Arn
+      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn:1}}"
+      FilterPolicy: !Ref FilterPolicy
+          
+Outputs:
+  SqsQueue:
+    Description: "Sqs Queue"
+    Value: !Ref SqsQueue
+  SqsQueueArn:
+    Description: "Sqs Queue Arn"
+    Value: !GetAtt SqsQueue.Arn

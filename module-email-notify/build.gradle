@@ -66,9 +66,9 @@ task assembleTemplate {
 			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/module-email-notify/template.yaml"
 		}
 		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml"
-		}
+//		exec {
+//			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml"
+//		}
 	}
 }
 

@@ -173,6 +173,9 @@ task assembleTemplate {
 			commandLine "bash", "-c", "cp ${buildDir}/template.yaml ${buildDir}/distributions/formkiq-core/sam/template.yaml"
 		}
 		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"
+		}
+		exec {
 			commandLine "bash", "-c", "yq m --overwrite ${buildDir}/template.yaml ${buildDir}/template-sar-snippet.yaml > ${buildDir}/template-sar.yaml"
 		}
 		// build SAR distribution
