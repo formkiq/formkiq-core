@@ -20,6 +20,7 @@
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.stacks.common.objects" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />
+			<allow pkg="com.formkiq.stacks.common.formats" />
 						
 			<allow pkg="com.google.gson" />
 			

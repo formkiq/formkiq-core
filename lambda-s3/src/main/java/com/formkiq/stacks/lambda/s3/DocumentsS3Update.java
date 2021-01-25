@@ -44,6 +44,7 @@ import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -67,6 +68,9 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 @Reflectable
 public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Void> {
 
+  /** Max Sns Message Size. */
+  private static final int MAX_SNS_MESSAGE_SIZE = 256000;
+  
   /**
    * Get Bucket Name.
    *
@@ -254,12 +258,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     String siteId = getSiteId(key.toString());
     String documentId = resetDatabaseKey(siteId, key.toString());
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
 
     String msg = String.format("Removing %s from bucket %s.", key, bucket);
     logger.log(msg);
 
     this.service.deleteDocument(siteId, documentId);
-    sendSnsMessage(logger, "delete", siteId, documentId, bucket, key, null);
+    sendSnsMessage(logger, "delete", siteId, doc, bucket, key, null);
   }
 
   /**
@@ -345,13 +350,27 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         this.service.deleteDocumentFormats(siteId, item.getDocumentId());
 
-        sendSnsMessage(logger, create ? "create" : "update", siteId, item.getDocumentId(),
-            s3bucket, key, doc.getUserId());
+        String content = getContent(s3bucket, key, s3, resp, doc);
+        
+        sendSnsMessage(logger, create ? "create" : "update", siteId, doc, s3bucket, key, content);
 
       } else {
         logger.log("Cannot find document " + documentId + " in site " + siteId);
       }
     }
+  }
+
+  private String getContent(final String s3bucket, final String key, final S3Client s3,
+      final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
+    
+    String content = null;
+
+    if (MimeType.isPlainText(doc.getContentType()) && resp.getContentLength() != null
+        && resp.getContentLength().longValue() < MAX_SNS_MESSAGE_SIZE) {
+      content = this.s3service.getContentAsString(s3, s3bucket, key, null);
+    }
+    
+    return content;
   }
 
   /**
@@ -424,20 +443,26 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param logger {@link LambdaLogger}
    * @param eventType {@link String}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param doc {@link DynamicDocumentItem}
    * @param s3Bucket {@link String}
    * @param s3Key {@link String}
-   * @param userId {@link String}
+   * @param content {@link String}
    */
   private void sendSnsMessage(final LambdaLogger logger, final String eventType,
-      final String siteId, final String documentId, final String s3Bucket, final String s3Key,
-      final String userId) {
+      final String siteId, final DynamicDocumentItem doc, final String s3Bucket,
+      final String s3Key, final String content) {
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    DocumentEvent event =
-        new DocumentEvent().siteId(site).documentId(resetDatabaseKey(siteId, documentId))
-            .s3bucket(s3Bucket).s3key(s3Key).type(eventType).userId(userId);
+    
+    DocumentEvent event = new DocumentEvent().siteId(site)
+        .documentId(resetDatabaseKey(siteId, doc.getDocumentId())).s3bucket(s3Bucket).s3key(s3Key)
+        .type(eventType).userId(doc.getUserId()).content(content);
+    
     String eventJson = this.gson.toJson(event);
+    if (eventJson.length() > MAX_SNS_MESSAGE_SIZE) {
+      event.content(null);
+      eventJson = this.gson.toJson(event);
+    }
     
     boolean debug = "true".equals(System.getenv("DEBUG"));
     if (debug) {
@@ -453,7 +478,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     
     Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
     
-    if (userId != null) {
+    if (doc.getUserId() != null) {
       MessageAttributeValue userIdAttr =
           MessageAttributeValue.builder().dataType("String").stringValue(event.userId()).build();
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);

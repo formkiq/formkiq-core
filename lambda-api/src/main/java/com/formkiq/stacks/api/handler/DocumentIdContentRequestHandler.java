@@ -38,6 +38,7 @@ import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.ApiResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.NotFoundException;
+import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -69,7 +70,7 @@ public class DocumentIdContentRequestHandler
 
     String s3key = createS3Key(siteId, documentId);
 
-    if (isPlainText(item.getContentType())) {
+    if (MimeType.isPlainText(item.getContentType())) {
 
       try (S3Client s3 = awsservice.s3Service().buildClient()) {
 
@@ -91,18 +92,6 @@ public class DocumentIdContentRequestHandler
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);
-  }
-
-  /**
-   * Is Content Type plain text.
-   * 
-   * @param contentType {@link String}
-   * @return boolean
-   */
-  private boolean isPlainText(final String contentType) {
-    return contentType != null
-        && (contentType.startsWith("text/") || "application/json".equals(contentType)
-            || "application/x-www-form-urlencoded".equals(contentType));
   }
 
   @Override
