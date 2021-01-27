@@ -5,7 +5,7 @@ plugins {
   id 'com.github.spotbugs'  version '4.6.0'
   id 'com.diffplug.spotless' version '5.8.2'
   id 'com.github.ben-manes.versions' version '0.36.0'
-  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.0.3'
+  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.1.0'
 }
 
 spotless { 
@@ -16,7 +16,7 @@ spotless {
 }
 
 allprojects {
-  version = '1.1.0'
+  version = '1.2.0'
   group = 'com.formkiq.stacks'
 }
 
@@ -171,6 +171,9 @@ task assembleTemplate {
 		}		
 		exec {
 			commandLine "bash", "-c", "cp ${buildDir}/template.yaml ${buildDir}/distributions/formkiq-core/sam/template.yaml"
+		}
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"
 		}
 		exec {
 			commandLine "bash", "-c", "yq m --overwrite ${buildDir}/template.yaml ${buildDir}/template-sar-snippet.yaml > ${buildDir}/template-sar.yaml"

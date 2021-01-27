@@ -32,7 +32,7 @@ compileJava {
 nativeImage { 
 	outputFileName = "server"
 	javaVersion = "java11"
-	imageVersion = "20.3.0"
+	imageVersion = "21.0.0"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
     enableHttp = true
     enableHttps = true

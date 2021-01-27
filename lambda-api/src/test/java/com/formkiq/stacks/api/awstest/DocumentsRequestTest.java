@@ -20,7 +20,6 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.stacks.common.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -143,35 +142,6 @@ public class DocumentsRequestTest extends AbstractApiTest {
     }
 
     return map;
-  }
-
-  /**
-   * Get Document.
-   * 
-   * @param client {@link FormKiqClientV1}
-   * @param documentId {@link String}
-   * @param hasChildren boolean
-   * @return {@link DocumentWithChildren}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
-   */
-  private DocumentWithChildren getDocument(final FormKiqClientV1 client, final String documentId,
-      final boolean hasChildren) throws IOException, InterruptedException, URISyntaxException {
-
-    GetDocumentRequest request = new GetDocumentRequest().documentId(documentId);
-
-    while (true) {
-      try {
-        DocumentWithChildren document = client.getDocument(request);
-        if (hasChildren && notNull(document.documents()).isEmpty()) {
-          throw new IOException("documents not added yet");
-        }
-        return document;
-      } catch (IOException e) {
-        Thread.sleep(ONE_SECOND);
-      }
-    }
   }
 
   /**
@@ -626,7 +596,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   public void testPost07() throws Exception {
 
     for (boolean enablePublicEndpoint : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
-
+      
       for (FormKiqClientV1 client : getFormKiqClients()) {
         // given
         AddDocument post = new AddDocument()
@@ -669,9 +639,11 @@ public class DocumentsRequestTest extends AbstractApiTest {
         // when - fetch document
         final DocumentWithChildren documentc = getDocument(client, documentId, true);
         DocumentTags tags = getDocumentTags(client, documentId);
-        assertEquals(1, tags.tags().size());
+        assertEquals(2, tags.tags().size());
         assertEquals("formName", tags.tags().get(0).key());
         assertEquals("Job Application Form", tags.tags().get(0).value());
+        assertEquals("userId", tags.tags().get(1).key());
+        assertNotNull(tags.tags().get(1).value());
 
         // then
         assertNotNull(documentc);

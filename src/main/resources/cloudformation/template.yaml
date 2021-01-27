@@ -23,31 +23,31 @@ Parameters:
     
   PasswordMinimumLength:
     Type: Number
-    Description: The minimum password length for FormKiQ Stacks Cognito Users
+    Description: The minimum password length for FormKiQ Cognito Users
     MinValue: "6"
     MaxValue: "99"
     Default: "8"
     
   PasswordRequireLowercase:
-    Description: Whether FormKiQ Stacks Cognito Users password requires at least one lowercase letter
+    Description: Whether FormKiQ Cognito Users password requires at least one lowercase letter
     Default: "true"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireNumbers:
-    Description: Whether FormKiQ Stacks Cognito Users password requires at least one number
+    Description: Whether FormKiQ Cognito Users password requires at least one number
     Default: "true"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireSymbols:
-    Description: Whether FormKiQ Stacks Cognito Users password requires at least one symbol
+    Description: Whether FormKiQ Cognito Users password requires at least one symbol
     Default: "true"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireUppercase:
-    Description: Whether FormKiQ Stacks Cognito Users password requires at least one uppercase letter
+    Description: Whether FormKiQ Cognito Users password requires at least one uppercase letter
     Default: "true"
     Type: String
     AllowedValues: ["true", "false"]
@@ -57,7 +57,7 @@ Resources:
   VersionParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "FormKiQ Stacks Version"
+      Description: "FormKiQ Version"
       Name: !Sub "/formkiq/${AppEnvironment}/version"
       Type: String
       Value: "{{version}}"
@@ -137,6 +137,9 @@ Resources:
         StackName: !Sub "${AWS::StackName}"
         
 Outputs:
+  AppEnvironment:
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    Value: !Ref AppEnvironment
   IamApiUrl:
     Description: "The URL for the API endpoint that uses IAM authorization"
     Value: !GetAtt CoreApi.Outputs.DocumentsIamApiUrl

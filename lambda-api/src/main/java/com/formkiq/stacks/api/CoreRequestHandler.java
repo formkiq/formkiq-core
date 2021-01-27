@@ -44,9 +44,12 @@ import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
+import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
+import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
+import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
@@ -116,6 +119,10 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
       return new PublicDocumentsRequestHandler();
     }
 
+    if (s.startsWith("/public/webhooks")) {
+      return new PublicWebhooksRequestHandler();
+    }
+
     switch (s) {
       case "options":
         return new DocumentsOptionsRequestHandler();
@@ -154,6 +161,11 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
       case "/documents/{documentId}/upload":
         return new DocumentsIdUploadRequestHandler();
 
+      case "/webhooks/{webhookId}":
+        return new WebhooksIdRequestHandler();
+      case "/webhooks":
+        return new WebhooksRequestHandler();
+        
       default:
         throw new NotFoundException(resource + " not found");
     }

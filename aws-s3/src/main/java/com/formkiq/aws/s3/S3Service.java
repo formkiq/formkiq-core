@@ -273,7 +273,7 @@ public class S3Service {
       final String versionId) {
 
     GetObjectRequest gr =
-        GetObjectRequest.builder().bucket(bucket).key(key)/* .versionId(versionId) */.build();
+        GetObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
     ResponseBytes<GetObjectResponse> response = s3.getObjectAsBytes(gr);
 
     String s = response.asUtf8String();

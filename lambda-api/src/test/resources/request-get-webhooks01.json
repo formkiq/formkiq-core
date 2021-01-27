@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "resource": "/sites",
-  "path": "/sites",
+  "resource": "/webhooks",
+  "path": "/webhooks",
   "httpMethod": "GET",
   "headers": {
     "Content-Length": "0",
@@ -115,13 +115,13 @@
       "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0",
       "userArn": null
     },
-    "path": "/sites",
+    "path": "/webhooks",
     "protocol": "HTTP/1.1",
     "requestId": "PYuYDiIrIAMEMGA=",
     "requestTime": "09/Jul/2020:03:37:36 +0000",
     "requestTimeEpoch": 1594265856216,
-    "resourceId": "GET /sites",
-    "resourcePath": "/sites",
+    "resourceId": "GET /webhooks",
+    "resourcePath": "/webhooks",
     "stage": "$default"
   },
   "pathParameters": null,

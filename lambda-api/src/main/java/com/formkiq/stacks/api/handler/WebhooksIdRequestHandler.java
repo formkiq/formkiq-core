@@ -23,46 +23,40 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import java.util.HashMap;
-import java.util.Map;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.lambda.apigateway.ApiAuthorizer;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.lambda.apigateway.exception.NotFoundException;
 
-/** {@link ApiGatewayRequestHandler} for "/public/documents". */
-public class PublicDocumentsRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
+public class WebhooksIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-
-  @SuppressWarnings("unchecked")
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    
-    Map<String, Object> auth = event.getRequestContext().getAuthorizer();
-    if (auth == null) {
-      auth = new HashMap<>();
-      event.getRequestContext().setAuthorizer(auth);
-    }
-    
-    Map<String, Object> claims = (Map<String, Object>) auth.get("claims");
-    if (claims == null) {
-      claims = new HashMap<>();
-      auth.put("claims", claims);
-    }
+      final AwsServiceCache awsServices) throws Exception {
 
-    claims.put("cognito:username", "public");
-
-    return new DocumentsRequestHandler().post(logger, event, authorizer, awsservice);
+    String siteId = getSiteId(event);
+    String id = getPathParameter(event, "webhookId");
+    
+    if (awsServices.webhookService().findWebhook(siteId, id) == null) {
+      throw new NotFoundException("Webhook 'id' not found");
+    }
+    awsServices.webhookService().deleteWebhook(siteId, id);
+    
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMessageResponse("'" + id + "' object deleted"));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/public/documents";
+    return "/webhooks/{webhookId}";
   }
 }

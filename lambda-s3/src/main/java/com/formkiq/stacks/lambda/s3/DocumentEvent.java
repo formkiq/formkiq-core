@@ -42,6 +42,10 @@ public class DocumentEvent {
   private String s3bucket;
   /** Document Type. */
   private String type;
+  /** User Id. */
+  private String userId;
+  /** Document Content. */
+  private String content;
 
   /**
    * constructor.
@@ -147,6 +151,46 @@ public class DocumentEvent {
    */
   public DocumentEvent type(final String eventtype) {
     this.type = eventtype;
+    return this;
+  }
+  
+  /**
+   * Get {@link DocumentEvent} UserId.
+   * 
+   * @return {@link String}
+   */
+  public String userId() {
+    return this.userId;
+  }
+
+  /**
+   * Set {@link DocumentEvent} UserId.
+   * 
+   * @param user {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent userId(final String user) {
+    this.userId = user;
+    return this;
+  }
+  
+  /**
+   * Get {@link DocumentEvent} Content.
+   * 
+   * @return {@link String}
+   */
+  public String content() {
+    return this.content;
+  }
+
+  /**
+   * Set {@link DocumentEvent} Content.
+   * 
+   * @param data {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent content(final String data) {
+    this.content = data;
     return this;
   }
 }

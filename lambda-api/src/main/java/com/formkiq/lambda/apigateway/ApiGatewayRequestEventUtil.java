@@ -41,6 +41,7 @@ import com.formkiq.stacks.dynamodb.CacheService;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
@@ -156,6 +157,30 @@ public interface ApiGatewayRequestEventUtil {
         logger.log("Cannot close DocumentItemJSON: " + e.getMessage());
       }
     }
+  }
+  
+  /**
+   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   * @throws BadException BadException
+   */
+  default String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
+    String body = event.getBody();
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+    
+    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
+      byte[] bytes = Base64.getDecoder().decode(body);
+      body = new String(bytes, StandardCharsets.UTF_8);
+    }
+    
+    if (StringUtils.isEmpty(body)) {
+      throw new BadException("request body is required");
+    }
+    
+    return body;
   }
 
   /**

@@ -78,7 +78,7 @@ public abstract class AbstractAwsTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-    
+            
     awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");

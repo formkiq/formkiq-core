@@ -64,4 +64,16 @@ public enum MimeType {
   public String getContentType() {
     return this.contentType;
   }
+  
+  /**
+   * Is Content Type plain text.
+   * 
+   * @param contentType {@link String}
+   * @return boolean
+   */
+  public static boolean isPlainText(final String contentType) {
+    return contentType != null
+        && (contentType.startsWith("text/") || "application/json".equals(contentType)
+            || "application/x-www-form-urlencoded".equals(contentType));
+  }
 }
