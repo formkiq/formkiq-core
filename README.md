@@ -21,6 +21,7 @@
   - [SAM CLI](#sam-cli)
   - [Outputs](#outputs)
 - [🌐 API Reference](#-api-reference)
+- [🪝 Webhooks](#-webhooks)
 - [🖥️ Console](#%EF%B8%8F-console)
 - [🔑 Authentication](#-authentication)
   - [Users](#users)
@@ -235,6 +236,15 @@ Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the 
 | GET | /documents/{documentId}/upload | Returns URL that can accept uploads largers than 5 MB to update a specific document |
 | POST | /search | Document search |
 | POST | /public/documents | Public (unauthenticated) URL for creating a document, used for web forms |
+
+## 🪝 Webhooks
+
+Many services today allow you to uses webhooks to notify your application when an event happens in the service. For example, [Stripe](https://stripe.com/docs/webhooks) allow you to specify a webhooks to notify your application when an event happens in your account.
+
+With FormKiQ you can create webhook endpoints that you can use to receive and store event notifications from other services. Using the /webhooks API (or from the console), you can create a webhook and then enter that webhook in Stripe or other supporting serivces and immediately start receiving notifications.
+
+FormKiQ allows you to take this one step further and using the [Document Events](#%EF%B8%8F-document-events) (that are created every time a webhook notification is received), you can easily write custom code that is automatically executed.
+
 
 ## 🖥️ Console
 
