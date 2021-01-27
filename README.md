@@ -219,7 +219,7 @@ Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the 
 
 |Method|Url|Description|
 |--------------|--------------------------|--------------------------|
-| GET | /documents | Returns a list of documents in reverse inserted date order |
+| GET | /documents | Returns a list of documents |
 | POST | /documents | Create document |
 | GET | /documents/{documentId} | Get document details |
 | PATCH | /documents/{documentId} | Update document details |
@@ -236,6 +236,8 @@ Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the 
 | GET | /documents/{documentId}/upload | Returns URL that can accept uploads largers than 5 MB to update a specific document |
 | POST | /search | Document search |
 | POST | /public/documents | Public (unauthenticated) URL for creating a document, used for web forms |
+| GET | /webhooks | Returns a list of webhooks |
+| POST | /webhooks | Create Webhook |
 
 ## 🪝 Webhooks
 
