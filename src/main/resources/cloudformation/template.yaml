@@ -137,6 +137,9 @@ Resources:
         StackName: !Sub "${AWS::StackName}"
         
 Outputs:
+  AppEnvironment:
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    Value: !Ref AppEnvironment
   IamApiUrl:
     Description: "The URL for the API endpoint that uses IAM authorization"
     Value: !GetAtt CoreApi.Outputs.DocumentsIamApiUrl
