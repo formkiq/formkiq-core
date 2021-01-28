@@ -158,3 +158,6 @@ Outputs:
   FormKiQVersion:
     Description: "The FormKiQ Version"
     Value: {{version}}
+  SnsDocumentEventArn:
+    Description: SNS Topic for Document Events
+    Value: !GetAtt CoreStorage.Outputs.SnsDocumentEventArn    
