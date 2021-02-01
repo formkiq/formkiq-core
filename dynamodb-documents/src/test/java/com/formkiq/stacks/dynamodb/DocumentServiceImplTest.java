@@ -20,7 +20,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static org.junit.Assert.assertArrayEquals;
@@ -58,11 +57,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 
 /** 
  * Unit Tests for {@link DocumentServiceImpl}. 
  */
-public class DocumentServiceImplTest {
+public class DocumentServiceImplTest implements DbKeys {
 
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder adb;
@@ -215,7 +217,7 @@ public class DocumentServiceImplTest {
           new DocumentTag(documentId, tagKey, tagValue, document.getInsertedDate(), userId));
 
       // when
-      this.service.addTags(siteId, documentId, tags);
+      this.service.addTags(siteId, documentId, tags, null);
 
       // then
       PaginationResults<DocumentTag> results =
@@ -1261,6 +1263,47 @@ public class DocumentServiceImplTest {
       assertNotNull(item);
       assertNotNull(item.getBelongsToDocumentId());
       assertEquals("text/plain", item.getContentType());
+    }
+  }
+  
+  /**
+   * Test Save {@link DocumentItem} with {@link DocumentTag} and TTL.
+   */
+  @Test
+  public void testSaveDocumentItemWithTag06() {
+    // given
+    String ttl = "1612058378";
+    
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String content = "This is a test";
+      String username = UUID.randomUUID() + "@formkiq.com";
+
+      DynamicDocumentItem doc =
+          new DynamicDocumentItem(Map.of("documentId", UUID.randomUUID().toString(),
+              "TimeToLive", ttl, "userId", username, "insertedDate", new Date(), "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+
+      // when
+      DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
+
+      // then      
+      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
+          .tableName(dbhelper.getDocumentTable()).build();
+      
+      try (DynamoDbClient db = dbhelper.getDb()) {
+        Map<String, AttributeValue> result = db.getItem(r).item();
+        assertEquals(ttl, result.get("TimeToLive").n());
+      }
+      
+      for (String tagKey : Arrays.asList("untagged", "userId")) {
+        r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
+            .tableName(dbhelper.getDocumentTable()).build();
+        
+        try (DynamoDbClient db = dbhelper.getDb()) {
+          Map<String, AttributeValue> result = db.getItem(r).item();
+          assertEquals(ttl, result.get("TimeToLive").n());
+        }        
+      }
     }
   }
 }

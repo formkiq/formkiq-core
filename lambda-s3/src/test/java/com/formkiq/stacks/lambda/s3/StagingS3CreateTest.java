@@ -57,6 +57,7 @@ import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.DbKeys;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -73,12 +74,15 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for {@link StagingS3Create}. */
-public class StagingS3CreateTest {
+public class StagingS3CreateTest implements DbKeys {
 
   /** SQS Sns Queue. */
   private static final String SNS_SQS_DELETE_QUEUE = "sqssnsDelete";
@@ -502,7 +506,7 @@ public class StagingS3CreateTest {
       processFkB64File(siteId, item);
     }
   }
-
+  
   /**
    * Test .fkb64 file without CONTENT.
    * 
@@ -607,14 +611,38 @@ public class StagingS3CreateTest {
     }
   }
 
-  private void verifyBelongsToDocument(final DocumentItem item, final String documentId,
-      final List<String> documentIds) {
-    assertEquals(documentIds.size(), item.getDocuments().size());
-    
-    for (int i = 0; i < documentIds.size(); i++) {
-      assertEquals(documentIds.get(i), item.getDocuments().get(i).getDocumentId());
-      assertNotNull(item.getDocuments().get(i).getInsertedDate());
-      assertNotNull(item.getDocuments().get(i).getBelongsToDocumentId());
+  /**
+   * Test .fkb64 file with TTL.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension06() throws IOException {
+    String timeToLive = "1612061365";
+    DynamicDocumentItem item = createDocumentItem();
+    item.put("TimeToLive", timeToLive);
+
+    item.put("tags",
+        Arrays.asList(Map.of("documentId", item.getDocumentId(), "key", "category", "value",
+            "person", "insertedDate", new Date(), "userId", "joe", "type",
+            DocumentTagType.USERDEFINED.name())));
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      processFkB64File(siteId, item);
+
+      String key = createDatabaseKey(siteId, item.getDocumentId());
+      try (S3Client c = s3.buildClient()) {
+        String content = s3.getContentAsString(c, DOCUMENTS_BUCKET, key, null);
+        assertEquals("VGhpcyBpcyBhIHRlc3Q=", content);
+      }
+      
+      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
+          .tableName(dbHelper.getDocumentTable()).build();
+
+      try (DynamoDbClient db = dbHelper.getDb()) {
+        Map<String, AttributeValue> result = db.getItem(r).item();
+        assertEquals(timeToLive, result.get("TimeToLive").n());
+      }
     }
   }
 
@@ -650,6 +678,17 @@ public class StagingS3CreateTest {
     assertTrue(this.logger.containsString("skipping event ObjectUnknwn:Delete"));
 
     verifySqsMessages(0, 0, 0);
+  }
+
+  private void verifyBelongsToDocument(final DocumentItem item, final String documentId,
+      final List<String> documentIds) {
+    assertEquals(documentIds.size(), item.getDocuments().size());
+    
+    for (int i = 0; i < documentIds.size(); i++) {
+      assertEquals(documentIds.get(i), item.getDocuments().get(i).getDocumentId());
+      assertNotNull(item.getDocuments().get(i).getInsertedDate());
+      assertNotNull(item.getDocuments().get(i).getBelongsToDocumentId());
+    }
   }
 
   /**

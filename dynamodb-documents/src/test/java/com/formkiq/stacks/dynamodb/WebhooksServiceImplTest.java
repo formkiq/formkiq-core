@@ -25,7 +25,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import org.junit.Before;
@@ -96,8 +100,8 @@ public class WebhooksServiceImplTest {
   public void testFindWebhooks01() {
     //given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      this.service.saveWebhook(siteId, "test", "joe");
-      this.service.saveWebhook(siteId, "abc", "joe");
+      this.service.saveWebhook(siteId, "test", "joe", null);
+      this.service.saveWebhook(siteId, "abc", "joe", null);
 
       // when
       List<DynamicObject> list = this.service.findWebhooks(siteId);
@@ -110,6 +114,7 @@ public class WebhooksServiceImplTest {
         assertNotNull(l.getString("path"));
         assertNotNull(l.getString("userId"));
         assertNotNull(l.getString("inserteddate"));
+        assertNull(l.getString("TimeToLive"));
       });
       
       // when
@@ -143,7 +148,8 @@ public class WebhooksServiceImplTest {
   public void testFindWebhook01() {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String id = this.service.saveWebhook(siteId, "test", "joe");
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+      String id = this.service.saveWebhook(siteId, "test", "joe", Date.from(now.toInstant()));
 
       // when
       DynamicObject o = this.service.findWebhook(siteId, id);
@@ -153,6 +159,16 @@ public class WebhooksServiceImplTest {
       assertNotNull(o.getString("path"));
       assertNotNull(o.getString("userId"));
       assertNotNull(o.getString("inserteddate"));
+      assertNotNull(o.getString("TimeToLive"));
+      
+      LocalDateTime time =
+          LocalDateTime.ofEpochSecond(Long.parseLong(o.getString("TimeToLive")), 0, ZoneOffset.UTC);
+      assertEquals(now.getYear(), time.getYear());
+      assertEquals(now.getMonth(), time.getMonth());
+      assertEquals(now.getDayOfMonth(), time.getDayOfMonth());
+      assertEquals(now.getHour(), time.getHour());
+      assertEquals(now.getMinute(), time.getMinute());
+      assertEquals(now.getSecond(), time.getSecond());
 
       // when
       this.service.deleteWebhook(siteId, id);

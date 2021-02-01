@@ -49,6 +49,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getBelongsToDocumentId() {
+    return getString("belongsToDocumentId");
+  }
+
+  @Override
   public String getChecksum() {
     return getString("checksum");
   }
@@ -69,6 +74,13 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public List<DocumentItem> getDocuments() {
+    List<DynamicObject> list = getList("documents");
+    return list.stream().map(o -> new DynamicObjectToDocumentItem().apply(o))
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Date getInsertedDate() {
     return getDate("insertedDate");
   }
@@ -79,8 +91,18 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getTimeToLive() {
+    return getString("TimeToLive");
+  }
+
+  @Override
   public String getUserId() {
     return getString("userId");
+  }
+
+  @Override
+  public void setBelongsToDocumentId(final String documentId) {
+    put("belongsToDocumentId", documentId);
   }
 
   @Override
@@ -104,6 +126,12 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public void setDocuments(final List<DocumentItem> list) {
+    put("documents", list);
+
+  }
+
+  @Override
   public void setInsertedDate(final Date date) {
     put("insertedDate", date);
   }
@@ -114,30 +142,12 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public void setTimeToLive(final String ttl) {
+    put("TimeToLive", ttl);
+  }
+
+  @Override
   public void setUserId(final String userId) {
     put("userId", userId);
-  }
-
-  @Override
-  public String getBelongsToDocumentId() {
-    return getString("belongsToDocumentId");
-  }
-
-  @Override
-  public List<DocumentItem> getDocuments() {
-    List<DynamicObject> list = getList("documents");
-    return list.stream().map(o -> new DynamicObjectToDocumentItem().apply(o))
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  public void setBelongsToDocumentId(final String documentId) {
-    put("belongsToDocumentId", documentId);
-  }
-
-  @Override
-  public void setDocuments(final List<DocumentItem> list) {
-    put("documents", list);
-
   }
 }

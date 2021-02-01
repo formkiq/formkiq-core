@@ -182,6 +182,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      AutoPublishCodeSha256: F1D9B3966753C69829FBA656DC702C117F28D1C8AE09CF1CE02A94C91BDDE3AE
       Environment:
         Variables:
           DOCUMENTS_S3_BUCKET: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
@@ -227,6 +228,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      AutoPublishCodeSha256: F1D9B3966753C69829FBA656DC702C117F28D1C8AE09CF1CE02A94C91BDDE3AE
       Environment:
         Variables:
           DOCUMENTS_TABLE: !Ref Documents
@@ -423,6 +425,9 @@ Resources:
     Properties:
       TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents"
       BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE            
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       PointInTimeRecoverySpecification:

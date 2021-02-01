@@ -70,7 +70,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(documentId, tagKey, tagKey, now, userId);
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag));
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -127,7 +127,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(documentId, tagKey, null, now, userId);
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag));
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
       assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
@@ -178,7 +178,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       DocumentTag item = new DocumentTag(documentId, tagname, tagvalue, date, userId);
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(item));
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(item), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags00.json");
@@ -229,7 +229,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag item0 = new DocumentTag(documentId, "category0", "person", now, userId);
       DocumentTag item1 = new DocumentTag(documentId, "category1", "thing", now, userId);
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(item0, item1));
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(item0, item1), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags02.json");

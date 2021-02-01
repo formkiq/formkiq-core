@@ -229,6 +229,14 @@ public class DynamoDbHelper {
   }
 
   /**
+   * Get Document Table Name.
+   * @return {@link String}
+   */
+  public String getDocumentTable() {
+    return this.documentTable;
+  }
+
+  /**
    * Get {@link DocumentSearchService}.
    * 
    * @return {@link DocumentSearchService}
@@ -254,7 +262,7 @@ public class DynamoDbHelper {
   public WebhooksService getWebhookService() {
     return this.webhookService;
   }
-
+  
   /**
    * Is Documents Table Exist.
    * 
@@ -287,7 +295,7 @@ public class DynamoDbHelper {
     list.forEach(i -> this.db.deleteItem(DeleteItemRequest.builder().tableName(this.documentTable)
         .key(i).build()));
   }
-  
+
   /**
    * Truncate Documents Table.
    * 

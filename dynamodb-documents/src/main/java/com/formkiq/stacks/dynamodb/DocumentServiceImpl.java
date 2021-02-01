@@ -100,7 +100,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void addTags(final String siteId, final String documentId,
-      final Collection<DocumentTag> tags) {
+      final Collection<DocumentTag> tags, final String timeToLive) {
 
     if (tags != null) {
       Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
@@ -109,7 +109,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentTagToAttributeValueMap mapper =
           new DocumentTagToAttributeValueMap(this.df, siteId, documentId);
 
-      List<Put> putitems = tags.stream().filter(predicate).map(mapper)
+      List<Map<String, AttributeValue>> valueList =
+          tags.stream().filter(predicate).map(mapper).collect(Collectors.toList());
+      
+      if (timeToLive != null) {
+        valueList.forEach(v -> addN(v, "TimeToLive", timeToLive));
+      }
+      
+      List<Put> putitems = valueList.stream()
           .map(values -> Put.builder().tableName(this.documentTableName).item(values).build())
           .collect(Collectors.toList());
 
@@ -814,9 +821,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param siteId DynamoDB PK siteId
    * @param document {@link DocumentItem}
    * @param saveGsi1 boolean
+   * @param timeToLive {@link String}
    */
   private void saveDocument(final Map<String, AttributeValue> keys, final String siteId,
-      final DocumentItem document, final boolean saveGsi1) {
+      final DocumentItem document, final boolean saveGsi1, final String timeToLive) {
 
     Date insertedDate = document.getInsertedDate();
     String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
@@ -851,6 +859,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     if (document.getBelongsToDocumentId() != null) {
       addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
     }
+    
+    if (timeToLive != null) {
+      addN(pkvalues, "TimeToLive", timeToLive);
+    }
 
     save(pkvalues);
   }
@@ -863,12 +875,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param saveGsi1 boolean
+   * @param timeToLive {@link String}
    */
   private void saveDocument(final Map<String, AttributeValue> keys, final String siteId,
-      final DocumentItem document, final Collection<DocumentTag> tags, final boolean saveGsi1) {
+      final DocumentItem document, final Collection<DocumentTag> tags, final boolean saveGsi1,
+      final String timeToLive) {
     // TODO save Document/Tags inside transaction.
-    saveDocument(keys, siteId, document, saveGsi1);
-    addTags(siteId, document.getDocumentId(), tags);
+    saveDocument(keys, siteId, document, saveGsi1, timeToLive);
+    addTags(siteId, document.getDocumentId(), tags, timeToLive);
     
     if (saveGsi1) {
       saveDocumentDate(document);
@@ -879,7 +893,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public void saveDocument(final String siteId, final DocumentItem document,
       final Collection<DocumentTag> tags) {
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(keys, siteId, document, tags, true);
+    saveDocument(keys, siteId, document, tags, true, null);
   }
 
   /** 
@@ -994,7 +1008,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     boolean saveGsi1 = doc.getBelongsToDocumentId() == null;
     Map<String, AttributeValue> keys = keysDocument(siteId, item.getDocumentId());
-    saveDocument(keys, siteId, item, tags, saveGsi1);
+    saveDocument(keys, siteId, item, tags, saveGsi1, doc.getString("TimeToLive"));
 
     List<DynamicObject> documents = doc.getList("documents");
     for (DynamicObject subdoc : documents) {
@@ -1013,14 +1027,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       // save child document
       keys =
           keysDocument(siteId, item.getDocumentId(), Optional.of(subdoc.getString("documentId")));
-      saveDocument(keys, siteId, dockey, null, false);
+      saveDocument(keys, siteId, dockey, null, false, doc.getString("TimeToLive"));
 
       List<DynamicObject> doctags = subdoc.getList("tags");
       tags = doctags.stream().map(t -> new DynamicObjectToDocumentTag().apply(t))
           .collect(Collectors.toList());
 
       keys = keysDocument(siteId, subdoc.getString("documentId"));
-      saveDocument(keys, siteId, document, tags, false);
+      saveDocument(keys, siteId, document, tags, false, doc.getString("TimeToLive"));
     }
 
     return item;

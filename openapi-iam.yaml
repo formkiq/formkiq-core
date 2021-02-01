@@ -2,7 +2,7 @@
         info:
           title: "FormKiQ HTTP API"
           description: "FormKiQ IAM API"
-          version: "1.5.0"
+          version: "1.5.2"
         paths:
           /version:
             get:
@@ -762,6 +762,35 @@
                         $ref: '#/components/schemas/DocumentId'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              description: Public Webhook.
+              tags:
+                - Public
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/webhooksParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentId'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             options:
               description: Public Webhook Options.
               tags:
@@ -804,7 +833,7 @@
                       schema:
                         "$ref": "#/components/schemas/WebhookResults"
               security:
-                - AuthorizationCognito: []
+                - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
@@ -834,7 +863,7 @@
                       schema:
                         $ref: '#/components/schemas/WebhookPostResponse'
               security:
-                - AuthorizationCognito: []
+                - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
             options:
@@ -874,7 +903,7 @@
                 '200':
                   $ref: '#/components/responses/200Cors'
               security:
-                - AuthorizationCognito: []
+                - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:

@@ -45,6 +45,8 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 /** Implementation of the {@link WebhooksService}. */
 public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
+  /** MilliSeconds per Second. */
+  private static final int MILLISECONDS = 1000;
   /** Documents Table Name. */
   private String documentTableName;
 
@@ -123,7 +125,8 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   }
 
   @Override
-  public String saveWebhook(final String siteId, final String name, final String userId) {
+  public String saveWebhook(final String siteId, final String name, final String userId,
+      final Date ttl) {
 
     final String id = UUID.randomUUID().toString();
     final String fulldate = this.df.format(new Date());
@@ -137,6 +140,11 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     
     addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_WEBHOOKS));
     addS(pkvalues, GSI1_SK, name + TAG_DELIMINATOR + fulldate);
+    
+    if (ttl != null) {
+      long timeout = ttl.getTime() / MILLISECONDS;
+      addN(pkvalues, "TimeToLive", String.valueOf(timeout));
+    }
     
     PutItemRequest put =
         PutItemRequest.builder().tableName(this.documentTableName).item(pkvalues).build();

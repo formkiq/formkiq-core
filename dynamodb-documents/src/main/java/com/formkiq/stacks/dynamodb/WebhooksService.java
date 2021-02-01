@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.Date;
 import java.util.List;
 import com.formkiq.stacks.common.objects.DynamicObject;
 
@@ -60,8 +61,9 @@ public interface WebhooksService {
    * @param siteId Optional Grouping siteId
    * @param name {@link String}
    * @param userId {@link String}
+   * @param ttl {@link Date}
    * 
    * @return {@link String}
    */
-  String saveWebhook(String siteId, String name, String userId);
+  String saveWebhook(String siteId, String name, String userId, Date ttl);
 }

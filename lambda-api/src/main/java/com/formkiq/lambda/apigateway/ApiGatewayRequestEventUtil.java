@@ -31,6 +31,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -403,6 +404,24 @@ public interface ApiGatewayRequestEventUtil {
    */
   default boolean isPaginationPrevious(final Map<String, String> q) {
     return isNotBlank(q.getOrDefault("previous", null));
+  }
+
+  /**
+   * Set Path Parameter.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  default void setPathParameter(final ApiGatewayRequestEvent event, final String key,
+      final String value) {
+    Map<String, String> q = event.getPathParameters();
+    if (q == null) {
+      q = new HashMap<>();
+      event.setPathParameters(q);
+    }
+
+    q.put(key, value);
   }
 
   /**

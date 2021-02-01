@@ -46,8 +46,9 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @param timeToLive {@link String}
    */
-  void addTags(String siteId, String documentId, Collection<DocumentTag> tags);
+  void addTags(String siteId, String documentId, Collection<DocumentTag> tags, String timeToLive);
   
   /**
    * Delete Document.

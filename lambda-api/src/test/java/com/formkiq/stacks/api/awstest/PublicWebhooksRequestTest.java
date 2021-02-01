@@ -26,20 +26,25 @@ package com.formkiq.stacks.api.awstest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import java.io.IOException;
+import static org.junit.Assert.assertTrue;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.BiPredicate;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.stacks.client.models.DocumentWithChildren;
+import com.formkiq.stacks.client.models.Webhook;
+import com.formkiq.stacks.client.models.Webhooks;
+import com.formkiq.stacks.client.requests.AddWebhookRequest;
+import com.formkiq.stacks.client.requests.DeleteWebhookRequest;
+import com.formkiq.stacks.client.requests.GetWebhooksRequest;
+import com.formkiq.stacks.client.requests.OptionsWebhookRequest;
 import software.amazon.awssdk.core.sync.RequestBody;
 
 /**
@@ -59,120 +64,19 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   private static final int STATUS_NOT_FOUND = 404;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
-
-  /**
-   * Delete Webhook.
-   * @param id {@link String}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private void deleteWebhooks(final String id) throws IOException, InterruptedException {
-    String url = getRootHttpUrl() + "/webhooks/" + id;
-
-    Map<String, List<String>> headers = Map.of("Authorization",
-        Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.delete(url, o);
-
-    // then
-    assertEquals(STATUS_OK, response.statusCode());
-  }
-
-  /**
-   * Get new Webhooks.
-   * @return {@link Map}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private Map<String, Object> getWebhooks() throws IOException, InterruptedException {
-    String url = getRootHttpUrl() + "/webhooks";
-
-    Map<String, List<String>> headers = Map.of("Authorization",
-        Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.get(url, o);
-
-    // then
-    assertEquals(STATUS_OK, response.statusCode());
-    Map<String, Object> map = toMap(response);
-    return map;
-  }
   
   /**
-   * Create new Webhook.
-   * @return {@link String}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private String postWebhooks() throws IOException, InterruptedException {
-    String url = getRootHttpUrl() + "/webhooks";
-
-    Map<String, List<String>> headers = Map.of("Authorization",
-        Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    String content = "{\"name\":\"paypal\"}";
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(url, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_OK, response.statusCode());
-    Map<String, Object> map = toMap(response);
-    return map.get("id").toString();
-  }
-  
-  /**
-   * Options.
+   * /webhooks Options.
    * 
    * @throws Exception Exception
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    // given
-    String url = getRootHttpUrl() + "/public/webhooks/" + UUID.randomUUID().toString();
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.options(url, o);
-
-    // then
-    assertEquals(STATUS_OK, response.statusCode());
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      assertEquals(STATUS_OK, client.optionsWebhooks().statusCode());
+      assertEquals(STATUS_OK,
+          client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
+    }
   }
   
   /**
@@ -180,48 +84,47 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test(timeout = TEST_TIMEOUT)
   public void testPublicWebhooks01() throws Exception {
-    // given
-    String id = postWebhooks();
-    String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    String content = "{\"name\":\"John Smith\"}";
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_OK, response.statusCode());
-    Map<String, Object> map = toMap(response);
-
     for (FormKiqClientV1 client : getFormKiqClients()) {
+      // given
+      String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
+      String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
+
+      Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+      Optional<HttpHeaders> o =
+          Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
+            @Override
+            public boolean test(final String t, final String u) {
+              return true;
+            }
+          }));
+
+      String content = "{\"name\":\"John Smith\"}";
+
+      // when
+      HttpService hs = new HttpServiceJava();
+      HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+
+      // then
+      assertEquals(STATUS_OK, response.statusCode());
+      Map<String, Object> map = toMap(response);
+
       DocumentWithChildren document = getDocument(client, map.get("documentId").toString(), false);
       assertNotNull(document);
+
+      Webhooks webhooks = client.getWebhooks(new GetWebhooksRequest());
+      List<Webhook> list = webhooks.webhooks();
+      assertFalse(list.isEmpty());
+      assertEquals("default", list.get(0).siteId());
+      assertEquals("paypal", list.get(0).name());
+      assertNotNull(list.get(0).url());
+      assertNotNull(list.get(0).insertedDate());
+      assertNotNull(list.get(0).id());
+      assertNotNull("testadminuser@formkiq.com", list.get(0).userId());
+
+      assertTrue(client.deleteWebhook(new DeleteWebhookRequest().webhookId(id)));
     }
-    
-    Map<String, Object> webhooks = getWebhooks();
-    List<Map<String, Object>> list = (List<Map<String, Object>>) webhooks.get("webhooks");
-    assertFalse(list.isEmpty());
-    assertEquals("default", list.get(0).get("siteId"));
-    assertEquals("paypal", list.get(0).get("name"));
-    assertNotNull(list.get(0).get("url"));
-    assertNotNull(list.get(0).get("insertedDate"));
-    assertNotNull(list.get(0).get("id"));
-    assertEquals("testadminuser@formkiq.com", list.get(0).get("userId"));
-    
-    deleteWebhooks(id);
   }
   
   /**

@@ -23,21 +23,49 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import java.util.HashMap;
+import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.lambda.apigateway.ApiAuthorizer;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.NotFoundException;
+import com.formkiq.stacks.common.objects.DynamicObject;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
 public class WebhooksIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsServices) throws Exception {
+    
+    String siteId = getSiteId(event);
+    String id = getPathParameter(event, "webhookId");
+    DynamicObject m = awsServices.webhookService().findWebhook(siteId, id);
+    
+    String url = awsServices.ssmService()
+        .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
+
+    Map<String, Object> map = new HashMap<>();
+    map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    map.put("id", m.getString("documentId"));
+    map.put("name", m.getString("path"));
+    map.put("url", url + "/public/webhooks/" + m.getString("documentId"));
+    map.put("insertedDate", m.getString("inserteddate"));
+    map.put("userId", m.getString("userId"));
+        
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+  
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,

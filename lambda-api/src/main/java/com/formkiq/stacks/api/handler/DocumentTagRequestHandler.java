@@ -112,7 +112,7 @@ public class DocumentTagRequestHandler
 
     DocumentTag tag = new DocumentTag(null, tagKey, value, now, userId);
 
-    documentService.addTags(siteId, documentId, Arrays.asList(tag));
+    documentService.addTags(siteId, documentId, Arrays.asList(tag), null);
 
     ApiResponse resp = new ApiMessageResponse(
         "Updated tag '" + tagKey + "' to '" + value + "' for document '" + documentId + "'.");
