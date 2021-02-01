@@ -1,5 +1,21 @@
 # FormKiQ-Core Releases #
 
+### Version 1.2.2
+- Added ability to set TimeToLive on records created through a webhook
+
+### Version 1.2.1
+- Added SnsDocumentEventArn as CloudFormation Output
+
+### Version 1.2.0
+- Added /public/webhooks/{webhooks+} API
+- Added GET / POST /webhooks API
+- Added DELETE /webhooks/{webhookId} API
+- Updated GraalVM version to 21.0.0
+- Updated Console to 1.3.5
+- Added Document's Content to SNS message if size < 256KB and Content is plain text
+- Added userId as System Defined tag
+- Added AppEnvironment as CloudFormation Output
+
 ### Version 1.1.0
 - Added Email Notify Module
 - Fixed /documents to not return belongsToDocumentId
