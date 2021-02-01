@@ -26,6 +26,9 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -46,8 +49,35 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class PublicWebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** To Milliseconds. */
+  private static final long TO_MILLIS = 1000L;
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
+
+  @Override
+  public String getRequestUrl() {
+    return "/public/webhooks";
+  }
+  
+  /**
+   * Is object expired.
+   * @param obj {@link DynamicObject}
+   * @return boolean
+   */
+  private boolean isExpired(final DynamicObject obj) {
+    
+    boolean expired = false;
+    
+    if (obj.containsKey("TimeToLive")) {
+      long epoch = Long.parseLong(obj.getString("TimeToLive"));
+      
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+      ZonedDateTime date = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
+      expired = now.isAfter(date);
+    }
+
+    return expired;
+  }
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
@@ -67,7 +97,7 @@ public class PublicWebhooksRequestHandler
     String webhookId = getPathParameter(event, "webhooks");
     DynamicObject hook = awsservice.webhookService().findWebhook(siteId, webhookId);
     
-    if (hook == null) {
+    if (hook == null || isExpired(hook)) {
       throw new BadException("invalid webhook url");
     }
     
@@ -77,6 +107,10 @@ public class PublicWebhooksRequestHandler
     item.put("userId", "webhook/" + hook.getOrDefault("path", "webhook"));
     item.put("path", "webhooks/" + webhookId);
     
+    if (hook.containsKey("TimeToLive")) {
+      item.put("TimeToLive", hook.get("TimeToLive"));
+    }
+    
     if (siteId != null) {
       item.put("siteId", siteId);
     }
@@ -85,6 +119,13 @@ public class PublicWebhooksRequestHandler
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("documentId", documentId)));
+  }
+
+  @Override
+  public ApiRequestHandlerResponse put(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+    return post(logger, event, authorizer, awsservice);
   }
 
   /**
@@ -108,10 +149,5 @@ public class PublicWebhooksRequestHandler
     try (S3Client client = s3.buildClient()) {
       s3.putObject(client, awsservice.stages3bucket(), key, bytes, item.getString("contentType"));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/public/webhooks";
   }
 }

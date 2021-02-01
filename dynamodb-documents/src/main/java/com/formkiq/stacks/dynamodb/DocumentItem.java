@@ -86,6 +86,13 @@ public interface DocumentItem {
   String getPath();
 
   /**
+   * Get Time To Live.
+   *
+   * @return {@link String}
+   */
+  String getTimeToLive();
+
+  /**
    * Get User Id.
    *
    * @return {@link String}
@@ -147,7 +154,14 @@ public interface DocumentItem {
    * @param filepath {@link String}
    */
   void setPath(String filepath);
-
+  
+  /**
+   * Set Time To Live.
+   *
+   * @param ttl {@link String}
+   */
+  void setTimeToLive(String ttl);
+  
   /**
    * Set User Id.
    *

@@ -120,7 +120,7 @@ public class DocumentTagsRequestHandler
     String siteId = getSiteId(event);
     
     awsservice.documentService().deleteDocumentTag(siteId, documentId, "untagged");
-    awsservice.documentService().addTags(siteId, documentId, Arrays.asList(tag));
+    awsservice.documentService().addTags(siteId, documentId, Arrays.asList(tag), null);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

@@ -42,7 +42,10 @@ public class AttributeValueToDynamicObject
     DynamicObject o = new DynamicObject(new HashMap<>());
     
     for (Map.Entry<String, AttributeValue> e : map.entrySet()) {
-      o.put(e.getKey(), e.getValue().s());
+      String s = e.getValue().s();
+      String n = e.getValue().n();
+      String v = s == null && n != null ? n : s;
+      o.put(e.getKey(), v);
     }
     
     return o;

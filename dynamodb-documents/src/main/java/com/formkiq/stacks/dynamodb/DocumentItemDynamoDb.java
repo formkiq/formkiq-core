@@ -56,6 +56,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   private List<DocumentItem> documents;
   /** Belongs To Document Id. */
   private String belongsToDocumentId;
+  /** Time to Live. */
+  @Reflectable
+  private String timeToLive;
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -72,6 +75,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
     setDocumentId(docid);
     setInsertedDate(date);
     setUserId(username);
+  }
+
+  @Override
+  public String getBelongsToDocumentId() {
+    return this.belongsToDocumentId;
   }
 
   @Override
@@ -95,6 +103,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public List<DocumentItem> getDocuments() {
+    return this.documents;
+  }
+
+  @Override
   public Date getInsertedDate() {
     return this.insertedDate != null ? (Date) this.insertedDate.clone() : null;
   }
@@ -105,8 +118,18 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public String getTimeToLive() {
+    return this.timeToLive;
+  }
+
+  @Override
   public String getUserId() {
     return this.userId;
+  }
+
+  @Override
+  public void setBelongsToDocumentId(final String id) {
+    this.belongsToDocumentId = id;
   }
 
   @Override
@@ -130,6 +153,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public void setDocuments(final List<DocumentItem> objects) {
+    this.documents = objects;
+  }
+
+  @Override
   public void setInsertedDate(final Date date) {
     this.insertedDate = date != null ? (Date) date.clone() : null;
   }
@@ -140,6 +168,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public void setTimeToLive(final String ttl) {
+    this.timeToLive = ttl;
+  }
+
+  @Override
   public void setUserId(final String username) {
     this.userId = username;
   }
@@ -147,25 +180,5 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public String toString() {
     return "documentId=" + this.documentId + ",inserteddate=" + this.insertedDate;
-  }
-
-  @Override
-  public String getBelongsToDocumentId() {
-    return this.belongsToDocumentId;
-  }
-
-  @Override
-  public List<DocumentItem> getDocuments() {
-    return this.documents;
-  }
-
-  @Override
-  public void setBelongsToDocumentId(final String id) {
-    this.belongsToDocumentId = id;
-  }
-
-  @Override
-  public void setDocuments(final List<DocumentItem> objects) {
-    this.documents = objects;
   }
 }

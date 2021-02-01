@@ -46,7 +46,9 @@ public class DocumentEvent {
   private String userId;
   /** Document Content. */
   private String content;
-
+  /** Document Content Type. */
+  private String contentType;
+  
   /**
    * constructor.
    */
@@ -191,6 +193,26 @@ public class DocumentEvent {
    */
   public DocumentEvent content(final String data) {
     this.content = data;
+    return this;
+  }
+  
+  /**
+   * Get {@link DocumentEvent} Content-Type.
+   * 
+   * @return {@link String}
+   */
+  public String contentType() {
+    return this.contentType;
+  }
+
+  /**
+   * Set {@link DocumentEvent} Content.
+   * 
+   * @param data {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent contentType(final String data) {
+    this.contentType = data;
     return this;
   }
 }

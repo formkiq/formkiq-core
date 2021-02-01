@@ -27,6 +27,9 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE      
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       PointInTimeRecoverySpecification:

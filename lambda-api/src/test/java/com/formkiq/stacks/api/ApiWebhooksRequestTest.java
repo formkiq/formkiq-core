@@ -26,6 +26,10 @@ package com.formkiq.stacks.api;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,10 +37,14 @@ import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.common.objects.DynamicObject;
 
 /** Unit Tests for request /webhooks. */
 public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
+  /** To Milliseconds. */
+  private static final long TO_MILLIS = 1000L;
+  
   /**
    * Delete /webhooks/{webhookId}.
    *
@@ -140,6 +148,11 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertNotNull(result.get("id"));
     final String id = result.get("id").toString();
     
+    assertNotNull(result.get("insertedDate"));
+    assertEquals("john smith", result.get("name"));
+    assertEquals("test@formkiq.com", result.get("userId"));
+    assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
+    
     newOutstream();
     
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks01.json");
@@ -161,11 +174,53 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     Optional<Map<String, Object>> o =
         list.stream().filter(l -> l.get("url").toString().contains(id)).findFirst();
     assertTrue(o.isPresent());
+
+    final int expectedCount = 6;
+    assertEquals(expectedCount, o.get().size());
     assertNotNull(o.get().get("insertedDate"));
     assertNotNull(o.get().get("id"));
     assertEquals("john smith", o.get().get("name"));
     assertEquals("default", o.get().get("siteId"));
     assertEquals("test@formkiq.com", o.get().get("userId"));
     assertEquals("http://localhost:8080/public/webhooks/" + id, o.get().get("url"));
+  }
+  
+  /**
+   * POST /webhooks.
+   * Test TTL.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks01() throws Exception {
+    // given
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl", "http://localhost:8080");
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
+    String ttl = "87400";
+    event.setBody("{\"name\":\"john smith\",\"ttl\":\"" + ttl + "\"}");
+    
+    // when
+    String response = handleRequest(event);
+    
+    // then
+    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals("default", result.get("siteId"));
+    assertNotNull(result.get("id"));
+    final String id = result.get("id").toString();
+    
+    assertNotNull(result.get("insertedDate"));
+    assertEquals("john smith", result.get("name"));
+    assertEquals("test@formkiq.com", result.get("userId"));
+    assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
+    
+    DynamicObject obj = getAwsServices().webhookService().findWebhook(null, id);
+    
+    long epoch = Long.parseLong(obj.getString("TimeToLive"));
+    LocalDate ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC).toLocalDate();
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
   }
 }
