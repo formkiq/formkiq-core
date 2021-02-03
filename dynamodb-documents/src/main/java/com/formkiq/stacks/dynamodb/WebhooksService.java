@@ -66,4 +66,12 @@ public interface WebhooksService {
    * @return {@link String}
    */
   String saveWebhook(String siteId, String name, String userId, Date ttl);
+  
+  /**
+   * Update Webhook.
+   * @param siteId {@link String}
+   * @param webhookId {@link String}
+   * @param obj {@link DynamicObject}
+   */
+  void updateWebhook(String siteId, String webhookId, DynamicObject obj);
 }

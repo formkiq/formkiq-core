@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
@@ -41,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /** Implementation of the {@link WebhooksService}. */
 public class WebhooksServiceImpl implements WebhooksService, DbKeys {
@@ -152,5 +155,29 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     this.dynamoDB.putItem(put);
     
     return id;
+  }
+
+  @Override
+  public void updateWebhook(final String siteId, final String webhookId, final DynamicObject obj) {
+    Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, "webhook");
+    
+    Map<String, AttributeValueUpdate> values =  new HashMap<>();
+    
+    if (obj.containsKey("name")) {
+      values.put("name", AttributeValueUpdate.builder()
+          .value(AttributeValue.builder().s(obj.getString("name")).build()).build());
+    }
+    
+    if (obj.containsKey("TimeToLive")) {
+      Date datettl = obj.getDate("TimeToLive");
+      long timeout = datettl.getTime() / MILLISECONDS;
+      values.put("TimeToLive", AttributeValueUpdate.builder()
+          .value(AttributeValue.builder().n(String.valueOf(timeout)).build()).build());
+    }
+    
+    if (!values.isEmpty()) {
+      this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
+          .key(key).attributeUpdates(values).build());
+    }
   }
 }

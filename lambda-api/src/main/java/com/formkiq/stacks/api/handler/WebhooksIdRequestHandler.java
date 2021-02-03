@@ -25,6 +25,9 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -43,6 +46,23 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 public class WebhooksIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsServices) throws Exception {
+
+    String siteId = getSiteId(event);
+    String id = getPathParameter(event, "webhookId");
+    
+    if (awsServices.webhookService().findWebhook(siteId, id) == null) {
+      throw new NotFoundException("Webhook 'id' not found");
+    }
+    awsServices.webhookService().deleteWebhook(siteId, id);
+    
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMessageResponse("'" + id + "' object deleted"));
+  }
+  
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -65,9 +85,14 @@ public class WebhooksIdRequestHandler
         
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
+
+  @Override
+  public String getRequestUrl() {
+    return "/webhooks/{webhookId}";
+  }
   
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
@@ -77,14 +102,25 @@ public class WebhooksIdRequestHandler
     if (awsServices.webhookService().findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    awsServices.webhookService().deleteWebhook(siteId, id);
+    
+    DynamicObject obj = fromBodyToDynamicObject(logger, event);
+    
+    Map<String, Object> map = new HashMap<>();
+    
+    if (obj.containsKey("name")) {
+      map.put("name", obj.getString("name"));
+    }
+    
+    if (obj.containsKey("ttl")) {
+      ZonedDateTime now =
+          ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(obj.getString("ttl")));
+      Date ttlDate = Date.from(now.toInstant());
+      map.put("TimeToLive", ttlDate);
+    }
+    
+    awsServices.webhookService().updateWebhook(siteId, id, new DynamicObject(map));
     
     return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMessageResponse("'" + id + "' object deleted"));
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/webhooks/{webhookId}";
+        new ApiMessageResponse("'" + id + "' object updated"));
   }
 }

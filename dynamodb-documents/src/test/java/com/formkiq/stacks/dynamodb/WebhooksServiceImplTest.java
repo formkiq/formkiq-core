@@ -31,6 +31,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,6 +47,9 @@ import software.amazon.awssdk.regions.Region;
  */
 public class WebhooksServiceImplTest {
 
+  /** MilliSeconds per Second. */
+  private static final int MILLISECONDS = 1000;
+  
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder adb;
 
@@ -192,6 +196,38 @@ public class WebhooksServiceImplTest {
 
       // then
       assertNull(o);
+    }
+  }
+  
+  /**
+   * Test Updating webhooks.
+   */
+  @Test
+  public void testUpdateWebhooks01() {
+    //given
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+    Date ttl = Date.from(now.toInstant());
+    
+    ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    Date tomorrowttl = Date.from(tomorrow.toInstant());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      
+      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl);
+      DynamicObject obj = new DynamicObject(Map.of("name", "test2", "TimeToLive", tomorrowttl));
+
+      // when
+      this.service.updateWebhook(siteId, webhookId, obj);
+      
+      // then
+      DynamicObject result = this.service.findWebhook(siteId, webhookId);
+      assertEquals("test2", result.getString("name"));
+      assertNotNull(result.getString("documentId"));
+      assertNotNull(result.getString("path"));
+      assertNotNull(result.getString("userId"));
+      assertNotNull(result.getString("inserteddate"));
+      assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
+          result.getString("TimeToLive"));
     }
   }
 }
