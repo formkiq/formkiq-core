@@ -1,5 +1,8 @@
 # FormKiQ-Core Releases #
 
+### Version 1.2.3
+- Added PATCH /webhooks/{webhookId}
+
 ### Version 1.2.2
 - Added ability to set TimeToLive on records created through a webhook
 
