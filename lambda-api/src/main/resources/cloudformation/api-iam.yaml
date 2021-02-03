@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "FormKiQ IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.5.2"
+          version: "1.5.3"
         paths:
           /version:
             get:
@@ -899,7 +899,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete document.
+              description: Delete webhook.
               tags:
               - Webhooks      
               parameters:
@@ -912,6 +912,20 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            patch:
+              description: Updates webhook.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
         components:
           headers:
             AccessControlAllowOrigin:

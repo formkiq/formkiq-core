@@ -27,7 +27,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -219,8 +218,34 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     DynamicObject obj = getAwsServices().webhookService().findWebhook(null, id);
     
     long epoch = Long.parseLong(obj.getString("TimeToLive"));
-    LocalDate ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC).toLocalDate();
+    ZonedDateTime ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
     ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
+
+    // update ttl/name
+    newOutstream();
+    
+    // given
+    ttl = "174800";
+    event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
+    event.setPathParameters(Map.of("webhookId", id));
+    event.setBody("{\"name\":\"john smith2\",\"ttl\":\"" + ttl + "\"}");
+    
+    // when
+    response = handleRequest(event);
+    
+    // then
+    m = GsonUtil.getInstance().fromJson(response, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals("'" + id + "' object updated", result.get("message"));
+        
+    obj = getAwsServices().webhookService().findWebhook(null, id);
+    assertEquals("john smith2", obj.get("name"));
+    
+    epoch = Long.parseLong(obj.getString("TimeToLive"));
+    ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
+    now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
   }
 }

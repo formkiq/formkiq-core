@@ -99,7 +99,7 @@ public abstract class AbstractRequestHandler {
    */
   @BeforeClass
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
-
+    
     appenvironment = System.getProperty("testappenvironment");
     awsRegion = Region.of(System.getProperty("testregion"));
 
