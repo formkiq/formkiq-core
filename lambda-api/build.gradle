@@ -24,7 +24,7 @@ dependencies {
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.15.25'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.15.25'
 	
-	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.2'
+	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.3'
     testImplementation group: 'junit', name: 'junit', version:'4.+'
 }
 

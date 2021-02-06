@@ -2,7 +2,7 @@
         info:
           title: "FormKiQ HTTP API"
           description: "FormKiQ HTTP API"
-          version: "1.5.3"
+          version: "1.5.4"
         paths:
           /version:
             get:
@@ -920,6 +920,71 @@
                 - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /webhooks/{webhookId}/tags:
+            get:
+              description: Get Webhook tags.
+              tags:
+                - Webhooks
+              parameters:
+                - $ref: '#/components/parameters/webhookIdParam'
+                - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/WebhookTags'
+              security:
+                - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            options:
+              description: Get Webhooks tags Options.
+              tags:
+                - Webhooks
+              parameters:
+                - $ref: '#/components/parameters/webhookIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Add Tag to Webhook.
+              tags:
+                - Webhooks
+              parameters:
+                - $ref: '#/components/parameters/webhookIdParam'
+                - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentItemTag'
+                    examples:
+                      Add_Key_Only_Tag:
+                        value:
+                          key: category
+                      Add_Key_and_Value_Tag:
+                        value:
+                          key: category
+                          value: person
+              responses:
+                '201':
+                  $ref: '#/components/responses/200Cors'
+              security:
+                - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -1317,6 +1382,37 @@
                     format: "uuid"
                   userId:
                     type: "string"
+            WebhookTags:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
+                tags:
+                  $ref: "#/components/schemas/WebhookTagsList"
+            WebhookTagsList:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/WebhookTag"
+            WebhookTag:
+              required:
+                - "key"
+                - "value"
+              type: "object"
+              properties:
+                insertedDate:
+                  type: "string"
+                webhookId:
+                  type: "string"
+                type:
+                  type: "string"
+                userId:
+                  type: "string"
+                value:
+                  type: "string"
+                key:
+                  type: "string"
             Version:
               type: object
               properties:
@@ -1403,7 +1499,7 @@
             - "*"
         tags:
           - name: Application
-            x-amazon-apigateway-tag-value: "FormKiQ Core"
+            x-amazon-apigateway-tag-value: "FormKiQ"
           - name: AppEnvironment
             x-amazon-apigateway-tag-value:
               Fn::Sub: "${AppEnvironment}"

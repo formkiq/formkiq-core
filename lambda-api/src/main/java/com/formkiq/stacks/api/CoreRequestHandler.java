@@ -50,6 +50,7 @@ import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
+import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
@@ -161,6 +162,8 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
       case "/documents/{documentId}/upload":
         return new DocumentsIdUploadRequestHandler();
 
+      case "/webhooks/{webhookId}/tags":
+        return new WebhooksTagsRequestHandler();
       case "/webhooks/{webhookId}":
         return new WebhooksIdRequestHandler();
       case "/webhooks":

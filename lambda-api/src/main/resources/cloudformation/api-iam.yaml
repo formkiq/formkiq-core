@@ -1,6 +1,6 @@
 Resources:
   DocumentsIamApi:
-    Type: AWS::ApiGatewayV2::Api  
+    Type: AWS::ApiGatewayV2::Api
     Properties:
       Body:
         openapi: "3.0.1"
@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "FormKiQ IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.5.3"
+          version: "1.5.4"
         paths:
           /version:
             get:
@@ -911,9 +911,9 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
             patch:
-              description: Updates webhook.
+              description: Updates Webhook.
               tags:
               - Webhooks      
               parameters:
@@ -925,7 +925,72 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /webhooks/{webhookId}/tags:
+            get:
+              description: Get Webhook tags.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/WebhookTags'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            options:
+              description: Get Webhooks tags Options.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Add Tag to Webhook.
+              tags:
+              - Webhooks      
+              parameters:
+              - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentItemTag'
+                    examples:
+                      Add_Key_Only_Tag:
+                        value:
+                          key: category
+                      Add_Key_and_Value_Tag:
+                        value:
+                          key: category
+                          value: person
+              responses:
+                '201':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
         components:
           headers:
             AccessControlAllowOrigin:
@@ -968,14 +1033,14 @@ Resources:
               required: true
               description: Web Hook Param
               schema:
-                type: string 
+                type: string
             webhookIdParam:
               name: webhookId
               in: path
               required: true
               description: Web Hook Param
               schema:
-                type: string                               
+                type: string                
             siteIdParam:
               name: siteId
               in: query
@@ -989,7 +1054,7 @@ Resources:
               description: Limit Results
               required: false
               schema:
-                type: string                
+                type: string
             documentIdParam:
               name: documentId
               in: path
@@ -1085,7 +1150,7 @@ Resources:
                   type: "string"
                   format: "uuid"
                 siteId:
-                  type: "string"                   
+                  type: "string"                  
             DocumentPostResponse:
               type: "object"
               properties:
@@ -1121,7 +1186,7 @@ Resources:
                 next:
                   type: "string"
                 previous:
-                  type: "string"              
+                  type: "string"
                 siteId:
                   type: "string"
                 path:
@@ -1168,7 +1233,7 @@ Resources:
                       versionId:
                         type: "string"
                       belongsToDocumentId:
-                        type: "string"                         
+                        type: "string"                        
             DocumentSearchBody:
               required:
               - "query"
@@ -1323,6 +1388,37 @@ Resources:
                     format: "uuid"
                   userId:
                     type: "string"
+            WebhookTags:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
+                tags:
+                  $ref: "#/components/schemas/WebhookTagsList"
+            WebhookTagsList:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/WebhookTag"
+            WebhookTag:
+              required:
+              - "key"
+              - "value"
+              type: "object"
+              properties:
+                insertedDate:
+                  type: "string"
+                webhookId:
+                  type: "string"
+                type:
+                  type: "string"
+                userId:
+                  type: "string"
+                value:
+                  type: "string"
+                key:
+                  type: "string"                    
             Version:
               type: object
               properties:

@@ -107,7 +107,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
 
       DocumentTagToAttributeValueMap mapper =
-          new DocumentTagToAttributeValueMap(this.df, siteId, documentId);
+          new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
 
       List<Map<String, AttributeValue>> valueList =
           tags.stream().filter(predicate).map(mapper).collect(Collectors.toList());

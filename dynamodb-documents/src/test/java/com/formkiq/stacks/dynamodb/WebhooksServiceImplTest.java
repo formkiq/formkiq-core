@@ -230,4 +230,28 @@ public class WebhooksServiceImplTest {
           result.getString("TimeToLive"));
     }
   }
+  
+  /**
+   * Add Webhook Tag.
+   */
+  @Test
+  public void testAddTags01() {
+    // given
+    String hook0 = this.service.saveWebhook(null, "test", "joe", null);
+    String hook1 = this.service.saveWebhook(null, "test2", "joe2", null);
+    DocumentTag tag0 = new DocumentTag(hook0, "category", "person", new Date(), "joe");
+    DocumentTag tag1 = new DocumentTag(hook0, "type", "person2", new Date(), "joe");
+    
+    // when
+    this.service.addTags(null, hook0, Arrays.asList(tag0, tag1), null);
+    
+    // then
+    assertNull(this.service.findTag(null, hook1, "category"));
+    DynamicObject tag = this.service.findTag(null, hook0, "category");
+    assertEquals("category", tag.getString("tagKey"));
+    assertEquals("person", tag.getString("tagValue"));
+    
+    assertEquals(2, this.service.findTags(null, hook0).getResults().size());
+    assertEquals(0, this.service.findTags(null, hook1).getResults().size());
+  }
 }
