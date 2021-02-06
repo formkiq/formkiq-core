@@ -1,5 +1,11 @@
 # FormKiQ-Core Releases #
 
+### Version 1.2.5
+- Added GET/POST /webhooks/{webhookId}/tags
+
+### Version 1.2.4
+- Added 'path' to DocumentEvent
+
 ### Version 1.2.3
 - Added PATCH /webhooks/{webhookId}
 
