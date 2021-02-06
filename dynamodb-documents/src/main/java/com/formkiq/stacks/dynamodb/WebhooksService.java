@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import com.formkiq.stacks.common.objects.DynamicObject;
@@ -31,12 +32,43 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 public interface WebhooksService {
   
   /**
+   * Add Tags to Webhook.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param webhookId {@link String}
+   * @param tags {@link Collection} {@link DocumentTag}
+   * @param timeToLive {@link String}
+   */
+  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, String timeToLive);
+  
+  /**
    * Delete Webhook.
    *
    * @param siteId Optional Grouping siteId
    * @param id {@link String}
    */
   void deleteWebhook(String siteId, String id);
+  
+  /**
+   * Find Webhook Tag.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param webhookId {@link String}
+   * @param tagKey {@link String}
+   * 
+   * @return {@link DynamicObject}
+   */
+  DynamicObject findTag(String siteId, String webhookId, String tagKey);
+  
+  /**
+   * Find Webhook Tags.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param webhookId {@link String}
+   * 
+   * @return {@link DynamicObject} {@link PaginationResults}
+   */
+  PaginationResults<DynamicObject> findTags(String siteId, String webhookId);
 
   /**
    * Find Webhook.
@@ -74,4 +106,6 @@ public interface WebhooksService {
    * @param obj {@link DynamicObject}
    */
   void updateWebhook(String siteId, String webhookId, DynamicObject obj);
+  
+  
 }

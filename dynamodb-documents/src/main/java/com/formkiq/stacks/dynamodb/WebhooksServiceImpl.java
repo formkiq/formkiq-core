@@ -40,9 +40,12 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
+import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /** Implementation of the {@link WebhooksService}. */
@@ -76,12 +79,75 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   }
 
   @Override
+  public void addTags(final String siteId, final String webhookId,
+      final Collection<DocumentTag> tags, final String timeToLive) {
+
+    if (tags != null) {
+
+      DocumentTagToAttributeValueMap mapper =
+          new DocumentTagToAttributeValueMap(this.df, PREFIX_WEBHOOK, siteId, webhookId);
+
+      List<Map<String, AttributeValue>> valueList =
+          tags.stream().map(mapper).collect(Collectors.toList());
+      
+      if (timeToLive != null) {
+        valueList.forEach(v -> addN(v, "TimeToLive", timeToLive));
+      }
+
+      List<Put> putitems = valueList.stream()
+          .map(values -> Put.builder().tableName(this.documentTableName).item(values).build())
+          .collect(Collectors.toList());
+
+      List<TransactWriteItem> writes = putitems.stream()
+          .map(i -> TransactWriteItem.builder().put(i).build()).collect(Collectors.toList());
+
+      if (!writes.isEmpty()) {
+        this.dynamoDB
+            .transactWriteItems(TransactWriteItemsRequest.builder().transactItems(writes).build());
+      }
+    }
+  }
+
+  @Override
   public void deleteWebhook(final String siteId, final String id) {
     Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + id, "webhook");
     this.dynamoDB
         .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
   }
 
+  @Override
+  public DynamicObject findTag(final String siteId, final String webhookId, final String tagKey) {
+    Map<String, AttributeValue> pkvalues =
+        keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, PREFIX_TAGS + tagKey);
+    GetItemResponse response =
+        this.dynamoDB.getItem(
+            GetItemRequest.builder().tableName(this.documentTableName).key(pkvalues).build());
+    AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
+    return !response.item().isEmpty() ? transform.apply(response.item()) : null;
+  }
+
+  @Override
+  public PaginationResults<DynamicObject> findTags(final String siteId,
+      final String webhookId) {
+  
+    String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
+
+    Map<String, AttributeValue> values =
+        queryKeys(keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, PREFIX_TAGS));
+
+    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
+        .keyConditionExpression(expression).expressionAttributeValues(values)
+        .build();
+
+    QueryResponse result = this.dynamoDB.query(q);
+    AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
+    
+    List<DynamicObject> objs =
+        result.items().stream().map(i -> transform.apply(i)).collect(Collectors.toList());
+    
+    return new PaginationResults<>(objs, new QueryResponseToPagination().apply(result));
+  }
+  
   @Override
   public DynamicObject findWebhook(final String siteId, final String id) {
 
@@ -126,7 +192,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     
     return Collections.emptyList();
   }
-
+  
   @Override
   public String saveWebhook(final String siteId, final String name, final String userId,
       final Date ttl) {

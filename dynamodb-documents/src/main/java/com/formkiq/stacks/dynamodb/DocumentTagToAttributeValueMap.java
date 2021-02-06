@@ -25,7 +25,6 @@ import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.PK;
-import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
 import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAGS;
 import static com.formkiq.stacks.dynamodb.DbKeys.SK;
@@ -53,16 +52,20 @@ public class DocumentTagToAttributeValueMap
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df;
+  /** Primary Key Prefix. */
+  private String keyPrefix;
 
   /**
    * constructor.
    * 
    * @param dateformat {@link SimpleDateFormat}
+   * @param pkPrefix {@link String}
    * @param siteId {@link String}
    * @param documentId {@link String}
    */
-  public DocumentTagToAttributeValueMap(final SimpleDateFormat dateformat, final String siteId,
-      final String documentId) {
+  public DocumentTagToAttributeValueMap(final SimpleDateFormat dateformat, final String pkPrefix,
+      final String siteId, final String documentId) {
+    this.keyPrefix = pkPrefix;
     this.site = siteId;
     this.document = documentId;
     this.df = dateformat;
@@ -94,7 +97,7 @@ public class DocumentTagToAttributeValueMap
     Map<String, AttributeValue> pkvalues = new HashMap<String, AttributeValue>();
 
     pkvalues.put(PK,
-        AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_DOCS + documentId)).build());
+        AttributeValue.builder().s(createDatabaseKey(siteId, this.keyPrefix + documentId)).build());
     pkvalues.put(SK, AttributeValue.builder().s(PREFIX_TAGS + tagKey).build());
 
     pkvalues.put(GSI1_PK, AttributeValue.builder()
