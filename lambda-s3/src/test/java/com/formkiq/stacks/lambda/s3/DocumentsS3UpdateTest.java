@@ -188,11 +188,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @param sqsQueueUrl {@link String}
    * @param eventType {@link String}
    * @param hasContent boolean
+   * @param childDoc boolean
    * @throws InterruptedException InterruptedException
    */
   @SuppressWarnings("unchecked")
   private void assertPublishSnsMessage(final String siteId, final String sqsQueueUrl,
-      final String eventType, final boolean hasContent) throws InterruptedException {
+      final String eventType, final boolean hasContent, final boolean childDoc)
+      throws InterruptedException {
 
     List<Message> msgs = sqsService.receiveMessages(sqsQueueUrl).messages();
     while (msgs.size() != 1) {
@@ -206,8 +208,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
     
     map = this.gson.fromJson(message, Map.class);
     assertNotNull(map.get("documentId"));
-
     assertEquals(eventType, map.get("type"));
+    
+    if (!childDoc) {
+      assertNotNull(map.get("path"));
+    }
     
     if (hasContent) {
       assertEquals("text/plain", map.get("contentType"));
@@ -282,6 +287,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("joe");
+      doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
       
       addS3File(key, "pdf", false, "testdata");
@@ -293,25 +299,35 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      assertEquals(2, tags.getResults().size());
-      assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertEquals("true", tags.getResults().get(0).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertEquals("joe", tags.getResults().get(0).getUserId());
-      assertNotNull(tags.getResults().get(0).getInsertedDate());
+      final int count = 3;
+      assertEquals(count, tags.getResults().size());
+      
+      int i = 0;
+      assertEquals("path", tags.getResults().get(i).getKey());
+      assertEquals("test.txt", tags.getResults().get(i).getValue());
+      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
+      assertEquals("joe", tags.getResults().get(i).getUserId());
+      assertNotNull(tags.getResults().get(i++).getInsertedDate());
+      
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("true", tags.getResults().get(i).getValue());
+      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
+      assertEquals("joe", tags.getResults().get(i).getUserId());
+      assertNotNull(tags.getResults().get(i++).getInsertedDate());
 
-      assertEquals("userId", tags.getResults().get(1).getKey());
-      assertEquals("joe", tags.getResults().get(1).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(1).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
-      assertEquals("joe", tags.getResults().get(1).getUserId());
-      assertNotNull(tags.getResults().get(1).getInsertedDate());
+      assertEquals("userId", tags.getResults().get(i).getKey());
+      assertEquals("joe", tags.getResults().get(i).getValue());
+      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
+      assertEquals("joe", tags.getResults().get(i).getUserId());
+      assertNotNull(tags.getResults().get(i++).getInsertedDate());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
 
@@ -335,7 +351,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("asd");
-
+      doc.setPath("test.txt");
+      
       DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
           "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
       doc.put("tags", Arrays.asList(tag));
@@ -357,24 +374,27 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int size = 4;
+      final int size = 5;
+      int i = 0;
       assertEquals(size, tags.getResults().size());
-      assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(0).getKey());
-      assertEquals("GOOD", tags.getResults().get(0).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertEquals("person", tags.getResults().get(1).getKey());
-      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(1).getType());
-      assertEquals("12345", tags.getResults().get(2).getValue());
-      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(2).getType());
-      assertEquals("12345", tags.getResults().get(2).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(size - 1).getType());
-      assertEquals("asd", tags.getResults().get(size - 1).getValue());
+      assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(i).getKey());
+      assertEquals("GOOD", tags.getResults().get(i).getValue());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i++).getType());
+      assertEquals("path", tags.getResults().get(i).getKey());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i++).getType());
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i++).getType());
+      assertEquals("12345", tags.getResults().get(i).getValue());
+      assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i).getType());
+      assertEquals("12345", tags.getResults().get(i++).getValue());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
+      assertEquals("asd", tags.getResults().get(i++).getValue());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "update", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "update", false, false);
     }
   }
 
@@ -397,6 +417,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
+      doc.setPath("test.txt");
 
       DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
           "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
@@ -411,7 +432,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       assertNull(item);
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "delete", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "delete", false, true);
     }
   }
 
@@ -436,6 +457,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
+      doc.setPath("test.txt");
       doc.setUserId("joe");
 
       DynamicDocumentItem child = new DynamicDocumentItem(Map.of());
@@ -462,26 +484,26 @@ public class DocumentsS3UpdateTest implements DbKeys {
                 .key(keysDocument(siteId, child.getDocumentId())).build()).item();
         assertNull(m.get(GSI1_PK)); 
       }
-      
-      assertEquals(2, tags.getResults().size());
-      assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertEquals("true", tags.getResults().get(0).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(0).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
-      assertEquals("joe", tags.getResults().get(0).getUserId());
-      assertNotNull(tags.getResults().get(0).getInsertedDate());
-      
-      assertEquals("userId", tags.getResults().get(1).getKey());
-      assertEquals("joe", tags.getResults().get(1).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(1).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(1).getType());
-      assertEquals("joe", tags.getResults().get(1).getUserId());
-      assertNotNull(tags.getResults().get(1).getInsertedDate());
+
+      final int count = 3;
+      int i = 0;
+      assertEquals(count, tags.getResults().size());
+      assertDocumentTagEquals(new DocumentTag().setKey("path").setValue("test.txt")
+          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
+          tags.getResults().get(i++));
+
+      assertDocumentTagEquals(new DocumentTag().setKey("untagged").setValue("true")
+          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
+          tags.getResults().get(i++));
+       
+      assertDocumentTagEquals(new DocumentTag().setKey("userId").setValue("joe")
+          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
+          tags.getResults().get(i++));
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, true);
       
       tags = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
@@ -584,6 +606,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("joe");
+      doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
       
       addS3File(key, "text/plain", false, "testdata");
@@ -593,7 +616,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", true);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", true, false);
     }
   }
   
@@ -617,6 +640,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("joe");
+      doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
       
       String content = loadFile(this, "/256kb-text.txt");
@@ -627,7 +651,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
   
@@ -651,6 +675,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("joe");
+      doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
       
       String content = loadFile(this, "/255kb-text.txt");
@@ -661,7 +686,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
 
@@ -685,6 +710,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setInsertedDate(new Date());
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("joe");
+      doc.setPath("test.txt");
       doc.put("TimeToLive", ttl);
       service.saveDocumentItemWithTag(siteId, doc);
       
@@ -713,7 +739,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       }
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
   
@@ -772,7 +798,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     assertEquals(contentType, item.getContentType());
     assertEquals(contentLength, item.getContentLength().toString());
-    assertNull(item.getPath());
 
     try (S3Client s3 = s3service.buildClient()) {
       s3service.deleteAllObjectTags(s3, "example-bucket", item.getDocumentId());

@@ -454,9 +454,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
     
-    DocumentEvent event = new DocumentEvent().siteId(site)
-        .documentId(resetDatabaseKey(siteId, doc.getDocumentId())).s3bucket(s3Bucket).s3key(s3Key)
-        .type(eventType).userId(doc.getUserId()).content(content).contentType(doc.getContentType());
+    DocumentEvent event =
+        new DocumentEvent().siteId(site).documentId(resetDatabaseKey(siteId, doc.getDocumentId()))
+            .s3bucket(s3Bucket).s3key(s3Key).type(eventType).userId(doc.getUserId())
+            .content(content).contentType(doc.getContentType()).path(doc.getPath());
     
     String eventJson = this.gson.toJson(event);
     if (eventJson.length() > MAX_SNS_MESSAGE_SIZE) {
