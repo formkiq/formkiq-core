@@ -48,6 +48,8 @@ public class DocumentEvent {
   private String content;
   /** Document Content Type. */
   private String contentType;
+  /** Docuemnt Path. */
+  private String path;
   
   /**
    * constructor.
@@ -213,6 +215,26 @@ public class DocumentEvent {
    */
   public DocumentEvent contentType(final String data) {
     this.contentType = data;
+    return this;
+  }
+  
+  /**
+   * Get {@link DocumentEvent} Path.
+   * 
+   * @return {@link String}
+   */
+  public String path() {
+    return this.path;
+  }
+
+  /**
+   * Set {@link DocumentEvent} Path.
+   * 
+   * @param s {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent path(final String s) {
+    this.path = s;
     return this;
   }
 }
