@@ -1,5 +1,8 @@
 # FormKiQ-Core Releases #
 
+### Version 1.2.6
+- Added 'redirect_uri' & 'responseFields' magic parameters to POST /public/webhook/{webhookId}
+
 ### Version 1.2.5
 - Added GET/POST /webhooks/{webhookId}/tags
 
