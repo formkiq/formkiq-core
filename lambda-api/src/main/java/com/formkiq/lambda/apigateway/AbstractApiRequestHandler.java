@@ -110,11 +110,10 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
     Map<String, Object> response = new HashMap<>();
     response.put("statusCode", Integer.valueOf(status.getStatusCode()));
 
-    Map<String, String> jsonheaders = createJsonHeaders();
-    jsonheaders.putAll(headers);
-    response.put("headers", jsonheaders);
-
-    if (status.getStatusCode() == SC_FOUND.getStatusCode()
+    if (apiResponse instanceof ApiRedirectResponse) {
+      headers.clear();
+      headers.put("Location", ((ApiRedirectResponse) apiResponse).getRedirectUri());
+    } else if (status.getStatusCode() == SC_FOUND.getStatusCode()
         && apiResponse instanceof ApiMessageResponse) {
       headers.clear();
       headers.put("Location", ((ApiMessageResponse) apiResponse).getMessage());
@@ -123,6 +122,10 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
     } else {
       response.put("body", this.gson.toJson(apiResponse));
     }
+
+    Map<String, String> jsonheaders = createJsonHeaders();
+    jsonheaders.putAll(headers);
+    response.put("headers", jsonheaders);
 
     writeJson(logger, awsServices, output, response);
   }

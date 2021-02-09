@@ -32,6 +32,8 @@ public enum ApiResponseStatus {
   SC_CREATED(201),
   /** {@code 202 ACCEPTED} (HTTP/1.0 - RFC 1945). */
   SC_ACCEPTED(202),
+  /** Found (Previously "Moved Permanently"). */
+  MOVED_PERMANENTLY(301),
   /** Found (Previously "Moved temporarily"). */
   SC_FOUND(302),
   /** {@code 303 SEE Other}. */

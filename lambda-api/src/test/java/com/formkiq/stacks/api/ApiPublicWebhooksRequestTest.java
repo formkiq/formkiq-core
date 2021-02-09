@@ -255,4 +255,114 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
     }
   }
+  
+  /**
+   * Post /public/webhooks without authentication and with redirect_uri.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks06() throws Exception {
+    // given    
+    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(getMap());
+
+    newOutstream();
+    String name = UUID.randomUUID().toString();
+
+    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks04.json");
+    setPathParameter(event, "webhooks", id);
+    event.getRequestContext().setAuthorizer(new HashMap<>());
+    event.getRequestContext().setIdentity(new HashMap<>());
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, Object> m = fromJson(response, Map.class);
+    final int mapsize = 2;
+    assertEquals(mapsize, m.size());
+
+    assertEquals("301.0", String.valueOf(m.get("statusCode")));
+    
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+    assertEquals("https://www.google.ca", headers.get("Location"));
+  }
+  
+  /**
+   * Post /public/webhooks without authentication and with redirect_uri and responseFields.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks07() throws Exception {
+    // given    
+    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(getMap());
+
+    newOutstream();
+    String name = UUID.randomUUID().toString();
+
+    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks05.json");
+    setPathParameter(event, "webhooks", id);
+    event.getRequestContext().setAuthorizer(new HashMap<>());
+    event.getRequestContext().setIdentity(new HashMap<>());
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, Object> m = fromJson(response, Map.class);
+    final int mapsize = 2;
+    assertEquals(mapsize, m.size());
+
+    assertEquals("301.0", String.valueOf(m.get("statusCode")));
+    
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+    assertEquals("https://www.google.ca?client=safari&fname=John&lname=Doe&kdhfsd=null",
+        headers.get("Location"));
+  }
+  
+  /**
+   * Post /public/webhooks without authentication and with redirect_uri and responseFields.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks08() throws Exception {
+    // given    
+    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(getMap());
+
+    newOutstream();
+    String name = UUID.randomUUID().toString();
+
+    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
+    setPathParameter(event, "webhooks", id);
+    event.getRequestContext().setAuthorizer(new HashMap<>());
+    event.getRequestContext().setIdentity(new HashMap<>());
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, Object> m = fromJson(response, Map.class);
+    final int mapsize = 2;
+    assertEquals(mapsize, m.size());
+
+    assertEquals("301.0", String.valueOf(m.get("statusCode")));
+    
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+    assertEquals("https://www.google.ca?fname=John&lname=Doe&kdhfsd=null",
+        headers.get("Location"));
+  }
 }

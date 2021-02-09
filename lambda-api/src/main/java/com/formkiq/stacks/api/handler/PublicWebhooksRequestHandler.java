@@ -23,13 +23,16 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -39,11 +42,13 @@ import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
 import com.formkiq.lambda.apigateway.ApiMapResponse;
+import com.formkiq.lambda.apigateway.ApiRedirectResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/public/webhooks". */
 public class PublicWebhooksRequestHandler
@@ -54,11 +59,49 @@ public class PublicWebhooksRequestHandler
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
 
+  private ApiRequestHandlerResponse buildRedirect(final ApiGatewayRequestEvent event,
+      final String redirectUri, final String body) {
+    ApiRequestHandlerResponse response;
+    StringBuilder sb = new StringBuilder();
+    sb.append(redirectUri);
+    
+    Map<String, String> queryMap = decodeQueryString(body);
+    
+    String responseFields = getParameter(event, "responseFields");
+    if (StringUtils.isNotBlank(responseFields)) {
+      String[] fields = responseFields.split(",");
+      for (int i = 0; i < fields.length; i++) {
+        String value = queryMap.get(fields[i]);
+        sb.append(i == 0 && redirectUri.indexOf("?") == -1 ? "?" : "&");
+        sb.append(fields[i] + "=" + value);          
+      }
+    }
+    
+    response = new ApiRequestHandlerResponse(MOVED_PERMANENTLY,
+        new ApiRedirectResponse(sb.toString()));
+    return response;
+  }
+  
+  private Map<String, String> decodeQueryString(final String query) {
+    Map<String, String> params = new LinkedHashMap<>();
+    for (String param : query.split("&")) {
+      String[] keyValue = param.split("=", 2);
+      String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+      String value =
+          keyValue.length > 1 ? URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8) : "";
+      if (!key.isEmpty()) {
+        params.put(key, value);
+      }
+    }
+
+    return params;
+  }
+
   @Override
   public String getRequestUrl() {
     return "/public/webhooks";
   }
-  
+
   /**
    * Is object expired.
    * @param obj {@link DynamicObject}
@@ -78,7 +121,7 @@ public class PublicWebhooksRequestHandler
 
     return expired;
   }
-
+  
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -86,6 +129,7 @@ public class PublicWebhooksRequestHandler
 
     final String siteId = getSiteId(event);
     final String documentId = UUID.randomUUID().toString();
+    final String redirectUri = getParameter(event, "redirect_uri");
     
     DynamicObject item = new DynamicObject(new HashMap<>());
     
@@ -117,8 +161,16 @@ public class PublicWebhooksRequestHandler
 
     putObjectToStaging(logger, awsservice, item, siteId);
 
-    return new ApiRequestHandlerResponse(SC_OK,
+    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("documentId", documentId)));
+
+    if ("application/x-www-form-urlencoded".equals(contentType)
+        && StringUtils.isNotBlank(redirectUri)) {
+      
+      response = buildRedirect(event, redirectUri, body);
+    }
+    
+    return response;
   }
 
   @Override
