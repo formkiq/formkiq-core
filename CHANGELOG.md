@@ -1,5 +1,8 @@
 # FormKiQ-Core Releases #
 
+### Version 1.2.7
+- Fixed 'redirect_uri' to work on any Content-Type (#12
+
 ### Version 1.2.6
 - Added 'redirect_uri' & 'responseFields' magic parameters to POST /public/webhook/{webhookId}
 
