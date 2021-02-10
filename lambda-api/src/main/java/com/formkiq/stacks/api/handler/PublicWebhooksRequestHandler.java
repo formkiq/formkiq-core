@@ -163,11 +163,15 @@ public class PublicWebhooksRequestHandler
 
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("documentId", documentId)));
-
+    
     if ("application/x-www-form-urlencoded".equals(contentType)
         && StringUtils.isNotBlank(redirectUri)) {
       
       response = buildRedirect(event, redirectUri, body);
+      
+    } else if (StringUtils.isNotBlank(redirectUri)) {
+      response = new ApiRequestHandlerResponse(MOVED_PERMANENTLY,
+          new ApiRedirectResponse(redirectUri));
     }
     
     return response;
