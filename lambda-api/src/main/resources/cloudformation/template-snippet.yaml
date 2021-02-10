@@ -93,7 +93,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
-      AutoPublishCodeSha256: C09D58714BDE524B4011D61B6B36B4A727EB06B95EB46DACC380A21FAF4359F3
+      AutoPublishCodeSha256: B308D1AD71D08E7F37BC1F137B1659BF4184C271220142EB835A88FBC48A900B
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
