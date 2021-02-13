@@ -100,12 +100,18 @@ public interface WebhooksService {
   String saveWebhook(String siteId, String name, String userId, Date ttl);
   
   /**
+   * Update Webhook TimeToLive.
+   * @param siteId {@link String}
+   * @param webhookId {@link String}
+   * @param ttl {@link Date}
+   */
+  void updateTimeToLive(String siteId, String webhookId, Date ttl);
+
+  /**
    * Update Webhook.
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @param obj {@link DynamicObject}
    */
-  void updateWebhook(String siteId, String webhookId, DynamicObject obj);
-  
-  
+  void updateWebhook(String siteId, String webhookId, DynamicObject obj);  
 }
