@@ -1,5 +1,8 @@
 # FormKiQ-Core Releases #
 
+### Version 1.2.8
+- Fixed when the TimeToLive on the webhook is set, change webhook tag's to match (#13)
+
 ### Version 1.2.7
 - Fixed 'redirect_uri' to work on any Content-Type (#12
 
