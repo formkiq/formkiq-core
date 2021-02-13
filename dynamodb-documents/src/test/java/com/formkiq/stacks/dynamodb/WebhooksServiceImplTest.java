@@ -254,4 +254,47 @@ public class WebhooksServiceImplTest {
     assertEquals(2, this.service.findTags(null, hook0).getResults().size());
     assertEquals(0, this.service.findTags(null, hook1).getResults().size());
   }
+  
+  /**
+   * Test Updating webhooks Time To Live.
+   */
+  @Test
+  public void testUpdateTimeToLive01() {
+    //given
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+    Date ttl = Date.from(now.toInstant());
+    
+    ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    Date tomorrowttl = Date.from(tomorrow.toInstant());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      
+      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl);
+      DocumentTag tag0 = new DocumentTag(webhookId, "category", "person", new Date(), "joe");
+      
+      this.service.addTags(siteId, webhookId, Arrays.asList(tag0), null);
+      
+      DynamicObject tag = this.service.findTag(siteId, webhookId, "category");
+      assertNull(tag.getString("TimeToLive"));
+
+      // when
+      this.service.updateTimeToLive(siteId, webhookId, tomorrowttl);
+      
+      // then
+      DynamicObject result = this.service.findWebhook(siteId, webhookId);
+
+      assertEquals("test", result.getString("path"));
+      assertNotNull(result.getString("documentId"));
+      assertNotNull(result.getString("path"));
+      assertNotNull(result.getString("userId"));
+      assertNotNull(result.getString("inserteddate"));
+      assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
+          result.getString("TimeToLive"));
+      
+      tag = this.service.findTag(siteId, webhookId, "category");
+      assertNotNull(tag.getString("TimeToLive"));
+      assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
+          tag.getString("TimeToLive"));
+    }
+  }
 }

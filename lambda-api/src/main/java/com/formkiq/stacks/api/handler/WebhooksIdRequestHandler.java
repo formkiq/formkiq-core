@@ -41,6 +41,7 @@ import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.NotFoundException;
 import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
 public class WebhooksIdRequestHandler
@@ -99,7 +100,9 @@ public class WebhooksIdRequestHandler
     String siteId = getSiteId(event);
     String id = getPathParameter(event, "webhookId");
     
-    if (awsServices.webhookService().findWebhook(siteId, id) == null) {
+    WebhooksService webhookService = awsServices.webhookService();
+    
+    if (webhookService.findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
     
@@ -111,14 +114,19 @@ public class WebhooksIdRequestHandler
       map.put("name", obj.getString("name"));
     }
     
+    Date ttlDate = null;
     if (obj.containsKey("ttl")) {
       ZonedDateTime now =
           ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(obj.getString("ttl")));
-      Date ttlDate = Date.from(now.toInstant());
+      ttlDate = Date.from(now.toInstant());
       map.put("TimeToLive", ttlDate);
     }
     
-    awsServices.webhookService().updateWebhook(siteId, id, new DynamicObject(map));
+    webhookService.updateWebhook(siteId, id, new DynamicObject(map));
+    
+    if (ttlDate != null) {
+      webhookService.updateTimeToLive(siteId, id, ttlDate);
+    }
     
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMessageResponse("'" + id + "' object updated"));

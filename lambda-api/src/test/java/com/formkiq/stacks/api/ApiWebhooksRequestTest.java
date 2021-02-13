@@ -25,10 +25,13 @@ package com.formkiq.stacks.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +40,8 @@ import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.DocumentTag;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** Unit Tests for request /webhooks. */
 public class ApiWebhooksRequestTest extends AbstractRequestHandler {
@@ -215,13 +220,23 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("test@formkiq.com", result.get("userId"));
     assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
     
-    DynamicObject obj = getAwsServices().webhookService().findWebhook(null, id);
+    WebhooksService webhookService = getAwsServices().webhookService();
+    DynamicObject obj = webhookService.findWebhook(null, id);
     
     long epoch = Long.parseLong(obj.getString("TimeToLive"));
     ZonedDateTime ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
     ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
 
+    // given
+    DocumentTag tag = new DocumentTag(id, "category", "person", new Date(), "joe");
+    
+    // when
+    webhookService.addTags(null, id, Arrays.asList(tag), null);
+    
+    // then
+    assertNull(webhookService.findTag(null, id, "category").getString("TimeToLive"));
+    
     // update ttl/name
     newOutstream();
     
@@ -240,10 +255,17 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
     assertEquals("'" + id + "' object updated", result.get("message"));
         
-    obj = getAwsServices().webhookService().findWebhook(null, id);
+    obj = webhookService.findWebhook(null, id);
     assertEquals("john smith2", obj.get("name"));
     
     epoch = Long.parseLong(obj.getString("TimeToLive"));
+    ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
+    now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2);
+    assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
+    
+    DynamicObject dtag = webhookService.findTag(null, id, "category");
+    assertNotNull(dtag.getString("TimeToLive"));
+    epoch = Long.parseLong(dtag.getString("TimeToLive"));
     ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
     now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
