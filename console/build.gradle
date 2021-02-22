@@ -10,6 +10,7 @@ dependencies {
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
 	implementation group: 'org.json', name: 'json', version: '20200518'
 	
+	testImplementation project(':aws-cognito')
     testImplementation group: 'junit', name: 'junit', version:'4.+'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
 }
@@ -56,26 +57,26 @@ task testaws(type: Test) {
 
 task assembleTemplate {
     dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
 	outputs.dir("${buildDir}/distributions")
 	doLast {
 		exec {
-			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/console && mkdir -p ${buildDir}/distributions/formkiq-core/sar/console"
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/console"
 		}
 		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/template-sar.yaml"
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template* ${buildDir}/distributions/formkiq-core/sam/console/"
 		}
 		// build SAM distribution
-		exec {
-			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/console/template.yaml"
-		}
+//		exec {
+//			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/console/template.yaml"
+//		}
 		exec {
 			commandLine "bash", "-c", "cp ${buildDir}/console-installer.zip ${buildDir}/distributions/formkiq-core/sam/console/"
 		}
 		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml"
-		}
+		//exec {
+		//	commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml"
+		//}
 	}
 }
 

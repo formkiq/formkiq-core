@@ -85,7 +85,9 @@ public class AwsResourceTest extends AbstractApiTest {
     userCognitoService.addUserToGroup(email, group);
 
     // then
-    assertEquals("testadminuser@formkiq.com", user.username());
+    assertNotNull(user.username());
+    assertEquals("testadminuser@formkiq.com", user.userAttributes().stream()
+        .filter(f -> f.name().equals("email")).findFirst().get().value());
   }
 
   /**

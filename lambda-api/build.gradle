@@ -140,7 +140,28 @@ task assembleOpenApiTemplate {
 	}
 }
 
+/*
+task downloadAwsCognito(type: Download) {
+    src "https://github.com/formkiq/aws-cognito/releases/download/v1.0.0/aws-cognito-v${awsCognitoVersion}.zip"
+    dest buildDir
+    overwrite false
+}*/
+
+task downloadAwsCognito(type: Copy) {
+    from file("$buildDir/../../../aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
+    into file("${buildDir}")
+}
+
+task unzipAwsCognito(type: Copy) {
+  dependsOn downloadAwsCognito
+  def zipFile = file("${buildDir}/aws-cognito-v${awsCognitoVersion}.zip")
+  def outputDir = file("${buildDir}/distributions/formkiq-core/sam/cognito")
+
+  from zipTree(zipFile)
+  into outputDir
+}
+
 buildJava11Zip.dependsOn jar
 
 graalvmNativeImage.dependsOn check
-build.dependsOn assembleTemplate, assembleOpenApiTemplate
+build.dependsOn assembleTemplate, assembleOpenApiTemplate, unzipAwsCognito

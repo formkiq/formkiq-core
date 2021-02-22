@@ -15,6 +15,12 @@ Parameters:
     AllowedPattern: "[a-zA-Z0-9_.-/]+"
     Default: prod
   
+  AllowAdminCreateUserOnly:
+    Description: When true only Cognito Admin can create users, false users can register themselves
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+
   EnablePublicUrls:
     Description: Enables /public urls (unauthenticated urls)
     Default: "true"
@@ -89,10 +95,72 @@ Resources:
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
+  CoreConsole:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: console/template.yaml
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        AdminEmail: !Ref AdminEmail
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CoreConsoleInstall:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreApi
+    Properties:
+      Location: console/template-install.yaml
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        ConsoleVersion: !GetAtt CoreConsole.Outputs.ConsoleVersion
+        ConsoleBucket: !GetAtt CoreConsole.Outputs.ConsoleBucket
+        CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+        CognitoIdentityPoolId: !GetAtt Cognito.Outputs.CognitoIdentityPoolId
+        ApiUrl: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  Cognito:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreConsole
+    Properties:
+      Location: cognito/template.yaml
+      Parameters:
+        UserPoolName: !Sub "${AWS::StackName}-${AppEnvironment}"
+        AllowAdminCreateUserOnly: !Sub "${AllowAdminCreateUserOnly}"
+        PasswordMinimumLength: !Sub "${PasswordMinimumLength}"
+        PasswordRequireLowercase: !Sub "${PasswordRequireLowercase}"
+        PasswordRequireNumbers: !Sub "${PasswordRequireNumbers}"
+        PasswordRequireSymbols: !Sub "${PasswordRequireSymbols}"
+        PasswordRequireUppercase: !Sub "${PasswordRequireUppercase}"
+        Domain: !Sub "${AppEnvironment}${AWS::AccountId}"
+        RedirectUrl: !GetAtt CoreConsole.Outputs.ConsoleUrl
+        
+  SsmProperties:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - Cognito
+    Properties:
+      Location: ./ssm-template.yaml
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
+        CognitoUserPoolArn: !GetAtt Cognito.Outputs.CognitoUserPoolArn
+        CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+        CognitoIdentityPool: !GetAtt Cognito.Outputs.CognitoIdentityPoolId
+        Domain: !GetAtt Cognito.Outputs.Domain
+        
   CoreApi:
     Type: AWS::Serverless::Application
     DependsOn:
-      - CoreStorage
+      - Cognito
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -103,20 +171,8 @@ Resources:
         PasswordRequireNumbers: !Ref PasswordRequireNumbers
         PasswordRequireSymbols: !Ref PasswordRequireSymbols
         PasswordRequireUppercase: !Ref PasswordRequireUppercase
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
-          
-  CoreConsole:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreApi
-    Properties:
-      Location: console/template.yaml
-      Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        AdminEmail: !Ref AdminEmail
+        CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
+        CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -135,7 +191,26 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
-        
+
+  CoreConsoleUsers:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreApi
+      - SsmProperties
+    Properties:
+      Location: console/template-users.yaml
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        AdminEmail: !Ref AdminEmail
+        CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
+        CognitoUserPoolArn: !GetAtt Cognito.Outputs.CognitoUserPoolArn
+        CognitoIdentityPool: !GetAtt Cognito.Outputs.CognitoIdentityPoolId
+        CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod
@@ -151,10 +226,10 @@ Outputs:
     Value: !GetAtt CoreConsole.Outputs.ConsoleUrl
   CognitoUserPoolId:
     Description: "The Cognito User Pool Id"
-    Value: !GetAtt CoreApi.Outputs.CognitoUserPoolId
+    Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
   CognitoClientId:
     Description: "The Cognito Client Id"
-    Value: !GetAtt CoreApi.Outputs.CognitoUserPoolClientId
+    Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
   FormKiQVersion:
     Description: "The FormKiQ Version"
     Value: {{version}}

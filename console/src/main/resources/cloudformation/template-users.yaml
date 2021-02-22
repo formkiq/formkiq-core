@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Console
+        
+Parameters:
+
+  AdminEmail:
+    Type: String
+    Description: Administrator Email
+    AllowedPattern: ".+"
+    
+  AppEnvironment:
+    Type: String
+    Description: The Document Stack Environment
+    AllowedPattern: ".+"
+              
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+
+  CognitoUserPool:
+    Type: String
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+
+  CognitoUserPoolArn:
+    Type: String
+    Description: The Cognito User Pool Arn
+    AllowedPattern: ".+"
+
+  CognitoIdentityPool:
+    Type: String
+    Description: Cognito Identity Pool Id
+    AllowedPattern: ".+"
+
+  CognitoUserPoolClient:
+    Type: String
+    Description: Cognito User Pool Client
+    AllowedPattern: ".+"    
+
+Resources:
+
+  ConsoleAdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      DesiredDeliveryMediums: 
+        - EMAIL
+      Username: !Sub "${AdminEmail}"
+      UserPoolId: !Ref CognitoUserPool
+      UserAttributes:
+        - Name: email
+          Value: !Sub "${AdminEmail}"
+        - Name: email_verified
+          Value: "true"
+
+  ConsoleAddUserToGroup:
+    Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    DependsOn:
+    - ConsoleAdminUser
+    Properties: 
+      GroupName: !Ref AdminGroup
+      Username: !Sub "${AdminEmail}"
+      UserPoolId: !Ref CognitoUserPool
+
+  ConsoleAddUserToDefaultGroup:
+    Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    DependsOn:
+    - ConsoleAdminUser
+    Properties: 
+      GroupName: "default"
+      Username: !Sub "${AdminEmail}"
+      UserPoolId: !Ref CognitoUserPool
+      
+  ConsoleAdminEmailParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console Admin Email"
+      Name: !Sub "/formkiq/${AppEnvironment}/console/AdminEmail"
+      Type: String
+      Value: !Ref AdminEmail
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  AdminGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
+    Properties:
+      Precedence: 0
+      GroupName: "Admins"
+      RoleArn: !GetAtt AdminGroupRole.Arn
+      UserPoolId: !Ref CognitoUserPool
+  
+  AdminGroupParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Admin Group"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/AdminGroup"
+      Type: String
+      Value: !Ref AdminGroup
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  AdminGroupRole: 
+    Type: "AWS::IAM::Role"
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Federated: 
+                - "cognito-identity.amazonaws.com"
+            Action: 
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: 
+                - !Ref CognitoIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr:
+                - "authenticated"
+      Path: "/"
+      Policies: 
+        - 
+          PolicyName: !Sub "${AWS::StackName}-AdminGroupRole"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Effect: "Allow"
+                Action: [ "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminCreateUser", "cognito-idp:AdminDeleteUser", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminRemoveUserFromGroup", "cognito-idp:AdminResetUserPassword", "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup" ]
+                Resource: !Ref CognitoUserPoolArn
+
+  DefaultGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
+    Properties:
+      Precedence: 0
+      GroupName: "default"
+      UserPoolId: !Ref CognitoUserPool
+
+  DefaultReadGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
+    Properties:
+      Precedence: 0
+      GroupName: "default_read"
+      UserPoolId: !Ref CognitoUserPool
+                      
+  CognitoNoAccessRole: 
+    Type: "AWS::IAM::Role"
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: "StackName"
+          Value: !Sub "${AWS::StackName}"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Federated: 
+                - "cognito-identity.amazonaws.com"
+            Action: 
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: 
+                - !Ref CognitoIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr:
+                - "authenticated"
+      Path: "/"
+      Policies: 
+        - PolicyName: !Sub "${AWS::StackName}-CognitoNoAccessRole"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Effect: "Deny"
+                Action: [ "*" ]
+                Resource: "*"
+
+  CognitoIdentityPoolRoleMapping:
+    Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+    Properties:
+      IdentityPoolId: !Ref CognitoIdentityPool
+      RoleMappings:
+        cognitoProvider:
+          IdentityProvider: !Join [ "", ["cognito-idp.", !Sub "${AWS::Region}", ".amazonaws.com/", !Ref CognitoUserPool, ":", !Ref CognitoUserPoolClient] ]
+          Type: Token
+          AmbiguousRoleResolution: Deny
+      Roles:
+        authenticated: !GetAtt CognitoNoAccessRole.Arn
+        unauthenticated: !GetAtt CognitoNoAccessRole.Arn

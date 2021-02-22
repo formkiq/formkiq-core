@@ -42,9 +42,6 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
-import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.aws.ssm.SsmServiceImpl;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -58,8 +55,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private S3Service s3;
   /** {@link S3Service}. */
   private S3Service s3UsEast1;
-  /** {@link SsmService}. */
-  private SsmService ssm;
 
   /** Environment Variable {@link Map}. */
   private Map<String, String> environmentMap;
@@ -67,8 +62,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   /** constructor. */
   public ConsoleInstallHandler() {
     this(System.getenv(), new S3ConnectionBuilder().setRegion(Region.US_EAST_1),
-        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))),
-        new SsmConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))));
+        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))));
   }
 
   /**
@@ -77,11 +71,9 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * @param map {@link Map}
    * @param s3builderUsEast1 {@link S3ConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
-   * @param ssmBuilder {@link SsmConnectionBuilder}
    */
   public ConsoleInstallHandler(final Map<String, String> map,
-      final S3ConnectionBuilder s3builderUsEast1, final S3ConnectionBuilder s3builder,
-      final SsmConnectionBuilder ssmBuilder) {
+      final S3ConnectionBuilder s3builderUsEast1, final S3ConnectionBuilder s3builder) {
 
     this.environmentMap = map;
 
@@ -96,7 +88,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     this.s3 = new S3Service(s3builder);
     this.s3UsEast1 = new S3Service(s3builderUsEast1);
-    this.ssm = new SsmServiceImpl(ssmBuilder);
   }
 
   /**
@@ -155,22 +146,18 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    */
   private void createCognitoConfig(final LambdaLogger logger) {
 
-    String appenv = this.environmentMap.get("appenvironment");
-    String consoleversion = this.environmentMap.get("consoleversion");
+    String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
     String region = this.environmentMap.get("REGION");
-    String destinationBucket = getDestinationBucket(appenv, logger);
+    String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
     String allowUserSelfRegistration = "false";
 
-    String userpoolid =
-        getParameterStoreValue("/formkiq/" + appenv + "/cognito/UserPoolId", logger);
+    String userpoolid = this.environmentMap.get("COGNITO_USER_POOL_ID");
 
-    String clientid =
-        getParameterStoreValue("/formkiq/" + appenv + "/cognito/UserPoolClientId", logger);
+    String clientid = this.environmentMap.get("COGNITO_USER_POOL_CLIENT_ID");
 
-    String identitypool =
-        getParameterStoreValue("/formkiq/" + appenv + "/cognito/IdentityPoolId", logger);
+    String identitypool = this.environmentMap.get("COGNITO_IDENTITY_POOL_ID");
 
-    String apiurl = getParameterStoreValue("/formkiq/" + appenv + "/api/DocumentsHttpUrl", logger);
+    String apiurl = this.environmentMap.get("API_URL");
 
     String json = String.format(
         "{%n\"version\":\"%s\",%n\"cognito\": {%n\"userPoolId\":\"%s\",%n" + "\"region\": \""
@@ -200,11 +187,10 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private void unzipConsole(final Map<String, Object> input, final String requestType,
       final Context context, final LambdaLogger logger) {
 
-    String appenv = this.environmentMap.get("appenvironment");
-    String consoleversion = this.environmentMap.get("consoleversion");
+    String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
 
-    String distributionBucket = this.environmentMap.get("distributionbucket");
-    String destinationBucket = getDestinationBucket(appenv, logger);
+    String distributionBucket = this.environmentMap.get("DISTRIBUTION_BUCKET");
+    String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
 
     String consoleZipKey = "formkiq-console/" + consoleversion + "/formkiq-console.zip";
 
@@ -250,18 +236,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   }
 
   /**
-   * Get Destination Bucket.
-   *
-   * @param appenv {@link String}
-   * @param logger {@link LambdaLogger}
-   * @return {@link String}
-   */
-  private String getDestinationBucket(final String appenv, final LambdaLogger logger) {
-    String destinationBucket = getParameterStoreValue("/formkiq/" + appenv + "/s3/Console", logger);
-    return destinationBucket;
-  }
-
-  /**
    * Write {@link InputStream} to Bucket.
    *
    * @param stream {@link InputStream}
@@ -300,25 +274,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
         }
       }
     }
-  }
-
-  /**
-   * Get Parameter Store Value.
-   *
-   * @param parameterKey {@link String}
-   * @param logger {@link LambdaLogger}
-   * @return {@link String}
-   */
-  private String getParameterStoreValue(final String parameterKey, final LambdaLogger logger) {
-
-    String value = this.ssm.getParameterValue(parameterKey);
-
-    if (value == null) {
-      logger.log("Property not found: " + parameterKey);
-      throw new IllegalArgumentException("Cannot find Parameter Store Value: " + parameterKey);
-    }
-
-    return value;
   }
 
   /**

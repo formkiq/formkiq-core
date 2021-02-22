@@ -253,6 +253,13 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, resp.getTags().size());
       assertNotNull(resp.getNext());
       assertNull(resp.getPrevious());
+      
+      assertNull(resp.getTags().get(0).getDocumentId());
+      assertNotNull(resp.getTags().get(0).getInsertedDate());
+      assertEquals("category0", resp.getTags().get(0).getKey());
+      assertEquals("userdefined", resp.getTags().get(0).getType());
+      assertEquals("jsmith", resp.getTags().get(0).getUserId());
+      assertEquals("person", resp.getTags().get(0).getValue());
     }
   }
 
@@ -410,6 +417,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
+      assertEquals("testadminuser@formkiq.com", tags.getResults().get(0).getUserId());
 
       assertTrue(getLogger().containsString("response: " + expected));
     }

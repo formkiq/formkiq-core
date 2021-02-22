@@ -218,10 +218,9 @@ public interface ApiGatewayRequestEventUtil {
       if (authorizer != null && authorizer.containsKey("claims")) {
 
         Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
-        if (claims.containsKey("username")) {
-          username = claims.get("username").toString();
-        } else if (claims.containsKey("cognito:username")) {
-          username = claims.get("cognito:username").toString();
+        String u = getCallingCognitoUsernameFromClaims(claims);
+        if (u != null) {
+          username = u;
         }
       }
     }
@@ -229,6 +228,18 @@ public interface ApiGatewayRequestEventUtil {
     return username;
   }
 
+  private String getCallingCognitoUsernameFromClaims(Map<String, Object> claims) {
+    String username = null;
+    if (claims.containsKey("email")) {
+      username = claims.get("email").toString();
+    } else if (claims.containsKey("username")) {
+      username = claims.get("username").toString();
+    } else if (claims.containsKey("cognito:username")) {
+      username = claims.get("cognito:username").toString();
+    }
+    return username;
+  }
+  
   /**
    * Get ContentType from {@link ApiGatewayRequestEvent}.
    * 

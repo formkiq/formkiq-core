@@ -38,9 +38,6 @@ import org.junit.Test;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
-import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.aws.ssm.SsmServiceImpl;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -61,12 +58,8 @@ public class ConsoleInstallHandlerTest {
   private static HttpUrlConnectionRecorder connection;
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmConnection;
   /** {@link S3Service}. */
   private static S3Service s3;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
 
   /**
    * Before Class.
@@ -81,14 +74,10 @@ public class ConsoleInstallHandlerTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:4566");
-
     s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
         .setEndpointOverride("http://localhost:4566");
 
     s3 = new S3Service(s3Connection);
-    ssmService = new SsmServiceImpl(ssmConnection);
 
     try (S3Client s = s3.buildClient()) {
 
@@ -109,14 +98,17 @@ public class ConsoleInstallHandlerTest {
   public void before() {
 
     Map<String, String> map = new HashMap<>();
-    map.put("appenvironment", "prod");
-    map.put("appversion", "0.0.4");
-    map.put("consoleversion", "0.1");
-    map.put("version", "0.0.1");
+    map.put("CONSOLE_VERSION", "0.1");
     map.put("REGION", "us-east-1");
-    map.put("distributionbucket", "distrobucket");
+    map.put("DISTRIBUTION_BUCKET", "distrobucket");
+    map.put("CONSOLE_BUCKET", "destbucket");
+    map.put("COGNITO_USER_POOL_ID", "us-east-1_TVZnIdg4o");
+    map.put("COGNITO_USER_POOL_CLIENT_ID", "31bp0cnujj1fluhdjmcc77gpaf");
+    map.put("COGNITO_IDENTITY_POOL_ID", "kasdasdassa");
+    map.put("API_URL", "https://me.execute-api.us-east-1.amazonaws.com/prod/");
 
-    this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection, ssmConnection) {
+
+    this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
       @Override
       protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
@@ -146,7 +138,7 @@ public class ConsoleInstallHandlerTest {
   private Map<String, Object> createInput(final String requestType) {
     Map<String, Object> map = new HashMap<>();
     map.put("RequestType", requestType);
-    map.put("ResponseURL", "https://cloudformation-custom-resource");
+    map.put("ResponseURL", "https://cloudformation-custom-resource");    
     return map;
   }
 
@@ -179,16 +171,6 @@ public class ConsoleInstallHandlerTest {
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }
 
-  /** Expect write console config. */
-  private void expectWriteConfig() {
-
-    ssmService.putParameter("/formkiq/prod/cognito/UserPoolId", "us-east-1_TVZnIdg4o");
-    ssmService.putParameter("/formkiq/prod/cognito/UserPoolClientId", "31bp0cnujj1fluhdjmcc77gpaf");
-    ssmService.putParameter("/formkiq/prod/cognito/IdentityPoolId", "kasdasdassa");
-    ssmService.putParameter("/formkiq/prod/api/DocumentsHttpUrl",
-        "https://me.execute-api.us-east-1.amazonaws.com/prod/");
-  }
-
   /**
    * Get Connection.
    *
@@ -217,9 +199,7 @@ public class ConsoleInstallHandlerTest {
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
-    ssmService.putParameter("/formkiq/prod/s3/Console", "destbucket");
-
-    expectWriteConfig();
+    input.put("CONSOLE_BUCKET", "destbucket");
 
     // replayAll();
     this.handler.handleRequest(input, this.context);
@@ -273,10 +253,6 @@ public class ConsoleInstallHandlerTest {
     final Map<String, Object> input = createInput("Update");
 
     // when
-    ssmService.putParameter("/formkiq/prod/s3/Console", "destbucket");
-
-    expectWriteConfig();
-
     this.handler.handleRequest(input, this.context);
 
     // then
