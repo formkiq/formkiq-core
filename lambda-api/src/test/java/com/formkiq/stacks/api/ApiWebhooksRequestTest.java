@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -144,51 +145,71 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   public void testGetWebhooks02() throws Exception {
     // given
     putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl", "http://localhost:8080");
-    String response = handleRequest(toRequestEvent("/request-post-webhooks01.json"));
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    assertEquals("default", result.get("siteId"));
-    assertNotNull(result.get("id"));
-    final String id = result.get("id").toString();
     
-    assertNotNull(result.get("insertedDate"));
-    assertEquals("john smith", result.get("name"));
-    assertEquals("test@formkiq.com", result.get("userId"));
-    assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
-    
-    newOutstream();
-    
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks01.json");
-
-    // when 
-    response = handleRequest(event);
-    
-    // then
-    m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
-    result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    
-    List<Map<String, Object>> list = (List<Map<String, Object>>) result.get("webhooks");
-    Optional<Map<String, Object>> o =
-        list.stream().filter(l -> l.get("url").toString().contains(id)).findFirst();
-    assertTrue(o.isPresent());
-
-    final int expectedCount = 6;
-    assertEquals(expectedCount, o.get().size());
-    assertNotNull(o.get().get("insertedDate"));
-    assertNotNull(o.get().get("id"));
-    assertEquals("john smith", o.get().get("name"));
-    assertEquals("default", o.get().get("siteId"));
-    assertEquals("test@formkiq.com", o.get().get("userId"));
-    assertEquals("http://localhost:8080/public/webhooks/" + id, o.get().get("url"));
-  }
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      
+      newOutstream();
+      
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
+      addParameter(event, "siteId", siteId);
+      
+      String response = handleRequest(event);
+      
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+      
+      if (siteId == null) {
+        assertEquals("default", result.get("siteId"));
+      } else {
+        assertNotNull(result.get("siteId"));
+        assertNotEquals("default", result.get("siteId"));
+      }
+      
+      assertNotNull(result.get("id"));
+      final String id = result.get("id").toString();
+      
+      assertNotNull(result.get("insertedDate"));
+      assertEquals("john smith", result.get("name"));
+      assertEquals("test@formkiq.com", result.get("userId"));
+      
+      verifyUrl(siteId, id, result);
+      
+      newOutstream();
+      
+      event = toRequestEvent("/request-get-webhooks01.json");
+      addParameter(event, "siteId", siteId);
   
+      // when 
+      response = handleRequest(event);
+      
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
+  
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      
+      result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+      
+      List<Map<String, Object>> list = (List<Map<String, Object>>) result.get("webhooks");
+      Optional<Map<String, Object>> o =
+          list.stream().filter(l -> l.get("url").toString().contains(id)).findFirst();
+      assertTrue(o.isPresent());
+  
+      final int expectedCount = 6;
+      assertEquals(expectedCount, o.get().size());
+      assertNotNull(o.get().get("insertedDate"));
+      assertNotNull(o.get().get("id"));
+      assertEquals("john smith", o.get().get("name"));
+      
+      verifyUrl(siteId, id, o.get());
+      
+      assertEquals("test@formkiq.com", o.get().get("userId"));
+    }
+  }
+
   /**
    * POST /webhooks.
    * Test TTL.
@@ -269,5 +290,17 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
     now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
+  }
+  
+  private void verifyUrl(final String siteId, final String id, final Map<String, Object> result) {
+    if (siteId == null) {
+      assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
+      assertEquals("default", result.get("siteId"));
+    } else {
+      assertNotNull(result.get("siteId"));
+      assertNotEquals("default", result.get("siteId"));
+      assertEquals("http://localhost:8080/public/webhooks/" + id + "?siteId=" + siteId,
+          result.get("url"));
+    }
   }
 }

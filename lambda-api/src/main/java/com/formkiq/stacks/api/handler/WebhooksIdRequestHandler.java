@@ -76,11 +76,16 @@ public class WebhooksIdRequestHandler
     String url = awsServices.ssmService()
         .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
 
+    String u = url + "/public/webhooks/" + m.getString("documentId");
+    if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
+      u += "?siteId=" + siteId;
+    }
+    
     Map<String, Object> map = new HashMap<>();
     map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     map.put("id", m.getString("documentId"));
     map.put("name", m.getString("path"));
-    map.put("url", url + "/public/webhooks/" + m.getString("documentId"));
+    map.put("url", u);
     map.put("insertedDate", m.getString("inserteddate"));
     map.put("userId", m.getString("userId"));
         

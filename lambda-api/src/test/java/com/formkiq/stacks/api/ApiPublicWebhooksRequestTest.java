@@ -23,10 +23,12 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,39 +57,47 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+      newOutstream();      
+      
+      String name = UUID.randomUUID().toString();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, String> m = fromJson(response, Map.class);
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
-    String documentId = body.get("documentId").toString();
-    assertNotNull(documentId);
-    
-    // verify s3 file
-    try (S3Client s3 = getS3().buildClient()) {
-      String json =
-          getS3().getContentAsString(s3, getStages3bucket(), documentId + FORMKIQ_DOC_EXT, null);
-      Map<String, Object> map = fromJson(json, Map.class);
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("webhook/" + name, map.get("userId"));
-      assertEquals("webhooks/" + id, map.get("path"));
-      assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      String documentId = body.get("documentId").toString();
+      assertNotNull(documentId);
+
+      // verify s3 file
+      try (S3Client s3 = getS3().buildClient()) {
+        
+        String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+        
+        Map<String, Object> map = fromJson(json, Map.class);
+        assertEquals(documentId, map.get("documentId"));
+        assertEquals("webhook/" + name, map.get("userId"));
+        assertEquals("webhooks/" + id, map.get("path"));
+        assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+      }
     }
   }
 
@@ -99,45 +109,50 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks02() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    
-    String name = UUID.randomUUID().toString();
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      
+      newOutstream();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks02.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      String name = UUID.randomUUID().toString();
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks02.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, String> m = fromJson(response, Map.class);
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
-    String documentId = body.get("documentId").toString();
-    assertNotNull(documentId);
-    
-    // verify s3 file
-    try (S3Client s3 = getS3().buildClient()) {
-      String json =
-          getS3().getContentAsString(s3, getStages3bucket(), documentId + FORMKIQ_DOC_EXT, null);
-      Map<String, Object> map = fromJson(json, Map.class);
+      // when
+      String response = handleRequest(event);
 
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("webhook/" + name, map.get("userId"));
-      assertEquals("webhooks/" + id, map.get("path"));
-      assertEquals("application/json", map.get("contentType"));
-      assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      String documentId = body.get("documentId").toString();
+      assertNotNull(documentId);
+
+      // verify s3 file
+      try (S3Client s3 = getS3().buildClient()) {
+        String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+        Map<String, Object> map = fromJson(json, Map.class);
+
+        assertEquals(documentId, map.get("documentId"));
+        assertEquals("webhook/" + name, map.get("userId"));
+        assertEquals("webhooks/" + id, map.get("path"));
+        assertEquals("application/json", map.get("contentType"));
+        assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+      }
     }
   }
   
@@ -175,31 +190,35 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks04() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+      String name = UUID.randomUUID().toString();
 
-    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
-    Date ttl = Date.from(now.toInstant());
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", ttl);
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
+      Date ttl = Date.from(now.toInstant());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl);
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // when
-    String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-    // then
-    Map<String, String> m = fromJson(response, Map.class);
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("400.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
   }
   
   /**
@@ -210,49 +229,54 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks05() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
-    Date ttl = Date.from(now.toInstant());
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", ttl);
+      newOutstream();
+      String name = UUID.randomUUID().toString();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
+      Date ttl = Date.from(now.toInstant());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, String> m = fromJson(response, Map.class);
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
-    String documentId = body.get("documentId").toString();
-    assertNotNull(documentId);
-    
-    DynamicObject obj = getAwsServices().webhookService().findWebhook(null, id);
-    assertNotNull(obj.get("TimeToLive"));
-    
-    // verify s3 file
-    try (S3Client s3 = getS3().buildClient()) {
-      String json =
-          getS3().getContentAsString(s3, getStages3bucket(), documentId + FORMKIQ_DOC_EXT, null);
-      Map<String, Object> map = fromJson(json, Map.class);
-      assertEquals(documentId, map.get("documentId"));
-      assertEquals("webhook/" + name, map.get("userId"));
-      assertEquals("webhooks/" + id, map.get("path"));
-      assertEquals("{\"name\":\"john smith\"}", map.get("content"));
-      assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      String documentId = body.get("documentId").toString();
+      assertNotNull(documentId);
+
+      DynamicObject obj = getAwsServices().webhookService().findWebhook(siteId, id);
+      assertNotNull(obj.get("TimeToLive"));
+
+      // verify s3 file
+      try (S3Client s3 = getS3().buildClient()) {
+        String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+        Map<String, Object> map = fromJson(json, Map.class);
+        assertEquals(documentId, map.get("documentId"));
+        assertEquals("webhook/" + name, map.get("userId"));
+        assertEquals("webhooks/" + id, map.get("path"));
+        assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+        assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
+      }
     }
   }
   
@@ -264,32 +288,37 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks06() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+      newOutstream();
+      String name = UUID.randomUUID().toString();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks04.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks04.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, Object> m = fromJson(response, Map.class);
-    final int mapsize = 2;
-    assertEquals(mapsize, m.size());
+      // when
+      String response = handleRequest(event);
 
-    assertEquals("301.0", String.valueOf(m.get("statusCode")));
-    
-    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-    assertEquals("https://www.google.ca", headers.get("Location"));
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
+
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
+
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca", headers.get("Location"));
+    }
   }
   
   /**
@@ -300,33 +329,38 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks07() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+      newOutstream();
+      String name = UUID.randomUUID().toString();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks05.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks05.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, Object> m = fromJson(response, Map.class);
-    final int mapsize = 2;
-    assertEquals(mapsize, m.size());
+      // when
+      String response = handleRequest(event);
 
-    assertEquals("301.0", String.valueOf(m.get("statusCode")));
-    
-    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-    assertEquals("https://www.google.ca?client=safari&fname=John&lname=Doe&kdhfsd=null",
-        headers.get("Location"));
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
+
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
+
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca?client=safari&fname=John&lname=Doe&kdhfsd=null",
+          headers.get("Location"));
+    }
   }
   
   /**
@@ -337,33 +371,38 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks08() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+      newOutstream();
+      String name = UUID.randomUUID().toString();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, Object> m = fromJson(response, Map.class);
-    final int mapsize = 2;
-    assertEquals(mapsize, m.size());
+      // when
+      String response = handleRequest(event);
 
-    assertEquals("301.0", String.valueOf(m.get("statusCode")));
-    
-    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-    assertEquals("https://www.google.ca?fname=John&lname=Doe&kdhfsd=null",
-        headers.get("Location"));
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
+
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
+
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca?fname=John&lname=Doe&kdhfsd=null",
+          headers.get("Location"));
+    }
   }
   
   /**
@@ -375,32 +414,37 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks09() throws Exception {
-    // given    
+    // given
     getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
-    newOutstream();
-    String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    String id = getAwsServices().webhookService().saveWebhook(null, name, "joe", null);
+      newOutstream();
+      String name = UUID.randomUUID().toString();
 
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
-    event.getHeaders().put("Content-Type", "application/json");
-    setPathParameter(event, "webhooks", id);
-    event.getRequestContext().setAuthorizer(new HashMap<>());
-    event.getRequestContext().setIdentity(new HashMap<>());
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
 
-    // when
-    String response = handleRequest(event);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
+      event.getHeaders().put("Content-Type", "application/json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
 
-    // then
-    Map<String, Object> m = fromJson(response, Map.class);
-    final int mapsize = 2;
-    assertEquals(mapsize, m.size());
+      // when
+      String response = handleRequest(event);
 
-    assertEquals("301.0", String.valueOf(m.get("statusCode")));
-    
-    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-    assertEquals("https://www.google.ca", headers.get("Location"));
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
+
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
+
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca", headers.get("Location"));
+    }
   }
 }
