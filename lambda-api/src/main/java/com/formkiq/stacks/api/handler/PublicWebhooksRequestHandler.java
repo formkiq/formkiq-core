@@ -127,7 +127,8 @@ public class PublicWebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = getSiteId(event);
+    String siteId = getParameter(event, "siteId");
+
     final String documentId = UUID.randomUUID().toString();
     final String redirectUri = getParameter(event, "redirect_uri");
     

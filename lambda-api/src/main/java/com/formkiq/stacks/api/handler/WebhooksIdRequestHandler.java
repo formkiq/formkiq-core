@@ -52,7 +52,7 @@ public class WebhooksIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     
     if (awsServices.webhookService().findWebhook(siteId, id) == null) {
@@ -69,7 +69,7 @@ public class WebhooksIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
     
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     DynamicObject m = awsServices.webhookService().findWebhook(siteId, id);
     
@@ -102,7 +102,7 @@ public class WebhooksIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     
     WebhooksService webhookService = awsServices.webhookService();

@@ -82,14 +82,15 @@ public class DocumentIdUrlRequestHandler
 
     String documentId = event.getPathParameters().get("documentId");
     String versionId = getParameter(event, "versionId");
+    String siteId = authorizer.getSiteId();
 
-    DocumentItem item = awsservice.documentService().findDocument(getSiteId(event), documentId);
+    DocumentItem item = awsservice.documentService().findDocument(siteId, documentId);
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    URL url = getS3Url(logger, awsservice, event, item, documentId, versionId, awsservice);
+    URL url = getS3Url(logger, authorizer, awsservice, event, item, documentId, versionId);
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
@@ -100,21 +101,21 @@ public class DocumentIdUrlRequestHandler
    * Get S3 URL.
    * 
    * @param logger {@link LambdaLogger}
-   * @param awsservices {@link AwsServiceCache}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
    * @param documentId {@link String}
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
-   * @param awsservice {@link AwsServiceCache}
    * @return {@link URL}
    */
-  private URL getS3Url(final LambdaLogger logger, final AwsServiceCache awsservices,
-      final ApiGatewayRequestEvent event, final DocumentItem item, final String documentId,
-      final String versionId, final AwsServiceCache awsservice) {
+  private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
+      final String documentId, final String versionId) {
 
     URL url = null;
     String contentType = getContentType(event);
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     int hours = getDurationHours(event);
     Duration duration = Duration.ofHours(hours);
 
@@ -128,7 +129,7 @@ public class DocumentIdUrlRequestHandler
           + documentId);
 
       String s3key = createS3Key(siteId, documentId);
-      url = awsservice.s3Service().presignGetUrl(awsservices.documents3bucket(), s3key, duration,
+      url = awsservice.s3Service().presignGetUrl(awsservice.documents3bucket(), s3key, duration,
           versionId);
 
     } else {
@@ -144,7 +145,7 @@ public class DocumentIdUrlRequestHandler
         }
 
         String s3key = createS3Key(siteId, documentId, contentType);
-        url = awsservice.s3Service().presignGetUrl(awsservices.documents3bucket(), s3key, duration,
+        url = awsservice.s3Service().presignGetUrl(awsservice.documents3bucket(), s3key, duration,
             versionId);
 
       } else if (awsservice.debug()) {

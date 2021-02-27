@@ -80,7 +80,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   @Override
   public void addTags(final String siteId, final String webhookId,
-      final Collection<DocumentTag> tags, final String timeToLive) {
+      final Collection<DocumentTag> tags, final Date ttl) {
 
     if (tags != null) {
 
@@ -90,8 +90,8 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
       List<Map<String, AttributeValue>> valueList =
           tags.stream().map(mapper).collect(Collectors.toList());
       
-      if (timeToLive != null) {
-        valueList.forEach(v -> addN(v, "TimeToLive", timeToLive));
+      if (ttl != null) {
+        valueList.forEach(v -> addTimeToLive(v, ttl));
       }
 
       List<Put> putitems = valueList.stream()
@@ -108,7 +108,13 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     }
   }
 
-  private void addTimeToLive(final Map<String, AttributeValueUpdate> values, final Date datettl) {
+  private void addTimeToLive(final Map<String, AttributeValue> values, final Date datettl) {
+    long timeout = datettl.getTime() / MILLISECONDS;
+    values.put("TimeToLive", AttributeValue.builder().n(String.valueOf(timeout)).build());
+  }
+  
+  private void addTimeToLiveUpdate(final Map<String, AttributeValueUpdate> values,
+      final Date datettl) {
     long timeout = datettl.getTime() / MILLISECONDS;
     values.put("TimeToLive", AttributeValueUpdate.builder()
         .value(AttributeValue.builder().n(String.valueOf(timeout)).build()).build());
@@ -236,7 +242,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, "webhook");
         
     Map<String, AttributeValueUpdate> values =  new HashMap<>();
-    addTimeToLive(values, ttl);
+    addTimeToLiveUpdate(values, ttl);
     
     this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
         .key(key).attributeUpdates(values).build());
@@ -267,7 +273,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     
     if (obj.containsKey("TimeToLive")) {
       Date datettl = obj.getDate("TimeToLive");
-      addTimeToLive(values, datettl);
+      addTimeToLiveUpdate(values, datettl);
     }
     
     if (!values.isEmpty()) {

@@ -56,11 +56,11 @@ public class DocumentIdContentRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     String versionId = getParameter(event, "versionId");
 
-    DocumentItem item = awsservice.documentService().findDocument(getSiteId(event), documentId);
+    DocumentItem item = awsservice.documentService().findDocument(siteId, documentId);
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");

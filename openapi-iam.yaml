@@ -2,7 +2,7 @@
         info:
           title: "FormKiQ HTTP API"
           description: "FormKiQ IAM API"
-          version: "1.5.4"
+          version: "1.5.5"
         paths:
           /version:
             get:
@@ -1253,6 +1253,15 @@
               properties:
                 name:
                   type: "string"
+                tags:
+                  type: "array"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                      value:
+                        type: "string"
             DocumentBody:
               required:
                 - "content"

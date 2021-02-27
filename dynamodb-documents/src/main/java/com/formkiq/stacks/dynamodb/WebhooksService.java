@@ -37,9 +37,9 @@ public interface WebhooksService {
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
-   * @param timeToLive {@link String}
+   * @param ttl {@link Date}
    */
-  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, String timeToLive);
+  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, Date ttl);
   
   /**
    * Delete Webhook.

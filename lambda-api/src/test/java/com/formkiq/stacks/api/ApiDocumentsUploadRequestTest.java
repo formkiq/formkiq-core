@@ -176,6 +176,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
       // then
       ApiUrlResponse resp = expectResponse(response);
+
       DocumentItem item = getDocumentService().findDocument(siteId, resp.getDocumentId());
       assertEquals(
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",

@@ -86,7 +86,7 @@ public class DocumentsIdUploadRequestHandler
     Map<String, String> map = event.getPathParameters();
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     DocumentService service = awsservice.documentService();
 
     if (map != null && map.containsKey("documentId")) {

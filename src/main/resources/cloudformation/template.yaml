@@ -235,4 +235,7 @@ Outputs:
     Value: {{version}}
   SnsDocumentEventArn:
     Description: SNS Topic for Document Events
-    Value: !GetAtt CoreStorage.Outputs.SnsDocumentEventArn    
+    Value: !GetAtt CoreStorage.Outputs.SnsDocumentEventArn
+  CognitoApiEndpoint:
+    Description: The Cognito Login API endpoint
+    Value: !GetAtt Cognito.Outputs.ApiEndpoint

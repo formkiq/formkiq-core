@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "FormKiQ HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.5.4"
+          version: "1.5.5"
         paths:
           /version:
             get:
@@ -1259,6 +1259,15 @@ Resources:
               properties:
                 name:
                   type: "string"
+                tags:
+                  type: "array"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                      value:
+                        type: "string"                  
             DocumentBody:
               required:
               - "content"

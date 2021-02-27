@@ -237,7 +237,7 @@ public class DocumentIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
     
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     int limit = getLimit(logger, event);
     ApiPagination token = getPagination(awsservice.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
@@ -275,7 +275,7 @@ public class DocumentIdRequestHandler
     boolean isUpdate = event.getHttpMethod().equalsIgnoreCase("patch")
         && event.getPathParameters().containsKey("documentId");
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String documentId = UUID.randomUUID().toString();
 
     if (isUpdate) {

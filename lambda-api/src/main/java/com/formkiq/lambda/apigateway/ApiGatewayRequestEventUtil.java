@@ -370,24 +370,6 @@ public interface ApiGatewayRequestEventUtil {
   }
 
   /**
-   * Get Site Id.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   */
-  default String getSiteId(final ApiGatewayRequestEvent event) {
-
-    String siteId = null;
-    Map<String, String> map = event.getQueryStringParameters();
-
-    if (map != null && map.containsKey("siteId")) {
-      siteId = map.get("siteId");
-    }
-
-    return siteId;
-  }
-
-  /**
    * Is String NOT empty.
    * 
    * @param s {@link String}

@@ -24,6 +24,7 @@ import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.DocumentTag;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler
@@ -49,16 +51,16 @@ public class WebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String url = awsServices.ssmService()
         .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
 
     List<DynamicObject> list = awsServices.webhookService().findWebhooks(siteId);
 
     List<Map<String, Object>> webhooks = list.stream().map(m -> {
-      
+
       Map<String, Object> map = new HashMap<>();
-      String u = url + "/public/webhooks/" + m.getString("documentId");      
+      String u = url + "/public/webhooks/" + m.getString("documentId");
       if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
         u += "?siteId=" + siteId;
       }
@@ -81,29 +83,39 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = getSiteId(event);
-    Map<String, String> q = fromBodyToObject(logger, event, Map.class);
+    String siteId = authorizer.getSiteId();
+    DynamicObject o = fromBodyToDynamicObject(logger, event);
 
-    if (q == null || q.get("name") == null) {
+    if (o == null || o.get("name") == null) {
       throw new BadException("Invalid JSON body.");
     }
 
     Date ttlDate = null;
-    String ttl = q.getOrDefault("ttl", null);
+    String ttl = o.getString("ttl");
     if (ttl != null) {
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
       ttlDate = Date.from(now.toInstant());
     }
 
-    String name = q.get("name");
+    String name = o.getString("name");
     String userId = getCallingCognitoUsername(event);
     String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate);
+
+    if (o.containsKey("tags")) {
+      List<DynamicObject> dtags = o.getList("tags");
+
+      Date date = new Date();
+      Collection<DocumentTag> tags = dtags.stream()
+          .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
+          .collect(Collectors.toList());
+      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
+    }
+
     setPathParameter(event, "webhookId", id);
 
     WebhooksIdRequestHandler h = new WebhooksIdRequestHandler();

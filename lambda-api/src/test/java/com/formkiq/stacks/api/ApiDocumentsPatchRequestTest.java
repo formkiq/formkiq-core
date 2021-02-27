@@ -186,7 +186,13 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
     assertNotNull(resp.get("documentId"));
-    assertEquals(siteId, resp.get("siteId"));
+    
+    if (siteId != null) {
+      assertEquals(siteId, resp.get("siteId"));
+    } else {
+      assertEquals("default", resp.get("siteId"));
+    }
+    
     assertNull(resp.get("next"));
     assertNull(resp.get("previous"));
 

@@ -188,7 +188,8 @@ public class ApiAuthorizer {
     String site = null;
 
     String siteIdParam = this.event != null ? this.event.getQueryStringParameter("siteId") : null;
-    if (siteIdParam != null && (this.siteIds.contains(siteIdParam)) || this.isUserAdmin) {
+    if (siteIdParam != null && (this.siteIds.contains(siteIdParam)) || this.isUserAdmin
+        || isIamCaller()) {
       site = siteIdParam;
     } else if (siteIdParam == null && !this.siteIds.isEmpty()) {
       site = this.siteIds.get(0);
@@ -201,6 +202,10 @@ public class ApiAuthorizer {
     return site;
   }
 
+  private boolean isIamCaller() {
+    return this.isCallerAssumeRole() || this.isCallerIamUser();
+  }
+  
   /**
    * Get Site Ids.
    * 

@@ -105,7 +105,7 @@ public class DocumentsRequestHandler
 
     ZonedDateTime date = transformToDate(logger, awsservice, dateString, tz);
 
-    final String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     final PaginationResults<DocumentItem> results =
         awsservice.documentService().findDocumentsByDate(siteId, date, ptoken, limit);
 

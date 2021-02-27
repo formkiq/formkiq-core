@@ -59,7 +59,7 @@ public class DocumentTagRequestHandler
 
     String documentId = event.getPathParameters().get("documentId");
     String tagKey = event.getPathParameters().get("tagKey");
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
 
     DocumentTag docTag = awsservice.documentService().findDocumentTag(siteId, documentId, tagKey);
     if (docTag == null) {
@@ -94,7 +94,7 @@ public class DocumentTagRequestHandler
       throw new BadException("request body is invalid");
     }
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     DocumentService documentService = awsservice.documentService();
 
     if (event.getHttpMethod().equalsIgnoreCase("put")) {
@@ -125,7 +125,7 @@ public class DocumentTagRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
