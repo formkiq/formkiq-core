@@ -103,7 +103,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
-      AutoPublishCodeSha256: B2FEFAFA4BA81FDC98CEA179F4C68C591A08903B90053CE2BA4C94F1E08D7A85
+      AutoPublishCodeSha256: F1E6120CAF7C465F1561875E04FD9BB921613E0F4D47B35EABBD1B7521F7AF94
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
@@ -161,7 +161,19 @@ Resources:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
-      
+
+  DocumentsPublicHttpApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The Public URL for the API endpoint that uses Cognito authorization"
+      Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsPublicHttpUrl"
+      Type: String
+      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
   DocumentsApiRequestsRole:
     Type: AWS::IAM::Role
     Properties:

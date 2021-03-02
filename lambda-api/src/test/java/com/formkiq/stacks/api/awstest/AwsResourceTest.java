@@ -171,6 +171,9 @@ public class AwsResourceTest extends AbstractApiTest {
   public void testSsmParameters() {
     assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl")
         .endsWith(getAwsRegion() + ".amazonaws.com"));
+    assertTrue(
+        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl")
+            .endsWith(getAwsRegion() + ".amazonaws.com"));
     assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsIamUrl")
         .endsWith(getAwsRegion() + ".amazonaws.com"));
     assertTrue(

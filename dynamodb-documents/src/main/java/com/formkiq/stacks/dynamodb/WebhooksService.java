@@ -94,10 +94,11 @@ public interface WebhooksService {
    * @param name {@link String}
    * @param userId {@link String}
    * @param ttl {@link Date}
+   * @param enabled boolean
    * 
    * @return {@link String}
    */
-  String saveWebhook(String siteId, String name, String userId, Date ttl);
+  String saveWebhook(String siteId, String name, String userId, Date ttl, boolean enabled);
   
   /**
    * Update Webhook TimeToLive.

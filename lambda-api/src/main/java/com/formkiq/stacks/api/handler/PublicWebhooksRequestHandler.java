@@ -46,6 +46,7 @@ import com.formkiq.lambda.apigateway.ApiRedirectResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.BadException;
+import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.StringUtils;
@@ -58,6 +59,20 @@ public class PublicWebhooksRequestHandler
   private static final long TO_MILLIS = 1000L;
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
+
+  private static boolean isContentTypeJson(final String contentType) {
+    return contentType != null && "application/json".equals(contentType);
+  }
+  
+  private static boolean isJsonValid(final String json) {
+    
+    try {
+      GSON.fromJson(json, Object.class);
+      return true;
+    } catch (Exception ex) {
+      return false;
+    }
+  }
 
   private ApiRequestHandlerResponse buildRedirect(final ApiGatewayRequestEvent event,
       final String redirectUri, final String body) {
@@ -81,6 +96,17 @@ public class PublicWebhooksRequestHandler
         new ApiRedirectResponse(sb.toString()));
     return response;
   }
+
+  private void checkIsWebhookValid(final DynamicObject hook)
+      throws BadException, TooManyRequestsException {
+    if (hook == null || isExpired(hook)) {
+      throw new BadException("invalid webhook url");
+    }
+    
+    if (!isEnabled(hook)) {
+      throw new TooManyRequestsException("webhook is disabled");
+    }
+  }
   
   private Map<String, String> decodeQueryString(final String query) {
     Map<String, String> params = new LinkedHashMap<>();
@@ -96,12 +122,28 @@ public class PublicWebhooksRequestHandler
 
     return params;
   }
-
+  
   @Override
   public String getRequestUrl() {
     return "/public/webhooks";
   }
 
+  /**
+   * Is Webhook Enabled.
+   * @param obj {@link DynamicObject}
+   * @return boolean
+   */
+  private boolean isEnabled(final DynamicObject obj) {
+    
+    boolean enabled = true;
+    
+    if (obj.containsKey("enabled") && obj.getString("enabled").equals("false")) {
+      enabled = false;
+    }
+
+    return enabled;
+  }
+  
   /**
    * Is object expired.
    * @param obj {@link DynamicObject}
@@ -142,11 +184,13 @@ public class PublicWebhooksRequestHandler
     String webhookId = getPathParameter(event, "webhooks");
     DynamicObject hook = awsservice.webhookService().findWebhook(siteId, webhookId);
     
-    if (hook == null || isExpired(hook)) {
-      throw new BadException("invalid webhook url");
-    }
+    checkIsWebhookValid(hook);
     
     String body = getBodyAsString(event);
+    if (isContentTypeJson(contentType) && !isJsonValid(body)) {
+      throw new BadException("body isn't valid JSON");
+    }
+
     item.put("content", body);
     item.put("documentId", documentId);
     item.put("userId", "webhook/" + hook.getOrDefault("path", "webhook"));

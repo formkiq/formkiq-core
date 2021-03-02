@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "FormKiQ IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.5.5"
+          version: "1.5.8"
         paths:
           /version:
             get:
@@ -887,6 +887,34 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks/{webhookId}:
+            get:
+              tags:
+              - Webhooks
+              description: Returns a webhook
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhookIdParam'
+              responses:
+                200:
+                  description: "200 response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/Webhook"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"          
             options:
               description: Get Webhook Options.
               tags:
@@ -1259,6 +1287,10 @@ Resources:
               properties:
                 name:
                   type: "string"
+                ttl:
+                  type: "string"
+                enabled:
+                  type: boolean                  
                 tags:
                   type: "array"
                   items:
@@ -1381,22 +1413,24 @@ Resources:
             Webhooks:
               type: "array"
               items:
-                type: "object"
-                properties:
-                  siteId:
-                    type: "string"
-                  name:
-                    type: "string"
-                  url:
-                    type: "string"                    
-                  insertedDate:
-                    type: "string"
-                    format: "date-time"
-                  id:
-                    type: "string"
-                    format: "uuid"
-                  userId:
-                    type: "string"
+                $ref: "#/components/schemas/Webhook"
+            Webhook:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                name:
+                  type: "string"
+                url:
+                  type: "string"                    
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                id:
+                  type: "string"
+                  format: "uuid"
+                userId:
+                  type: "string"
             WebhookTags:
               type: "object"
               properties:

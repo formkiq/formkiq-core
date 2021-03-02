@@ -104,8 +104,8 @@ public class WebhooksServiceImplTest {
   public void testFindWebhooks01() {
     //given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      this.service.saveWebhook(siteId, "test", "joe", null);
-      this.service.saveWebhook(siteId, "abc", "joe", null);
+      this.service.saveWebhook(siteId, "test", "joe", null, true);
+      this.service.saveWebhook(siteId, "abc", "joe", null, true);
 
       // when
       List<DynamicObject> list = this.service.findWebhooks(siteId);
@@ -153,7 +153,7 @@ public class WebhooksServiceImplTest {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-      String id = this.service.saveWebhook(siteId, "test", "joe", Date.from(now.toInstant()));
+      String id = this.service.saveWebhook(siteId, "test", "joe", Date.from(now.toInstant()), true);
 
       // when
       DynamicObject o = this.service.findWebhook(siteId, id);
@@ -213,7 +213,7 @@ public class WebhooksServiceImplTest {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       
-      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl);
+      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, true);
       DynamicObject obj = new DynamicObject(Map.of("name", "test2", "TimeToLive", tomorrowttl));
 
       // when
@@ -221,7 +221,7 @@ public class WebhooksServiceImplTest {
       
       // then
       DynamicObject result = this.service.findWebhook(siteId, webhookId);
-      assertEquals("test2", result.getString("name"));
+      assertEquals("test2", result.getString("path"));
       assertNotNull(result.getString("documentId"));
       assertNotNull(result.getString("path"));
       assertNotNull(result.getString("userId"));
@@ -237,8 +237,8 @@ public class WebhooksServiceImplTest {
   @Test
   public void testAddTags01() {
     // given
-    String hook0 = this.service.saveWebhook(null, "test", "joe", null);
-    String hook1 = this.service.saveWebhook(null, "test2", "joe2", null);
+    String hook0 = this.service.saveWebhook(null, "test", "joe", null, true);
+    String hook1 = this.service.saveWebhook(null, "test2", "joe2", null, true);
     DocumentTag tag0 = new DocumentTag(hook0, "category", "person", new Date(), "joe");
     DocumentTag tag1 = new DocumentTag(hook0, "type", "person2", new Date(), "joe");
     
@@ -269,7 +269,7 @@ public class WebhooksServiceImplTest {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       
-      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl);
+      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, true);
       DocumentTag tag0 = new DocumentTag(webhookId, "category", "person", new Date(), "joe");
       
       this.service.addTags(siteId, webhookId, Arrays.asList(tag0), null);

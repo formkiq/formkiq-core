@@ -52,66 +52,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   private static final long TO_MILLIS = 1000L;
   
   /**
-   * Delete /webhooks/{webhookId}.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testDeleteWebhooks01() throws Exception {
-    // given
-    String response = handleRequest(toRequestEvent("/request-post-webhooks01.json"));
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-    assertEquals("default", result.get("siteId"));
-    assertNotNull(result.get("id"));
-    final String id = result.get("id").toString();
-    
-    newOutstream();
-    
-    ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
-    setPathParameter(event, "webhookId", id);
-
-    // when 
-    response = handleRequest(event);
-    
-    // then
-    m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-  }
-  
-  /**
-   * Delete /webhooks/{webhookId} not found.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testDeleteWebhooks02() throws Exception {
-    // given
-    String id = UUID.randomUUID().toString();
-    
-    ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
-    setPathParameter(event, "webhookId", id);
-
-    // when 
-    String response = handleRequest(event);
-    
-    // then
-    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("404.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-  }
-  
-  /**
    * Get /webhooks empty.
    *
    * @throws Exception an error has occurred
@@ -145,7 +85,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testGetWebhooks02() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       
@@ -173,6 +113,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       assertNotNull(result.get("insertedDate"));
       assertEquals("john smith", result.get("name"));
       assertEquals("test@formkiq.com", result.get("userId"));
+      assertEquals("true", result.get("enabled"));
       
       verifyUrl(siteId, id, result);
       
@@ -199,11 +140,12 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
           list.stream().filter(l -> l.get("url").toString().contains(id)).findFirst();
       assertTrue(o.isPresent());
   
-      final int expectedCount = 6;
+      final int expectedCount = 7;
       assertEquals(expectedCount, o.get().size());
       assertNotNull(o.get().get("insertedDate"));
       assertNotNull(o.get().get("id"));
       assertEquals("john smith", o.get().get("name"));
+      assertEquals("true", o.get().get("enabled"));
       
       verifyUrl(siteId, id, o.get());
       
@@ -221,7 +163,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
     String ttl = "87400";
     event.setBody("{\"name\":\"john smith\",\"ttl\":\"" + ttl + "\"}");
@@ -278,7 +220,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("'" + id + "' object updated", result.get("message"));
         
     obj = webhookService.findWebhook(null, id);
-    assertEquals("john smith2", obj.get("name"));
+    assertEquals("john smith2", obj.get("path"));
     
     epoch = Long.parseLong(obj.getString("TimeToLive"));
     ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
@@ -303,7 +245,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl",
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -373,7 +315,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks03() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl",
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
     String siteId = UUID.randomUUID().toString();

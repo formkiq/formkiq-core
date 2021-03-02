@@ -63,7 +63,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
       setPathParameter(event, "webhooks", id);
@@ -118,7 +118,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
 
       String name = UUID.randomUUID().toString();
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks02.json");
       setPathParameter(event, "webhooks", id);
@@ -200,7 +200,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
       Date ttl = Date.from(now.toInstant());
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
       setPathParameter(event, "webhooks", id);
@@ -240,7 +240,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
       Date ttl = Date.from(now.toInstant());
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
       setPathParameter(event, "webhooks", id);
@@ -297,7 +297,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks04.json");
       setPathParameter(event, "webhooks", id);
@@ -338,7 +338,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks05.json");
       setPathParameter(event, "webhooks", id);
@@ -380,7 +380,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
       setPathParameter(event, "webhooks", id);
@@ -423,12 +423,14 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
       event.getHeaders().put("Content-Type", "application/json");
       setPathParameter(event, "webhooks", id);
       addParameter(event, "siteId", siteId);
+      event.setBody("{\"name\":\"john smith\"}");
+      event.setIsBase64Encoded(Boolean.FALSE);
       
       event.getRequestContext().setAuthorizer(new HashMap<>());
       event.getRequestContext().setIdentity(new HashMap<>());
@@ -445,6 +447,86 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       Map<String, Object> headers = (Map<String, Object>) m.get("headers");
       assertEquals("https://www.google.ca", headers.get("Location"));
+    }
+  }
+  
+  /**
+   * Post /public/webhooks to disabled webhook.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks10() throws Exception {
+    // given    
+    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(getMap());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      newOutstream();      
+      
+      String name = UUID.randomUUID().toString();
+
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, false);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("429.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
+  }
+  
+  /**
+   * Post /public/webhooks application/json, INVALID JSON body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks11() throws Exception {
+    // given
+    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(getMap());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      newOutstream();
+      String name = UUID.randomUUID().toString();
+
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks06.json");
+      event.getHeaders().put("Content-Type", "application/json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"body isn't valid JSON\"}", m.get("body"));
     }
   }
 }

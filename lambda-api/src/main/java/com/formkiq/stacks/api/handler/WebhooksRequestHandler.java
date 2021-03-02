@@ -52,8 +52,8 @@ public class WebhooksRequestHandler
       final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorizer.getSiteId();
-    String url = awsServices.ssmService()
-        .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
+    String url = awsServices.ssmService().getParameterValue(
+        "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
 
     List<DynamicObject> list = awsServices.webhookService().findWebhooks(siteId);
 
@@ -71,7 +71,8 @@ public class WebhooksRequestHandler
       map.put("url", u);
       map.put("insertedDate", m.getString("inserteddate"));
       map.put("userId", m.getString("userId"));
-
+      map.put("enabled", m.getString("enabled"));
+      
       return map;
     }).collect(Collectors.toList());
 
@@ -104,7 +105,7 @@ public class WebhooksRequestHandler
 
     String name = o.getString("name");
     String userId = getCallingCognitoUsername(event);
-    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate);
+    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, true);
 
     if (o.containsKey("tags")) {
       List<DynamicObject> dtags = o.getList("tags");

@@ -207,7 +207,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   @Override
   public String saveWebhook(final String siteId, final String name, final String userId,
-      final Date ttl) {
+      final Date ttl, final boolean enabled) {
 
     final String id = UUID.randomUUID().toString();
     final String fulldate = this.df.format(new Date());
@@ -218,6 +218,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     addS(pkvalues, "path", name);
     addS(pkvalues, "userId", userId);
     addS(pkvalues, "inserteddate", fulldate);
+    addS(pkvalues, "enabled", "" + enabled);
     
     addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_WEBHOOKS));
     addS(pkvalues, GSI1_SK, name + TAG_DELIMINATOR + fulldate);
@@ -267,7 +268,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Map<String, AttributeValueUpdate> values =  new HashMap<>();
     
     if (obj.containsKey("name")) {
-      values.put("name", AttributeValueUpdate.builder()
+      values.put("path", AttributeValueUpdate.builder()
           .value(AttributeValue.builder().s(obj.getString("name")).build()).build());
     }
     

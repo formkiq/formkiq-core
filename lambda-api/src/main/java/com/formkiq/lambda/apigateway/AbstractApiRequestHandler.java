@@ -29,6 +29,7 @@ import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_FOUND;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_NOT_IMPLEMENTED;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -49,6 +50,7 @@ import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.lambda.apigateway.exception.ForbiddenException;
 import com.formkiq.lambda.apigateway.exception.NotFoundException;
 import com.formkiq.lambda.apigateway.exception.NotImplementedException;
+import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.InvalidConditionsException;
@@ -202,6 +204,9 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
 
     } catch (NotFoundException e) {
       buildResponse(logger, output, SC_NOT_FOUND, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (TooManyRequestsException e) {
+      buildResponse(logger, output, SC_TOO_MANY_REQUESTS, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (BadException | InvalidConditionsException | DateTimeException e) {
       buildResponse(logger, output, SC_BAD_REQUEST, Collections.emptyMap(),

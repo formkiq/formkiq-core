@@ -182,7 +182,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: B2FEFAFA4BA81FDC98CEA179F4C68C591A08903B90053CE2BA4C94F1E08D7A85
+      AutoPublishCodeSha256: F1E6120CAF7C465F1561875E04FD9BB921613E0F4D47B35EABBD1B7521F7AF94
       Environment:
         Variables:
           DOCUMENTS_S3_BUCKET: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
@@ -228,7 +228,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: B2FEFAFA4BA81FDC98CEA179F4C68C591A08903B90053CE2BA4C94F1E08D7A85
+      AutoPublishCodeSha256: F1E6120CAF7C465F1561875E04FD9BB921613E0F4D47B35EABBD1B7521F7AF94
       Environment:
         Variables:
           DOCUMENTS_TABLE: !Ref Documents

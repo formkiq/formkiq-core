@@ -72,9 +72,12 @@ public class WebhooksIdRequestHandler
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     DynamicObject m = awsServices.webhookService().findWebhook(siteId, id);
+    if (m == null) {
+      throw new NotFoundException("Webhook 'id' not found");
+    }
     
-    String url = awsServices.ssmService()
-        .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
+    String url = awsServices.ssmService().getParameterValue(
+        "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
 
     String u = url + "/public/webhooks/" + m.getString("documentId");
     if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
@@ -88,6 +91,7 @@ public class WebhooksIdRequestHandler
     map.put("url", u);
     map.put("insertedDate", m.getString("inserteddate"));
     map.put("userId", m.getString("userId"));
+    map.put("enabled", m.getString("enabled"));
         
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -119,6 +123,10 @@ public class WebhooksIdRequestHandler
       map.put("name", obj.getString("name"));
     }
     
+    if (obj.containsKey("enabled")) {
+      map.put("enabled", obj.getBoolean("enabled"));
+    }
+    
     Date ttlDate = null;
     if (obj.containsKey("ttl")) {
       ZonedDateTime now =
@@ -126,7 +134,7 @@ public class WebhooksIdRequestHandler
       ttlDate = Date.from(now.toInstant());
       map.put("TimeToLive", ttlDate);
     }
-    
+
     webhookService.updateWebhook(siteId, id, new DynamicObject(map));
     
     if (ttlDate != null) {
