@@ -238,7 +238,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       assertNotNull(result.get("insertedDate"));
       assertEquals("john smith2", result.get("name"));
       assertEquals("joe", result.get("userId"));
-      assertEquals("true", result.get("enabled"));
+      assertEquals("false", result.get("enabled"));
 
       verifyUrl(siteId, id, result);
     }

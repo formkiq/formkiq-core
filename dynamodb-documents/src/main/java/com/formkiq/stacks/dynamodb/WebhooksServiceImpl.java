@@ -272,6 +272,11 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
           .value(AttributeValue.builder().s(obj.getString("name")).build()).build());
     }
     
+    if (obj.containsKey("enabled")) {
+      values.put("enabled", AttributeValueUpdate.builder()
+          .value(AttributeValue.builder().s(obj.getString("enabled")).build()).build());
+    }
+    
     if (obj.containsKey("TimeToLive")) {
       Date datettl = obj.getDate("TimeToLive");
       addTimeToLiveUpdate(values, datettl);
