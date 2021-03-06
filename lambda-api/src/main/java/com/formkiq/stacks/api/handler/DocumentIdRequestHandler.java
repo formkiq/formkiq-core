@@ -298,7 +298,7 @@ public class DocumentIdRequestHandler
         throw new BadException("Invalid JSON body.");
       }
 
-      maxDocumentCount = this.restrictionMaxDocuments.getSsmValue(awsservice, siteId);
+      maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
       if (maxDocumentCount != null
           && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
         throw new BadException("Max Number of Documents reached");

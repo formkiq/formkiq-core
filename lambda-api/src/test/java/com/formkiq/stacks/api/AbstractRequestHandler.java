@@ -133,9 +133,12 @@ public abstract class AbstractRequestHandler {
     DynamoDbHelper dbHelper = new DynamoDbHelper(dbConnection);
     if (!dbHelper.isDocumentsTableExists()) {
       dbHelper.createDocumentsTable();
-      dbHelper.createCacheTable();
     }
 
+    if (!dbHelper.isCacheTableExists()) {
+      dbHelper.createCacheTable();
+    }
+    
     SqsService sqsservice = new SqsService(sqsConnection);
     if (!sqsservice.exists(SQS_DOCUMENT_FORMATS_QUEUE)) {
       sqsDocumentFormatsQueueUrl = sqsservice.createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
@@ -257,6 +260,8 @@ public abstract class AbstractRequestHandler {
 
     this.dbhelper = new DynamoDbHelper(dbConnection);
     this.dbhelper.truncateDocumentsTable();
+    this.dbhelper.truncateWebhooks();
+    this.dbhelper.truncateConfig();
 
     this.map.put("APP_ENVIRONMENT", appenvironment);
     this.map.put("DOCUMENTS_TABLE", documentsTable);

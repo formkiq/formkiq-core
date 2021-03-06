@@ -49,7 +49,9 @@ public class DynamoDbHelper {
   private DynamoDbClient db;
   /** {@link DocumentService}. */
   private DocumentService service;
-  /** {@link DocumentService}. */
+  /** {@link ConfigService}. */
+  private ConfigService configService;  
+  /** {@link WebhooksService}. */
   private WebhooksService webhookService;
   /** {@link DocumentSearchService}. */
   private DocumentSearchService searchService;
@@ -91,6 +93,7 @@ public class DynamoDbHelper {
     this.cacheService = new DynamoDbCacheService(builder, cacheTableName);
     this.searchService = new DocumentSearchServiceImpl(this.service, builder, documentTableName);
     this.webhookService = new WebhooksServiceImpl(builder, documentTableName);
+    this.configService = new ConfigServiceImpl(builder, documentTableName);
   }
 
   /**
@@ -205,6 +208,14 @@ public class DynamoDbHelper {
   }
 
   /**
+   * Get {@link ConfigService}.
+   * @return {@link ConfigService}
+   */
+  public ConfigService getConfigService() {
+    return this.configService;
+  }
+
+  /**
    * Get {@link DynamoDbClient}.
    * 
    * @return {@link DynamoDbClient}
@@ -253,7 +264,7 @@ public class DynamoDbHelper {
   public DocumentService getService() {
     return this.service;
   }
-
+  
   /**
    * Get {@link WebhooksService}.
    * 
@@ -261,6 +272,21 @@ public class DynamoDbHelper {
    */
   public WebhooksService getWebhookService() {
     return this.webhookService;
+  }
+  
+  /**
+   * Is Documents Table Exist.
+   * 
+   * @return boolean
+   */
+  public boolean isCacheTableExists() {
+    try {
+      return this.db
+          .describeTable(DescribeTableRequest.builder().tableName(this.cacheTable).build())
+          .table() != null;
+    } catch (ResourceNotFoundException e) {
+      return false;
+    }
   }
   
   /**
@@ -277,7 +303,24 @@ public class DynamoDbHelper {
       return false;
     }
   }
-  
+
+  /**
+   * Truncate Config.
+   */
+  public void truncateConfig() {
+    final int maxresults = 1000;
+    ScanRequest sr = ScanRequest.builder().tableName(this.documentTable)
+        .limit(Integer.valueOf(maxresults)).build();
+    ScanResponse result = this.db.scan(sr);
+    
+    List<Map<String, AttributeValue>> list =
+        result.items().stream().filter(i -> i.get("PK").s().contains(DbKeys.PREFIX_CONFIG))
+            .map(m -> Map.of("PK", m.get("PK"), "SK", m.get("SK"))).collect(Collectors.toList());
+    
+    list.forEach(i -> this.db.deleteItem(DeleteItemRequest.builder().tableName(this.documentTable)
+        .key(i).build()));
+  }
+
   /**
    * Truncate Document Dates.
    * 
@@ -323,7 +366,7 @@ public class DynamoDbHelper {
       }
     }
   }
-
+  
   /**
    * Truncate Webhooks.
    */

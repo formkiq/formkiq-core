@@ -61,6 +61,9 @@ public interface DbKeys {
   /** Composite Tag Key Deliminator. */
   String TAG_DELIMINATOR = "#";
 
+  /** Config Partition Key Prefix. */
+  String PREFIX_CONFIG = "configs" + TAG_DELIMINATOR;
+  
   /** Webhooks Partition Key Prefix. */
   String PREFIX_WEBHOOKS = "webhooks" + TAG_DELIMINATOR;
   /** Webhooks Partition Key Prefix. */

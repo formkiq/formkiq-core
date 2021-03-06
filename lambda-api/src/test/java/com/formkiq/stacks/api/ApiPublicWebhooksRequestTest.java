@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -527,6 +528,63 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
       assertEquals("{\"message\":\"body isn't valid JSON\"}", m.get("body"));
+    }
+  }
+  
+  /**
+   * Post /public/webhooks with Config 'DocumentTimeToLive'.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks12() throws Exception {
+    // given
+    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(getMap());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      newOutstream();
+      String name = UUID.randomUUID().toString();
+
+      getAwsServices().configService().save(siteId,
+          new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
+      
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks01.json");
+      setPathParameter(event, "webhooks", id);
+      addParameter(event, "siteId", siteId);
+      
+      event.getRequestContext().setAuthorizer(new HashMap<>());
+      event.getRequestContext().setIdentity(new HashMap<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      String documentId = body.get("documentId").toString();
+      assertNotNull(documentId);
+
+      // verify s3 file
+      try (S3Client s3 = getS3().buildClient()) {
+        String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+        Map<String, Object> map = fromJson(json, Map.class);
+        assertEquals(documentId, map.get("documentId"));
+        assertEquals("webhook/" + name, map.get("userId"));
+        assertEquals("webhooks/" + id, map.get("path"));
+        assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+        assertEquals("1000", map.get("TimeToLive"));
+      }
     }
   }
 }

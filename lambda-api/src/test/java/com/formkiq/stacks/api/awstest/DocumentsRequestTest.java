@@ -20,6 +20,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +64,7 @@ import com.formkiq.stacks.client.requests.GetDocumentsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
 import com.formkiq.stacks.common.formats.MimeType;
+import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
@@ -96,16 +98,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @AfterClass
   public static void afterClass() {
-    removeParameterStoreValue(getMaxDocumentsSsmKey());
-  }
-
-  /**
-   * Get Max Documents Ssm Key.
-   * 
-   * @return {@link String}
-   */
-  private static String getMaxDocumentsSsmKey() {
-    return "/formkiq/" + getAppenvironment() + "/siteid/" + SITEID1 + "/MaxDocuments";
+    getConfigService().delete(SITEID1);
   }
 
   /**
@@ -532,17 +525,22 @@ public class DocumentsRequestTest extends AbstractApiTest {
   public void testPost05() throws Exception {
     // given
     final String siteId = "finance";
-    AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
-    FormKiqClientV1 client = createHttpClient(token);
+    
+    AuthenticationResultType utoken = login(USER_EMAIL, USER_PASSWORD);
+    AuthenticationResultType ftoken = login(FINANCE_EMAIL, USER_PASSWORD);
+    
+    FormKiqClientV1 uclient = createHttpClient(utoken);
+    FormKiqClientV1 fclient = createHttpClient(ftoken);
+    
     AddDocument post = new AddDocument();
     post.content("dummy data", StandardCharsets.UTF_8);
     post.contentType("application/pdf");
     AddDocumentRequest req = new AddDocumentRequest().document(post);
 
     // when
-    final HttpResponse<String> responseNoSiteId = client.addDocumentAsHttpResponse(req);
+    final HttpResponse<String> responseNoSiteId = uclient.addDocumentAsHttpResponse(req);
     final HttpResponse<String> responseSiteId =
-        client.addDocumentAsHttpResponse(req.siteId(siteId));
+        fclient.addDocumentAsHttpResponse(req.siteId(siteId));
 
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
@@ -564,7 +562,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testPost06() throws Exception {
     // given
-    putParameter(getMaxDocumentsSsmKey(), "1");
+    getConfigService().save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
 
     AddDocument post = new AddDocument();
     post.content("dummy data", StandardCharsets.UTF_8);

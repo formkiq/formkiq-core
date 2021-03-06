@@ -31,6 +31,9 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
+import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentCountServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -64,6 +67,8 @@ public class AwsServiceCache {
   private String dbDocumentsTable;
   /** {@link String}. */
   private String dbCacheTable;
+  /** {@link ConfigService}. */
+  private ConfigService configService;
   /** {@link DocumentService}. */
   private DocumentService documentService;
   /** {@link WebhooksService}. */
@@ -116,6 +121,27 @@ public class AwsServiceCache {
     return this;
   }
 
+  /**
+   * Get SiteId Config.
+   * @param siteId {@link String}
+   * @return {@link DynamicObject}
+   */
+  public DynamicObject config(final String siteId) {
+    return configService().get(siteId);
+  }
+
+  /**
+   * Get {@link ConfigService}.
+   * 
+   * @return {@link ConfigService}
+   */
+  public ConfigService configService() {
+    if (this.configService == null) {
+      this.configService = new ConfigServiceImpl(this.dbConnection, this.dbDocumentsTable);
+    }
+    return this.configService;
+  }
+  
   /**
    * Set {@link DynamoDbConnectionBuilder}.
    * 

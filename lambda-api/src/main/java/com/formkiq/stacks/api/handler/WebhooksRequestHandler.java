@@ -21,6 +21,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -39,12 +40,35 @@ import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.BadException;
+import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  private String addTags(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
+      final String siteId, final DynamicObject o) {
+    
+    Date ttlDate = getTtlDate(o);
+
+    String name = o.getString("name");
+    String userId = getCallingCognitoUsername(event);
+    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, true);
+
+    if (o.containsKey("tags")) {
+      List<DynamicObject> dtags = o.getList("tags");
+
+      Date date = new Date();
+      Collection<DocumentTag> tags = dtags.stream()
+          .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
+          .collect(Collectors.toList());
+      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
+    }
+    
+    return id;
+  }
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
@@ -84,6 +108,40 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
+  private Date getTtlDate(final DynamicObject o) {
+    Date ttlDate = null;
+    String ttl = o.getString("ttl");
+    if (ttl != null) {
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
+      ttlDate = Date.from(now.toInstant());
+    }
+    return ttlDate;
+  }
+
+  private boolean isOverMaxWebhooks(final AwsServiceCache awsservice, final String siteId) {
+    
+    boolean over = false;
+    DynamicObject config = awsservice.config(siteId);
+    
+    String maxString = config.getString(MAX_WEBHOOKS);
+    
+    if (maxString != null) {
+      
+      try {
+        
+        int max = Integer.parseInt(maxString);
+        if (awsservice.webhookService().findWebhooks(siteId).size() >= max) {
+          over = true;
+        }
+        
+      } catch (NumberFormatException e) {
+        over = false;
+      }
+    }
+        
+    return over;
+  }
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -92,36 +150,34 @@ public class WebhooksRequestHandler
     String siteId = authorizer.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(logger, event);
 
-    if (o == null || o.get("name") == null) {
-      throw new BadException("Invalid JSON body.");
-    }
+    validatePost(awsservice, siteId, o);
 
-    Date ttlDate = null;
-    String ttl = o.getString("ttl");
-    if (ttl != null) {
-      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
-      ttlDate = Date.from(now.toInstant());
-    }
+    String id = addTags(event, awsservice, siteId, o);
 
-    String name = o.getString("name");
-    String userId = getCallingCognitoUsername(event);
-    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, true);
+    return response(logger, event, authorizer, awsservice, id);
+  }
 
-    if (o.containsKey("tags")) {
-      List<DynamicObject> dtags = o.getList("tags");
-
-      Date date = new Date();
-      Collection<DocumentTag> tags = dtags.stream()
-          .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
-          .collect(Collectors.toList());
-      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
-    }
-
-    setPathParameter(event, "webhookId", id);
+  private ApiRequestHandlerResponse response(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice, final String webhookId) throws Exception {
+    
+    setPathParameter(event, "webhookId", webhookId);
 
     WebhooksIdRequestHandler h = new WebhooksIdRequestHandler();
     ApiRequestHandlerResponse response = h.get(logger, event, authorizer, awsservice);
 
     return response;
+  }
+
+  private void validatePost(final AwsServiceCache awsservice, final String siteId,
+      final DynamicObject o) throws BadException, TooManyRequestsException {
+    
+    if (o == null || o.get("name") == null) {
+      throw new BadException("Invalid JSON body.");
+    }
+    
+    if (isOverMaxWebhooks(awsservice, siteId)) {
+      throw new TooManyRequestsException("Reached max number of webhooks");
+    }
   }
 }

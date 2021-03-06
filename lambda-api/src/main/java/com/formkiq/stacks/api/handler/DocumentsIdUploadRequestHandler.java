@@ -119,7 +119,7 @@ public class DocumentsIdUploadRequestHandler
       tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
           DocumentTagType.SYSTEMDEFINED));
 
-      String value = this.restrictionMaxDocuments.getSsmValue(awsservice, siteId);
+      String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
       if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
         logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
@@ -175,7 +175,7 @@ public class DocumentsIdUploadRequestHandler
         ? Long.valueOf(query.get("contentLength"))
         : null;
 
-    String value = this.restrictionMaxContentLength.getSsmValue(awsservice, siteId);
+    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
     if (value != null
         && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
 
@@ -184,7 +184,7 @@ public class DocumentsIdUploadRequestHandler
       }
 
       String maxContentLengthBytes =
-          this.restrictionMaxContentLength.getSsmValue(awsservice, siteId);
+          this.restrictionMaxContentLength.getValue(awsservice, siteId);
       throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
     }
 

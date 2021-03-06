@@ -101,6 +101,7 @@ public class DocumentSearchServiceImplTest {
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();
     dbhelper.truncateWebhooks();
+    dbhelper.truncateConfig();
 
     assertEquals(0, dbhelper.getDocumentItemCount());
   }

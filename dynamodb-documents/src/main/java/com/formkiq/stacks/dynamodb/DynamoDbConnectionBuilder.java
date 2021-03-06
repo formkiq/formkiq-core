@@ -48,6 +48,8 @@ public class DynamoDbConnectionBuilder {
    * constructor.
    */
   public DynamoDbConnectionBuilder() {
+    System.setProperty("software.amazon.awssdk.http.service.impl",
+        "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService");
     this.builder = DynamoDbClient.builder()
         .overrideConfiguration(ClientOverrideConfiguration.builder().build());
   }

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ConfigService;
 
 /**
  * {@link DocumentsRestrictions} for Max Number of Documents.
@@ -73,7 +74,7 @@ public class DocumentsRestrictionsMaxContentLength implements DocumentsRestricti
   }
 
   @Override
-  public String getSsmValue(final AwsServiceCache awsservice, final String siteId) {
-    return getSsmValue(awsservice, siteId, "MaxContentLengthBytes");
+  public String getValue(final AwsServiceCache awsservice, final String siteId) {
+    return getValue(awsservice, siteId, ConfigService.MAX_DOCUMENT_SIZE_BYTES);
   }
 }

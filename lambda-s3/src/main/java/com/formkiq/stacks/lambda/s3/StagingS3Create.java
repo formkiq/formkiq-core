@@ -389,7 +389,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private void write(final S3Client s3Client, final LambdaLogger logger,
       final DynamicDocumentItem doc, final Date date, final String siteId) {
 
-    if (writeS3File(s3Client, siteId, doc)) {
+    if (writeS3File(logger, s3Client, siteId, doc)) {
 
       logger.log(String.format("Inserted %s into bucket %s as %s", doc.getPath(),
           this.documentsBucket, createDatabaseKey(siteId, doc.getDocumentId())));
@@ -403,14 +403,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Writes File to S3.
-   *
+   * @param logger {@link LambdaLogger}
    * @param s3Client {@link S3Client}
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @return boolean
    */
-  private boolean writeS3File(final S3Client s3Client, final String siteId,
-      final DynamicDocumentItem doc) {
+  private boolean writeS3File(final LambdaLogger logger, final S3Client s3Client,
+      final String siteId, final DynamicDocumentItem doc) {
 
     boolean wrote = false;
 

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -347,6 +348,39 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     DynamicObject obj = webhookService.findWebhook(siteId, id);
     assertEquals("joe smith", obj.getString("path"));
     assertEquals("test@formkiq.com", obj.getString("userId"));
+  }
+  
+  /**
+   * POST /webhooks too many webhooks.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks04() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      getAwsServices().configService().save(siteId, new DynamicObject(Map.of(MAX_WEBHOOKS, "2")));
+      
+      String response = null;
+      
+      for (int i = 0; i <= 2; i++) {
+        newOutstream();
+        
+        ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
+        addParameter(event, "siteId", siteId);
+        event.setBody("{\"name\":\"john smith\"}");
+  
+        // when
+        response = handleRequest(event);
+      }
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("429.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"Reached max number of webhooks\"}", m.get("body").toString());
+    }
   }
   
   private void verifyUrl(final String siteId, final String id, final Map<String, Object> result) {

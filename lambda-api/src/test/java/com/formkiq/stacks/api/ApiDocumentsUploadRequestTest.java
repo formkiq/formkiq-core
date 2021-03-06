@@ -36,6 +36,8 @@ import org.junit.Before;
 import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 
@@ -47,7 +49,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void before() throws Exception {
     super.before();
 
-    removeSsmParameter("/formkiq/" + getAppenvironment() + "/siteid/default/MaxContentLengthBytes");
+    getAwsServices().configService().delete(null);
   }
 
   /**
@@ -221,17 +223,16 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload06() throws Exception {
 
     String maxContentLengthBytes = "2783034";
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/siteid/default/MaxContentLengthBytes",
-        maxContentLengthBytes);
-
+    getAwsServices().configService().save(null,
+        new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+    
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       newOutstream();
 
       if (siteId != null) {
-        putSsmParameter(
-            "/formkiq/" + getAppenvironment() + "/siteid/" + siteId + "/MaxContentLengthBytes",
-            maxContentLengthBytes);
+        getAwsServices().configService().save(siteId, new DynamicObject(
+            Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
       }
 
       // given
@@ -263,17 +264,16 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload07() throws Exception {
 
     String maxContentLengthBytes = "2783034";
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/siteid/default/MaxContentLengthBytes",
-        maxContentLengthBytes);
+    getAwsServices().configService().save(null,
+        new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       newOutstream();
 
       if (siteId != null) {
-        putSsmParameter(
-            "/formkiq/" + getAppenvironment() + "/siteid/" + siteId + "/MaxContentLengthBytes",
-            maxContentLengthBytes);
+        getAwsServices().configService().save(siteId, new DynamicObject(
+            Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
       }
 
       // given

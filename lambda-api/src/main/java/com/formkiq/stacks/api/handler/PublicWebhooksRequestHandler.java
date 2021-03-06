@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -198,12 +199,17 @@ public class PublicWebhooksRequestHandler
     
     if (hook.containsKey("TimeToLive")) {
       item.put("TimeToLive", hook.get("TimeToLive"));
+    } else {
+      String ttl = awsservice.configService().get(siteId).getString(DOCUMENT_TIME_TO_LIVE);
+      if (ttl != null) {
+        item.put("TimeToLive", ttl);
+      }
     }
     
     if (siteId != null) {
       item.put("siteId", siteId);
     }
-
+    
     putObjectToStaging(logger, awsservice, item, siteId);
 
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(SC_OK,

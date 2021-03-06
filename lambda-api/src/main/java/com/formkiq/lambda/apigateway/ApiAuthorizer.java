@@ -23,6 +23,7 @@
  */
 package com.formkiq.lambda.apigateway;
 
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -175,6 +176,15 @@ public class ApiAuthorizer {
    * @return {@link String}
    */
   public String getSiteId() {
+    return this.siteId != null && !this.siteId.equals(DEFAULT_SITE_ID) ? this.siteId : null;
+  }
+  
+  /**
+   * Get Site Id, including DEFAULT.
+   * 
+   * @return {@link String}
+   */
+  public String getSiteIdIncludeDefault() {
     return this.siteId;
   }
 

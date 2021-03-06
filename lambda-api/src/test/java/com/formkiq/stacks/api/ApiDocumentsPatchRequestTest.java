@@ -189,8 +189,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     
     if (siteId != null) {
       assertEquals(siteId, resp.get("siteId"));
-    } else {
-      assertEquals("default", resp.get("siteId"));
     }
     
     assertNull(resp.get("next"));
