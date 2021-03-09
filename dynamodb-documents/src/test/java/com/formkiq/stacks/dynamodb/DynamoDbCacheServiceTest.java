@@ -67,7 +67,10 @@ public class DynamoDbCacheServiceTest {
     DynamoDbHelper dbhelper = new DynamoDbHelper(adb);
 
     if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
+      dbhelper.createCacheTable();
+    }
+    
+    if (!dbhelper.isCacheTableExists()) {
       dbhelper.createCacheTable();
     }
   }

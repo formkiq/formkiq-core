@@ -24,7 +24,9 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -32,10 +34,10 @@ import com.formkiq.lambda.apigateway.ApiAuthorizer;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
-import com.formkiq.stacks.api.ApiSitesResponse;
-import com.formkiq.stacks.api.Site;
+import com.formkiq.stacks.common.objects.DynamicObject;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -115,18 +117,20 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    List<Site> sites = authorizer.getSiteIds().stream().map(s -> {
-      Site site = new Site();
-      site.setSiteId(s);
-      return site;
+    List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
+      DynamicObject config = awsservice.config(siteId);
+      config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+      return config;
     }).collect(Collectors.toList());
+    
+    sites.forEach(ob -> {
+      ob.remove("PK");
+      ob.remove("SK");
+    });
 
     updateUploadEmail(logger, awsservice, authorizer, sites);
 
-    ApiSitesResponse resp = new ApiSitesResponse();
-    resp.setSites(sites);
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("sites", sites)));
   }
 
   /**
@@ -135,10 +139,10 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
    * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
    * @param authorizer {@link ApiAuthorizer}
-   * @param sites {@link List} {@link Site}
+   * @param sites {@link List} {@link DynamicObject}
    */
   private void updateUploadEmail(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final ApiAuthorizer authorizer, final List<Site> sites) {
+      final ApiAuthorizer authorizer, final List<DynamicObject> sites) {
 
     String mailDomain = getMailDomain(awsservice);
 
@@ -148,27 +152,31 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
       sites.forEach(site -> {
 
-        if (writeSiteIds.contains(site.getSiteId())) {
-          String key = String.format("/formkiq/%s/siteid/%s/email", awsservice.appEnvironment(),
-              site.getSiteId());
-          site.setUploadEmail(awsservice.ssmService().getParameterValue(key));
+        String siteId = site.getString("siteId");
+        if (writeSiteIds.contains(siteId)) {
+          String key =
+              String.format("/formkiq/%s/siteid/%s/email", awsservice.appEnvironment(), siteId);
+          site.put("uploadEmail", awsservice.ssmService().getParameterValue(key));
         }
       });
 
       sites.forEach(site -> {
 
-        if (site.getUploadEmail() == null && writeSiteIds.contains(site.getSiteId())) {
+        String siteId = site.getString("siteId");
+        String uploadEmail = site.getString("uploadEmail");
+        
+        if (uploadEmail == null && writeSiteIds.contains(siteId)) {
 
           String email = generateUploadEmail(logger, awsservice, mailDomain);
-          site.setUploadEmail(email);
+          site.put("uploadEmail", email);
 
-          String key = String.format("/formkiq/%s/siteid/%s/email", awsservice.appEnvironment(),
-              site.getSiteId());
+          String key =
+              String.format("/formkiq/%s/siteid/%s/email", awsservice.appEnvironment(), siteId);
           awsservice.ssmService().putParameter(key, email);
 
           String[] strs = email.split("@");
           key = String.format("/formkiq/ses/%s/%s", strs[1], strs[0]);
-          String val = "{\"siteId\":\"" + site.getSiteId() + "\", \"appEnvironment\":\""
+          String val = "{\"siteId\":\"" + siteId + "\", \"appEnvironment\":\""
               + awsservice.appEnvironment() + "\"}";
           awsservice.ssmService().putParameter(key, val);
         }

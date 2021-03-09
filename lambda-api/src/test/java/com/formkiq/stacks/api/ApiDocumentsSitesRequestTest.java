@@ -23,16 +23,20 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.junit.Test;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.common.objects.DynamicObject;
 
 /** Unit Tests for request /sites. */
 public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
@@ -63,34 +67,35 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-    ApiSitesResponse resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiSitesResponse.class);
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
+    assertNull(resp.getString("next"));
+    assertNull(resp.getString("previous"));
 
-    assertEquals(2, resp.getSites().size());
-    assertEquals(DEFAULT_SITE_ID, resp.getSites().get(0).getSiteId());
-    assertNotNull(resp.getSites().get(0).getUploadEmail());
+    List<DynamicObject> sites = resp.getList("sites");
+    assertEquals(2, sites.size());
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
+    assertNotNull(sites.get(0).get("uploadEmail"));
 
-    String uploadEmail = resp.getSites().get(0).getUploadEmail();
+    String uploadEmail = sites.get(0).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
 
     assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        resp.getSites().get(0).getSiteId())));
+        sites.get(0).get("siteId"))));
 
     String[] strs = uploadEmail.split("@");
     assertEquals("tryformkiq.com", strs[1]);
     assertEquals("{\"siteId\":\"default\", \"appEnvironment\":\"" + getAppenvironment() + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
 
-    assertEquals("finance", resp.getSites().get(1).getSiteId());
-    assertNotNull(resp.getSites().get(1).getUploadEmail());
-    uploadEmail = resp.getSites().get(1).getUploadEmail();
+    assertEquals("finance", sites.get(1).get("siteId"));
+    assertNotNull(sites.get(1).get("uploadEmail"));
+    uploadEmail = sites.get(1).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
     assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        resp.getSites().get(1).getSiteId())));
+        sites.get(1).get("siteId"))));
     strs = uploadEmail.split("@");
     assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + getAppenvironment() + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
@@ -119,17 +124,18 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-    ApiSitesResponse resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiSitesResponse.class);
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
+    assertNull(resp.getString("next"));
+    assertNull(resp.getString("previous"));
 
-    assertEquals(2, resp.getSites().size());
-    assertEquals(DEFAULT_SITE_ID, resp.getSites().get(0).getSiteId());
-    assertNull(resp.getSites().get(0).getUploadEmail());
+    List<DynamicObject> sites = resp.getList("sites");
+    assertEquals(2, sites.size());
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
+    assertNull(sites.get(0).get("uploadEmail"));
 
-    assertEquals("finance", resp.getSites().get(1).getSiteId());
-    assertNull(resp.getSites().get(1).getUploadEmail());
+    assertEquals("finance", sites.get(1).get("siteId"));
+    assertNull(sites.get(1).get("uploadEmail"));
   }
 
   /**
@@ -158,27 +164,61 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-    ApiSitesResponse resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiSitesResponse.class);
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
 
-    assertEquals(2, resp.getSites().size());
-    assertEquals(DEFAULT_SITE_ID, resp.getSites().get(0).getSiteId());
-    assertNull(resp.getSites().get(0).getUploadEmail());
+    List<DynamicObject> sites = resp.getList("sites");
+    assertEquals(2, sites.size());
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
+    assertNull(sites.get(0).get("uploadEmail"));
 
     assertNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        resp.getSites().get(0).getSiteId())));
+        sites.get(0).get("siteId"))));
 
-    assertEquals("finance", resp.getSites().get(1).getSiteId());
-    assertNotNull(resp.getSites().get(1).getUploadEmail());
-    String uploadEmail = resp.getSites().get(1).getUploadEmail();
+    assertEquals("finance", sites.get(1).get("siteId"));
+    assertNotNull(sites.get(1).get("uploadEmail"));
+    String uploadEmail = sites.get(1).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
     assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        resp.getSites().get(1).getSiteId())));
+        sites.get(1).get("siteId"))));
     String[] strs = uploadEmail.split("@");
     assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + getAppenvironment() + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
+  }
+  
+  /**
+   * Get /sites with Config.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetSites04() throws Exception {
+    // given
+    String siteId = "finance";
+    ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
+    setCognitoGroup(event, siteId);
+    getAwsServices().configService().save(siteId,
+        new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertEquals(1, resp.getList("sites").size());
+    assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
+    assertEquals("5", resp.getList("sites").get(0).getString(MAX_DOCUMENTS));
+    assertEquals("10", resp.getList("sites").get(0).getString(MAX_WEBHOOKS));
   }
 }
