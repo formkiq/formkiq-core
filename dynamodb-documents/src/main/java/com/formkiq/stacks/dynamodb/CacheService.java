@@ -52,6 +52,7 @@ public interface CacheService {
    * 
    * @param key {@link String}
    * @param value {@link String}
+   * @param cacheInDays int
    */
-  void write(String key, String value);
+  void write(String key, String value, int cacheInDays);
 }

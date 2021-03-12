@@ -88,7 +88,7 @@ public interface ApiGatewayRequestEventUtil {
       current.setStartkey(token);
       current.setHasNext(token != null);
 
-      cacheService.write(current.getNext(), gson.toJson(current));
+      cacheService.write(current.getNext(), gson.toJson(current), 1);
     }
 
     return current;
