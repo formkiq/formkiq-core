@@ -616,7 +616,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", true, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
   
