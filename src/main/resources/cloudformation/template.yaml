@@ -227,6 +227,9 @@ Outputs:
   CognitoUserPoolId:
     Description: "The Cognito User Pool Id"
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
+  CognitoUserPoolArn:
+    Description: "The Cognito User Pool Arn"
+    Value: !GetAtt Cognito.Outputs.CognitoUserPoolArn
   CognitoClientId:
     Description: "The Cognito Client Id"
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
