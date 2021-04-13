@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -184,6 +185,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("john smith", result.get("name"));
     assertEquals("test@formkiq.com", result.get("userId"));
     assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
+    assertNotNull(result.get("ttl"));
     
     WebhooksService webhookService = getAwsServices().webhookService();
     DynamicObject obj = webhookService.findWebhook(null, id);
@@ -381,6 +383,88 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals("429.0", String.valueOf(m.get("statusCode")));
       assertEquals("{\"message\":\"Reached max number of webhooks\"}", m.get("body").toString());
     }
+  }
+
+  /**
+   * POST /webhooks with Config WEBHOOK_TIME_TO_LIVE.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks05() throws Exception {
+    // given
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl",
+        "http://localhost:8080");
+
+    ApiGatewayRequestEvent eventPost = toRequestEvent("/request-post-webhooks01.json");
+    eventPost.setBody("{\"name\":\"john smith\"}");
+    
+    ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks01.json");
+
+    String siteId = null;
+    String ttl = "87400";
+    getAwsServices().configService().save(siteId,
+        new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
+        
+    // when
+    String responsePost = handleRequest(eventPost);
+    newOutstream();
+    final String response = handleRequest(event);
+    
+    // then
+    Map<String, String> m = GsonUtil.getInstance().fromJson(responsePost, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    
+    final String id = verifyPostWebhooks05(result);
+    
+    m = GsonUtil.getInstance().fromJson(response, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+
+    result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    List<Map<String, Object>> list = (List<Map<String, Object>>) result.get("webhooks");
+    assertEquals(1, list.size());
+    verifyPostWebhooks05(list.get(0));
+    
+    WebhooksService webhookService = getAwsServices().webhookService();
+    DynamicObject obj = webhookService.findWebhook(null, id);
+    
+    long epoch = Long.parseLong(obj.getString("TimeToLive"));
+    ZonedDateTime ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
+    
+    // given
+    ttl = "-87400";
+    getAwsServices().configService().save(siteId,
+        new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
+    
+    // when
+    newOutstream();
+    responsePost = handleRequest(eventPost);
+    
+    // then
+    m = GsonUtil.getInstance().fromJson(responsePost, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals("false", result.get("enabled"));
+    assertNotNull(result.get("ttl"));
+  }
+
+  private String verifyPostWebhooks05(final Map<String, Object> result) {
+    assertEquals("default", result.get("siteId"));
+    assertNotNull(result.get("id"));
+    final String id = result.get("id").toString();
+
+    assertNotNull(result.get("insertedDate"));
+    assertEquals("john smith", result.get("name"));
+    assertEquals("test@formkiq.com", result.get("userId"));
+    assertEquals("true", result.get("enabled"));
+    assertNotNull(result.get("ttl"));
+    assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
+    
+    return id;
   }
   
   private void verifyUrl(final String siteId, final String id, final Map<String, Object> result) {

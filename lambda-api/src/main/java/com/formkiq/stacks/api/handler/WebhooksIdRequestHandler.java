@@ -92,7 +92,8 @@ public class WebhooksIdRequestHandler
     map.put("insertedDate", m.getString("inserteddate"));
     map.put("userId", m.getString("userId"));
     map.put("enabled", m.getString("enabled"));
-        
+    map.put("ttl", m.getString("ttl"));
+
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 

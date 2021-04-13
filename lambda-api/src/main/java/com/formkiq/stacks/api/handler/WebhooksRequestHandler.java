@@ -22,6 +22,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -47,28 +48,6 @@ import com.formkiq.stacks.dynamodb.DocumentTag;
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
-
-  private String addTags(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
-      final String siteId, final DynamicObject o) {
-    
-    Date ttlDate = getTtlDate(o);
-
-    String name = o.getString("name");
-    String userId = getCallingCognitoUsername(event);
-    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, true);
-
-    if (o.containsKey("tags")) {
-      List<DynamicObject> dtags = o.getList("tags");
-
-      Date date = new Date();
-      Collection<DocumentTag> tags = dtags.stream()
-          .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
-          .collect(Collectors.toList());
-      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
-    }
-    
-    return id;
-  }
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
@@ -96,6 +75,7 @@ public class WebhooksRequestHandler
       map.put("insertedDate", m.getString("inserteddate"));
       map.put("userId", m.getString("userId"));
       map.put("enabled", m.getString("enabled"));
+      map.put("ttl", m.getString("ttl"));
       
       return map;
     }).collect(Collectors.toList());
@@ -108,13 +88,21 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
-  private Date getTtlDate(final DynamicObject o) {
+  private Date getTtlDate(final AwsServiceCache awsservice, final String siteId,
+      final DynamicObject o) {
     Date ttlDate = null;
     String ttl = o.getString("ttl");
+
+    if (ttl == null) {
+      DynamicObject config = awsservice.config(siteId);
+      ttl = config.getString(WEBHOOK_TIME_TO_LIVE);
+    }
+    
     if (ttl != null) {
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
       ttlDate = Date.from(now.toInstant());
     }
+    
     return ttlDate;
   }
 
@@ -152,7 +140,7 @@ public class WebhooksRequestHandler
 
     validatePost(awsservice, siteId, o);
 
-    String id = addTags(event, awsservice, siteId, o);
+    String id = saveWebhook(event, awsservice, siteId, o);
 
     return response(logger, event, authorizer, awsservice, id);
   }
@@ -167,6 +155,28 @@ public class WebhooksRequestHandler
     ApiRequestHandlerResponse response = h.get(logger, event, authorizer, awsservice);
 
     return response;
+  }
+
+  private String saveWebhook(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
+      final String siteId, final DynamicObject o) {
+    
+    Date ttlDate = getTtlDate(awsservice, siteId, o);
+
+    String name = o.getString("name");
+    String userId = getCallingCognitoUsername(event);
+    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, true);
+
+    if (o.containsKey("tags")) {
+      List<DynamicObject> dtags = o.getList("tags");
+
+      Date date = new Date();
+      Collection<DocumentTag> tags = dtags.stream()
+          .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
+          .collect(Collectors.toList());
+      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
+    }
+    
+    return id;
   }
 
   private void validatePost(final AwsServiceCache awsservice, final String siteId,

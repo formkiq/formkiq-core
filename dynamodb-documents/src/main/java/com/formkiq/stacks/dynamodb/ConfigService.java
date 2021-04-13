@@ -33,6 +33,8 @@ public interface ConfigService {
   String MAX_DOCUMENTS = "MaxDocuments";
   /** Max Document Size. */
   String MAX_DOCUMENT_SIZE_BYTES = "MaxContentLengthBytes";
+  /** Webhook Time To Live Key. */
+  String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
 
   /**
    * Delete Config.

@@ -168,9 +168,17 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
         this.dynamoDB.getItem(
             GetItemRequest.builder().tableName(this.documentTableName).key(pkvalues).build());
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
-    return !response.item().isEmpty() ? transform.apply(response.item()) : null;
+    
+    DynamicObject ob = null;
+    
+    if (!response.item().isEmpty()) {
+      ob = transform.apply(response.item());
+      updateWebhookTimeToLive(ob);
+    }
+    
+    return ob;
   }
-  
+
   @Override
   public List<DynamicObject> findWebhooks(final String siteId) {
     Map<String, AttributeValue> key = queryKeys(keysGeneric(siteId, PREFIX_WEBHOOKS, null));
@@ -185,6 +193,8 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Collection<? extends Map<String, AttributeValue>> keys = result.items().stream()
         .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());    
         
+    List<DynamicObject> retlist = Collections.emptyList();
+    
     if (!keys.isEmpty()) {
       
       Map<String, KeysAndAttributes> items =
@@ -199,12 +209,13 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
       AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
-      return list.stream().map(m -> transform.apply(m)).collect(Collectors.toList());
+      retlist = list.stream().map(m -> transform.apply(m)).collect(Collectors.toList());
+      retlist.forEach(ob -> updateWebhookTimeToLive(ob));
     }
     
-    return Collections.emptyList();
+    return retlist;
   }
-
+  
   @Override
   public String saveWebhook(final String siteId, final String name, final String userId,
       final Date ttl, final boolean enabled) {
@@ -285,6 +296,19 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     if (!values.isEmpty()) {
       this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
           .key(key).attributeUpdates(values).build());
+    }
+  }
+
+  private void updateWebhookTimeToLive(final DynamicObject ob) {
+    String epoch = ob.getString("TimeToLive");
+    
+    if (epoch != null) {
+      long dateL = Long.parseLong(epoch) * MILLISECONDS;
+      if (new Date().getTime() > dateL) {
+        ob.put("enabled", "false");
+      }
+      
+      ob.put("ttl", this.df.format(new Date(dateL)));
     }
   }
 }

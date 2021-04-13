@@ -41,8 +41,8 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 public class ConfigServiceImpl implements ConfigService, DbKeys {
 
   /** Config Keys. */
-  private static final List<String> KEYS =
-      Arrays.asList(DOCUMENT_TIME_TO_LIVE, MAX_WEBHOOKS, MAX_DOCUMENTS, MAX_DOCUMENT_SIZE_BYTES);
+  private static final List<String> KEYS = Arrays.asList(DOCUMENT_TIME_TO_LIVE, MAX_WEBHOOKS,
+      MAX_DOCUMENTS, MAX_DOCUMENT_SIZE_BYTES, WEBHOOK_TIME_TO_LIVE);
 
   /** Documents Table Name. */
   private String documentTableName;
