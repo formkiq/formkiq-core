@@ -103,15 +103,15 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
-      AutoPublishCodeSha256: 65A093D040AEC3F4D99A7783CECF7EC275B8B584AA4DCD51231AD4BDF39A1B01
+      AutoPublishCodeSha256: 096E04D3B9D1ED00765ADAFD9448BAF0DE370B0BBDC5B7E0F7342B6F2B0833CC
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
           DEBUG: false
-          DOCUMENTS_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
-          CACHE_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName:1}}"
-          DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}"
-          STAGE_DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}"
+          DOCUMENTS_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          CACHE_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+          DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
           ENABLE_PUBLIC_URLS: !Sub "${EnablePublicUrls}"
           FORMKIQ_TYPE: !Ref FormKiQType
       Role: !GetAtt [DocumentsApiRequestsRole, Arn]
@@ -215,16 +215,16 @@ Resources:
               Resource:
               - !Sub
                 - 'arn:aws:s3:::${Bucket}'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}" }
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}" }
               - !Sub
                 - 'arn:aws:s3:::${Bucket}/*'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket:1}}" }
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}" }
               - !Sub
                 - 'arn:aws:s3:::${Bucket}'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}" }
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}" }
               - !Sub
                 - 'arn:aws:s3:::${Bucket}/*'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket:1}}" }
+                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}" }
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
@@ -235,19 +235,19 @@ Resources:
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Resource: 
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}"
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
             - Effect: Allow
               Action:
               - dynamodb:Query
               - dynamodb:Scan
               Resource:
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName:1}}/index/*"
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
             - Effect: Allow
               Action:
               - dynamodb:Get*
               - dynamodb:Put*
               Resource: 
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName:1}}"
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
             - Effect: Allow
               Action:
               - ssm:GetParameter

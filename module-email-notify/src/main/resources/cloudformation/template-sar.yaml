@@ -89,7 +89,7 @@ Resources:
         Variables:
           DEBUG: false
           EMAIL_TOPIC_ARN: !Ref DocumentsEmailNotification
-          CONSOLE_URL: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url:1}}" 
+          CONSOLE_URL: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url}}" 
       Role: !GetAtt [EmailNotifyRole, Arn]
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"
