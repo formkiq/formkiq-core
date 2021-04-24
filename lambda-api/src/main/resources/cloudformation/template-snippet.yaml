@@ -59,25 +59,25 @@ Parameters:
     
   PasswordRequireLowercase:
     Description: Password requires at least one lowercase letter.
-    Default: "true"
+    Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireNumbers:
     Description: Password requires at least one number.
-    Default: "true"
+    Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireSymbols:
     Description: Password requires at least one symbol.
-    Default: "true"
+    Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
   PasswordRequireUppercase:
     Description: Password requires at least one uppercase letter.
-    Default: "true"
+    Default: "false"
     Type: String
     AllowedValues: ["true", "false"]    
 
