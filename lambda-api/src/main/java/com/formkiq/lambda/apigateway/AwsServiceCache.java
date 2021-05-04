@@ -93,6 +93,8 @@ public class AwsServiceCache {
   private boolean debug;
   /** Documents S3 Bucket. */
   private String documentsS3bucket;
+  /** Web Socket Sqs Url. */
+  private String websocketSqsUrl;
 
   /**
    * constructor.
@@ -374,5 +376,25 @@ public class AwsServiceCache {
       this.webhookService = new WebhooksServiceImpl(this.dbConnection, this.dbDocumentsTable);
     }
     return this.webhookService;
+  }
+
+  /**
+   * Get Web Socket Sqs Url.
+   * 
+   * @return {@link String}
+   */
+  public String websocketSqsUrl() {
+    return this.websocketSqsUrl;
+  }
+  
+  /**
+   * Set Web Socket Sqs Url.
+   * 
+   * @param url {@link String}
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache websocketSqsUrl(final String url) {
+    this.websocketSqsUrl = url;
+    return this;
   }
 }

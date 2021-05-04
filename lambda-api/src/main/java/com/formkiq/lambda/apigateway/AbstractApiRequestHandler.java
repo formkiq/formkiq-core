@@ -84,7 +84,8 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
         .dbConnection(builder, map.get("DOCUMENTS_TABLE"), map.get("CACHE_TABLE")).s3Connection(s3)
         .sqsConnection(sqs).ssmConnection(ssm).stages3bucket(map.get("STAGE_DOCUMENTS_S3_BUCKET"))
         .debug("true".equals(map.get("DEBUG"))).appEnvironment(map.get("APP_ENVIRONMENT"))
-        .formkiqType(map.get("FORMKIQ_TYPE")).documents3bucket(map.get("DOCUMENTS_S3_BUCKET"));
+        .formkiqType(map.get("FORMKIQ_TYPE")).documents3bucket(map.get("DOCUMENTS_S3_BUCKET"))
+        .websocketSqsUrl(map.get("WEBSOCKET_SQS_URL"));
 
     awsServices.init();
   }
@@ -200,6 +201,7 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
     try {
 
       ApiRequestHandlerResponse object = processRequest(logger, event, authorizer);
+      processResponse(event, object);
       buildResponse(logger, output, object.getStatus(), object.getHeaders(), object.getResponse());
 
     } catch (NotFoundException e) {
@@ -222,6 +224,31 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
 
       buildResponse(logger, output, SC_ERROR, Collections.emptyMap(),
           new ApiResponseError("Internal Server Error"));
+    }
+  }
+
+  /**
+   * Processes the Response.
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param resp {@link ApiRequestHandlerResponse}
+   */
+  private void processResponse(final ApiGatewayRequestEvent event,
+      final ApiRequestHandlerResponse resp) {
+
+    String webnotify = event.getQueryStringParameter("webnotify");
+    
+    if ("true".equals(webnotify)) {
+      AwsServiceCache aws = getAwsServices();
+      switch (resp.getStatus()) {
+        case SC_OK:
+        case SC_CREATED:
+        case SC_ACCEPTED:
+          aws.sqsService().sendMessage(aws.websocketSqsUrl(), event.getBody());
+          break;
+
+        default:
+          break;
+      }
     }
   }
 

@@ -6,7 +6,7 @@ Resources:
         openapi: "3.0.1"
         info:
           title: 
-            Fn::Sub: "FormKiQ HTTP API - ${AppEnvironment}"
+            Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
           version: "1.5.8"
         paths:

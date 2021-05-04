@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - Websocket API
+        
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  CognitoUserPoolId:
+    Type: String
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+    
+  CognitoUserPoolClientId:
+    Type: String
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+  
+  StageName:
+    Type: String
+    Description: The Stage Name
+    Default: prod
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+    
+Resources:
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${AWS::StackName} - ${AppEnvironment}"
+      Description: !Sub "FormKiQ WebSocket API - ${AppEnvironment}"
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"      
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      OperationName: ConnectRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref ConnectInteg
+          
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      OperationName: DisconnectRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref ConnectInteg
+
+#  MessageRoute:
+#    Type: AWS::ApiGatewayV2::Route
+#    Properties:
+#      ApiId: !Ref WebSocketApi
+#      RouteKey: message
+#      AuthorizationType: NONE
+#      OperationName: MessageRoute
+#      Target: !Join
+#        - '/'
+#        - - 'integrations'
+#          - !Ref ConnectInteg
+          
+  ConnectInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: 
+        Fn::Sub:
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations
+
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+    - ConnectRoute
+    #- MessageRoute
+    - DisconnectRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+      
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: !Ref StageName
+      Description: Prod Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref WebSocketApi
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}" 
+        
+  OnConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiFunction
+      Principal: apigateway.amazonaws.com
+      
+  SqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 600
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
+
+  SqsQueueUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SQS URL for processing Websocket Messages"
+      Name: !Sub "/formkiq/${AppEnvironment}/sqs/WebsocketUrl"
+      Type: String
+      Value: !Ref SqsQueue
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+  WebsocketApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The URL for the Websocket API endpoint"
+      Name: !Sub "/formkiq/${AppEnvironment}/api/WebsocketUrl"
+      Type: String
+      Value: !Sub "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+          
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 600
+      MemorySize: 512
+      CodeUri: ./websocket-api.zip
+      Environment:
+        Variables:
+          API_URL: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          REGION: !Ref AWS::Region
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
+          COGNITO_USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClientId
+          WEB_CONNECTIONS_TABLE: !Ref WebConnections
+          DEBUG: false
+      Role: !GetAtt [ApiFunctionRole, Arn]
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+      Events:
+        CreateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SqsQueue.Arn
+            BatchSize: 10
+      
+  ApiFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+        - Key: StackName
+          Value: !Sub "${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: ApiFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              Resource:
+              - !GetAtt SqsQueue.Arn
+            - Effect: Allow
+              Action:
+              - execute-api:ManageConnections
+              Resource:
+              - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              Resource: 
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
+                            
+  WebConnections:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-webconnections"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE            
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+              
+Outputs:
+  WebsocketApiUrl:
+    Description: "The URL for the Websocket API endpoint"
+    Value: !Ref WebsocketApiUrlParameter
+  SqsQueueUrl:
+    Description: "SQS URL for processing Websocket Messages"
+    Value: !Ref SqsQueue
+    

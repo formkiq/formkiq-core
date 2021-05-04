@@ -65,6 +65,8 @@ import software.amazon.awssdk.utils.IoUtils;
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
+  /** SQS Websockets Queue. */
+  private static final String SQS_WEBSOCKET_QUEUE = "websockets";
   /** SQS Document Formats Queue. */
   private static final String SQS_DOCUMENT_FORMATS_QUEUE = "documentFormats";
   /** {@link String}. */
@@ -89,6 +91,8 @@ public abstract class AbstractRequestHandler {
   private static Region awsRegion;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentFormatsQueueUrl;
+  /** SQS Websocket Queue Url. */
+  private static String sqsWebsocketQueueUrl;
 
   /**
    * Before Class.
@@ -143,6 +147,10 @@ public abstract class AbstractRequestHandler {
     if (!sqsservice.exists(SQS_DOCUMENT_FORMATS_QUEUE)) {
       sqsDocumentFormatsQueueUrl = sqsservice.createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
     }
+    
+    if (!sqsservice.exists(SQS_WEBSOCKET_QUEUE)) {
+      sqsWebsocketQueueUrl = sqsservice.createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
+    }
 
     new SsmServiceImpl(ssmConnection).putParameter("/formkiq/" + appenvironment + "/version",
         "1.1");
@@ -175,18 +183,27 @@ public abstract class AbstractRequestHandler {
     return sqsDocumentFormatsQueueUrl;
   }
 
+  /**
+   * Get SqsWebsocketQueueUrl.
+   * @return {@link String}
+   */
+  public static String getSqsWebsocketQueueUrl() {
+    return sqsWebsocketQueueUrl;
+  }
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
+
   /** {@link CoreRequestHandler}. */
   private CoreRequestHandler handler;
+
   /** {@link ByteArrayOutputStream}. */
   private ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
 
   /** {@link LambdaLogger}. */
   private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
+
   /** {@link DynamoDbHelper}. */
   private DynamoDbHelper dbhelper;
 
@@ -273,6 +290,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("SQS_DOCUMENT_FORMATS", sqsDocumentFormatsQueueUrl);
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
+    this.map.put("WEBSOCKET_SQS_URL", sqsWebsocketQueueUrl);
 
     createApiRequestHandler(this.map);
 
@@ -498,6 +516,7 @@ public abstract class AbstractRequestHandler {
     this.awsServices.ssmService().putParameter(name, value);
   }
 
+
   /**
    * Remove SSM Parameter.
    * 
@@ -533,7 +552,6 @@ public abstract class AbstractRequestHandler {
 
     claims.put("cognito:groups", cognitoGroups);
   }
-
 
   /**
    * Set Path Parameter.

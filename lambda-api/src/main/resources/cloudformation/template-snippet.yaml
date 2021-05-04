@@ -91,6 +91,11 @@ Parameters:
     Description: The Cognito User Pool Client Id
     AllowedPattern: ".+"
 
+  WebsocketSqsQueueUrl:
+    Type: String
+    Description: "SQS URL for processing Websocket Messages"
+    AllowedPattern: ".+"
+    
 Resources:        
         
   DocumentsApiRequests:
@@ -103,7 +108,7 @@ Resources:
       Timeout: !Sub "${LambdaTimeout}"
       MemorySize: !Sub "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
-      AutoPublishCodeSha256: 096E04D3B9D1ED00765ADAFD9448BAF0DE370B0BBDC5B7E0F7342B6F2B0833CC
+      AutoPublishCodeSha256: EB2006813E6C9884361832B29301D2F643329A590A1BD02B10C96DA83F35471E
       Environment:
         Variables:
           APP_ENVIRONMENT: !Sub "${AppEnvironment}"
@@ -114,6 +119,7 @@ Resources:
           STAGE_DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
           ENABLE_PUBLIC_URLS: !Sub "${EnablePublicUrls}"
           FORMKIQ_TYPE: !Ref FormKiQType
+          WEBSOCKET_SQS_URL: !Ref WebsocketSqsQueueUrl
       Role: !GetAtt [DocumentsApiRequestsRole, Arn]
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"

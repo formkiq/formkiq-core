@@ -161,6 +161,7 @@ Resources:
     Type: AWS::Serverless::Application
     DependsOn:
       - Cognito
+      - WebsocketApi
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -173,6 +174,7 @@ Resources:
         PasswordRequireUppercase: !Ref PasswordRequireUppercase
         CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
         CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+        WebsocketSqsQueueUrl: !GetAtt WebsocketApi.Outputs.SqsQueueUrl
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
@@ -211,6 +213,21 @@ Resources:
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
 
+  WebsocketApi:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - Cognito
+    Properties:
+      Location: websocket-api/template.yaml
+      Parameters:
+        AppEnvironment: !Ref AppEnvironment
+        CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod

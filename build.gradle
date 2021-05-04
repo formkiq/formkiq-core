@@ -152,6 +152,7 @@ task buildDistribution(type: Copy) {
     from 'lambda-api/build/distributions/formkiq-core'
     from 'lambda-s3/build/distributions/formkiq-core'
     from 'module-email-notify/build/distributions/formkiq-core'
+    from 'websocket-api/build/distributions/formkiq-core'
     into "${buildDir}/distributions/formkiq-core"
 }
 
@@ -162,28 +163,15 @@ task assembleTemplate {
 		exec {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/* ${buildDir}/distributions/formkiq-core/sam/"
 		}
-		//exec {
-			//commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar-snippet.yaml ${buildDir}/template-sar-snippet.yaml"
-		//}
 		exec {
 			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
 		}
 		exec {
 			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
 		}		
-		//exec {
-			//commandLine "bash", "-c", "cp ${buildDir}/template.yaml ${buildDir}/distributions/formkiq-core/sam/template.yaml"
-		//}
 		exec {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"
-		}
-		//exec {
-			//commandLine "bash", "-c", "yq m --overwrite ${buildDir}/template.yaml ${buildDir}/template-sar-snippet.yaml > ${buildDir}/template-sar.yaml"
-		//}
-		// build SAR distribution
-		//exec {
-			//commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml"
-		//}		
+		}	
 	}
 }
 
