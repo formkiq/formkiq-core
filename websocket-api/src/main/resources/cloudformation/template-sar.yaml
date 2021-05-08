@@ -271,7 +271,7 @@ Resources:
 Outputs:
   WebsocketApiUrl:
     Description: "The URL for the Websocket API endpoint"
-    Value: !Ref WebsocketApiUrlParameter
+    Value: !GetAtt WebsocketApiUrlParameter.Value
   SqsQueueUrl:
     Description: "SQS URL for processing Websocket Messages"
     Value: !Ref SqsQueue
