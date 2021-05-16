@@ -6,11 +6,18 @@ const {
   errors: { JwtVerificationError, JwksNoMatchingKeyError },
 } = require('@southlane/cognito-jwt-verifier');
 
-const verifier = verifierFactory({
+const verifierId = verifierFactory({
   region: process.env.REGION,
   userPoolId: process.env.COGNITO_USER_POOL_ID,
   appClientId: process.env.COGNITO_USER_POOL_CLIENT_ID,
   tokenType: 'id'
+});
+
+const verifierAccess = verifierFactory({
+  region: process.env.REGION,
+  userPoolId: process.env.COGNITO_USER_POOL_ID,
+  appClientId: process.env.COGNITO_USER_POOL_CLIENT_ID,
+  tokenType: 'access'
 });
 
 const api = new AWS.ApiGatewayManagementApi({
@@ -137,8 +144,14 @@ async function disconnect(event) {
 }
 
 async function verifyToken(event) {
-  let authorization = event.headers.Authentication;
-  return verifier.verify(authorization);
+  var authentication = event.headers.Authentication;
+  if (authentication == null) {
+    authentication = event.queryStringParameters.Authentication;
+  }
+
+  return verifierId.verify(authentication).catch((err) => {
+    return verifierAccess.verify(authentication);
+  });
 }
 
 async function replyToMessage(response, connectionId) {

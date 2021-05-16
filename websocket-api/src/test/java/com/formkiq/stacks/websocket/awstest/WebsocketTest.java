@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
@@ -152,49 +153,59 @@ public class WebsocketTest {
    */
   @Test(timeout = TIMEOUT)
   public void testConnectValidAuthentication01() throws Exception {
-    // given
-    final int sleep = 500;
-    WebSocketClientImpl client = new WebSocketClientImpl(new URI(websocketUrl));
-    client.addHeader("Authentication", token.idToken());
-     
-    // when
-    client.connectBlocking();
-    
-    // then
-    assertTrue(client.isOnOpen());
-    assertFalse(client.isOnClose());
-    assertEquals(0, client.getMessages().size());
-    assertEquals(0, client.getErrors().size());
-    assertEquals("-1", String.valueOf(client.getCloseCode()));
-       
-    // given
-    
-    // when
-    sqsService.sendMessage(websocketSqsUrl,
-        "{\"siteId\":\"" + GROUP + "\",\"message\":\"this is a test\"}");
-    
-    // then
-    while (true) {
-      if (!client.getMessages().isEmpty()) {
-        assertEquals(1, client.getMessages().size());
-        assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
-        break;
-      }
-      
-      Thread.sleep(sleep);
-    }
-    
-    // given    
-    // when
-    client.closeBlocking();
 
-    // then
-    assertTrue(client.isOnOpen());
-    assertTrue(client.isOnClose());
-    assertEquals(1, client.getMessages().size());
-    assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
-    assertEquals(0, client.getErrors().size());
-    assertEquals("1000", String.valueOf(client.getCloseCode()));
+    for (Boolean useHeader : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
+      // given
+      final int sleep = 500;
+      WebSocketClientImpl client = null;
+      
+      if (useHeader.booleanValue()) {
+        client = new WebSocketClientImpl(new URI(websocketUrl));
+        client.addHeader("Authentication", token.idToken());
+      } else {
+        client =
+            new WebSocketClientImpl(new URI(websocketUrl + "?Authentication=" + token.idToken()));
+      }
+
+      // when
+      client.connectBlocking();
+
+      // then
+      assertTrue(client.isOnOpen());
+      assertFalse(client.isOnClose());
+      assertEquals(0, client.getMessages().size());
+      assertEquals(0, client.getErrors().size());
+      assertEquals("-1", String.valueOf(client.getCloseCode()));
+
+      // given
+
+      // when
+      sqsService.sendMessage(websocketSqsUrl,
+          "{\"siteId\":\"" + GROUP + "\",\"message\":\"this is a test\"}");
+
+      // then
+      while (true) {
+        if (!client.getMessages().isEmpty()) {
+          assertEquals(1, client.getMessages().size());
+          assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
+          break;
+        }
+
+        Thread.sleep(sleep);
+      }
+
+      // given
+      // when
+      client.closeBlocking();
+
+      // then
+      assertTrue(client.isOnOpen());
+      assertTrue(client.isOnClose());
+      assertEquals(1, client.getMessages().size());
+      assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
+      assertEquals(0, client.getErrors().size());
+      assertEquals("1000", String.valueOf(client.getCloseCode()));
+    }
   }
   
   /**
