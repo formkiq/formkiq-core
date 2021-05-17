@@ -143,7 +143,19 @@ Resources:
         Application: !Sub "FormKiQ ${FormKiQType}"
         AppEnvironment: !Sub "${AppEnvironment}"
         StackName: !Sub "${AWS::StackName}"
-        
+
+  SqsQueueArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SQS Arn for processing Websocket Messages"
+      Name: !Sub "/formkiq/${AppEnvironment}/sqs/WebsocketArn"
+      Type: String
+      Value: !GetAtt SqsQueue.Arn
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+                
   WebsocketApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -164,7 +176,7 @@ Resources:
       Timeout: 600
       MemorySize: 512
       CodeUri: ./websocket-api.zip
-      AutoPublishCodeSha256: 22971EE424D1C84AFC61F29DB4BD61068DCA5A0ED81D3953E511B949EAC313F9
+      AutoPublishCodeSha256: 0F7254E841FFD8F84EF2F9938B2B29040FD0C4E413030B894F58DDCA0343E253
       Environment:
         Variables:
           API_URL: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"

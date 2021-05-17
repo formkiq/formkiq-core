@@ -22,11 +22,18 @@ package com.formkiq.stacks.websocket.awstest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
@@ -36,6 +43,12 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
+import com.formkiq.stacks.client.FormKiqClientConnection;
+import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
+import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
@@ -48,6 +61,9 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
  */
 public class WebsocketTest {
   
+  /** {@link Gson}. */
+  private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
+
   /** Test Timeout. */
   private static final int TIMEOUT = 15000;
   /** Cognito User Email. */
@@ -58,6 +74,8 @@ public class WebsocketTest {
   private static final String USER_TEMP_PASSWORD = "TEMPORARY_PASSWORd1!";
   /** Cognito User Password. */
   private static final String USER_PASSWORD = USER_TEMP_PASSWORD + "!";
+  /** FormKiQ Http API Client. */
+  private static FormKiqClientV1 httpClient;
   
   /** WebSocket SQS Url. */
   private static String websocketSqsUrl;
@@ -69,6 +87,32 @@ public class WebsocketTest {
   private static AuthenticationResultType token;
   /** {@link SqsService}. */
   private static SqsService sqsService;
+  /**
+   * Add User and/or Login Cognito.
+   * 
+   * @param username {@link String}
+   * @param groupName {@link String}
+   */
+  private static void addAndLoginCognito(final String username, final String groupName) {
+    
+    if (!adminCognitoService.isUserExists(username)) {
+
+      adminCognitoService.addUser(username, USER_TEMP_PASSWORD);
+      adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
+
+      if (groupName != null) {
+        adminCognitoService.addGroup(groupName);
+        adminCognitoService.addUserToGroup(username, groupName);
+      }
+      
+    } else {
+
+      AdminGetUserResponse user = adminCognitoService.getUser(username);
+      if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
+        adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
+      }
+    }
+  }
   
   /**
    * beforeclass.
@@ -117,33 +161,102 @@ public class WebsocketTest {
     
     addAndLoginCognito(USER_EMAIL, GROUP);
     token = adminCognitoService.login(USER_EMAIL, USER_PASSWORD);
+    
+    String rootHttpUrl = ssmService.getParameterValue("/formkiq/" + app + "/api/DocumentsHttpUrl");
+    
+    FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)
+        .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
+        .header("Access-Control-Request-Method", Arrays.asList("GET"));
+    
+    httpClient = new FormKiqClientV1(connection);
+  }
+  
+  /** {@link HttpClient}. */
+  private HttpClient http = HttpClient.newHttpClient();
+  
+  /**
+   * Add Document Tag.
+   * @param client {@link FormKiqClientV1}
+   * @param documentId {@link String}
+   * @throws IOException IOException 
+   * @throws InterruptedException InterruptedException
+   */
+  private void addDocumentTag(final FormKiqClientV1 client, final String documentId)
+      throws IOException, InterruptedException {
+    AddDocumentTagRequest request = new AddDocumentTagRequest().documentId(documentId)
+        .tagKey("test").tagValue("somevalue").webnotify(true);
+    HttpResponse<String> response = client.addDocumentTagAsHttpResponse(request);
+    assertEquals("201", String.valueOf(response.statusCode()));
   }
   
   /**
-   * Add User and/or Login Cognito.
+   * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
-   * @param username {@link String}
-   * @param groupName {@link String}
+   * @param client {@link FormKiqClientV1}
+   * @return {@link String}
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   * @throws InterruptedException InterruptedException
    */
-  private static void addAndLoginCognito(final String username, final String groupName) {
+  @SuppressWarnings("unchecked")
+  private String addDocumentWithoutFile(final FormKiqClientV1 client)
+      throws IOException, URISyntaxException, InterruptedException {
+    // given
+    final int status = 200;
+    final String content = "sample content";
+    GetDocumentUploadRequest request =
+        new GetDocumentUploadRequest().contentLength(content.length());
+
+    // when
+    HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+
+    // then
+    assertEquals(status, response.statusCode());
+
+    Map<String, Object> map = GSON.fromJson(response.body(), Map.class);
+    assertNotNull(map.get("documentId"));
+    assertNotNull(map.get("url"));
+
+    String s3url = map.get("url").toString();
+    response =
+        this.http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", "text/plain")
+            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
+
+    assertEquals(status, response.statusCode());
+
+    return map.get("documentId").toString();
+  }
+  
+  /**
+   * Test Connecting with missing Authentication header.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testConnectMissingAuthenticationHeader() throws Exception {
+    // given
+    WebSocketClientImpl client = new WebSocketClientImpl(new URI(websocketUrl));
     
-    if (!adminCognitoService.isUserExists(username)) {
+    // when
+    client.connectBlocking();
+    
+    // then
+    assertFalse(client.isOnOpen());
+    assertTrue(client.isOnClose());
+    assertEquals(0, client.getMessages().size());
+    assertEquals(0, client.getErrors().size());
+    assertEquals("1002", String.valueOf(client.getCloseCode()));
+    
+    // given    
+    // when
+    client.closeBlocking();
 
-      adminCognitoService.addUser(username, USER_TEMP_PASSWORD);
-      adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
-
-      if (groupName != null) {
-        adminCognitoService.addGroup(groupName);
-        adminCognitoService.addUserToGroup(username, groupName);
-      }
-      
-    } else {
-
-      AdminGetUserResponse user = adminCognitoService.getUser(username);
-      if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
-        adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
-      }
-    }
+    // then
+    assertFalse(client.isOnOpen());
+    assertTrue(client.isOnClose());
+    assertEquals(0, client.getMessages().size());
+    assertEquals(0, client.getErrors().size());
+    assertEquals("1002", String.valueOf(client.getCloseCode()));
   }
   
   /**
@@ -209,34 +322,33 @@ public class WebsocketTest {
   }
   
   /**
-   * Test Connecting with missing Authentication header.
-   * 
+   * Test Receiving Web Notify.
    * @throws Exception Exception
    */
-  @Test
-  public void testConnectMissingAuthenticationHeader() throws Exception {
+  @Test(timeout = TIMEOUT)
+  public void testWebNotify01() throws Exception {
     // given
+    final int sleep = 500;
     WebSocketClientImpl client = new WebSocketClientImpl(new URI(websocketUrl));
-    
-    // when
+    client.addHeader("Authentication", token.idToken());
     client.connectBlocking();
-    
-    // then
-    assertFalse(client.isOnOpen());
-    assertTrue(client.isOnClose());
-    assertEquals(0, client.getMessages().size());
-    assertEquals(0, client.getErrors().size());
-    assertEquals("1002", String.valueOf(client.getCloseCode()));
-    
-    // given    
-    // when
-    client.closeBlocking();
 
+    // when
+    String documentId = addDocumentWithoutFile(httpClient);
+    addDocumentTag(httpClient, documentId);
+        
     // then
-    assertFalse(client.isOnOpen());
-    assertTrue(client.isOnClose());
-    assertEquals(0, client.getMessages().size());
+    while (true) {
+      if (!client.getMessages().isEmpty()) {
+        assertEquals(1, client.getMessages().size());
+        assertEquals("{\"message\":\"{\\\"value\\\":\\\"somevalue\\\",\\\"key\\\":\\\"test\\\"}\"}",
+            client.getMessages().get(0));
+        break;
+      }
+      
+      Thread.sleep(sleep);
+    }
+    
     assertEquals(0, client.getErrors().size());
-    assertEquals("1002", String.valueOf(client.getCloseCode()));
   }
 }

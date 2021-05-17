@@ -476,7 +476,15 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       }
       
       assertEquals(1, msgs.messages().size());
-      assertEquals("{\"key\": \"category\",\"value\": \"job\"}", msgs.messages().get(0).body());
+      if (siteId != null) {
+        assertEquals(
+            "{\"siteId\":\"" + siteId
+                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+            msgs.messages().get(0).body());
+      } else {
+        assertEquals("{\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+            msgs.messages().get(0).body());
+      }
     }
   }
 

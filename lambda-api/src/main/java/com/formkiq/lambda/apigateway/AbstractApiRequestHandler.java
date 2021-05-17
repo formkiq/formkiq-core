@@ -201,7 +201,7 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
     try {
 
       ApiRequestHandlerResponse object = processRequest(logger, event, authorizer);
-      processResponse(event, object);
+      processResponse(authorizer, event, object);
       buildResponse(logger, output, object.getStatus(), object.getHeaders(), object.getResponse());
 
     } catch (NotFoundException e) {
@@ -229,21 +229,33 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
 
   /**
    * Processes the Response.
+   * @param authorizer {@link ApiAuthorizer}
    * @param event {@link ApiGatewayRequestEvent}
    * @param resp {@link ApiRequestHandlerResponse}
+   * @throws BadException BadException
    */
-  private void processResponse(final ApiGatewayRequestEvent event,
-      final ApiRequestHandlerResponse resp) {
+  private void processResponse(final ApiAuthorizer authorizer, final ApiGatewayRequestEvent event,
+      final ApiRequestHandlerResponse resp) throws BadException {
 
     String webnotify = event.getQueryStringParameter("webnotify");
     
     if ("true".equals(webnotify)) {
+      
       AwsServiceCache aws = getAwsServices();
       switch (resp.getStatus()) {
         case SC_OK:
         case SC_CREATED:
         case SC_ACCEPTED:
-          aws.sqsService().sendMessage(aws.websocketSqsUrl(), event.getBody());
+          String siteId = authorizer.getSiteId();
+          String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+          Map<String, String> m = new HashMap<>();
+          if (siteId != null) {
+            m.put("siteId", siteId);
+          }
+          m.put("message", body);
+    
+          String json = this.gson.toJson(m);
+          aws.sqsService().sendMessage(aws.websocketSqsUrl(), json);
           break;
 
         default:

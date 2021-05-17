@@ -166,7 +166,7 @@ public interface ApiGatewayRequestEventUtil {
    * @return {@link String}
    * @throws BadException BadException
    */
-  default String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
+  static String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
     String body = event.getBody();
     if (body == null) {
       throw new BadException("request body is required");

@@ -46,10 +46,12 @@ exports.handler = async (event) => {
 
         let promises = [];
         event.Records.forEach(r => {
-          let obj = JSON.parse(r.body);
-          if (obj.siteId != null && obj.message != null) {
-            promises.push(processMessages(obj.siteId, obj.message));
-          }
+          try {
+            let obj = JSON.parse(r.body);
+            if (obj.siteId != null && obj.message != null) {
+              promises.push(processMessages(obj.siteId, obj.message));
+            }
+          } catch (e) {}
         });
         
         return Promise.all(promises).then(() => {
