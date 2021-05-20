@@ -478,11 +478,13 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, msgs.messages().size());
       if (siteId != null) {
         assertEquals(
-            "{\"siteId\":\"" + siteId
+            "{\"siteId\":\"" + siteId + "\",\"documentId\":\"" + documentId
                 + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
             msgs.messages().get(0).body());
       } else {
-        assertEquals("{\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+        assertEquals(
+            "{\"documentId\":\"" + documentId
+                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
             msgs.messages().get(0).body());
       }
     }

@@ -248,10 +248,17 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
         case SC_ACCEPTED:
           String siteId = authorizer.getSiteId();
           String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+          String documentId = event.getPathParameters().get("documentId");
+          
           Map<String, String> m = new HashMap<>();
           if (siteId != null) {
             m.put("siteId", siteId);
           }
+          
+          if (documentId != null) {
+            m.put("documentId", documentId);
+          }
+          
           m.put("message", body);
     
           String json = this.gson.toJson(m);

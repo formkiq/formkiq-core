@@ -176,7 +176,7 @@ Resources:
       Timeout: 600
       MemorySize: 512
       CodeUri: ./websocket-api.zip
-      AutoPublishCodeSha256: 0F7254E841FFD8F84EF2F9938B2B29040FD0C4E413030B894F58DDCA0343E253
+      AutoPublishCodeSha256: e5b50f83db6054a76bcf1b587a5b03eb36a846b8336bdc92ab1c1b3eb78c06e9
       Environment:
         Variables:
           API_URL: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
@@ -248,9 +248,23 @@ Resources:
               - dynamodb:Scan
               - dynamodb:BatchWriteItem
               - dynamodb:PutItem
+              - dynamodb:DeleteItem
               Resource: 
               - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
-                            
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
+
+  WebConnectionsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: !Sub "/formkiq/${AppEnvironment}/dynamodb/WebConnectionsTableName"
+      Type: String
+      Value: !Ref WebConnections
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
   WebConnections:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -280,7 +294,25 @@ Resources:
         - 
           AttributeName: "SK"
           AttributeType: "S"
-              
+        - 
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "GSI1"
+          KeySchema: 
+            - 
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: "KEYS_ONLY"
+
 Outputs:
   WebsocketApiUrl:
     Description: "The URL for the Websocket API endpoint"
