@@ -24,12 +24,6 @@ describe('event', () => {
 		let text = await readFile('./test/json/connect1.json');
 		let response = await lambda.handler(JSON.parse(text), {logStreamName:"test"});
 		assert.equal('{"statusCode":400,"body":"unable to verify token"}', JSON.stringify(response));
-	});
-
-	it('Disconnect', async() => {
-		let text = await readFile('./test/json/disconnect1.json');
-		let response = await lambda.handler(JSON.parse(text), {logStreamName:"test"});
-		assert.equal('{"statusCode":200,"body":"disconnected"}', JSON.stringify(response));
 	});	
 });
 

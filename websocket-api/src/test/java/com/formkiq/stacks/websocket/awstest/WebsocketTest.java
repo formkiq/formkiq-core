@@ -47,12 +47,16 @@ import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 /**
  * 
@@ -77,6 +81,8 @@ public class WebsocketTest {
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
   
+  /** Web Connections Table. */
+  private static String webconnectionsTable;
   /** WebSocket SQS Url. */
   private static String websocketSqsUrl;
   /** WebSocket URL. */
@@ -87,6 +93,9 @@ public class WebsocketTest {
   private static AuthenticationResultType token;
   /** {@link SqsService}. */
   private static SqsService sqsService;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbConnection;
+  
   /**
    * Add User and/or Login Cognito.
    * 
@@ -169,6 +178,11 @@ public class WebsocketTest {
         .header("Access-Control-Request-Method", Arrays.asList("GET"));
     
     httpClient = new FormKiqClientV1(connection);
+    
+    webconnectionsTable =
+        ssmService.getParameterValue("/formkiq/" + app + "/dynamodb/WebConnectionsTableName");
+    dbConnection =
+        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
   }
   
   /** {@link HttpClient}. */
@@ -318,9 +332,19 @@ public class WebsocketTest {
       assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
       assertEquals(0, client.getErrors().size());
       assertEquals("1000", String.valueOf(client.getCloseCode()));
+      
+      verifyDbConnections();
     }
   }
   
+  private void verifyDbConnections() {
+    try (DynamoDbClient client = dbConnection.build()) {
+      ScanResponse response =
+          client.scan(ScanRequest.builder().tableName(webconnectionsTable).build());
+      assertEquals(0, response.count().intValue());
+    }
+  }
+
   /**
    * Test Receiving Web Notify.
    * @throws Exception Exception

@@ -130,6 +130,8 @@ async function registerConnection(connectionId, data) {
         'PK' : {S: group + "/connections"},
         'SK' : {S: connectionId},
         'connectionId' : {S: connectionId},
+        'GSI1PK' : {S: connectionId},
+        'GSI1SK' : {S: group + "/connections"},
         'TimeToLive': {N: "" + expirationTime}
       }
     };
@@ -140,9 +142,44 @@ async function registerConnection(connectionId, data) {
   return Promise.all(promises);
 }
 
+async function deregisterConnection(connectionId) {
+
+  var params = {
+    ExpressionAttributeValues: {
+      ':pk': {S: connectionId}
+    },
+    KeyConditionExpression: 'GSI1PK = :pk',
+    IndexName: "GSI1",
+    TableName: process.env.WEB_CONNECTIONS_TABLE
+  };
+
+  return ddb.query(params).promise().then((data) => {
+
+    let list = [];
+    data.Items.forEach(i => {
+
+      var item = {
+        Key: {
+          "PK": { S: i.PK.S }, 
+          "SK": { S: i.SK.S }
+        }, 
+        TableName: process.env.WEB_CONNECTIONS_TABLE
+      };
+
+      list.push(ddb.deleteItem(item).promise());
+    });
+
+    return Promise.all(list);
+  });
+
+}
+
 async function disconnect(event) {
-  console.log('Disconnect occurred');
-  return response(200, "disconnected");
+  const connectionId = event.requestContext.connectionId;
+  console.log('Disconnect for id: ' + connectionId);
+  return deregisterConnection(connectionId).then(() => {
+  	return response(200, "disconnected");
+  });
 }
 
 async function verifyToken(event) {
