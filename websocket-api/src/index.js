@@ -49,7 +49,7 @@ exports.handler = async (event) => {
           try {
             let obj = JSON.parse(r.body);
             if (obj.siteId != null && obj.message != null) {
-              promises.push(processMessages(obj.siteId, obj.message));
+              promises.push(processMessages(obj.siteId, r.body));
             }
           } catch (e) {}
         });
