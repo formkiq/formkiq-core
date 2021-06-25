@@ -14,7 +14,11 @@ module.exports.handler = async(event, context) => {
   	if (element.body != null) {
   		var msg = JSON.parse(element.body);
   		if (msg.Message != null) {
-  			records.push(JSON.parse(msg.Message));
+        try {
+  			 records.push(JSON.parse(msg.Message));
+        } catch(err) {
+          console.log("invalid JSON message: " + msg.Message);
+        }
   		}
   	}
   });

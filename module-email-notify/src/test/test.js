@@ -27,6 +27,13 @@ describe('event', () => {
 		assert.equal(1, response.length);
 		assert(response[0].MessageId != null);
 	});
+
+	it('SQS Event 2 - invalid event', async() => {
+		let text = await readFile('./test/json/sqs-event2.json');
+		let response = await lambda.handler(JSON.parse(text), {logStreamName:"test"});
+		assert.equal("arn:aws:sns:us-east-1:000000000000:test", process.env.EMAIL_TOPIC_ARN);
+		assert.equal(0, response.length);
+	});
 });
 
 async function readFile(filePath) {
