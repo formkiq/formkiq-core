@@ -176,7 +176,7 @@ Resources:
       Timeout: 600
       MemorySize: 512
       CodeUri: ./websocket-api.zip
-      AutoPublishCodeSha256: a428332c28c1853296558ea120dbee58a03f006826563165854d9aeeaa13d0de
+      AutoPublishCodeSha256: C56892587246538CA58242819E3C7F2BDA027AE071607A1323C63EDA197B39EA
       Environment:
         Variables:
           API_URL: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"

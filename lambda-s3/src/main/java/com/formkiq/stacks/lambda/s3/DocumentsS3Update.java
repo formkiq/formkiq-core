@@ -479,16 +479,26 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     MessageAttributeValue typeAttr =
         MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
     MessageAttributeValue siteIdAttr =
-        MessageAttributeValue.builder().dataType("String").stringValue(event.siteId()).build();
+        MessageAttributeValue.builder().dataType("String")
+            .stringValue(convertToPrintableCharacters(event.siteId())).build();
     
     Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
     
     if (doc.getUserId() != null) {
-      MessageAttributeValue userIdAttr =
-          MessageAttributeValue.builder().dataType("String").stringValue(event.userId()).build();
+      MessageAttributeValue userIdAttr = MessageAttributeValue.builder().dataType("String")
+          .stringValue(convertToPrintableCharacters(event.userId())).build();
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
     
+    for (Map.Entry<String, MessageAttributeValue> e : tags.entrySet()) {
+      logger.log("Adding Message Attribute: '" + e.getKey() + "', attributes: "
+          + e.getValue().dataType() + " " + e.getValue().stringValue());
+    }
+    
     this.snsService.publish(this.snsDocumentEvent, eventJson, tags);
+  }
+  
+  static String convertToPrintableCharacters(final String s) {
+    return s.replaceAll("[^A-Za-z0-9/-]", "");
   }
 }
