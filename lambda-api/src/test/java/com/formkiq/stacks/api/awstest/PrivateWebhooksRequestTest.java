@@ -50,20 +50,16 @@ import software.amazon.awssdk.core.sync.RequestBody;
 /**
  * Process Urls.
  * <p>
- * POST /public/webhooks tests
+ * POST /private/webhooks tests
  * </p>
  *
  */
-public class PublicWebhooksRequestTest extends AbstractApiTest {
+public class PrivateWebhooksRequestTest extends AbstractApiTest {
 
   /** Http Status OK. */
   private static final int STATUS_OK = 200;
-  /** Http Status BAD. */
-  private static final int STATUS_BAD = 400;
   /** Http Status Unauthorized. */
   private static final int STATUS_UNAUTHORIZED = 401;
-  /** Http Status NOT_FOUND. */
-  private static final int STATUS_NOT_FOUND = 404;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
   
@@ -82,7 +78,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   }
   
   /**
-   * Test POST /public/webhooks.
+   * Test POST /private/webhooks.
    * 
    * @throws Exception Exception
    */
@@ -90,10 +86,12 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   public void testPublicWebhooks01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
-      String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
-      String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
-
-      Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+      String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
+      String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
+      
+      Map<String, List<String>> headers = Map.of("Authorization",
+          Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
+      
       Optional<HttpHeaders> o =
           Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
             @Override
@@ -128,80 +126,21 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
       assertTrue(client.deleteWebhook(new DeleteWebhookRequest().webhookId(id)));
     }
   }
-  
+
   /**
-   * Test POST /public/webhooks missing endpoint UUID.
+   * Test POST /private/webhooks missing Authorization token.
    * 
    * @throws Exception Exception
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPublicWebhooks02() throws Exception {
-    // given
-    String urlpath = getRootHttpUrl() + "/public/webhooks";
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    String content = "{\"name\":\"John Smith\"}";
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_NOT_FOUND, response.statusCode());
-    assertEquals("{\"message\":\"Not Found\"}", response.body());
-  }
-  
-  /**
-   * Test POST /public/webhook/invalid endpoint UUID.
-   * 
-   * @throws Exception Exception
-   */
-  @Test(timeout = TEST_TIMEOUT)
-  public void testPublicWebhooks03() throws Exception {
-    // given
-    String urlpath = getRootHttpUrl() + "/public/webhooks/asdffgdfg";
-
-    Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-    Optional<HttpHeaders> o =
-        Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
-          @Override
-          public boolean test(final String t, final String u) {
-            return true;
-          }
-        }));
-
-    String content = "{\"name\":\"John Smith\"}";
-
-    // when
-    HttpService hs = new HttpServiceJava();
-    HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
-
-    // then
-    assertEquals(STATUS_BAD, response.statusCode());
-    assertEquals("{\"message\":\"invalid webhook url\"}", response.body());
-  }
-  
-  /**
-   * Test POST /public/webhooks with private webhook.
-   * 
-   * @throws Exception Exception
-   */
-  @Test(timeout = TEST_TIMEOUT)
-  public void testPublicWebhooks04() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
       String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
-      String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
-
+      String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
+      
       Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+      
       Optional<HttpHeaders> o =
           Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
             @Override

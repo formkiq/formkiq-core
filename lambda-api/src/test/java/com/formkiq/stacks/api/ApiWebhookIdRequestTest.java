@@ -154,18 +154,82 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       assertEquals("john smith", result.get("name"));
       assertEquals("test@formkiq.com", result.get("userId"));
 
-      verifyUrl(siteId, id, result);
+      verifyUrl(siteId, id, result, true);
     }
   }
   
-  private void verifyUrl(final String siteId, final String id, final Map<String, Object> result) {
+  /**
+   * GET /webhooks/{webhookId} with PRIVATE.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testGetWebhook02() throws Exception {
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      newOutstream();
+      
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
+      addParameter(event, "siteId", siteId);
+      event.setBody("{\"name\":\"john smith\",\"enabled\":\"private\"}");
+
+      String response = handleRequest(event);
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+      assertNotNull(result.get("id"));
+      String id = result.get("id").toString();
+
+      newOutstream();
+
+      event = toRequestEvent("/request-get-webhooks-webhookid01.json");
+      setPathParameter(event, "webhookId", id);
+      addParameter(event, "siteId", siteId);
+
+      // when
+      response = handleRequest(event);
+
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+
+      if (siteId == null) {
+        assertEquals("default", result.get("siteId"));
+      } else {
+        assertNotNull(result.get("siteId"));
+        assertNotEquals("default", result.get("siteId"));
+      }
+
+      assertNotNull(result.get("id"));
+      id = result.get("id").toString();
+
+      assertNotNull(result.get("insertedDate"));
+      assertEquals("john smith", result.get("name"));
+      assertEquals("test@formkiq.com", result.get("userId"));
+
+      verifyUrl(siteId, id, result, false);
+    }
+  }
+  
+  private void verifyUrl(final String siteId, final String id, final Map<String, Object> result,
+      final boolean publicUrl) {
+    String path = publicUrl ? "/public" : "/private";
     if (siteId == null) {
-      assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
+      assertEquals("http://localhost:8080" + path + "/webhooks/" + id, result.get("url"));
       assertEquals("default", result.get("siteId"));
     } else {
       assertNotNull(result.get("siteId"));
       assertNotEquals("default", result.get("siteId"));
-      assertEquals("http://localhost:8080/public/webhooks/" + id + "?siteId=" + siteId,
+      assertEquals("http://localhost:8080" + path + "/webhooks/" + id + "?siteId=" + siteId,
           result.get("url"));
     }
   }
@@ -185,7 +249,8 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       // given
       newOutstream();
       
-      String id = getAwsServices().webhookService().saveWebhook(siteId, "test", "joe", date, true);
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, "test", "joe", date, "true");
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
       setPathParameter(event, "webhookId", id);
@@ -240,7 +305,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       assertEquals("joe", result.get("userId"));
       assertEquals("false", result.get("enabled"));
 
-      verifyUrl(siteId, id, result);
+      verifyUrl(siteId, id, result, true);
     }
   }
 }

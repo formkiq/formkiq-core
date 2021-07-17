@@ -62,8 +62,10 @@ public class WebhooksRequestHandler
 
     List<Map<String, Object>> webhooks = list.stream().map(m -> {
 
+      String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
+      
       Map<String, Object> map = new HashMap<>();
-      String u = url + "/public/webhooks/" + m.getString("documentId");
+      String u = url + path + "/webhooks/" + m.getString("documentId");
       if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
         u += "?siteId=" + siteId;
       }
@@ -164,7 +166,8 @@ public class WebhooksRequestHandler
 
     String name = o.getString("name");
     String userId = getCallingCognitoUsername(event);
-    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, true);
+    String enabled = o.containsKey("enabled") ? o.getString("enabled") : "true";
+    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, enabled);
 
     if (o.containsKey("tags")) {
       List<DynamicObject> dtags = o.getList("tags");

@@ -79,7 +79,9 @@ public class WebhooksIdRequestHandler
     String url = awsServices.ssmService().getParameterValue(
         "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
 
-    String u = url + "/public/webhooks/" + m.getString("documentId");
+    String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
+    
+    String u = url + path + "/webhooks/" + m.getString("documentId");
     if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
       u += "?siteId=" + siteId;
     }

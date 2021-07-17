@@ -30,6 +30,7 @@ import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_FOUND;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_NOT_IMPLEMENTED;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_UNAUTHORIZED;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,6 +52,7 @@ import com.formkiq.lambda.apigateway.exception.ForbiddenException;
 import com.formkiq.lambda.apigateway.exception.NotFoundException;
 import com.formkiq.lambda.apigateway.exception.NotImplementedException;
 import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
+import com.formkiq.lambda.apigateway.exception.UnauthorizedException;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.InvalidConditionsException;
@@ -215,6 +217,9 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
           new ApiResponseError(e.getMessage()));
     } catch (ForbiddenException e) {
       buildResponse(logger, output, SC_FORBIDDEN, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (UnauthorizedException e) {
+      buildResponse(logger, output, SC_UNAUTHORIZED, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (NotImplementedException e) {
       buildResponse(logger, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),

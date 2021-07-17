@@ -44,7 +44,6 @@ import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmServiceImpl;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestContext;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -103,7 +102,7 @@ public abstract class AbstractRequestHandler {
    */
   @BeforeClass
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
-
+    
     appenvironment = System.getProperty("testappenvironment");
     awsRegion = Region.of(System.getProperty("testregion"));
 
@@ -605,33 +604,6 @@ public abstract class AbstractRequestHandler {
       return GsonUtil.getInstance().fromJson(new InputStreamReader(in, StandardCharsets.UTF_8),
           ApiGatewayRequestEvent.class);
     }
-  }
-
-  /**
-   * Converts {@link String} filename to {@link ApiGatewayRequestEvent}.
-   *
-   * @param method {@link String}
-   * @param resource {@link String}
-   * @param object {@link Object}
-   * @return {@link ApiGatewayRequestEvent}
-   * @throws IOException IOException
-   */
-  public ApiGatewayRequestEvent toRequestEvent(final String method, final String resource,
-      final Object object) throws IOException {
-    ApiGatewayRequestEvent req = new ApiGatewayRequestEvent();
-    req.setHttpMethod(method);
-    req.setResource(resource);
-
-    ApiGatewayRequestContext reqContext = new ApiGatewayRequestContext();
-    reqContext.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[Admins]", "username",
-        "f67128c7-b804-4147-8ae9-a22fdec108e0@formkiq.com")));
-    req.setRequestContext(reqContext);
-
-    if (object != null) {
-      req.setBody(GsonUtil.getInstance().toJson(object));
-    }
-
-    return req;
   }
 
   /**

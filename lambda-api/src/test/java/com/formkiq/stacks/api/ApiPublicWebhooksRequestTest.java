@@ -59,8 +59,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks01() throws Exception {
-    // given    
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    // given
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -69,7 +68,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -96,7 +95,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -104,7 +102,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
 
       String name = UUID.randomUUID().toString();
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks02.json", siteId, id);
@@ -155,7 +153,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks04() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -164,7 +161,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
       Date ttl = Date.from(now.toInstant());
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -187,7 +184,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -197,7 +193,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
       Date ttl = Date.from(now.toInstant());
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -226,7 +222,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks06() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -234,7 +229,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks04.json", siteId, id);
@@ -263,7 +258,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks07() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -271,7 +265,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks05.json", siteId, id);
@@ -301,7 +295,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks08() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -309,7 +302,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
@@ -340,7 +333,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks09() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -348,7 +340,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
@@ -380,8 +372,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks10() throws Exception {
-    // given    
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    // given
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -390,7 +381,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, false);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "false");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -413,7 +404,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks11() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -421,7 +411,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       newOutstream();
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
@@ -446,7 +436,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks12() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -457,7 +446,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       getAwsServices().configService().save(siteId,
           new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
       
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -495,8 +484,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks13() throws Exception {
-    // given    
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    // given
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -506,7 +494,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, true);
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -542,6 +530,38 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
         S3ObjectMetadata om = getS3().getObjectMetadata(s3, getStages3bucket(), s3key);
         assertFalse(om.isObjectExists());
       }
+    }
+  }
+ 
+  /**
+   * Post /public/webhooks with enabled=private .
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks14() throws Exception {
+    // given    
+    createApiRequestHandler(getMap());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      newOutstream();      
+      
+      String name = UUID.randomUUID().toString();
+
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "private");
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "401.0");
     }
   }
   

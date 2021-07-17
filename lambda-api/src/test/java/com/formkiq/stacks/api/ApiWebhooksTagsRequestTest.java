@@ -69,7 +69,7 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
   public void testGetWebhooks02() throws Exception {
     // given
     String webhookId =
-        getAwsServices().webhookService().saveWebhook(null, "testwebhook", "joe", null, true);
+        getAwsServices().webhookService().saveWebhook(null, "testwebhook", "joe", null, "true");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks-webhookid-tags01.json");
     setPathParameter(event, "webhookId", webhookId);
 

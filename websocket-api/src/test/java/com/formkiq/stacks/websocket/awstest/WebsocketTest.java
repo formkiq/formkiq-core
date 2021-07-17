@@ -314,7 +314,8 @@ public class WebsocketTest {
       while (true) {
         if (!client.getMessages().isEmpty()) {
           assertEquals(1, client.getMessages().size());
-          assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
+          assertEquals("{\"message\":\"{\\\"siteId\\\":\\\"test9843\\\","
+              + "\\\"message\\\":\\\"this is a test\\\"}\"}", client.getMessages().get(0));
           break;
         }
 
@@ -329,7 +330,8 @@ public class WebsocketTest {
       assertTrue(client.isOnOpen());
       assertTrue(client.isOnClose());
       assertEquals(1, client.getMessages().size());
-      assertEquals("{\"message\":\"this is a test\"}", client.getMessages().get(0));
+      assertEquals("{\"message\":\"{\\\"siteId\\\":\\\"test9843\\\","
+          + "\\\"message\\\":\\\"this is a test\\\"}\"}", client.getMessages().get(0));
       assertEquals(0, client.getErrors().size());
       assertEquals("1000", String.valueOf(client.getCloseCode()));
       
@@ -365,8 +367,10 @@ public class WebsocketTest {
     while (true) {
       if (!client.getMessages().isEmpty()) {
         assertEquals(1, client.getMessages().size());
-        assertEquals("{\"message\":\"{\\\"value\\\":\\\"somevalue\\\",\\\"key\\\":\\\"test\\\"}\"}",
-            client.getMessages().get(0));
+        assertEquals("{\"message\":\"{\\\"siteId\\\":\\\"test9843\\\"," + "\\\"documentId\\\":\\\""
+            + documentId + "\\\","
+            + "\\\"message\\\":\\\"{\\\\\\\"value\\\\\\\":\\\\\\\"somevalue\\\\\\\","
+            + "\\\\\\\"key\\\\\\\":\\\\\\\"test\\\\\\\"}\\\"}\"}", client.getMessages().get(0));
         break;
       }
       

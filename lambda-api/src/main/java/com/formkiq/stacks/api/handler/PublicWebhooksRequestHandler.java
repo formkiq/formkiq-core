@@ -48,6 +48,7 @@ import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
+import com.formkiq.lambda.apigateway.exception.UnauthorizedException;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.SiteIdKeyGenerator;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -157,14 +158,25 @@ public class PublicWebhooksRequestHandler
   }
   
   private void checkIsWebhookValid(final DynamicObject hook)
-      throws BadException, TooManyRequestsException {
+      throws BadException, TooManyRequestsException, UnauthorizedException {
     if (hook == null || isExpired(hook)) {
       throw new BadException("invalid webhook url");
     }
     
-    if (!isEnabled(hook)) {
+    boolean isPrivate = isEnabled(hook, "private");
+    boolean isEnabled = isEnabled(hook, "true");
+    
+    if (isPrivate && !isSupportPrivate()) {
+      throw new UnauthorizedException("webhook is private");
+    }
+    
+    if (!isPrivate && !isEnabled) {
       throw new TooManyRequestsException("webhook is disabled");
     }
+  }
+  
+  protected boolean isSupportPrivate() {
+    return false;
   }
 
   private Map<String, String> decodeQueryString(final String query) {
@@ -191,18 +203,18 @@ public class PublicWebhooksRequestHandler
     return "/public/webhooks";
   }
 
-  
   /**
    * Is Webhook Enabled.
    * @param obj {@link DynamicObject}
+   * @param val {@link String}
    * @return boolean
    */
-  private boolean isEnabled(final DynamicObject obj) {
+  private boolean isEnabled(final DynamicObject obj, final String val) {
     
-    boolean enabled = true;
+    boolean enabled = false;
     
-    if (obj.containsKey("enabled") && obj.getString("enabled").equals("false")) {
-      enabled = false;
+    if (obj.containsKey("enabled") && obj.getString("enabled").equals(val)) {
+      enabled = true;
     }
 
     return enabled;

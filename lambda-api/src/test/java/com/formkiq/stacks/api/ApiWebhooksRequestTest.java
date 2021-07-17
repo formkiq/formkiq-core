@@ -452,6 +452,37 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertNotNull(result.get("ttl"));
   }
 
+  /**
+   * POST /webhooks.
+   * Test TTL.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPostWebhooks06() throws Exception {
+    // given
+    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
+    event.setBody("{\"name\":\"john smith\",\"enabled\":\"private\"}");
+    
+    // when
+    String response = handleRequest(event);
+    
+    // then
+    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals("default", result.get("siteId"));
+    assertNotNull(result.get("id"));
+    final String id = result.get("id").toString();
+    
+    assertNotNull(result.get("insertedDate"));
+    assertEquals("john smith", result.get("name"));
+    assertEquals("test@formkiq.com", result.get("userId"));
+    assertEquals("http://localhost:8080/private/webhooks/" + id, result.get("url"));
+  }
+  
   private String verifyPostWebhooks05(final Map<String, Object> result) {
     assertEquals("default", result.get("siteId"));
     assertNotNull(result.get("id"));
