@@ -53,6 +53,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
 
   /** 200 OK. */
   private static final int STATUS_OK = 200;
+  /** 200 No Content. */
+  private static final int STATUS_NO_CONTENT = 204;
   /** 400 Bad Request. */
   private static final int STATUS_BAD_REQUEST = 400;
   /** Random Site ID. */
@@ -145,7 +147,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
       // when
       HttpResponse<String> response = client.optionsDocumentUpload();
       // then
-      assertEquals(STATUS_OK, response.statusCode());
+      assertEquals(STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());
     }
   }

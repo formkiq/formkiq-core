@@ -78,6 +78,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
   private static final int STATUS_OK = 200;
   /** 201 Created. */
   private static final int STATUS_CREATED = 201;
+  /** 200 No Content. */
+  private static final int STATUS_NO_CONTENT = 204;
   /** 400 Bad Request. */
   private static final int STATUS_BAD_REQUEST = 400;
   /** 403 Forbidden. */
@@ -317,7 +319,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
       HttpResponse<String> response = client.optionsDocument(req);
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
+      assertEquals(STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());
     }
   }
@@ -335,7 +337,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
       HttpResponse<String> response = client.optionsDocuments();
 
       // then
-      assertEquals(STATUS_OK, response.statusCode());
+      assertEquals(STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());
     }
   }

@@ -42,7 +42,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
 public class SitesRequestTest extends AbstractApiTest {
 
   /** Http Status OK. */
-  private static final int HTTP_STATUS_OK = 200;
+  private static final int HTTP_STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
 
@@ -71,11 +71,11 @@ public class SitesRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test//(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       HttpResponse<String> response = client.optionsSites();
-      assertEquals(HTTP_STATUS_OK, response.statusCode());
+      assertEquals(HTTP_STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());
     }
   }

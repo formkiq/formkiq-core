@@ -58,6 +58,8 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
 
   /** Http Status OK. */
   private static final int STATUS_OK = 200;
+  /** Http Status No Content. */
+  private static final int STATUS_NO_CONTENT = 204;
   /** Http Status Unauthorized. */
   private static final int STATUS_UNAUTHORIZED = 401;
   /** JUnit Test Timeout. */
@@ -71,8 +73,8 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      assertEquals(STATUS_OK, client.optionsWebhooks().statusCode());
-      assertEquals(STATUS_OK,
+      assertEquals(STATUS_NO_CONTENT, client.optionsWebhooks().statusCode());
+      assertEquals(STATUS_NO_CONTENT,
           client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
     }
   }

@@ -161,7 +161,7 @@ public abstract class AbstractApiTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-    
+        
     awsregion = Region.of(System.getProperty("testregion"));
 
     String awsprofile = System.getProperty("testprofile");
@@ -425,7 +425,6 @@ public abstract class AbstractApiTest {
     assertEquals(1, headers.allValues("access-control-allow-headers").size());
     assertEquals(1, headers.allValues("access-control-allow-methods").size());
     assertEquals(1, headers.allValues("access-control-allow-origin").size());
-    assertEquals(1, headers.allValues("Content-Type").size());
 
     if ("*".equals(headers.allValues("access-control-allow-headers").get(0))) {
       assertEquals("*", headers.allValues("access-control-allow-headers").get(0));
