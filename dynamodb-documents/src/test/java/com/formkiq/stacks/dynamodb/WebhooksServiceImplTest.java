@@ -98,50 +98,51 @@ public class WebhooksServiceImplTest {
   }
 
   /**
-   * Test Finding webhooks.
+   * Add Webhook Tag.
    */
   @Test
-  public void testFindWebhooks01() {
-    //given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      this.service.saveWebhook(siteId, "test", "joe", null, "true");
-      this.service.saveWebhook(siteId, "abc", "joe", null, "true");
-
-      // when
-      List<DynamicObject> list = this.service.findWebhooks(siteId);
-      
-      // then
-      assertEquals(2, list.size());
-      
-      list.forEach(l -> {
-        assertNotNull(l.getString("documentId"));
-        assertNotNull(l.getString("path"));
-        assertNotNull(l.getString("userId"));
-        assertNotNull(l.getString("inserteddate"));
-        assertNull(l.getString("TimeToLive"));
-      });
-      
-      // when
-      this.service.deleteWebhook(siteId, list.get(0).getString("documentId"));
-      
-      // then
-      assertEquals(1, this.service.findWebhooks(siteId).size());
-    }
+  public void testAddTags01() {
+    // given
+    String hook0 = this.service.saveWebhook(null, "test", "joe", null, "true");
+    String hook1 = this.service.saveWebhook(null, "test2", "joe2", null, "true");
+    DocumentTag tag0 = new DocumentTag(hook0, "category", "person", new Date(), "joe");
+    DocumentTag tag1 = new DocumentTag(hook0, "type", "person2", new Date(), "joe");
+    
+    // when
+    this.service.addTags(null, hook0, Arrays.asList(tag0, tag1), null);
+    
+    // then
+    assertNull(this.service.findTag(null, hook1, "category"));
+    DynamicObject tag = this.service.findTag(null, hook0, "category");
+    assertEquals("category", tag.getString("tagKey"));
+    assertEquals("person", tag.getString("tagValue"));
+    
+    assertEquals(2, this.service.findTags(null, hook0, null).getResults().size());
+    assertEquals(0, this.service.findTags(null, hook1, null).getResults().size());
   }
   
   /**
-   * Test Finding webhooks, empty list.
+   * Test Delete Webhook and Tags.
    */
   @Test
-  public void testFindWebhooks02() {
+  public void testDeleteWebhooksAndTags01() {
     //given
+    final int numberOfTags = 100;
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String id0 = this.service.saveWebhook(siteId, "test", "joe", null, "true");
 
+      for (int i = 0; i < numberOfTags; i++) {
+        DocumentTag tag =
+            new DocumentTag(id0, UUID.randomUUID().toString(), null, new Date(), "joe");
+        this.service.addTags(siteId, id0, Arrays.asList(tag), null);
+      }
+      
       // when
-      List<DynamicObject> list = this.service.findWebhooks(siteId);
+      this.service.deleteWebhook(siteId, id0);
       
       // then
-      assertEquals(0, list.size());      
+      PaginationResults<DynamicObject> tags = this.service.findTags(siteId, id0, null);
+      assertEquals(0, tags.getResults().size());
     }
   }
   
@@ -201,59 +202,51 @@ public class WebhooksServiceImplTest {
   }
   
   /**
-   * Test Updating webhooks.
+   * Test Finding webhooks.
    */
   @Test
-  public void testUpdateWebhooks01() {
+  public void testFindWebhooks01() {
     //given
-    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-    Date ttl = Date.from(now.toInstant());
-    
-    ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
-    Date tomorrowttl = Date.from(tomorrow.toInstant());
-
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      
-      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, "true");
-      DynamicObject obj = new DynamicObject(Map.of("name", "test2", "TimeToLive", tomorrowttl));
+      this.service.saveWebhook(siteId, "test", "joe", null, "true");
+      this.service.saveWebhook(siteId, "abc", "joe", null, "true");
 
       // when
-      this.service.updateWebhook(siteId, webhookId, obj);
+      List<DynamicObject> list = this.service.findWebhooks(siteId);
       
       // then
-      DynamicObject result = this.service.findWebhook(siteId, webhookId);
-      assertEquals("test2", result.getString("path"));
-      assertNotNull(result.getString("documentId"));
-      assertNotNull(result.getString("path"));
-      assertNotNull(result.getString("userId"));
-      assertNotNull(result.getString("inserteddate"));
-      assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
-          result.getString("TimeToLive"));
+      assertEquals(2, list.size());
+      
+      list.forEach(l -> {
+        assertNotNull(l.getString("documentId"));
+        assertNotNull(l.getString("path"));
+        assertNotNull(l.getString("userId"));
+        assertNotNull(l.getString("inserteddate"));
+        assertNull(l.getString("TimeToLive"));
+      });
+      
+      // when
+      this.service.deleteWebhook(siteId, list.get(0).getString("documentId"));
+      
+      // then
+      assertEquals(1, this.service.findWebhooks(siteId).size());
     }
   }
   
   /**
-   * Add Webhook Tag.
+   * Test Finding webhooks, empty list.
    */
   @Test
-  public void testAddTags01() {
-    // given
-    String hook0 = this.service.saveWebhook(null, "test", "joe", null, "true");
-    String hook1 = this.service.saveWebhook(null, "test2", "joe2", null, "true");
-    DocumentTag tag0 = new DocumentTag(hook0, "category", "person", new Date(), "joe");
-    DocumentTag tag1 = new DocumentTag(hook0, "type", "person2", new Date(), "joe");
-    
-    // when
-    this.service.addTags(null, hook0, Arrays.asList(tag0, tag1), null);
-    
-    // then
-    assertNull(this.service.findTag(null, hook1, "category"));
-    DynamicObject tag = this.service.findTag(null, hook0, "category");
-    assertEquals("category", tag.getString("tagKey"));
-    assertEquals("person", tag.getString("tagValue"));
-    
-    assertEquals(2, this.service.findTags(null, hook0).getResults().size());
-    assertEquals(0, this.service.findTags(null, hook1).getResults().size());
+  public void testFindWebhooks02() {
+    //given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // when
+      List<DynamicObject> list = this.service.findWebhooks(siteId);
+      
+      // then
+      assertEquals(0, list.size());      
+    }
   }
   
   /**
@@ -296,6 +289,38 @@ public class WebhooksServiceImplTest {
       assertNotNull(tag.getString("TimeToLive"));
       assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
           tag.getString("TimeToLive"));
+    }
+  }
+  
+  /**
+   * Test Updating webhooks.
+   */
+  @Test
+  public void testUpdateWebhooks01() {
+    //given
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+    Date ttl = Date.from(now.toInstant());
+    
+    ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    Date tomorrowttl = Date.from(tomorrow.toInstant());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      
+      String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, "true");
+      DynamicObject obj = new DynamicObject(Map.of("name", "test2", "TimeToLive", tomorrowttl));
+
+      // when
+      this.service.updateWebhook(siteId, webhookId, obj);
+      
+      // then
+      DynamicObject result = this.service.findWebhook(siteId, webhookId);
+      assertEquals("test2", result.getString("path"));
+      assertNotNull(result.getString("documentId"));
+      assertNotNull(result.getString("path"));
+      assertNotNull(result.getString("userId"));
+      assertNotNull(result.getString("inserteddate"));
+      assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
+          result.getString("TimeToLive"));
     }
   }
 }

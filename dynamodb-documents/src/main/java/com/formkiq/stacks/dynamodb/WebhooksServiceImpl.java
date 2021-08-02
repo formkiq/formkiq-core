@@ -122,9 +122,33 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   @Override
   public void deleteWebhook(final String siteId, final String id) {
+    
+    deleteWebhookTags(siteId, id, null);
+    
     Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + id, "webhook");
     this.dynamoDB
         .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+  }
+  
+  private void deleteWebhookTags(final String siteId, final String id,
+      final PaginationMapToken token) {
+    
+    PaginationResults<DynamicObject> tags = findTags(siteId, id, token);
+    
+    for (DynamicObject t : tags.getResults()) {
+      String pk = t.getString("PK");
+      String sk = t.getString("SK");
+      
+      Map<String, AttributeValue> key = Map.of("PK", AttributeValue.builder().s(pk).build(), "SK",
+          AttributeValue.builder().s(sk).build());
+      
+      this.dynamoDB.deleteItem(
+          DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+    }
+    
+    if (tags.getToken() != null) {
+      deleteWebhookTags(siteId, id, tags.getToken());
+    }
   }
 
   @Override
@@ -140,15 +164,18 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   
   @Override
   public PaginationResults<DynamicObject> findTags(final String siteId,
-      final String webhookId) {
+      final String webhookId, final PaginationMapToken token) {
   
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
 
     Map<String, AttributeValue> values =
         queryKeys(keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, PREFIX_TAGS));
 
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
         .keyConditionExpression(expression).expressionAttributeValues(values)
+        .exclusiveStartKey(startkey)
         .build();
 
     QueryResponse result = this.dynamoDB.query(q);
@@ -259,7 +286,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
         .key(key).attributeUpdates(values).build());
     
-    PaginationResults<DynamicObject> result = findTags(siteId, webhookId);
+    PaginationResults<DynamicObject> result = findTags(siteId, webhookId, null);
     for (DynamicObject ob : result.getResults()) {
       
       key = new HashMap<>();

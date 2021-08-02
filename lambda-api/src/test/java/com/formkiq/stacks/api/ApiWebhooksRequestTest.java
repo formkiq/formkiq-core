@@ -287,7 +287,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals("joe smith", obj.getString("path"));
       assertEquals("test@formkiq.com", obj.getString("userId"));
 
-      PaginationResults<DynamicObject> tags = webhookService.findTags(siteId, id);
+      PaginationResults<DynamicObject> tags = webhookService.findTags(siteId, id, null);
       assertEquals(2, tags.getResults().size());
 
       DynamicObject tag = tags.getResults().get(0);

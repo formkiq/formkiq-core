@@ -85,7 +85,7 @@ Resources:
       Timeout: 60
       MemorySize: 256
       CodeUri: ./module-email-notify.zip
-      AutoPublishCodeSha256: 59CFCAA650F1B8CC840EB94927BC570D534A22FA6BDBA7D2CE1BDB8B7B260730
+      AutoPublishCodeSha256: 8824764B1781FAF3BC725E07C9D9692A1A8BC7F3305786A5DD3FBA994068389B
       Environment:
         Variables:
           DEBUG: false

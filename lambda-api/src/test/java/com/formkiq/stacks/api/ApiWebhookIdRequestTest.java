@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
@@ -95,6 +96,56 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("404.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+  }
+  
+  /**
+   * Delete /webhooks/{webhookId} and webhook tags.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testDeleteWebhooks03() throws Exception {
+    // given
+    ApiGatewayRequestEvent req = toRequestEvent("/request-post-webhooks01.json");
+    req.setBody("{\"name\":\"john smith\",tags:[{key:\"dynamodb\"}]}");
+    
+    String response = handleRequest(req);
+    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals("default", result.get("siteId"));
+    assertNotNull(result.get("id"));
+    final String id = result.get("id").toString();
+    
+    newOutstream();
+    
+    ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
+    setPathParameter(event, "webhookId", id);
+
+    // when 
+    response = handleRequest(event);
+    
+    // then
+    m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    
+    newOutstream();
+
+    event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
+    setPathParameter(event, "webhookId", id);
+
+    // when
+    response = handleRequest(event);
+
+    // then
+    m = GsonUtil.getInstance().fromJson(response, Map.class);
+    result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+    assertEquals(0, ((List<Object>) result.get("tags")).size());
   }
   
   /**

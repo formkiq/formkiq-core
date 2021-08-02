@@ -65,10 +65,12 @@ public interface WebhooksService {
    *
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
+   * @param token {@link PaginationMapToken}
    * 
    * @return {@link DynamicObject} {@link PaginationResults}
    */
-  PaginationResults<DynamicObject> findTags(String siteId, String webhookId);
+  PaginationResults<DynamicObject> findTags(String siteId, String webhookId,
+      PaginationMapToken token);
 
   /**
    * Find Webhook.

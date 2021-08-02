@@ -62,7 +62,7 @@ public class WebhooksTagsRequestHandler
     
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    PaginationResults<DynamicObject> list = awsServices.webhookService().findTags(siteId, id);
+    PaginationResults<DynamicObject> list = awsServices.webhookService().findTags(siteId, id, null);
     
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();
