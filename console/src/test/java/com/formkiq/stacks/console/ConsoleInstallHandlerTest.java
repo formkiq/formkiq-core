@@ -102,11 +102,10 @@ public class ConsoleInstallHandlerTest {
     map.put("REGION", "us-east-1");
     map.put("DISTRIBUTION_BUCKET", "distrobucket");
     map.put("CONSOLE_BUCKET", "destbucket");
-    map.put("COGNITO_USER_POOL_ID", "us-east-1_TVZnIdg4o");
-    map.put("COGNITO_USER_POOL_CLIENT_ID", "31bp0cnujj1fluhdjmcc77gpaf");
-    map.put("COGNITO_IDENTITY_POOL_ID", "kasdasdassa");
-    map.put("API_URL", "https://me.execute-api.us-east-1.amazonaws.com/prod/");
-
+    map.put("API_URL", "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
+    map.put("API_AUTH_URL", "https://auth.execute-api.us-east-1.amazonaws.com/prod/");
+    map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");  
+    map.put("BRAND", "24hourcharts");
 
     this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
@@ -161,13 +160,14 @@ public class ConsoleInstallHandlerTest {
    * Verify Config File is written.
    */
   private void verifyConfigWritten() {
-    String config = String
-        .format("{%n\"version\":\"0.1\",%n\"cognito\": {%n\"userPoolId\":\"us-east-1_TVZnIdg4o\",%n"
-            + "\"region\": \"us-east-1\",%n\"clientId\":\"31bp0cnujj1fluhdjmcc77gpaf\",%n"
-            + "\"identityPoolId\":\"kasdasdassa\",%n" + "\"allowUserSelfRegistration\":false"
-            + "},\"apigateway\": {%n"
-            + "\"url\": \"https://me.execute-api.us-east-1.amazonaws.com/prod/\"%n}%n}");
-
+    String config = String.format(
+        "{%n\"url\": {%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
+            + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"}"
+            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\"}",
+        "https://auth.execute-api.us-east-1.amazonaws.com/prod/",
+        "https://chartapi.24hourcharts.com", "wss://me.execute-api.us-east-1.amazonaws.com/prod/",
+        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1", "24hourcharts");
+    
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }
 

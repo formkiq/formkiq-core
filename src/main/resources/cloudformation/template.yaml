@@ -117,10 +117,9 @@ Resources:
         AppEnvironment: !Ref AppEnvironment
         ConsoleVersion: !GetAtt CoreConsole.Outputs.ConsoleVersion
         ConsoleBucket: !GetAtt CoreConsole.Outputs.ConsoleBucket
-        CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
-        CognitoIdentityPoolId: !GetAtt Cognito.Outputs.CognitoIdentityPoolId
         ApiUrl: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
+        WebsocketApiUrl: !GetAtt WebsocketApi.Outputs.WebsocketApiUrl
+        AuthApiUrl: !GetAtt Cognito.Outputs.ApiEndpoint
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"

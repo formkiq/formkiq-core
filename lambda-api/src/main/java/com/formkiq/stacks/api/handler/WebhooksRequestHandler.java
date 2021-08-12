@@ -108,7 +108,8 @@ public class WebhooksRequestHandler
     return ttlDate;
   }
 
-  private boolean isOverMaxWebhooks(final AwsServiceCache awsservice, final String siteId) {
+  private boolean isOverMaxWebhooks(final LambdaLogger logger, final AwsServiceCache awsservice,
+      final String siteId) {
     
     boolean over = false;
     DynamicObject config = awsservice.config(siteId);
@@ -120,12 +121,20 @@ public class WebhooksRequestHandler
       try {
         
         int max = Integer.parseInt(maxString);
-        if (awsservice.webhookService().findWebhooks(siteId).size() >= max) {
+        int numberOfWebhooks = awsservice.webhookService().findWebhooks(siteId).size();
+    
+        if (awsservice.debug()) {
+          logger.log("found config for maximum webhooks " + maxString);
+          logger.log("found " + numberOfWebhooks + " webhooks");
+        }
+        
+        if (numberOfWebhooks >= max) {
           over = true;
         }
         
       } catch (NumberFormatException e) {
         over = false;
+        e.printStackTrace();
       }
     }
         
@@ -140,7 +149,7 @@ public class WebhooksRequestHandler
     String siteId = authorizer.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(logger, event);
 
-    validatePost(awsservice, siteId, o);
+    validatePost(logger, awsservice, siteId, o);
 
     String id = saveWebhook(event, awsservice, siteId, o);
 
@@ -182,14 +191,14 @@ public class WebhooksRequestHandler
     return id;
   }
 
-  private void validatePost(final AwsServiceCache awsservice, final String siteId,
-      final DynamicObject o) throws BadException, TooManyRequestsException {
+  private void validatePost(final LambdaLogger logger, final AwsServiceCache awsservice,
+      final String siteId, final DynamicObject o) throws BadException, TooManyRequestsException {
     
     if (o == null || o.get("name") == null) {
       throw new BadException("Invalid JSON body.");
     }
     
-    if (isOverMaxWebhooks(awsservice, siteId)) {
+    if (isOverMaxWebhooks(logger, awsservice, siteId)) {
       throw new TooManyRequestsException("Reached max number of webhooks");
     }
   }

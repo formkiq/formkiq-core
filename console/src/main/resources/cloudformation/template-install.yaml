@@ -19,26 +19,26 @@ Parameters:
     Description: Console S3 Bucket
     AllowedPattern: ".+"
 
-  CognitoUserPoolId:
-    Type: String
-    Description: Cognito User Pool Id
-    AllowedPattern: ".+"    
-
-  CognitoUserPoolClientId:
-    Type: String
-    Description: Cognito User Pool Client Id
-    AllowedPattern: ".+"
-
   ApiUrl:
     Type: String
     Description: API URL
     AllowedPattern: ".+"  
   
-  CognitoIdentityPoolId:
+  WebsocketApiUrl:
     Type: String
-    Description: Cognito Identity Pool Id
-    AllowedPattern: ".+"
-  
+    Description: WebSocket URL
+    AllowedPattern: ".+" 
+ 
+  AuthApiUrl:
+    Type: String
+    Description: Auth Api URL
+    AllowedPattern: ".+" 
+
+  Brand:
+    Type: String
+    Description: Console Installer Brand
+    Default: "formkiq"
+    
   DistributionBucket:
     Type: String
     Description: FormKiQ Distribution BucketName
@@ -86,10 +86,10 @@ Resources:
           DISTRIBUTION_BUCKET: !Sub "${DistributionBucket}"
           REGION: !Sub "${AWS::Region}"
           CONSOLE_BUCKET: !Sub "${ConsoleBucket}"
-          COGNITO_USER_POOL_ID: !Sub "${CognitoUserPoolId}"
-          COGNITO_USER_POOL_CLIENT_ID: !Sub "${CognitoUserPoolClientId}"
-          COGNITO_IDENTITY_POOL_ID: !Sub "${CognitoIdentityPoolId}"
           API_URL: !Sub "${ApiUrl}"
+          API_WEBSOCKET_URL: !Sub "${WebsocketApiUrl}"
+          API_AUTH_URL: !Sub "${AuthApiUrl}"
+          BRAND: !Sub "${Brand}"
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role

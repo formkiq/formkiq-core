@@ -147,26 +147,24 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private void createCognitoConfig(final LambdaLogger logger) {
 
     String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
-    String region = this.environmentMap.get("REGION");
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
-    String allowUserSelfRegistration = "false";
+    String brand = this.environmentMap.get("BRAND");
 
-    String userpoolid = this.environmentMap.get("COGNITO_USER_POOL_ID");
+    String authApi = this.environmentMap.get("API_AUTH_URL");
 
-    String clientid = this.environmentMap.get("COGNITO_USER_POOL_CLIENT_ID");
+    String documentApi = this.environmentMap.get("API_URL");
+    
+    String chartApi = brand.contains("24hourcharts") ? "https://chartapi.24hourcharts.com" : "";
 
-    String identitypool = this.environmentMap.get("COGNITO_IDENTITY_POOL_ID");
-
-    String apiurl = this.environmentMap.get("API_URL");
-
+    String webSocketApi = this.environmentMap.get("API_WEBSOCKET_URL");
+    
     String json = String.format(
-        "{%n\"version\":\"%s\",%n\"cognito\": {%n\"userPoolId\":\"%s\",%n" + "\"region\": \""
-            + region + "\",%n\"clientId\":\"%s\",%n\"identityPoolId\":\"%s\","
-            + "%n\"allowUserSelfRegistration\":" + allowUserSelfRegistration
-            + "},\"apigateway\": {%n\"url\": \"%s\"%n}%n}",
-        consoleversion, userpoolid, clientid, identitypool, apiurl);
+        "{%n\"url\": {%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
+            + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"},"
+            + "\"consoleversion\":\"%s\",\"brand\":\"%s\"}",
+         authApi, chartApi, webSocketApi, documentApi, consoleversion, brand);
 
-    String fileName = consoleversion + "/config.json";
+    String fileName = consoleversion + "/assets/config.json";
 
     try (S3Client s = this.s3.buildClient()) {
       this.s3.putObject(s, destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8),
