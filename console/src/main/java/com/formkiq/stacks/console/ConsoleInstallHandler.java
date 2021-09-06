@@ -149,7 +149,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
     String brand = this.environmentMap.get("BRAND");
-
+    String allowAdminCreateUserOnly = this.environmentMap.get("ALLOW_ADMIN_CREATE_USER_ONLY");
     String authApi = this.environmentMap.get("API_AUTH_URL");
 
     String documentApi = this.environmentMap.get("API_URL");
@@ -161,8 +161,9 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String json = String.format(
         "{%n\"url\": {%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
             + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"},"
-            + "\"consoleversion\":\"%s\",\"brand\":\"%s\"}",
-         authApi, chartApi, webSocketApi, documentApi, consoleversion, brand);
+            + "\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\"}",
+        authApi, chartApi, webSocketApi, documentApi, consoleversion, brand,
+        allowAdminCreateUserOnly);
 
     String fileName = consoleversion + "/assets/config.json";
 

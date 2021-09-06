@@ -50,6 +50,11 @@ Parameters:
     Type: String
     AllowedValues: ["core", "pro"]
 
+  AllowAdminCreateUserOnly:
+    Description: When true only Cognito Admin can create users, false users can register themselves
+    AllowedPattern: ".+"
+    Type: String
+    
 Resources:
 
   ConsoleInstallerParameter:
@@ -90,6 +95,7 @@ Resources:
           API_WEBSOCKET_URL: !Sub "${WebsocketApiUrl}"
           API_AUTH_URL: !Sub "${AuthApiUrl}"
           BRAND: !Sub "${Brand}"
+          ALLOW_ADMIN_CREATE_USER_ONLY: !Sub "${AllowAdminCreateUserOnly}"
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role

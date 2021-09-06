@@ -120,6 +120,7 @@ Resources:
         ApiUrl: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
         WebsocketApiUrl: !GetAtt WebsocketApi.Outputs.WebsocketApiUrl
         AuthApiUrl: !GetAtt Cognito.Outputs.ApiEndpoint
+        AllowAdminCreateUserOnly: !Sub "${AllowAdminCreateUserOnly}"
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"

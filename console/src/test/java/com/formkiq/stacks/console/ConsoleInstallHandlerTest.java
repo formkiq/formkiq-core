@@ -106,6 +106,7 @@ public class ConsoleInstallHandlerTest {
     map.put("API_AUTH_URL", "https://auth.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");  
     map.put("BRAND", "24hourcharts");
+    map.put("ALLOW_ADMIN_CREATE_USER_ONLY", "false");
 
     this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
@@ -163,10 +164,10 @@ public class ConsoleInstallHandlerTest {
     String config = String.format(
         "{%n\"url\": {%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
             + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"}"
-            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\"}",
+            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\"}",
         "https://auth.execute-api.us-east-1.amazonaws.com/prod/",
         "https://chartapi.24hourcharts.com", "wss://me.execute-api.us-east-1.amazonaws.com/prod/",
-        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1", "24hourcharts");
+        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1", "24hourcharts", "false");
     
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }
