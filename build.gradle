@@ -18,7 +18,7 @@ spotless {
 
 allprojects {
   version = '1.3.0'
-  ext.awsCognitoVersion = '1.1.0'
+  ext.awsCognitoVersion = '1.2.0'
   group = 'com.formkiq.stacks'
 }
 
