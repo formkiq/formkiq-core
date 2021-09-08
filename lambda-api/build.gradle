@@ -137,17 +137,16 @@ task assembleOpenApiTemplate {
 	}
 }
 
-/*
 task downloadAwsCognito(type: Download) {
-    src "https://github.com/formkiq/aws-cognito/releases/download/v1.0.0/aws-cognito-v${awsCognitoVersion}.zip"
+    src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
     dest buildDir
     overwrite false
-}*/
-
+}
+/*
 task downloadAwsCognito(type: Copy) {
     from file("$buildDir/../../../aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
     into file("${buildDir}")
-}
+}*/
 
 task unzipAwsCognito(type: Copy) {
   dependsOn downloadAwsCognito
