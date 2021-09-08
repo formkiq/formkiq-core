@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.lambda.apigateway.AwsServiceCache;
-import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 
 /**
  * Interface for providing restrictions around Document.
@@ -44,32 +43,23 @@ public interface DocumentsRestrictions {
   boolean enforced(AwsServiceCache awsservice, String siteId, String value, Object... objs);
 
   /**
-   * Get SSM Vaoue.
+   * Get Value.
    * 
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param key {@link String}
    * @return {@link String}
    */
-  default String getSsmValue(final AwsServiceCache awsservice, final String siteId,
-      final String key) {
-    String ssmkey =
-        siteId != null ? "/formkiq/" + awsservice.appEnvironment() + "/siteid/" + siteId + "/" + key
-            : "/formkiq/" + awsservice.appEnvironment() + "/siteid/default/" + key;
-
-    try {
-      return awsservice.ssmService().getParameterValue(ssmkey);
-    } catch (ParameterNotFoundException e) {
-      return null;
-    }
+  default String getValue(final AwsServiceCache awsservice, final String siteId, final String key) {
+    return awsservice.config(siteId).getString(key);
   }
 
   /**
-   * Get Ssm Value.
+   * Get Value.
    * 
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @return {@link String}
    */
-  String getSsmValue(AwsServiceCache awsservice, String siteId);
+  String getValue(AwsServiceCache awsservice, String siteId);
 }

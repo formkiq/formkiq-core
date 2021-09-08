@@ -28,10 +28,14 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.UUID;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.stacks.dynamodb.DynamoDbHelper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -47,8 +51,12 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   /** {@link DocumentsRestrictionsMaxContentLength}. */
   private static DocumentsRestrictionsMaxContentLength service;
   /** {@link AwsServiceCache}. */
-  private static AwsServiceCache awsservice;
-
+  private AwsServiceCache awsservice;
+  /** {@link DynamoDbHelper}. */
+  private static DynamoDbHelper dbhelper;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder adb;
+  
   /**
    * Before Class.
    * 
@@ -62,11 +70,25 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    SsmConnectionBuilder ssmConnection = new SsmConnectionBuilder().setCredentials(cred)
-        .setRegion(Region.US_EAST_1).setEndpointOverride("http://localhost:4566");
+    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+        .setEndpointOverride("http://localhost:8000");
 
-    awsservice = new AwsServiceCache().ssmConnection(ssmConnection).appEnvironment("unittest");
+    dbhelper = new DynamoDbHelper(adb);
+    
+    if (!dbhelper.isDocumentsTableExists()) {
+      dbhelper.createDocumentsTable();
+    }
+    
     service = new DocumentsRestrictionsMaxContentLength();
+  }
+  
+  /**
+   * Before Tests.
+   */
+  @Before
+  public void before() {
+    this.awsservice = new AwsServiceCache().dbConnection(adb, dbhelper.getDocumentTable(), "")
+        .appEnvironment("unittest");
   }
 
   /**
@@ -79,8 +101,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = null;
 
     // when
-    String value = service.getSsmValue(awsservice, siteId);
-    boolean result = service.enforced(awsservice, siteId, value, contentLength);
+    String value = service.getValue(this.awsservice, siteId);
+    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
     // then
     assertFalse(result);
@@ -94,12 +116,14 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = null;
     String siteId = UUID.randomUUID().toString();
-    String ssmkey = "/formkiq/unittest/siteid/" + siteId + "/MaxContentLengthBytes";
-    awsservice.ssmService().putParameter(ssmkey, "10");
+    
+    DynamicObject ob = this.awsservice.configService().get(siteId);
+    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    this.awsservice.configService().save(siteId, ob);
 
     // when
-    String value = service.getSsmValue(awsservice, siteId);
-    boolean result = service.enforced(awsservice, siteId, value, contentLength);
+    String value = service.getValue(this.awsservice, siteId);
+    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
     // then
     assertTrue(result);
@@ -113,12 +137,14 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf("10");
     String siteId = UUID.randomUUID().toString();
-    String ssmkey = "/formkiq/unittest/siteid/" + siteId + "/MaxContentLengthBytes";
-    awsservice.ssmService().putParameter(ssmkey, "10");
+    
+    DynamicObject ob = this.awsservice.configService().get(siteId);
+    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    this.awsservice.configService().save(siteId, ob);
 
     // when
-    String value = service.getSsmValue(awsservice, siteId);
-    boolean result = service.enforced(awsservice, siteId, value, contentLength);
+    String value = service.getValue(this.awsservice, siteId);
+    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
     // then
     assertFalse(result);
@@ -133,12 +159,14 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf("15");
     String siteId = UUID.randomUUID().toString();
-    String ssmkey = "/formkiq/unittest/siteid/" + siteId + "/MaxContentLengthBytes";
-    awsservice.ssmService().putParameter(ssmkey, "10");
+    
+    DynamicObject ob = this.awsservice.configService().get(siteId);
+    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    this.awsservice.configService().save(siteId, ob);
 
     // when
-    String value = service.getSsmValue(awsservice, siteId);
-    boolean result = service.enforced(awsservice, siteId, value, contentLength);
+    String value = service.getValue(this.awsservice, siteId);
+    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
     // then
     assertTrue(result);
@@ -152,12 +180,14 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf(0);
     String siteId = UUID.randomUUID().toString();
-    String ssmkey = "/formkiq/unittest/siteid/" + siteId + "/MaxContentLengthBytes";
-    awsservice.ssmService().putParameter(ssmkey, "10");
+    
+    DynamicObject ob = this.awsservice.configService().get(siteId);
+    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+    this.awsservice.configService().save(siteId, ob);
 
     // when
-    String value = service.getSsmValue(awsservice, siteId);
-    boolean result = service.enforced(awsservice, siteId, value, contentLength);
+    String value = service.getValue(this.awsservice, siteId);
+    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
     // then
     assertTrue(result);

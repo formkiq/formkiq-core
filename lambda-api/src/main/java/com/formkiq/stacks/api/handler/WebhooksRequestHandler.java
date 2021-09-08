@@ -21,9 +21,12 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +41,9 @@ import com.formkiq.lambda.apigateway.ApiMapResponse;
 import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.exception.BadException;
+import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
 import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.dynamodb.DocumentTag;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler
@@ -49,22 +54,31 @@ public class WebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = getSiteId(event);
-    String url = awsServices.ssmService()
-        .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
+    String siteId = authorizer.getSiteId();
+    String url = awsServices.ssmService().getParameterValue(
+        "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
 
     List<DynamicObject> list = awsServices.webhookService().findWebhooks(siteId);
 
     List<Map<String, Object>> webhooks = list.stream().map(m -> {
+
+      String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
+      
       Map<String, Object> map = new HashMap<>();
+      String u = url + path + "/webhooks/" + m.getString("documentId");
+      if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
+        u += "?siteId=" + siteId;
+      }
 
       map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
       map.put("id", m.getString("documentId"));
       map.put("name", m.getString("path"));
-      map.put("url", url + "/public/webhooks/" + m.getString("documentId"));
+      map.put("url", u);
       map.put("insertedDate", m.getString("inserteddate"));
       map.put("userId", m.getString("userId"));
-
+      map.put("enabled", m.getString("enabled"));
+      map.put("ttl", m.getString("ttl"));
+      
       return map;
     }).collect(Collectors.toList());
 
@@ -76,34 +90,116 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
-  @SuppressWarnings("unchecked")
+  private Date getTtlDate(final AwsServiceCache awsservice, final String siteId,
+      final DynamicObject o) {
+    Date ttlDate = null;
+    String ttl = o.getString("ttl");
+
+    if (ttl == null) {
+      DynamicObject config = awsservice.config(siteId);
+      ttl = config.getString(WEBHOOK_TIME_TO_LIVE);
+    }
+    
+    if (ttl != null) {
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
+      ttlDate = Date.from(now.toInstant());
+    }
+    
+    return ttlDate;
+  }
+
+  private boolean isOverMaxWebhooks(final LambdaLogger logger, final AwsServiceCache awsservice,
+      final String siteId) {
+    
+    boolean over = false;
+    DynamicObject config = awsservice.config(siteId);
+    
+    String maxString = config.getString(MAX_WEBHOOKS);
+    
+    if (maxString != null) {
+      
+      try {
+        
+        int max = Integer.parseInt(maxString);
+        int numberOfWebhooks = awsservice.webhookService().findWebhooks(siteId).size();
+    
+        if (awsservice.debug()) {
+          logger.log("found config for maximum webhooks " + maxString);
+          logger.log("found " + numberOfWebhooks + " webhooks");
+        }
+        
+        if (numberOfWebhooks >= max) {
+          over = true;
+        }
+        
+      } catch (NumberFormatException e) {
+        over = false;
+        e.printStackTrace();
+      }
+    }
+        
+    return over;
+  }
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = getSiteId(event);
-    Map<String, String> q = fromBodyToObject(logger, event, Map.class);
+    String siteId = authorizer.getSiteId();
+    DynamicObject o = fromBodyToDynamicObject(logger, event);
 
-    if (q == null || q.get("name") == null) {
-      throw new BadException("Invalid JSON body.");
-    }
+    validatePost(logger, awsservice, siteId, o);
 
-    Date ttlDate = null;
-    String ttl = q.getOrDefault("ttl", null);
-    if (ttl != null) {
-      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong(ttl));
-      ttlDate = Date.from(now.toInstant());
-    }
+    String id = saveWebhook(event, awsservice, siteId, o);
 
-    String name = q.get("name");
-    String userId = getCallingCognitoUsername(event);
-    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate);
-    setPathParameter(event, "webhookId", id);
+    return response(logger, event, authorizer, awsservice, id);
+  }
+
+  private ApiRequestHandlerResponse response(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice, final String webhookId) throws Exception {
+    
+    setPathParameter(event, "webhookId", webhookId);
 
     WebhooksIdRequestHandler h = new WebhooksIdRequestHandler();
     ApiRequestHandlerResponse response = h.get(logger, event, authorizer, awsservice);
 
     return response;
+  }
+
+  private String saveWebhook(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
+      final String siteId, final DynamicObject o) {
+    
+    Date ttlDate = getTtlDate(awsservice, siteId, o);
+
+    String name = o.getString("name");
+    String userId = getCallingCognitoUsername(event);
+    String enabled = o.containsKey("enabled") ? o.getString("enabled") : "true";
+    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, enabled);
+
+    if (o.containsKey("tags")) {
+      List<DynamicObject> dtags = o.getList("tags");
+
+      Date date = new Date();
+      Collection<DocumentTag> tags = dtags.stream()
+          .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
+          .collect(Collectors.toList());
+      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
+    }
+    
+    return id;
+  }
+
+  private void validatePost(final LambdaLogger logger, final AwsServiceCache awsservice,
+      final String siteId, final DynamicObject o) throws BadException, TooManyRequestsException {
+    
+    if (o == null || o.get("name") == null) {
+      throw new BadException("Invalid JSON body.");
+    }
+    
+    if (isOverMaxWebhooks(logger, awsservice, siteId)) {
+      throw new TooManyRequestsException("Reached max number of webhooks");
+    }
   }
 }

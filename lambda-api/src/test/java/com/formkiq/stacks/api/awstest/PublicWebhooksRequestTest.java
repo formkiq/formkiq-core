@@ -58,8 +58,12 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
 
   /** Http Status OK. */
   private static final int STATUS_OK = 200;
+  /** Http Status No Content. */
+  private static final int STATUS_NO_CONTENT = 204;
   /** Http Status BAD. */
   private static final int STATUS_BAD = 400;
+  /** Http Status Unauthorized. */
+  private static final int STATUS_UNAUTHORIZED = 401;
   /** Http Status NOT_FOUND. */
   private static final int STATUS_NOT_FOUND = 404;
   /** JUnit Test Timeout. */
@@ -73,8 +77,8 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      assertEquals(STATUS_OK, client.optionsWebhooks().statusCode());
-      assertEquals(STATUS_OK,
+      assertEquals(STATUS_NO_CONTENT, client.optionsWebhooks().statusCode());
+      assertEquals(STATUS_NO_CONTENT,
           client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
     }
   }
@@ -186,4 +190,36 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
     assertEquals(STATUS_BAD, response.statusCode());
     assertEquals("{\"message\":\"invalid webhook url\"}", response.body());
   }
+  
+  /**
+   * Test POST /public/webhooks with private webhook.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testPublicWebhooks04() throws Exception {
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      // given
+      String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
+      String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
+
+      Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
+      Optional<HttpHeaders> o =
+          Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
+            @Override
+            public boolean test(final String t, final String u) {
+              return true;
+            }
+          }));
+
+      String content = "{\"name\":\"John Smith\"}";
+
+      // when
+      HttpService hs = new HttpServiceJava();
+      HttpResponse<String> response = hs.post(urlpath, o, RequestBody.fromString(content));
+
+      // then
+      assertEquals(STATUS_UNAUTHORIZED, response.statusCode());
+    }
+  }  
 }

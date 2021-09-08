@@ -48,6 +48,8 @@ public enum ApiResponseStatus {
   SC_FORBIDDEN(403),
   /** {@code 404 notfound} (HTTP/1.0 - RFC 1945). */
   SC_NOT_FOUND(404),
+  /** {@code 429 Too Many Requests} (HTTP/1.0 - RFC 1945). */
+  SC_TOO_MANY_REQUESTS(429),
   /** {@code 500 Server Error} (HTTP/1.0 - RFC 1945). */
   SC_ERROR(500),
   /** {@code 501 Server Error} (HTTP/1.0 - RFC 1945). */

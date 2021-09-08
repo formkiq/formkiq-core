@@ -3,9 +3,10 @@ plugins {
   id 'java-library'
   id 'checkstyle'
   id 'com.github.spotbugs'  version '4.6.0'
-  id 'com.diffplug.spotless' version '5.8.2'
+  id 'com.diffplug.spotless' version '5.12.1'
   id 'com.github.ben-manes.versions' version '0.36.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.1.0'
+  id 'de.undercouch.download' version '4.1.1'
 }
 
 spotless { 
@@ -16,7 +17,8 @@ spotless {
 }
 
 allprojects {
-  version = '1.2.8'
+  version = '1.3.0'
+  ext.awsCognitoVersion = '1.3.0'
   group = 'com.formkiq.stacks'
 }
 
@@ -150,6 +152,7 @@ task buildDistribution(type: Copy) {
     from 'lambda-api/build/distributions/formkiq-core'
     from 'lambda-s3/build/distributions/formkiq-core'
     from 'module-email-notify/build/distributions/formkiq-core'
+    from 'websocket-api/build/distributions/formkiq-core'
     into "${buildDir}/distributions/formkiq-core"
 }
 
@@ -158,30 +161,17 @@ task assembleTemplate {
   	outputs.upToDateWhen { false }
 	doLast {
 		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template.yaml ${buildDir}/template.yaml"
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/* ${buildDir}/distributions/formkiq-core/sam/"
 		}
 		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar-snippet.yaml ${buildDir}/template-sar-snippet.yaml"
+			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
 		}
 		exec {
-			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
-		}
-		exec {
-			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/*.yaml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
+			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
 		}		
-		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/template.yaml ${buildDir}/distributions/formkiq-core/sam/template.yaml"
-		}
 		exec {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"
-		}
-		exec {
-			commandLine "bash", "-c", "yq m --overwrite ${buildDir}/template.yaml ${buildDir}/template-sar-snippet.yaml > ${buildDir}/template-sar.yaml"
-		}
-		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml"
-		}		
+		}	
 	}
 }
 
@@ -306,7 +296,7 @@ task buildSamZip(type: Zip) {
     destinationDir(file("${buildDir}/distributions/formkiq-core"))
    	from("${buildDir}/distributions/formkiq-core/sam") {
    		include '*'
-        include '*/*'
+      include '**/**'
     }
 	from("${projectDir}") {
    		include 'INSTALL.md'

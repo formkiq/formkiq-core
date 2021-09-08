@@ -115,6 +115,7 @@ public class DocumentServiceImplTest implements DbKeys {
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();
     dbhelper.truncateWebhooks();
+    dbhelper.truncateConfig();
 
     assertEquals(0, dbhelper.getDocumentItemCount());
   }

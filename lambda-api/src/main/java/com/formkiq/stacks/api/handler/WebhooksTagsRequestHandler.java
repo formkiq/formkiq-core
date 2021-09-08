@@ -52,14 +52,17 @@ import com.formkiq.stacks.dynamodb.PaginationResults;
 public class WebhooksTagsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
   
+  /** Convert to Milliseconds. */
+  private static final long TO_MILLIS = 1000L;
+  
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
     
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    PaginationResults<DynamicObject> list = awsServices.webhookService().findTags(siteId, id);
+    PaginationResults<DynamicObject> list = awsServices.webhookService().findTags(siteId, id, null);
     
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();
@@ -93,7 +96,7 @@ public class WebhooksTagsRequestHandler
       throw new BadException("invalid json body");
     }
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
 
     tag.setType(DocumentTagType.USERDEFINED);
@@ -105,8 +108,14 @@ public class WebhooksTagsRequestHandler
       throw new NotFoundException("Webhook 'id' not found");
     }
     
-    awsServices.webhookService().addTags(siteId, id, Arrays.asList(tag),
-        webhook.getString("TimeToLive"));
+    Date ttl = null;
+    String ttlString = webhook.getString("TimeToLive");
+    if (ttlString != null) {
+      long epoch = Long.parseLong(ttlString);
+      ttl = new Date(epoch * TO_MILLIS);
+    }
+    
+    awsServices.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

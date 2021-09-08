@@ -1,0 +1,84 @@
+	
+description = "FormKiQ Core - WebSocket"
+
+dependencies {
+	testImplementation project(':aws-sqs')
+	testImplementation project(':aws-ssm')
+	testImplementation project(':aws-cognito')
+	testImplementation project(':dynamodb-documents')
+	
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.15.25'
+	
+    testImplementation group: 'junit', name: 'junit', version:'4.+'
+    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
+	testImplementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.2'
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.26'
+	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.6'
+}
+
+test {
+  failFast = true
+  exclude 'com/formkiq/stacks/websocket/awstest/**' 
+}
+
+task testaws(type: Test) {
+  description = 'Runs AWS integration tests.'
+  outputs.upToDateWhen {false}
+  include 'com/formkiq/stacks/websocket/awstest/**'    
+}
+
+task npmtest {
+  inputs.files("${project.projectDir}/src/index.js", "${project.projectDir}/src/test/index.js")
+  outputs.file("$buildDir/${project.name}_index.js_${project.version}")
+
+  doFirst {
+	macroLocalStackStart()
+  }
+  
+  doLast {
+    exec {
+      commandLine "bash", "-c", "cd src ; npm install ; npm test"
+    }
+    macroDockerComposeDown()
+  }
+}
+
+task buildZip(type: Zip) {
+   dependsOn check
+   from "src"
+   include "*"
+   include "*/**"
+   exclude "test", "coverage", ".nyc_output"
+   archiveName "websocket-api.zip"
+   destinationDir(file("${buildDir}"))
+}
+
+task assembleTemplate {
+    dependsOn buildZip
+	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
+	outputs.dir("${buildDir}/distributions/formkiq-core")
+	doLast {
+		exec {
+			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/websocket-api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/websocket-api"
+		}
+		exec {
+			commandLine "bash", "-c", "cp ${buildDir}/websocket-api.zip ${buildDir}/distributions/formkiq-core/sam/websocket-api/"
+		}
+		exec {
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/distributions/formkiq-core/sam/websocket-api/template.yaml"
+		}
+	}
+}
+
+task updateLambda {
+	outputs.upToDateWhen { false }
+	dependsOn assembleTemplate
+	doLast {
+		exec {
+			commandLine "bash", "-c", "aws lambda list-functions --region ${testregion} --profile ${testprofile} | jq -r '.Functions[] | .FunctionName' | grep formkiq-core-${testappenvironment} | grep 'Websocket' | xargs -I{} aws lambda update-function-code --function-name {} --zip-file fileb://${buildDir}/websocket-api.zip --region ${testregion} --profile ${testprofile}"
+		}
+	}
+}
+
+test.dependsOn npmtest
+build.dependsOn assembleTemplate

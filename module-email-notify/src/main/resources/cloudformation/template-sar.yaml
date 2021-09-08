@@ -85,11 +85,12 @@ Resources:
       Timeout: 60
       MemorySize: 256
       CodeUri: ./module-email-notify.zip
+      AutoPublishCodeSha256: 8824764B1781FAF3BC725E07C9D9692A1A8BC7F3305786A5DD3FBA994068389B
       Environment:
         Variables:
           DEBUG: false
           EMAIL_TOPIC_ARN: !Ref DocumentsEmailNotification
-          CONSOLE_URL: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url:1}}" 
+          CONSOLE_URL: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url}}" 
       Role: !GetAtt [EmailNotifyRole, Arn]
       Tags:
         Application: !Sub "FormKiQ ${FormKiQType}"

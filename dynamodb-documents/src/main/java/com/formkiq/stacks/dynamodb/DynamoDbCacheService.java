@@ -98,11 +98,12 @@ public class DynamoDbCacheService implements CacheService {
 
   /**
    * Get Expiry Time.
+   * @param cacheInDays int
    * 
    * @return long
    */
-  private Date getExpiryTime() {
-    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+  private Date getExpiryTime(final int cacheInDays) {
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(cacheInDays);
     return Date.from(now.toInstant());
   }
 
@@ -130,10 +131,11 @@ public class DynamoDbCacheService implements CacheService {
   }
 
   @Override
-  public void write(final String key, final String data) {
+  public void write(final String key, final String data, final int cacheInDays) {
 
     Date now = new Date();
-    long timeout = getExpiryTime().getTime() / MILLISECONDS;
+    long timeout = getExpiryTime(cacheInDays).getTime() / MILLISECONDS;
+
     String fulldate = this.df.format(now);
 
     Map<String, AttributeValue> pkvalues = new HashMap<String, AttributeValue>();

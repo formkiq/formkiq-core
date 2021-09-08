@@ -80,7 +80,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   @Override
   public void addTags(final String siteId, final String webhookId,
-      final Collection<DocumentTag> tags, final String timeToLive) {
+      final Collection<DocumentTag> tags, final Date ttl) {
 
     if (tags != null) {
 
@@ -90,8 +90,8 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
       List<Map<String, AttributeValue>> valueList =
           tags.stream().map(mapper).collect(Collectors.toList());
       
-      if (timeToLive != null) {
-        valueList.forEach(v -> addN(v, "TimeToLive", timeToLive));
+      if (ttl != null) {
+        valueList.forEach(v -> addTimeToLive(v, ttl));
       }
 
       List<Put> putitems = valueList.stream()
@@ -108,7 +108,13 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     }
   }
 
-  private void addTimeToLive(final Map<String, AttributeValueUpdate> values, final Date datettl) {
+  private void addTimeToLive(final Map<String, AttributeValue> values, final Date datettl) {
+    long timeout = datettl.getTime() / MILLISECONDS;
+    values.put("TimeToLive", AttributeValue.builder().n(String.valueOf(timeout)).build());
+  }
+  
+  private void addTimeToLiveUpdate(final Map<String, AttributeValueUpdate> values,
+      final Date datettl) {
     long timeout = datettl.getTime() / MILLISECONDS;
     values.put("TimeToLive", AttributeValueUpdate.builder()
         .value(AttributeValue.builder().n(String.valueOf(timeout)).build()).build());
@@ -116,9 +122,33 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
   @Override
   public void deleteWebhook(final String siteId, final String id) {
+    
+    deleteWebhookTags(siteId, id, null);
+    
     Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + id, "webhook");
     this.dynamoDB
         .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+  }
+  
+  private void deleteWebhookTags(final String siteId, final String id,
+      final PaginationMapToken token) {
+    
+    PaginationResults<DynamicObject> tags = findTags(siteId, id, token);
+    
+    for (DynamicObject t : tags.getResults()) {
+      String pk = t.getString("PK");
+      String sk = t.getString("SK");
+      
+      Map<String, AttributeValue> key = Map.of("PK", AttributeValue.builder().s(pk).build(), "SK",
+          AttributeValue.builder().s(sk).build());
+      
+      this.dynamoDB.deleteItem(
+          DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+    }
+    
+    if (tags.getToken() != null) {
+      deleteWebhookTags(siteId, id, tags.getToken());
+    }
   }
 
   @Override
@@ -134,15 +164,18 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   
   @Override
   public PaginationResults<DynamicObject> findTags(final String siteId,
-      final String webhookId) {
+      final String webhookId, final PaginationMapToken token) {
   
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
 
     Map<String, AttributeValue> values =
         queryKeys(keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, PREFIX_TAGS));
 
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
         .keyConditionExpression(expression).expressionAttributeValues(values)
+        .exclusiveStartKey(startkey)
         .build();
 
     QueryResponse result = this.dynamoDB.query(q);
@@ -162,9 +195,17 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
         this.dynamoDB.getItem(
             GetItemRequest.builder().tableName(this.documentTableName).key(pkvalues).build());
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
-    return !response.item().isEmpty() ? transform.apply(response.item()) : null;
+    
+    DynamicObject ob = null;
+    
+    if (!response.item().isEmpty()) {
+      ob = transform.apply(response.item());
+      updateWebhookTimeToLive(ob);
+    }
+    
+    return ob;
   }
-  
+
   @Override
   public List<DynamicObject> findWebhooks(final String siteId) {
     Map<String, AttributeValue> key = queryKeys(keysGeneric(siteId, PREFIX_WEBHOOKS, null));
@@ -179,6 +220,8 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Collection<? extends Map<String, AttributeValue>> keys = result.items().stream()
         .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());    
         
+    List<DynamicObject> retlist = Collections.emptyList();
+    
     if (!keys.isEmpty()) {
       
       Map<String, KeysAndAttributes> items =
@@ -193,15 +236,16 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
       AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
-      return list.stream().map(m -> transform.apply(m)).collect(Collectors.toList());
+      retlist = list.stream().map(m -> transform.apply(m)).collect(Collectors.toList());
+      retlist.forEach(ob -> updateWebhookTimeToLive(ob));
     }
     
-    return Collections.emptyList();
+    return retlist;
   }
-
+  
   @Override
   public String saveWebhook(final String siteId, final String name, final String userId,
-      final Date ttl) {
+      final Date ttl, final String enabled) {
 
     final String id = UUID.randomUUID().toString();
     final String fulldate = this.df.format(new Date());
@@ -212,6 +256,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     addS(pkvalues, "path", name);
     addS(pkvalues, "userId", userId);
     addS(pkvalues, "inserteddate", fulldate);
+    addS(pkvalues, "enabled", enabled);
     
     addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_WEBHOOKS));
     addS(pkvalues, GSI1_SK, name + TAG_DELIMINATOR + fulldate);
@@ -236,12 +281,12 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, "webhook");
         
     Map<String, AttributeValueUpdate> values =  new HashMap<>();
-    addTimeToLive(values, ttl);
+    addTimeToLiveUpdate(values, ttl);
     
     this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
         .key(key).attributeUpdates(values).build());
     
-    PaginationResults<DynamicObject> result = findTags(siteId, webhookId);
+    PaginationResults<DynamicObject> result = findTags(siteId, webhookId, null);
     for (DynamicObject ob : result.getResults()) {
       
       key = new HashMap<>();
@@ -261,18 +306,36 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Map<String, AttributeValueUpdate> values =  new HashMap<>();
     
     if (obj.containsKey("name")) {
-      values.put("name", AttributeValueUpdate.builder()
+      values.put("path", AttributeValueUpdate.builder()
           .value(AttributeValue.builder().s(obj.getString("name")).build()).build());
+    }
+    
+    if (obj.containsKey("enabled")) {
+      values.put("enabled", AttributeValueUpdate.builder()
+          .value(AttributeValue.builder().s(obj.getString("enabled")).build()).build());
     }
     
     if (obj.containsKey("TimeToLive")) {
       Date datettl = obj.getDate("TimeToLive");
-      addTimeToLive(values, datettl);
+      addTimeToLiveUpdate(values, datettl);
     }
     
     if (!values.isEmpty()) {
       this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
           .key(key).attributeUpdates(values).build());
+    }
+  }
+
+  private void updateWebhookTimeToLive(final DynamicObject ob) {
+    String epoch = ob.getString("TimeToLive");
+    
+    if (epoch != null) {
+      long dateL = Long.parseLong(epoch) * MILLISECONDS;
+      if (new Date().getTime() > dateL) {
+        ob.put("enabled", "false");
+      }
+      
+      ob.put("ttl", this.df.format(new Date(dateL)));
     }
   }
 }

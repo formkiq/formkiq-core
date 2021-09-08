@@ -29,6 +29,8 @@ import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_FOUND;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_NOT_IMPLEMENTED;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
+import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_UNAUTHORIZED;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -49,6 +51,8 @@ import com.formkiq.lambda.apigateway.exception.BadException;
 import com.formkiq.lambda.apigateway.exception.ForbiddenException;
 import com.formkiq.lambda.apigateway.exception.NotFoundException;
 import com.formkiq.lambda.apigateway.exception.NotImplementedException;
+import com.formkiq.lambda.apigateway.exception.TooManyRequestsException;
+import com.formkiq.lambda.apigateway.exception.UnauthorizedException;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.InvalidConditionsException;
@@ -82,7 +86,8 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
         .dbConnection(builder, map.get("DOCUMENTS_TABLE"), map.get("CACHE_TABLE")).s3Connection(s3)
         .sqsConnection(sqs).ssmConnection(ssm).stages3bucket(map.get("STAGE_DOCUMENTS_S3_BUCKET"))
         .debug("true".equals(map.get("DEBUG"))).appEnvironment(map.get("APP_ENVIRONMENT"))
-        .formkiqType(map.get("FORMKIQ_TYPE")).documents3bucket(map.get("DOCUMENTS_S3_BUCKET"));
+        .formkiqType(map.get("FORMKIQ_TYPE")).documents3bucket(map.get("DOCUMENTS_S3_BUCKET"))
+        .websocketSqsUrl(map.get("WEBSOCKET_SQS_URL"));
 
     awsServices.init();
   }
@@ -198,16 +203,23 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
     try {
 
       ApiRequestHandlerResponse object = processRequest(logger, event, authorizer);
+      processResponse(authorizer, event, object);
       buildResponse(logger, output, object.getStatus(), object.getHeaders(), object.getResponse());
 
     } catch (NotFoundException e) {
       buildResponse(logger, output, SC_NOT_FOUND, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (TooManyRequestsException e) {
+      buildResponse(logger, output, SC_TOO_MANY_REQUESTS, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (BadException | InvalidConditionsException | DateTimeException e) {
       buildResponse(logger, output, SC_BAD_REQUEST, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (ForbiddenException e) {
       buildResponse(logger, output, SC_FORBIDDEN, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (UnauthorizedException e) {
+      buildResponse(logger, output, SC_UNAUTHORIZED, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
     } catch (NotImplementedException e) {
       buildResponse(logger, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),
@@ -217,6 +229,50 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
 
       buildResponse(logger, output, SC_ERROR, Collections.emptyMap(),
           new ApiResponseError("Internal Server Error"));
+    }
+  }
+
+  /**
+   * Processes the Response.
+   * @param authorizer {@link ApiAuthorizer}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param resp {@link ApiRequestHandlerResponse}
+   * @throws BadException BadException
+   */
+  private void processResponse(final ApiAuthorizer authorizer, final ApiGatewayRequestEvent event,
+      final ApiRequestHandlerResponse resp) throws BadException {
+
+    String webnotify = event.getQueryStringParameter("webnotify");
+    
+    if ("true".equals(webnotify)) {
+      
+      AwsServiceCache aws = getAwsServices();
+      switch (resp.getStatus()) {
+        case SC_OK:
+        case SC_CREATED:
+        case SC_ACCEPTED:
+          String siteId = authorizer.getSiteId();
+          String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+          String documentId = event.getPathParameters().get("documentId");
+          
+          Map<String, String> m = new HashMap<>();
+          if (siteId != null) {
+            m.put("siteId", siteId);
+          }
+          
+          if (documentId != null) {
+            m.put("documentId", documentId);
+          }
+          
+          m.put("message", body);
+    
+          String json = this.gson.toJson(m);
+          aws.sqsService().sendMessage(aws.websocketSqsUrl(), json);
+          break;
+
+        default:
+          break;
+      }
     }
   }
 

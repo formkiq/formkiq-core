@@ -63,7 +63,7 @@ public class DocumentVersionsRequestHandler
 
     SimpleDateFormat df = new SimpleDateFormat(GsonUtil.DATE_FORMAT);
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     String next = getParameter(event, "next");
 

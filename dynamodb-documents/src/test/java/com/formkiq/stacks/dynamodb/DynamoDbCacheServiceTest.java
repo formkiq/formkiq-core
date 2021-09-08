@@ -67,7 +67,10 @@ public class DynamoDbCacheServiceTest {
     DynamoDbHelper dbhelper = new DynamoDbHelper(adb);
 
     if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
+      dbhelper.createCacheTable();
+    }
+    
+    if (!dbhelper.isCacheTableExists()) {
       dbhelper.createCacheTable();
     }
   }
@@ -89,13 +92,13 @@ public class DynamoDbCacheServiceTest {
   public void testWrite01() {
     // given
     final Date before = Date.from(ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(1).toInstant());
-    final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(1).toInstant());
+    final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).toInstant());
 
     String key = "testkey";
     String value = UUID.randomUUID().toString();
 
     // when
-    this.service.write(key, value);
+    this.service.write(key, value, 1);
 
     // then
     assertEquals(value, this.service.read(key));

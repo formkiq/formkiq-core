@@ -44,7 +44,6 @@ import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmServiceImpl;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestContext;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -65,6 +64,8 @@ import software.amazon.awssdk.utils.IoUtils;
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
+  /** SQS Websockets Queue. */
+  private static final String SQS_WEBSOCKET_QUEUE = "websockets";
   /** SQS Document Formats Queue. */
   private static final String SQS_DOCUMENT_FORMATS_QUEUE = "documentFormats";
   /** {@link String}. */
@@ -89,6 +90,8 @@ public abstract class AbstractRequestHandler {
   private static Region awsRegion;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentFormatsQueueUrl;
+  /** SQS Websocket Queue Url. */
+  private static String sqsWebsocketQueueUrl;
 
   /**
    * Before Class.
@@ -133,12 +136,19 @@ public abstract class AbstractRequestHandler {
     DynamoDbHelper dbHelper = new DynamoDbHelper(dbConnection);
     if (!dbHelper.isDocumentsTableExists()) {
       dbHelper.createDocumentsTable();
-      dbHelper.createCacheTable();
     }
 
+    if (!dbHelper.isCacheTableExists()) {
+      dbHelper.createCacheTable();
+    }
+    
     SqsService sqsservice = new SqsService(sqsConnection);
     if (!sqsservice.exists(SQS_DOCUMENT_FORMATS_QUEUE)) {
       sqsDocumentFormatsQueueUrl = sqsservice.createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
+    }
+    
+    if (!sqsservice.exists(SQS_WEBSOCKET_QUEUE)) {
+      sqsWebsocketQueueUrl = sqsservice.createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
     }
 
     new SsmServiceImpl(ssmConnection).putParameter("/formkiq/" + appenvironment + "/version",
@@ -172,18 +182,27 @@ public abstract class AbstractRequestHandler {
     return sqsDocumentFormatsQueueUrl;
   }
 
+  /**
+   * Get SqsWebsocketQueueUrl.
+   * @return {@link String}
+   */
+  public static String getSqsWebsocketQueueUrl() {
+    return sqsWebsocketQueueUrl;
+  }
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
+
   /** {@link CoreRequestHandler}. */
   private CoreRequestHandler handler;
+
   /** {@link ByteArrayOutputStream}. */
   private ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
 
   /** {@link LambdaLogger}. */
   private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
+
   /** {@link DynamoDbHelper}. */
   private DynamoDbHelper dbhelper;
 
@@ -257,6 +276,8 @@ public abstract class AbstractRequestHandler {
 
     this.dbhelper = new DynamoDbHelper(dbConnection);
     this.dbhelper.truncateDocumentsTable();
+    this.dbhelper.truncateWebhooks();
+    this.dbhelper.truncateConfig();
 
     this.map.put("APP_ENVIRONMENT", appenvironment);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
@@ -268,6 +289,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("SQS_DOCUMENT_FORMATS", sqsDocumentFormatsQueueUrl);
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
+    this.map.put("WEBSOCKET_SQS_URL", sqsWebsocketQueueUrl);
 
     createApiRequestHandler(this.map);
 
@@ -493,6 +515,7 @@ public abstract class AbstractRequestHandler {
     this.awsServices.ssmService().putParameter(name, value);
   }
 
+
   /**
    * Remove SSM Parameter.
    * 
@@ -528,7 +551,6 @@ public abstract class AbstractRequestHandler {
 
     claims.put("cognito:groups", cognitoGroups);
   }
-
 
   /**
    * Set Path Parameter.
@@ -582,33 +604,6 @@ public abstract class AbstractRequestHandler {
       return GsonUtil.getInstance().fromJson(new InputStreamReader(in, StandardCharsets.UTF_8),
           ApiGatewayRequestEvent.class);
     }
-  }
-
-  /**
-   * Converts {@link String} filename to {@link ApiGatewayRequestEvent}.
-   *
-   * @param method {@link String}
-   * @param resource {@link String}
-   * @param object {@link Object}
-   * @return {@link ApiGatewayRequestEvent}
-   * @throws IOException IOException
-   */
-  public ApiGatewayRequestEvent toRequestEvent(final String method, final String resource,
-      final Object object) throws IOException {
-    ApiGatewayRequestEvent req = new ApiGatewayRequestEvent();
-    req.setHttpMethod(method);
-    req.setResource(resource);
-
-    ApiGatewayRequestContext reqContext = new ApiGatewayRequestContext();
-    reqContext.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[Admins]", "username",
-        "f67128c7-b804-4147-8ae9-a22fdec108e0@formkiq.com")));
-    req.setRequestContext(reqContext);
-
-    if (object != null) {
-      req.setBody(GsonUtil.getInstance().toJson(object));
-    }
-
-    return req;
   }
 
   /**

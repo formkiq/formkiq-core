@@ -44,7 +44,7 @@ Resources:
           Resource: !GetAtt [SqsQueue, Arn]
           Condition:
             ArnLike:
-              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn:1}}"
+              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
       Queues:
       - Ref: SqsQueue
       
@@ -53,7 +53,7 @@ Resources:
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt SqsQueue.Arn
-      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn:1}}"
+      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
       FilterPolicy: !Ref FilterPolicy
           
 Outputs:

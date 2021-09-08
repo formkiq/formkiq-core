@@ -2,7 +2,7 @@
         info:
           title: "FormKiQ HTTP API"
           description: "FormKiQ IAM API"
-          version: "1.5.4"
+          version: "1.6.2"
         paths:
           /version:
             get:
@@ -30,20 +30,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Return the version of FormKiQ Options.
-              tags:
-                - Miscellaneous
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                  content: {}
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites:
             get:
               description: Sites User belongs to
@@ -68,20 +54,6 @@
                         "$ref": "#/components/schemas/Sites"
               security:
                 - sigv4: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Sites User belongs to Options.
-              tags:
-                - Miscellaneous
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                  content: {}
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents:
@@ -159,20 +131,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-            options:
-              description: Save document Options.
-              tags:
-                - Documents
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                  content: {}
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}:
             get:
               description: Get document details.
@@ -239,17 +197,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Get document details Options.
-              tags:
-                - Documents
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
               description: Delete document.
               tags:
@@ -299,17 +246,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Get document versions Options.
-              tags:
-                - Documents
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/content:
             get:
               description: Get document content.
@@ -337,17 +273,6 @@
                         $ref: '#/components/schemas/DocumentContent'
               security:
                 - sigv4: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Get document tags Options.
-              tags:
-                - Documents
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags:
@@ -385,17 +310,6 @@
                         $ref: '#/components/schemas/DocumentItemsTags'
               security:
                 - sigv4: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Get document tags Options.
-              tags:
-                - Documents
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
@@ -474,18 +388,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Delete document tags Options.
-              tags:
-                - Documents
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-                - $ref: '#/components/parameters/tagkeyParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
               description: Delete document tags.
               tags:
@@ -529,17 +431,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Returns a URL to fetch the document Options.
-              tags:
-                - Documents
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/upload:
             get:
               description: Returns URL that can accept uploads largers than 5 MB.
@@ -572,15 +463,6 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Returns URL that can accept uploads largers than 5 MB Options.
-              tags:
-                - Documents
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/upload:
             get:
               parameters:
@@ -609,27 +491,7 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              parameters:
-                - $ref: '#/components/parameters/documentIdParam'
-              description: Searches for Documents Options.
-              tags:
-                - Documents
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /search:
-            options:
-              description: Searches for Documents Options.
-              tags:
-                - Search
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               description: Searches for Documents.
               tags:
@@ -718,20 +580,6 @@
                         $ref: '#/components/schemas/DocumentId'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-            options:
-              description: Save document Options.
-              tags:
-                - Public
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                  content: {}
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/webhooks/{webhooks+}:
             post:
               description: Public Webhook.
@@ -791,21 +639,67 @@
                         $ref: '#/components/schemas/DocumentId'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Public Webhook Options.
+          /private/webhooks/{webhooks+}:
+            post:
+              description: Private Webhook.
               tags:
-                - Public
+                - Webhooks
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/webhooksParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
               responses:
                 '200':
                   description: 200 response
                   headers:
                     Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
                       schema:
-                        type: string
-                  content: {}
+                        $ref: '#/components/schemas/DocumentId'
+              security:
+                - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              description: Private Webhook.
+              tags:
+                - Webhooks
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/webhooksParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentId'
+              security:
+                - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks:
@@ -866,30 +760,33 @@
                 - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-            options:
-              description: Webhook Options.
+          /webhooks/{webhookId}:
+            get:
               tags:
                 - Webhooks
+              description: Returns a webhook
+              parameters:
+                - $ref: '#/components/parameters/siteIdParam'
+                - $ref: '#/components/parameters/webhookIdParam'
               responses:
-                '200':
-                  description: 200 response
+                200:
+                  description: "200 response"
                   headers:
                     Access-Control-Allow-Origin:
                       schema:
-                        type: string
-                  content: {}
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /webhooks/{webhookId}:
-            options:
-              description: Get Webhook Options.
-              tags:
-                - Webhooks
-              parameters:
-                - $ref: '#/components/parameters/webhookIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/Webhook"
+              security:
+                - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
@@ -944,17 +841,6 @@
                         $ref: '#/components/schemas/WebhookTags'
               security:
                 - sigv4: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            options:
-              description: Get Webhooks tags Options.
-              tags:
-                - Webhooks
-              parameters:
-                - $ref: '#/components/parameters/webhookIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
@@ -1253,6 +1139,19 @@
               properties:
                 name:
                   type: "string"
+                ttl:
+                  type: "string"
+                enabled:
+                  type: "string"
+                tags:
+                  type: "array"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                      value:
+                        type: "string"
             DocumentBody:
               required:
                 - "content"
@@ -1366,22 +1265,24 @@
             Webhooks:
               type: "array"
               items:
-                type: "object"
-                properties:
-                  siteId:
-                    type: "string"
-                  name:
-                    type: "string"
-                  url:
-                    type: "string"
-                  insertedDate:
-                    type: "string"
-                    format: "date-time"
-                  id:
-                    type: "string"
-                    format: "uuid"
-                  userId:
-                    type: "string"
+                $ref: "#/components/schemas/Webhook"
+            Webhook:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                name:
+                  type: "string"
+                url:
+                  type: "string"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                id:
+                  type: "string"
+                  format: "uuid"
+                userId:
+                  type: "string"
             WebhookTags:
               type: "object"
               properties:

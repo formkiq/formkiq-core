@@ -181,6 +181,44 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /** {@link DocumentsS3Update}. */
   private DocumentsS3Update handler;
 
+  private void addS3File(final String key, final String contentType, final boolean addTags,
+      final String content) {
+    
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("Content-Type", contentType);
+
+    try (S3Client s3 = s3service.buildClient()) {
+      s3service.putObject(s3, "example-bucket", key, content.getBytes(StandardCharsets.UTF_8),
+          contentType, metadata);
+
+      if (addTags) {
+        s3service.setObjectTags(s3, "example-bucket", key,
+            Arrays.asList(Tag.builder().key("sample").value("12345").build(),
+                Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
+      }
+    }
+  }
+
+  /**
+   * Assert {@link DocumentTag}.
+   * @param expected {@link DocumentTag}
+   * @param actual {@link DocumentTag}
+   */
+  private void assertDocumentTagEquals(final DocumentTag expected, final DocumentTag actual) {
+    assertEquals(expected.getKey(), actual.getKey());
+    assertEquals(expected.getValue(), actual.getValue());
+    assertEquals(expected.getDocumentId(), actual.getDocumentId());
+    assertEquals(expected.getType(), actual.getType());
+    
+    if (expected.getUserId() != null) {
+      assertEquals(expected.getUserId(), actual.getUserId());
+    } else {
+      assertNotNull(actual.getUserId());
+    }
+    
+    assertNotNull(actual.getInsertedDate());
+  }
+
   /**
    * Assert Publish SNS Topic.
    * 
@@ -268,6 +306,72 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
+   * Create {@link DynamicDocumentItem} with Child Documents.
+   * @param now {@link Date}
+   * @return {@link DynamicDocumentItem}
+   */
+  private DynamicDocumentItem createSubDocuments(final Date now) {
+    String username = UUID.randomUUID() + "@formkiq.com";
+    
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc.setContentType("text/plain");
+    doc.put("tags",
+        Arrays.asList(Map.of("documentId", doc.getDocumentId(), "key", "category", "value", "none",
+            "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc1.setContentType("text/html");
+    doc1.put("tags", Arrays.asList(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
+        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
+    doc2.setContentType("application/json");
+    doc2.put("tags", Arrays.asList(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
+        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    doc.put("documents", Arrays.asList(doc1, doc2));
+
+    return doc;
+  }
+
+  /**
+   * Handle Request.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param map {@link Map}
+   * 
+   * @return {@link DocumentItem}
+   * @throws IOException IOException
+   */
+  private DocumentItem handleRequest(final String siteId, final String documentId,
+      final Map<String, Object> map) throws IOException {
+
+    // when
+    this.handler.handleRequest(map, this.context);
+
+    // then
+    return service.findDocument(siteId, documentId);
+  }
+  
+  /**
+   * Test convertToPrintableCharacters.
+   */
+  @Test
+  public void testConvertToPrintableCharacters01() {
+    String s = "öäü How to do in java .\" com A função, Ãugent";
+    assertEquals("HowtodoinjavacomAfunougent",
+        DocumentsS3Update.convertToPrintableCharacters(s));
+    assertEquals("webhook/Mostpopularboynamesxlsx",
+        DocumentsS3Update.convertToPrintableCharacters("webhook/\"Mostpopularboynames.xlsx\""));
+    assertEquals("FK79tpEN51",
+        DocumentsS3Update.convertToPrintableCharacters("FK79tpEN51"));
+  }
+  
+  /**
    * Create Document Request without existing Tags/Formats.
    *
    * @throws Exception Exception
@@ -330,7 +434,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
-
+  
   /**
    * Update Document Request with existing Tags.
    *
@@ -397,7 +501,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "update", false, false);
     }
   }
-
+  
   /**
    * Delete Document Request.
    *
@@ -435,7 +539,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "delete", false, true);
     }
   }
-
+  
   /**
    * Create Document Request on child document.
    *
@@ -509,7 +613,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(0, tags.getResults().size());
     }
   }
-  
+
   /**
    * Test Processing Document with sub documents.
    * 
@@ -567,26 +671,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
   
   /**
-   * Assert {@link DocumentTag}.
-   * @param expected {@link DocumentTag}
-   * @param actual {@link DocumentTag}
-   */
-  private void assertDocumentTagEquals(final DocumentTag expected, final DocumentTag actual) {
-    assertEquals(expected.getKey(), actual.getKey());
-    assertEquals(expected.getValue(), actual.getValue());
-    assertEquals(expected.getDocumentId(), actual.getDocumentId());
-    assertEquals(expected.getType(), actual.getType());
-    
-    if (expected.getUserId() != null) {
-      assertEquals(expected.getUserId(), actual.getUserId());
-    } else {
-      assertNotNull(actual.getUserId());
-    }
-    
-    assertNotNull(actual.getInsertedDate());
-  }
-  
-  /**
    * Create Document Request with Text Content.
    *
    * @throws Exception Exception
@@ -616,10 +700,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", true, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
-  
+
   /**
    * Create Document Request with Text Content TOO LARGE.
    *
@@ -654,7 +738,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
-  
+
   /**
    * Create Document Request with Text Content+Payload TOO LARGE.
    *
@@ -689,7 +773,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
     }
   }
-
+  
   /**
    * Create Document Request without existing Tags/Formats and TTL.
    *
@@ -744,44 +828,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
   
   /**
-   * Handle Request.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param map {@link Map}
-   * 
-   * @return {@link DocumentItem}
-   * @throws IOException IOException
-   */
-  private DocumentItem handleRequest(final String siteId, final String documentId,
-      final Map<String, Object> map) throws IOException {
-
-    // when
-    this.handler.handleRequest(map, this.context);
-
-    // then
-    return service.findDocument(siteId, documentId);
-  }
-
-  private void addS3File(final String key, final String contentType, final boolean addTags,
-      final String content) {
-    
-    Map<String, String> metadata = new HashMap<>();
-    metadata.put("Content-Type", contentType);
-
-    try (S3Client s3 = s3service.buildClient()) {
-      s3service.putObject(s3, "example-bucket", key, content.getBytes(StandardCharsets.UTF_8),
-          contentType, metadata);
-
-      if (addTags) {
-        s3service.setObjectTags(s3, "example-bucket", key,
-            Arrays.asList(Tag.builder().key("sample").value("12345").build(),
-                Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
-      }
-    }
-  }
-
-  /**
    * Verify {@link DocumentItem}.
    * 
    * @param siteId {@link String}
@@ -805,37 +851,5 @@ public class DocumentsS3UpdateTest implements DbKeys {
     }
 
     return item;
-  }
-  
-  /**
-   * Create {@link DynamicDocumentItem} with Child Documents.
-   * @param now {@link Date}
-   * @return {@link DynamicDocumentItem}
-   */
-  private DynamicDocumentItem createSubDocuments(final Date now) {
-    String username = UUID.randomUUID() + "@formkiq.com";
-    
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
-    doc.setContentType("text/plain");
-    doc.put("tags",
-        Arrays.asList(Map.of("documentId", doc.getDocumentId(), "key", "category", "value", "none",
-            "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
-
-    DynamicDocumentItem doc1 = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
-    doc1.setContentType("text/html");
-    doc1.put("tags", Arrays.asList(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
-        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
-
-    DynamicDocumentItem doc2 = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
-    doc2.setContentType("application/json");
-    doc2.put("tags", Arrays.asList(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
-        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
-
-    doc.put("documents", Arrays.asList(doc1, doc2));
-
-    return doc;
   }
 }

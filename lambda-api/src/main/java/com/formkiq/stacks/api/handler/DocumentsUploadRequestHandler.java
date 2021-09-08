@@ -84,7 +84,7 @@ public class DocumentsUploadRequestHandler
 
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     DocumentService service = awsservice.documentService();
 
     if (query != null && query.containsKey("path")) {
@@ -97,7 +97,7 @@ public class DocumentsUploadRequestHandler
           new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
     }
 
-    String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);
+    String urlstring = generatePresignedUrl(awsservice, logger, siteId, documentId, query);
     logger.log("generated presign url: " + urlstring + " for document " + documentId);
 
     if (!documentExists) {
@@ -105,7 +105,8 @@ public class DocumentsUploadRequestHandler
       tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
           DocumentTagType.SYSTEMDEFINED));
 
-      String value = this.restrictionMaxDocuments.getSsmValue(awsservice, siteId);
+      String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
+
       if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
         logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
@@ -126,18 +127,20 @@ public class DocumentsUploadRequestHandler
    * Generate Presigned URL.
    *
    * @param awsservice {@link AwsServiceCache}
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param query {@link Map}
    * @return {@link String}
    * @throws BadException BadException
    */
-  private String generatePresignedUrl(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final Map<String, String> query) throws BadException {
+  private String generatePresignedUrl(final AwsServiceCache awsservice, final LambdaLogger logger,
+      final String siteId, final String documentId, final Map<String, String> query)
+      throws BadException {
 
     String key = siteId != null ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
-    Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
+    Optional<Long> contentLength = calculateContentLength(awsservice, logger, query, siteId);
     URL url = awsservice.s3Service().presignPostUrl(awsservice.documents3bucket(), key, duration,
         contentLength);
 
@@ -149,19 +152,22 @@ public class DocumentsUploadRequestHandler
    * Calculate Content Length.
    * 
    * @param awsservice {@link AwsServiceCache}
+   * @param logger {@link LambdaLogger}
    * @param query {@link Map}
    * @param siteId {@link String}
    * @return {@link Optional} {@link Long}
    * @throws BadException BadException
    */
   private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
-      final Map<String, String> query, final String siteId) throws BadException {
+      final LambdaLogger logger, final Map<String, String> query, final String siteId)
+      throws BadException {
 
     Long contentLength = query != null && query.containsKey("contentLength")
         ? Long.valueOf(query.get("contentLength"))
         : null;
 
-    String value = this.restrictionMaxContentLength.getSsmValue(awsservice, siteId);
+    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
+
     if (value != null
         && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
 
@@ -170,7 +176,7 @@ public class DocumentsUploadRequestHandler
       }
 
       String maxContentLengthBytes =
-          this.restrictionMaxContentLength.getSsmValue(awsservice, siteId);
+          this.restrictionMaxContentLength.getValue(awsservice, siteId);
       throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
     }
 

@@ -109,7 +109,8 @@
         "token_use": "id",
         "auth_time": "1559447872",
         "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_fC9EAO1D0",
-        "cognito:username": "regan.wolfrom+test1@gmail.com",
+        "cognito:username": "cbc3b091-f393-47ec-a012-5c18cc754c7f",
+        "email": "testadminuser@formkiq.com",
         "exp": "Sun Jun 02 04:57:52 UTC 2019",
         "iat": "Sun Jun 02 03:57:52 UTC 2019",
         "email": "regan.wolfrom+test1@gmail.com"

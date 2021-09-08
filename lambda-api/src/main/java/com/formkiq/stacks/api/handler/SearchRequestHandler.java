@@ -68,7 +68,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new BadException("Invalid JSON body.");
     }
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     PaginationResults<DynamicDocumentItem> results =
         awsservice.documentSearchService().search(siteId, q.getQuery().getTag(), ptoken, limit);
 

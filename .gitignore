@@ -12,3 +12,4 @@ node_modules
 *.tmp
 gradle.properties
 !console/src/test/resources/test.zip
+websocket-api/src/coverage

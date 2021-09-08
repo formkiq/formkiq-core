@@ -39,7 +39,7 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 public class VersionRequestTest extends AbstractApiTest {
 
   /** Http Status OK. */
-  private static final int HTTP_STATUS_OK = 200;
+  private static final int HTTP_STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
 
@@ -66,7 +66,7 @@ public class VersionRequestTest extends AbstractApiTest {
   public void testOptions01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       HttpResponse<String> response = client.optionsVersion();
-      assertEquals(HTTP_STATUS_OK, response.statusCode());
+      assertEquals(HTTP_STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());
     }
   }

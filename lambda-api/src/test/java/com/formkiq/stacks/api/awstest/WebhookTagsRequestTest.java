@@ -43,7 +43,7 @@ import com.formkiq.stacks.client.requests.OptionsWebhookTagsRequest;
 public class WebhookTagsRequestTest extends AbstractApiTest {
 
   /** Http Status OK. */
-  private static final int STATUS_OK = 200;
+  private static final int STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
 
@@ -57,7 +57,7 @@ public class WebhookTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       OptionsWebhookTagsRequest req =
           new OptionsWebhookTagsRequest().webhookId(UUID.randomUUID().toString());
-      assertEquals(STATUS_OK, client.optionsWebhookTags(req).statusCode());
+      assertEquals(STATUS_NO_CONTENT, client.optionsWebhookTags(req).statusCode());
     }
   }
 

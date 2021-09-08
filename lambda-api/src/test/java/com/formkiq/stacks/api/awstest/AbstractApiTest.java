@@ -55,6 +55,9 @@ import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
+import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.regions.Region;
@@ -99,6 +102,8 @@ public abstract class AbstractApiTest {
   private static StsService stsService;
   /** {@link SsmService}. */
   private static SsmService ssmService;
+  /** {@link ConfigService}. */
+  private static ConfigService configService;
   /** API Root Http Url. */
   private static String rootHttpUrl;
   /** FormKiQ Http API Client. */
@@ -156,7 +161,7 @@ public abstract class AbstractApiTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-    
+        
     awsregion = Region.of(System.getProperty("testregion"));
 
     String awsprofile = System.getProperty("testprofile");
@@ -198,6 +203,7 @@ public abstract class AbstractApiTest {
     }
 
     setupCognito();
+    setupConfigService(awsprofile);
   }
 
   /**
@@ -359,6 +365,16 @@ public abstract class AbstractApiTest {
     httpClient = new FormKiqClientV1(connection);
   }
 
+  private static void setupConfigService(final String awsprofile) {
+    
+    String documentsTable =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+    
+    DynamoDbConnectionBuilder dbConnection =
+        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    configService = new ConfigServiceImpl(dbConnection, documentsTable);
+  }
+
   /** {@link HttpClient}. */
   private HttpClient http = HttpClient.newHttpClient();
 
@@ -409,7 +425,6 @@ public abstract class AbstractApiTest {
     assertEquals(1, headers.allValues("access-control-allow-headers").size());
     assertEquals(1, headers.allValues("access-control-allow-methods").size());
     assertEquals(1, headers.allValues("access-control-allow-origin").size());
-    assertEquals(1, headers.allValues("Content-Type").size());
 
     if ("*".equals(headers.allValues("access-control-allow-headers").get(0))) {
       assertEquals("*", headers.allValues("access-control-allow-headers").get(0));
@@ -485,6 +500,14 @@ public abstract class AbstractApiTest {
    */
   public Region getAwsRegion() {
     return AbstractApiTest.awsregion;
+  }
+
+  /**
+   * Get {@link ConfigService}.
+   * @return {@link ConfigService}
+   */
+  public static ConfigService getConfigService() {
+    return configService;
   }
 
   /**

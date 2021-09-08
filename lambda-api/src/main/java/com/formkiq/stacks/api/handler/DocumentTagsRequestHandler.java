@@ -68,7 +68,7 @@ public class DocumentTagsRequestHandler
 
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     PaginationResults<DocumentTag> results =
@@ -117,7 +117,7 @@ public class DocumentTagsRequestHandler
     tag.setUserId(getCallingCognitoUsername(event));
 
     String documentId = event.getPathParameters().get("documentId");
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     
     awsservice.documentService().deleteDocumentTag(siteId, documentId, "untagged");
     awsservice.documentService().addTags(siteId, documentId, Arrays.asList(tag), null);

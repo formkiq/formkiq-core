@@ -85,7 +85,9 @@ public class AwsResourceTest extends AbstractApiTest {
     userCognitoService.addUserToGroup(email, group);
 
     // then
-    assertEquals("testadminuser@formkiq.com", user.username());
+    assertNotNull(user.username());
+    assertEquals("testadminuser@formkiq.com", user.userAttributes().stream()
+        .filter(f -> f.name().equals("email")).findFirst().get().value());
   }
 
   /**
@@ -169,6 +171,9 @@ public class AwsResourceTest extends AbstractApiTest {
   public void testSsmParameters() {
     assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl")
         .endsWith(getAwsRegion() + ".amazonaws.com"));
+    assertTrue(
+        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl")
+            .endsWith(getAwsRegion() + ".amazonaws.com"));
     assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsIamUrl")
         .endsWith(getAwsRegion() + ".amazonaws.com"));
     assertTrue(

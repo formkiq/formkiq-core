@@ -102,6 +102,15 @@ public final class SiteIdKeyGenerator {
   }
 
   /**
+   * Is SiteId the Default site.
+   * @param siteId {@link String}
+   * @return boolean
+   */
+  public static boolean isDefaultSiteId(final String siteId) {
+    return siteId == null || DEFAULT_SITE_ID.equals(siteId);
+  }
+
+  /**
    * Remove Key siteId from {@link String}.
    * 
    * @param siteId {@link String}

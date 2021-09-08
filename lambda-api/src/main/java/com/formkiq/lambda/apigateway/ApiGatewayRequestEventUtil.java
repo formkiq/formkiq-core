@@ -88,7 +88,7 @@ public interface ApiGatewayRequestEventUtil {
       current.setStartkey(token);
       current.setHasNext(token != null);
 
-      cacheService.write(current.getNext(), gson.toJson(current));
+      cacheService.write(current.getNext(), gson.toJson(current), 1);
     }
 
     return current;
@@ -166,7 +166,7 @@ public interface ApiGatewayRequestEventUtil {
    * @return {@link String}
    * @throws BadException BadException
    */
-  default String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
+  static String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
     String body = event.getBody();
     if (body == null) {
       throw new BadException("request body is required");
@@ -218,10 +218,9 @@ public interface ApiGatewayRequestEventUtil {
       if (authorizer != null && authorizer.containsKey("claims")) {
 
         Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
-        if (claims.containsKey("username")) {
-          username = claims.get("username").toString();
-        } else if (claims.containsKey("cognito:username")) {
-          username = claims.get("cognito:username").toString();
+        String u = getCallingCognitoUsernameFromClaims(claims);
+        if (u != null) {
+          username = u;
         }
       }
     }
@@ -229,6 +228,18 @@ public interface ApiGatewayRequestEventUtil {
     return username;
   }
 
+  private String getCallingCognitoUsernameFromClaims(Map<String, Object> claims) {
+    String username = null;
+    if (claims.containsKey("email")) {
+      username = claims.get("email").toString();
+    } else if (claims.containsKey("username")) {
+      username = claims.get("username").toString();
+    } else if (claims.containsKey("cognito:username")) {
+      username = claims.get("cognito:username").toString();
+    }
+    return username;
+  }
+  
   /**
    * Get ContentType from {@link ApiGatewayRequestEvent}.
    * 
@@ -356,24 +367,6 @@ public interface ApiGatewayRequestEventUtil {
         event.getQueryStringParameters() != null ? event.getQueryStringParameters()
             : Collections.emptyMap();
     return q;
-  }
-
-  /**
-   * Get Site Id.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   */
-  default String getSiteId(final ApiGatewayRequestEvent event) {
-
-    String siteId = null;
-    Map<String, String> map = event.getQueryStringParameters();
-
-    if (map != null && map.containsKey("siteId")) {
-      siteId = map.get("siteId");
-    }
-
-    return siteId;
   }
 
   /**

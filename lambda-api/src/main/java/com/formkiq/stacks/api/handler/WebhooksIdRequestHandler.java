@@ -52,7 +52,7 @@ public class WebhooksIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     
     if (awsServices.webhookService().findWebhook(siteId, id) == null) {
@@ -69,21 +69,33 @@ public class WebhooksIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
     
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     DynamicObject m = awsServices.webhookService().findWebhook(siteId, id);
+    if (m == null) {
+      throw new NotFoundException("Webhook 'id' not found");
+    }
     
-    String url = awsServices.ssmService()
-        .getParameterValue("/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsHttpUrl");
+    String url = awsServices.ssmService().getParameterValue(
+        "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
 
+    String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
+    
+    String u = url + path + "/webhooks/" + m.getString("documentId");
+    if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
+      u += "?siteId=" + siteId;
+    }
+    
     Map<String, Object> map = new HashMap<>();
     map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     map.put("id", m.getString("documentId"));
     map.put("name", m.getString("path"));
-    map.put("url", url + "/public/webhooks/" + m.getString("documentId"));
+    map.put("url", u);
     map.put("insertedDate", m.getString("inserteddate"));
     map.put("userId", m.getString("userId"));
-        
+    map.put("enabled", m.getString("enabled"));
+    map.put("ttl", m.getString("ttl"));
+
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
@@ -97,7 +109,7 @@ public class WebhooksIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = getSiteId(event);
+    String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     
     WebhooksService webhookService = awsServices.webhookService();
@@ -114,6 +126,10 @@ public class WebhooksIdRequestHandler
       map.put("name", obj.getString("name"));
     }
     
+    if (obj.containsKey("enabled")) {
+      map.put("enabled", obj.getBoolean("enabled"));
+    }
+    
     Date ttlDate = null;
     if (obj.containsKey("ttl")) {
       ZonedDateTime now =
@@ -121,7 +137,7 @@ public class WebhooksIdRequestHandler
       ttlDate = Date.from(now.toInstant());
       map.put("TimeToLive", ttlDate);
     }
-    
+
     webhookService.updateWebhook(siteId, id, new DynamicObject(map));
     
     if (ttlDate != null) {

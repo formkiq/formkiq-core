@@ -13,7 +13,7 @@ dependencies {
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
     
-    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.1'
+    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
     
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.26'
@@ -24,7 +24,7 @@ dependencies {
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.15.25'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.15.25'
 	
-	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.3'
+	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.5.6'
     testImplementation group: 'junit', name: 'junit', version:'4.+'
 }
 
@@ -87,7 +87,7 @@ task buildJava11Zip(type: Zip) {
 }
 
 task assembleTemplate {
-    dependsOn buildZip, ':lambda-cognito-user-signup:build'
+	dependsOn buildZip
 	inputs.files("src/main/resources/cloudformation/template-snippet.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
 	doLast {
@@ -95,10 +95,7 @@ task assembleTemplate {
 			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/api"
 		}
 		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/../../lambda-cognito-user-signup/build/distributions/cognito-user-signup.zip ${buildDir}/"
-		}
-		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/lambda-api-graalvm.zip ${buildDir}/cognito-user-signup.zip ${buildDir}/distributions/formkiq-core/sam/api/"
+			commandLine "bash", "-c", "cp ${buildDir}/lambda-api-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/api/"
 		}
 		// build SAR distribution
 		exec {
@@ -140,7 +137,27 @@ task assembleOpenApiTemplate {
 	}
 }
 
+task downloadAwsCognito(type: Download) {
+    src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
+    dest buildDir
+    overwrite false
+}
+/*
+task downloadAwsCognito(type: Copy) {
+    from file("$buildDir/../../../aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
+    into file("${buildDir}")
+}*/
+
+task unzipAwsCognito(type: Copy) {
+  dependsOn downloadAwsCognito
+  def zipFile = file("${buildDir}/aws-cognito-v${awsCognitoVersion}.zip")
+  def outputDir = file("${buildDir}/distributions/formkiq-core/sam/cognito")
+
+  from zipTree(zipFile)
+  into outputDir
+}
+
 buildJava11Zip.dependsOn jar
 
 graalvmNativeImage.dependsOn check
-build.dependsOn assembleTemplate, assembleOpenApiTemplate
+build.dependsOn assembleTemplate, assembleOpenApiTemplate, unzipAwsCognito

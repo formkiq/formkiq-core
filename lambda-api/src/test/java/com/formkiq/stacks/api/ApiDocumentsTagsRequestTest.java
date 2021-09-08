@@ -41,9 +41,13 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.PaginationResults;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
 public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
+
+  /** Test Timeout. */
+  private static final long TEST_TIMEOUT = 10000L;
 
   /**
    * DELETE /documents/{documentId}/tags/{tagKey} request with Tag Value.
@@ -253,6 +257,13 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, resp.getTags().size());
       assertNotNull(resp.getNext());
       assertNull(resp.getPrevious());
+      
+      assertNull(resp.getTags().get(0).getDocumentId());
+      assertNotNull(resp.getTags().get(0).getInsertedDate());
+      assertEquals("category0", resp.getTags().get(0).getKey());
+      assertEquals("userdefined", resp.getTags().get(0).getType());
+      assertEquals("jsmith", resp.getTags().get(0).getUserId());
+      assertEquals("person", resp.getTags().get(0).getValue());
     }
   }
 
@@ -410,22 +421,25 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
+      assertEquals("testadminuser@formkiq.com", tags.getResults().get(0).getUserId());
 
       assertTrue(getLogger().containsString("response: " + expected));
     }
   }
 
   /**
-   * POST /documents/{documentId}/tags tags request. Add Tag non Base 64
+   * POST /documents/{documentId}/tags tags request. Add Tag non Base 64 and add 'webnotify=true'
+   * parameter
    *
    * @throws Exception an error has occurred
    */
-  @Test
+  @Test(timeout = TEST_TIMEOUT)
   public void testHandlePostDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       newOutstream();
 
       // given
+      final long sleep = 500L;
       final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
       final String tagname = "category";
       final String tagvalue = "job";
@@ -433,6 +447,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-documents-documentid-tags02.json");
       addParameter(event, "siteId", siteId);
+      addParameter(event, "webnotify", "true");
       setPathParameter(event, "documentId", documentId);
 
 
@@ -452,6 +467,26 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
 
       assertTrue(getLogger().containsString("response: " + expected));
+      
+      ReceiveMessageResponse msgs =
+          getAwsServices().sqsService().receiveMessages(getSqsWebsocketQueueUrl());
+      while (msgs.messages().isEmpty()) {
+        msgs = getAwsServices().sqsService().receiveMessages(getSqsWebsocketQueueUrl());
+        Thread.sleep(sleep);
+      }
+      
+      assertEquals(1, msgs.messages().size());
+      if (siteId != null) {
+        assertEquals(
+            "{\"siteId\":\"" + siteId + "\",\"documentId\":\"" + documentId
+                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+            msgs.messages().get(0).body());
+      } else {
+        assertEquals(
+            "{\"documentId\":\"" + documentId
+                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+            msgs.messages().get(0).body());
+      }
     }
   }
 

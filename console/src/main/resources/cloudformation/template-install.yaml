@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Console Install
+        
+Parameters:
+    
+  AppEnvironment:
+    Type: String
+    Description: The Document Stack Environment
+    AllowedPattern: ".+"
+          
+  ConsoleVersion:
+    Type: String
+    Description: Version of FormKiQ console to deploy
+    AllowedPattern: ".+"
+ 
+  ConsoleBucket:
+    Type: String
+    Description: Console S3 Bucket
+    AllowedPattern: ".+"
+
+  ApiUrl:
+    Type: String
+    Description: API URL
+    AllowedPattern: ".+"  
+  
+  WebsocketApiUrl:
+    Type: String
+    Description: WebSocket URL
+    AllowedPattern: ".+" 
+ 
+  AuthApiUrl:
+    Type: String
+    Description: Auth Api URL
+    AllowedPattern: ".+" 
+
+  Brand:
+    Type: String
+    Description: Console Installer Brand
+    Default: "formkiq"
+    
+  DistributionBucket:
+    Type: String
+    Description: FormKiQ Distribution BucketName
+    Default: "formkiq-distribution-console"
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+
+  AllowAdminCreateUserOnly:
+    Description: When true only Cognito Admin can create users, false users can register themselves
+    AllowedPattern: ".+"
+    Type: String
+    
+Resources:
+
+  ConsoleInstallerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for Console Installation"
+      Name: !Sub "/formkiq/${AppEnvironment}/lambda/ConsoleInstaller"
+      Type: String
+      Value: !Ref ConsoleInstaller
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  ConsoleInstaller:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.formkiq.stacks.console.ConsoleInstallHandler
+      Runtime: java11
+      Timeout: 300
+      MemorySize: 512
+      Role:
+        Fn::GetAtt:
+        - ConsoleInstallRole
+        - Arn
+      CodeUri: ./console-installer.zip
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+      Environment:
+        Variables:
+          CONSOLE_VERSION: !Sub "${ConsoleVersion}"
+          DISTRIBUTION_BUCKET: !Sub "${DistributionBucket}"
+          REGION: !Sub "${AWS::Region}"
+          CONSOLE_BUCKET: !Sub "${ConsoleBucket}"
+          API_URL: !Sub "${ApiUrl}"
+          API_WEBSOCKET_URL: !Sub "${WebsocketApiUrl}"
+          API_AUTH_URL: !Sub "${AuthApiUrl}"
+          BRAND: !Sub "${Brand}"
+          ALLOW_ADMIN_CREATE_USER_ONLY: !Sub "${AllowAdminCreateUserOnly}"
+
+  ConsoleInstallRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: !Sub "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: !Sub "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: !Sub "${AWS::StackName}-ConsoleInstallPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ssm:GetParameter
+              Resource: 
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              Resource: 
+              - !Join ['', ['arn:aws:s3:::', !Ref ConsoleBucket, /]]
+              - !Join ['', ['arn:aws:s3:::', !Ref ConsoleBucket, /*]]
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              Resource: 
+              - !Join ['', ['arn:aws:s3:::', !Ref 'DistributionBucket', /*]]  
+            - Effect: Allow
+              Action:
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:ReEncrypt*'
+              - 'kms:GenerateDataKey*'
+              - 'kms:DescribeKey'
+              Resource: '*'
+
+  ConsoleInstallerRef:
+    Type: Custom::ConsoleInstallerRef
+    Properties:
+      Nonce: !Ref ConsoleVersion
+      ServiceToken:
+        Fn::GetAtt:
+        - ConsoleInstaller
+        - Arn

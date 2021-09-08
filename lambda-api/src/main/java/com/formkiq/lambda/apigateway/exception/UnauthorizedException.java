@@ -21,55 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.lambda.apigateway.exception;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.lambda.apigateway.ApiResponse;
+/** {@link Exception} that will return a 403 error. */
+public class UnauthorizedException extends Exception {
 
-/** /sites {@link ApiResponse}. */
-@Reflectable
-public class Site {
-
-  /** Site Id. */
-  @Reflectable
-  private String siteId;
-  /** Upload Email. */
-  @Reflectable
-  private String uploadEmail;
+  /** serialVersionUID. */
+  private static final long serialVersionUID = -3307625920614270509L;
 
   /**
-   * Get Site Id.
-   * 
-   * @return {@link String}
+   * constructor.
+   *
+   * @param msg {@link String}
    */
-  public String getSiteId() {
-    return this.siteId;
-  }
-
-  /**
-   * Set Site Id.
-   * 
-   * @param site {@link String}
-   */
-  public void setSiteId(final String site) {
-    this.siteId = site;
-  }
-
-  /**
-   * Get Upload Email.
-   * 
-   * @return {@link String}
-   */
-  public String getUploadEmail() {
-    return this.uploadEmail;
-  }
-
-  /**
-   * Set Upload Email.
-   * 
-   * @param email {@link String}
-   */
-  public void setUploadEmail(final String email) {
-    this.uploadEmail = email;
+  public UnauthorizedException(final String msg) {
+    super(msg);
   }
 }

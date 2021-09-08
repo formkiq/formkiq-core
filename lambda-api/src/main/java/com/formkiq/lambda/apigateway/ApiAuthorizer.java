@@ -23,6 +23,7 @@
  */
 package com.formkiq.lambda.apigateway;
 
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -175,6 +176,15 @@ public class ApiAuthorizer {
    * @return {@link String}
    */
   public String getSiteId() {
+    return this.siteId != null && !this.siteId.equals(DEFAULT_SITE_ID) ? this.siteId : null;
+  }
+  
+  /**
+   * Get Site Id, including DEFAULT.
+   * 
+   * @return {@link String}
+   */
+  public String getSiteIdIncludeDefault() {
     return this.siteId;
   }
 
@@ -188,7 +198,8 @@ public class ApiAuthorizer {
     String site = null;
 
     String siteIdParam = this.event != null ? this.event.getQueryStringParameter("siteId") : null;
-    if (siteIdParam != null && (this.siteIds.contains(siteIdParam)) || this.isUserAdmin) {
+    if (siteIdParam != null && (this.siteIds.contains(siteIdParam)) || this.isUserAdmin
+        || isIamCaller()) {
       site = siteIdParam;
     } else if (siteIdParam == null && !this.siteIds.isEmpty()) {
       site = this.siteIds.get(0);
@@ -201,6 +212,10 @@ public class ApiAuthorizer {
     return site;
   }
 
+  private boolean isIamCaller() {
+    return this.isCallerAssumeRole() || this.isCallerIamUser();
+  }
+  
   /**
    * Get Site Ids.
    * 

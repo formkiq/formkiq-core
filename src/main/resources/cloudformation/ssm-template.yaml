@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ SSM Properties
+    
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    AllowedPattern: ".+"
+
+  CognitoUserPool:
+    Type: String
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+
+  CognitoUserPoolArn:
+    Type: String
+    Description: The Cognito User Pool Arn
+    AllowedPattern: ".+"
+
+  CognitoUserPoolClient:
+    Type: String
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+
+  CognitoIdentityPool:
+    Type: String
+    Description: The Cognito Identity Pool Id
+    AllowedPattern: ".+"
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "pro"]
+  
+  Domain:
+    Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
+    AllowedPattern: ".+"
+    Type: String
+
+Resources:
+
+  CognitoUserPoolIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolId"
+      Type: String
+      Value: !Ref CognitoUserPool
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+        
+  CognitoUserPoolArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool Arn"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolArn"
+      Type: String
+      Value: !Ref CognitoUserPoolArn
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoUserPoolClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito User Pool Client"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolClientId"
+      Type: String
+      Value: !Ref CognitoUserPoolClient
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CognitoIdentityPoolIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Identity Pool"
+      Name: !Sub "/formkiq/${AppEnvironment}/cognito/IdentityPoolId"
+      Type: String
+      Value: !Ref CognitoIdentityPool
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CustomMessageAdminCreateUserSubjectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "AdminCreateUser Email Subject"
+      Name: !Sub "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Subject"
+      Type: String
+      Value: "Welcome to FormKiQ"
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"
+
+  CustomMessageAdminCreateUserMessageParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "AdminCreateUser Email Message"
+      Name: !Sub "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Message"
+      Type: String
+      Value: "Hello {username} {email},<br /><br />Welcome to FormKiQ.<br /><br />FormKiQ gives you full control of your organization's documents, including storage, search, data extraction, and workflows.<br />All in Your AWS Cloud.<br /><br />Log into your FormKiQ account ${link}"
+      Tags:
+        Application: !Sub "FormKiQ ${FormKiQType}"
+        AppEnvironment: !Sub "${AppEnvironment}"
+        StackName: !Sub "${AWS::StackName}"

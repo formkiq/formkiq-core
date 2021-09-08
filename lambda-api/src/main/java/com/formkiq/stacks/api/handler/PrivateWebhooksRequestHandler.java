@@ -21,53 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
-import java.util.ArrayList;
-import java.util.List;
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.lambda.apigateway.ApiResponse;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
 
-/** /sites {@link ApiResponse}. */
-@Reflectable
-public class ApiSitesResponse implements ApiResponse {
-
-  /** {@link String}. */
-  @Reflectable
-  private List<Site> sites;
-
-  /**
-   * constructor.
-   */
-  public ApiSitesResponse() {
-    this.sites = new ArrayList<>();
-  }
+/** {@link ApiGatewayRequestHandler} for "/private/webhooks". */
+public class PrivateWebhooksRequestHandler extends PublicWebhooksRequestHandler {
 
   @Override
-  public String getNext() {
-    return null;
+  protected boolean isSupportPrivate() {
+    return true;
   }
-
+  
   @Override
-  public String getPrevious() {
-    return null;
-  }
-
-  /**
-   * Get Sites.
-   * 
-   * @return {@link List} {@link Site}
-   */
-  public List<Site> getSites() {
-    return this.sites;
-  }
-
-  /**
-   * Set Sites.
-   * 
-   * @param list {@link List} {@link Site}
-   */
-  public void setSites(final List<Site> list) {
-    this.sites = list;
+  public String getRequestUrl() {
+    return "/private/webhooks";
   }
 }

@@ -101,7 +101,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
       // when
       HttpResponse<String> response = client.optionsDocumentUpload(req);
       // then
-      final int status = 200;
+      final int status = 204;
       assertEquals(status, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());
     }

@@ -37,9 +37,9 @@ public interface WebhooksService {
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
-   * @param timeToLive {@link String}
+   * @param ttl {@link Date}
    */
-  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, String timeToLive);
+  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, Date ttl);
   
   /**
    * Delete Webhook.
@@ -65,10 +65,12 @@ public interface WebhooksService {
    *
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
+   * @param token {@link PaginationMapToken}
    * 
    * @return {@link DynamicObject} {@link PaginationResults}
    */
-  PaginationResults<DynamicObject> findTags(String siteId, String webhookId);
+  PaginationResults<DynamicObject> findTags(String siteId, String webhookId,
+      PaginationMapToken token);
 
   /**
    * Find Webhook.
@@ -94,10 +96,11 @@ public interface WebhooksService {
    * @param name {@link String}
    * @param userId {@link String}
    * @param ttl {@link Date}
+   * @param enabled {@link String}
    * 
    * @return {@link String}
    */
-  String saveWebhook(String siteId, String name, String userId, Date ttl);
+  String saveWebhook(String siteId, String name, String userId, Date ttl, String enabled);
   
   /**
    * Update Webhook TimeToLive.
