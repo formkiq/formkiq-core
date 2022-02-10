@@ -104,7 +104,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v1.3.5",
+    assertEquals("v2.0.2",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));
@@ -132,6 +132,6 @@ public class AwsResourceTest {
     assertEquals(statusCode, response.statusCode());
 
     String text = response.body();
-    assertTrue(text.contains("<title>FormKiQ Stacks Console</title>"));
+    assertTrue(text.contains("<title>FormKiQ Cloud Console</title>"));
   }
 }
