@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.6.2"
+          version: "1.6.3"
         paths:
           /version:
             get:
@@ -339,6 +339,10 @@ Resources:
                         value:
                           key: category
                           value: person
+                      Add_Key_and_Values_Tag:
+                        value:
+                          key: category
+                          values: [person,canadian]
               responses:
                 '201':
                   $ref: '#/components/responses/200Cors'
@@ -971,12 +975,14 @@ Resources:
                 type: integer
           schemas:
             DocumentItemTagValueBody:
-              required:
-              - "value"
               type: "object"
               properties:
                 value:
                   type: "string"
+                values:
+                  type: "array"
+                  items:
+                    type: "string"
             DocumentContent:
               type: "object"
               properties:
@@ -1227,6 +1233,10 @@ Resources:
                   type: "string"
                 value:
                   type: "string"
+                values:
+                  type: "array"
+                  items:
+                    type: "string"
                 key:
                   type: "string"
             DocumentItemsResults:

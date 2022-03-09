@@ -28,6 +28,8 @@ import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
 import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,26 +186,38 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     QueryResponse result = this.dynamoDB.query(q);
 
     Map<String, DocumentTag> tags = new HashMap<>();
-
-    List<DocumentItem> list = result.items().stream().map(s -> {
+    result.items().forEach(s -> {
       String documentId = s.get("documentId").s();
 
       String tagKey = s.containsKey("tagKey") ? s.get("tagKey").s() : null;
-      String tagValue = s.containsKey("tagValue") ? s.get("tagValue").s() : null;
-      tags.put(documentId, new DocumentTag(null, tagKey, tagValue, null, null));
+      String tagValue = s.containsKey("tagValue") ? s.get("tagValue").s() : "";
 
-      return new DocumentItemDynamoDb(documentId, null, null);
-    }).collect(Collectors.toList());
+      DocumentTag tag = tags.containsKey(documentId) ? tags.get(documentId)
+          : new DocumentTag().setKey(tagKey).setValue(tagValue)
+              .setType(DocumentTagType.USERDEFINED);
 
-    if (!list.isEmpty()) {
-      List<String> documentIds =
-          list.stream().map(s -> s.getDocumentId()).collect(Collectors.toList());
+      if (tags.containsKey(documentId)) {
 
-      list = this.docService.findDocuments(siteId, documentIds);
-    }
+        if (tag.getValues() == null) {
+          tag.setValues(new ArrayList<>());
+          tag.getValues().add(tag.getValue());
+          tag.setValue(null);
+        }
 
-    List<DynamicDocumentItem> results = list.stream()
-        .map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).collect(Collectors.toList());
+        tag.getValues().add(tagValue);
+
+      } else {
+        tags.put(documentId, tag);
+      }
+    });
+    
+    List<String> documentIds = new ArrayList<>(tags.keySet());
+
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+   
+    List<DynamicDocumentItem> results =
+        list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+            .collect(Collectors.toList()) : Collections.emptyList();
 
     results.forEach(r -> {
       DocumentTag tag = tags.get(r.getDocumentId());

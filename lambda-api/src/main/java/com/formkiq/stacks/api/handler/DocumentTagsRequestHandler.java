@@ -87,6 +87,7 @@ public class DocumentTagsRequestHandler
       r.setInsertedDate(t.getInsertedDate());
       r.setKey(t.getKey());
       r.setValue(t.getValue());
+      r.setValues(t.getValues());
       r.setUserId(t.getUserId());
       r.setType(t.getType() != null ? t.getType().name().toLowerCase() : null);
 

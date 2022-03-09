@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +53,7 @@ import software.amazon.awssdk.services.dynamodb.model.ItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactGetItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactGetItemsRequest;
@@ -109,9 +111,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentTagToAttributeValueMap mapper =
           new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
 
-      List<Map<String, AttributeValue>> valueList =
-          tags.stream().filter(predicate).map(mapper).collect(Collectors.toList());
-      
+      List<Map<String, AttributeValue>> valueList = tags.stream().filter(predicate).map(mapper)
+          .flatMap(List::stream).collect(Collectors.toList());
+
       if (timeToLive != null) {
         valueList.forEach(v -> addN(v, "TimeToLive", timeToLive));
       }
@@ -465,7 +467,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     final int chunkSize = 10;
     final AtomicInteger counter = new AtomicInteger();
-    final Collection<List<String>> documentIdsSplit = ids.stream()
+    final Collection<List<String>> documentIdsSplit = ids.stream().distinct()
         .collect(
             Collectors.groupingBy(it -> Integer.valueOf(counter.getAndIncrement() / chunkSize)))
         .values();
@@ -564,7 +566,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final String tagKey) {
 
     DocumentTag item = null;
-    List<Map<String, AttributeValue>> items = findDocumentTagAttributes(siteId, documentId, tagKey);
+    QueryResponse response =
+        findDocumentTagAttributes(siteId, documentId, tagKey, Integer.valueOf(1));
+    List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
       item = new AttributeValueToDocumentTag(siteId).apply(items.get(0));
@@ -579,28 +583,49 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param siteId DynamoDB PK siteId
    * @param documentId {@link String}
    * @param tagKey {@link String}
+   * @param maxresults {@link Integer} 
    * 
-   * @return {@link List} {@link Map} {@link AttributeValue}
+   * @return {@link QueryResponse}
    */
-  private List<Map<String, AttributeValue>> findDocumentTagAttributes(final String siteId,
-      final String documentId, final String tagKey) {
+  private QueryResponse findDocumentTagAttributes(final String siteId,
+      final String documentId, final String tagKey, final Integer maxresults) {
 
     Map<String, AttributeValue> values = queryKeys(keysDocumentTag(siteId, documentId, tagKey));
-    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-        .keyConditionExpression(PK + " = :pk and " + SK + "= :sk").expressionAttributeValues(values)
-        .limit(Integer.valueOf(1)).build();
 
+    Builder req = QueryRequest.builder().tableName(this.documentTableName)
+        .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ", :sk)")
+        .expressionAttributeValues(values);
+    
+    if (maxresults != null) {
+      req = req.limit(maxresults);
+    }
+    
+    QueryRequest q = req.build();        
     QueryResponse result = this.dynamoDB.query(q);
-
-    List<Map<String, AttributeValue>> items = result.items();
-    return items;
+    return result;
   }
 
   @Override
   public PaginationResults<DocumentTag> findDocumentTags(final String siteId,
       final String documentId, final PaginationMapToken token, final int maxresults) {
+    
     Map<String, AttributeValue> keys = keysDocumentTag(siteId, documentId, null);
-    return findAndTransform(keys, token, maxresults, new AttributeValueToDocumentTag(siteId));
+    
+    PaginationResults<DocumentTag> tags =
+        findAndTransform(keys, token, maxresults, new AttributeValueToDocumentTag(siteId));
+
+    // filter duplicates
+    DocumentTag prev = null;
+    for (Iterator<DocumentTag> itr = tags.getResults().iterator(); itr.hasNext();) {
+      DocumentTag t = itr.next();
+      if (prev != null && prev.getKey().equals(t.getKey())) {
+        itr.remove();
+      } else {
+        prev = t;
+      }
+    }
+    
+    return tags;
   }
 
   @Override
@@ -791,13 +816,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<String> tags) {
 
     for (String tag : tags) {
+      QueryResponse response = findDocumentTagAttributes(siteId, documentId, tag, null);
+      List<Map<String, AttributeValue>> items = response.items();
+      items.forEach(i -> {
+        Map<String, AttributeValue> key = keysGeneric(i.get("PK").s(), i.get("SK").s());
+        DeleteItemRequest deleteItemRequest =
+            DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-      Map<String, AttributeValue> key = keysDocumentTag(siteId, documentId, tag);
-
-      DeleteItemRequest deleteItemRequest =
-          DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
-
-      this.dynamoDB.deleteItem(deleteItemRequest);
+        this.dynamoDB.deleteItem(deleteItemRequest);
+      });
     }
   }
 

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Date;
+import java.util.List;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Document Tag. */
@@ -39,6 +40,9 @@ public class DocumentTag {
   /** Document String Tag Value. */
   @Reflectable
   private String value;
+  /** Document Tag Values. */
+  @Reflectable
+  private List<String> values;
   /** User Id. */
   @Reflectable
   private String userId;
@@ -82,6 +86,27 @@ public class DocumentTag {
     setDocumentId(docid);
     setKey(tagKey);
     setValue(tagValue);
+    setInsertedDate(date);
+    setUserId(user);
+    setType(tagType);
+  }
+  
+  /**
+   * constructor.
+   *
+   * @param docid {@link String}
+   * @param tagKey {@link String}
+   * @param tagValues {@link List} {@link String}
+   * @param date {@link Date}
+   * @param user {@link String}
+   * @param tagType {@link DocumentTagType}
+   */
+  public DocumentTag(final String docid, final String tagKey, final List<String> tagValues,
+      final Date date, final String user, final DocumentTagType tagType) {
+    this();
+    setDocumentId(docid);
+    setKey(tagKey);
+    setValues(tagValues);
     setInsertedDate(date);
     setUserId(user);
     setType(tagType);
@@ -144,6 +169,26 @@ public class DocumentTag {
    */
   public DocumentTag setValue(final String s) {
     this.value = s;
+    return this;
+  }
+  
+  /**
+   * Get Values.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getValues() {
+    return this.values;
+  }
+
+  /**
+   * Set Values.
+   * 
+   * @param list {@link List} {@link String}
+   * @return {@link DocumentTag}
+   */
+  public DocumentTag setValues(final List<String> list) {
+    this.values = list;
     return this;
   }
 

@@ -305,4 +305,42 @@ public class DocumentSearchServiceImplTest {
       assertEquals("active", results.getResults().get(0).getMap("matchedTag").get("value"));
     }
   }
+  
+  /** Search multi-value tag 'eq' Tag Key & Value. */
+  @Test
+  public void testSearch06() {
+    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      createTestData("finance");
+      List<DocumentItem> items = createTestData(prefix);
+      DocumentItem item = items.get(0);
+      DocumentTag tag =
+          new DocumentTag(item.getDocumentId(), "status", null, new Date(), "testuser")
+              .setValues(Arrays.asList("active", "notactive"));
+      this.service.saveDocument(prefix, item, Arrays.asList(tag));
+      
+      String tagKey = "status";
+      String tagValue = "notactive";
+      PaginationMapToken startkey = null;
+      SearchTagCriteria c = new SearchTagCriteria(tagKey);
+      c.setEq(tagValue);
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          dbhelper.getSearchService().search(prefix, c, startkey, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("status", s.getMap("matchedTag").get("key"));
+        assertEquals("notactive", s.getMap("matchedTag").get("value"));
+        DocumentItem i = this.service.findDocument(prefix, s.getDocumentId());
+        assertNotNull(i);
+      });
+    }
+  }
 }

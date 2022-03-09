@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import java.util.Date;
+import java.util.List;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.lambda.apigateway.ApiResponse;
 
@@ -37,6 +38,9 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
   /** Document String Tag Value. */
   @Reflectable
   private String value;
+  /** Document String Tag Value. */
+  @Reflectable
+  private List<String> values;
   /** User Id. */
   @Reflectable
   private String userId;
@@ -99,6 +103,24 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
     this.value = s;
   }
 
+  /**
+   * Get Values.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getValues() {
+    return this.values;
+  }
+
+  /**
+   * Set Values.
+   * 
+   * @param list {@link List} {@link String}
+   */
+  public void setValues(final List<String> list) {
+    this.values = list;
+  }
+  
   /**
    * Get UserId.
    * 

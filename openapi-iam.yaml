@@ -2,7 +2,7 @@
         info:
           title: "FormKiQ HTTP API"
           description: "FormKiQ IAM API"
-          version: "1.6.2"
+          version: "1.6.3"
         paths:
           /version:
             get:
@@ -333,6 +333,10 @@
                         value:
                           key: category
                           value: person
+                      Add_Key_and_Values_Tag:
+                        value:
+                          key: category
+                          values: [person, canadian]
               responses:
                 '201':
                   $ref: '#/components/responses/200Cors'
@@ -965,12 +969,14 @@
                 type: integer
           schemas:
             DocumentItemTagValueBody:
-              required:
-                - "value"
               type: "object"
               properties:
                 value:
                   type: "string"
+                values:
+                  type: "array"
+                  items:
+                    type: "string"
             DocumentContent:
               type: "object"
               properties:
@@ -1221,6 +1227,10 @@
                   type: "string"
                 value:
                   type: "string"
+                values:
+                  type: "array"
+                  items:
+                    type: "string"
                 key:
                   type: "string"
             DocumentItemsResults:

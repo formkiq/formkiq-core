@@ -23,28 +23,19 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * 
- * {@link Function} to convert {@link DocumentTag} to {@link DynamicDocumentTag}.
+ * Convert {@link List} {@link AttributeValue} to {@link List} {@link String}.
  *
  */
-public class DocumentTagToDynamicDocumentTag implements Function<DocumentTag, DynamicDocumentTag> {
+public class AttributeValueToListOfStrings implements Function<List<AttributeValue>, List<String>> {
 
   @Override
-  public DynamicDocumentTag apply(final DocumentTag tag) {
-    Map<String, Object> map = new HashMap<>();
-    map.put("documentId", tag.getDocumentId());
-    map.put("key", tag.getKey());
-    map.put("type", tag.getType().name());
-    map.put("userId", tag.getUserId());
-    map.put("value", tag.getValue());
-    map.put("values", tag.getValues());
-
-    return new DynamicDocumentTag(map);
+  public List<String> apply(final List<AttributeValue> list) {
+    return list.stream().map(s -> s.s()).collect(Collectors.toList());
   }
-
 }
