@@ -338,6 +338,66 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   }
   
   /**
+   * Test DELETE /documents/{documentId}/tags/{tagKey}/{tagValue}.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsTags05() throws Exception {
+
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      
+      // given
+      String documentId = addDocumentWithoutFile(client);
+      GetDocumentTagsKeyRequest req =
+          new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
+      OptionsDocumentTagsKeyRequest oreq =
+          new OptionsDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
+
+      try {
+        // when
+        HttpResponse<String> response =
+            client.addDocumentTagAsHttpResponse(new AddDocumentTagRequest().documentId(documentId)
+                .tagKey("category").tagValues(Arrays.asList("somevalue0", "somevalue1")));
+
+        // then
+        assertEquals("201", String.valueOf(response.statusCode()));
+
+        // then
+        response = client.getDocumentTagAsHttpResponse(req);
+
+        assertEquals("200", String.valueOf(response.statusCode()));
+        assertRequestCorsHeaders(response.headers());
+
+        HttpResponse<String> options = client.optionsDocumentTag(oreq);
+        assertPreflightedCorsHeaders(options.headers());
+
+        Map<String, Object> map = toMap(response);
+        assertEquals("[somevalue0, somevalue1]", map.get("values").toString());
+
+        // given
+        DeleteDocumentTagRequest tagreq = new DeleteDocumentTagRequest().documentId(documentId)
+            .tagKey("category").tagValue("somevalue1");
+
+        // when
+        response = client.deleteDocumentTagAsHttpResponse(tagreq);
+
+        // then
+        assertEquals("200", String.valueOf(response.statusCode()));
+        response = client.getDocumentTagAsHttpResponse(req);
+        map = toMap(response);
+        assertEquals("somevalue0", map.get("value").toString());
+        assertNull(map.get("values"));
+
+        deleteDocumentTag(client, documentId);
+
+      } finally {
+        deleteDocument(client, documentId);
+      }
+    }
+  }
+  
+  /**
    * Verify UserId.
    * 
    * @param map {@link Map}

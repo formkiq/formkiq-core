@@ -37,6 +37,7 @@ import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
@@ -151,6 +152,9 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
       case "/documents/{documentId}/tags":
         return new DocumentTagsRequestHandler();
 
+      case "/documents/{documentId}/tags/{tagKey}/{tagValue}":
+        return new DocumentTagValueRequestHandler();
+        
       case "/documents/{documentId}/tags/{tagKey}":
         return new DocumentTagRequestHandler();
 

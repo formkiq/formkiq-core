@@ -812,6 +812,51 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public boolean removeTag(final String siteId, final String documentId, final String tagKey,
+      final String tagValue) {
+    
+    QueryResponse response = findDocumentTagAttributes(siteId, documentId, tagKey, null);
+    List<Map<String, AttributeValue>> items = response.items();
+    
+    List<DeleteItemRequest> deletes = new ArrayList<>();
+    List<PutItemRequest> puts = new ArrayList<>();
+    
+    items.forEach(i -> {
+      
+      String pk = i.get("PK").s();
+      String sk = i.get("SK").s();
+      String value = i.get("tagValue").s();
+      Map<String, AttributeValue> key = keysGeneric(pk, sk);
+      
+      if (value.equals(tagValue)) {
+        DeleteItemRequest deleteItemRequest =
+            DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
+        deletes.add(deleteItemRequest);
+        
+      } else if (i.containsKey("tagValues")) {
+        
+        List<AttributeValue> avalues = i.get("tagValues").l();
+        avalues =
+            avalues.stream().filter(v -> !v.s().equals(tagValue)).collect(Collectors.toList());
+        
+        Map<String, AttributeValue> m = new HashMap<>(i);
+        if (avalues.size() == 1) {
+          m.remove("tagValues");
+          m.put("tagValue", avalues.get(0));
+        } else {
+          m.put("tagValues", AttributeValue.builder().l(avalues).build()); 
+        }
+        puts.add(PutItemRequest.builder().tableName(this.documentTableName).item(m).build());
+      }
+    });
+    
+    deletes.forEach(i -> this.dynamoDB.deleteItem(i));
+    puts.forEach(i -> this.dynamoDB.putItem(i));
+    
+    return !deletes.isEmpty();
+  }
+  
+  @Override
   public void removeTags(final String siteId, final String documentId,
       final Collection<String> tags) {
 

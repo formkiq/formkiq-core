@@ -413,6 +413,23 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/tags/{tagKey}/{tagValue}:
+            delete:
+              description: Delete a specific document tag/value combination.
+              tags:
+              - Documents      
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/tagvalueParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/url:
             get:
               description: Returns a URL to fetch the document.
@@ -956,6 +973,13 @@ Resources:
               name: tagKey
               in: path
               description: Tag Key.
+              required: true
+              schema:
+                type: string
+            tagvalueParam:
+              name: tagValue
+              in: path
+              description: Tag Key Value.
               required: true
               schema:
                 type: string

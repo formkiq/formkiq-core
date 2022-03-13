@@ -1122,6 +1122,165 @@ public class DocumentServiceImplTest implements DbKeys {
   }
   
   /**
+   * Test Remove 1 tag value from a 2 multi-value Document Tag.
+   */
+  @Test
+  public void testRemoveTag01() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String tagKey = "category";
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
+      tag.setValues(Arrays.asList("abc", "xyz"));
+      Collection<DocumentTag> tags = Arrays.asList(tag);
+      this.service.saveDocument(siteId, item, tags);
+
+      List<DocumentTag> results =
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertEquals("[abc, xyz]", results.get(0).getValues().toString());
+      assertNull(results.get(0).getValue());
+      
+      // when
+      assertTrue(this.service.removeTag(siteId, docid, tagKey, "xyz"));
+
+      // then
+      results = this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertNull(results.get(0).getValues());
+      assertEquals("abc", results.get(0).getValue());
+    }
+  }
+  
+  /**
+   * Test Remove 1 tag value from a 3 multi-value Document Tag.
+   */
+  @Test
+  public void testRemoveTag02() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String tagKey = "category";
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
+      tag.setValues(Arrays.asList("abc", "mno", "xyz"));
+      Collection<DocumentTag> tags = Arrays.asList(tag);
+      this.service.saveDocument(siteId, item, tags);
+
+      List<DocumentTag> results =
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertEquals("[abc, mno, xyz]", results.get(0).getValues().toString());
+      assertNull(results.get(0).getValue());
+      
+      // when
+      assertTrue(this.service.removeTag(siteId, docid, tagKey, "xyz"));
+
+      // then
+      results = this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertEquals("[abc, mno]", results.get(0).getValues().toString());
+      assertNull(results.get(0).getValue());
+    }
+  }
+  
+  /**
+   * Test Remove 1 tag value from a 1 multi-value Document Tag.
+   */
+  @Test
+  public void testRemoveTag03() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String tagKey = "category";
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
+      tag.setValues(Arrays.asList("xyz"));
+      Collection<DocumentTag> tags = Arrays.asList(tag);
+      this.service.saveDocument(siteId, item, tags);
+
+      List<DocumentTag> results =
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertEquals("[xyz]", results.get(0).getValues().toString());
+      assertNull(results.get(0).getValue());
+      
+      // when
+      assertTrue(this.service.removeTag(siteId, docid, tagKey, "xyz"));
+
+      // then
+      results = this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(0, results.size());
+    }
+  }
+  
+  /**
+   * Test Remove tag value.
+   */
+  @Test
+  public void testRemoveTag04() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String tagKey = "category";
+      String tagValue = "person";
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      DocumentTag tag = new DocumentTag(docid, tagKey, tagValue, new Date(), "jsmith");
+      Collection<DocumentTag> tags = Arrays.asList(tag);
+      this.service.saveDocument(siteId, item, tags);
+
+      List<DocumentTag> results =
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertNull(results.get(0).getValues());
+      assertEquals(tagValue, results.get(0).getValue());
+      
+      // when
+      assertTrue(this.service.removeTag(siteId, docid, tagKey, tagValue));
+
+      // then
+      results = this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(0, results.size());
+    }
+  }
+  
+  /**
+   * Test Remove wrong tag value.
+   */
+  @Test
+  public void testRemoveTag05() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String tagKey = "category";
+      String tagValue = "person";
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      DocumentTag tag = new DocumentTag(docid, tagKey, tagValue, new Date(), "jsmith");
+      Collection<DocumentTag> tags = Arrays.asList(tag);
+      this.service.saveDocument(siteId, item, tags);
+
+      List<DocumentTag> results =
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertNull(results.get(0).getValues());
+      assertEquals(tagValue, results.get(0).getValue());
+      
+      // when
+      assertFalse(this.service.removeTag(siteId, docid, tagKey, tagValue + "!"));
+
+      // then
+      results = this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+    }
+  }
+  
+  /**
    * Test Save {@link DocumentItem} with {@link DocumentTag}.
    */
   @Test

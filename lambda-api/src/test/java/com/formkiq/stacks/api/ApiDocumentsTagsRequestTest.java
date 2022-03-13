@@ -50,6 +50,172 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   private static final long TEST_TIMEOUT = 10000L;
 
   /**
+   * DELETE /documents/{documentId}/tags/{tagKey}/{tagValue} request with Tag Value.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleDeleteTagValue01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final Date now = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String tagKey = "category";
+      final String tagValue = "person";
+      final String userId = "jsmith";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-delete-documents-documentid-tag-value01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      setPathParameter(event, "tagKey", tagKey);
+      setPathParameter(event, "tagValue", tagValue);
+
+      DocumentTag tag = new DocumentTag(documentId, tagKey, tagValue, now, userId);
+      tag.setInsertedDate(new Date());
+
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+          .getResults().size());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      ApiMessageResponse resp =
+          GsonUtil.getInstance().fromJson(m.get("body"), ApiMessageResponse.class);
+      assertEquals("Removed Tag from document '" + documentId + "'.", resp.getMessage());
+      assertNull(resp.getNext());
+      assertNull(resp.getPrevious());
+
+      PaginationResults<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(0, tags.getResults().size());
+    }
+  }
+  
+  /**
+   * DELETE /documents/{documentId}/tags/{tagKey}/{tagValue} request with Tag Values.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleDeleteTagValue02() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final Date now = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String tagKey = "category";
+      final String userId = "jsmith";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-delete-documents-documentid-tag-value01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      setPathParameter(event, "tagKey", tagKey);
+      setPathParameter(event, "tagValue", "xyz");
+
+      DocumentTag tag = new DocumentTag(documentId, tagKey, null, now, userId);
+      tag.setValues(Arrays.asList("abc", "xyz"));
+      tag.setInsertedDate(new Date());
+
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+          .getResults().size());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      ApiMessageResponse resp =
+          GsonUtil.getInstance().fromJson(m.get("body"), ApiMessageResponse.class);
+      assertEquals("Removed Tag from document '" + documentId + "'.", resp.getMessage());
+      assertNull(resp.getNext());
+      assertNull(resp.getPrevious());
+
+      PaginationResults<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals("abc", tags.getResults().get(0).getValue());
+      assertNull(tags.getResults().get(0).getValues());
+    }
+  }
+  
+  /**
+   * DELETE /documents/{documentId}/tags/{tagKey}/{tagValue} wrong Tag Value.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleDeleteTagValue03() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final Date now = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String tagKey = "category";
+      final String userId = "jsmith";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-delete-documents-documentid-tag-value01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      setPathParameter(event, "tagKey", tagKey);
+      setPathParameter(event, "tagValue", "xyz123");
+
+      DocumentTag tag = new DocumentTag(documentId, tagKey, null, now, userId);
+      tag.setValues(Arrays.asList("abc", "xyz"));
+      tag.setInsertedDate(new Date());
+
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+          .getResults().size());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("404.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      ApiMessageResponse resp =
+          GsonUtil.getInstance().fromJson(m.get("body"), ApiMessageResponse.class);
+      assertEquals("Tag/Value combination not found.", resp.getMessage());
+      assertNull(resp.getNext());
+      assertNull(resp.getPrevious());
+
+      PaginationResults<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertNull(tags.getResults().get(0).getValue());
+      assertEquals("[abc, xyz]", tags.getResults().get(0).getValues().toString());
+    }
+  }
+  
+  /**
    * DELETE /documents/{documentId}/tags/{tagKey} request with Tag Value.
    *
    * @throws Exception an error has occurred
