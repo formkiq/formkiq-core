@@ -56,6 +56,7 @@ import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
+import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
 import com.formkiq.stacks.dynamodb.Preset;
@@ -68,8 +69,8 @@ import software.amazon.awssdk.regions.Region;
 /** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
 @Reflectable
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
-    PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class, PresetTag.class,
-    Preset.class})
+    DocumentTags.class, PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class,
+    PresetTag.class, Preset.class})
 public class CoreRequestHandler extends AbstractApiRequestHandler {
 
   /** Is Public Urls Enabled. */

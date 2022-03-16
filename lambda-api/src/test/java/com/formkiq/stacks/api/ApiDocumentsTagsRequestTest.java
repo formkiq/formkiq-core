@@ -986,6 +986,94 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   }
   
   /**
+   * POST /documents/{documentId}/tags multiple "tags" request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentTags08() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final String documentId = UUID.randomUUID().toString();
+      final String expected = "{" + getHeaders() + ",\"body\":\""
+          + "{\\\"message\\\":\\\"Created Tags.\\\"}\",\"statusCode\":201}";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-documents-documentid-tags01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody("ewogICJ0YWdzIjogWwogICAgewogICAgICAia2V5IjogIm1pbmUiCiAg"
+          + "ICB9LAogICAgewogICAgICAia2V5IjogInBsYXllcklkIiwKICAgICAgInZhbHVlI"
+          + "jogIjEiCiAgICB9LAogICAgewogICAgICAia2V5IjogImNhc2VJZCIsCiAgICAgICJ"
+          + "2YWx1ZXMiOiBbCiAgICAgICAgIjEyMyIsCiAgICAgICAgIjk5OSIKICAgICAgXQogIC"
+          + "AgfQogIF0KfQ==");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+
+      final int count = 3;
+      PaginationResults<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(count, tags.getResults().size());
+      assertEquals("caseId", tags.getResults().get(0).getKey());
+      assertNull(tags.getResults().get(0).getValue());
+      assertEquals("[123, 999]", tags.getResults().get(0).getValues().toString());
+      assertEquals("testadminuser@formkiq.com", tags.getResults().get(0).getUserId());
+
+      assertEquals("mine", tags.getResults().get(1).getKey());
+      assertEquals("", tags.getResults().get(1).getValue());
+      assertNull(tags.getResults().get(1).getValues());
+      assertEquals("testadminuser@formkiq.com", tags.getResults().get(1).getUserId());
+      
+      assertEquals("playerId", tags.getResults().get(2).getKey());
+      assertEquals("1", tags.getResults().get(2).getValue());
+      assertNull(tags.getResults().get(2).getValues());
+      assertEquals("testadminuser@formkiq.com", tags.getResults().get(2).getUserId());
+      
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+  
+  /**
+   * POST /documents/{documentId}/tags invalid "tags" request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentTags09() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final String documentId = UUID.randomUUID().toString();
+      final String expected = "{" + getHeaders()
+          + ",\"body\":\"{\\\"message\\\":\\\"invalid json body\\\"}\"" + ",\"statusCode\":400}";
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-documents-documentid-tags01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody("ewogICJ0YWdzIjogWwogICAgewogICAgICAia2V5MSI6ICJtaW5lIgogICAgfQogIF0KfQ==");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assertEquals(expected, response);
+
+      PaginationResults<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(0, tags.getResults().size());
+      assertTrue(getLogger().containsString("response: " + expected));
+    }
+  }
+  
+  /**
    * PUT /documents/{documentId}/tags/{tagKey} VALUE request.
    *
    * @throws Exception an error has occurred

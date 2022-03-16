@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.requests.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentTagRequest;
 import com.formkiq.stacks.client.requests.GetDocumentTagsKeyRequest;
@@ -390,6 +391,78 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
         assertNull(map.get("values"));
 
         deleteDocumentTag(client, documentId);
+
+      } finally {
+        deleteDocument(client, documentId);
+      }
+    }
+  }
+  
+  /**
+   * Test POST /documents/{documentId}/tags with multiple tags.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsTags06() throws Exception {
+
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+
+      // given
+      String documentId = addDocumentWithoutFile(client);
+      AddDocumentTag tag0 = new AddDocumentTag().key("test1")
+          .value("somevalue");
+      AddDocumentTag tag1 = new AddDocumentTag().key("test2");
+      AddDocumentTag tag2 =
+          new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz"));
+      
+      List<AddDocumentTag> tags = Arrays.asList(tag0, tag1, tag2);
+      AddDocumentTagRequest request = new AddDocumentTagRequest().documentId(documentId).tags(tags);
+      OptionsDocumentTagsRequest optionReq =
+          new OptionsDocumentTagsRequest().documentId(documentId);
+
+      try {
+        // when
+        HttpResponse<String> response = client.addDocumentTagAsHttpResponse(request);
+
+        // then
+        assertEquals("201", String.valueOf(response.statusCode()));
+        assertRequestCorsHeaders(response.headers());
+
+        HttpResponse<String> options = client.optionsDocumentTags(optionReq);
+        assertPreflightedCorsHeaders(options.headers());
+
+        // given
+        GetDocumentTagsRequest req = new GetDocumentTagsRequest().documentId(documentId);
+        // when
+        response = client.getDocumentTagsAsHttpResponse(req);
+
+        // then
+        assertEquals("200", String.valueOf(response.statusCode()));
+        assertRequestCorsHeaders(response.headers());
+
+        Map<String, Object> map = toMap(response);
+        List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("tags");
+        assertEquals(tags.size(), list.size());
+        map = list.get(0);
+        assertEquals("test1", map.get("key"));
+        assertEquals("somevalue", map.get("value"));
+        verifyUserId(map);
+        assertNotNull(map.get("insertedDate"));
+        
+        map = list.get(1);
+        assertEquals("test2", map.get("key"));
+        assertEquals("", map.get("value"));
+        verifyUserId(map);
+        assertNotNull(map.get("insertedDate"));
+        
+        map = list.get(2);
+        assertEquals("test3", map.get("key"));
+        assertNull(map.get("value"));
+        assertEquals("[abc, xyz]", map.get("values").toString());
+        verifyUserId(map);
+        assertNotNull(map.get("insertedDate"));
 
       } finally {
         deleteDocument(client, documentId);

@@ -350,6 +350,27 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /documents/{documentId}/tags#:
+            post:
+              description: Add multiple Tags to document.
+              tags:
+              - Documents      
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentTagsPost'
+              responses:
+                '201':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
           /documents/{documentId}/tags/{tagKey}:
             get:
               description: Get document tags.
@@ -837,6 +858,12 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/WebhookBody'              
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1241,6 +1268,23 @@ Resources:
                   type: "string"
                 lastModifiedDate:
                   type: "string"
+            DocumentTagsPost:
+              required:
+              - "tags"            
+              type: "object"
+              properties:
+                tagschema:
+                  type: "string"
+                  format: "uuid"
+                tags:
+                  $ref: "#/components/schemas/DocumentItemTags"
+              example:
+                tags:
+                  - key: category
+                  - key: category
+                    value: person
+                  - key: category
+                    values: [person,car]                  
             DocumentItemTag:
               required:
               - "key"

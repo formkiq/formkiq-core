@@ -24,11 +24,14 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.List;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /** {@link List} of {@link DocumentItemDynamoDb} tags. */
+@Reflectable
 public class DocumentTags {
 
   /** {@link List} of {@link DocumentTag}. */
+  @Reflectable
   private List<DocumentTag> tags;
 
   /** constructor. */
