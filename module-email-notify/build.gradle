@@ -43,8 +43,8 @@ task buildZip(type: Zip) {
    include "*"
    include "*/*"
    exclude "test", "coverage"
-   archiveName "module-email-notify.zip"
-   destinationDir(file("${buildDir}"))
+   archiveFileName = "module-email-notify.zip"
+   destinationDirectory = file("${buildDir}")
 }
 
 task assembleTemplate {

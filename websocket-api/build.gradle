@@ -49,8 +49,8 @@ task buildZip(type: Zip) {
    include "*"
    include "*/**"
    exclude "test", "coverage", ".nyc_output"
-   archiveName "websocket-api.zip"
-   destinationDir(file("${buildDir}"))
+   archiveFileName = "websocket-api.zip"
+   destinationDirectory = file("${buildDir}")
 }
 
 task assembleTemplate {

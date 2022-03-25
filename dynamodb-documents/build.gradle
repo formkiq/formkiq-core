@@ -27,8 +27,8 @@ task createZip(type: Zip) {
    from "nodejs"
    include "*"
    include "*/*"
-   archiveName "documentsmetrics-${project.version}.zip"
-   destinationDir(file("$buildDir/distributions"))
+   archiveFileName = "documentsmetrics-${project.version}.zip"
+   destinationDirectory = file("$buildDir/distributions")
 }
 
 createZip.dependsOn check

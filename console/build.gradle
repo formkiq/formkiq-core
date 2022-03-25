@@ -17,12 +17,12 @@ dependencies {
 
 task buildZip(type: Zip) {
 	dependsOn check
-	archiveName "console-installer.zip"
-    destinationDir(file("${buildDir}"))
+	archiveFileName = "console-installer.zip"
+    destinationDirectory = file("${buildDir}")
     from compileJava
     from processResources              
     into('lib') {
-        from configurations.default
+        from configurations.runtimeClasspath
     }           
 }
 

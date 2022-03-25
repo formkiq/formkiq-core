@@ -55,7 +55,7 @@ Resources:
   SnsDocumentsEmailNotificationArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "SNS Topic for Document Create Events"
+      Description: "SNS Topic for Email Notification"
       Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentsEmailNotificationArn"
       Type: String
       Value: !Ref DocumentsEmailNotification

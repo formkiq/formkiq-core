@@ -292,8 +292,8 @@ task deleteSar {
 task buildSamZip(type: Zip) {
 	dependsOn assembleTemplate
 	outputs.upToDateWhen { false }
-	archiveName "formkiq-core-${project.version}.zip"
-    destinationDir(file("${buildDir}/distributions/formkiq-core"))
+	archiveFileName = "formkiq-core-${project.version}.zip"
+    destinationDirectory = file("${buildDir}/distributions/formkiq-core")
    	from("${buildDir}/distributions/formkiq-core/sam") {
    		include '*'
       include '**/**'

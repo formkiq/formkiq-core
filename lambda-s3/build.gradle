@@ -66,8 +66,8 @@ task buildZip(type: Zip) {
 	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
   	outputs.dir("${buildDir}")
   	
-	archiveName "lambda-s3-graalvm.zip"
-    destinationDir(file("${buildDir}"))
+	archiveFileName = "lambda-s3-graalvm.zip"
+    destinationDirectory = file("${buildDir}")
     from("${project.projectDir}/runtime") {
         include 'bootstrap'
     }
