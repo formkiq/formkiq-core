@@ -446,8 +446,24 @@ public class StagingS3CreateTest implements DbKeys {
         assertEquals(item.getPath(), expectedPath);
         assertEquals("1234", item.getUserId());
 
-        assertTrue(
-            service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults().isEmpty());
+        List<DocumentTag> tags =
+            service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
+
+        int i = 0;
+        int count = 2;
+        
+        if (item.getPath() != null) {
+          count++;
+          assertEquals("path", tags.get(i).getKey());
+          assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
+        }
+        
+        assertEquals(count, tags.size());
+        
+        assertEquals("untagged", tags.get(i).getKey());
+        assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
+        assertEquals("userId", tags.get(i).getKey());
+        assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
       }
     }
   }
