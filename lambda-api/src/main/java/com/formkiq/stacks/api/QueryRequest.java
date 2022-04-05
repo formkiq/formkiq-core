@@ -43,7 +43,7 @@ public class QueryRequest {
    *
    * @return {@link SearchQuery}
    */
-  public SearchQuery getQuery() {
+  public SearchQuery query() {
     return this.query;
   }
 
@@ -51,9 +51,11 @@ public class QueryRequest {
    * Set Query.
    *
    * @param q {@link SearchQuery}
+   * @return {@link QueryRequest}
    */
-  public void setQuery(final SearchQuery q) {
+  public QueryRequest query(final SearchQuery q) {
     this.query = q;
+    return this;
   }
 
   /** Is {@link QueryRequest} object valid. */

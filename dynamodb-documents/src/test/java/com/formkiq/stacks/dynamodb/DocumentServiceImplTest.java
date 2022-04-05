@@ -237,8 +237,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(tagValue, this.service.findDocumentTag(siteId, documentId, tagKey).getValue());
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
+      SearchQuery q = new SearchQuery().tag(s);
+      
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
+          dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -280,8 +282,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("", this.service.findDocumentTag(siteId, documentId, tagKey).getValue());
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
+      SearchQuery q = new SearchQuery().tag(s);
+      
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
+          dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -349,8 +353,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(tagValues, this.service.findDocumentTag(siteId, documentId, tagKey).getValues());
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
+      SearchQuery q = new SearchQuery().tag(s);
+      
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(siteId, s, null, MAX_RESULTS);
+          dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());

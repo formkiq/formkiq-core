@@ -28,6 +28,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Document;
@@ -110,6 +112,52 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
 
       HttpResponse<String> options = client.optionsSearch();
       assertPreflightedCorsHeaders(options.headers());
+    }
+  }
+  
+  /**
+   * Test /search for specific DocumentIds.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsSearch03() throws Exception {
+    // given
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      String documentId = addDocumentWithoutFile(client);
+      SearchDocumentsRequest req =
+          new SearchDocumentsRequest().tagKey("untagged").documentIds(Arrays.asList(documentId));
+      // when
+      Documents documents = client.search(req);
+
+      // then
+      assertEquals(1, documents.documents().size());
+
+      Document doc = documents.documents().get(0);
+      assertEquals(documentId, doc.documentId());
+      assertNotNull(doc.insertedDate());
+      assertNotNull(doc.userId());
+    }
+  }
+  
+  /**
+   * Test /search for invalid specific DocumentIds.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsSearch04() throws Exception {
+    // given
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      addDocumentWithoutFile(client);
+      SearchDocumentsRequest req =
+          new SearchDocumentsRequest().tagKey("untagged")
+              .documentIds(Arrays.asList(UUID.randomUUID().toString()));
+      // when
+      Documents documents = client.search(req);
+
+      // then
+      assertEquals(0, documents.documents().size());
     }
   }
 }

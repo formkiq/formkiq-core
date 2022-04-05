@@ -25,17 +25,26 @@ import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_PK;
 import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
+import static com.formkiq.stacks.dynamodb.DbKeys.PK;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
+import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAGS;
+import static com.formkiq.stacks.dynamodb.DbKeys.SK;
 import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -74,24 +83,99 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     this.documentTableName = documentsTable;
   }
 
-  @Override
-  public PaginationResults<DynamicDocumentItem> search(final String siteId,
-      final SearchTagCriteria search, final PaginationMapToken token, final int maxresults) {
+  /**
+   * Filter Document Tags.
+   * @param docMap {@link Map}
+   * @param search {@link SearchTagCriteria}
+   * @return {@link Map}
+   */
+  private Map<String, Map<String, AttributeValue>> filterDocumentTags(
+      final Map<String, Map<String, AttributeValue>> docMap, final SearchTagCriteria search) {
 
-    search.isValid();
+    Map<String, Map<String, AttributeValue>> map = docMap;
 
-    PaginationResults<DynamicDocumentItem> result = null;
-    String key = search.getKey();
+    if (search.eq() != null || search.beginsWith() != null) {
 
-    if (search.getEq() != null) {
-      result = findDocumentsWithTagAndValue(siteId, key, search.getEq(), token, maxresults);
-    } else if (search.getBeginsWith() != null) {
-      result = findDocumentsTagStartWith(siteId, key, search.getBeginsWith(), token, maxresults);
-    } else {
-      result = findDocumentsWithTag(siteId, key, null, token, maxresults);
+      map = map.entrySet().stream().filter(x -> {
+        
+        AttributeValue value = x.getValue().get("tagValue");
+        AttributeValue values = x.getValue().get("tagValues");
+        
+        boolean result = false;
+        if (values != null) {
+
+          Optional<AttributeValue> val = values.l().stream().filter(v -> {            
+            return search.beginsWith() != null ? v.s().startsWith(search.beginsWith())
+                : v.s().equals(search.eq());
+          }).findFirst();
+          
+          result = val.isPresent();
+          if (result) {
+            x.getValue().remove("tagValues");
+            x.getValue().put("tagValue", val.get());
+          }
+         
+        } else if (value != null) {
+          result = search.beginsWith() != null ? value.s().startsWith(search.beginsWith())
+              : value.s().equals(search.eq());
+        }
+
+        return result;
+
+      }).collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
     }
 
-    return result;
+    return map;
+  }
+
+  /**
+   * Find Document Tag records.
+   * @param siteId DynamoDB siteId.
+   * @param documentIds {@link Collection} {@link String}
+   * @param tagKey {@link String}
+   * @return {@link Map}
+   */
+  private Map<String, Map<String, AttributeValue>> findDocumentsTags(final String siteId,
+      final Collection<String> documentIds, final String tagKey) {
+    
+    Map<String, Map<String, AttributeValue>> map = new HashMap<>();
+
+    List<Map<String, AttributeValue>> keys = documentIds.stream()
+        .map(id -> Map.of(PK,
+            AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_DOCS + id)).build(), SK,
+            AttributeValue.builder().s(PREFIX_TAGS + tagKey).build()))
+        .collect(Collectors.toList());
+    
+    Map<String, KeysAndAttributes> items =
+        Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
+    BatchGetItemRequest batchReq = BatchGetItemRequest.builder().requestItems(items).build();
+    BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+
+    Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
+    
+    if (!values.isEmpty()) {
+      List<Map<String, AttributeValue>> list = values.iterator().next();
+      
+      list.forEach(m -> {
+        
+        Map<String, AttributeValue> item = new HashMap<>();
+        item.put("type", m.get("type"));
+        item.put("tagKey", m.get("tagKey"));
+
+        if (m.containsKey("tagValue")) {
+          item.put("tagValue", m.get("tagValue"));
+        }
+
+        if (m.containsKey("tagValues")) {
+          item.put("tagValues", m.get("tagValues"));
+        }
+        
+        String documentId = m.get("documentId").s();
+        map.put(documentId, item);
+      });
+    }    
+
+    return map;
   }
 
   /**
@@ -159,6 +243,53 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
 
     return searchForDocuments(siteId, GSI1, expression, values, token, maxresults);
+  }
+
+  @Override
+  public PaginationResults<DynamicDocumentItem> search(final String siteId,
+      final SearchQuery query, final PaginationMapToken token, final int maxresults) {
+
+    SearchTagCriteria search = query.tag();
+    search.isValid();
+
+    PaginationResults<DynamicDocumentItem> result = null;
+    String key = search.key();
+
+    Collection<String> documentIds = query.documentIds();
+    
+    if (documentIds != null && !documentIds.isEmpty()) {
+
+      Map<String, Map<String, AttributeValue>> docs = findDocumentsTags(siteId, documentIds, key);
+      Map<String, Map<String, AttributeValue>> filteredDocs = filterDocumentTags(docs, search);
+      
+      List<String> fetchDocumentIds = new ArrayList<>(filteredDocs.keySet());
+
+      List<DocumentItem> list = this.docService.findDocuments(siteId, fetchDocumentIds);
+     
+      List<DynamicDocumentItem> results =
+          list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+              .collect(Collectors.toList()) : Collections.emptyList();
+
+      results.forEach(r -> {
+        Map<String, AttributeValue> tagMap = filteredDocs.get(r.getDocumentId());
+        DocumentTag tag = new AttributeValueToDocumentTag(siteId).apply(tagMap);
+        r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
+      });
+
+      result = new PaginationResults<>(results, null);
+      
+    } else {
+      
+      if (search.eq() != null) {
+        result = findDocumentsWithTagAndValue(siteId, key, search.eq(), token, maxresults);
+      } else if (search.beginsWith() != null) {
+        result = findDocumentsTagStartWith(siteId, key, search.beginsWith(), token, maxresults);
+      } else {
+        result = findDocumentsWithTag(siteId, key, null, token, maxresults);
+      }
+    }
+
+    return result;
   }
 
   /**

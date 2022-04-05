@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -38,10 +39,15 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
+import com.formkiq.stacks.dynamodb.SearchQuery;
+import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 
 /** Unit Tests for request /search. */
 public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
+  /** Match Tag element count. */
+  private static final int MATCH_COUNT = 3;
+  
   /**
    * Invalid search.
    *
@@ -139,6 +145,8 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertNotNull(documents.get(0).get("insertedDate"));
 
       Map<String, Object> matchedTag = (Map<String, Object>) documents.get(0).get("matchedTag");
+      assertEquals(MATCH_COUNT, matchedTag.size());
+      assertEquals("USERDEFINED", matchedTag.get("type"));
       assertEquals("category", matchedTag.get("key"));
       assertEquals("person", matchedTag.get("value"));
       assertNull(resp.get("next"));
@@ -194,6 +202,8 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertNotNull(documents.get(0).get("insertedDate"));
 
       Map<String, Object> matchedTag = (Map<String, Object>) documents.get(0).get("matchedTag");
+      assertEquals(MATCH_COUNT, matchedTag.size());
+      assertEquals("USERDEFINED", matchedTag.get("type"));
       assertEquals("category", matchedTag.get("key"));
       assertEquals("xyz", matchedTag.get("value"));
       assertNull(resp.get("next"));
@@ -254,6 +264,114 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
+    }
+  }
+  
+  /**
+   * Valid POST search by eq tagValue and valid/invalid DocumentId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest07() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      final String documentId = UUID.randomUUID().toString();
+      final String tagKey = "category";
+      final String tagvalue = "person";
+      final String username = "jsmith";
+      final Date now = new Date();
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(
+          "{\"query\":{\"tag\":{\"key\":\"category\",\"eq\":\"person\"},\"documentIds\":[\""
+              + documentId + "\"]}}");
+
+      DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
+      item.setUserId(UUID.randomUUID().toString());
+
+      getDocumentService().saveDocument(siteId, new DocumentItemDynamoDb(documentId, now, username),
+          Arrays.asList(item));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0).get("documentId"));
+      assertEquals(username, documents.get(0).get("userId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+
+      Map<String, Object> matchedTag = (Map<String, Object>) documents.get(0).get("matchedTag");
+      assertEquals(MATCH_COUNT, matchedTag.size());
+      assertEquals("category", matchedTag.get("key"));
+      assertEquals("person", matchedTag.get("value"));
+      assertEquals("USERDEFINED", matchedTag.get("type"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+      
+      // given - invalid document id
+      newOutstream();
+      event.setBody("{\"query\":{\"tag\":{\"key\":\"category\",\"eq\":\"person\"},"
+          + "\"documentIds\":[\"123\"]}}");
+      // when
+      response = handleRequest(event);
+      // then
+      m = fromJson(response, Map.class);
+      resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      documents = resp.getList("documents");
+      assertEquals(0, documents.size());
+    }
+  }
+  
+  /**
+   * Valid POST search by eq tagValue and TOO many DocumentId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest08() throws Exception {
+    final int count = 101;
+    
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      newOutstream();
+
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest().query(new SearchQuery()
+          .tag(new SearchTagCriteria().key("test")).documentsIds(new ArrayList<>()));
+
+      for (int i = 0; i < count; i++) {
+        q.query().documentIds().add(UUID.randomUUID().toString());
+      }
+      
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      String expected = "{" + getHeaders() + ",\"body\":"
+          + "\"{\\\"message\\\":\\\"Maximum number of DocumentIds is 100\\\"}\","
+          + "\"statusCode\":400}";
+      assertEquals(expected, response);
     }
   }
 }

@@ -482,7 +482,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       List<TransactGetItem> tgets = gets.stream().map(g -> TransactGetItem.builder().get(g).build())
           .collect(Collectors.toList());
-
+      // TODO change to BatchGet?
       TransactGetItemsRequest treq = TransactGetItemsRequest.builder().transactItems(tgets).build();
       TransactGetItemsResponse response = this.dynamoDB.transactGetItems(treq);
 
@@ -1026,12 +1026,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DynamicObject> doctags = doc.getList("tags");
 
     tags.addAll(doctags.stream().map(t -> {
+      
       DocumentTagType type = null;
       if (t.hasString("type")) {
         type = DocumentTagType.valueOf(t.getString("type").toUpperCase());
       }
 
-      return new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
+      DocumentTag tag =
+          new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
+      
+      if (t.containsKey("values") /*&& t.getStringList("values") != null*/) {
+        tag.setValue(null);
+        tag.setValues(t.getStringList("values"));
+      }
+      
+      return tag;
+      
     }).collect(Collectors.toList()));
 
     if (!docexists && tags.isEmpty()) {

@@ -575,6 +575,13 @@
                             tag:
                               key: firstname
                               beginsWith: jo
+                      Search_By_Value_for_Specific_Documents:
+                        value:
+                          query:
+                            tag:
+                              key: category
+                              eq: person
+                            documentIds: ["1", "2"]
               responses:
                 '200':
                   description: 200 response
@@ -1070,6 +1077,10 @@
               properties:
                 tag:
                   $ref: "#/components/schemas/DocumentSearchItemTag"
+                documentIds:
+                  type: array
+                  items:
+                    type: "string"
             DocumentId:
               required:
                 - "documentId"

@@ -41,8 +41,14 @@ public class DocumentTagToDynamicDocumentTag implements Function<DocumentTag, Dy
     map.put("key", tag.getKey());
     map.put("type", tag.getType().name());
     map.put("userId", tag.getUserId());
-    map.put("value", tag.getValue());
-    map.put("values", tag.getValues());
+    
+    if (tag.getValue() != null) {
+      map.put("value", tag.getValue());      
+    }
+    
+    if (tag.getValues() != null) {      
+      map.put("values", tag.getValues());
+    }
 
     return new DynamicDocumentTag(map);
   }

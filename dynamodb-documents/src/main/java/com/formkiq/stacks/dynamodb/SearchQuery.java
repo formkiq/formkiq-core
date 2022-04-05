@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.Collection;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Search Query. */
@@ -32,26 +33,34 @@ public class SearchQuery {
   /** {@link SearchTagCriteria}. */
   @Reflectable
   private SearchTagCriteria tag;
+  /** Collection of Document Ids use {@link SearchTagCriteria} against. */
+  @Reflectable
+  private Collection<String> documentIds;
 
   /** constructor. */
   public SearchQuery() {}
 
   /**
-   * Get {@link SearchTagCriteria}.
-   *
-   * @return {@link SearchTagCriteria}
+   * Get Document Ids.
+   * @return {@link Collection} {@link String}
    */
-  public SearchTagCriteria getTag() {
-    return this.tag;
+  public Collection<String> documentIds() {
+    return this.documentIds;
   }
 
   /**
-   * Set {@link SearchTagCriteria}.
-   *
-   * @param searchtag {@link SearchTagCriteria}
+   * Set Document Ids.
+   * @param ids {@link Collection} {@link String}
+   * @return {@link SearchQuery}
    */
-  public void setTag(final SearchTagCriteria searchtag) {
-    this.tag = searchtag;
+  public SearchQuery documentsIds(final Collection<String> ids) {
+    this.documentIds = ids;
+    return this;
+  }
+
+  /** Is {@link SearchTagCriteria} valid. */
+  private void isSearchTagValid() {
+    this.tag.isValid();
   }
 
   /** Is {@link SearchQuery} object valid. */
@@ -63,8 +72,23 @@ public class SearchQuery {
     isSearchTagValid();
   }
 
-  /** Is {@link SearchTagCriteria} valid. */
-  private void isSearchTagValid() {
-    this.tag.isValid();
+  /**
+   * Get {@link SearchTagCriteria}.
+   *
+   * @return {@link SearchTagCriteria}
+   */
+  public SearchTagCriteria tag() {
+    return this.tag;
+  }
+
+  /**
+   * Set {@link SearchTagCriteria}.
+   *
+   * @param searchtag {@link SearchTagCriteria}
+   * @return {@link SearchQuery}
+   */
+  public SearchQuery tag(final SearchTagCriteria searchtag) {
+    this.tag = searchtag;
+    return this;
   }
 }

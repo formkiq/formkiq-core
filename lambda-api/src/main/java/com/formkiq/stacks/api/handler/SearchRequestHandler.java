@@ -46,6 +46,9 @@ import com.formkiq.stacks.dynamodb.PaginationResults;
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** Maximum number of Document Ids that can be sent. */
+  private static final int MAX_DOCUMENT_IDS = 100;
+  
   /**
    * constructor.
    *
@@ -64,13 +67,17 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     QueryRequest q = fromBodyToObject(logger, event, QueryRequest.class);
 
-    if (q == null || q.getQuery() == null || q.getQuery().getTag() == null) {
+    if (q == null || q.query() == null || q.query().tag() == null) {
       throw new BadException("Invalid JSON body.");
     }
 
+    if (q.query().documentIds() != null && q.query().documentIds().size() > MAX_DOCUMENT_IDS) {
+      throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
+    }
+    
     String siteId = authorizer.getSiteId();
     PaginationResults<DynamicDocumentItem> results =
-        awsservice.documentSearchService().search(siteId, q.getQuery().getTag(), ptoken, limit);
+        awsservice.documentSearchService().search(siteId, q.query(), ptoken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);

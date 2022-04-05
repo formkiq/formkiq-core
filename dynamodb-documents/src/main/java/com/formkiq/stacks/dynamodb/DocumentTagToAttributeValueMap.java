@@ -79,12 +79,15 @@ public class DocumentTagToAttributeValueMap
     List<Map<String, AttributeValue>> list = new ArrayList<>();
     if (isValueList(tag)) {
       
-      int idx = 0;
+      int idx = -1;
       for (String tagValue : tag.getValues()) {
         Map<String, AttributeValue> pkvalues =
             buildTagAttributeValue(this.site, this.document, tag, tagValue, idx);
         list.add(pkvalues);
         idx++;
+        if (idx == 0) {
+          idx++;
+        }
       }
       
     } else {
