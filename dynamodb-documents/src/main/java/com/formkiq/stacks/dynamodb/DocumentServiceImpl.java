@@ -30,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,27 +38,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.Get;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.ItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.TransactGetItem;
-import software.amazon.awssdk.services.dynamodb.model.TransactGetItemsRequest;
-import software.amazon.awssdk.services.dynamodb.model.TransactGetItemsResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 
@@ -465,37 +463,47 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
-    final int chunkSize = 10;
-    final AtomicInteger counter = new AtomicInteger();
-    final Collection<List<String>> documentIdsSplit = ids.stream().distinct()
-        .collect(
-            Collectors.groupingBy(it -> Integer.valueOf(counter.getAndIncrement() / chunkSize)))
-        .values();
+    List<DocumentItem> results = null;
 
-    List<Map<String, AttributeValue>> result = new ArrayList<>();
+    if (!ids.isEmpty()) {
 
-    for (List<String> documentIds : documentIdsSplit) {
+      List<Map<String, AttributeValue>> keys = ids.stream()
+          .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
 
-      List<Get> gets =
-          documentIds.stream().map(documentId -> Get.builder().tableName(this.documentTableName)
-              .key(keysDocument(siteId, documentId)).build()).collect(Collectors.toList());
+      Map<String, KeysAndAttributes> requestedItems =
+          Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
 
-      List<TransactGetItem> tgets = gets.stream().map(g -> TransactGetItem.builder().get(g).build())
+      BatchGetItemRequest batchReq =
+          BatchGetItemRequest.builder().requestItems(requestedItems).build();
+      BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+
+      Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
+      List<Map<String, AttributeValue>> result =
+          !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
+
+      AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
+      List<DocumentItem> items = result.stream().map(a -> toDocumentItem.apply(Arrays.asList(a)))
           .collect(Collectors.toList());
-      // TODO change to BatchGet?
-      TransactGetItemsRequest treq = TransactGetItemsRequest.builder().transactItems(tgets).build();
-      TransactGetItemsResponse response = this.dynamoDB.transactGetItems(treq);
+      items = sortByIds(ids, items);
 
-      List<ItemResponse> responses = response.responses();
-      result.addAll(responses.stream().map(r -> r.item()).collect(Collectors.toList()));
+      results = !items.isEmpty() ? items : null;
     }
 
-    AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
-    List<DocumentItem> items = result.stream().map(a -> toDocumentItem.apply(Arrays.asList(a)))
+    return results;
+  }
+  
+  /**
+   * Sort {@link DocumentItem} to match DocumentIds {@link List}.
+   * @param documentIds {@link List} {@link String}
+   * @param documents {@link List} {@link DocumentItem}
+   * @return {@link List} {@link DocumentItem}
+   */
+  private List<DocumentItem> sortByIds(final List<String> documentIds,
+      final List<DocumentItem> documents) {
+    Map<String, DocumentItem> map = documents.stream()
+        .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
+    return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
         .collect(Collectors.toList());
-    items = items.stream().filter(i -> i != null).collect(Collectors.toList());
-
-    return !items.isEmpty() ? items : null;
   }
 
   @Override

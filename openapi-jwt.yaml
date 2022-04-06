@@ -595,7 +595,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentItemsResults'
+                        $ref: '#/components/schemas/DocumentSearchResults'
               security:
                 - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1311,6 +1311,51 @@
                   items:
                     type: "string"
                 key:
+                  type: "string"
+            DocumentSearchResults:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
+                documents:
+                  $ref: "#/components/schemas/SearchDocumentItems"
+            SearchDocumentItems:
+              type: "array"
+              items:
+                type: "object"
+                properties:
+                  siteId:
+                    type: "string"
+                  path:
+                    type: "string"
+                  insertedDate:
+                    type: "string"
+                    format: "date-time"
+                  checksum:
+                    type: "string"
+                  documentId:
+                    type: "string"
+                    format: "uuid"
+                  contentType:
+                    type: "string"
+                  userId:
+                    type: "string"
+                  contentLength:
+                    type: "integer"
+                  versionId:
+                    type: "string"
+                  matchedTag:
+                    $ref: "#/components/schemas/DocumentSearchMatchTag"
+            DocumentSearchMatchTag:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                value:
+                  type: "string"
+                type:
                   type: "string"
             DocumentItemsResults:
               type: "object"
