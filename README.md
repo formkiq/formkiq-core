@@ -205,39 +205,56 @@ SSM parameters made it easy for applications to automatically lookup FormKiQ con
 
 ## 🌐 API Reference
 
-FormKiQ creates two APIs on deployment. One API uses Cognito authorization and the other uses IAM authorization. 
+When installed, FormKiQ Core deploys it's API twice under different authentication mechanisms. 
 
-See [CloudFormation Outputs](#cloudformation-outputs) for API URLs.
+The first API is deployed using [AWS Cognito](https://aws.amazon.com/cognito/) as the authenticator. This allows for easy creation of applications that can use the users' JWT token to access the FormKiQ API.
 
-Below is a summary of the FormKiQ Core FormKiQ API. The API was built using the [OpenAPI Specification](https://swagger.io/specification/).
+A second API is deployed using [AWS Identify and Acces Management controls](https://aws.amazon.com/iam/) as the authenticator. Both API are identical in every other way. Using [AWS Identify and Acces Management controls](https://aws.amazon.com/iam/) as the authenticator allows easy creation of backend processes that use [IAM access policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html). AWS provides examples of how to setup [IAM Policy for API execution](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples-for-api-execution.html). AWS also provide a managed policy called `arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess` that can be added to an existing IAM role.
 
-[Full FormKiQ Api](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API)
+The API urls can be found in the [CloudFormation Outputs](#cloudformation-outputs) of the FormKiQ Core CloudFormation installation.
 
-[JWT FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/openapi-jwt.yaml)
+FormKiQ Core's API was built using the [OpenAPI Specification](https://swagger.io/specification/).
 
-[IAM FormKiQ Core OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/openapi-iam.yaml)
+The OpenAPI specifications can be found:
 
-|Method|Url|Description|
-|--------------|--------------------------|--------------------------|
-| GET | /documents | Returns a list of documents |
-| POST | /documents | Create document |
-| GET | /documents/{documentId} | Get document details |
-| PATCH | /documents/{documentId} | Update document details |
-| DELETE | /documents/{documentId} | Delete document |
-| GET | /documents/{documentId}/versions | Get versions of document |
-| GET | /documents/{documentId}/content | Get document content |
-| GET | /documents/{documentId}/tags | Get document tags |
-| POST | /documents/{documentId}/tags | Add tag to document |
-| GET | /documents/{documentId}/tags/{tagKey} | Get a specific tag |
-| PUT | /documents/{documentId}/tags/{tagKey} | Update tag |
-| DELETE | /documents/{documentId}/tags/{tagKey} | Delete tag |
-| GET | /documents/{documentId}/url | Get document URL |
-| GET | /documents/upload | Returns URL that can accept uploads largers than 5 MB |
-| GET | /documents/{documentId}/upload | Returns URL that can accept uploads largers than 5 MB to update a specific document |
-| POST | /search | Document search |
-| POST | /public/documents | Public (unauthenticated) URL for creating a document, used for web forms |
-| GET | /webhooks | Returns a list of webhooks |
-| POST | /webhooks | Create Webhook |
+[JWT OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/openapi-jwt.yaml)
+
+[IAM OpenAPI Spec](https://raw.githubusercontent.com/formkiq/formkiq-core/master/openapi-iam.yaml)
+
+The markdown version of the API can be found in the [FormKiQ Wiki](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API).
+
+
+### API Endpoints
+
+All endpoints require either Cognito / IAM Authentication unless the URL starts with /public. 
+
+Public URLs are disabled by default and can be enabled through the CloudFormation installation.
+
+### Document Endpoints
+
+* [Get Document Listing](api/documents/get_documents.md) : `GET /documents`
+* [Create New Document](api/documents/post_documents.md) : `POST /documents`
+* [Get Document by Id](api/documents/get_documents_id.md) : `GET /documents/{documentId}`
+* [Update Document](api/documents/patch_documents_id.md) : `PATCH /documents/{documentId}`
+* [Delete Document](api/documents/delete_documents_id.md) : `DELETE /documents/{documentId}`
+* [Get Versions of Document](api/documents/get_documents_versions.md) : `GET /documents/{documentId}/versions`
+* [Get Content of Document](api/documents/get_documents_content.md) : `GET /documents/{documentId}/content`
+* [Get Download URL for Id](api/documents/get_documents_download_url.md) : `GET /documents/{documentId}/url`
+* [Get Upload URL](api/documents/get_documents_upload_url.md) : `GET /documents/upload`
+* [Get Upload URL for ID](api/documents/get_documents_upload_url_id.md) : `GET /documents/{documentId}/upload`
+
+### Document Tags Endpoints
+
+* [Get Tags of Document](api/documents/get_documents_tags.md) : `GET /documents/{documentId}/tags`
+* [Add Tag(s) to Document](api/documents/get_documents_tags.md) : `POST /documents/{documentId}/tags`
+* [Get Document Tag by Key](api/documents/get_documents_tag.md) : `GET /documents/{documentId}/tags/{tagKey}`
+* [Replace Document Tag Value](api/documents/put_documents_tag.md) : `PUT /documents/{documentId}/tags/{tagKey}`
+* [Delete Document Tag](api/documents/delete_documents_tag.md) : `DELETE /documents/{documentId}/tags/{tagKey}`
+* [Delete Document Tag Value](api/documents/delete_documents_tag_value.md) : `DELETE /documents/{documentId}/tags/{tagKey}/{tagValue}`
+
+### Documents Search Endpoints
+
+* [Search for Documents](api/documents/post_search_documents.md) : `POST /search`
 
 ## 🪝 Webhooks
 
