@@ -66,22 +66,26 @@ Resources:
             get:
               tags:
               - Documents
-              description: Returns a list of documents in reverse inserted date order.
+              description: Returns a list of most recent added documents order by inserted DESC
               parameters:
               - name: "date"
                 in: "query"
+                description: "Fetch documents inserted on a certain date (yyyy-MM-dd)"
                 schema:
                   type: "string"
               - name: "tz"
                 in: "query"
+                description: "UTC offset to apply to date parameter (IE: -0600)"
                 schema:
                   type: "string"
               - name: "next"
                 in: "query"
+                description: "Next pagination of documents token"
                 schema:
                   type: "string"
               - name: "previous"
                 in: "query"
+                description: "Previous pagination of documents token"
                 schema:
                   type: "string"
               - $ref: '#/components/parameters/siteIdParam'
@@ -108,7 +112,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Save document.
+              description: Saves a new document
               tags:
               - Documents      
               parameters:
@@ -119,6 +123,24 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/DocumentBody'
+                    examples:
+                      Simple_File:
+                        value:
+                          path: test.txt
+                          contentType: text/plain
+                          content: This is sample data file
+                          tags: [key:type,value:sample]
+                      Nested_Document:
+                        value:
+                          path: doc1.txt
+                          contentType: text/plain
+                          content: This is document1 content
+                          tags: [key:type,value:document1]
+                          documents: [{
+                            contentType: text/plain,
+                            content: This is sub document1 content,
+                            tags: [key:type,value:subdocument1]
+                          }]
               responses:
                 '201':
                   description: 201 response
@@ -139,21 +161,12 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}:
             get:
-              description: Get document details.
+              description: Retrieves a document details
               tags:
               - Documents      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
-              - name: "next"
-                in: "query"
-                schema:
-                  type: "string"
-              - name: "previous"
-                in: "query"
-                schema:
-                  type: "string"              
               responses:
                 '200':
                   description: 200 response
@@ -173,7 +186,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
-              description: Update document details.
+              description: Update a document details
               tags:
               - Documents      
               parameters:
@@ -204,7 +217,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete document.
+              description: Delete a document
               tags:
               - Documents      
               parameters:
@@ -219,7 +232,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/versions:
             get:
-              description: Get document versions.
+              description: Get a listing of document content versions
               tags:
               - Documents      
               parameters:
@@ -254,7 +267,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/content:
             get:
-              description: Get document content.
+              description: Get a Document Contents
               tags:
               - Documents      
               parameters:
@@ -283,9 +296,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags:
             get:
-              description: Get document tags.
+              description: Get a listing of a document's tags
               tags:
-              - Documents      
+              - Document Tags     
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -319,9 +332,9 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Add Tag to document.
+              description: Add tag(s) to a document
               tags:
-              - Documents      
+              - Document Tags      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -352,9 +365,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags#:
             post:
-              description: Add multiple Tags to document.
+              description: Add tag(s) to a document
               tags:
-              - Documents      
+              - Document Tags      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -373,9 +386,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
           /documents/{documentId}/tags/{tagKey}:
             get:
-              description: Get document tags.
+              description: Get a document's tag by key
               tags:
-              - Documents      
+              - Document Tags     
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -399,9 +412,9 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
-              description: Replace Tag value.
+              description: Update the value(s) of a document's tag
               tags:
-              - Documents      
+              - Document Tags      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -420,9 +433,9 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete document tags.
+              description: Delete a document's tag
               tags:
-              - Documents      
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -436,9 +449,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags/{tagKey}/{tagValue}:
             delete:
-              description: Delete a specific document tag/value combination.
+              description: Delete a document's valid tag/value combination
               tags:
-              - Documents      
+              - Document Tags      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -453,7 +466,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/url:
             get:
-              description: Returns a URL to fetch the document.
+              description: Returns a url to fetch the document's contents
               tags:
               - Documents      
               parameters:
@@ -481,7 +494,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/upload:
             get:
-              description: Returns URL that can accept uploads largers than 5 MB.
+              description: Returns a url that can be used to upload documents largers than 5 MB
               tags:
               - Documents      
               parameters:
@@ -518,7 +531,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
-              description: Returns URL to upload content larger than 5 MB.
+              description: Returns a url that can be used to upload documents largers than 5 MB for a specific documentId
               tags:
               - Documents      
               responses:
@@ -541,9 +554,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /search:
             post:
-              description: Searches for Documents.
+              description: Document search query request
               tags:
-              - Search      
+              - Document Search      
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'              
@@ -608,7 +621,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/documents:
             post:
-              description: Save document.
+              description: Allows unauthenticated creation of new documents, must be enabled during installation (disabled by default)
               tags:
               - Public      
               parameters:
@@ -637,36 +650,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /public/webhooks/{webhooks+}:
             post:
-              description: Public Webhook.
-              tags:
-              - Public      
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/webhooksParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object                
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DocumentId'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              description: Public Webhook.
+              description: Incoming public webhook, must be enabled during installation (disabled by default)
               tags:
               - Public      
               parameters:
@@ -696,38 +680,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /private/webhooks/{webhooks+}:
             post:
-              description: Private Webhook.
-              tags:
-              - Webhooks      
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/webhooksParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object                
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DocumentId'
-              security:
-              - AuthorizationCognito: []                        
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              description: Private Webhook.
+              description: Incoming private webhook
               tags:
               - Webhooks      
               parameters:
@@ -786,7 +739,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Save Webhook.
+              description: Save a new webhook.
               tags:
               - Webhooks      
               parameters:
@@ -819,7 +772,7 @@ Resources:
             get:
               tags:
               - Webhooks
-              description: Returns a webhook
+              description: Returns a webhook details
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
@@ -845,7 +798,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete webhook.
+              description: Deletes a webhook
               tags:
               - Webhooks      
               parameters:
@@ -859,7 +812,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
             patch:
-              description: Updates Webhook.
+              description: Updates a webhook
               tags:
               - Webhooks      
               parameters:
@@ -880,7 +833,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks/{webhookId}/tags:
             get:
-              description: Get Webhook tags.
+              description: Get a webhook's tags.
               tags:
               - Webhooks      
               parameters:
@@ -905,7 +858,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Add Tag to Webhook.
+              description: Add a tag to a webhook
               tags:
               - Webhooks      
               parameters:

@@ -123,7 +123,7 @@ task assembleOpenApiTemplate {
 			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-jwt.yaml > ${buildDir}/../../openapi-jwt.yaml"
 		}
 		exec {
-			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-jwt.yaml -g asciidoc -o ${buildDir}/openapi-jwt"
+			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-jwt.yaml -g markdown -o ${buildDir}/openapi-jwt"
 		}
 		exec {
 			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/api-iam.yaml src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
@@ -132,7 +132,7 @@ task assembleOpenApiTemplate {
 			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../openapi-iam.yaml"
 		}
 		exec {
-			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-iam.yaml -g asciidoc -o ${buildDir}/openapi-iam"
+			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-iam.yaml -g markdown -o ${buildDir}/openapi-iam"
 		}
 	}
 }
