@@ -205,6 +205,8 @@ SSM parameters made it easy for applications to automatically lookup FormKiQ con
 
 ## 🌐 API Reference
 
+The FormKiQ API is built for the easily adding of documents, tagging documents and searching for documents.
+
 When installed, FormKiQ Core deploys it's API twice under different authentication mechanisms. 
 
 The first API is deployed using [AWS Cognito](https://aws.amazon.com/cognito/) as the authenticator. This allows for easy creation of applications that can use the users' JWT token to access the FormKiQ API.
@@ -232,29 +234,29 @@ Public URLs are disabled by default and can be enabled through the CloudFormatio
 
 ### Document Endpoints
 
-* [Get Document Listing](api/documents/get_documents.md) : `GET /documents`
-* [Create New Document](api/documents/post_documents.md) : `POST /documents`
-* [Get Document by Id](api/documents/get_documents_id.md) : `GET /documents/{documentId}`
-* [Update Document](api/documents/patch_documents_id.md) : `PATCH /documents/{documentId}`
-* [Delete Document](api/documents/delete_documents_id.md) : `DELETE /documents/{documentId}`
-* [Get Versions of Document](api/documents/get_documents_versions.md) : `GET /documents/{documentId}/versions`
-* [Get Content of Document](api/documents/get_documents_content.md) : `GET /documents/{documentId}/content`
-* [Get Download URL for Id](api/documents/get_documents_download_url.md) : `GET /documents/{documentId}/url`
-* [Get Upload URL](api/documents/get_documents_upload_url.md) : `GET /documents/upload`
-* [Get Upload URL for ID](api/documents/get_documents_upload_url_id.md) : `GET /documents/{documentId}/upload`
+* [Get Document Listing](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents`
+* [Create New Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `POST /documents`
+* [Get Document by Id](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents/{documentId}`
+* [Update Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `PATCH /documents/{documentId}`
+* [Delete Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents : `DELETE /documents/{documentId}`
+* [Get Versions of Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents/{documentId}/versions`
+* [Get Content of Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents/{documentId}/content`
+* [Get Download URL for Id](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents/{documentId}/url`
+* [Get Upload URL](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents/upload`
+* [Get Upload URL for ID](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Documents) : `GET /documents/{documentId}/upload`
 
 ### Document Tags Endpoints
 
-* [Get Tags of Document](api/documents/get_documents_tags.md) : `GET /documents/{documentId}/tags`
-* [Add Tag(s) to Document](api/documents/get_documents_tags.md) : `POST /documents/{documentId}/tags`
-* [Get Document Tag by Key](api/documents/get_documents_tag.md) : `GET /documents/{documentId}/tags/{tagKey}`
-* [Replace Document Tag Value](api/documents/put_documents_tag.md) : `PUT /documents/{documentId}/tags/{tagKey}`
-* [Delete Document Tag](api/documents/delete_documents_tag.md) : `DELETE /documents/{documentId}/tags/{tagKey}`
-* [Delete Document Tag Value](api/documents/delete_documents_tag_value.md) : `DELETE /documents/{documentId}/tags/{tagKey}/{tagValue}`
+* [Get Tags of Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Tags) : `GET /documents/{documentId}/tags`
+* [Add Tag(s) to Document](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Tags) : `POST /documents/{documentId}/tags`
+* [Get Document Tag by Key](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Tags) : `GET /documents/{documentId}/tags/{tagKey}`
+* [Replace Document Tag Value](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Tags) : `PUT /documents/{documentId}/tags/{tagKey}`
+* [Delete Document Tag](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Tags) : `DELETE /documents/{documentId}/tags/{tagKey}`
+* [Delete Document Tag Value](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Tags) : `DELETE /documents/{documentId}/tags/{tagKey}/{tagValue}`
 
 ### Documents Search Endpoints
 
-* [Search for Documents](api/documents/post_search_documents.md) : `POST /search`
+* [Search for Documents](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-API#Document-Search) : `POST /search`
 
 ## 🪝 Webhooks
 
