@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 
@@ -55,7 +56,7 @@ public class LambdaLoggerRecorder implements LambdaLogger {
    * @return {@link List} byte[]
    */
   public List<String> getRecordedMessages() {
-    return this.recordedMessages;
+    return Collections.unmodifiableList(this.recordedMessages);
   }
 
   /**
@@ -64,7 +65,7 @@ public class LambdaLoggerRecorder implements LambdaLogger {
    * @return {@link List} byte[]
    */
   public List<byte[]> getRecordedByteMessages() {
-    return this.recordedByteMessages;
+    return Collections.unmodifiableList(this.recordedByteMessages);
   }
 
   /**

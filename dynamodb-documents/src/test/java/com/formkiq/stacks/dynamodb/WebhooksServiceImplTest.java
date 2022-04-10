@@ -88,7 +88,7 @@ public class WebhooksServiceImplTest {
   @Before
   public void before() throws Exception {
 
-    this.service = dbhelper.getWebhookService();
+    this.service = new WebhooksServiceImpl(adb, "Documents");
 
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();

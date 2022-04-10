@@ -29,6 +29,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -57,7 +58,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetRequest01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -84,8 +84,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetRequest02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -127,15 +125,16 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   public void testHandleGetRequest03() throws Exception {
     // given
     String input = "";
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     final InputStream instream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
     final String expected = "{" + getHeaders() + ","
         + "\"body\":\"{\\\"message\\\":\\\"Invalid Request\\\"}\",\"statusCode\":404}";
 
     // when
-    getHandler().handleRequest(instream, getOutstream(), getMockContext());
+    getHandler().handleRequest(instream, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(getOutstream().toByteArray(), "UTF-8"));
+    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
     assertTrue(getLogger().containsString("response: " + expected));
   }
 
@@ -147,7 +146,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetRequest04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-invalid-resource.json");
       addParameter(event, "siteId", siteId);
@@ -172,8 +170,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest05() throws Exception {
-    newOutstream();
-
     // given
     Date date = new Date();
     String documentId = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
@@ -213,8 +209,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest06() throws Exception {
-    newOutstream();
-
     // given
     Date date = new Date();
     String documentId0 = "1a1d1938-451e-4e20-bf95-e0e7a749505a";

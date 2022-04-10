@@ -148,7 +148,7 @@ public abstract class AbstractAwsTest {
    * 
    * @return {@link DocumentService}
    */
-  public static DocumentService getDocumentService() {
+  protected static DocumentService getDocumentService() {
     return documentService;
   }
 
@@ -157,7 +157,7 @@ public abstract class AbstractAwsTest {
    * 
    * @return {@link S3Service}
    */
-  public static S3Service getS3Service() {
+  protected static S3Service getS3Service() {
     return s3Service;
   }
 
@@ -184,7 +184,7 @@ public abstract class AbstractAwsTest {
    * 
    * @return {@link SnsService}
    */
-  public static SnsService getSnsService() {
+  protected static SnsService getSnsService() {
     return snsService;
   }
 
@@ -193,7 +193,7 @@ public abstract class AbstractAwsTest {
    * 
    * @return {@link SqsService}
    */
-  public static SqsService getSqsService() {
+  protected static SqsService getSqsService() {
     return sqsService;
   }
 
@@ -202,7 +202,7 @@ public abstract class AbstractAwsTest {
    * 
    * @return {@link SsmService}
    */
-  public static SsmService getSsmService() {
+  protected static SsmService getSsmService() {
     return ssmService;
   }
 

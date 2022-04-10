@@ -86,7 +86,6 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     assertEquals("{\"message\":\"Created Tag 'category'.\"}", m.get("body"));
     
     // given
-    newOutstream();
     event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
     setPathParameter(event, "webhookId", webhookId);
     

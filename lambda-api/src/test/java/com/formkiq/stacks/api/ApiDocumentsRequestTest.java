@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -109,17 +110,17 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   private void expectNextPage(final String next) throws IOException {
     // given
-    newOutstream();
     try (InputStream in = toStream("/request-get-documents-next.json")) {
       String input = IoUtils.toUtf8String(in).replaceAll("\\{\\{next\\}\\}", next);
       final InputStream instream2 =
           new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
-
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+      
       // when
-      getHandler().handleRequest(instream2, getOutstream(), getMockContext());
+      getHandler().handleRequest(instream2, outstream, getMockContext());
 
       // then
-      String response = new String(getOutstream().toByteArray(), "UTF-8");
+      String response = new String(outstream.toByteArray(), "UTF-8");
 
       Map<String, String> m = fromJson(response, Map.class);
       DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
@@ -160,7 +161,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteDocument01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String filename = "test.pdf";
       try (S3Client s3 = getS3().buildClient()) {
@@ -183,7 +183,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String filename = "test.txt";
 
@@ -207,7 +206,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteDocument03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       final String expected = "{" + getHeaders() + ","
           + "\"body\":\"{\\\"message\\\":\\\"Document test.pdf not found.\\\"}\""
@@ -234,8 +232,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       final long contentLength = 1000L;
@@ -279,9 +275,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
       createTestData(siteId, DocumentService.MAX_RESULTS + 2);
 
       try (InputStream in = toStream("/request-get-documents-next.json")) {
@@ -291,10 +286,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
             new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
         // when
-        getHandler().handleRequest(instream, getOutstream(), getMockContext());
+        getHandler().handleRequest(instream, outstream, getMockContext());
 
         // then
-        String response = new String(getOutstream().toByteArray(), "UTF-8");
+        String response = new String(outstream.toByteArray(), "UTF-8");
         Map<String, String> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
@@ -323,9 +318,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
       createTestData(siteId, DocumentService.MAX_RESULTS);
 
       try (InputStream in = toStream("/request-get-documents-next.json")) {
@@ -335,10 +329,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
             new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
         // when
-        getHandler().handleRequest(instream, getOutstream(), getMockContext());
+        getHandler().handleRequest(instream, outstream, getMockContext());
 
         // then
-        String response = new String(getOutstream().toByteArray(), "UTF-8");
+        String response = new String(outstream.toByteArray(), "UTF-8");
         Map<String, String> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
@@ -365,8 +359,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
@@ -404,8 +396,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = DateUtil.toDateFromString("2019-08-15", "0500");
       String username = UUID.randomUUID() + "@formkiq.com";
@@ -443,8 +433,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       ZoneOffset zone = ZoneOffset.of("-05:00");
       ZonedDateTime zdate = ZonedDateTime.now(zone);
@@ -486,8 +474,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments07() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date0 = new Date();
       final int year = 2015;
@@ -691,8 +677,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments13() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents04.json");
       addParameter(event, "siteId", siteId);
@@ -723,8 +707,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleOptionsDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
@@ -758,7 +740,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments01() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       // when
       DynamicObject obj =
@@ -795,7 +776,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
@@ -844,7 +824,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid03.json");
       addParameter(event, "siteId", siteId);
@@ -869,7 +848,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid04.json");
       addParameter(event, "siteId", siteId);
@@ -901,7 +879,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid05.json");
       addParameter(event, "siteId", siteId);
@@ -932,7 +909,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid06.json");
       addParameter(event, "siteId", siteId);
@@ -977,7 +953,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments08() throws Exception {
-    newOutstream();
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents01.json");
 
@@ -1017,7 +992,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments09() throws Exception {
-    newOutstream();
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents02.json");
 
@@ -1042,7 +1016,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments10() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1092,7 +1065,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments11() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1143,7 +1115,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments12() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
 
       // when

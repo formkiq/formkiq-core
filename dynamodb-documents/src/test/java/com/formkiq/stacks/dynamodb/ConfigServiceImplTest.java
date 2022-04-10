@@ -85,7 +85,7 @@ public class ConfigServiceImplTest {
   @Before
   public void before() throws Exception {
 
-    this.service = dbhelper.getConfigService();
+    this.service = new ConfigServiceImpl(adb, "Documents");
 
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();

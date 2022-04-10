@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.s3;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -79,7 +80,7 @@ public class S3ObjectMetadata {
    * @return {@link Map}
    */
   public Map<String, String> getMetadata() {
-    return this.metadata;
+    return Collections.unmodifiableMap(this.metadata);
   }
 
   /**
@@ -129,7 +130,7 @@ public class S3ObjectMetadata {
    * @return {@link S3ObjectMetadata}
    */
   public S3ObjectMetadata setMetadata(final Map<String, String> map) {
-    this.metadata = map;
+    this.metadata = Collections.unmodifiableMap(map);
     return this;
   }
 

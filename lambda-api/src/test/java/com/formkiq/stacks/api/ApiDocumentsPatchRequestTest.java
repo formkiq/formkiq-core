@@ -52,7 +52,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
 
       // given
       String userId = "jsmith";
@@ -85,7 +84,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -106,7 +104,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
 
       // given
       String documentId = UUID.randomUUID().toString();
@@ -136,7 +133,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
 
       // given
       Map<String, String> map = new HashMap<>(getMap());

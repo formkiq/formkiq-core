@@ -56,9 +56,6 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     for (String enabled : Arrays.asList("private", "true")) {
 
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-        newOutstream();
-
         String name = UUID.randomUUID().toString();
 
         String id =

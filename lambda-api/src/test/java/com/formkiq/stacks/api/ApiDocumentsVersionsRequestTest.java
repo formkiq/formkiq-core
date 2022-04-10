@@ -48,8 +48,6 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentVersions01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId1 = UUID.randomUUID().toString();
       String documentId2 = UUID.randomUUID().toString();
@@ -107,8 +105,6 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentVersions02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId1 = UUID.randomUUID().toString();
       String documentId2 = UUID.randomUUID().toString();
@@ -160,8 +156,6 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentVersions03() throws Exception {
-    newOutstream();
-
     // given
     String siteId = null;
     String documentId1 = UUID.randomUUID().toString();

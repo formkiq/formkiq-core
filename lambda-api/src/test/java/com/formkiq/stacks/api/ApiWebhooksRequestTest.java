@@ -91,8 +91,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       
-      newOutstream();
-      
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
       
@@ -118,8 +116,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals("true", result.get("enabled"));
       
       verifyUrl(siteId, id, result);
-      
-      newOutstream();
       
       event = toRequestEvent("/request-get-webhooks01.json");
       addParameter(event, "siteId", siteId);
@@ -205,8 +201,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertNull(webhookService.findTag(null, id, "category").getString("TimeToLive"));
     
     // update ttl/name
-    newOutstream();
-    
     // given
     ttl = "174800";
     event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
@@ -252,8 +246,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         "http://localhost:8080");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-      
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
       
@@ -376,8 +368,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         String response = null;
 
         for (int i = 0; i <= 2; i++) {
-          newOutstream();
-
           ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
           addParameter(event, "siteId", siteId);
           event.setBody("{\"name\":\"john smith\"}");
@@ -418,7 +408,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         
     // when
     String responsePost = handleRequest(eventPost);
-    newOutstream();
     final String response = handleRequest(event);
     
     // then
@@ -450,7 +439,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
     
     // when
-    newOutstream();
     responsePost = handleRequest(eventPost);
     
     // then

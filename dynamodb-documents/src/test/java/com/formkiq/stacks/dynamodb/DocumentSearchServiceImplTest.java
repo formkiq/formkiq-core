@@ -99,7 +99,7 @@ public class DocumentSearchServiceImplTest {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-    this.service = dbhelper.getService();
+    this.service = new DocumentServiceImpl(adb, "Documents");
 
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();

@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -44,6 +45,7 @@ import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmServiceImpl;
+import com.formkiq.lambda.apigateway.ApiGatewayRequestContext;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -192,11 +194,6 @@ public abstract class AbstractRequestHandler {
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
 
-  /** {@link CoreRequestHandler}. */
-  private CoreRequestHandler handler;
-
-  /** {@link ByteArrayOutputStream}. */
-  private ByteArrayOutputStream outstream = new ByteArrayOutputStream();
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
 
@@ -240,11 +237,11 @@ public abstract class AbstractRequestHandler {
   public void addParameter(final ApiGatewayRequestEvent event, final String parameter,
       final String value) {
     if (value != null) {
-      Map<String, String> queryMap = event.getQueryStringParameters();
-      if (queryMap == null) {
-        queryMap = new HashMap<>();
+      Map<String, String> queryMap = new HashMap<>();
+      if (event.getQueryStringParameters() != null) {
+        queryMap.putAll(event.getQueryStringParameters());
       }
-
+          
       queryMap.put(parameter, value);
       event.setQueryStringParameters(queryMap);
     }
@@ -293,7 +290,7 @@ public abstract class AbstractRequestHandler {
 
     createApiRequestHandler(this.map);
 
-    this.awsServices = this.handler.getAwsServices();
+    this.awsServices = new CoreRequestHandler().getAwsServices();
 
     SqsService sqsservice = this.awsServices.sqsService();
     for (String queue : Arrays.asList(sqsDocumentFormatsQueueUrl)) {
@@ -315,7 +312,6 @@ public abstract class AbstractRequestHandler {
    */
   public void createApiRequestHandler(final Map<String, String> prop) {
     CoreRequestHandler.setUpHandler(prop, dbConnection, s3Connection, ssmConnection, sqsConnection);
-    this.handler = new CoreRequestHandler();
   }
 
   /**
@@ -372,7 +368,7 @@ public abstract class AbstractRequestHandler {
    * @return {@link CoreRequestHandler}
    */
   public CoreRequestHandler getHandler() {
-    return this.handler;
+    return new CoreRequestHandler();
   }
 
   /**
@@ -402,9 +398,9 @@ public abstract class AbstractRequestHandler {
    * @return {@link Map}
    */
   public Map<String, String> getMap() {
-    return this.map;
+    return Collections.unmodifiableMap(this.map);
   }
-
+  
   /**
    * Get Mock {@link Context}.
    *
@@ -412,15 +408,6 @@ public abstract class AbstractRequestHandler {
    */
   public Context getMockContext() {
     return this.context;
-  }
-
-  /**
-   * Get {@link ByteArrayOutputStream} for API Request Results.
-   *
-   * @return {@link ByteArrayOutputStream}
-   */
-  public ByteArrayOutputStream getOutstream() {
-    return this.outstream;
   }
 
   /**
@@ -462,10 +449,11 @@ public abstract class AbstractRequestHandler {
 
     String s = GsonUtil.getInstance().toJson(event);
     InputStream is = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
 
-    this.handler.handleRequest(is, this.outstream, getMockContext());
+    new CoreRequestHandler().handleRequest(is, outstream, getMockContext());
 
-    String response = new String(this.outstream.toByteArray(), "UTF-8");
+    String response = new String(outstream.toByteArray(), "UTF-8");
     return response;
   }
 
@@ -499,13 +487,6 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Create new Outstream.
-   */
-  public void newOutstream() {
-    this.outstream = new ByteArrayOutputStream();
-  }
-
-  /**
    * Put SSM Parameter.
    * 
    * @param name {@link String}
@@ -514,7 +495,6 @@ public abstract class AbstractRequestHandler {
   public void putSsmParameter(final String name, final String value) {
     this.awsServices.ssmService().putParameter(name, value);
   }
-
 
   /**
    * Remove SSM Parameter.
@@ -529,6 +509,7 @@ public abstract class AbstractRequestHandler {
     }
   }
 
+
   /**
    * Set Cognito Group.
    * 
@@ -537,10 +518,11 @@ public abstract class AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   public void setCognitoGroup(final ApiGatewayRequestEvent event, final String... cognitoGroups) {
-    Map<String, Object> authorizer = event.getRequestContext().getAuthorizer();
+    
+    ApiGatewayRequestContext requestContext = event.getRequestContext();
+    Map<String, Object> authorizer = requestContext.getAuthorizer();
     if (authorizer == null) {
       authorizer = new HashMap<>();
-      event.getRequestContext().setAuthorizer(authorizer);
     }
 
     Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
@@ -550,6 +532,17 @@ public abstract class AbstractRequestHandler {
     }
 
     claims.put("cognito:groups", cognitoGroups);
+    requestContext.setAuthorizer(authorizer);
+    event.setRequestContext(requestContext);
+  }
+
+  /**
+   * Set Environment Variable.
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  public void setEnvironment(final String key, final String value) {
+    this.map.put(key, value);
   }
 
   /**
@@ -565,8 +558,9 @@ public abstract class AbstractRequestHandler {
       event.setPathParameters(new HashMap<>());
     }
 
-    Map<String, String> pathmap = event.getPathParameters();
+    Map<String, String> pathmap = new HashMap<>(event.getPathParameters());
     pathmap.put(parameter, value);
+    event.setPathParameters(pathmap);
   }
 
   /**
@@ -577,10 +571,10 @@ public abstract class AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   public void setUsername(final ApiGatewayRequestEvent event, final String username) {
-    Map<String, Object> authorizer = event.getRequestContext().getAuthorizer();
+    ApiGatewayRequestContext requestContext = event.getRequestContext();
+    Map<String, Object> authorizer = requestContext.getAuthorizer();
     if (authorizer == null) {
       authorizer = new HashMap<>();
-      event.getRequestContext().setAuthorizer(authorizer);
     }
 
     Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
@@ -590,6 +584,9 @@ public abstract class AbstractRequestHandler {
     }
 
     claims.put("cognito:username", username);
+    
+    requestContext.setAuthorizer(authorizer);
+    event.setRequestContext(requestContext);
   }
 
   /**

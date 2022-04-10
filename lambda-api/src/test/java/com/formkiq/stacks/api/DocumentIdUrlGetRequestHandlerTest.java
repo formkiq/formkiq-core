@@ -56,8 +56,6 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
     for (String contentType : Arrays.asList(null, "application/pdf", "text/plain")) {
 
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        newOutstream();
-
         // given
         String documentId = UUID.randomUUID().toString();
         String userId = "jsmith";
@@ -122,8 +120,6 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentContent02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url02.json");
@@ -170,7 +166,6 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentContent03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url01.json");
       addParameter(event, "siteId", siteId);
@@ -206,8 +201,6 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   public void testHandleGetDocumentContent04() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
 

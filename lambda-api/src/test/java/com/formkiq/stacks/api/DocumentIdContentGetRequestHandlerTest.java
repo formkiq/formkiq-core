@@ -52,8 +52,6 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   public void testHandleGetDocumentContent01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String userId = "jsmith";
@@ -104,8 +102,6 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   public void testHandleGetDocumentContent02() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
 
@@ -159,8 +155,6 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   private void testReturnContent(final String contentType) throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
 

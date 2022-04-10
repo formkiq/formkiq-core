@@ -157,9 +157,8 @@ public class S3Service {
    */
   public void copyObject(final S3Client s3, final String sourcebucket, final String sourcekey,
       final String destinationBucket, final String destinationKey, final String contentType) {
-    CopyObjectRequest.Builder req =
-        CopyObjectRequest.builder().copySource(encode(sourcebucket + "/" + sourcekey))
-            .destinationBucket(destinationBucket).destinationKey(destinationKey);
+    CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
+        .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
 
     if (contentType != null) {
       req = req.contentType(contentType);

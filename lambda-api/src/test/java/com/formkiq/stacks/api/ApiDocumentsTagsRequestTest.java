@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Date;
@@ -58,8 +59,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagValue01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final Date now = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -112,8 +111,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagValue02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final Date now = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -168,8 +165,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagValue03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final Date now = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -224,8 +219,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagDocument01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date now = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -281,8 +274,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date now = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -337,8 +328,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagDocument03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date now = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -395,8 +384,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentTags01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String userId = "jsmith";
       Date date = new Date();
@@ -447,8 +434,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentTags02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date now = new Date();
       String userId = "jsmith";
@@ -500,8 +485,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date now = new Date();
       String userId = "jsmith";
@@ -555,16 +538,17 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetTags01() throws Exception {
     // given
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     final String expected = "{" + getHeaders()
         + ",\"body\":\"{\\\"message\\\":\\\"Tag category not found.\\\"}\",\"statusCode\":404}";
 
     final InputStream in = toStream("/request-get-documents-documentid-tags01.json");
 
     // when
-    getHandler().handleRequest(in, getOutstream(), getMockContext());
+    getHandler().handleRequest(in, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(getOutstream().toByteArray(), "UTF-8"));
+    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
     in.close();
   }
 
@@ -577,8 +561,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetTags02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
@@ -616,8 +598,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
@@ -655,8 +635,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetTags04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "jsmith");
@@ -717,8 +695,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = UUID.randomUUID().toString();
       final String tagname = "category";
@@ -757,8 +733,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test(timeout = TEST_TIMEOUT)
   public void testHandlePostDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final long sleep = 500L;
       final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
@@ -819,8 +793,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
       final String tagname = "category";
@@ -858,8 +830,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       final String tagname = "category";
@@ -900,8 +870,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = "test" + UUID.randomUUID().toString() + ".pdf";
       
@@ -953,8 +921,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags07() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = UUID.randomUUID().toString();
       final String tagname = "category";
@@ -993,8 +959,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags08() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = UUID.randomUUID().toString();
       final String expected = "{" + getHeaders() + ",\"body\":\""
@@ -1047,8 +1011,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentTags09() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = UUID.randomUUID().toString();
       final String expected = "{" + getHeaders()
@@ -1081,8 +1043,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePutTags01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String userId = "jsmith";
@@ -1116,16 +1076,17 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePutTags02() throws Exception {
     // given
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     final String expected = "{" + getHeaders() + "," + "\"body\":\""
         + "{\\\"message\\\":\\\"Document 143 not found.\\\"}\"" + ",\"statusCode\":404}";
 
     final InputStream in = toStream("/request-put-documents-documentid-tags01.json");
 
     // when
-    getHandler().handleRequest(in, getOutstream(), getMockContext());
+    getHandler().handleRequest(in, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(getOutstream().toByteArray(), "UTF-8"));
+    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
     in.close();
   }
 
@@ -1137,8 +1098,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePutTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String userId = "jsmith";
@@ -1171,16 +1130,17 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePutTags04() throws Exception {
     // given
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     final String expected = "{" + getHeaders() + ","
         + "\"body\":\"{\\\"message\\\":\\\"request body is invalid\\\"}\"" + ",\"statusCode\":400}";
 
     final InputStream in = toStream("/request-put-documents-documentid-tags03.json");
 
     // when
-    getHandler().handleRequest(in, getOutstream(), getMockContext());
+    getHandler().handleRequest(in, outstream, getMockContext());
 
     // then
-    assertEquals(expected, new String(getOutstream().toByteArray(), "UTF-8"));
+    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
     in.close();
   }
   
@@ -1192,8 +1152,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePutTags05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String userId = "jsmith";
@@ -1236,8 +1194,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePutTags06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String userId = "jsmith";

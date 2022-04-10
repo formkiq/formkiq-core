@@ -110,7 +110,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-    this.service = dbhelper.getService();
+    this.service = new DocumentServiceImpl(adb, "Documents");
 
     dbhelper.truncateDocumentsTable();
     dbhelper.truncateDocumentDates();
@@ -1537,17 +1537,15 @@ public class DocumentServiceImplTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(dbhelper.getDocumentTable()).build();
 
-      try (DynamoDbClient db = dbhelper.getDb()) {
+      try (DynamoDbClient db = adb.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
-      }
 
-      for (String tagKey : Arrays.asList("untagged", "userId")) {
-        r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-            .tableName(dbhelper.getDocumentTable()).build();
+        for (String tagKey : Arrays.asList("untagged", "userId")) {
+          r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
+              .tableName(dbhelper.getDocumentTable()).build();
 
-        try (DynamoDbClient db = dbhelper.getDb()) {
-          Map<String, AttributeValue> result = db.getItem(r).item();
+          result = db.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
         }
       }

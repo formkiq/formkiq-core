@@ -56,7 +56,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search-invalid.json");
       addParameter(event, "siteId", siteId);
@@ -81,7 +80,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-search.json");
       addParameter(event, "siteId", siteId);
@@ -108,8 +106,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String tagKey = "category";
@@ -163,8 +159,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       String documentId = UUID.randomUUID().toString();
       String tagKey = "category";
@@ -219,7 +213,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       final String expected = "{" + getHeaders() + ",\"body\":\""
           + "{\\\"message\\\":\\\"Invalid JSON body.\\\"}\",\"statusCode\":400}";
@@ -244,8 +237,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
       addParameter(event, "siteId", siteId);
@@ -276,8 +267,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest07() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       final String documentId = UUID.randomUUID().toString();
       final String tagKey = "category";
@@ -325,7 +314,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
       
       // given - invalid document id
-      newOutstream();
       event.setBody("{\"query\":{\"tag\":{\"key\":\"category\",\"eq\":\"person\"},"
           + "\"documentIds\":[\"123\"]}}");
       // when
@@ -348,18 +336,17 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     final int count = 101;
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
       addParameter(event, "siteId", siteId);
       event.setIsBase64Encoded(Boolean.FALSE);
       QueryRequest q = new QueryRequest().query(new SearchQuery()
           .tag(new SearchTagCriteria().key("test")).documentsIds(new ArrayList<>()));
-
+      List<String> ids = new ArrayList<>();
       for (int i = 0; i < count; i++) {
-        q.query().documentIds().add(UUID.randomUUID().toString());
+        ids.add(UUID.randomUUID().toString());
       }
+      q.query().documentsIds(ids);
       
       event.setIsBase64Encoded(Boolean.FALSE);
       event.setBody(GsonUtil.getInstance().toJson(q));

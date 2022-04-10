@@ -113,6 +113,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static S3ConnectionBuilder s3Builder;
   /** {@link S3Service}. */
   private static S3Service s3;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbBuilder;
   /** {@link DynamoDbHelper}. */
   private static DynamoDbHelper dbHelper;
   /** {@link DocumentService}. */
@@ -156,7 +158,7 @@ public class StagingS3CreateTest implements DbKeys {
     s3Builder = new S3ConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT).setRegion(region)
         .setCredentials(cred);
 
-    DynamoDbConnectionBuilder dbBuilder = new DynamoDbConnectionBuilder().setRegion(region)
+    dbBuilder = new DynamoDbConnectionBuilder().setRegion(region)
         .setEndpointOverride(DYNAMODB_ENDPOINT).setCredentials(cred);
     service = new DocumentServiceImpl(dbBuilder, "Documents");
     dbHelper = new DynamoDbHelper(dbBuilder);
@@ -329,7 +331,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     // given
     String documentId = UUID.randomUUID().toString();
-    this.logger.getRecordedMessages().clear();
+    this.logger.reset();
 
     String key = createDatabaseKey(siteId, documentId + ".fkb64");
 
@@ -407,7 +409,7 @@ public class StagingS3CreateTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, documentId);
 
@@ -655,7 +657,7 @@ public class StagingS3CreateTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(dbHelper.getDocumentTable()).build();
 
-      try (DynamoDbClient db = dbHelper.getDb()) {
+      try (DynamoDbClient db = dbBuilder.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
         assertEquals(timeToLive, result.get("TimeToLive").n());
       }

@@ -116,6 +116,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static String snsDocumentEvent;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentEventUrl;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbBuilder;
 
   /**
    * Before Class.
@@ -141,7 +143,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     s3Builder = new S3ConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT).setRegion(region)
         .setCredentials(cred);
 
-    DynamoDbConnectionBuilder dbBuilder = new DynamoDbConnectionBuilder().setRegion(region)
+    dbBuilder = new DynamoDbConnectionBuilder().setRegion(region)
         .setEndpointOverride(DYNAMODB_ENDPOINT).setCredentials(cred);
 
     service = new DocumentServiceImpl(dbBuilder, "Documents");
@@ -381,7 +383,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -445,7 +447,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -512,7 +514,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -552,7 +554,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, documentId);
       final Map<String, Object> map =
@@ -582,7 +584,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      try (DynamoDbClient client = DocumentsS3UpdateTest.service.getDynamoDB()) {
+      try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m =
             client.getItem(GetItemRequest.builder().tableName("Documents")
                 .key(keysDocument(siteId, child.getDocumentId())).build()).item();
@@ -623,7 +625,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public void testHandleRequest05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
       Date now = new Date();
       DynamicDocumentItem doc = createSubDocuments(now);
       service.saveDocumentItemWithTag(siteId, doc);
@@ -640,7 +642,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           handleRequest(siteId, doc.getDocuments().get(0).getDocumentId(), map);
 
       // then
-      try (DynamoDbClient client = DocumentsS3UpdateTest.service.getDynamoDB()) {
+      try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m = client.getItem(GetItemRequest.builder()
             .tableName("Documents").key(keysDocument(siteId, doc.getDocumentId())).build()).item();
         assertNotNull(m.get(GSI1_PK)); 
@@ -680,7 +682,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -714,7 +716,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -749,7 +751,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -784,7 +786,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     String ttl = "1612061365";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -807,19 +809,17 @@ public class DocumentsS3UpdateTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(dbHelper.getDocumentTable()).build();
       
-      try (DynamoDbClient db = dbHelper.getDb()) {
+      try (DynamoDbClient db = dbBuilder.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
-      }
-      
-      for (String tagKey : Arrays.asList("untagged", "userId")) {
-        r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-            .tableName(dbHelper.getDocumentTable()).build();
-        
-        try (DynamoDbClient db = dbHelper.getDb()) {
-          Map<String, AttributeValue> result = db.getItem(r).item();
+
+        for (String tagKey : Arrays.asList("untagged", "userId")) {
+          r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
+              .tableName(dbHelper.getDocumentTable()).build();
+
+          result = db.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
-        }        
+        }
       }
 
       verifyDocumentSaved(siteId, item, "pdf", "8");

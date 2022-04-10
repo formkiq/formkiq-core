@@ -64,8 +64,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();      
-      
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
@@ -99,8 +97,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       
-      newOutstream();
-
       String name = UUID.randomUUID().toString();
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -130,8 +126,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks03() throws Exception {
     // givens
-    newOutstream();
-
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks03.json");
     event.getRequestContext().setAuthorizer(new HashMap<>());
     event.getRequestContext().setIdentity(new HashMap<>());
@@ -156,7 +150,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
@@ -188,7 +181,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
@@ -226,7 +218,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
@@ -262,7 +253,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
@@ -299,7 +289,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
@@ -337,7 +326,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
@@ -345,7 +333,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
       
-      event.getHeaders().put("Content-Type", "application/json");
+      HashMap<String, String> headers = new HashMap<>(event.getHeaders());
+      headers.put("Content-Type", "application/json");
+      event.setHeaders(headers);
       event.setBody("{\"name\":\"john smith\"}");
       event.setIsBase64Encoded(Boolean.FALSE);
       
@@ -359,8 +349,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
-      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-      assertEquals("https://www.google.ca", headers.get("Location"));
+      assertEquals("https://www.google.ca",
+          ((Map<String, Object>) m.get("headers")).get("Location"));
     }
   }
   
@@ -375,9 +365,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     // given
     createApiRequestHandler(getMap());
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      newOutstream();      
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {      
       
       String name = UUID.randomUUID().toString();
 
@@ -408,14 +396,15 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
-      event.getHeaders().put("Content-Type", "application/json");
+      Map<String, String> headers =  new HashMap<>(event.getHeaders());
+      headers.put("Content-Type", "application/json");
+      event.setHeaders(headers);
 
       // when
       String response = handleRequest(event);
@@ -440,7 +429,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
       String name = UUID.randomUUID().toString();
 
       getAwsServices().configService().save(siteId,
@@ -489,8 +477,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      String idempotencyKey = UUID.randomUUID().toString();
-      newOutstream();      
+      String idempotencyKey = UUID.randomUUID().toString();      
       
       String name = UUID.randomUUID().toString();
 
@@ -514,9 +501,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
       assertEquals(documentId, getAwsServices().documentCacheService().read(key));
       
-      // given
-      newOutstream();
-      
+      // given      
       // when
       response = handleRequest(event);
       
@@ -544,9 +529,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     // given    
     createApiRequestHandler(getMap());
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      newOutstream();      
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {      
       
       String name = UUID.randomUUID().toString();
 

@@ -63,7 +63,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     // given
     for (String path : Arrays.asList(null, "/bleh/test.txt")) {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        newOutstream();
         ApiGatewayRequestEvent event =
             toRequestEvent("/request-get-documents-upload-documentid.json");
         addParameter(event, "siteId", siteId);
@@ -106,7 +105,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentsUpload02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid01.json");
@@ -132,7 +130,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentsUpload03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       Date date = new Date();
       String documentId = UUID.randomUUID().toString();
@@ -167,7 +164,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentsUpload04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid02.json");
@@ -228,8 +224,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      newOutstream();
-
       if (siteId != null) {
         getAwsServices().configService().save(siteId, new DynamicObject(
             Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
@@ -268,8 +262,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
         new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      newOutstream();
 
       if (siteId != null) {
         getAwsServices().configService().save(siteId, new DynamicObject(

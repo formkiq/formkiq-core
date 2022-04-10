@@ -53,9 +53,8 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
     assertEquals("default", result.get("siteId"));
     assertNotNull(result.get("id"));
-    final String id = result.get("id").toString();
     
-    newOutstream();
+    String id = result.get("id").toString();
     
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", id);
@@ -116,9 +115,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
     assertEquals("default", result.get("siteId"));
     assertNotNull(result.get("id"));
-    final String id = result.get("id").toString();
-    
-    newOutstream();
+    String id = result.get("id").toString();
     
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", id);
@@ -133,8 +130,6 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
-    newOutstream();
 
     event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
     setPathParameter(event, "webhookId", id);
@@ -159,9 +154,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      newOutstream();
-      
+      // given      
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
 
@@ -171,8 +164,6 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
       assertNotNull(result.get("id"));
       String id = result.get("id").toString();
-
-      newOutstream();
 
       event = toRequestEvent("/request-get-webhooks-webhookid01.json");
       setPathParameter(event, "webhookId", id);
@@ -220,9 +211,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      newOutstream();
-      
+      // given      
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
       event.setBody("{\"name\":\"john smith\",\"enabled\":\"private\"}");
@@ -233,8 +222,6 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
       assertNotNull(result.get("id"));
       String id = result.get("id").toString();
-
-      newOutstream();
 
       event = toRequestEvent("/request-get-webhooks-webhookid01.json");
       setPathParameter(event, "webhookId", id);
@@ -298,8 +285,6 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      newOutstream();
-      
       String id =
           getAwsServices().webhookService().saveWebhook(siteId, "test", "joe", date, "true");
 
@@ -322,8 +307,6 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       assertEquals("{\"message\":\"'" + id + "' object updated\"}", m.get("body"));
 
       // given
-      newOutstream();
-      
       event = toRequestEvent("/request-get-webhooks-webhookid01.json");
       setPathParameter(event, "webhookId", id);
       addParameter(event, "siteId", siteId);
