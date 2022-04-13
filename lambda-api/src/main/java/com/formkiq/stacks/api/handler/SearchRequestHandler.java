@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +72,15 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new BadException("Invalid JSON body.");
     }
 
-    if (q.query().documentIds() != null && q.query().documentIds().size() > MAX_DOCUMENT_IDS) {
-      throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
+    Collection<String> documentIds = q.query().documentIds();
+    if (documentIds != null) {
+      if (documentIds.size() > MAX_DOCUMENT_IDS) {
+        throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
+      }
+      
+      if (!getQueryParameterMap(event).containsKey("limit")) {
+        limit = documentIds.size();
+      }
     }
     
     String siteId = authorizer.getSiteId();

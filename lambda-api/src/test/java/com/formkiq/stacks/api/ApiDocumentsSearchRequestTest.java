@@ -361,4 +361,77 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
     }
   }
+  
+  /**
+   * Valid POST search by eq tagValue with > 10 Document.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest09() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 100;
+      final String tagKey = "category";
+      final String tagvalue = "person";
+      final String username = "jsmith";
+      List<String> documentIds = new ArrayList<>();
+
+      for (int i = 0; i < count; i++) {
+        String documentId = UUID.randomUUID().toString();
+        Date now = new Date();
+        
+        documentIds.add(documentId);
+
+        DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
+        item.setUserId(UUID.randomUUID().toString());
+
+        getDocumentService().saveDocument(siteId,
+            new DocumentItemDynamoDb(documentId, now, username), Arrays.asList(item));
+      }
+      
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest().query(new SearchQuery()
+          .tag(new SearchTagCriteria().key(tagKey).eq(tagvalue)).documentsIds(documentIds));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+      
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(count, documents.size());
+      
+      // given not search by documentIds should be limited to 10
+      q = new QueryRequest().query(new SearchQuery()
+          .tag(new SearchTagCriteria().key(tagKey).eq(tagvalue)).documentsIds(null));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+      
+      // when
+      response = handleRequest(event);
+
+      // then
+      final int ten = 10;
+      m = fromJson(response, Map.class);
+
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      documents = resp.getList("documents");
+      assertEquals(ten, documents.size());
+    }
+  }
 }
