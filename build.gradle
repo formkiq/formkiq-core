@@ -169,9 +169,6 @@ task assembleTemplate {
 			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
 		}
 		exec {
-			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{aws_accountid}}\" replacement=\"${aws_account_id}\""
-		}		
-		exec {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"
 		}	
 	}
@@ -184,7 +181,7 @@ task deploy {
     outputs.upToDateWhen { false }
 	doLast {
 		exec {
-			commandLine "bash", "-c", "sam deploy --s3-bucket ${distrobucket} --template-file ${buildDir}/distributions/formkiq-core/sam/template.yaml --stack-name formkiq-core-${testappenvironment} --parameter-overrides ParameterKey=AppEnvironment,ParameterValue=${testappenvironment} ParameterKey=AdminEmail,ParameterValue=${testadminemail} ParameterKey=EnablePublicUrls,ParameterValue=true --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM --region ${testregion} --profile ${testprofile}"
+			commandLine "bash", "-c", "sam deploy --resolve-s3  --template-file ${buildDir}/distributions/formkiq-core/sam/template.yaml --stack-name formkiq-core-${testappenvironment} --parameter-overrides ParameterKey=AppEnvironment,ParameterValue=${testappenvironment} ParameterKey=AdminEmail,ParameterValue=${testadminemail} ParameterKey=EnablePublicUrls,ParameterValue=true --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM --region ${testregion} --profile ${testprofile}"
 		}
 	}
 }
@@ -257,37 +254,11 @@ task createSar {
 			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
 		exec {
-			commandLine "bash", "-c", "sam package --template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
+			commandLine "bash", "-c", "sam package --template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml --resolve-s3  --region ${testregion} --profile ${testprofile} --output-template-file build/formkiq-core-sar.yaml"
 		}
 		exec {
 			commandLine "bash", "-c", "sam publish --template-file ${buildDir}/distributions/formkiq-core/sar/template.yaml --semantic-version ${project.version} --region ${testregion} --profile ${testprofile}"
 		}
-	}
-}
-
-task deleteSar {
-	outputs.upToDateWhen { false }
-	doLast {
-		exec {
-			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core-Storage --region ${testregion} --profile ${testprofile}"
-			ignoreExitValue = true
-		}
-		exec {
-			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core-Api --region ${testregion} --profile ${testprofile}"
-			ignoreExitValue = true
-		}
-		exec {
-			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core-Console --region ${testregion} --profile ${testprofile}"
-			ignoreExitValue = true
-		}
-		exec {
-			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Module-Email-Nodify --region ${testregion} --profile ${testprofile}"
-			ignoreExitValue = true
-		}
-		exec {
-			commandLine "bash", "-c", "aws serverlessrepo delete-application --application-id arn:aws:serverlessrepo:${testregion}:${aws_account_id}:applications/FormKiQ-Core --region ${testregion} --profile ${testprofile}"
-			ignoreExitValue = true
-		}		
 	}
 }
 

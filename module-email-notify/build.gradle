@@ -67,7 +67,7 @@ task assembleTemplate {
 		}
 		// build SAR distribution
 //		exec {
-//			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml"
+//			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --resolve-s3 --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/module-email-notify/template.yaml"
 //		}
 	}
 }
