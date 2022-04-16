@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.getSqsWebsocketQueueUrl;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,7 +35,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -45,6 +49,8 @@ import com.formkiq.stacks.dynamodb.PaginationResults;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
   /** Test Timeout. */
@@ -730,7 +736,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(value = TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
   public void testHandlePostDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

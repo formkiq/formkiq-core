@@ -13,6 +13,12 @@ dependencies {
 	testImplementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
 	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.1'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
+	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'
    		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
@@ -36,15 +42,8 @@ build.dependsOn createZip
 
 test {
   failFast = true
-  exclude 'com/formkiq/stacks/dynamodb/awstest/**'
-  
-  doFirst {
-    macroDynamoDbStart()
-  }
-  
-  doLast {
-    macroDockerComposeDown()
-  }
+  useJUnitPlatform()
+  exclude 'com/formkiq/stacks/dynamodb/awstest/**' 
 }
 
 task testaws(type: Test) {

@@ -29,8 +29,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -43,45 +41,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /** Unit Tests for {@link DocumentSearchServiceImpl}. */
+@ExtendWith(DynamoDbExtension.class)
 public class DocumentSearchServiceImplTest {
 
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder adb;
-
   /** {@link DynamoDbHelper}. */
-  private static DynamoDbHelper dbhelper;
-
-  /**
-   * Generate Test Data.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException {
-
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-
-    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:8000");
-
-    dbhelper = new DynamoDbHelper(adb);
-
-    if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
-      dbhelper.createCacheTable();
-    }
-  }
+  private DynamoDbHelper dbhelper;
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -94,19 +63,13 @@ public class DocumentSearchServiceImplTest {
    *
    * @throws Exception Exception
    */
-  @Before
+  @BeforeEach
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-    this.service = new DocumentServiceImpl(adb, "Documents");
-
-    dbhelper.truncateDocumentsTable();
-    dbhelper.truncateDocumentDates();
-    dbhelper.truncateWebhooks();
-    dbhelper.truncateConfig();
-
-    assertEquals(0, dbhelper.getDocumentItemCount());
+    this.dbhelper = DynamoDbTestServices.getDynamoDbHelper(null);
+    this.service =
+        new DocumentServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
   }
 
   /**
@@ -179,7 +142,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -213,7 +176,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
@@ -235,7 +198,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       try {
-        dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+        this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
         fail();
       } catch (Exception e) {
         // then
@@ -258,7 +221,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -293,7 +256,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(prefix, q, startkey, limit);
+          this.dbhelper.getSearchService().search(prefix, q, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -304,7 +267,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results2 =
-          dbhelper.getSearchService().search(prefix, q, startkey, limit);
+          this.dbhelper.getSearchService().search(prefix, q, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -337,7 +300,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -375,7 +338,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -395,7 +358,7 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+      results = this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -419,7 +382,7 @@ public class DocumentSearchServiceImplTest {
       
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(2, results.getResults().size());
       
@@ -454,7 +417,7 @@ public class DocumentSearchServiceImplTest {
       
       // when
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -480,7 +443,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -521,7 +484,7 @@ public class DocumentSearchServiceImplTest {
 
     // when - wrong document id
     PaginationResults<DynamicDocumentItem> results =
-        dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+        this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
 
     // then
     assertEquals(count, results.getResults().size());
@@ -549,7 +512,7 @@ public class DocumentSearchServiceImplTest {
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -569,7 +532,7 @@ public class DocumentSearchServiceImplTest {
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+      results = this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }

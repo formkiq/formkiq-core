@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,12 +32,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/versions. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
 
   /**
@@ -56,12 +60,12 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
 
       try (S3Client s3 = getS3().buildClient()) {
 
-        getS3().putObject(s3, getBucketName(), s3key1, "testdata1".getBytes(StandardCharsets.UTF_8),
+        getS3().putObject(s3, BUCKET_NAME, s3key1, "testdata1".getBytes(StandardCharsets.UTF_8),
             null);
-        getS3().putObject(s3, getBucketName(), s3key2, "testdata2".getBytes(StandardCharsets.UTF_8),
+        getS3().putObject(s3, BUCKET_NAME, s3key2, "testdata2".getBytes(StandardCharsets.UTF_8),
             null);
 
-        getS3().putObject(s3, getBucketName(), s3key1, "testdata3".getBytes(StandardCharsets.UTF_8),
+        getS3().putObject(s3, BUCKET_NAME, s3key1, "testdata3".getBytes(StandardCharsets.UTF_8),
             null);
       }
 
@@ -113,9 +117,9 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
 
       try (S3Client s3 = getS3().buildClient()) {
 
-        getS3().putObject(s3, getBucketName(), s3key1, "testdata1".getBytes(StandardCharsets.UTF_8),
+        getS3().putObject(s3, BUCKET_NAME, s3key1, "testdata1".getBytes(StandardCharsets.UTF_8),
             null);
-        getS3().putObject(s3, getBucketName(), s3key2, "testdata2".getBytes(StandardCharsets.UTF_8),
+        getS3().putObject(s3, BUCKET_NAME, s3key2, "testdata2".getBytes(StandardCharsets.UTF_8),
             null);
       }
 

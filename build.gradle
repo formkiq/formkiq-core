@@ -87,55 +87,6 @@ subprojects {
         }
     }
   }
-  
-  ext.macroLocalStackStart = {
-	exec {
-	  commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml up -d localstack"
-	}
-	exec {
-	  commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh"
-	}
-  }
-  
-  ext.macroDynamoDbStart = {
-  	exec {
-	  commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml up -d dynamodb"
-	}
-	exec {
-	  commandLine "bash", "-c", "${project.rootDir}/wait-for-dynamodb.sh"
-	}
-  }
-  
-  ext.macroDynamoDbCreateTables = {
-	exec {
-	  commandLine "bash", "-c", "for f in \$(find ${project.rootDir}/dynamodb-documents/src/test/resources -name \"*.json\"); do aws dynamodb create-table --region ${awsregion} --endpoint=${dynamodbEndpoint} --profile ${awsprofile} --cli-input-json \"\$(cat \$f)\"; done"
-	}
-  }
-  
-  ext.macroDynamoDbDeleteAllTables = {
-    exec {
-      commandLine "bash", "-c", "aws dynamodb list-tables --endpoint=${dynamodbEndpoint} --profile ${awsprofile} --region ${awsregion} | jq -r '.TableNames[]' | xargs -I {} aws dynamodb delete-table --table-name {} --region ${awsregion} --profile ${awsprofile} --endpoint=${dynamodbEndpoint}"
-    }
-  }
-  
-  ext.macroDockerComposeDown = {
-    exec {
-      commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml down"
-    }
-  }
-
-  task dockerComposeUp {
-    doLast {
-      macroLocalStackStart()
-	  macroDynamoDbStart()
-    }
-  }
-
-  task dockerComposeDown {
-    doLast {
-      macroDockerComposeDown()
-    }
-  }
 }
 
 description = "FormKiQ Core"

@@ -33,7 +33,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
@@ -43,6 +44,8 @@ import com.formkiq.stacks.dynamodb.SearchQuery;
 import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 
 /** Unit Tests for request /search. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
   /** Match Tag element count. */

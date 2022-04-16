@@ -35,6 +35,9 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.utility.DockerImageName;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -60,7 +63,13 @@ public class ConsoleInstallHandlerTest {
   private static S3ConnectionBuilder s3Connection;
   /** {@link S3Service}. */
   private static S3Service s3;
-
+  /** LocalStack {@link DockerImageName}. */
+  private static DockerImageName localStackImage =
+      DockerImageName.parse("localstack/localstack:0.12.2");
+  /** {@link LocalStackContainer}. */
+  private static LocalStackContainer localstack =
+      new LocalStackContainer(localStackImage).withServices(Service.S3);
+  
   /**
    * Before Class.
    * 
@@ -74,8 +83,10 @@ public class ConsoleInstallHandlerTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
+    localstack.start();
+    
     s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:4566");
+        .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString());
 
     s3 = new S3Service(s3Connection);
 

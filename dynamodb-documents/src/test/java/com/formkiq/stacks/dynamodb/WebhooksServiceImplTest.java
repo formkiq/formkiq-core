@@ -23,8 +23,6 @@ package com.formkiq.stacks.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -33,49 +31,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.stacks.common.objects.DynamicObject;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** 
  * Unit Tests for {@link DocumentServiceImpl}. 
  */
+@ExtendWith(DynamoDbExtension.class)
 public class WebhooksServiceImplTest {
 
   /** MilliSeconds per Second. */
   private static final int MILLISECONDS = 1000;
-  
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder adb;
-
-  /** {@link DynamoDbHelper}. */
-  private static DynamoDbHelper dbhelper;
-
-  /**
-   * Generate Test Data.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException {
-
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:8000");
-
-    dbhelper = new DynamoDbHelper(adb);
-
-    if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
-    }
-  }
 
   /** Document Table. */
   private WebhooksService service;
@@ -85,16 +53,10 @@ public class WebhooksServiceImplTest {
    *
    * @throws Exception Exception
    */
-  @Before
+  @BeforeEach
   public void before() throws Exception {
-
-    this.service = new WebhooksServiceImpl(adb, "Documents");
-
-    dbhelper.truncateDocumentsTable();
-    dbhelper.truncateDocumentDates();
-    dbhelper.truncateWebhooks();
-
-    assertEquals(0, dbhelper.getDocumentItemCount());
+    this.service =
+        new WebhooksServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
   }
 
   /**

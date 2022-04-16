@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.AWS_REGION;
+import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
+import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,29 +38,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeEach;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
-import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestContext;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbHelper;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -66,131 +57,45 @@ import software.amazon.awssdk.utils.IoUtils;
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
-  /** SQS Websockets Queue. */
-  private static final String SQS_WEBSOCKET_QUEUE = "websockets";
-  /** SQS Document Formats Queue. */
-  private static final String SQS_DOCUMENT_FORMATS_QUEUE = "documentFormats";
-  /** {@link String}. */
-  private static String bucketName = "testbucket";
-  /** {@link String}. */
-  private static String stages3bucket = "stagebucket";
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder dbConnection;
-  /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Connection;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmConnection;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsConnection;
   /** Documents Table. */
   private static String documentsTable = "Documents";
   /** Cache Table. */
   private static String cacheTable = "Cache";
-  /** App Environment. */
-  private static String appenvironment;
-  /** Aws Region. */
-  private static Region awsRegion;
-  /** SQS Sns Create QueueUrl. */
-  private static String sqsDocumentFormatsQueueUrl;
-  /** SQS Websocket Queue Url. */
-  private static String sqsWebsocketQueueUrl;
 
-  /**
-   * Before Class.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
-        
-    appenvironment = System.getProperty("testappenvironment");
-    awsRegion = Region.of(System.getProperty("testregion"));
+  // /**
+  // * Get App Environment.
+  // *
+  // * @return {@link String}
+  // */
+  // public static String getAppenvironment() {
+  // return appenvironment;
+  // }
 
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+  // /**
+  // * Get Aws Region.
+  // *
+  // * @return {@link Region}
+  // */
+  // public static Region getAwsRegion() {
+  // return awsRegion;
+  // }
 
-    s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(awsRegion)
-        .setEndpointOverride("http://localhost:4566");
-
-    ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(awsRegion)
-        .setEndpointOverride("http://localhost:4566");
-
-    sqsConnection = new SqsConnectionBuilder().setCredentials(cred).setRegion(awsRegion)
-        .setEndpointOverride("http://localhost:4566");
-
-    dbConnection = new DynamoDbConnectionBuilder().setRegion(awsRegion).setCredentials(cred)
-        .setEndpointOverride("http://localhost:8000");
-
-    S3Service s3service = new S3Service(s3Connection);
-    try (S3Client s3 = s3service.buildClient()) {
-
-      if (!s3service.exists(s3, bucketName)) {
-        s3service.createBucket(s3, bucketName);
-      }
-
-      if (!s3service.exists(s3, stages3bucket)) {
-        s3service.createBucket(s3, stages3bucket);
-      }
-    }
-
-    DynamoDbHelper dbHelper = new DynamoDbHelper(dbConnection);
-    if (!dbHelper.isDocumentsTableExists()) {
-      dbHelper.createDocumentsTable();
-    }
-
-    if (!dbHelper.isCacheTableExists()) {
-      dbHelper.createCacheTable();
-    }
-    
-    SqsService sqsservice = new SqsService(sqsConnection);
-    if (!sqsservice.exists(SQS_DOCUMENT_FORMATS_QUEUE)) {
-      sqsDocumentFormatsQueueUrl = sqsservice.createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
-    }
-    
-    if (!sqsservice.exists(SQS_WEBSOCKET_QUEUE)) {
-      sqsWebsocketQueueUrl = sqsservice.createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
-    }
-
-    new SsmServiceImpl(ssmConnection).putParameter("/formkiq/" + appenvironment + "/version",
-        "1.1");
-  }
-
-  /**
-   * Get App Environment.
-   * 
-   * @return {@link String}
-   */
-  public static String getAppenvironment() {
-    return appenvironment;
-  }
-
-  /**
-   * Get Aws Region.
-   * 
-   * @return {@link Region}
-   */
-  public static Region getAwsRegion() {
-    return awsRegion;
-  }
-
-  /**
-   * Get Sqs Document Formats Queue Url.
-   * 
-   * @return {@link String}
-   */
-  public static String getSqsDocumentFormatsQueueUrl() {
-    return sqsDocumentFormatsQueueUrl;
-  }
-
-  /**
-   * Get SqsWebsocketQueueUrl.
-   * @return {@link String}
-   */
-  public static String getSqsWebsocketQueueUrl() {
-    return sqsWebsocketQueueUrl;
-  }
+  // /**
+  // * Get Sqs Document Formats Queue Url.
+  // *
+  // * @return {@link String}
+  // */
+  // public static String getSqsDocumentFormatsQueueUrl() {
+  // return sqsDocumentFormatsQueueUrl;
+  // }
+  //
+  // /**
+  // * Get SqsWebsocketQueueUrl.
+  // * @return {@link String}
+  // */
+  // public static String getSqsWebsocketQueueUrl() {
+  // return sqsWebsocketQueueUrl;
+  // }
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
 
@@ -200,8 +105,8 @@ public abstract class AbstractRequestHandler {
   /** {@link LambdaLogger}. */
   private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
 
-  /** {@link DynamoDbHelper}. */
-  private DynamoDbHelper dbhelper;
+  // /** {@link DynamoDbHelper}. */
+  // private DynamoDbHelper dbhelper;
 
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsServices;
@@ -268,32 +173,32 @@ public abstract class AbstractRequestHandler {
    *
    * @throws Exception Exception
    */
-  @Before
+  @BeforeEach
   public void before() throws Exception {
 
-    this.dbhelper = new DynamoDbHelper(dbConnection);
-    this.dbhelper.truncateDocumentsTable();
-    this.dbhelper.truncateWebhooks();
-    this.dbhelper.truncateConfig();
+    // this.dbhelper = new DynamoDbHelper(TestServices.getDynamoDbConnection(DYNAMODB_PORT));
+    // this.dbhelper.truncateDocumentsTable();
+    // this.dbhelper.truncateWebhooks();
+    // this.dbhelper.truncateConfig();
 
-    this.map.put("APP_ENVIRONMENT", appenvironment);
+    this.map.put("APP_ENVIRONMENT", TestServices.FORMKIQ_APP_ENVIRONMENT);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
     this.map.put("CACHE_TABLE", cacheTable);
-    this.map.put("DOCUMENTS_S3_BUCKET", bucketName);
-    this.map.put("STAGE_DOCUMENTS_S3_BUCKET", stages3bucket);
-    this.map.put("AWS_REGION", "us-east-1");
+    this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
+    this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
+    this.map.put("AWS_REGION", AWS_REGION.toString());
     this.map.put("DEBUG", "true");
-    this.map.put("SQS_DOCUMENT_FORMATS", sqsDocumentFormatsQueueUrl);
+    this.map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl());
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
-    this.map.put("WEBSOCKET_SQS_URL", sqsWebsocketQueueUrl);
+    this.map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl());
 
     createApiRequestHandler(this.map);
 
     this.awsServices = new CoreRequestHandler().getAwsServices();
 
     SqsService sqsservice = this.awsServices.sqsService();
-    for (String queue : Arrays.asList(sqsDocumentFormatsQueueUrl)) {
+    for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl())) {
       ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
       while (response.messages().size() > 0) {
         for (Message msg : response.messages()) {
@@ -309,9 +214,12 @@ public abstract class AbstractRequestHandler {
    * Create Api Request Handler.
    * 
    * @param prop {@link Map}
+   * @throws URISyntaxException URISyntaxException
    */
-  public void createApiRequestHandler(final Map<String, String> prop) {
-    CoreRequestHandler.setUpHandler(prop, dbConnection, s3Connection, ssmConnection, sqsConnection);
+  public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
+    CoreRequestHandler.setUpHandler(prop, DynamoDbTestServices.getDynamoDbConnection(null),
+        TestServices.getS3Connection(), TestServices.getSsmConnection(),
+        TestServices.getSqsConnection());
   }
 
   /**
@@ -335,23 +243,23 @@ public abstract class AbstractRequestHandler {
     return this.awsServices;
   }
 
-  /**
-   * Documents Bucket Name.
-   *
-   * @return {@link String}
-   */
-  public String getBucketName() {
-    return bucketName;
-  }
+  // /**
+  // * Documents Bucket Name.
+  // *
+  // * @return {@link String}
+  // */
+  // public String getBucketName() {
+  // return bucketName;
+  // }
 
-  /**
-   * Get {@link DynamoDbHelper}.
-   * 
-   * @return {@link DynamoDbHelper}
-   */
-  public DynamoDbHelper getDbhelper() {
-    return this.dbhelper;
-  }
+  // /**
+  // * Get {@link DynamoDbHelper}.
+  // *
+  // * @return {@link DynamoDbHelper}
+  // */
+  // public DynamoDbHelper getDbhelper() {
+  // return this.dbhelper;
+  // }
 
   /**
    * Get {@link DocumentService}.
@@ -429,14 +337,14 @@ public abstract class AbstractRequestHandler {
     return this.awsServices.ssmService().getParameterValue(key);
   }
 
-  /**
-   * Get Staging Document Bucket Name.
-   *
-   * @return {@link String}
-   */
-  public String getStages3bucket() {
-    return stages3bucket;
-  }
+  // /**
+  // * Get Staging Document Bucket Name.
+  // *
+  // * @return {@link String}
+  // */
+  // public String getStages3bucket() {
+  // return stages3bucket;
+  // }
 
   /**
    * Handle Request.

@@ -47,9 +47,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
@@ -66,6 +71,8 @@ import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.DynamoDbHelper;
+import com.formkiq.stacks.lambda.s3.util.DynamoDbExtension;
+import com.formkiq.stacks.lambda.s3.util.DynamoDbTestServices;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.google.gson.Gson;
@@ -82,8 +89,15 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for {@link StagingS3Create}. */
+@ExtendWith(DynamoDbExtension.class)
 public class StagingS3CreateTest implements DbKeys {
 
+  /** LocalStack {@link DockerImageName}. */
+  private static DockerImageName localStackImage =
+      DockerImageName.parse("localstack/localstack:0.12.2");
+  /** {@link LocalStackContainer}. */
+  private static LocalStackContainer localstack =
+      new LocalStackContainer(localStackImage).withServices(Service.S3, Service.SQS, Service.SNS);
   /** SQS Sns Queue. */
   private static final String SNS_SQS_DELETE_QUEUE = "sqssnsDelete";
   /** SQS Sns Update Queue. */
@@ -98,12 +112,6 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** Document S3 Staging Bucket. */
   private static final String STAGING_BUCKET = "example-bucket";
-
-  /** LocalStack Endpoint. */
-  private static final String LOCALSTACK_ENDPOINT = "http://localhost:4566";
-
-  /** DynamoDB Endpoint. */
-  private static final String DYNAMODB_ENDPOINT = "http://localhost:8000";
 
   /** {@link SnsConnectionBuilder}. */
   private static SnsConnectionBuilder snsBuilder;
@@ -141,27 +149,31 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
     Region region = Region.US_EAST_1;
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    snsBuilder = new SnsConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT)
+    localstack.start();
+    
+    snsBuilder = new SnsConnectionBuilder()
+        .setEndpointOverride(localstack.getEndpointOverride(Service.SNS).toString())
         .setRegion(region).setCredentials(cred);
 
-    sqsBuilder = new SqsConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT)
+    sqsBuilder = new SqsConnectionBuilder()
+        .setEndpointOverride(localstack.getEndpointOverride(Service.SQS).toString())
         .setRegion(region).setCredentials(cred);
     sqsService = new SqsService(sqsBuilder);
 
-    s3Builder = new S3ConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT).setRegion(region)
-        .setCredentials(cred);
+    s3Builder = new S3ConnectionBuilder()
+        .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString())
+        .setRegion(region).setCredentials(cred);
 
-    dbBuilder = new DynamoDbConnectionBuilder().setRegion(region)
-        .setEndpointOverride(DYNAMODB_ENDPOINT).setCredentials(cred);
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
     service = new DocumentServiceImpl(dbBuilder, "Documents");
-    dbHelper = new DynamoDbHelper(dbBuilder);
+    dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
 
     s3 = new S3Service(s3Builder);
 
@@ -197,6 +209,14 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
+  /**
+   * afterClass().
+   */
+  @AfterAll
+  public static void afterClass() {
+    localstack.stop();
+  }
+  
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).create();
 
@@ -212,7 +232,7 @@ public class StagingS3CreateTest implements DbKeys {
   /**
    * before.
    */
-  @Before
+  @BeforeEach
   public void before() {
 
     this.env = new HashMap<>();

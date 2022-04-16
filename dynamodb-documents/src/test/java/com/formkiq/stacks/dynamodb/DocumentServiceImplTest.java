@@ -28,8 +28,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Month;
@@ -50,13 +48,9 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -64,35 +58,11 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 /**
  * Unit Tests for {@link DocumentServiceImpl}.
  */
+@ExtendWith(DynamoDbExtension.class)
 public class DocumentServiceImplTest implements DbKeys {
 
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder adb;
-
   /** {@link DynamoDbHelper}. */
-  private static DynamoDbHelper dbhelper;
-
-  /**
-   * Generate Test Data.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException {
-
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:8000");
-
-    dbhelper = new DynamoDbHelper(adb);
-
-    if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
-      dbhelper.createCacheTable();
-    }
-  }
+  private DynamoDbHelper dbhelper;
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -105,19 +75,13 @@ public class DocumentServiceImplTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Before
+  @BeforeEach
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-    this.service = new DocumentServiceImpl(adb, "Documents");
-
-    dbhelper.truncateDocumentsTable();
-    dbhelper.truncateDocumentDates();
-    dbhelper.truncateWebhooks();
-    dbhelper.truncateConfig();
-
-    assertEquals(0, dbhelper.getDocumentItemCount());
+    this.dbhelper = DynamoDbTestServices.getDynamoDbHelper(null);
+    this.service =
+        new DocumentServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
   }
 
   /**
@@ -240,7 +204,7 @@ public class DocumentServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQuery().tag(s);
       
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -285,7 +249,7 @@ public class DocumentServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQuery().tag(s);
       
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -356,7 +320,7 @@ public class DocumentServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQuery().tag(s);
       
       PaginationResults<DynamicDocumentItem> list =
-          dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -1535,15 +1499,15 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(dbhelper.getDocumentTable()).build();
+          .tableName(this.dbhelper.getDocumentTable()).build();
 
-      try (DynamoDbClient db = adb.build()) {
+      try (DynamoDbClient db = this.dbhelper.getDb()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
 
         for (String tagKey : Arrays.asList("untagged", "userId")) {
           r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-              .tableName(dbhelper.getDocumentTable()).build();
+              .tableName(this.dbhelper.getDocumentTable()).build();
 
           result = db.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());

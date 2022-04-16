@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.AWS_REGION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -31,7 +32,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -39,8 +43,13 @@ import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 
 /** Unit Tests for request /documents/{documentId}/url. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
+  /** {@link LocalStackContainer}. */
+  private LocalStackContainer localstack = TestServices.getLocalStack();
+  
   /**
    * /documents/{documentId}/url request.
    * 
@@ -97,15 +106,18 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
         assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
         assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
-        assertTrue(resp.getUrl().contains(getAwsRegion().toString()));
+        assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
         assertNull(resp.getNext());
         assertNull(resp.getPrevious());
 
         if (siteId != null) {
-          assertTrue(resp.getUrl()
-              .startsWith("http://localhost:4566/testbucket/" + siteId + "/" + documentId));
+          assertTrue(
+              resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+                  + "/testbucket/" + siteId + "/" + documentId));
         } else {
-          assertTrue(resp.getUrl().startsWith("http://localhost:4566/testbucket/" + documentId));
+          assertTrue(
+              resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+                  + "/testbucket/" + documentId));
         }
       }
     }
@@ -144,15 +156,18 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
       assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
       assertTrue(resp.getUrl().contains("X-Amz-Expires=28800"));
-      assertTrue(resp.getUrl().contains(getAwsRegion().toString()));
+      assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
       if (siteId != null) {
-        assertTrue(resp.getUrl()
-            .startsWith("http://localhost:4566/testbucket/" + siteId + "/" + documentId));
+        assertTrue(
+            resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+                + "/testbucket/" + siteId + "/" + documentId));
       } else {
-        assertTrue(resp.getUrl().startsWith("http://localhost:4566/testbucket/" + documentId));
+        assertTrue(
+            resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+                + "/testbucket/" + documentId));
       }
     }
   }

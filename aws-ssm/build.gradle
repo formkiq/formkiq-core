@@ -12,15 +12,9 @@ dependencies {
 	
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
 	testImplementation group: 'junit', name: 'junit', version:'4.+'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
 }
 
 test {
-  
-  doFirst {
-	macroLocalStackStart()
-  }  
-  
-  doLast {
-	macroDockerComposeDown()
-  } 
 }

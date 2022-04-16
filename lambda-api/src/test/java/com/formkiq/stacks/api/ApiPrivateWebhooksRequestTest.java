@@ -23,13 +23,15 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
@@ -37,6 +39,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 /** Unit Tests for request POST /public/webhooks. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
 
   /** Extension for FormKiQ config file. */
@@ -102,7 +106,7 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     try (S3Client s3 = getS3().buildClient()) {
       
       String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-      String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+      String json = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
       
       Map<String, Object> map = fromJson(json, Map.class);
       assertEquals(documentId, map.get("documentId"));
@@ -120,7 +124,7 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
         assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
       }
       
-      s3.deleteObject(DeleteObjectRequest.builder().bucket(getStages3bucket()).key(key).build());
+      s3.deleteObject(DeleteObjectRequest.builder().bucket(STAGE_BUCKET_NAME).key(key).build());
     }
   }
 }

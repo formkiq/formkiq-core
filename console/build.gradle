@@ -13,6 +13,13 @@ dependencies {
 	testImplementation project(':aws-cognito')
     testImplementation group: 'junit', name: 'junit', version:'4.+'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'	
+	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
+	
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
 }
 
 task buildZip(type: Zip) {
@@ -38,15 +45,7 @@ task buildUnzip(type: Copy) {
 test {
   failFast = true
   exclude 'com/formkiq/stacks/console/awstest/**'
-  
-  doFirst {
-    macroLocalStackStart()
-	macroDynamoDbStart()
-  }
-  
-  doLast {
-    macroDockerComposeDown()
-  }
+  useJUnitPlatform()
 }
 
 task testaws(type: Test) {

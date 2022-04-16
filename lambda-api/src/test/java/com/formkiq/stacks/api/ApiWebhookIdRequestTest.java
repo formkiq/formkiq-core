@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,11 +32,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 
 /** Unit Tests for request /webhooks/{webhookId}. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   
   /**
@@ -151,7 +155,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testGetWebhook01() throws Exception {
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given      
@@ -208,7 +212,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testGetWebhook02() throws Exception {
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given      
@@ -281,7 +285,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @Test
   public void testPatchWebhook01() throws Exception {
     Date date = new Date();
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

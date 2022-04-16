@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.AWS_REGION;
+import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,14 +34,22 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/content. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandler {
 
+  /** {@link LocalStackContainer}. */
+  private LocalStackContainer localstack = TestServices.getLocalStack();
+  
   /**
    * /documents/{documentId}/content request.
    * 
@@ -79,13 +89,15 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
 
       assertTrue(url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
       assertTrue(url.contains("X-Amz-Expires="));
-      assertTrue(url.contains(getAwsRegion().toString()));
+      assertTrue(url.contains(AWS_REGION.toString()));
       assertEquals("application/octet-stream", body.get("contentType"));
 
       if (siteId != null) {
-        assertTrue(url.startsWith("http://localhost:4566/testbucket/" + siteId + "/" + documentId));
+        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+            + "/testbucket/" + siteId + "/" + documentId));
       } else {
-        assertTrue(url.startsWith("http://localhost:4566/testbucket/" + documentId));
+        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+            + "/testbucket/" + documentId));
       }
     }
   }
@@ -161,7 +173,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
       String content = "this is a test";
       String s3key = createS3Key(siteId, documentId);
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, getBucketName(), s3key, content.getBytes(StandardCharsets.UTF_8),
+        getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8),
             null);
       }
 

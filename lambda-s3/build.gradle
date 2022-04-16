@@ -23,6 +23,14 @@ dependencies {
 
 	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.17.167'
 	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.167'
+
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.1'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
+	
 }
 
 compileJava {
@@ -44,15 +52,7 @@ nativeImage {
 test {
   failFast = true
   exclude 'com/formkiq/stacks/lambda/s3/awstest/**'
-  
-  doFirst {
-    macroLocalStackStart()
-	macroDynamoDbStart()
-  }
-  
-  doLast {
-	macroDockerComposeDown()
-  }  
+  useJUnitPlatform()
 }
 
 task testaws(type: Test) {

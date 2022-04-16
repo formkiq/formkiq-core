@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.Assert.assertEquals;
@@ -36,7 +37,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -46,6 +48,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 /** Unit Tests for request POST /public/webhooks. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
   /** Extension for FormKiQ config file. */
@@ -453,7 +457,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       // verify s3 file
       try (S3Client s3 = getS3().buildClient()) {
         String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-        String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+        String json = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
         Map<String, Object> map = fromJson(json, Map.class);
         assertEquals(documentId, map.get("documentId"));
         assertEquals("webhook/" + name, map.get("userId"));
@@ -512,7 +516,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       try (S3Client s3 = getS3().buildClient()) {
         
         String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-        S3ObjectMetadata om = getS3().getObjectMetadata(s3, getStages3bucket(), s3key);
+        S3ObjectMetadata om = getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, s3key);
         assertFalse(om.isObjectExists());
       }
     }
@@ -590,7 +594,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     try (S3Client s3 = getS3().buildClient()) {
       
       String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-      String json = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+      String json = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
       
       Map<String, Object> map = fromJson(json, Map.class);
       assertEquals(documentId, map.get("documentId"));
@@ -608,7 +612,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
         assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
       }
       
-      s3.deleteObject(DeleteObjectRequest.builder().bucket(getStages3bucket()).key(key).build());
+      s3.deleteObject(DeleteObjectRequest.builder().bucket(STAGE_BUCKET_NAME).key(key).build());
     }
   }
 }

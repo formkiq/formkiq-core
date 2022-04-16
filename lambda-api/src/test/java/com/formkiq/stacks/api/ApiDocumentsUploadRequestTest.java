@@ -32,8 +32,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
@@ -42,10 +45,15 @@ import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 
 /** Unit Tests for uploading /documents. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
+  /** {@link LocalStackContainer}. */
+  private LocalStackContainer localstack = TestServices.getLocalStack();
+  
   @Override
-  @Before
+  @BeforeEach
   public void before() throws Exception {
     super.before();
 
@@ -78,11 +86,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
         assertFalse(resp.getUrl().contains("content-length"));
 
         if (siteId != null) {
-          assertTrue(getLogger()
-              .containsString("generated presign url: http://localhost:4566/testbucket/" + siteId));
+          assertTrue(getLogger().containsString(
+              "generated presign url: " + this.localstack.getEndpointOverride(Service.S3).toString()
+                  + "/testbucket/" + siteId));
         } else {
-          assertTrue(getLogger()
-              .containsString("generated presign url: http://localhost:4566/testbucket/"));
+          assertTrue(getLogger().containsString("generated presign url: "
+              + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
         }
 
         assertTrue(getLogger().containsString("saving document: "));
@@ -148,8 +157,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       // then
       ApiUrlResponse resp = expectResponse(response);
 
-      assertTrue(
-          getLogger().containsString("generated presign url: http://localhost:4566/testbucket/"));
+      assertTrue(getLogger().containsString("generated presign url: "
+          + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
       assertTrue(getLogger().containsString("for document " + resp.getDocumentId()));
 
       assertEquals(documentId, resp.getDocumentId());
@@ -203,8 +212,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     ApiUrlResponse resp = expectResponse(response);
     assertTrue(resp.getUrl().contains("content-length"));
 
-    assertTrue(
-        getLogger().containsString("generated presign url: http://localhost:4566/testbucket/"));
+    assertTrue(getLogger().containsString("generated presign url: "
+        + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
     assertTrue(getLogger().containsString("saving document: "));
     assertTrue(getLogger().containsString(" on path " + null));
   }
