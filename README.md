@@ -8,16 +8,17 @@
 <details open>
 <summary>Table of Contents</summary>
 
-- [💥 What is FormKiQ Core](#-what-is-formkiq-core)
+- [What is FormKiQ Core](#-what-is-formkiq-core)
   - [Features](#features)
   - [Demo](#demo)
   - [How much does it cost to run?](#how-much-does-it-cost-to-run)
   - [Examples](#examples)
     - [Web Form Example - Contact Form](#web-form-example---contact-form)
     - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
-- [🏗️ Architecture](#%EF%B8%8F-architecture)
-  - [List of AWS Services](#list-of-aws-services)
-- [📜 License](#-license)
+- [Architecture](#architecture)
+- [Documentation](#documentation)
+- [Building from source](#building-from-source)
+- [License](#license)
 
 </details>
 
@@ -101,7 +102,7 @@ You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples be
 
 ![Screenshot of Job Application Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-jobapplication/master/screenshot.png)
 
-## 🏗️ Architecture
+## Architecture
 
 ![Architecture Diagram](https://raw.githubusercontent.com/formkiq/formkiq-core/master/architecture.svg)
 
@@ -125,10 +126,10 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 - Amazon Simple Notification Service (SNS) - document status notify system, allows applications to be notified that a document has been create/deleted or updated
 - AWS IAM and Amazon Cognito - User and System authentication
 
-## 🛠️ Building from source
+## Building from source
 
 Please see our [docs](https://docs.formkiq.com/#_building_from_source) for instructions.
 
-## 📜 License
+## License
 
 MIT - 2020 (c) FormKiq Inc. More details see LICENSE file.
