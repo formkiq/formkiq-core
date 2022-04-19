@@ -21,6 +21,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -51,8 +52,6 @@ public class AttributeValueToDocumentTag
   public DocumentTag apply(final Map<String, AttributeValue> map) {
     String tagKey = null;
     String tagValue = null;
-    // String pk = map.get(GSI1_PK).s();
-    // String[] strs = pk.split(TAG_DELIMINATOR);
 
     if (map.containsKey("tagKey")) {
       tagKey = map.get("tagKey").s();
@@ -60,16 +59,9 @@ public class AttributeValueToDocumentTag
 
     if (map.containsKey("tagValue")) {
       tagValue = map.get("tagValue").s();
+    } else {
+      tagValue = "";
     }
-    // String tagKey = resetDatabaseKey(this.site, strs[0]);
-    //
-    // if (strs.length > 1) {
-    // tagValue = strs[1];
-    //
-    // if (strs[1].equals("null")) {
-    // tagValue = null;
-    // }
-    // }
 
     Date date = this.toDate.apply(map);
     String userId = map.containsKey("userId") ? map.get("userId").s() : null;
@@ -82,6 +74,12 @@ public class AttributeValueToDocumentTag
 
     if (map.containsKey("documentId")) {
       tag.setDocumentId(map.get("documentId").s());
+    }
+    
+    if (map.containsKey("tagValues")) {
+      List<String> values = new AttributeValueToListOfStrings().apply(map.get("tagValues").l());
+      tag.setValues(values);
+      tag.setValue(null);
     }
 
     return tag;

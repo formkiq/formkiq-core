@@ -291,13 +291,6 @@ public class PublicWebhooksRequestHandler
     return buildResponse(event, item);
   }
 
-  @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    return post(logger, event, authorizer, awsservice);
-  }
-
   /**
    * Put Object to Staging Bucket.
    * @param logger {@link LambdaLogger}

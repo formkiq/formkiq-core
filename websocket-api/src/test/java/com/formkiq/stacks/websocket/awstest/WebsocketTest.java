@@ -335,6 +335,7 @@ public class WebsocketTest {
       assertEquals(0, client.getErrors().size());
       assertEquals("1000", String.valueOf(client.getCloseCode()));
       
+      Thread.sleep(sleep * 2);
       verifyDbConnections();
     }
   }

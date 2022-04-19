@@ -30,8 +30,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -45,6 +49,13 @@ import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
  */
 public class SsmServiceCacheTest {
 
+  /** LocalStack {@link DockerImageName}. */
+  private static DockerImageName localStackImage =
+      DockerImageName.parse("localstack/localstack:0.12.2");
+  /** {@link LocalStackContainer}. */
+  private static LocalStackContainer localstack =
+      new LocalStackContainer(localStackImage).withServices(Service.SSM);
+  
   /** {@link SsmServiceCache}. */
   private static SsmServiceCache cache;
   /** {@link SsmConnectionBuilder}. */
@@ -63,10 +74,20 @@ public class SsmServiceCacheTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:4566");
+    localstack.start();
 
+    ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+        .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString());
+    
     cache = new SsmServiceCache(ssmConnection, 1, TimeUnit.SECONDS);
+  }
+  
+  /**
+   * AfterClass.
+   */
+  @AfterClass
+  public static void afterClass() {
+    localstack.stop();
   }
 
   /**

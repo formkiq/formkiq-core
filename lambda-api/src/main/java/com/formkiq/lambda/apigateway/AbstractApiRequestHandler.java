@@ -113,23 +113,22 @@ public abstract class AbstractApiRequestHandler implements RequestStreamHandler 
       final ApiResponse apiResponse) throws IOException {
 
     Map<String, Object> response = new HashMap<>();
+    Map<String, String> jsonheaders = createJsonHeaders();
     response.put("statusCode", Integer.valueOf(status.getStatusCode()));
 
     if (apiResponse instanceof ApiRedirectResponse) {
-      headers.clear();
-      headers.put("Location", ((ApiRedirectResponse) apiResponse).getRedirectUri());
+      jsonheaders.put("Location", ((ApiRedirectResponse) apiResponse).getRedirectUri());
     } else if (status.getStatusCode() == SC_FOUND.getStatusCode()
         && apiResponse instanceof ApiMessageResponse) {
-      headers.clear();
-      headers.put("Location", ((ApiMessageResponse) apiResponse).getMessage());
+      jsonheaders.put("Location", ((ApiMessageResponse) apiResponse).getMessage());
     } else if (apiResponse instanceof ApiMapResponse) {
       response.put("body", this.gson.toJson(((ApiMapResponse) apiResponse).getMap()));
+      jsonheaders.putAll(headers);
     } else {
       response.put("body", this.gson.toJson(apiResponse));
+      jsonheaders.putAll(headers);
     }
 
-    Map<String, String> jsonheaders = createJsonHeaders();
-    jsonheaders.putAll(headers);
     response.put("headers", jsonheaders);
 
     writeJson(logger, awsServices, output, response);

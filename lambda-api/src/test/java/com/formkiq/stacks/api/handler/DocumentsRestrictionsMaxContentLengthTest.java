@@ -28,65 +28,40 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.stacks.api.DynamoDbExtension;
+import com.formkiq.stacks.api.DynamoDbTestServices;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.DynamoDbHelper;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * Unit Tests for {@link DocumentsRestrictionsMaxContentLength}.
  *
  * 
  */
+@ExtendWith(DynamoDbExtension.class)
 public class DocumentsRestrictionsMaxContentLengthTest {
 
   /** {@link DocumentsRestrictionsMaxContentLength}. */
-  private static DocumentsRestrictionsMaxContentLength service;
+  private static DocumentsRestrictionsMaxContentLength service =
+      new DocumentsRestrictionsMaxContentLength();
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsservice;
-  /** {@link DynamoDbHelper}. */
-  private static DynamoDbHelper dbhelper;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder adb;
-  
-  /**
-   * Before Class.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
-
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-
-    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:8000");
-
-    dbhelper = new DynamoDbHelper(adb);
-    
-    if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
-    }
-    
-    service = new DocumentsRestrictionsMaxContentLength();
-  }
   
   /**
    * Before Tests.
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
    */
-  @Before
-  public void before() {
+  @BeforeEach
+  public void before() throws URISyntaxException, IOException {
+    DynamoDbConnectionBuilder adb = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbHelper dbhelper = new DynamoDbHelper(adb);
     this.awsservice = new AwsServiceCache().dbConnection(adb, dbhelper.getDocumentTable(), "")
         .appEnvironment("unittest");
   }

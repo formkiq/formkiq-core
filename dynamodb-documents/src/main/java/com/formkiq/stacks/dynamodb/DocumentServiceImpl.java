@@ -30,32 +30,32 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.Get;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.ItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.TransactGetItem;
-import software.amazon.awssdk.services.dynamodb.model.TransactGetItemsRequest;
-import software.amazon.awssdk.services.dynamodb.model.TransactGetItemsResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 
@@ -109,9 +109,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentTagToAttributeValueMap mapper =
           new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
 
-      List<Map<String, AttributeValue>> valueList =
-          tags.stream().filter(predicate).map(mapper).collect(Collectors.toList());
-      
+      List<Map<String, AttributeValue>> valueList = tags.stream().filter(predicate).map(mapper)
+          .flatMap(List::stream).collect(Collectors.toList());
+
       if (timeToLive != null) {
         valueList.forEach(v -> addN(v, "TimeToLive", timeToLive));
       }
@@ -463,37 +463,47 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
-    final int chunkSize = 10;
-    final AtomicInteger counter = new AtomicInteger();
-    final Collection<List<String>> documentIdsSplit = ids.stream()
-        .collect(
-            Collectors.groupingBy(it -> Integer.valueOf(counter.getAndIncrement() / chunkSize)))
-        .values();
+    List<DocumentItem> results = null;
 
-    List<Map<String, AttributeValue>> result = new ArrayList<>();
+    if (!ids.isEmpty()) {
 
-    for (List<String> documentIds : documentIdsSplit) {
+      List<Map<String, AttributeValue>> keys = ids.stream()
+          .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
 
-      List<Get> gets =
-          documentIds.stream().map(documentId -> Get.builder().tableName(this.documentTableName)
-              .key(keysDocument(siteId, documentId)).build()).collect(Collectors.toList());
+      Map<String, KeysAndAttributes> requestedItems =
+          Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
 
-      List<TransactGetItem> tgets = gets.stream().map(g -> TransactGetItem.builder().get(g).build())
+      BatchGetItemRequest batchReq =
+          BatchGetItemRequest.builder().requestItems(requestedItems).build();
+      BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+
+      Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
+      List<Map<String, AttributeValue>> result =
+          !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
+
+      AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
+      List<DocumentItem> items = result.stream().map(a -> toDocumentItem.apply(Arrays.asList(a)))
           .collect(Collectors.toList());
+      items = sortByIds(ids, items);
 
-      TransactGetItemsRequest treq = TransactGetItemsRequest.builder().transactItems(tgets).build();
-      TransactGetItemsResponse response = this.dynamoDB.transactGetItems(treq);
-
-      List<ItemResponse> responses = response.responses();
-      result.addAll(responses.stream().map(r -> r.item()).collect(Collectors.toList()));
+      results = !items.isEmpty() ? items : null;
     }
 
-    AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
-    List<DocumentItem> items = result.stream().map(a -> toDocumentItem.apply(Arrays.asList(a)))
+    return results;
+  }
+  
+  /**
+   * Sort {@link DocumentItem} to match DocumentIds {@link List}.
+   * @param documentIds {@link List} {@link String}
+   * @param documents {@link List} {@link DocumentItem}
+   * @return {@link List} {@link DocumentItem}
+   */
+  private List<DocumentItem> sortByIds(final List<String> documentIds,
+      final List<DocumentItem> documents) {
+    Map<String, DocumentItem> map = documents.stream()
+        .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
+    return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
         .collect(Collectors.toList());
-    items = items.stream().filter(i -> i != null).collect(Collectors.toList());
-
-    return !items.isEmpty() ? items : null;
   }
 
   @Override
@@ -564,7 +574,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final String tagKey) {
 
     DocumentTag item = null;
-    List<Map<String, AttributeValue>> items = findDocumentTagAttributes(siteId, documentId, tagKey);
+    QueryResponse response =
+        findDocumentTagAttributes(siteId, documentId, tagKey, Integer.valueOf(1));
+    List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
       item = new AttributeValueToDocumentTag(siteId).apply(items.get(0));
@@ -579,28 +591,49 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param siteId DynamoDB PK siteId
    * @param documentId {@link String}
    * @param tagKey {@link String}
+   * @param maxresults {@link Integer} 
    * 
-   * @return {@link List} {@link Map} {@link AttributeValue}
+   * @return {@link QueryResponse}
    */
-  private List<Map<String, AttributeValue>> findDocumentTagAttributes(final String siteId,
-      final String documentId, final String tagKey) {
+  private QueryResponse findDocumentTagAttributes(final String siteId,
+      final String documentId, final String tagKey, final Integer maxresults) {
 
     Map<String, AttributeValue> values = queryKeys(keysDocumentTag(siteId, documentId, tagKey));
-    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-        .keyConditionExpression(PK + " = :pk and " + SK + "= :sk").expressionAttributeValues(values)
-        .limit(Integer.valueOf(1)).build();
 
+    Builder req = QueryRequest.builder().tableName(this.documentTableName)
+        .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ", :sk)")
+        .expressionAttributeValues(values);
+    
+    if (maxresults != null) {
+      req = req.limit(maxresults);
+    }
+    
+    QueryRequest q = req.build();        
     QueryResponse result = this.dynamoDB.query(q);
-
-    List<Map<String, AttributeValue>> items = result.items();
-    return items;
+    return result;
   }
 
   @Override
   public PaginationResults<DocumentTag> findDocumentTags(final String siteId,
       final String documentId, final PaginationMapToken token, final int maxresults) {
+    
     Map<String, AttributeValue> keys = keysDocumentTag(siteId, documentId, null);
-    return findAndTransform(keys, token, maxresults, new AttributeValueToDocumentTag(siteId));
+    
+    PaginationResults<DocumentTag> tags =
+        findAndTransform(keys, token, maxresults, new AttributeValueToDocumentTag(siteId));
+
+    // filter duplicates
+    DocumentTag prev = null;
+    for (Iterator<DocumentTag> itr = tags.getResults().iterator(); itr.hasNext();) {
+      DocumentTag t = itr.next();
+      if (prev != null && prev.getKey().equals(t.getKey())) {
+        itr.remove();
+      } else {
+        prev = t;
+      }
+    }
+    
+    return tags;
   }
 
   @Override
@@ -787,17 +820,64 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public boolean removeTag(final String siteId, final String documentId, final String tagKey,
+      final String tagValue) {
+    
+    QueryResponse response = findDocumentTagAttributes(siteId, documentId, tagKey, null);
+    List<Map<String, AttributeValue>> items = response.items();
+    
+    List<DeleteItemRequest> deletes = new ArrayList<>();
+    List<PutItemRequest> puts = new ArrayList<>();
+    
+    items.forEach(i -> {
+      
+      String pk = i.get("PK").s();
+      String sk = i.get("SK").s();
+      String value = i.get("tagValue").s();
+      Map<String, AttributeValue> key = keysGeneric(pk, sk);
+      
+      if (value.equals(tagValue)) {
+        DeleteItemRequest deleteItemRequest =
+            DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
+        deletes.add(deleteItemRequest);
+        
+      } else if (i.containsKey("tagValues")) {
+        
+        List<AttributeValue> avalues = i.get("tagValues").l();
+        avalues =
+            avalues.stream().filter(v -> !v.s().equals(tagValue)).collect(Collectors.toList());
+        
+        Map<String, AttributeValue> m = new HashMap<>(i);
+        if (avalues.size() == 1) {
+          m.remove("tagValues");
+          m.put("tagValue", avalues.get(0));
+        } else {
+          m.put("tagValues", AttributeValue.builder().l(avalues).build()); 
+        }
+        puts.add(PutItemRequest.builder().tableName(this.documentTableName).item(m).build());
+      }
+    });
+    
+    deletes.forEach(i -> this.dynamoDB.deleteItem(i));
+    puts.forEach(i -> this.dynamoDB.putItem(i));
+    
+    return !deletes.isEmpty();
+  }
+  
+  @Override
   public void removeTags(final String siteId, final String documentId,
       final Collection<String> tags) {
 
     for (String tag : tags) {
+      QueryResponse response = findDocumentTagAttributes(siteId, documentId, tag, null);
+      List<Map<String, AttributeValue>> items = response.items();
+      items.forEach(i -> {
+        Map<String, AttributeValue> key = keysGeneric(i.get("PK").s(), i.get("SK").s());
+        DeleteItemRequest deleteItemRequest =
+            DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-      Map<String, AttributeValue> key = keysDocumentTag(siteId, documentId, tag);
-
-      DeleteItemRequest deleteItemRequest =
-          DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
-
-      this.dynamoDB.deleteItem(deleteItemRequest);
+        this.dynamoDB.deleteItem(deleteItemRequest);
+      });
     }
   }
 
@@ -954,12 +1034,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DynamicObject> doctags = doc.getList("tags");
 
     tags.addAll(doctags.stream().map(t -> {
+      
       DocumentTagType type = null;
       if (t.hasString("type")) {
         type = DocumentTagType.valueOf(t.getString("type").toUpperCase());
       }
 
-      return new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
+      DocumentTag tag =
+          new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
+      
+      if (t.containsKey("values") /*&& t.getStringList("values") != null*/) {
+        tag.setValue(null);
+        tag.setValues(t.getStringList("values"));
+      }
+      
+      return tag;
+      
     }).collect(Collectors.toList()));
 
     if (!docexists && tags.isEmpty()) {

@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +46,7 @@ import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.dynamodb.CacheService;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
+import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
 import com.formkiq.stacks.dynamodb.PaginationResults;
 
@@ -62,6 +64,7 @@ public class DocumentTagsRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
+    
     CacheService cacheService = awsservice.documentCacheService();
     ApiPagination pagination = getPagination(cacheService, event);
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
@@ -87,6 +90,7 @@ public class DocumentTagsRequestHandler
       r.setInsertedDate(t.getInsertedDate());
       r.setKey(t.getKey());
       r.setValue(t.getValue());
+      r.setValues(t.getValues());
       r.setUserId(t.getUserId());
       r.setType(t.getType() != null ? t.getType().name().toLowerCase() : null);
 
@@ -102,32 +106,68 @@ public class DocumentTagsRequestHandler
   }
 
   @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/tags";
+  }
+
+  /**
+   * Is Valid {@link DocumentTag}.
+   * @param tag {@link DocumentTag}
+   * @return boolean
+   */
+  private boolean isValid(final DocumentTag tag) {
+    return tag.getKey() != null && tag.getKey().length() > 0;
+  }
+  
+  /**
+   * Is Valid {@link DocumentTags}.
+   * @param tags {@link DocumentTags}
+   * @return boolean
+   */
+  private boolean isValid(final DocumentTags tags) {
+    List<DocumentTag> list =
+        tags != null && tags.getTags() != null ? tags.getTags() : Collections.emptyList();
+    return !list.isEmpty()
+        ? !list.stream().map(t -> Boolean.valueOf(isValid(t))).filter(b -> b.equals(Boolean.FALSE))
+            .findFirst().isPresent()
+        : false;
+  }
+  
+  @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
+    DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
 
-    if (tag.getKey() == null || tag.getKey().length() == 0) {
+    boolean tagValid = isValid(tag);
+    boolean tagsValid = isValid(tags);
+    
+    if (!tagValid && !tagsValid) {
       throw new BadException("invalid json body");
     }
 
-    tag.setType(DocumentTagType.USERDEFINED);
-    tag.setInsertedDate(new Date());
-    tag.setUserId(getCallingCognitoUsername(event));
+    if (!tagsValid) {
+      tags = new DocumentTags();
+      tags.setTags(Arrays.asList(tag));
+    }
+    
+    tags.getTags().forEach(t -> {
+      t.setType(DocumentTagType.USERDEFINED);
+      t.setInsertedDate(new Date());
+      t.setUserId(getCallingCognitoUsername(event));
+    });
 
     String documentId = event.getPathParameters().get("documentId");
     String siteId = authorizer.getSiteId();
     
     awsservice.documentService().deleteDocumentTag(siteId, documentId, "untagged");
-    awsservice.documentService().addTags(siteId, documentId, Arrays.asList(tag), null);
+    awsservice.documentService().addTags(siteId, documentId, tags.getTags(), null);
 
-    ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
+    ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
+        : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
+    
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/documents/{documentId}/tags";
   }
 }

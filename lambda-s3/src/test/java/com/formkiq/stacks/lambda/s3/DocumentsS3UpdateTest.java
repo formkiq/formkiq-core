@@ -27,10 +27,10 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -40,9 +40,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
@@ -61,6 +68,8 @@ import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.DynamoDbHelper;
 import com.formkiq.stacks.dynamodb.PaginationResults;
+import com.formkiq.stacks.lambda.s3.util.DynamoDbExtension;
+import com.formkiq.stacks.lambda.s3.util.DynamoDbTestServices;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.google.gson.Gson;
@@ -78,16 +87,19 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** {@link DocumentsS3Update} Unit Tests. */
+@ExtendWith(DynamoDbExtension.class)
 public class DocumentsS3UpdateTest implements DbKeys {
 
+  /** LocalStack {@link DockerImageName}. */
+  private static DockerImageName localStackImage =
+      DockerImageName.parse("localstack/localstack:0.12.2");
+  /** {@link LocalStackContainer}. */
+  private static LocalStackContainer localstack =
+      new LocalStackContainer(localStackImage).withServices(Service.S3, Service.SQS, Service.SNS);
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30000L;
   /** Bucket Key. */
   private static final String BUCKET_KEY = "b53c92cf-f7b9-4787-9541-76574ec70d71";
-  /** LocalStack Endpoint. */
-  private static final String LOCALSTACK_ENDPOINT = "http://localhost:4566";
-  /** DynamoDB Endpoint. */
-  private static final String DYNAMODB_ENDPOINT = "http://localhost:8000";
   /** SQS Error Queue. */
   private static final String ERROR_SQS_QUEUE = "sqserror";
   /** SQS Sns Update Queue. */
@@ -116,6 +128,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static String snsDocumentEvent;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentEventUrl;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbBuilder;
 
   /**
    * Before Class.
@@ -124,25 +138,29 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
     Region region = Region.US_EAST_1;
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    snsBuilder = new SnsConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT)
+    localstack.start();
+    
+    snsBuilder = new SnsConnectionBuilder()
+        .setEndpointOverride(localstack.getEndpointOverride(Service.SNS).toString())
         .setRegion(region).setCredentials(cred);
 
-    sqsBuilder = new SqsConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT)
+    sqsBuilder = new SqsConnectionBuilder()
+        .setEndpointOverride(localstack.getEndpointOverride(Service.SQS).toString())
         .setRegion(region).setCredentials(cred);
     sqsService = new SqsService(sqsBuilder);
 
-    s3Builder = new S3ConnectionBuilder().setEndpointOverride(LOCALSTACK_ENDPOINT).setRegion(region)
-        .setCredentials(cred);
+    s3Builder = new S3ConnectionBuilder()
+        .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString())
+        .setRegion(region).setCredentials(cred);
 
-    DynamoDbConnectionBuilder dbBuilder = new DynamoDbConnectionBuilder().setRegion(region)
-        .setEndpointOverride(DYNAMODB_ENDPOINT).setCredentials(cred);
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
 
     service = new DocumentServiceImpl(dbBuilder, "Documents");
 
@@ -171,6 +189,14 @@ public class DocumentsS3UpdateTest implements DbKeys {
     }
   }
 
+  /**
+   * afterClass().
+   */
+  @AfterAll
+  public static void afterClass() {
+    localstack.stop();
+  }
+  
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link LambdaContextRecorder}. */
@@ -275,7 +301,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * 
    * @throws URISyntaxException URISyntaxException
    */
-  @Before
+  @BeforeEach
   public void before() throws URISyntaxException {
 
     try (S3Client s3 = s3service.buildClient()) {
@@ -286,7 +312,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
     dbHelper.truncateDocumentsTable();
 
     Map<String, String> map = new HashMap<>();
-    map.put("SQS_ERROR_URL", LOCALSTACK_ENDPOINT + "/queue/" + ERROR_SQS_QUEUE);
+    map.put("SQS_ERROR_URL",
+        localstack.getEndpointOverride(Service.SQS).toString() + "/queue/" + ERROR_SQS_QUEUE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
 
     this.context = new LambdaContextRecorder();
@@ -376,12 +403,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -440,12 +468,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest02() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -507,12 +536,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest03() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -545,14 +575,15 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest04() throws Exception {
 
     String documentId = UUID.randomUUID().toString();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, documentId);
       final Map<String, Object> map =
@@ -582,7 +613,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      try (DynamoDbClient client = DocumentsS3UpdateTest.service.getDynamoDB()) {
+      try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m =
             client.getItem(GetItemRequest.builder().tableName("Documents")
                 .key(keysDocument(siteId, child.getDocumentId())).build()).item();
@@ -619,11 +650,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
       Date now = new Date();
       DynamicDocumentItem doc = createSubDocuments(now);
       service.saveDocumentItemWithTag(siteId, doc);
@@ -640,7 +672,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           handleRequest(siteId, doc.getDocuments().get(0).getDocumentId(), map);
 
       // then
-      try (DynamoDbClient client = DocumentsS3UpdateTest.service.getDynamoDB()) {
+      try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m = client.getItem(GetItemRequest.builder()
             .tableName("Documents").key(keysDocument(siteId, doc.getDocumentId())).build()).item();
         assertNotNull(m.get(GSI1_PK)); 
@@ -675,12 +707,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest06() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -709,12 +742,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest07() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -744,12 +778,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest08() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -779,12 +814,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    *
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest09() throws Exception {
     String ttl = "1612061365";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      this.logger.getRecordedMessages().clear();
+      this.logger.reset();
 
       String key = createDatabaseKey(siteId, BUCKET_KEY);
       final Map<String, Object> map =
@@ -807,19 +843,17 @@ public class DocumentsS3UpdateTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(dbHelper.getDocumentTable()).build();
       
-      try (DynamoDbClient db = dbHelper.getDb()) {
+      try (DynamoDbClient db = dbBuilder.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
-      }
-      
-      for (String tagKey : Arrays.asList("untagged", "userId")) {
-        r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-            .tableName(dbHelper.getDocumentTable()).build();
-        
-        try (DynamoDbClient db = dbHelper.getDb()) {
-          Map<String, AttributeValue> result = db.getItem(r).item();
+
+        for (String tagKey : Arrays.asList("untagged", "userId")) {
+          r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
+              .tableName(dbHelper.getDocumentTable()).build();
+
+          result = db.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
-        }        
+        }
       }
 
       verifyDocumentSaved(siteId, item, "pdf", "8");

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -37,6 +38,7 @@ import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
@@ -55,6 +57,7 @@ import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
+import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.PaginationMapToken;
 import com.formkiq.stacks.dynamodb.Preset;
@@ -67,12 +70,14 @@ import software.amazon.awssdk.regions.Region;
 /** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
 @Reflectable
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
-    PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class, PresetTag.class,
-    Preset.class})
+    DocumentTags.class, PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class,
+    PresetTag.class, Preset.class})
 public class CoreRequestHandler extends AbstractApiRequestHandler {
 
   /** Is Public Urls Enabled. */
   private static boolean isEnablePublicUrls;
+  /** Url Class Map. */
+  private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
   static {
 
@@ -87,6 +92,29 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
           new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
               .setCredentials(EnvironmentVariableCredentialsProvider.create()));
     }
+    
+    buildUrlMap();
+  }
+
+  protected static void buildUrlMap() {
+    URL_MAP.put("options", new DocumentsOptionsRequestHandler());
+    URL_MAP.put("/version", new VersionRequestHandler());
+    URL_MAP.put("/sites", new SitesRequestHandler());
+    URL_MAP.put("/documents", new DocumentsRequestHandler());
+    URL_MAP.put("/documents/{documentId}", new DocumentIdRequestHandler());
+    URL_MAP.put("/documents/{documentId}/versions", new DocumentVersionsRequestHandler());
+    URL_MAP.put("/documents/{documentId}/tags", new DocumentTagsRequestHandler());
+    URL_MAP.put("/documents/{documentId}/tags/{tagKey}/{tagValue}",
+        new DocumentTagValueRequestHandler());
+    URL_MAP.put("/documents/{documentId}/tags/{tagKey}", new DocumentTagRequestHandler());
+    URL_MAP.put("/documents/{documentId}/url", new DocumentIdUrlRequestHandler());
+    URL_MAP.put("/documents/{documentId}/content", new DocumentIdContentRequestHandler());
+    URL_MAP.put("/search", new SearchRequestHandler());
+    URL_MAP.put("/documents/upload", new DocumentsUploadRequestHandler());
+    URL_MAP.put("/documents/{documentId}/upload", new DocumentsIdUploadRequestHandler());
+    URL_MAP.put("/webhooks/{webhookId}/tags", new WebhooksTagsRequestHandler());
+    URL_MAP.put("/webhooks/{webhookId}", new WebhooksIdRequestHandler());
+    URL_MAP.put("/webhooks", new WebhooksRequestHandler());
   }
 
   /**
@@ -129,54 +157,12 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
       return new PrivateWebhooksRequestHandler();
     }
     
-    switch (s) {
-      case "options":
-        return new DocumentsOptionsRequestHandler();
-
-      case "/version":
-        return new VersionRequestHandler();
-
-      case "/sites":
-        return new SitesRequestHandler();
-
-      case "/documents":
-        return new DocumentsRequestHandler();
-
-      case "/documents/{documentId}":
-        return new DocumentIdRequestHandler();
-
-      case "/documents/{documentId}/versions":
-        return new DocumentVersionsRequestHandler();
-
-      case "/documents/{documentId}/tags":
-        return new DocumentTagsRequestHandler();
-
-      case "/documents/{documentId}/tags/{tagKey}":
-        return new DocumentTagRequestHandler();
-
-      case "/documents/{documentId}/url":
-        return new DocumentIdUrlRequestHandler();
-      case "/documents/{documentId}/content":
-        return new DocumentIdContentRequestHandler();
-
-      case "/search":
-        return new SearchRequestHandler();
-
-      case "/documents/upload":
-        return new DocumentsUploadRequestHandler();
-      case "/documents/{documentId}/upload":
-        return new DocumentsIdUploadRequestHandler();
-
-      case "/webhooks/{webhookId}/tags":
-        return new WebhooksTagsRequestHandler();
-      case "/webhooks/{webhookId}":
-        return new WebhooksIdRequestHandler();
-      case "/webhooks":
-        return new WebhooksRequestHandler();
-        
-      default:
-        throw new NotFoundException(resource + " not found");
+    ApiGatewayRequestHandler hander = URL_MAP.get(s);
+    if (hander != null) {
+      return hander;
     }
+      
+    throw new NotFoundException(resource + " not found");
   }
 
   /**

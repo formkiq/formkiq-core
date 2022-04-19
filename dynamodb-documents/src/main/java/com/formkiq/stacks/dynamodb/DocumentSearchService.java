@@ -34,11 +34,11 @@ public interface DocumentSearchService {
    * Search for Documents.
    *
    * @param siteId Optional Grouping siteId
-   * @param search {@link SearchTagCriteria}
+   * @param search {@link SearchQuery}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    */
-  PaginationResults<DynamicDocumentItem> search(String siteId, SearchTagCriteria search,
+  PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
       PaginationMapToken token, int maxresults);
 }

@@ -52,21 +52,23 @@ public class SearchTagCriteria {
   }
 
   /**
-   * Get Tag Key.
+   * Get Begins With.
    *
    * @return {@link String}
    */
-  public String getKey() {
-    return this.key;
+  public String beginsWith() {
+    return this.beginsWith;
   }
 
   /**
-   * Set Tag Name.
+   * Set Begins With.
    *
    * @param s {@link String}
+   * @return {@link SearchTagCriteria}
    */
-  public void setKey(final String s) {
-    this.key = s;
+  public SearchTagCriteria beginsWith(final String s) {
+    this.beginsWith = s;
+    return this;
   }
 
   /**
@@ -74,7 +76,7 @@ public class SearchTagCriteria {
    *
    * @return {@link String}
    */
-  public String getEq() {
+  public String eq() {
     return this.eq;
   }
 
@@ -82,9 +84,21 @@ public class SearchTagCriteria {
    * Set EQ String.
    *
    * @param s {@link String}
+   * @return {@link SearchTagCriteria}
    */
-  public void setEq(final String s) {
+  public SearchTagCriteria eq(final String s) {
     this.eq = s;
+    return this;
+  }
+
+  /**
+   * {@link String} has value.
+   *
+   * @param s {@link String}
+   * @return boolean
+   */
+  private boolean hasValue(final String s) {
+    return s != null && s.length() > 0;
   }
 
   /**
@@ -99,30 +113,22 @@ public class SearchTagCriteria {
   }
 
   /**
-   * {@link String} has value.
-   *
-   * @param s {@link String}
-   * @return boolean
-   */
-  private boolean hasValue(final String s) {
-    return s != null && s.length() > 0;
-  }
-
-  /**
-   * Get Begins With.
+   * Get Tag Key.
    *
    * @return {@link String}
    */
-  public String getBeginsWith() {
-    return this.beginsWith;
+  public String key() {
+    return this.key;
   }
 
   /**
-   * Set Begins With.
+   * Set Tag Name.
    *
    * @param s {@link String}
+   * @return {@link SearchTagCriteria}
    */
-  public void setBeginsWith(final String s) {
-    this.beginsWith = s;
+  public SearchTagCriteria key(final String s) {
+    this.key = s;
+    return this;
   }
 }

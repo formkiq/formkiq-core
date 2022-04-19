@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.lambda.apigateway.ApiAuthorizer;
@@ -53,74 +54,6 @@ public class DocumentTagRequestHandler
   public DocumentTagRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    String documentId = event.getPathParameters().get("documentId");
-    String tagKey = event.getPathParameters().get("tagKey");
-    String siteId = authorizer.getSiteId();
-
-    DocumentTag docTag = awsservice.documentService().findDocumentTag(siteId, documentId, tagKey);
-    if (docTag == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
-    }
-
-    ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
-    resp.setKey(tagKey);
-    resp.setValue(docTag.getValue());
-    resp.setInsertedDate(docTag.getInsertedDate());
-    resp.setUserId(docTag.getUserId());
-    resp.setType(docTag.getType() != null ? docTag.getType().name().toLowerCase() : null);
-    resp.setDocumentId(docTag.getDocumentId());
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    Map<String, String> map = event.getPathParameters();
-    final String documentId = map.get("documentId");
-    String tagKey = map.get("tagKey");
-
-    Map<String, String> body = fromBodyToObject(logger, event, Map.class);
-    String value = body != null ? body.getOrDefault("value", null) : null;
-
-    if (value == null) {
-      throw new BadException("request body is invalid");
-    }
-
-    String siteId = authorizer.getSiteId();
-    DocumentService documentService = awsservice.documentService();
-
-    if (event.getHttpMethod().equalsIgnoreCase("put")) {
-      if (documentService.findDocument(siteId, documentId) == null) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
-    }
-
-    Date now = new Date();
-    String userId = getCallingCognitoUsername(event);
-
-    if (documentService.findDocumentTag(siteId, documentId, tagKey) == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
-    }
-
-    DocumentTag tag = new DocumentTag(null, tagKey, value, now, userId);
-
-    documentService.addTags(siteId, documentId, Arrays.asList(tag), null);
-
-    ApiResponse resp = new ApiMessageResponse(
-        "Updated tag '" + tagKey + "' to '" + value + "' for document '" + documentId + "'.");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
@@ -145,7 +78,99 @@ public class DocumentTagRequestHandler
   }
 
   @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String documentId = event.getPathParameters().get("documentId");
+    String tagKey = event.getPathParameters().get("tagKey");
+    String siteId = authorizer.getSiteId();
+    
+    DocumentTag tag = awsservice.documentService().findDocumentTag(siteId, documentId, tagKey);
+    if (tag == null) {
+      throw new NotFoundException("Tag " + tagKey + " not found.");
+    }
+
+    ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
+    resp.setKey(tagKey);
+    resp.setValue(tag.getValue());
+    resp.setValues(tag.getValues());
+    resp.setInsertedDate(tag.getInsertedDate());
+    resp.setUserId(tag.getUserId());
+    resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
+    resp.setDocumentId(tag.getDocumentId());
+
+    return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/tags/{tagKey}";
+  }
+
+  /**
+   * Is Changing Tag from Value to Values or Values to Value.
+   * @param tag {@link DocumentTag}
+   * @param value {@link String}
+   * @param values {@link List} {@link String}
+   * @return boolean
+   */
+  private boolean isTagValueTypeChanged(final DocumentTag tag, final String value,
+      final List<String> values) {
+    return (tag.getValue() != null && values != null) || (tag.getValues() != null && value != null);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ApiRequestHandlerResponse put(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    Map<String, String> map = event.getPathParameters();
+    final String documentId = map.get("documentId");
+    final String tagKey = map.get("tagKey");
+
+    Map<String, Object> body = fromBodyToObject(logger, event, Map.class);
+    String value = body != null ? (String) body.getOrDefault("value", null) : null;
+    List<String> values = body != null ? (List<String>) body.getOrDefault("values", null) : null;
+
+    if (value == null && values == null) {
+      throw new BadException("request body is invalid");
+    }
+
+    String siteId = authorizer.getSiteId();
+    DocumentService documentService = awsservice.documentService();
+
+    if (event.getHttpMethod().equalsIgnoreCase("put")) {
+      if (documentService.findDocument(siteId, documentId) == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
+      }
+    }
+
+    Date now = new Date();
+    String userId = getCallingCognitoUsername(event);
+
+    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
+    if (tag == null) {
+      throw new NotFoundException("Tag " + tagKey + " not found.");
+    }
+
+    // if trying to change from tag VALUE to VALUES or VALUES to VALUE
+    if (isTagValueTypeChanged(tag, value, values)) {
+      documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
+    }
+    
+    tag = new DocumentTag(null, tagKey, value, now, userId);
+    if (values != null) {
+      tag.setValue(null);
+      tag.setValues(values);
+    }
+
+    documentService.addTags(siteId, documentId, Arrays.asList(tag), null);
+
+    ApiResponse resp = new ApiMessageResponse(
+        "Updated tag '" + tagKey + "' on document '" + documentId + "'.");
+
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 }

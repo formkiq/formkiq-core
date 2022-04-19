@@ -408,13 +408,14 @@ public interface ApiGatewayRequestEventUtil {
    */
   default void setPathParameter(final ApiGatewayRequestEvent event, final String key,
       final String value) {
-    Map<String, String> q = event.getPathParameters();
-    if (q == null) {
-      q = new HashMap<>();
-      event.setPathParameters(q);
+    Map<String, String> q = new HashMap<>();
+    
+    if (event.getPathParameters() != null) {
+      q.putAll(event.getPathParameters());
     }
 
     q.put(key, value);
+    event.setPathParameters(q);
   }
 
   /**

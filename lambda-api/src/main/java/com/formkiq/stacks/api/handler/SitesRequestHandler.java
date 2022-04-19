@@ -42,6 +42,9 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** {@link Random}. */
+  private Random rnd = new Random();
+  
   /**
    * constructor.
    *
@@ -89,9 +92,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     String saltchars = "abcdefghijklmnopqrstuvwxyz1234567890";
     StringBuilder salt = new StringBuilder();
-    Random rnd = new Random();
     while (salt.length() < length) {
-      int index = (int) (rnd.nextFloat() * saltchars.length());
+      int index = (int) (this.rnd.nextFloat() * saltchars.length());
       salt.append(saltchars.charAt(index));
     }
     return salt.toString();

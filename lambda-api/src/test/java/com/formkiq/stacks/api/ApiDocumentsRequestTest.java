@@ -20,12 +20,15 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
+import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +44,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -53,6 +57,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** Unit Tests for request GET / POST / DELETE /documents. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
   /** One Second. */
@@ -109,17 +115,17 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   private void expectNextPage(final String next) throws IOException {
     // given
-    newOutstream();
     try (InputStream in = toStream("/request-get-documents-next.json")) {
       String input = IoUtils.toUtf8String(in).replaceAll("\\{\\{next\\}\\}", next);
       final InputStream instream2 =
           new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
-
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+      
       // when
-      getHandler().handleRequest(instream2, getOutstream(), getMockContext());
+      getHandler().handleRequest(instream2, outstream, getMockContext());
 
       // then
-      String response = new String(getOutstream().toByteArray(), "UTF-8");
+      String response = new String(outstream.toByteArray(), "UTF-8");
 
       Map<String, String> m = fromJson(response, Map.class);
       DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
@@ -160,11 +166,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteDocument01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String filename = "test.pdf";
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, getBucketName(), filename,
+        getS3().putObject(s3, BUCKET_NAME, filename,
             "testdata".getBytes(StandardCharsets.UTF_8), null);
       }
 
@@ -183,12 +188,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String filename = "test.txt";
 
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, getBucketName(), filename,
+        getS3().putObject(s3, BUCKET_NAME, filename,
             "testdata".getBytes(StandardCharsets.UTF_8), null);
       }
 
@@ -207,7 +211,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteDocument03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       final String expected = "{" + getHeaders() + ","
           + "\"body\":\"{\\\"message\\\":\\\"Document test.pdf not found.\\\"}\""
@@ -234,8 +237,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       final long contentLength = 1000L;
@@ -279,9 +280,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
       createTestData(siteId, DocumentService.MAX_RESULTS + 2);
 
       try (InputStream in = toStream("/request-get-documents-next.json")) {
@@ -291,10 +291,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
             new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
         // when
-        getHandler().handleRequest(instream, getOutstream(), getMockContext());
+        getHandler().handleRequest(instream, outstream, getMockContext());
 
         // then
-        String response = new String(getOutstream().toByteArray(), "UTF-8");
+        String response = new String(outstream.toByteArray(), "UTF-8");
         Map<String, String> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
@@ -323,9 +323,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
       createTestData(siteId, DocumentService.MAX_RESULTS);
 
       try (InputStream in = toStream("/request-get-documents-next.json")) {
@@ -335,10 +334,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
             new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
         // when
-        getHandler().handleRequest(instream, getOutstream(), getMockContext());
+        getHandler().handleRequest(instream, outstream, getMockContext());
 
         // then
-        String response = new String(getOutstream().toByteArray(), "UTF-8");
+        String response = new String(outstream.toByteArray(), "UTF-8");
         Map<String, String> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
@@ -365,8 +364,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
@@ -404,8 +401,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = DateUtil.toDateFromString("2019-08-15", "0500");
       String username = UUID.randomUUID() + "@formkiq.com";
@@ -443,8 +438,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       ZoneOffset zone = ZoneOffset.of("-05:00");
       ZonedDateTime zdate = ZonedDateTime.now(zone);
@@ -486,8 +479,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments07() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date0 = new Date();
       final int year = 2015;
@@ -691,8 +682,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments13() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents04.json");
       addParameter(event, "siteId", siteId);
@@ -723,8 +712,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleOptionsDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-
       // given
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
@@ -758,7 +745,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments01() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       // when
       DynamicObject obj =
@@ -778,7 +764,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId = body.getString("documentId");
 
       assertTrue(
-          getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
 
       assertNotNull(documentId);
 
@@ -795,7 +781,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
@@ -821,13 +806,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
           : resp.get("documentId") + ".fkb64";
 
       assertTrue(
-          getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
 
       assertNotNull(UUID.fromString(resp.getString("documentId")));
 
       try (S3Client s3 = getS3().buildClient()) {
-        assertTrue(getS3().getObjectMetadata(s3, getStages3bucket(), key).isObjectExists());
-        String content = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+        assertTrue(getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).isObjectExists());
+        String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
         DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
         assertTrue(obj.hasString("documentId"));
         assertTrue(obj.hasString("content"));
@@ -844,7 +829,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid03.json");
       addParameter(event, "siteId", siteId);
@@ -869,7 +853,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid04.json");
       addParameter(event, "siteId", siteId);
@@ -901,7 +884,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments05() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid05.json");
       addParameter(event, "siteId", siteId);
@@ -932,7 +914,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid06.json");
       addParameter(event, "siteId", siteId);
@@ -977,7 +958,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments08() throws Exception {
-    newOutstream();
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents01.json");
 
@@ -1000,12 +980,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String key = resp.get("documentId") + ".fkb64";
 
     assertTrue(
-        getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+        getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
 
     assertNotNull(UUID.fromString(resp.getString("documentId")));
 
     try (S3Client s3 = getS3().buildClient()) {
-      assertTrue(getS3().getObjectMetadata(s3, getStages3bucket(), key).isObjectExists());
+      assertTrue(getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).isObjectExists());
     }
   }
 
@@ -1017,7 +997,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments09() throws Exception {
-    newOutstream();
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents02.json");
 
@@ -1042,7 +1021,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments10() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1075,7 +1053,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId = body.getString("documentId");
 
       assertTrue(
-          getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
 
       assertNotNull(documentId);
 
@@ -1092,7 +1070,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments11() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1119,7 +1096,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId = body.getString("documentId");
 
       assertTrue(
-          getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
 
       assertNotNull(documentId);
 
@@ -1143,7 +1120,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocuments12() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
 
       // when
@@ -1164,7 +1140,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId = body.getString("documentId");
 
       assertTrue(
-          getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
 
       assertNotNull(documentId);
 
@@ -1176,7 +1152,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       try (S3Client s3 = getS3().buildClient()) {
         assertEquals("text/html",
-            getS3().getObjectMetadata(s3, getStages3bucket(), key).getContentType());
+            getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).getContentType());
       }
     }
   }
@@ -1192,8 +1168,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId) {
     try (S3Client s3 = getS3().buildClient()) {
-      assertTrue(getS3().getObjectMetadata(s3, getStages3bucket(), key).isObjectExists());
-      String content = getS3().getContentAsString(s3, getStages3bucket(), key, null);
+      assertTrue(getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).isObjectExists());
+      String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
       DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
 
       assertTrue(obj.hasString("documentId"));

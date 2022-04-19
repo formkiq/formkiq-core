@@ -27,52 +27,20 @@ import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.stacks.common.objects.DynamicObject;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** 
  * Unit Tests for {@link ConfigServiceImpl}. 
  */
+@ExtendWith(DynamoDbExtension.class)
 public class ConfigServiceImplTest {
-  
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder adb;
-
-  /** {@link DynamoDbHelper}. */
-  private static DynamoDbHelper dbhelper;
-
-  /**
-   * Generate Test Data.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException {
-
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:8000");
-
-    dbhelper = new DynamoDbHelper(adb);
-
-    if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createDocumentsTable();
-    }
-  }
 
   /** {@link ConfigService}. */
   private ConfigService service;
@@ -82,17 +50,10 @@ public class ConfigServiceImplTest {
    *
    * @throws Exception Exception
    */
-  @Before
+  @BeforeEach
   public void before() throws Exception {
-
-    this.service = dbhelper.getConfigService();
-
-    dbhelper.truncateDocumentsTable();
-    dbhelper.truncateDocumentDates();
-    dbhelper.truncateWebhooks();
-    dbhelper.truncateConfig();
-
-    assertEquals(0, dbhelper.getDocumentItemCount());
+    this.service =
+        new ConfigServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
   }
   
   /**

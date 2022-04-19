@@ -25,64 +25,32 @@ package com.formkiq.stacks.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /** Unit Tests for {@link DynamoDbCacheService}. */
+@ExtendWith(DynamoDbExtension.class)
 public class DynamoDbCacheServiceTest {
 
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder adb;
   /** Document Table. */
   private CacheService service;
   /** Cache Table. */
   private static String cacheTable = "Cache";
 
   /**
-   * Before Class.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException {
-
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-
-    adb = new DynamoDbConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride("http://localhost:8000");
-
-    DynamoDbHelper dbhelper = new DynamoDbHelper(adb);
-
-    if (!dbhelper.isDocumentsTableExists()) {
-      dbhelper.createCacheTable();
-    }
-    
-    if (!dbhelper.isCacheTableExists()) {
-      dbhelper.createCacheTable();
-    }
-  }
-
-  /**
    * Before Test.
    *
    * @throws Exception Exception
    */
-  @Before
+  @BeforeEach
   public void before() throws Exception {
-    this.service = new DynamoDbCacheService(adb, cacheTable);
+    this.service =
+        new DynamoDbCacheService(DynamoDbTestServices.getDynamoDbConnection(null), cacheTable);
   }
 
   /**

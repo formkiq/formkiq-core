@@ -161,7 +161,7 @@ public abstract class AbstractApiTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-        
+
     awsregion = Region.of(System.getProperty("testregion"));
 
     String awsprofile = System.getProperty("testprofile");
@@ -211,7 +211,7 @@ public abstract class AbstractApiTest {
    * 
    * @return {@link CognitoService}
    */
-  public static CognitoService getAdminCognitoService() {
+  protected static CognitoService getAdminCognitoService() {
     return adminCognitoService;
   }
 
@@ -506,7 +506,7 @@ public abstract class AbstractApiTest {
    * Get {@link ConfigService}.
    * @return {@link ConfigService}
    */
-  public static ConfigService getConfigService() {
+  protected static ConfigService getConfigService() {
     return configService;
   }
 

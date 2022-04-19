@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -33,12 +34,15 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 
 /** Unit Tests for request /sites. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
 
   /** Email Pattern. */
@@ -53,7 +57,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/maildomain", "tryformkiq.com");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
 
     // when
@@ -81,12 +85,12 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
 
-    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        sites.get(0).get("siteId"))));
+    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(0).get("siteId"))));
 
     String[] strs = uploadEmail.split("@");
     assertEquals("tryformkiq.com", strs[1]);
-    assertEquals("{\"siteId\":\"default\", \"appEnvironment\":\"" + getAppenvironment() + "\"}",
+    assertEquals("{\"siteId\":\"default\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
 
     assertEquals("finance", sites.get(1).get("siteId"));
@@ -94,10 +98,10 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     uploadEmail = sites.get(1).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
-    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        sites.get(1).get("siteId"))));
+    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(1).get("siteId"))));
     strs = uploadEmail.split("@");
-    assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + getAppenvironment() + "\"}",
+    assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
   }
 
@@ -110,7 +114,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetSites02() throws Exception {
     // given
-    removeSsmParameter("/formkiq/" + getAppenvironment() + "/maildomain");
+    removeSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain");
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
 
     // when
@@ -147,9 +151,9 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetSites03() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/maildomain", "tryformkiq.com");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     removeSsmParameter(
-        String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(), "default"));
+        String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
     setCognitoGroup(event, "default_read finance");
 
@@ -174,7 +178,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
     assertNull(sites.get(0).get("uploadEmail"));
 
-    assertNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
+    assertNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT,
         sites.get(0).get("siteId"))));
 
     assertEquals("finance", sites.get(1).get("siteId"));
@@ -182,10 +186,10 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     String uploadEmail = sites.get(1).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
-    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", getAppenvironment(),
-        sites.get(1).get("siteId"))));
+    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(1).get("siteId"))));
     String[] strs = uploadEmail.split("@");
-    assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + getAppenvironment() + "\"}",
+    assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
   }
   

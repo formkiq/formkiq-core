@@ -292,6 +292,17 @@ public interface DocumentService {
       int maxresults);
 
   /**
+   * Remove Tag from Document.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param documentId {@link String}
+   * @param tagKey {@link String}
+   * @param tagValue {@link String}
+   * @return boolean
+   */
+  boolean removeTag(String siteId, String documentId, String tagKey, String tagValue);
+  
+  /**
    * Remove Tags from Document.
    *
    * @param siteId Optional Grouping siteId

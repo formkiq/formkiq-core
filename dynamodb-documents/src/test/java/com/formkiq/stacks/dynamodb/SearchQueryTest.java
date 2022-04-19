@@ -51,7 +51,7 @@ public class SearchQueryTest {
   @Test
   public void testIsValid02() {
     // given
-    this.sq.setTag(this.st);
+    this.sq.tag(this.st);
 
     // when
     try {
@@ -66,9 +66,9 @@ public class SearchQueryTest {
   @Test
   public void testIsValid03() {
     // given
-    this.st.setKey("category");
-    this.sq.setTag(this.st);
-    this.st.setEq("1");
+    this.st.key("category");
+    this.sq.tag(this.st);
+    this.st.eq("1");
 
     // when
     this.sq.isValid();

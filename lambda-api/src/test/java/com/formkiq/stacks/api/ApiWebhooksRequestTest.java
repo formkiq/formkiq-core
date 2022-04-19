@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static org.junit.Assert.assertEquals;
@@ -39,7 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
@@ -48,6 +50,8 @@ import com.formkiq.stacks.dynamodb.PaginationResults;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** Unit Tests for request /webhooks. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
   /** To Milliseconds. */
@@ -87,11 +91,9 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testGetWebhooks02() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      
-      newOutstream();
       
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
@@ -118,8 +120,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals("true", result.get("enabled"));
       
       verifyUrl(siteId, id, result);
-      
-      newOutstream();
       
       event = toRequestEvent("/request-get-webhooks01.json");
       addParameter(event, "siteId", siteId);
@@ -165,9 +165,9 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
-    String ttl = "87400";
+    String ttl = "90000";
     event.setBody("{\"name\":\"john smith\",\"ttl\":\"" + ttl + "\"}");
     
     // when
@@ -192,7 +192,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     
     long epoch = Long.parseLong(obj.getString("TimeToLive"));
     ZonedDateTime ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
-    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).plusHours(1);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
 
     // given
@@ -205,10 +205,8 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertNull(webhookService.findTag(null, id, "category").getString("TimeToLive"));
     
     // update ttl/name
-    newOutstream();
-    
     // given
-    ttl = "174800";
+    ttl = "180000";
     event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
     event.setPathParameters(Map.of("webhookId", id));
     event.setBody("{\"name\":\"john smith2\",\"ttl\":\"" + ttl + "\"}");
@@ -227,7 +225,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     
     epoch = Long.parseLong(obj.getString("TimeToLive"));
     ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
-    now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2);
+    now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2).plusHours(2);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
     
     DynamicObject dtag = webhookService.findTag(null, id, "category");
@@ -248,12 +246,10 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl",
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
-      
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
       
@@ -318,7 +314,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks03() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl",
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
     String siteId = UUID.randomUUID().toString();
@@ -376,8 +372,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         String response = null;
 
         for (int i = 0; i <= 2; i++) {
-          newOutstream();
-
           ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
           addParameter(event, "siteId", siteId);
           event.setBody("{\"name\":\"john smith\"}");
@@ -403,7 +397,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl",
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
     ApiGatewayRequestEvent eventPost = toRequestEvent("/request-post-webhooks01.json");
@@ -418,7 +412,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         
     // when
     String responsePost = handleRequest(eventPost);
-    newOutstream();
     final String response = handleRequest(event);
     
     // then
@@ -450,7 +443,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
     
     // when
-    newOutstream();
     responsePost = handleRequest(eventPost);
     
     // then
@@ -471,7 +463,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks06() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
     event.setBody("{\"name\":\"john smith\",\"enabled\":\"private\"}");
     

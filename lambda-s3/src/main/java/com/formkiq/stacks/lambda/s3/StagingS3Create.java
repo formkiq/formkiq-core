@@ -48,7 +48,6 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -242,7 +241,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(s -> s.getValue())
         .orElse("System");
 
-    DocumentItem doc = new DynamicDocumentItem(Collections.emptyMap());
+    DynamicDocumentItem doc = new DynamicDocumentItem(Collections.emptyMap());
     doc.setDocumentId(documentId);
     doc.setContentLength(metadata.getContentLength());
     doc.setContentType(metadata.getContentType());
@@ -254,7 +253,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       doc.setPath(key);
     }
 
-    this.service.saveDocument(siteId, doc, null);
+    this.service.saveDocumentItemWithTag(siteId, doc);
 
     this.s3.copyObject(s3Client, bucket, originalkey, this.documentsBucket, destKey,
         metadata.getContentType());

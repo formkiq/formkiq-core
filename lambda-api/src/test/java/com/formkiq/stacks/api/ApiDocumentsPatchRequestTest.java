@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -34,7 +35,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -42,6 +44,8 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 
 /** Unit Tests for request PATCH /documents/{documentId}. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
   /**
@@ -52,7 +56,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
 
       // given
       String userId = "jsmith";
@@ -85,7 +88,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -106,7 +108,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
 
       // given
       String documentId = UUID.randomUUID().toString();
@@ -136,7 +137,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePatchDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      newOutstream();
 
       // given
       Map<String, String> map = new HashMap<>(getMap());
@@ -198,7 +198,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
         : resp.get("documentId") + ".fkb64";
 
     assertTrue(
-        getLogger().containsString("s3 putObject " + key + " into bucket " + getStages3bucket()));
+        getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
     assertNotNull(UUID.fromString(resp.getString("documentId")));
   }
 

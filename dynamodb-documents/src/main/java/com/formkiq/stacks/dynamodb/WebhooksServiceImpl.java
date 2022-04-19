@@ -87,14 +87,14 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
       DocumentTagToAttributeValueMap mapper =
           new DocumentTagToAttributeValueMap(this.df, PREFIX_WEBHOOK, siteId, webhookId);
 
-      List<Map<String, AttributeValue>> valueList =
+      List<List<Map<String, AttributeValue>>> valueList =
           tags.stream().map(mapper).collect(Collectors.toList());
       
       if (ttl != null) {
-        valueList.forEach(v -> addTimeToLive(v, ttl));
+        valueList.forEach(l -> l.forEach(v -> addTimeToLive(v, ttl)));
       }
 
-      List<Put> putitems = valueList.stream()
+      List<Put> putitems = valueList.stream().flatMap(List::stream)
           .map(values -> Put.builder().tableName(this.documentTableName).item(values).build())
           .collect(Collectors.toList());
 

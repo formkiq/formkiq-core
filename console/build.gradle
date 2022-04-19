@@ -12,17 +12,24 @@ dependencies {
 	
 	testImplementation project(':aws-cognito')
     testImplementation group: 'junit', name: 'junit', version:'4.+'
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'	
+	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
+	
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
 }
 
 task buildZip(type: Zip) {
 	dependsOn check
-	archiveName "console-installer.zip"
-    destinationDir(file("${buildDir}"))
+	archiveFileName = "console-installer.zip"
+    destinationDirectory = file("${buildDir}")
     from compileJava
     from processResources              
     into('lib') {
-        from configurations.default
+        from configurations.runtimeClasspath
     }           
 }
 
@@ -38,15 +45,7 @@ task buildUnzip(type: Copy) {
 test {
   failFast = true
   exclude 'com/formkiq/stacks/console/awstest/**'
-  
-  doFirst {
-    macroLocalStackStart()
-	macroDynamoDbStart()
-  }
-  
-  doLast {
-    macroDockerComposeDown()
-  }
+  useJUnitPlatform()
 }
 
 task testaws(type: Test) {
@@ -75,7 +74,7 @@ task assembleTemplate {
 		}
 		// build SAR distribution
 		//exec {
-		//	commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --s3-bucket ${distrobucket} --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml"
+		//	commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --resolve-s3 --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/console/template.yaml"
 		//}
 	}
 }

@@ -8,11 +8,11 @@ Resources:
           title: 
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.6.2"
+          version: "1.6.3"
         paths:
           /version:
             get:
-              description: Return the version of FormKiQ.
+              description: Return the version of FormKiQ
               tags:
               - Miscellaneous    
               responses:
@@ -35,10 +35,10 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"        
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"       
           /sites:
             get:
-              description: Sites User belongs to
+              description: Returns the list of sites the user has access to
               tags:
               - Miscellaneous
               responses:
@@ -61,27 +61,31 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"        
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"       
           /documents:
             get:
               tags:
               - Documents
-              description: Returns a list of documents in reverse inserted date order.
+              description: Returns a list of most recent added documents order by inserted DESC
               parameters:
               - name: "date"
                 in: "query"
+                description: "Fetch documents inserted on a certain date (yyyy-MM-dd)"
                 schema:
                   type: "string"
               - name: "tz"
                 in: "query"
+                description: "UTC offset to apply to date parameter (IE: -0600)"
                 schema:
                   type: "string"
               - name: "next"
                 in: "query"
+                description: "Next page of results token"
                 schema:
                   type: "string"
               - name: "previous"
                 in: "query"
+                description: "Previous page of results token"
                 schema:
                   type: "string"
               - $ref: '#/components/parameters/siteIdParam'
@@ -108,7 +112,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Save document.
+              description: Saves a new document
               tags:
               - Documents      
               parameters:
@@ -119,6 +123,24 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/DocumentBody'
+                    examples:
+                      Simple_File:
+                        value:
+                          path: test.txt
+                          contentType: text/plain
+                          content: This is sample data file
+                          tags: [key:type,value:sample]
+                      Nested_Document:
+                        value:
+                          path: doc1.txt
+                          contentType: text/plain
+                          content: This is document1 content
+                          tags: [key:type,value:document1]
+                          documents: [{
+                            contentType: text/plain,
+                            content: This is sub document1 content,
+                            tags: [key:type,value:subdocument1]
+                          }]
               responses:
                 '201':
                   description: 201 response
@@ -139,21 +161,12 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}:
             get:
-              description: Get document details.
+              description: Retrieves a document details
               tags:
               - Documents      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
-              - name: "next"
-                in: "query"
-                schema:
-                  type: "string"
-              - name: "previous"
-                in: "query"
-                schema:
-                  type: "string"              
               responses:
                 '200':
                   description: 200 response
@@ -173,7 +186,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
-              description: Update document details.
+              description: Update a document details
               tags:
               - Documents      
               parameters:
@@ -204,7 +217,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete document.
+              description: Delete a document
               tags:
               - Documents      
               parameters:
@@ -219,19 +232,15 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/versions:
             get:
-              description: Get document versions.
+              description: Get a listing of document content versions
               tags:
               - Documents      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - name: "tz"
-                in: "query"
-                schema:
-                  type: "string"
               - name: next
                 in: query
-                description: Next Page Token.
+                description: "Next page of results token"
                 schema:
                   type: string
               responses:
@@ -254,7 +263,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/content:
             get:
-              description: Get document content.
+              description: Get a document's contents
               tags:
               - Documents      
               parameters:
@@ -283,21 +292,21 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags:
             get:
-              description: Get document tags.
+              description: Get a listing of a document's tags
               tags:
-              - Documents      
+              - Document Tags     
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/limitParam'              
               - name: next
                 in: query
-                description: Next Page Token.
+                description: "Next page of results token"
                 schema:
                   type: string
               - name: previous
                 in: query
-                description: Previous Page Token.
+                description: "Previous page of results token"
                 schema:
                   type: string
               responses:
@@ -319,9 +328,9 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Add Tag to document.
+              description: Add tag(s) to a document
               tags:
-              - Documents      
+              - Document Tags      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -339,6 +348,10 @@ Resources:
                         value:
                           key: category
                           value: person
+                      Add_Key_and_Values_Tag:
+                        value:
+                          key: category
+                          values: [person,canadian]
               responses:
                 '201':
                   $ref: '#/components/responses/200Cors'
@@ -346,11 +359,32 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /documents/{documentId}/tags#:
+            post:
+              description: Add tag(s) to a document
+              tags:
+              - Document Tags      
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentTagsPost'
+              responses:
+                '201':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
           /documents/{documentId}/tags/{tagKey}:
             get:
-              description: Get document tags.
+              description: Get a document's tag by key
               tags:
-              - Documents      
+              - Document Tags     
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -374,9 +408,9 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
-              description: Replace Tag value.
+              description: Update the value(s) of a document's tag
               tags:
-              - Documents      
+              - Document Tags      
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -395,9 +429,9 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete document tags.
+              description: Delete a document's tag
               tags:
-              - Documents      
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -409,9 +443,26 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/tags/{tagKey}/{tagValue}:
+            delete:
+              description: Delete a document's valid tag/value combination
+              tags:
+              - Document Tags      
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/tagvalueParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/url:
             get:
-              description: Returns a URL to fetch the document.
+              description: Returns a url for the document's contents that expires (default 48 hours)
               tags:
               - Documents      
               parameters:
@@ -439,13 +490,13 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/upload:
             get:
-              description: Returns URL that can accept uploads largers than 5 MB.
+              description: Returns a url that can be used to upload a document that is larger than 5 MB
               tags:
               - Documents      
               parameters:
                 - name: path
                   in: query
-                  description: The upload file's path.
+                  description: The upload file's path
                   schema:
                     type: string
                 - $ref: '#/components/parameters/siteIdParam'
@@ -476,7 +527,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
-              description: Returns URL to upload content larger than 5 MB.
+              description: Returns a url that can be used to upload documents larger than 5 MB for a specific documentId
               tags:
               - Documents      
               responses:
@@ -499,20 +550,20 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /search:
             post:
-              description: Searches for Documents.
+              description: Document search query request
               tags:
-              - Search      
+              - Document Search      
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/limitParam'              
               - name: next
                 in: query
-                description: Next Page Token.
+                description: "Next page of results token"
                 schema:
                   type: string
               - name: previous
                 in: query
-                description: Previous Page Token.
+                description: "Previous page of results token"
                 schema:
                   type: string
               requestBody:
@@ -539,6 +590,13 @@ Resources:
                             tag:
                               key: firstname
                               beginsWith: jo
+                      Search_By_Value_for_Specific_Documents:
+                        value:
+                          query:
+                            tag:
+                              key: category
+                              eq: person
+                            documentIds: ["1", "2"]                              
               responses:
                 '200':
                   description: 200 response
@@ -552,14 +610,14 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentItemsResults'
+                        $ref: '#/components/schemas/DocumentSearchResults'
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/documents:
             post:
-              description: Save document.
+              description: Allows unauthenticated creation of new documents, must be enabled during installation (disabled by default)
               tags:
               - Public      
               parameters:
@@ -588,36 +646,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /public/webhooks/{webhooks+}:
             post:
-              description: Public Webhook.
-              tags:
-              - Public      
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/webhooksParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object                
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DocumentId'
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              description: Public Webhook.
+              description: Incoming public webhook, must be enabled during installation (disabled by default)
               tags:
               - Public      
               parameters:
@@ -647,7 +676,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /private/webhooks/{webhooks+}:
             post:
-              description: Private Webhook.
+              description: Incoming private webhook
               tags:
               - Webhooks      
               parameters:
@@ -674,38 +703,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/DocumentId'
               security:
-              - AuthorizationCognito: []                        
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              description: Private Webhook.
-              tags:
-              - Webhooks      
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/webhooksParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object                
-              responses:
-                '200':
-                  description: 200 response
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DocumentId'
-              security:
-              - AuthorizationCognito: []                        
+              - sigv4: []                        
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks:
@@ -737,7 +735,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Save Webhook.
+              description: Save a new webhook
               tags:
               - Webhooks      
               parameters:
@@ -770,7 +768,7 @@ Resources:
             get:
               tags:
               - Webhooks
-              description: Returns a webhook
+              description: Returns a webhook details
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
@@ -796,7 +794,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete webhook.
+              description: Deletes a webhook
               tags:
               - Webhooks      
               parameters:
@@ -810,12 +808,18 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
             patch:
-              description: Updates Webhook.
+              description: Updates a webhook
               tags:
               - Webhooks      
               parameters:
               - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/WebhookBody'              
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -825,7 +829,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks/{webhookId}/tags:
             get:
-              description: Get Webhook tags.
+              description: Get a webhook's tags
               tags:
               - Webhooks      
               parameters:
@@ -850,7 +854,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Add Tag to Webhook.
+              description: Add a tag to a webhook
               tags:
               - Webhooks      
               parameters:
@@ -893,7 +897,7 @@ Resources:
                 type: string        
           responses:
             200Cors:
-              description: Options Response.
+              description: Options Response
               headers:
                 Access-Control-Allow-Origin:
                   schema:
@@ -930,7 +934,7 @@ Resources:
             siteIdParam:
               name: siteId
               in: query
-              description: Site Identifier.
+              description: Site Identifier
               required: false
               schema:
                 type: string
@@ -944,55 +948,71 @@ Resources:
             documentIdParam:
               name: documentId
               in: path
-              description: Document Identifier.
+              description: Document Identifier
               required: true
               schema:
                 type: string
             tagkeyParam:
               name: tagKey
               in: path
-              description: Tag Key.
+              description: Tag Key
+              required: true
+              schema:
+                type: string
+            tagvalueParam:
+              name: tagValue
+              in: path
+              description: Tag Key Value
               required: true
               schema:
                 type: string
             contentLengthParam:
               name: contentLength
               in: query
-              description: Indicates the size of the entity-body.
+              description: Indicates the size of the entity-body
               required: false
               schema:
                 type: integer
             durationParam:
               name: duration
               in: query
-              description: Indicates the number of hours request is valid for.
+              description: Indicates the number of hours request is valid for
               required: true
               schema:
                 type: integer
           schemas:
             DocumentItemTagValueBody:
-              required:
-              - "value"
               type: "object"
               properties:
                 value:
                   type: "string"
+                  description: "Tag value"
+                values:
+                  type: "array"
+                  description: "Tag values"
+                  items:
+                    type: "string"
             DocumentContent:
               type: "object"
               properties:
                 content:
                   type: "string"
+                  description: "Document content"
                 contentUrl:
                   type: "string"
+                  description: "Url to document content"
                 contentType:
                   type: "string"
+                  description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
+                  description: "Is Content Base64 encoded"
             DocumentItemsVersions:
               type: "object"
               properties:
                 next:
                   type: "string"
+                  description: "Next page of results token"
                 versions:
                   $ref: "#/components/schemas/DocumentItemVersions"    
             DocumentItemsTags:
@@ -1000,25 +1020,35 @@ Resources:
               properties:
                 next:
                   type: "string"
+                  description: "Next page of results token"
                 previous:
                   type: "string"
+                  description: "Previous page of results token"
                 tags:
                   $ref: "#/components/schemas/DocumentItemTags"
             DocumentItemTags:
               type: "array"
+              description: "List of tags"
               items:
                 $ref: "#/components/schemas/DocumentItemTag"
             DocumentItemVersions:
               type: "array"
+              description: "List of document versions"
               items:
                 $ref: "#/components/schemas/DocumentItemVersion"
             DocumentSearchTag:
               required:
               - "tag"
               type: "object"
+              description: "Document tag search criteria"
               properties:
                 tag:
                   $ref: "#/components/schemas/DocumentSearchItemTag"
+                documentIds:
+                  type: array
+                  description: "List of DocumentIds to filter search results on"
+                  items:
+                    type: "string"
             DocumentId:
               required:
               - "documentId"
@@ -1027,8 +1057,10 @@ Resources:
                 documentId:
                   type: "string"
                   format: "uuid"
+                  description: "Document Identifier"
                 siteId:
                   type: "string"
+                  description: "Site Identifier"
             WebhookPostResponse:
               type: "object"
               properties:
@@ -1036,33 +1068,42 @@ Resources:
                   type: "string"
                   format: "uuid"
                 siteId:
-                  type: "string"                  
+                  type: "string"
+                  description: "Site Identifier"                  
             DocumentPostResponse:
               type: "object"
               properties:
                 documentId:
                   type: "string"
                   format: "uuid"
+                  description: "Document Identifier"
                 siteId:
                   type: "string"
+                  description: "Site Identifier"
                 uploadUrl:
                   type: "string"
+                  description: "Url to upload document to"
                 documents:
                   type: "array"
+                  description: "List of related documents"
                   items:
                     type: "object"
                     properties:
                       documentId:
                         type: "string"
+                        description: "Document Identifier"
                       uploadUrl:
                         type: "string"
+                        description: "Url to upload document to"
             DocumentUrl:
               type: "object"
               properties:
                 documentId:
                   type: "string"
+                  description: "Document Identifier"
                 url:
                   type: "string"
+                  description: "Document content url"
             DocumentItem:
               required:
               - "documentId"
@@ -1071,59 +1112,82 @@ Resources:
               properties:
                 next:
                   type: "string"
+                  description: "Next page of results token"
                 previous:
                   type: "string"
+                  description: "Previous page of results token"
                 siteId:
                   type: "string"
+                  description: "Site Identifier"
                 path:
                   type: "string"
+                  description: "Path or Name of document"
                 insertedDate:
                   type: "string"
                   format: "date-time"
+                  description: "Inserted Timestamp"
                 checksum:
                   type: "string"
+                  description: "Document checksum, changes when document file changes"
                 documentId:
                   type: "string"
                   format: "uuid"
+                  description: "Document Identifier"
                 contentType:
                   type: "string"
+                  description: "Document Content-Type"
                 userId:
                   type: "string"
+                  description: "User who added document"
                 contentLength:
                   type: "integer"
+                  description: "Document size"
                 versionId:
                   type: "string"
+                  description: "Document version"
                 belongsToDocumentId:
                   type: "string"
+                  description: "Parent Document Identifier"
                 documents:
                   type: "array"
+                  description: "List of related documents"
                   items:
                     type: "object"
                     properties:
                       path:
                         type: "string"
+                        description: "Path or Name of document"
                       insertedDate:
                         type: "string"
                         format: "date-time"
+                        description: "Inserted Timestamp"
                       checksum:
                         type: "string"
+                        description: "Document checksum, changes when document file changes"
                       documentId:
                         type: "string"
                         format: "uuid"
+                        description: "Document Identifier"
                       contentType:
                         type: "string"
+                        description: "Document Content-Type"
                       userId:
                         type: "string"
+                        description: "User who added document"
                       contentLength:
                         type: "integer"
+                        description: "Document size"
                       versionId:
                         type: "string"
+                        description: "Document version"
                       belongsToDocumentId:
-                        type: "string"                        
+                        type: "string"
+                        description: "Parent Document Identifier"
             DocumentSearchBody:
               required:
               - "query"
               type: "object"
+              description: "Document search tag criteria"
               properties:
                 query:
                   $ref: "#/components/schemas/DocumentSearchTag"
@@ -1134,10 +1198,13 @@ Resources:
               properties:
                 beginsWith:
                   type: "string"
+                  description: "Searches for strings that begin with"
                 eq:
                   type: "string"
+                  description: "Searches for strings that eq"
                 key:
                   type: "string"
+                  description: "Tag key to search"                
             WebhookBody:
               required:
               - "name"
@@ -1145,19 +1212,25 @@ Resources:
               properties:
                 name:
                   type: "string"
+                  description: "Name of webhook"
                 ttl:
                   type: "string"
+                  description: "Webhook time to live (expiry)"
                 enabled:
-                  type: "string"                  
+                  type: "string"
+                  description: "Is webhook enabled"
                 tags:
                   type: "array"
+                  description: "List of tags"
                   items:
                     type: "object"
                     properties:
                       key:
                         type: "string"
+                        description: "Tag key"
                       value:
-                        type: "string"                  
+                        type: "string"
+                        description: "Tag value"                  
             DocumentBody:
               required:
               - "content"
@@ -1165,43 +1238,58 @@ Resources:
               properties:
                 path:
                   type: "string"
+                  description: "Path or Name of document"
                 contentType:
                   type: "string"
+                  description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
+                  description: "Is Content Base64 encoded"
                 content:
                   type: "string"
+                  description: "Document content"
                 tags:
                   type: "array"
+                  description: "List of tags"
                   items:
                     type: "object"
                     properties:
                       key:
                         type: "string"
+                        description: "Tag key"
                       value:
                         type: "string"
+                        description: "Tag value"
                 documents:
                   type: "array"
+                  description: "List of related documents"
                   items:
                     type: "object"
                     properties:
                       path:
                         type: "string"
+                        description: "Path or Name of document"
                       contentType:
                         type: "string"
+                        description: "Document Content-Type"
                       isBase64:
                         type: "boolean"
+                        description: "Is Content Base64 encoded"
                       content:
                         type: "string"
+                        description: "Document content"
                       tags:
                         type: "array"
+                        description: "List of tags"
                         items:
                           type: "object"
                           properties:
                             key:
                               type: "string"
+                              description: "Tag key"
                             value:
                               type: "string"
+                              description: "Tag value"
             DocumentItemVersion:
               required:
               - "versionId"
@@ -1209,8 +1297,24 @@ Resources:
               properties:
                 versionId:
                   type: "string"
+                  description: "Document version"
                 lastModifiedDate:
                   type: "string"
+                  description: "Last modified date"
+            DocumentTagsPost:
+              required:
+              - "tags"            
+              type: "object"
+              properties:
+                tags:
+                  $ref: "#/components/schemas/DocumentItemTags"
+              example:
+                tags:
+                  - key: category
+                  - key: category
+                    value: person
+                  - key: category
+                    values: [person,car]                  
             DocumentItemTag:
               required:
               - "key"
@@ -1219,50 +1323,134 @@ Resources:
               properties:
                 insertedDate:
                   type: "string"
+                  description: "Inserted Timestamp"
                 documentId:
                   type: "string"
+                  description: "Document Identifier"
                 type:
                   type: "string"
+                  description: "Tag type"
                 userId:
                   type: "string"
+                  description: "User who added document"
                 value:
                   type: "string"
+                  description: "Tag value"
+                values:
+                  type: "array"
+                  description: "Tag values"
+                  items:
+                    type: "string"
+                    description: "Tag value"
                 key:
                   type: "string"
-            DocumentItemsResults:
+                  description: "Tag key"
+            DocumentSearchResults:
               type: "object"
               properties:
                 next:
                   type: "string"
+                  description: "Next page of results token"
                 previous:
                   type: "string"
+                  description: "Previous page of results token"
                 documents:
-                  $ref: "#/components/schemas/DocumentItems"
-            DocumentItems:
+                  $ref: "#/components/schemas/SearchDocumentItems"
+            SearchDocumentItems:
               type: "array"
+              description: "List of search result documents"
               items:
                 type: "object"
                 properties:
                   siteId:
                     type: "string"
+                    description: "Site Identifier"
                   path:
                     type: "string"
+                    description: "Path or Name of document"
                   insertedDate:
                     type: "string"
                     format: "date-time"
+                    description: "Inserted Timestamp"
                   checksum:
                     type: "string"
+                    description: "Document checksum, changes when document file changes"
                   documentId:
                     type: "string"
                     format: "uuid"
+                    description: "Document Identifier"
                   contentType:
                     type: "string"
+                    description: "Document Content-Type"
                   userId:
                     type: "string"
+                    description: "User who added document"
                   contentLength:
                     type: "integer"
+                    description: "Document size"
                   versionId:
                     type: "string"
+                    description: "Document version"
+                  matchedTag:
+                    $ref: "#/components/schemas/DocumentSearchMatchTag"
+            DocumentSearchMatchTag:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Tag key"
+                value:
+                  type: "string"
+                  description: "Tag value"
+                type:
+                  type: "string"
+                  description: "Tag type"
+            DocumentItemsResults:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                previous:
+                  type: "string"
+                  description: "Previous page of results token"
+                documents:
+                  $ref: "#/components/schemas/DocumentItems"
+            DocumentItems:
+              type: "array"
+              description: "List of documents"
+              items:
+                type: "object"
+                properties:
+                  siteId:
+                    type: "string"
+                    description: "Site Identifier"
+                  path:
+                    type: "string"
+                    description: "Path or Name of document"
+                  insertedDate:
+                    type: "string"
+                    format: "date-time"
+                    description: "Inserted Timestamp"
+                  checksum:
+                    type: "string"
+                    description: "Document checksum, changes when document file changes"
+                  documentId:
+                    type: "string"
+                    format: "uuid"
+                    description: "Document Identifier"
+                  contentType:
+                    type: "string"
+                    description: "Document Content-Type"
+                  userId:
+                    type: "string"
+                    description: "User who added document"
+                  contentLength:
+                    type: "integer"
+                    description: "Document size"
+                  versionId:
+                    type: "string"
+                    description: "Document version"
             WebhookResults:
               type: "object"
               properties:
@@ -1270,6 +1458,7 @@ Resources:
                   $ref: "#/components/schemas/Webhooks"
             Webhooks:
               type: "array"
+              description: "List of webhooks"
               items:
                 $ref: "#/components/schemas/Webhook"
             Webhook:
@@ -1277,29 +1466,38 @@ Resources:
               properties:
                 siteId:
                   type: "string"
+                  description: "Site Identifier"
                 name:
                   type: "string"
+                  description: "Webhook name"
                 url:
-                  type: "string"                    
+                  type: "string"
+                  description: "Webhook url"
                 insertedDate:
                   type: "string"
                   format: "date-time"
+                  description: "Inserted Timestamp"
                 id:
                   type: "string"
                   format: "uuid"
+                  description: "Webhook Identifier"
                 userId:
                   type: "string"
+                  description: "User who added document"                    
             WebhookTags:
               type: "object"
               properties:
                 next:
                   type: "string"
+                  description: "Next page of results token"
                 previous:
                   type: "string"
+                  description: "Previous page of results token"
                 tags:
                   $ref: "#/components/schemas/WebhookTagsList"
             WebhookTagsList:
               type: "array"
+              description: "List of webhook tags"
               items:
                 $ref: "#/components/schemas/WebhookTag"
             WebhookTag:
@@ -1310,23 +1508,31 @@ Resources:
               properties:
                 insertedDate:
                   type: "string"
+                  description: "Inserted Timestamp"
                 webhookId:
                   type: "string"
+                  description: "Webhook Identifier"
                 type:
                   type: "string"
+                  description: "Tag type"
                 userId:
                   type: "string"
+                  description: "User who added document"
                 value:
                   type: "string"
+                  description: "Tag value"
                 key:
-                  type: "string"                    
+                  type: "string"
+                  description: "Tag key"
             Version:
               type: object
               properties:
                 version:
                   type: string
+                  description: "FormKiQ version"
                 type:
-                  type: string          
+                  type: string
+                  description: "FormKiQ type"
             Sites:
               type: object
               properties:
@@ -1334,6 +1540,7 @@ Resources:
                   $ref: "#/components/schemas/SitesList"
             SitesList:
               type: "array"
+              description: "List of sites"
               items:
                 $ref: "#/components/schemas/Site"
             Site:
@@ -1341,8 +1548,10 @@ Resources:
               properties:
                 siteId:
                   type: "string"
+                  description: "Site Identifier"
                 uploadEmail:
                   type: "string"
+                  description: "SiteId document upload email address"
           securitySchemes:
             AuthorizationCognito:
               type: oauth2

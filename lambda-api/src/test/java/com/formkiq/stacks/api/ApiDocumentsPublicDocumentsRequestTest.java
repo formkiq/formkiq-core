@@ -29,11 +29,14 @@ import static org.junit.Assert.assertNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 
 /** Unit Tests for request POST /public/documents. */
+@ExtendWith(LocalStackExtension.class)
+@ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandler {
 
   /**
@@ -45,10 +48,8 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
   @Test
   public void testPostPublicDocuments01() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    setEnvironment("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
-
-    newOutstream();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-documents03.json");
     event.getRequestContext().setAuthorizer(new HashMap<>());
@@ -89,9 +90,8 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
   @Test
   public void testPostPublicForms02() throws Exception {
     // given
-    getMap().put("ENABLE_PUBLIC_URLS", "true");
+    setEnvironment("ENABLE_PUBLIC_URLS", "true");
     createApiRequestHandler(getMap());
-    newOutstream();
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-documents03.json");
     setCognitoGroup(event, "admins");
@@ -116,8 +116,6 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
   @Test
   public void testPostPublicForms03() throws Exception {
     // givens
-    newOutstream();
-
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-documents03.json");
     event.getRequestContext().setAuthorizer(new HashMap<>());
     event.getRequestContext().setIdentity(new HashMap<>());

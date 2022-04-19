@@ -3,15 +3,21 @@ description = "DocumentStore Dynamodb"
 
 dependencies {
 
-	implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.15.25'
-	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.15.25'
+	implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.17.167'
+	implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.17.167'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
     
 	testImplementation project(':aws-ssm')
 	testImplementation 'org.slf4j:slf4j-api:1.8.0-beta4'
     testImplementation group: 'junit', name: 'junit', version:'4.+'
-	testImplementation group: 'com.google.guava', name: 'guava', version: '30.1.1-jre'
+	testImplementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
+	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.1'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
 	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'
@@ -27,8 +33,8 @@ task createZip(type: Zip) {
    from "nodejs"
    include "*"
    include "*/*"
-   archiveName "documentsmetrics-${project.version}.zip"
-   destinationDir(file("$buildDir/distributions"))
+   archiveFileName = "documentsmetrics-${project.version}.zip"
+   destinationDirectory = file("$buildDir/distributions")
 }
 
 createZip.dependsOn check
@@ -36,15 +42,8 @@ build.dependsOn createZip
 
 test {
   failFast = true
-  exclude 'com/formkiq/stacks/dynamodb/awstest/**'
-  
-  doFirst {
-    macroDynamoDbStart()
-  }
-  
-  doLast {
-    macroDockerComposeDown()
-  }
+  useJUnitPlatform()
+  exclude 'com/formkiq/stacks/dynamodb/awstest/**' 
 }
 
 task testaws(type: Test) {
