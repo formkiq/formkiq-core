@@ -11,7 +11,7 @@
                 - Miscellaneous
               responses:
                 200:
-                  description: "200 response"
+                  description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
                       schema:
@@ -32,12 +32,12 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites:
             get:
-              description: Returns the list of sites the user has access to
+              description: Returns the list of sites that the user has access to
               tags:
                 - Miscellaneous
               responses:
                 200:
-                  description: "200 response"
+                  description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
                       schema:
@@ -60,7 +60,7 @@
             get:
               tags:
                 - Documents
-              description: Returns a list of most recent added documents order by inserted DESC
+              description: Returns a list of the most recent documents added, ordered by inserted, descending
               parameters:
                 - name: "date"
                   in: "query"
@@ -86,7 +86,7 @@
                 - $ref: '#/components/parameters/limitParam'
               responses:
                 200:
-                  description: "200 response"
+                  description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
                       schema:
@@ -106,7 +106,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Saves a new document
+              description: Creates a new document; body may include document content if less than 5 MB
               tags:
                 - Documents
               parameters:
@@ -133,7 +133,7 @@
                           documents: [{contentType: text/plain, content: This is sub document1 content, tags: ['key:type', 'value:subdocument1']}]
               responses:
                 '201':
-                  description: 201 response
+                  description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -151,7 +151,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}:
             get:
-              description: Retrieves a document details
+              description: Retrieves a document's details, i.e., metadata
               tags:
                 - Documents
               parameters:
@@ -159,7 +159,7 @@
                 - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -176,7 +176,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
-              description: Update a document details
+              description: Update a document's details, i.e., metadata
               tags:
                 - Documents
               parameters:
@@ -190,7 +190,7 @@
                       $ref: '#/components/schemas/DocumentBody'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -235,7 +235,7 @@
                     type: string
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -262,7 +262,7 @@
                 - $ref: '#/components/parameters/versionIdParam'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -301,7 +301,7 @@
                     type: string
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -318,7 +318,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Add tag(s) to a document
+              description: Add a single tag to a document; endpoint also accepts a different body parameter for adding multiple tags at one time
               tags:
                 - Document Tags
               parameters:
@@ -351,7 +351,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags#:
             post:
-              description: Add tag(s) to a document
+              description: Add multiple tags to a document; endpoint also accepts a different body parameter for adding a single tag
               tags:
                 - Document Tags
               parameters:
@@ -372,7 +372,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags/{tagKey}:
             get:
-              description: Get a document's tag by key
+              description: Get a document tag by using its key
               tags:
                 - Document Tags
               parameters:
@@ -381,7 +381,7 @@
                 - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -398,7 +398,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
-              description: Update the value(s) of a document's tag
+              description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
               tags:
                 - Document Tags
               parameters:
@@ -419,7 +419,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete a document's tag
+              description: Delete a document tag by using its key
               tags:
                 - Document Tags
               parameters:
@@ -435,7 +435,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags/{tagKey}/{tagValue}:
             delete:
-              description: Delete a document's valid tag/value combination
+              description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
                 - Document Tags
               parameters:
@@ -452,7 +452,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/url:
             get:
-              description: Returns a url for the document's contents that expires (default 48 hours)
+              description: Returns a URL for the document's contents that expires (default is 48 hours)
               tags:
                 - Documents
               parameters:
@@ -462,7 +462,7 @@
                 - $ref: '#/components/parameters/durationParam'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -480,7 +480,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/upload:
             get:
-              description: Returns a url that can be used to upload a document that is larger than 5 MB
+              description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
               tags:
                 - Documents
               parameters:
@@ -494,7 +494,7 @@
                 - $ref: '#/components/parameters/durationParam'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -517,12 +517,12 @@
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/contentLengthParam'
                 - $ref: '#/components/parameters/durationParam'
-              description: Returns a url that can be used to upload documents larger than 5 MB for a specific documentId
+              description: Returns a URL that can be used to upload documents for a specific documentId (required for documents larger than 5 MB)
               tags:
                 - Documents
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -540,7 +540,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /search:
             post:
-              description: Document search query request
+              description: Document search query request; documents are searched primarily using a document tag key and optional tag value, while an optional documentIds parameter is also available in the DocumentSearchBody to filter within up to 100 documentIds
               tags:
                 - Document Search
               parameters:
@@ -589,7 +589,7 @@
                             documentIds: ["1", "2"]
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -607,7 +607,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/documents:
             post:
-              description: Allows unauthenticated creation of new documents, must be enabled during installation (disabled by default)
+              description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
               tags:
                 - Public
               parameters:
@@ -620,7 +620,7 @@
                       $ref: '#/components/schemas/DocumentBody'
               responses:
                 '201':
-                  description: 201 response
+                  description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -636,7 +636,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /public/webhooks/{webhooks+}:
             post:
-              description: Incoming public webhook, must be enabled during installation (disabled by default)
+              description: Receives an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
               tags:
                 - Public
               parameters:
@@ -650,7 +650,7 @@
                       type: object
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -666,7 +666,7 @@
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /private/webhooks/{webhooks+}:
             post:
-              description: Incoming private webhook
+              description: Receives an incoming private webhook and creates a document based on the webhook's body; requires authentication
               tags:
                 - Webhooks
               parameters:
@@ -680,7 +680,7 @@
                       type: object
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -700,12 +700,12 @@
             get:
               tags:
                 - Webhooks
-              description: Returns a list of webhooks
+              description: Returns a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
               responses:
                 200:
-                  description: "200 response"
+                  description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
                       schema:
@@ -725,7 +725,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Save a new webhook
+              description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               tags:
                 - Webhooks
               parameters:
@@ -738,7 +738,7 @@
                       $ref: '#/components/schemas/WebhookBody'
               responses:
                 '201':
-                  description: 201 response
+                  description: 201 CREATED
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -758,13 +758,13 @@
             get:
               tags:
                 - Webhooks
-              description: Returns a webhook details
+              description: Returns a webhook's details, i.e., its metadata
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/webhookIdParam'
               responses:
                 200:
-                  description: "200 response"
+                  description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
                       schema:
@@ -784,7 +784,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Deletes a webhook
+              description: Deletes a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
               tags:
                 - Webhooks
               parameters:
@@ -798,7 +798,7 @@
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
-              description: Updates a webhook
+              description: Updates a webhook's details, i.e., its metadata
               tags:
                 - Webhooks
               parameters:
@@ -827,7 +827,7 @@
                 - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
-                  description: 200 response
+                  description: 200 OK
                   headers:
                     Access-Control-Allow-Origin:
                       $ref: '#/components/headers/AccessControlAllowOrigin'
@@ -887,7 +887,7 @@
                 type: string
           responses:
             200Cors:
-              description: Options Response
+              description: 200 OK
               headers:
                 Access-Control-Allow-Origin:
                   schema:
@@ -1350,39 +1350,41 @@
               type: "array"
               description: "List of search result documents"
               items:
-                type: "object"
-                properties:
-                  siteId:
-                    type: "string"
-                    description: "Site Identifier"
-                  path:
-                    type: "string"
-                    description: "Path or Name of document"
-                  insertedDate:
-                    type: "string"
-                    format: "date-time"
-                    description: "Inserted Timestamp"
-                  checksum:
-                    type: "string"
-                    description: "Document checksum, changes when document file changes"
-                  documentId:
-                    type: "string"
-                    format: "uuid"
-                    description: "Document Identifier"
-                  contentType:
-                    type: "string"
-                    description: "Document Content-Type"
-                  userId:
-                    type: "string"
-                    description: "User who added document"
-                  contentLength:
-                    type: "integer"
-                    description: "Document size"
-                  versionId:
-                    type: "string"
-                    description: "Document version"
-                  matchedTag:
-                    $ref: "#/components/schemas/DocumentSearchMatchTag"
+                $ref: "#/components/schemas/SearchDocumentItem"
+            SearchDocumentItem:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                contentLength:
+                  type: "integer"
+                  description: "Document size"
+                versionId:
+                  type: "string"
+                  description: "Document version"
+                matchedTag:
+                  $ref: "#/components/schemas/DocumentSearchMatchTag"
             DocumentSearchMatchTag:
               type: "object"
               properties:
@@ -1405,42 +1407,44 @@
                   type: "string"
                   description: "Previous page of results token"
                 documents:
-                  $ref: "#/components/schemas/DocumentItems"
-            DocumentItems:
+                  $ref: "#/components/schemas/DocumentItemResults"
+            DocumentItemResults:
               type: "array"
               description: "List of documents"
               items:
-                type: "object"
-                properties:
-                  siteId:
-                    type: "string"
-                    description: "Site Identifier"
-                  path:
-                    type: "string"
-                    description: "Path or Name of document"
-                  insertedDate:
-                    type: "string"
-                    format: "date-time"
-                    description: "Inserted Timestamp"
-                  checksum:
-                    type: "string"
-                    description: "Document checksum, changes when document file changes"
-                  documentId:
-                    type: "string"
-                    format: "uuid"
-                    description: "Document Identifier"
-                  contentType:
-                    type: "string"
-                    description: "Document Content-Type"
-                  userId:
-                    type: "string"
-                    description: "User who added document"
-                  contentLength:
-                    type: "integer"
-                    description: "Document size"
-                  versionId:
-                    type: "string"
-                    description: "Document version"
+                $ref: "#/components/schemas/DocumentItemResult"
+            DocumentItemResult:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                contentLength:
+                  type: "integer"
+                  description: "Document size"
+                versionId:
+                  type: "string"
+                  description: "Document version"
             WebhookResults:
               type: "object"
               properties:
