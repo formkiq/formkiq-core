@@ -547,11 +547,11 @@ Outputs:
       !Ref Cache
       
   DocumentsS3Buckets:
-    Description: Document Bucket.
+    Description: Documents Bucket.
     Value: !Ref DocumentsS3Buckets
     
   DocumentsStageS3Bucket:
-    Description: Document Bucket.
+    Description: Documents Staging Bucket.
     Value: !Ref DocumentsStageS3Bucket
     
   DocumentsUpdateQueueUrl:

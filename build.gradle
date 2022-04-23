@@ -6,7 +6,7 @@ plugins {
   id 'com.diffplug.spotless' version '6.4.2'
   id 'com.github.ben-manes.versions' version '0.42.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.1.0'
-  id 'de.undercouch.download' version '5.0.4'
+  id 'de.undercouch.download' version '5.0.5'
 }
 
 repositories { mavenCentral() }
@@ -19,7 +19,7 @@ spotless {
 }
 
 allprojects {
-  version = '1.6.0'
+  version = '1.6.1'
   ext.awsCognitoVersion = '1.3.4'
   group = 'com.formkiq.stacks'
 }
@@ -158,6 +158,51 @@ task undeploy {
 			commandLine "bash", "-c", "aws iam get-group --group-name ${group.toString().trim()} --profile ${testprofile} | jq -r '.Users[].UserName' | xargs -I{} aws iam remove-user-from-group --group-name ${group.toString().trim()} --user-name {} --region ${testregion} --profile ${testprofile}"
 			ignoreExitValue = true
   		}
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} aws s3api put-bucket-versioning --bucket formkiq-core-${testappenvironment}-staging-{} --versioning-configuration Status=Suspended --region ${testregion} --profile ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} aws s3api put-bucket-versioning --bucket formkiq-core-${testappenvironment}-documents-{} --versioning-configuration Status=Suspended --region ${testregion} --profile ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		
+  		// empty buckets
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} python3 ${project.projectDir}/emptyVersionedBucket.py -b formkiq-core-${testappenvironment}-console-{} -p ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} python3 ${project.projectDir}/emptyVersionedBucket.py -b formkiq-core-${testappenvironment}-staging-{} -p ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} python3 ${project.projectDir}/emptyVersionedBucket.py -b formkiq-core-${testappenvironment}-documents-{} -p ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		  		
+  		// delete buckets
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} aws s3 rb s3://formkiq-core-${testappenvironment}-console-{} --force --region ${testregion} --profile ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} aws s3 rb s3://formkiq-core-${testappenvironment}-staging-{} --force --region ${testregion} --profile ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		exec {
+  			commandLine "bash", "-c", "aws sts get-caller-identity --profile ${testprofile} | jq -r '.Account' | xargs -I{} aws s3 rb s3://formkiq-core-${testappenvironment}-documents-{} --force --region ${testregion} --profile ${testprofile}"
+  			ignoreExitValue = true
+  		}
+  		// sam delete
+  		exec {
+			commandLine "bash", "-c", "sam delete --stack-name formkiq-core-${testappenvironment} --no-prompts --region ${testregion} --profile ${testprofile}"
+		}
+		// delete cloudwatch logs
+		exec {
+			commandLine "bash", "-c", "aws logs describe-log-groups --log-group-name-prefix /aws/lambda/formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}  | jq -r '.logGroups[].logGroupName' | xargs -I{} aws logs delete-log-group --log-group-name {} --region ${testregion} --profile ${testprofile}"
+  		}
+  		/*
 		exec {
 			commandLine "bash", "-c", "aws cloudformation delete-stack --stack-name formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}"
 		}
@@ -184,7 +229,7 @@ task undeploy {
   		// wait for stack to be deleted
   		exec {
 	  		commandLine "bash", "-c", "aws cloudformation wait stack-delete-complete --stack-name formkiq-core-${testappenvironment} --region ${testregion} --profile ${testprofile}"
-		}
+		}*/
 	}
 }
 

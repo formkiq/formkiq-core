@@ -62,10 +62,6 @@ public class AwsResourceTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-
-    System.setProperty("testregion", "us-east-1");
-    System.setProperty("testprofile", "formkiqtest");
-    System.setProperty("testappenvironment", "test");
     
     Region region = Region.of(System.getProperty("testregion"));
 

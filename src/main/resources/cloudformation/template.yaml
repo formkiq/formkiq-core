@@ -23,7 +23,7 @@ Parameters:
 
   EnablePublicUrls:
     Description: Enables /public urls (unauthenticated urls)
-    Default: "true"
+    Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
     
@@ -244,6 +244,9 @@ Outputs:
   ConsoleUrl:
     Description: The URL for the FormKiQ Console
     Value: !GetAtt CoreConsole.Outputs.ConsoleUrl
+  ConsoleS3Bucket:
+    Description: The Console S3 Bucket
+    Value: !GetAtt CoreConsole.Outputs.ConsoleBucket
   CognitoUserPoolId:
     Description: "The Cognito User Pool Id"
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
@@ -262,3 +265,9 @@ Outputs:
   CognitoApiEndpoint:
     Description: The Cognito Login API endpoint
     Value: !GetAtt Cognito.Outputs.ApiEndpoint
+  DocumentsS3Buckets:
+    Description: Documents Bucket.
+    Value: !GetAtt CoreStorage.Outputs.DocumentsS3Buckets
+  DocumentsStageS3Bucket:
+    Description: Documents Staging Bucket.
+    Value: !GetAtt CoreStorage.Outputs.DocumentsStageS3Bucket
