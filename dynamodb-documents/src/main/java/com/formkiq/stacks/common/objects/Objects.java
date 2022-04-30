@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.common.objects;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +34,17 @@ import java.util.List;
  */
 public class Objects {
 
+  /**
+   * Returns a {@link Collection} that is guarantee not to be null.
+   * 
+   * @param <T> Type
+   * @param list {@link List}
+   * @return {@link List}
+   */
+  public static <T> Collection<T> notNull(final Collection<T> list) {
+    return list != null ? list : Collections.emptyList();
+  }
+  
   /**
    * Returns a {@link List} that is guarantee not to be null.
    * 

@@ -73,6 +73,29 @@ public class DocumentSearchServiceImplTest {
   }
 
   /**
+   * Create Document.
+   *
+   * @param uuid {@link String}
+   * @param date {@link ZonedDateTime}
+   * @param contentType {@link String}
+   * @param path {@link String}
+   * @return {@link DocumentItem}
+   */
+  private DocumentItem createDocument(final String uuid, final ZonedDateTime date,
+      final String contentType, final String path) {
+
+    String userId = "jsmith";
+
+    DocumentItem item = new DocumentItemDynamoDb(uuid, Date.from(date.toInstant()), userId);
+    item.setContentType(contentType);
+    item.setPath(path);
+    item.setUserId(UUID.randomUUID().toString());
+    item.setChecksum(UUID.randomUUID().toString());
+    item.setContentLength(Long.valueOf(2));
+    return item;
+  }
+
+  /**
    * Create Test {@link DocumentItem}.
    *
    * @param prefix DynamoDB PK Prefix
@@ -104,26 +127,36 @@ public class DocumentSearchServiceImplTest {
   }
 
   /**
-   * Create Document.
-   *
-   * @param uuid {@link String}
-   * @param date {@link ZonedDateTime}
-   * @param contentType {@link String}
-   * @param path {@link String}
-   * @return {@link DocumentItem}
+   * Create a Test Document with 2 tags.
+   * @param tags {@link Map}
+   * @param value whether to set value or values
+   * @return {@link DynamicDocumentItem}
    */
-  private DocumentItem createDocument(final String uuid, final ZonedDateTime date,
-      final String contentType, final String path) {
+  private DynamicDocumentItem createTestDocumentWithTags(final Map<String, Object> tags,
+      final boolean value) {
+    String username = "testuser";
+    String content = UUID.randomUUID().toString();
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+        UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
+        Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
-    String userId = "jsmith";
+    
+    List<Map<String, Object>> list = new ArrayList<>();
+    doc.put("tags", list);
 
-    DocumentItem item = new DocumentItemDynamoDb(uuid, Date.from(date.toInstant()), userId);
-    item.setContentType(contentType);
-    item.setPath(path);
-    item.setUserId(UUID.randomUUID().toString());
-    item.setChecksum(UUID.randomUUID().toString());
-    item.setContentLength(Long.valueOf(2));
-    return item;
+    for (Map.Entry<String, Object> e : tags.entrySet()) {
+      if (value) {
+        list.add(Map.of("documentId", doc.getDocumentId(), "key", e.getKey(), "value", e.getValue(),
+            "insertedDate", new Date(), "userId", username, "type",
+            DocumentTagType.USERDEFINED.name()));
+      } else {
+        list.add(Map.of("documentId", doc.getDocumentId(), "key", e.getKey(), "values",
+            e.getValue(), "insertedDate", new Date(), "userId", username, "type",
+            DocumentTagType.USERDEFINED.name()));
+      }
+    }
+
+    return doc;
   }
 
   /** Search by 'eq' Tag Key & Value. */
@@ -237,7 +270,7 @@ public class DocumentSearchServiceImplTest {
       });
     }
   }
-
+  
   /** Search by 'eq' Tag Key & Value & paginating. */
   @Test
   public void testSearch05() {
@@ -461,7 +494,7 @@ public class DocumentSearchServiceImplTest {
       });
     }
   }
-  
+
   /** Search for 100 DocumentIds. */
   @Test
   public void testSearch11() {
@@ -489,7 +522,7 @@ public class DocumentSearchServiceImplTest {
     // then
     assertEquals(count, results.getResults().size());
   }
-
+  
   /** Search for tag 'eq' with DocumentId & values. */
   @Test
   public void testSearch12() {
@@ -538,36 +571,114 @@ public class DocumentSearchServiceImplTest {
     }
   }
   
-  /**
-   * Create a Test Document with 2 tags.
-   * @param tags {@link Map}
-   * @param value whether to set value or values
-   * @return {@link DynamicDocumentItem}
-   */
-  private DynamicDocumentItem createTestDocumentWithTags(final Map<String, Object> tags,
-      final boolean value) {
-    String username = "testuser";
-    String content = UUID.randomUUID().toString();
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
-        UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
-        Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+  /** Search for tag 'eqOr' with DocumentId & values. */
+  @Test
+  public void testSearch13() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      doc0.setDocumentId("1");
+      DynamicDocumentItem doc1 =
+          createTestDocumentWithTags(Map.of("category", Arrays.asList("thing", "thing1")), false);
+      doc1.setDocumentId("2");
+      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("category", "person3"), true);
+      doc2.setDocumentId("3");
+      DynamicDocumentItem doc3 = createTestDocumentWithTags(Map.of("category", "person2"), true);
+      doc3.setDocumentId("4");
+      DynamicDocumentItem doc4 = createTestDocumentWithTags(Map.of("category", "person5"), true);
+      doc4.setDocumentId("5");
+      
+      this.service.saveDocumentItemWithTag(siteId, doc0);
+      this.service.saveDocumentItemWithTag(siteId, doc1);
+      this.service.saveDocumentItemWithTag(siteId, doc2);
+      this.service.saveDocumentItemWithTag(siteId, doc3);
+      this.service.saveDocumentItemWithTag(siteId, doc4);
+      
+      SearchTagCriteria c =
+          new SearchTagCriteria("category").eqOr(Arrays.asList("thing", "person2"));
+      SearchQuery q = new SearchQuery().tag(c);
+      q.documentsIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId(),
+          doc3.getDocumentId()));
+      
+      PaginationMapToken startkey = null;
 
-    
-    List<Map<String, Object>> list = new ArrayList<>();
-    doc.put("tags", list);
+      // when - wrong document id
+      PaginationResults<DynamicDocumentItem> results =
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
 
-    for (Map.Entry<String, Object> e : tags.entrySet()) {
-      if (value) {
-        list.add(Map.of("documentId", doc.getDocumentId(), "key", e.getKey(), "value", e.getValue(),
-            "insertedDate", new Date(), "userId", username, "type",
-            DocumentTagType.USERDEFINED.name()));
-      } else {
-        list.add(Map.of("documentId", doc.getDocumentId(), "key", e.getKey(), "values",
-            e.getValue(), "insertedDate", new Date(), "userId", username, "type",
-            DocumentTagType.USERDEFINED.name()));
-      }
+      // then
+      final int count = 2;
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(count, list.size());
+      assertNull(results.getToken());
+
+      assertEquals("category", list.get(0).getMap("matchedTag").get("key"));
+      assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
+      assertEquals("USERDEFINED", list.get(0).getMap("matchedTag").get("type"));
+
+      assertEquals("category", list.get(1).getMap("matchedTag").get("key"));
+      assertEquals("person2", list.get(1).getMap("matchedTag").get("value"));
+      assertEquals("USERDEFINED", list.get(1).getMap("matchedTag").get("type"));
+
+      list.forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNull(s.getPath());
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        assertNotNull(i);
+      });
+      
+      // given
+      q.documentsIds(Arrays.asList("123"));
+      // when
+      results = this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+      // then
+      list = results.getResults();
+      assertEquals(0, list.size());
     }
+  }
+  
+  /** Search for tag 'eqOr'. */
+  @Test
+  public void testSearch14() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("category", "person1"), true);
+      DynamicDocumentItem doc3 = createTestDocumentWithTags(Map.of("nocategory", "person"), true);
+      this.service.saveDocumentItemWithTag(siteId, doc0);
+      this.service.saveDocumentItemWithTag(siteId, doc1);
+      this.service.saveDocumentItemWithTag(siteId, doc2);
+      this.service.saveDocumentItemWithTag(siteId, doc3);
+      
+      SearchTagCriteria c =
+          new SearchTagCriteria("category").eqOr(Arrays.asList("thing", "person1"));
+      SearchQuery q = new SearchQuery().tag(c);
+      
+      PaginationMapToken startkey = null;
 
-    return doc;
+      // when - wrong document id
+      PaginationResults<DynamicDocumentItem> results =
+          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(2, list.size());
+      assertNull(results.getToken());
+
+      assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
+      assertEquals("person1", list.get(1).getMap("matchedTag").get("value"));
+      
+      list.forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNull(s.getPath());
+        assertEquals("category", s.getMap("matchedTag").get("key"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        assertNotNull(i);
+      });
+    }
   }
 }

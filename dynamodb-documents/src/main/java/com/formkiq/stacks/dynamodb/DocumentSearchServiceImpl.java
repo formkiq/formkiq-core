@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.formkiq.stacks.common.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -93,8 +94,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final Map<String, Map<String, AttributeValue>> docMap, final SearchTagCriteria search) {
 
     Map<String, Map<String, AttributeValue>> map = docMap;
-
-    if (search.eq() != null || search.beginsWith() != null) {
+    
+    if (hasFilter(search)) {
 
       map = map.entrySet().stream().filter(x -> {
         
@@ -104,10 +105,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         boolean result = false;
         if (values != null) {
 
-          Optional<AttributeValue> val = values.l().stream().filter(v -> {            
-            return search.beginsWith() != null ? v.s().startsWith(search.beginsWith())
-                : v.s().equals(search.eq());
-          }).findFirst();
+          Optional<AttributeValue> val =
+              values.l().stream().filter(v -> filterByValue(search, v)).findFirst();
           
           result = val.isPresent();
           if (result) {
@@ -116,8 +115,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
           }
          
         } else if (value != null) {
-          result = search.beginsWith() != null ? value.s().startsWith(search.beginsWith())
-              : value.s().equals(search.eq());
+          result = filterByValue(search, value);
         }
 
         return result;
@@ -126,6 +124,26 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     return map;
+  }
+
+  /**
+   * Filter {@link AttributeValue} by {@link SearchTagCriteria}.
+   * @param search {@link SearchTagCriteria}
+   * @param v {@link AttributeValue}
+   * @return boolean
+   */
+  private boolean filterByValue(final SearchTagCriteria search, final AttributeValue v) {
+    boolean filter = false;
+
+    if (search.beginsWith() != null) {
+      filter = v.s().startsWith(search.beginsWith());
+    } else if (!Objects.notNull(search.eqOr()).isEmpty()) {
+      filter = search.eqOr().contains(v.s());
+    } else if (search.eq() != null) {
+      filter = v.s().equals(search.eq());
+    }
+
+    return filter;
   }
 
   /**
@@ -245,6 +263,16 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     return searchForDocuments(siteId, GSI1, expression, values, token, maxresults);
   }
 
+  /**
+   * {@link SearchTagCriteria} has filter criteria.
+   * @param search {@link SearchTagCriteria}
+   * @return boolean
+   */
+  private boolean hasFilter(final SearchTagCriteria search) {
+    return search.eq() != null || search.beginsWith() != null
+        || !Objects.notNull(search.eqOr()).isEmpty();
+  }
+
   @Override
   public PaginationResults<DynamicDocumentItem> search(final String siteId,
       final SearchQuery query, final PaginationMapToken token, final int maxresults) {
@@ -257,9 +285,10 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     Collection<String> documentIds = query.documentIds();
     
-    if (documentIds != null && !documentIds.isEmpty()) {
+    if (!Objects.notNull(documentIds).isEmpty()) {
 
       Map<String, Map<String, AttributeValue>> docs = findDocumentsTags(siteId, documentIds, key);
+      
       Map<String, Map<String, AttributeValue>> filteredDocs = filterDocumentTags(docs, search);
       
       List<String> fetchDocumentIds = new ArrayList<>(filteredDocs.keySet());
@@ -280,7 +309,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       
     } else {
       
-      if (search.eq() != null) {
+      if (!Objects.notNull(search.eqOr()).isEmpty()) {
+        result = findDocumentsWithTagAndValues(siteId, key, search.eqOr(), maxresults);
+      } else if (search.eq() != null) {
         result = findDocumentsWithTagAndValue(siteId, key, search.eq(), token, maxresults);
       } else if (search.beginsWith() != null) {
         result = findDocumentsTagStartWith(siteId, key, search.beginsWith(), token, maxresults);
@@ -290,6 +321,28 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     return result;
+  }
+
+  /**
+   * Find Document that match tagKey & tagValues.
+   *
+   * @param siteId DynamoDB PK siteId
+   * @param key {@link String}
+   * @param eqOr {@link Collection} {@link String}
+   * @param maxresults int
+   * @return {@link PaginationResults}
+   */
+  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(final String siteId,
+      final String key, final Collection<String> eqOr, final int maxresults) {
+    
+    List<DynamicDocumentItem> list = new ArrayList<>();
+    for (String eq : eqOr) {
+      PaginationResults<DynamicDocumentItem> result =
+          findDocumentsWithTagAndValue(siteId, key, eq, null, maxresults);
+      list.addAll(result.getResults());
+    }
+    
+    return new PaginationResults<DynamicDocumentItem>(list, null);
   }
 
   /**

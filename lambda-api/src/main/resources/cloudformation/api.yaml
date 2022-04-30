@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.6.3"
+          version: "1.6.4"
         paths:
           /version:
             get:
@@ -1202,6 +1202,11 @@ Resources:
                 eq:
                   type: "string"
                   description: "Searches for strings that eq"
+                eqOr:
+                  type: array
+                  description: "Searches for ANY strings that eq"
+                  items:
+                    type: "string"
                 key:
                   type: "string"
                   description: "Tag key to search"                

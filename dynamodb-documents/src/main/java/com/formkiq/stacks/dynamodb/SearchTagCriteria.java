@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.Collection;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Searches for {@link DocumentItem}. */
@@ -35,6 +36,9 @@ public class SearchTagCriteria {
   /** Search Tag Value Equals. */
   @Reflectable
   private String eq;
+  /** Search Tag Values May Equal. */
+  @Reflectable
+  private Collection<String> eqOr;
   /** Search Tag Value Begins With. */
   @Reflectable
   private String beginsWith;
@@ -91,6 +95,26 @@ public class SearchTagCriteria {
     return this;
   }
 
+  /**
+   * Get EQ OR {@link Collection} {@link String}.
+   *
+   * @return {@link String}
+   */
+  public Collection<String> eqOr() {
+    return this.eqOr;
+  }
+
+  /**
+   * Set EQ Or String.
+   *
+   * @param s {@link Collection} {@link String}
+   * @return {@link SearchTagCriteria}
+   */
+  public SearchTagCriteria eqOr(final Collection<String> s) {
+    this.eqOr = s;
+    return this;
+  }
+  
   /**
    * {@link String} has value.
    *
