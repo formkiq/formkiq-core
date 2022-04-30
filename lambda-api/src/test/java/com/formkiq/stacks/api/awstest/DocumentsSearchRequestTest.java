@@ -34,6 +34,7 @@ import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Document;
 import com.formkiq.stacks.client.models.Documents;
+import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
 
 /**
@@ -155,6 +156,123 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
               .documentIds(Arrays.asList(UUID.randomUUID().toString()));
       // when
       Documents documents = client.search(req);
+
+      // then
+      assertEquals(0, documents.documents().size());
+    }
+  }
+  
+  /**
+   * Test /search for specific DocumentIds & eq.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsSearch05() throws Exception {
+    // given
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      String documentId = addDocumentWithoutFile(client);
+      AddDocumentTagRequest tagRequest =
+          new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
+      client.addDocumentTag(tagRequest);
+      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("test").eq("somevalue")
+          .documentIds(Arrays.asList(documentId));
+      
+      // when
+      Documents documents = client.search(req);
+
+      // then
+      assertEquals(1, documents.documents().size());
+
+      Document doc = documents.documents().get(0);
+      assertEquals(documentId, doc.documentId());
+      assertNotNull(doc.insertedDate());
+      assertNotNull(doc.userId());
+      
+      // given
+      req = new SearchDocumentsRequest().tagKey("test").eq("somevalue2")
+          .documentIds(Arrays.asList(documentId));
+      
+      // when
+      documents = client.search(req);
+      
+      // then
+      assertEquals(0, documents.documents().size());
+    }
+  }
+  
+  /**
+   * Test /search for specific DocumentIds & eqOr.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsSearch06() throws Exception {
+    // given
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      String documentId = addDocumentWithoutFile(client);
+      AddDocumentTagRequest tagRequest =
+          new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
+      client.addDocumentTag(tagRequest);
+      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("test")
+          .eqOr(Arrays.asList("somevalue")).documentIds(Arrays.asList(documentId));
+      
+      // when
+      Documents documents = client.search(req);
+
+      // then
+      assertEquals(1, documents.documents().size());
+
+      Document doc = documents.documents().get(0);
+      assertEquals(documentId, doc.documentId());
+      assertNotNull(doc.insertedDate());
+      assertNotNull(doc.userId());
+      
+      // given
+      req = new SearchDocumentsRequest().tagKey("test").eqOr(Arrays.asList("somevalue2"))
+          .documentIds(Arrays.asList(documentId));
+      
+      // when
+      documents = client.search(req);
+
+      // then
+      assertEquals(0, documents.documents().size());
+    }
+  }
+  
+  /**
+   * Test /search for eq & eqOr.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsSearch07() throws Exception {
+    // given
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      String tagKey = UUID.randomUUID().toString();
+      String documentId = addDocumentWithoutFile(client);
+      AddDocumentTagRequest tagRequest =
+          new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
+      client.addDocumentTag(tagRequest);
+      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey(tagKey)
+          .eqOr(Arrays.asList("somevalue"));
+      
+      // when
+      Documents documents = client.search(req);
+
+      // then
+      assertEquals(1, documents.documents().size());
+
+      Document doc = documents.documents().get(0);
+      assertEquals(documentId, doc.documentId());
+      assertNotNull(doc.insertedDate());
+      assertNotNull(doc.userId());
+      
+      // given
+      req = new SearchDocumentsRequest().tagKey(tagKey).eqOr(Arrays.asList("somevalue2"));
+      
+      // when
+      documents = client.search(req);
 
       // then
       assertEquals(0, documents.documents().size());
