@@ -62,9 +62,9 @@ task testaws(type: Test) {
 }
 
 task buildZip(type: Zip) {
-	dependsOn graalvmNativeImage
+	dependsOn test, graalvmNativeImage
 	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
-  	outputs.dir("${buildDir}")
+  	outputs.files("${buildDir}/lambda-s3-graalvm.zip")
   	
 	archiveFileName = "lambda-s3-graalvm.zip"
     destinationDirectory = file("${buildDir}")

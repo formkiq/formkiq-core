@@ -22,16 +22,16 @@ task testaws(type: Test) {
 }
 
 task npmtest {
-  inputs.files("${project.projectDir}/src/index.js", "${project.projectDir}/src/test/index.js")
-  outputs.file("$buildDir/${project.name}_index.js_${project.version}")
-
+  inputs.files("src/main/resources/js")
+  outputs.files("${buildDir}resources/main/js")
+  
   doFirst {
 	macroLocalStackStart()
   }
   
   doLast {
     exec {
-      commandLine "bash", "-c", "cd src ; npm install ; npm test"
+      commandLine "bash", "-c", "cd build/resources/main/js ; npm install ; npm test"
     }
     macroDockerComposeDown()
   }
@@ -39,7 +39,7 @@ task npmtest {
 
 task buildZip(type: Zip) {
    dependsOn check
-   from "src"
+   from "${buildDir}/resources/main/js"
    include "*"
    include "*/*"
    exclude "test", "coverage"
@@ -74,16 +74,16 @@ task assembleTemplate {
 
 ext.macroLocalStackStart = {
 	exec {
-	  commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml up -d localstack"
+	  commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml up -d"
 	}
 	exec {
-	  commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh"
+	  commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh 4567"
 	}
 }
   
 ext.macroDockerComposeDown = {
     exec {
-      commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml down"
+      commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml down"
     }
 }
 

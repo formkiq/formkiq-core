@@ -62,7 +62,7 @@ task testaws(type: Test) {
 }
 
 task buildZip(type: Zip) {
-	dependsOn graalvmNativeImage
+	dependsOn test, graalvmNativeImage
 	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
   	outputs.file("${buildDir}/lambda-api-graalvm.zip")
     
@@ -135,6 +135,7 @@ task assembleOpenApiTemplate {
 }
 
 task downloadAwsCognito(type: Download) {
+	dependsOn check
     src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
     dest buildDir
     overwrite false

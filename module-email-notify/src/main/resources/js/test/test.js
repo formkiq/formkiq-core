@@ -9,7 +9,7 @@ AWS.config.update({
   accessKeyId: 'asdjsadkskdskskdk',
   secretAccessKey: 'sdsadsissdiidicdsi',
   region: 'us-east-1',
-  endpoint: 'http://localhost:4566'
+  endpoint: 'http://localhost:4567'
 });
 
 describe('event', () => {

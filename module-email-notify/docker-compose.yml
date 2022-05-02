@@ -1,0 +1,15 @@
+version: "3"
+services:
+  localstack:
+    image: localstack/localstack:0.12.2
+    ports:
+      - "4567:4566"
+    environment:
+      - SERVICES=s3,sqs,ssm,sns
+      - DEBUG=${DEBUG- }
+      - DATA_DIR=${DATA_DIR- }
+      - PORT_WEB_UI=${PORT_WEB_UI- }
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+      - DOCKER_HOST=unix:///var/run/docker.sock
+   
