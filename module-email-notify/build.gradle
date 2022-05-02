@@ -22,6 +22,9 @@ task testaws(type: Test) {
 }
 
 task npmtest {
+  inputs.files("src/main/resources/js")
+  outputs.files("${buildDir}resources/main/js")
+  
   doFirst {
 	macroLocalStackStart()
   }
