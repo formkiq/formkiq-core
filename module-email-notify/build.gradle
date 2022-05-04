@@ -1,5 +1,6 @@
-	
 description = "FormKiQ Core - Email Notify Module"
+
+jar.enabled = false
 
 dependencies {
     testImplementation project(':aws-s3')
@@ -21,34 +22,34 @@ task testaws(type: Test) {
   include 'com/formkiq/stacks/module/emailnotify/awstest/**'    
 }
 
-task npmtest {
+task npmInstall(type:Exec) {
+  dependsOn processResources, compileTestJava, checkstyleTest, spotbugsTest
   inputs.files("src/main/resources/js")
-  outputs.files("${buildDir}resources/main/js")
-  
+  outputs.files("${buildDir}/resources/main/js/module-email-notify.zip")
+  workingDir "${buildDir}/resources/main/js"
+  commandLine "bash", "-c", "rm *.zip ; npm install ; npm run pack"
+}
+
+jar.dependsOn npmInstall
+
+task npmtest {
+  dependsOn npmInstall, jar
+  inputs.files("src/main/resources/js")
+  outputs.dir("${buildDir}/resources/main/js/coverage")
   doFirst {
 	macroLocalStackStart()
   }
   
   doLast {
     exec {
-      commandLine "bash", "-c", "cd build/resources/main/js ; npm install ; npm test"
+      commandLine "bash", "-c", "cd build/resources/main/js ; npm test"
     }
     macroDockerComposeDown()
   }
 }
 
-task buildZip(type: Zip) {
-   dependsOn check
-   from "${buildDir}/resources/main/js"
-   include "*"
-   include "*/*"
-   exclude "test", "coverage"
-   archiveFileName = "module-email-notify.zip"
-   destinationDirectory = file("${buildDir}")
-}
-
 task assembleTemplate {
-    dependsOn buildZip
+    dependsOn check
 	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
 	doLast {
@@ -56,7 +57,7 @@ task assembleTemplate {
 			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/module-email-notify && mkdir -p ${buildDir}/distributions/formkiq-core/sar/module-email-notify"
 		}
 		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/module-email-notify.zip ${buildDir}/distributions/formkiq-core/sam/module-email-notify/"
+			commandLine "bash", "-c", "cp ${buildDir}/resources/main/js/module-email-notify.zip ${buildDir}/distributions/formkiq-core/sam/module-email-notify/"
 		}
 		// build SAM distribution
 		exec {

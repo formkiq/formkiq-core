@@ -55,6 +55,8 @@ import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
  *
  */
 public class EmailSendingTest {
+  /** Test Timeout. */
+  private static final long TIMEOUT = 60000L;
   /** Sleep Timeout. */
   private static final long SLEEP = 500L;
   /** SNS Document Email Topic Arn. */
@@ -168,7 +170,7 @@ public class EmailSendingTest {
    * Test Sending Email.
    * @throws Exception Exception
    */
-  @Test
+  @Test(timeout = TIMEOUT)
   public void testSendingEmail01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();
