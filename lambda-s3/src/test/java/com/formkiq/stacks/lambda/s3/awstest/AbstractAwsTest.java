@@ -36,6 +36,8 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
@@ -70,7 +72,9 @@ public abstract class AbstractAwsTest {
   private static String snsDocumentEventArn;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
-
+  /** {@link DocumentSearchService}. */
+  private static DocumentSearchService searchService;
+  
   /**
    * beforeclass.
    * 
@@ -114,6 +118,7 @@ public abstract class AbstractAwsTest {
     DynamoDbConnectionBuilder dbConnection =
         new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     documentService = new DocumentServiceImpl(dbConnection, documentsTable);
+    searchService = new DocumentSearchServiceImpl(documentService, dbConnection, documentsTable);
   }
 
   /**
@@ -159,6 +164,14 @@ public abstract class AbstractAwsTest {
    */
   protected static S3Service getS3Service() {
     return s3Service;
+  }
+
+  /**
+   * Get {@link DocumentSearchService}.
+   * @return {@link DocumentSearchService}
+   */
+  public static DocumentSearchService getSearchService() {
+    return searchService;
   }
 
   /**

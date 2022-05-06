@@ -1043,7 +1043,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       DocumentTag tag =
           new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
       
-      if (t.containsKey("values") /*&& t.getStringList("values") != null*/) {
+      if (t.containsKey("values")) {
         tag.setValue(null);
         tag.setValues(t.getStringList("values"));
       }

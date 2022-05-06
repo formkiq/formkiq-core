@@ -22,6 +22,7 @@ package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.DATE_FORMAT;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
@@ -240,6 +241,7 @@ public class StagingS3CreateTest implements DbKeys {
     this.env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
     this.env.put("SNS_CREATE_TOPIC", snsCreateTopic);
     this.env.put("SQS_ERROR_URL", sqsErrorUrl);
+    this.env.put("DOCUMENTS_TABLE", "Documents");
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
@@ -333,7 +335,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    final StagingS3Create handler = new StagingS3Create(this.env, service, s3Builder, sqsBuilder);
+    final StagingS3Create handler = new StagingS3Create(this.env, dbBuilder, s3Builder, sqsBuilder);
 
     Void result = handler.handleRequest(map, this.context);
     assertNull(result);
@@ -420,73 +422,71 @@ public class StagingS3CreateTest implements DbKeys {
   /**
    * Test CopyFile.
    * 
-   * @param documentId {@link String}
+   * @param siteId {@link String}
+   * @param path {@link String}
    * @param expectedPath {@link String}
    * @throws IOException IOException
    */
-  private void testCopyFile(final String documentId, final String expectedPath) throws IOException {
+  private void testCopyFile(final String siteId, final String path, final String expectedPath)
+      throws IOException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    // given
+    this.logger.reset();
 
-      // given
-      this.logger.reset();
+    String key = siteId != null ? siteId + "/" + path : path;
+    
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("Content-Type", "application/pdf");
+    metadata.put("userId", "1234");
 
-      String key = createDatabaseKey(siteId, documentId);
+    Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event1.json", UUID1, key);
 
-      Map<String, String> metadata = new HashMap<>();
-      metadata.put("Content-Type", "application/pdf");
-      metadata.put("userId", "1234");
+    try (S3Client c = s3.buildClient()) {
 
-      Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event1.json", UUID1, key);
+      s3.putObject(c, STAGING_BUCKET, key, "testdata".getBytes(UTF_8), "application/pdf", metadata);
 
-      try (S3Client c = s3.buildClient()) {
+      // when
+      handleRequest(map);
 
-        s3.putObject(c, STAGING_BUCKET, key, "testdata".getBytes(UTF_8),
-            "application/pdf", metadata);
+      // then
+      String destDocumentId = findDocumentIdFromLogger(siteId);
 
-        // when
-        handleRequest(map);
+      assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
+      assertTrue(this.logger.containsString("handling 1 record(s)."));
+      assertTrue(this.logger.containsString("Copying " + key + " from bucket example-bucket to "
+          + createDatabaseKey(siteId, destDocumentId) + " in bucket " + DOCUMENTS_BUCKET + "."));
+      assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
 
-        // then
-        String destDocumentId = findDocumentIdFromLogger(siteId);
+      assertFalse(s3.getObjectMetadata(c, STAGING_BUCKET, path).isObjectExists());
 
-        assertTrue(this.logger.containsString(
-            "Removing " + createDatabaseKey(siteId, documentId) + " from bucket example-bucket."));
-        assertTrue(this.logger.containsString("handling 1 record(s)."));
-        assertTrue(this.logger.containsString("Copying " + key + " from bucket example-bucket to "
-            + createDatabaseKey(siteId, destDocumentId) + " in bucket " + DOCUMENTS_BUCKET + "."));
-        assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
+      DocumentItem item = service.findDocument(siteId, destDocumentId);
+      assertNotNull(item);
+      assertEquals("8", item.getContentLength().toString());
+      assertEquals("application/pdf", item.getContentType());
+      assertEquals("ef654c40ab4f1747fc699915d4f70902", item.getChecksum());
+      assertNotNull(item.getInsertedDate());
+      assertEquals(item.getPath(), expectedPath);
+      assertEquals("1234", item.getUserId());
 
-        assertFalse(s3.getObjectMetadata(c, STAGING_BUCKET, documentId).isObjectExists());
+      List<DocumentTag> tags =
+          service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
 
-        DocumentItem item = service.findDocument(siteId, destDocumentId);
-        assertNotNull(item);
-        assertEquals("8", item.getContentLength().toString());
-        assertEquals("application/pdf", item.getContentType());
-        assertEquals("ef654c40ab4f1747fc699915d4f70902", item.getChecksum());
-        assertNotNull(item.getInsertedDate());
-        assertEquals(item.getPath(), expectedPath);
-        assertEquals("1234", item.getUserId());
+      int i = 0;
+      int count = 2;
 
-        List<DocumentTag> tags =
-            service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
-
-        int i = 0;
-        int count = 2;
-        
-        if (item.getPath() != null) {
-          count++;
-          assertEquals("path", tags.get(i).getKey());
-          assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
-        }
-        
-        assertEquals(count, tags.size());
-        
-        assertEquals("untagged", tags.get(i).getKey());
-        assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
-        assertEquals("userId", tags.get(i).getKey());
+      if (item.getPath() != null) {
+        count++;
+        assertEquals("path", tags.get(i).getKey());
+        assertEquals(expectedPath, tags.get(i).getValue());
         assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
       }
+
+      assertEquals(count, tags.size());
+
+      assertEquals("untagged", tags.get(i).getKey());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
+      assertEquals("userId", tags.get(i).getKey());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
     }
   }
 
@@ -498,7 +498,9 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   public void testCopyFile01() throws Exception {
     final String documentId = "b53c92cf-f7b9-4787-9541-76574ec70d71";
-    testCopyFile(documentId, null);
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      testCopyFile(siteId, documentId, null);
+    }
   }
 
   /**
@@ -509,9 +511,24 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   public void testCopyFile02() throws Exception {
     final String documentId = "test.pdf";
-    testCopyFile(documentId, "test.pdf");
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      testCopyFile(siteId, documentId, "test.pdf");
+    }
   }
 
+  /**
+   * S3 Object Create Event Unit Test where filename long path.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testCopyFile03() throws Exception {
+    final String documentId = "something/where/test.pdf";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      testCopyFile(siteId, documentId, "something/where/test.pdf");
+    }
+  }
+  
   /**
    * Test .fkb64 file with TAGS.
    * 
@@ -704,7 +721,7 @@ public class StagingS3CreateTest implements DbKeys {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
-    final StagingS3Create handler = new StagingS3Create(this.env, service, s3Builder, sqsBuilder);
+    final StagingS3Create handler = new StagingS3Create(this.env, dbBuilder, s3Builder, sqsBuilder);
 
     // when
     Void result = handler.handleRequest(map, this.context);
