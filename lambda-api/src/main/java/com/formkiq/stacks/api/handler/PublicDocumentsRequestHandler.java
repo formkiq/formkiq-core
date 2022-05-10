@@ -26,12 +26,12 @@ package com.formkiq.stacks.api.handler;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.lambda.apigateway.ApiAuthorizer;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
-import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
-import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/public/documents". */
 public class PublicDocumentsRequestHandler

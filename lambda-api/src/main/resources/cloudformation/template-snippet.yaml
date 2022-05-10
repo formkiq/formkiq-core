@@ -30,7 +30,7 @@ Parameters:
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
-    Default: 512
+    Default: 1024
     MinValue: 128
     MaxValue: 3008
   

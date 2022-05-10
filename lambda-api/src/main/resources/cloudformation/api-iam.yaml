@@ -8,7 +8,7 @@ Resources:
           title: 
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.6.4"
+          version: "1.7.0"
         paths:
           /version:
             get:
@@ -615,6 +615,57 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/ocr:
+            get:
+              description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentOcr'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"          
+            post:
+              description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentOcrResult'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
           /public/documents:
             post:
               description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
@@ -1206,7 +1257,7 @@ Resources:
                   type: array
                   description: "Searches for ANY strings that eq"
                   items:
-                    type: "string"                  
+                    type: "string"
                 key:
                   type: "string"
                   description: "Tag key to search"                
@@ -1533,6 +1584,30 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
+            DocumentOcr:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: OCR text result
+                ocrEngine:
+                  type: string
+                  description: The OCR technique used
+                url:
+                  type: string
+                  description: The URL link for OCR data (for documents larger than 5 MB) 
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                isBase64:
+                  type: "boolean"
+                  description: "Is Content Base64 encoded"
+            DocumentOcrResult:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: OCR processing message                  
             Version:
               type: object
               properties:
@@ -1580,6 +1655,20 @@ Resources:
               x-amazon-apigateway-authtype: "awsSigv4"        
           x-amazon-apigateway-integrations:
             lambdaApi200:
+              uri:
+                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: "'*'"
+                    method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                    method.response.header.Access-Control-Allow-Origin: "'*'"
+              passthroughBehavior: "when_no_templates"
+              httpMethod: "POST"
+              type: "aws_proxy"
+              payloadFormatVersion: "1.0"
+            ocrLambdaApi200:
               uri:
                 Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:

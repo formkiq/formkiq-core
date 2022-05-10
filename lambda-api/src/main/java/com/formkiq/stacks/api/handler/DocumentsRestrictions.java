@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 
 /**
  * Interface for providing restrictions around Document.

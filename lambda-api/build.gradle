@@ -5,6 +5,7 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.1.1'
 	
+	implementation project(':fkq-lambda-core')
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')

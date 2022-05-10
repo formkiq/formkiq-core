@@ -31,7 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.stacks.api.DynamoDbExtension;
 import com.formkiq.stacks.api.DynamoDbTestServices;
 import com.formkiq.stacks.common.objects.DynamicObject;

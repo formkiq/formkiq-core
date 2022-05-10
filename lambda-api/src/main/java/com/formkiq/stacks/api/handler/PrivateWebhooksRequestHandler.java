@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
 /** {@link ApiGatewayRequestHandler} for "/private/webhooks". */
 public class PrivateWebhooksRequestHandler extends PublicWebhooksRequestHandler {

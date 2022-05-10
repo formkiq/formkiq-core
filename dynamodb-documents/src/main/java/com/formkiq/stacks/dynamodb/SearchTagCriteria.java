@@ -128,11 +128,11 @@ public class SearchTagCriteria {
   /**
    * Is {@link SearchTagCriteria} valid for DynamoDB.
    *
-   * @throws InvalidConditionsException InvalidConditionsException
+   * @throws IllegalArgumentException IllegalArgumentException
    */
   public void isValid() {
     if (!hasValue(this.key)) {
-      throw new InvalidConditionsException("'key' attribute is required.");
+      throw new IllegalArgumentException("'key' attribute is required.");
     }
   }
 
