@@ -1,0 +1,9 @@
+
+description = "FormKiQ Test Utils"
+
+dependencies {
+	implementation project(':aws-cognito')
+	implementation project(':aws-ssm')
+	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.7.0'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.0'
+}

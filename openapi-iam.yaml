@@ -1592,6 +1592,13 @@
                 isBase64:
                   type: "boolean"
                   description: "Is Content Base64 encoded"
+                userId:
+                  type: "string"
+                  description: "User who requested the OCR"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
             DocumentOcrResult:
               type: object
               properties:
