@@ -24,9 +24,11 @@ Resources:
         - Key: "Application"
           Value: "FormKiQ DocumentStack"
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
         - Key: StackName
-          Value: !Sub "${AWS::StackName}"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
 
   SqsQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -41,10 +43,14 @@ Resources:
           Principal:
             Service: sns.amazonaws.com
           Action: sqs:SendMessage
-          Resource: !GetAtt [SqsQueue, Arn]
+          Resource: 
+            Fn::GetAtt:
+            - SqsQueue
+            - Arn
           Condition:
             ArnLike:
-              aws:SourceArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+              aws:SourceArn: 
+                Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
       Queues:
       - Ref: SqsQueue
       
@@ -52,14 +58,23 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      Endpoint: !GetAtt SqsQueue.Arn
-      TopicArn: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
-      FilterPolicy: !Ref FilterPolicy
+      Endpoint: 
+        Fn::GetAtt:
+        - SqsQueue
+        - Arn
+      TopicArn: 
+        Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+      FilterPolicy: 
+        Ref: FilterPolicy
           
 Outputs:
   SqsQueue:
     Description: "Sqs Queue"
-    Value: !Ref SqsQueue
+    Value: 
+      Ref: SqsQueue
   SqsQueueArn:
     Description: "Sqs Queue Arn"
-    Value: !GetAtt SqsQueue.Arn
+    Value: 
+      Fn::GetAtt: 
+      - SqsQueue
+      - Arn

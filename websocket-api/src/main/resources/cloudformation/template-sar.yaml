@@ -35,55 +35,53 @@ Resources:
   WebSocketApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: !Sub "${AWS::StackName} - ${AppEnvironment}"
-      Description: !Sub "FormKiQ WebSocket API - ${AppEnvironment}"
+      Name: 
+        Fn::Sub: "${AWS::StackName} - ${AppEnvironment}"
+      Description: 
+        Fn::Sub: "FormKiQ WebSocket API - ${AppEnvironment}"
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"      
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"      
 
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref WebSocketApi
+      ApiId: 
+        Ref: WebSocketApi
       RouteKey: $connect
       AuthorizationType: NONE
       OperationName: ConnectRoute
-      Target: !Join
+      Target:
+        Fn::Join:
         - '/'
         - - 'integrations'
-          - !Ref ConnectInteg
+          - Ref: ConnectInteg
           
   DisconnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref WebSocketApi
+      ApiId: 
+        Ref: WebSocketApi
       RouteKey: $disconnect
       AuthorizationType: NONE
       OperationName: DisconnectRoute
-      Target: !Join
+      Target:
+        Fn::Join:
         - '/'
         - - 'integrations'
-          - !Ref ConnectInteg
-
-#  MessageRoute:
-#    Type: AWS::ApiGatewayV2::Route
-#    Properties:
-#      ApiId: !Ref WebSocketApi
-#      RouteKey: message
-#      AuthorizationType: NONE
-#      OperationName: MessageRoute
-#      Target: !Join
-#        - '/'
-#        - - 'integrations'
-#          - !Ref ConnectInteg
+          - Ref: ConnectInteg
           
   ConnectInteg:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
-      ApiId: !Ref WebSocketApi
+      ApiId: 
+        Ref: WebSocketApi
       Description: Connect Integration
       IntegrationType: AWS_PROXY
       IntegrationMethod: POST
@@ -98,25 +96,33 @@ Resources:
     #- MessageRoute
     - DisconnectRoute
     Properties:
-      ApiId: !Ref WebSocketApi
+      ApiId: 
+        Ref: WebSocketApi
       
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      StageName: !Ref StageName
+      StageName: 
+        Ref: StageName
       Description: Prod Stage
-      DeploymentId: !Ref Deployment
-      ApiId: !Ref WebSocketApi
+      DeploymentId: 
+        Ref: Deployment
+      ApiId: 
+        Ref: WebSocketApi
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}" 
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}" 
         
   OnConnectPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref ApiFunction
+      FunctionName: 
+        Ref: ApiFunction
       Principal: apigateway.amazonaws.com
       
   SqsQueue:
@@ -126,47 +132,67 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
         - Key: StackName
-          Value: !Sub "${AWS::StackName}"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
 
   SqsQueueUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "SQS URL for processing Websocket Messages"
-      Name: !Sub "/formkiq/${AppEnvironment}/sqs/WebsocketUrl"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/WebsocketUrl"
       Type: String
-      Value: !Ref SqsQueue
+      Value: 
+        Ref: SqsQueue
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   SqsQueueArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "SQS Arn for processing Websocket Messages"
-      Name: !Sub "/formkiq/${AppEnvironment}/sqs/WebsocketArn"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/WebsocketArn"
       Type: String
-      Value: !GetAtt SqsQueue.Arn
+      Value: 
+        Fn::GetAtt: 
+        - SqsQueue
+        - Arn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
                 
   WebsocketApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "The URL for the Websocket API endpoint"
-      Name: !Sub "/formkiq/${AppEnvironment}/api/WebsocketUrl"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/WebsocketUrl"
       Type: String
-      Value: !Sub "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+      Value: 
+        Fn::Sub: "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
           
   ApiFunction:
     Type: AWS::Serverless::Function
@@ -179,21 +205,34 @@ Resources:
       AutoPublishCodeSha256: 64919587C212B6C2F3E9F90B90906EBEFC02E1894A688406CC065B2832B1CDCC
       Environment:
         Variables:
-          API_URL: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
-          REGION: !Ref AWS::Region
-          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
-          COGNITO_USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClientId
-          WEB_CONNECTIONS_TABLE: !Ref WebConnections
+          API_URL: 
+            Fn::Sub: "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          REGION: 
+            Ref: AWS::Region
+          COGNITO_USER_POOL_ID: 
+            Ref: CognitoUserPoolId
+          COGNITO_USER_POOL_CLIENT_ID: 
+            Ref: CognitoUserPoolClientId
+          WEB_CONNECTIONS_TABLE: 
+            Ref: WebConnections
           DEBUG: false
-      Role: !GetAtt [ApiFunctionRole, Arn]
+      Role: 
+        Fn::GetAtt: 
+        - ApiFunctionRole
+        - Arn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
       Events:
         CreateSQSEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt SqsQueue.Arn
+            Queue: 
+              Fn::GetAtt: 
+              - SqsQueue
+              - Arn
             BatchSize: 10
       
   ApiFunctionRole:
@@ -201,11 +240,14 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
         - Key: StackName
-          Value: !Sub "${AWS::StackName}"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -234,12 +276,14 @@ Resources:
               - sqs:DeleteMessage
               - sqs:GetQueueAttributes
               Resource:
-              - !GetAtt SqsQueue.Arn
+              - Fn::GetAtt: 
+                - SqsQueue
+                - Arn
             - Effect: Allow
               Action:
               - execute-api:ManageConnections
               Resource:
-              - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
+              - Fn::Sub: "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
@@ -250,25 +294,31 @@ Resources:
               - dynamodb:PutItem
               - dynamodb:DeleteItem
               Resource: 
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
 
   WebConnectionsParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: DynamoDB Documents table name
-      Name: !Sub "/formkiq/${AppEnvironment}/dynamodb/WebConnectionsTableName"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/WebConnectionsTableName"
       Type: String
-      Value: !Ref WebConnections
+      Value: 
+        Ref: WebConnections
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   WebConnections:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "formkiq-${FormKiQType}-${AppEnvironment}-webconnections"
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-webconnections"
       BillingMode: PAY_PER_REQUEST
       TimeToLiveSpecification:
         AttributeName: TimeToLive
@@ -277,9 +327,11 @@ Resources:
         StreamViewType: NEW_IMAGE
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
       KeySchema: 
         - 
           AttributeName: "PK"
@@ -316,8 +368,12 @@ Resources:
 Outputs:
   WebsocketApiUrl:
     Description: "The URL for the Websocket API endpoint"
-    Value: !GetAtt WebsocketApiUrlParameter.Value
+    Value: 
+      Fn::GetAtt: 
+      - WebsocketApiUrlParameter
+      - Value
   SqsQueueUrl:
     Description: "SQS URL for processing Websocket Messages"
-    Value: !Ref SqsQueue
+    Value: 
+      Ref: SqsQueue
     

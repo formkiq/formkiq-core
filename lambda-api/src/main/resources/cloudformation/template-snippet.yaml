@@ -105,26 +105,42 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.api.CoreRequestHandler
       Runtime: provided
-      Timeout: !Sub "${LambdaTimeout}"
-      MemorySize: !Sub "${LambdaMemory}"
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
       AutoPublishCodeSha256: 64919587C212B6C2F3E9F90B90906EBEFC02E1894A688406CC065B2832B1CDCC
       Environment:
         Variables:
-          APP_ENVIRONMENT: !Sub "${AppEnvironment}"
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
           DEBUG: false
-          DOCUMENTS_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
-          CACHE_TABLE: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
-          DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
-          STAGE_DOCUMENTS_S3_BUCKET: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
-          ENABLE_PUBLIC_URLS: !Sub "${EnablePublicUrls}"
-          FORMKIQ_TYPE: !Ref FormKiQType
-          WEBSOCKET_SQS_URL: !Ref WebsocketSqsQueueUrl
-      Role: !GetAtt [DocumentsApiRequestsRole, Arn]
+          DOCUMENTS_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          CACHE_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+          ENABLE_PUBLIC_URLS: 
+            Fn::Sub: "${EnablePublicUrls}"
+          FORMKIQ_TYPE: 
+            Ref: FormKiQType
+          WEBSOCKET_SQS_URL: 
+            Ref: WebsocketSqsQueueUrl
+      Role: 
+        Fn::GetAtt:
+        - DocumentsApiRequestsRole
+        - Arn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -133,23 +149,28 @@ Resources:
     - DocumentsApiRequests
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref DocumentsApiRequests
+      FunctionName: 
+        Ref: DocumentsApiRequests
       Principal: apigateway.amazonaws.com
   
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      ApiId: !Ref DocumentsHttpApi
+      ApiId: 
+        Ref: DocumentsHttpApi
       AutoDeploy: true
-      Description: !Sub "Documents API ${AppEnvironment}"
+      Description: 
+        Fn::Sub: "Documents API ${AppEnvironment}"
       StageName: "$default"
     
   IamDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      ApiId: !Ref DocumentsIamApi
+      ApiId: 
+        Ref: DocumentsIamApi
       AutoDeploy: true
-      Description: !Sub "Documents IAM API ${AppEnvironment}"
+      Description: 
+        Fn::Sub: "Documents IAM API ${AppEnvironment}"
       StageName: "$default"
           
   DocumentsHttpApi: empty
@@ -160,34 +181,46 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "The URL for the API endpoint that uses Cognito authorization"
-      Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
-      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Value: 
+        Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   DocumentsPublicHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "The Public URL for the API endpoint that uses Cognito authorization"
-      Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsPublicHttpUrl"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsPublicHttpUrl"
       Type: String
-      Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Value: 
+        Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   DocumentsApiRequestsRole:
     Type: AWS::IAM::Role
     Properties:
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -219,18 +252,24 @@ Resources:
               - s3:ListBucket
               - s3:ListBucketVersions
               Resource:
-              - !Sub
-                - 'arn:aws:s3:::${Bucket}'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}" }
-              - !Sub
-                - 'arn:aws:s3:::${Bucket}/*'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}" }
-              - !Sub
-                - 'arn:aws:s3:::${Bucket}'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}" }
-              - !Sub
-                - 'arn:aws:s3:::${Bucket}/*'
-                - { Bucket: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}" }
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                  - '/*'
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                  - '/*'
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
@@ -241,64 +280,76 @@ Resources:
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Resource: 
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
             - Effect: Allow
               Action:
               - dynamodb:Query
               - dynamodb:Scan
               Resource:
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
             - Effect: Allow
               Action:
               - dynamodb:Get*
               - dynamodb:Put*
               Resource: 
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
             - Effect: Allow
               Action:
               - ssm:GetParameter
               - ssm:PutParameter
               Resource: 
-              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
               - sqs:SendMessage
               Resource:
-              - !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
-              - !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
+              - Fn::Sub: "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
               
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "The URL for the API endpoint that uses IAM authorization"
-      Name: !Sub "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
-      Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Value: 
+        Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   DocumentsApiRequestsParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Lambda for processing API Requests"
-      Name: !Sub "/formkiq/${AppEnvironment}/lambda/DocumentsApiRequests"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/DocumentsApiRequests"
       Type: String
-      Value: !Ref DocumentsApiRequests
+      Value: 
+        Ref: DocumentsApiRequests
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CloudWatchRole:
     Type: 'AWS::IAM::Role'
     Properties:
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"        
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -314,18 +365,24 @@ Resources:
   ApiGatewayAccount:
     Type: 'AWS::ApiGateway::Account'
     Properties:
-      CloudWatchRoleArn: !GetAtt [CloudWatchRole, Arn] 
+      CloudWatchRoleArn: 
+        Fn::GetAtt:
+        - CloudWatchRole
+        - Arn 
 
   ApiGatewayInvokeRole:
     Type: 'AWS::IAM::Role'
     Properties:
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"        
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"        
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
         - Key: "StackName"
-          Value: !Sub "${AWS::StackName}"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -349,69 +406,104 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "API Gateway Group that allows invoking of endpoints"
-      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroup"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroup"
       Type: String
-      Value: !Ref ApiGatewayInvokeGroup
+      Value: 
+        Ref: ApiGatewayInvokeGroup
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   ApiGatewayInvokeGroupArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "API Gateway Group Arn that allows invoking of endpoints"
-      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroupArn"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroupArn"
       Type: String
-      Value: !GetAtt [ApiGatewayInvokeGroup, Arn]
+      Value: 
+        Fn::GetAtt:
+        - ApiGatewayInvokeGroup
+        - Arn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
     
   ApiGatewayInvokeRoleParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "API Gateway Role that allows invoking of endpoints"
-      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeRole"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeRole"
       Type: String
-      Value: !Ref ApiGatewayInvokeRole
+      Value: 
+        Ref: ApiGatewayInvokeRole
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   ApiGatewayInvokeRoleArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "API Gateway Role Arn that allows invoking of endpoints"
-      Name: !Sub "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeRoleArn"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeRoleArn"
       Type: String
-      Value: !GetAtt [ApiGatewayInvokeRole, Arn]
+      Value: 
+        Fn::GetAtt:
+        - ApiGatewayInvokeRole
+        - Arn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
       
 Outputs:
   ApiGatewayInvokeRole:
     Description: "API Gateway Role that allows invoking of endpoints"
-    Value: !Ref ApiGatewayInvokeRole
+    Value: 
+      Ref: ApiGatewayInvokeRole
   ApiGatewayInvokeRoleArn:
     Description: "API Gateway Role Arn that allows invoking of endpoints"
-    Value: !GetAtt [ApiGatewayInvokeRole, Arn]
+    Value: 
+      Fn::GetAtt:
+      - ApiGatewayInvokeRole
+      - Arn
   ApiGatewayInvokeGroup:
     Description: "API Gateway Group that allows invoking of endpoints"
-    Value: !Ref ApiGatewayInvokeGroup
+    Value: 
+      Ref: ApiGatewayInvokeGroup
   ApiGatewayInvokeGroup:
     Description: "API Gateway Group ARN that allows invoking of endpoints"
-    Value: !GetAtt [ApiGatewayInvokeGroup, Arn]    
+    Value: 
+      Fn::GetAtt:
+      - ApiGatewayInvokeGroup
+      - Arn    
   DocumentsApiRequests:
     Description: "FormKiQ Api Request Handler"
-    Value: !Ref DocumentsApiRequests
+    Value: 
+      Ref: DocumentsApiRequests
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
-    Value: !Sub "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Value: 
+      Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
-    Value: !Sub "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Value: 
+      Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

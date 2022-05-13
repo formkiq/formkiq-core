@@ -39,41 +39,55 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"      
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"      
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
         - Key: "StackName"
-          Value: !Sub "${AWS::StackName}" 
+          Value: 
+            Fn::Sub: "${AWS::StackName}" 
 
   EmailSubscription:
     Type: AWS::SNS::Subscription
     Properties: 
-      Endpoint: !Ref Email
+      Endpoint: 
+        Ref: Email
       Protocol: "email"
-      TopicArn: !Ref DocumentsEmailNotification
+      TopicArn: 
+        Ref: DocumentsEmailNotification
       
   SnsDocumentsEmailNotificationArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "SNS Topic for Email Notification"
-      Name: !Sub "/formkiq/${AppEnvironment}/sns/DocumentsEmailNotificationArn"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sns/DocumentsEmailNotificationArn"
       Type: String
-      Value: !Ref DocumentsEmailNotification
+      Value: 
+        Ref: DocumentsEmailNotification
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   Module:
     Type: AWS::Serverless::Application
     Properties:
       Location: ../module-documentevent.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
+        AppEnvironment: 
+          Ref: AppEnvironment
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   EmailNotify:
     Type: AWS::Serverless::Function
@@ -89,17 +103,27 @@ Resources:
       Environment:
         Variables:
           DEBUG: false
-          EMAIL_TOPIC_ARN: !Ref DocumentsEmailNotification
-          CONSOLE_URL: !Sub "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url}}" 
-      Role: !GetAtt [EmailNotifyRole, Arn]
+          EMAIL_TOPIC_ARN: 
+            Ref: DocumentsEmailNotification
+          CONSOLE_URL: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url}}" 
+      Role: 
+        Fn::GetAtt: 
+        - EmailNotifyRole
+        - Arn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
       Events:
         CreateSQSEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt Module.Outputs.SqsQueueArn
+            Queue: 
+              Fn::GetAtt: 
+              - Module
+              - Outputs.SqsQueueArn
             BatchSize: 10
       
   EmailNotifyRole:
@@ -107,11 +131,14 @@ Resources:
     Properties:
       Tags:
         - Key: "Application"
-          Value: !Sub "FormKiQ ${FormKiQType}"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
         - Key: "AppEnvironment"
-          Value: !Sub "${AppEnvironment}"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
         - Key: StackName
-          Value: !Sub "${AWS::StackName}"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -140,9 +167,11 @@ Resources:
               - sqs:DeleteMessage
               - sqs:GetQueueAttributes
               Resource:
-              - !GetAtt Module.Outputs.SqsQueueArn
+              - Fn::GetAtt: 
+                - Module
+                - Outputs.SqsQueueArn
             - Effect: Allow
               Action:
               - sns:Publish
               Resource:
-              - !Ref DocumentsEmailNotification              
+              - Ref: DocumentsEmailNotification              
