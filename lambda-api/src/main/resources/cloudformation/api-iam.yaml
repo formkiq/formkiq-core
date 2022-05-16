@@ -1593,9 +1593,9 @@ Resources:
                 ocrEngine:
                   type: string
                   description: The OCR technique used
-                url:
+                ocrStatus:
                   type: string
-                  description: The URL link for OCR data (for documents larger than 5 MB) 
+                  description: The status of the OCR request 
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
