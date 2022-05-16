@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.api.TestServices.FORMKIQ_APP_ENVIRONMENT;
+import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /webhooks/{webhookId}. */
 @ExtendWith(LocalStackExtension.class)

@@ -34,6 +34,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiResponseError;
+import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.NotFoundException;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
@@ -128,6 +129,16 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
   }
 
   /**
+   * Whether to enable public urls.
+   * 
+   * @param map {@link Map}
+   * @return boolean
+   */
+  protected static boolean isEnablePublicUrls(final Map<String, String> map) {
+    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  }
+
+  /**
    * Setup Api Request Handlers.
    *
    * @param map {@link Map}
@@ -176,18 +187,12 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
     throw new NotFoundException(resource + " not found");
   }
 
-  /**
-   * Whether to enable public urls.
-   * 
-   * @param map {@link Map}
-   * @return boolean
-   */
-  protected static boolean isEnablePublicUrls(final Map<String, String> map) {
-    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
-  }
-
   @Override
   public Map<String, ApiGatewayRequestHandler> getUrlMap() {
     return URL_MAP;
+  }
+
+  @Override
+  public void handleSqsRequest(final LambdaInputRecord record) {    
   }
 }

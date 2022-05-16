@@ -23,9 +23,9 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.api.TestServices.AWS_REGION;
-import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
-import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -49,6 +49,10 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.LambdaContextRecorder;
+import com.formkiq.testutils.aws.LambdaLoggerRecorder;
+import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;

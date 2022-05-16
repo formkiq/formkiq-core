@@ -58,7 +58,7 @@ import software.amazon.awssdk.utils.StringUtils;
 public abstract class AbstractRestApiRequestHandler implements RequestStreamHandler {
 
   /** {@link Gson}. */
-  private Gson gson = GsonUtil.getInstance();
+  protected Gson gson = GsonUtil.getInstance();
  
   /**
    * Handle Exception.
@@ -95,235 +95,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     response.put("headers", jsonheaders);
 
     writeJson(logger, awsServices, output, response);
-  }
-
-  /**
-   * Create Response Headers.
-   *
-   * @return {@link Map} {@link String}
-   */
-  protected Map<String, String> createJsonHeaders() {
-    Map<String, String> headers = new HashMap<>();
-    headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key");
-    headers.put("Access-Control-Allow-Methods", "*");
-    headers.put("Access-Control-Allow-Origin", "*");
-    headers.put("Content-Type", "application/json");
-    return headers;
-  }
-
-  /**
-   * Find Request Handler.
-   * @param urlMap {@link Map}
-   * @param method {@link String}
-   * @param resource {@link String}
-   * @return {@link ApiGatewayRequestHandler}
-   * @throws NotFoundException Handler not found
-   */
-  public ApiGatewayRequestHandler findRequestHandler(
-      final Map<String, ApiGatewayRequestHandler> urlMap, final String method,
-      final String resource) throws NotFoundException {
-    String s = "options".equals(method) ? method : resource;
-    ApiGatewayRequestHandler hander = urlMap.get(s);
-    if (hander != null) {
-      return hander;
-    }
-      
-    throw new NotFoundException(resource + " not found");
-  }
-
-  /**
-   * Get {@link ApiGatewayRequestEvent}.
-   *
-   * @param input {@link InputStream}
-   * @param logger {@link LambdaLogger}
-   * @param awsservice {@link AwsServiceCache}
-   * @return {@link ApiGatewayRequestEvent}
-   * @throws IOException IOException
-   */
-  private ApiGatewayRequestEvent getApiGatewayEvent(final InputStream input,
-      final LambdaLogger logger, final AwsServiceCache awsservice) throws IOException {
-
-    String str = IoUtils.toUtf8String(input);
-
-    if (awsservice.debug()) {
-      logger.log(str);
-    }
-
-    ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
-    return event;
-  }
-
-  /**
-   * Get {@link AwsServiceCache}.
-   *
-   * @return {@link AwsServiceCache}
-   */
-  public abstract AwsServiceCache getAwsServices();
-  
-  /**
-   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   * @throws BadException BadException
-   */
-  private String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
-    String body = event.getBody();
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-    
-    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
-      byte[] bytes = Base64.getDecoder().decode(body);
-      body = new String(bytes, StandardCharsets.UTF_8);
-    }
-    
-    if (StringUtils.isEmpty(body)) {
-      throw new BadException("request body is required");
-    }
-    
-    return body;
-  }
-
-  /**
-   * Get URL Map.
-   * @return {@link Map}
-   */
-  public abstract Map<String, ApiGatewayRequestHandler> getUrlMap();
-
-  @Override
-  public void handleRequest(final InputStream input, final OutputStream output,
-      final Context context) throws IOException {
-
-    LambdaLogger logger = context.getLogger();
-    
-    AwsServiceCache awsServices = getAwsServices();
-
-    ApiGatewayRequestEvent event = getApiGatewayEvent(input, logger, awsServices);
-    ApiAuthorizer authorizer = new ApiAuthorizer(event);
-
-    try {
-
-      ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorizer);
-      processResponse(authorizer, event, object);
-      buildResponse(logger, awsServices, output, object.getStatus(), object.getHeaders(),
-          object.getResponse());
-
-    } catch (NotFoundException e) {
-      buildResponse(logger, awsServices, output, SC_NOT_FOUND, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (TooManyRequestsException e) {
-      buildResponse(logger, awsServices, output, SC_TOO_MANY_REQUESTS, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (BadException | IllegalArgumentException | DateTimeException e) {
-      buildResponse(logger, awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (ForbiddenException e) {
-      buildResponse(logger, awsServices, output, SC_FORBIDDEN, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (UnauthorizedException e) {
-      buildResponse(logger, awsServices, output, SC_UNAUTHORIZED, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (NotImplementedException e) {
-      buildResponse(logger, awsServices, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),
-          new ApiResponseError(e.getMessage()));
-    } catch (Exception e) {
-      logError(logger, e);
-
-      buildResponse(logger, awsServices, output, SC_ERROR, Collections.emptyMap(),
-          new ApiResponseError("Internal Server Error"));
-    }
-  }
-
-  /**
-   * Whether {@link ApiGatewayRequestEvent} has access.
-   * 
-   * @param method {@link String}
-   * @param path {@link String}
-   * @param handler {@link ApiGatewayRequestHandler}
-   * @param authorizer {@link ApiAuthorizer}
-   * @return boolean
-   */
-  private boolean hasAccess(final String method, final String path,
-      final ApiGatewayRequestHandler handler, final ApiAuthorizer authorizer) {
-
-    boolean access = false;
-
-    if (authorizer.isCallerAssumeRole() || authorizer.isCallerIamUser() || authorizer.isUserAdmin()
-        || isPublicUrl(path)) {
-
-      access = true;
-
-    } else if ((handler.isReadonly(method) && authorizer.isUserReadAccess())
-        || authorizer.isUserWriteAccess()) {
-
-      access = true;
-    }
-
-    return access;
-  }
-  
-  /**
-   * Whether to Http Method requires access check.
-   * 
-   * @param method {@link String}
-   * @return boolean
-   */
-  private boolean isCheckAccess(final String method) {
-    return !"options".equals(method);
-  }
-
-  /**
-   * Is Path /public/ and public urls are enabled.
-   * 
-   * @param path {@link String}
-   * @return boolean
-   */
-  private boolean isPublicUrl(final String path) {
-    return path.startsWith("/public/");
-  }
-
-  /**
-   * Log Exception.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param e {@link Exception}
-   */
-  private void logError(final LambdaLogger logger, final Exception e) {
-    e.printStackTrace();
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    e.printStackTrace(pw);
-    logger.log(sw.toString());
-  }
-
-  /**
-   * Process {@link ApiGatewayRequestEvent}.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param urlMap {@link Map}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorizer {@link ApiAuthorizer}
-   * 
-   * @return {@link ApiRequestHandlerResponse}
-   * @throws Exception Exception
-   */
-  private ApiRequestHandlerResponse processRequest(final LambdaLogger logger,
-      final Map<String, ApiGatewayRequestHandler> urlMap, final ApiGatewayRequestEvent event,
-      final ApiAuthorizer authorizer) throws Exception {
-
-    if (event == null || event.getHttpMethod() == null) {
-      throw new NotFoundException("Invalid Request");
-    }
-
-    String method = event.getHttpMethod().toLowerCase();
-    String resource = event.getResource();
-    ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
-
-    if (isCheckAccess(method) && !hasAccess(method, event.getPath(), handler, authorizer)) {
-      throw new ForbiddenException("Access Denied");
-    }
-
-    return callHandlerMethod(logger, method, event, authorizer, handler);
   }
 
   /**
@@ -376,6 +147,275 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
 
     return response;
+  }
+
+  /**
+   * Create Response Headers.
+   *
+   * @return {@link Map} {@link String}
+   */
+  protected Map<String, String> createJsonHeaders() {
+    Map<String, String> headers = new HashMap<>();
+    headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key");
+    headers.put("Access-Control-Allow-Methods", "*");
+    headers.put("Access-Control-Allow-Origin", "*");
+    headers.put("Content-Type", "application/json");
+    return headers;
+  }
+
+  /**
+   * Find Request Handler.
+   * @param urlMap {@link Map}
+   * @param method {@link String}
+   * @param resource {@link String}
+   * @return {@link ApiGatewayRequestHandler}
+   * @throws NotFoundException Handler not found
+   */
+  public ApiGatewayRequestHandler findRequestHandler(
+      final Map<String, ApiGatewayRequestHandler> urlMap, final String method,
+      final String resource) throws NotFoundException {
+    String s = "options".equals(method) ? method : resource;
+    ApiGatewayRequestHandler hander = urlMap.get(s);
+    if (hander != null) {
+      return hander;
+    }
+      
+    throw new NotFoundException(resource + " not found");
+  }
+
+  /**
+   * Get {@link ApiGatewayRequestEvent}.
+   *
+   * @param str {@link String}
+   * @param logger {@link LambdaLogger}
+   * @param awsservice {@link AwsServiceCache}
+   * @return {@link ApiGatewayRequestEvent}
+   * @throws IOException IOException
+   */
+  private ApiGatewayRequestEvent getApiGatewayEvent(final String str,
+      final LambdaLogger logger, final AwsServiceCache awsservice) throws IOException {
+
+    if (awsservice.debug()) {
+      logger.log(str);
+    }
+
+    ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
+    return event;
+  }
+  
+  /**
+   * Get {@link AwsServiceCache}.
+   *
+   * @return {@link AwsServiceCache}
+   */
+  public abstract AwsServiceCache getAwsServices();
+
+  /**
+   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   * @throws BadException BadException
+   */
+  private String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
+    String body = event.getBody();
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+    
+    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
+      byte[] bytes = Base64.getDecoder().decode(body);
+      body = new String(bytes, StandardCharsets.UTF_8);
+    }
+    
+    if (StringUtils.isEmpty(body)) {
+      throw new BadException("request body is required");
+    }
+    
+    return body;
+  }
+
+  /**
+   * Get URL Map.
+   * @return {@link Map}
+   */
+  public abstract Map<String, ApiGatewayRequestHandler> getUrlMap();
+
+  @Override
+  public void handleRequest(final InputStream input, final OutputStream output,
+      final Context context) throws IOException {
+
+    LambdaLogger logger = context.getLogger();
+    
+    AwsServiceCache awsServices = getAwsServices();
+
+    String str = IoUtils.toUtf8String(input);
+    
+    ApiGatewayRequestEvent event = getApiGatewayEvent(str, logger, awsServices);
+    if (!isEmpty(event)) {
+      processApiGatewayRequest(logger, event, awsServices, output);
+    } else {
+      LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
+      for (LambdaInputRecord record : records.getRecords()) {
+        if ("aws:sqs".equals(record.getEventSource())) {
+          handleSqsRequest(record);
+        }
+      }
+    }
+  }
+  
+  /**
+   * Handler for Sqs Requests.
+   * @param record {@link LambdaInputRecord}
+   * @throws IOException IOException
+   */
+  public abstract void handleSqsRequest(LambdaInputRecord record) throws IOException;
+
+  /**
+   * Whether {@link ApiGatewayRequestEvent} has access.
+   * 
+   * @param method {@link String}
+   * @param path {@link String}
+   * @param handler {@link ApiGatewayRequestHandler}
+   * @param authorizer {@link ApiAuthorizer}
+   * @return boolean
+   */
+  private boolean hasAccess(final String method, final String path,
+      final ApiGatewayRequestHandler handler, final ApiAuthorizer authorizer) {
+
+    boolean access = false;
+
+    if (authorizer.isCallerAssumeRole() || authorizer.isCallerIamUser() || authorizer.isUserAdmin()
+        || isPublicUrl(path)) {
+
+      access = true;
+
+    } else if ((handler.isReadonly(method) && authorizer.isUserReadAccess())
+        || authorizer.isUserWriteAccess()) {
+
+      access = true;
+    }
+
+    return access;
+  }
+
+  /**
+   * Whether to Http Method requires access check.
+   * 
+   * @param method {@link String}
+   * @return boolean
+   */
+  private boolean isCheckAccess(final String method) {
+    return !"options".equals(method);
+  }
+  
+  /**
+   * Is {@link ApiGatewayRequestEvent} empty.
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return boolean
+   */
+  private boolean isEmpty(final ApiGatewayRequestEvent event) {
+    return event.getHeaders() == null && event.getPath() == null;
+  }
+
+  /**
+   * Is Path /public/ and public urls are enabled.
+   * 
+   * @param path {@link String}
+   * @return boolean
+   */
+  private boolean isPublicUrl(final String path) {
+    return path.startsWith("/public/");
+  }
+
+  /**
+   * Log Exception.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param e {@link Exception}
+   */
+  private void logError(final LambdaLogger logger, final Exception e) {
+    e.printStackTrace();
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    logger.log(sw.toString());
+  }
+
+  /**
+   * Processes API Gateway Requests.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param awsServices {@link AwsServiceCache}
+   * @param output {@link OutputStream}
+   * @throws IOException IOException
+   */
+  private void processApiGatewayRequest(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
+      final OutputStream output) throws IOException {
+    
+    ApiAuthorizer authorizer = new ApiAuthorizer(event);
+
+    try {
+
+      ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorizer);
+      processResponse(authorizer, event, object);
+      buildResponse(logger, awsServices, output, object.getStatus(), object.getHeaders(),
+          object.getResponse());
+
+    } catch (NotFoundException e) {
+      buildResponse(logger, awsServices, output, SC_NOT_FOUND, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (TooManyRequestsException e) {
+      buildResponse(logger, awsServices, output, SC_TOO_MANY_REQUESTS, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (BadException | IllegalArgumentException | DateTimeException e) {
+      buildResponse(logger, awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (ForbiddenException e) {
+      buildResponse(logger, awsServices, output, SC_FORBIDDEN, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (UnauthorizedException e) {
+      buildResponse(logger, awsServices, output, SC_UNAUTHORIZED, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (NotImplementedException e) {
+      buildResponse(logger, awsServices, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),
+          new ApiResponseError(e.getMessage()));
+    } catch (Exception e) {
+      logError(logger, e);
+
+      buildResponse(logger, awsServices, output, SC_ERROR, Collections.emptyMap(),
+          new ApiResponseError("Internal Server Error"));
+    }
+  }
+
+  /**
+   * Process {@link ApiGatewayRequestEvent}.
+   *
+   * @param logger {@link LambdaLogger}
+   * @param urlMap {@link Map}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * 
+   * @return {@link ApiRequestHandlerResponse}
+   * @throws Exception Exception
+   */
+  private ApiRequestHandlerResponse processRequest(final LambdaLogger logger,
+      final Map<String, ApiGatewayRequestHandler> urlMap, final ApiGatewayRequestEvent event,
+      final ApiAuthorizer authorizer) throws Exception {
+
+    if (event == null || event.getHttpMethod() == null) {
+      throw new NotFoundException("Invalid Request");
+    }
+
+    String method = event.getHttpMethod().toLowerCase();
+    String resource = event.getResource();
+    ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
+
+    if (isCheckAccess(method) && !hasAccess(method, event.getPath(), handler, authorizer)) {
+      throw new ForbiddenException("Access Denied");
+    }
+
+    return callHandlerMethod(logger, method, event, authorizer, handler);
   }
 
   /**

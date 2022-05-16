@@ -47,6 +47,8 @@ import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for {@link CoreRequestHandler} class. */
 @ExtendWith(LocalStackExtension.class)

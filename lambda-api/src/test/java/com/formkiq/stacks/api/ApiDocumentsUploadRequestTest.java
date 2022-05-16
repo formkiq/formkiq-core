@@ -43,6 +43,9 @@ import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for uploading /documents. */
 @ExtendWith(LocalStackExtension.class)

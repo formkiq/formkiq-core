@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.testutils.aws;
 
-import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
-import static com.formkiq.stacks.api.TestServices.FORMKIQ_APP_ENVIRONMENT;
-import static com.formkiq.stacks.api.TestServices.STAGE_BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;

@@ -45,6 +45,8 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.SearchQuery;
 import com.formkiq.stacks.dynamodb.SearchTagCriteria;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /search. */
 @ExtendWith(LocalStackExtension.class)

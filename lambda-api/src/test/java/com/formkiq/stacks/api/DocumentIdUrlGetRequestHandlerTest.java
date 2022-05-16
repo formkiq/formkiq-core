@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.api.TestServices.AWS_REGION;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -41,6 +41,9 @@ import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for request /documents/{documentId}/url. */
 @ExtendWith(LocalStackExtension.class)
