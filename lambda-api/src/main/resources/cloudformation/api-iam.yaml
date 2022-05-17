@@ -648,6 +648,12 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OcrBody'
               responses:
                 '200':
                   description: 200 OK
@@ -1614,7 +1620,20 @@ Resources:
               properties:
                 message:
                   type: string
-                  description: OCR processing message                  
+                  description: OCR processing message
+            OcrBody:
+              type: object
+              example:
+                parseTypes:
+                  - TEXT
+                  - FORM
+                  - TABLE
+              properties:
+                parseTypes:
+                  type: "array"
+                  description "OCR Parse types: TEXT, FORM, TABLE"
+                  items:
+                    type: "string"
             Version:
               type: object
               properties:
