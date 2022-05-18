@@ -1,4 +1,4 @@
-![FormKiQ](https://raw.githubusercontent.com/formkiq/formkiq-core/master/logo.png)
+![FormKiQ](https://raw.githubusercontent.com/formkiq/formkiq-core/master/fq-gh-social.png)
 
 # FormKiQ Core &nbsp; [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Open%20Source%20Headless%20Document%20Management%20System%20that%20runs%20in%20your%20AWS%20Cloud&url=https://www.formkiq.com&via=FormKiQ&hashtags=documentmanagement,dms,headless,serverless)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
