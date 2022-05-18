@@ -132,4 +132,4 @@ Please see our [docs](https://docs.formkiq.com/#_building_from_source) for instr
 
 ## License
 
-MIT - 2020 (c) FormKiq Inc. More details see LICENSE file.
+MIT - 2020-2022 (c) FormKiQ, Inc. For more details, see LICENSE file.
