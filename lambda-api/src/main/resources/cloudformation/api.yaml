@@ -1626,12 +1626,12 @@ Resources:
               example:
                 parseTypes:
                   - TEXT
-                  - FORM
-                  - TABLE
+                  - FORMS
+                  - TABLES
               properties:
                 parseTypes:
                   type: "array"
-                  description "OCR Parse types: TEXT, FORM, TABLE"
+                  description "OCR Parse types: TEXT, FORMS, TABLES"
                   items:
                     type: "string"
             Version:

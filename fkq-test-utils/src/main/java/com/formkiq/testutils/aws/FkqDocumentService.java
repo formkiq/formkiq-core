@@ -31,6 +31,7 @@ public class FkqDocumentService {
    * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
    * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
    * @param content byte[]
    * @param contentType {@link String}
    * @return {@link String}
@@ -38,13 +39,12 @@ public class FkqDocumentService {
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  public String addDocument(final FormKiqClientV1 client, final byte[] content,
-      final String contentType)
-      throws IOException, URISyntaxException, InterruptedException {
+  public String addDocument(final FormKiqClientV1 client, final String siteId, final byte[] content,
+      final String contentType) throws IOException, URISyntaxException, InterruptedException {
     // given
     final int status = 200;
     GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().contentLength(content.length);
+        new GetDocumentUploadRequest().siteId(siteId).contentLength(content.length);
 
     // when
     HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
