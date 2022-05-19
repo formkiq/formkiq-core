@@ -89,14 +89,7 @@ task assembleTemplate {
 		}
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/template-sar.yaml"
-		}
-		exec {
-			commandLine "bash", "-c", "yq d src/main/resources/cloudformation/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
-		}
-		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --resolve-s3 --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/storage/template.yaml"
+			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
 		}
 	}
 }

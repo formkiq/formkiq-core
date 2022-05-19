@@ -1,18 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - API
-
-Metadata:
-  AWS::ServerlessRepo::Application:
-    Name: FormKiQ-Core-Api
-    Description: Base component of FormKiQ-Core
-    Author: FormKiQ Inc
-    SpdxLicenseId: MIT
-    LicenseUrl: file://../../../LICENSE
-    ReadmeUrl: file://../../../README.md
-    Labels: []
-    HomePageUrl: https://github.com/formkiq/formkiq-core
-    SourceCodeUrl: https://github.com/formkiq/formkiq-core
     
 Parameters:
               
@@ -172,11 +160,7 @@ Resources:
       Description: 
         Fn::Sub: "Documents IAM API ${AppEnvironment}"
       StageName: "$default"
-          
-  DocumentsHttpApi: empty
-    
-  DocumentsIamApi: empty
-            
+
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:

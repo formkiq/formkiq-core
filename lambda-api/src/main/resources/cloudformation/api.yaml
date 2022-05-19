@@ -1,4 +1,10 @@
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.all
+---
 Resources:
+
+  #@overlay/match missing_ok=True
   DocumentsHttpApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -16,7 +22,7 @@ Resources:
               tags:
               - Miscellaneous    
               responses:
-                200:
+                '200':
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
@@ -42,7 +48,7 @@ Resources:
               tags:
               - Miscellaneous
               responses:
-                200:
+                '200':
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
@@ -91,7 +97,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
               responses:
-                200:
+                '200':
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
@@ -771,7 +777,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               responses:
-                200:
+                '200':
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
@@ -830,7 +836,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
               responses:
-                200:
+                '200':
                   description: "200 OK"
                   headers:
                     Access-Control-Allow-Origin:
