@@ -58,10 +58,6 @@ Full FormKiQ Documentation can be found at
 
 https://docs.formkiq.com/
 
-or
-
-https://github.com/formkiq/docs.formkiq.com
-
 ### How much does it cost to run
 
 FormKiQ Core was created using [serverless technology](https://aws.amazon.com/serverless/). This means that there are no servers to manage; everything is managed by AWS. All AWS services FormKiQ uses pay-per-usage billing. You can start using FormKiQ with very little cost.
