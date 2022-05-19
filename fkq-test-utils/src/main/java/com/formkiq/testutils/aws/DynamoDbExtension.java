@@ -58,8 +58,8 @@ public class DynamoDbExtension
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
     this.dbhelper.truncateDocumentDates();
-    this.dbhelper.truncateDocumentsTable();
     this.dbhelper.truncateWebhooks();
+    this.dbhelper.truncateDocumentsTable();
     this.dbhelper.truncateConfig();
     if (0 != this.dbhelper.getDocumentItemCount()) {
       throw new RuntimeException("Database is not empty");

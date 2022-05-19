@@ -314,7 +314,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @return boolean
    */
   private boolean isEmpty(final ApiGatewayRequestEvent event) {
-    return event.getHeaders() == null && event.getPath() == null;
+    return event != null && event.getHeaders() == null && event.getPath() == null;
   }
 
   /**

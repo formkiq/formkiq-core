@@ -1631,7 +1631,7 @@ Resources:
               properties:
                 parseTypes:
                   type: "array"
-                  description "OCR Parse types: TEXT, FORM, TABLE"
+                  description: "OCR Parse types - TEXT, FORM, TABLE"
                   items:
                     type: "string"
             Version:

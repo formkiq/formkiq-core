@@ -638,6 +638,12 @@
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OcrBody'
               responses:
                 '200':
                   description: 200 OK
@@ -1583,9 +1589,9 @@
                 ocrEngine:
                   type: string
                   description: The OCR technique used
-                url:
+                ocrStatus:
                   type: string
-                  description: The URL link for OCR data (for documents larger than 5 MB)
+                  description: The status of the OCR request
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
@@ -1605,6 +1611,19 @@
                 message:
                   type: string
                   description: OCR processing message
+            OcrBody:
+              type: object
+              example:
+                parseTypes:
+                  - TEXT
+                  - FORM
+                  - TABLE
+              properties:
+                parseTypes:
+                  type: "array"
+                  description: "OCR Parse types - TEXT, FORM, TABLE"
+                  items:
+                    type: "string"
             Version:
               type: object
               properties:

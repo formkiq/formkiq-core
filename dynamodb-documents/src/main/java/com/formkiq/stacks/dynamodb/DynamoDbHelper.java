@@ -199,7 +199,7 @@ public class DynamoDbHelper {
 
     List<String> documents = result.items().stream().filter(i -> {
       String s = i.get("SK").s();
-      return "document".equals(s) || "ocr#".equals(s);
+      return "document".equals(s) || "ocr#".equals(s) || i.containsKey("documentId");
     }).map(i -> i.get("PK").s()).collect(Collectors.toList());
 
     return new PaginationResults<String>(documents, token);
