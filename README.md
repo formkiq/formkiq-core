@@ -10,7 +10,6 @@
 
 - [What is FormKiQ Core](#-what-is-formkiq-core)
   - [Features](#features)
-  - [Demo](#demo)
   - [How much does it cost to run?](#how-much-does-it-cost-to-run)
   - [Examples](#examples)
     - [Web Form Example - Contact Form](#web-form-example---contact-form)
@@ -62,12 +61,6 @@ https://docs.formkiq.com/
 or
 
 https://github.com/formkiq/docs.formkiq.com
-
-### Demo
-
-Click the link below to see how you can run the FormKiQ Demo is **YOUR** AWS Account.
-
-[FormKiQ Core Demo](https://github.com/formkiq/formkiq-core/wiki/FormKiQ-Core-Demo)
 
 ### How much does it cost to run
 
