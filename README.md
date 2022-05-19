@@ -37,7 +37,7 @@ FormKiQ Core is built using AWS Serverless services like [AWS Lambda](https://aw
 
 ### Features
 
-Please visit [our website](https://formkiq.com) to see the full list of features.
+Please visit [our website](https://www.formkiq.com) to see the full list of features.
 
 ✅ API First (FormKiQ API) and Cloud-Native Architecture
 
@@ -124,7 +124,7 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 
 ## Building from source
 
-Please see our [docs](https://docs.formkiq.com/#_building_from_source) for instructions.
+Please see our [docs](https://docs.formkiq.com/docs/1.6.0/reference/README.html#building-from-source) for instructions.
 
 ## License
 
