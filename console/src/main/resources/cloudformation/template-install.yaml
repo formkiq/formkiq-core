@@ -48,7 +48,7 @@ Parameters:
     Description: The type of FormKiQ installation
     Default: "core"
     Type: String
-    AllowedValues: ["core", "pro"]
+    AllowedValues: ["core", "enterprise"]
 
   AllowAdminCreateUserOnly:
     Description: When true only Cognito Admin can create users, false users can register themselves

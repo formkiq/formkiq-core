@@ -33,7 +33,7 @@ Parameters:
     Description: The type of FormKiQ installation
     Default: "core"
     Type: String
-    AllowedValues: ["core", "pro"]
+    AllowedValues: ["core", "enterprise"]
   
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)

@@ -25,7 +25,7 @@ Parameters:
     Description: The type of FormKiQ installation
     Default: "core"
     Type: String
-    AllowedValues: ["core", "pro"]
+    AllowedValues: ["core", "enterprise"]
     
 Resources:
 
@@ -208,7 +208,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: 64919587C212B6C2F3E9F90B90906EBEFC02E1894A688406CC065B2832B1CDCC
+      AutoPublishCodeSha256: 0E88FEF466DE7769DD559283C1443B7B62D03CA56B0FFC9128F93ABA919BFDF2
       Environment:
         Variables:
           DOCUMENTS_S3_BUCKET: 
@@ -278,7 +278,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: 64919587C212B6C2F3E9F90B90906EBEFC02E1894A688406CC065B2832B1CDCC
+      AutoPublishCodeSha256: 0E88FEF466DE7769DD559283C1443B7B62D03CA56B0FFC9128F93ABA919BFDF2
       Environment:
         Variables:
           DOCUMENTS_TABLE: 
