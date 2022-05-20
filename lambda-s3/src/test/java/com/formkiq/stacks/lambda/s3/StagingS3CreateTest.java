@@ -702,6 +702,88 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
+   * Test .fkb64 file minimum attributes.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension07() throws IOException {
+    Map<String, Object> data = new HashMap<>();
+    data.put("userId", "joesmith");
+    data.put("contentType", "text/plain");
+    data.put("isBase64", Boolean.TRUE);
+    data.put("content", "dGhpcyBpcyBhIHRlc3Q=");    
+    data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
+        Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
+    
+    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      this.logger.reset();
+
+      String key = createDatabaseKey(siteId, "documentId.fkb64");
+
+      Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
+
+      try (S3Client c = s3.buildClient()) {
+
+        byte[] content = this.gson.toJson(ditem).getBytes(UTF_8);
+        s3.putObject(c, STAGING_BUCKET, key, content, null, null);
+
+        // when
+        handleRequest(map);
+
+        // then
+        String documentId = findDocumentIdFromLogger(siteId);
+        assertEquals(documentId, UUID.fromString(documentId).toString());
+        assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
+
+        assertFalse(s3.getObjectMetadata(c, STAGING_BUCKET, documentId).isObjectExists());
+
+        DocumentItem item = service.findDocument(siteId, documentId);
+        assertEquals("14", item.getContentLength().toString());
+        assertEquals("text/plain", item.getContentType());
+        assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
+        assertNull(item.getPath());
+        assertEquals("joesmith", item.getUserId());
+
+        final int count = 3;
+        List<DocumentTag> tags =
+            service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
+        assertEquals(count, tags.size());
+
+        assertEqualsTag(tags.get(0), Map.of("documentId", documentId, "key", "category", "value",
+            "document", "type", "USERDEFINED", "userId", "joesmith"));
+        
+        assertEqualsTag(tags.get(1), Map.of("documentId", documentId, "key", "status", "values",
+            Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
+        
+        assertEqualsTag(tags.get(2), Map.of("documentId", documentId, "key", "userId", "value",
+            "joesmith", "type", "SYSTEMDEFINED", "userId", "joesmith"));        
+      }
+    }
+  }
+  
+  /**
+   * Assert {@link DocumentTag} Equals.
+   * @param tag {@link DocumentTag}
+   * @param attributes {@link Map}
+   */
+  private void assertEqualsTag(final DocumentTag tag, final Map<String, Object> attributes) {
+    assertEquals(attributes.get("documentId"), tag.getDocumentId());
+    assertEquals(attributes.get("key"), tag.getKey());
+    assertNotNull(tag.getInsertedDate());
+    assertEquals(attributes.get("type"), tag.getType().name());
+    assertEquals(attributes.get("userId"), tag.getUserId());
+
+    if (attributes.containsKey("values")) {
+      assertEquals(attributes.get("values"), tag.getValues());
+    } else {
+      assertEquals(attributes.get("value"), tag.getValue());
+    }
+  }
+  
+  /**
    * Handle Error.
    */
   @Test

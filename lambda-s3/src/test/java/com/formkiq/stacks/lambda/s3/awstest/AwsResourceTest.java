@@ -74,7 +74,9 @@ public class AwsResourceTest extends AbstractAwsTest {
   private static final long SLEEP = 500L;
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30000L;
-
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().create();
+  
   /**
    * Assert {@link LambdaFunctionConfiguration}.
    * 
@@ -95,10 +97,11 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @param queueUrl {@link String}
    * @param type {@link String}
+   * @return {@link String}
    * @throws InterruptedException InterruptedException
    */
   @SuppressWarnings("unchecked")
-  private static void assertSnsMessage(final String queueUrl, final String type)
+  private static String assertSnsMessage(final String queueUrl, final String type)
       throws InterruptedException {
 
     List<Message> receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
@@ -127,6 +130,8 @@ public class AwsResourceTest extends AbstractAwsTest {
     } else {
       assertSnsMessage(queueUrl, type);
     }
+    
+    return map.get("documentId");
   }
 
   /**
@@ -255,7 +260,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   }
 
   /**
-   * Test Adding a file directly to Documents Buckekt and then deleting it.
+   * Test Adding a file directly to Documents Bucket and then deleting it.
    * 
    * @throws Exception Exception
    */
@@ -308,6 +313,50 @@ public class AwsResourceTest extends AbstractAwsTest {
     }
   }
 
+  /**
+   * Test Adding a .FKB64 file directly to Staging Bucket.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testAddDeleteFile04() throws Exception {
+    // given
+    String key = UUID.randomUUID().toString();
+
+    String createQueue = "createtest-" + UUID.randomUUID();
+    String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String subscriptionDocumentArn =
+        subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
+
+    String contentType = "text/plain";
+
+    Map<String, Object> data = new HashMap<>();
+    data.put("userId", "joesmith");
+    data.put("contentType", contentType);
+    data.put("isBase64", Boolean.TRUE);
+    data.put("content", "dGhpcyBpcyBhIHRlc3Q=");    
+    data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
+        Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
+    byte[] json = this.gson.toJson(data).getBytes(StandardCharsets.UTF_8);
+    
+    try {
+
+      try (S3Client s3 = getS3Service().buildClient()) {        
+        // when
+        getS3Service().putObject(s3, getStagingdocumentsbucketname(), key + ".fkb64", json,
+            contentType);
+  
+        String documentId = assertSnsMessage(documentQueueUrl, "create");
+        assertEquals("this is a test",
+            getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
+      }
+
+    } finally {
+      getSnsService().unsubscribe(subscriptionDocumentArn);
+      getSqsService().deleteQueue(documentQueueUrl);
+    }
+  }
+  
   /**
    * Test Updating a file directly to Staging bucket.
    * 
