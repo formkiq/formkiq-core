@@ -235,7 +235,9 @@ Resources:
             Fn::Join: 
               - ""
               - 
-                -  !GetAtt Console.Arn
+                - Fn::GetAtt:
+                  - Console
+                  - Arn
                 - "/*"
           Principal:
             CanonicalUser: 
