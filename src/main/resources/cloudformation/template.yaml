@@ -60,6 +60,21 @@ Parameters:
      
 Resources:
 
+  EditionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "FormKiQ Edition"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/edition"
+      Type: String
+      Value: "core"
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   VersionParameter:
     Type: AWS::SSM::Parameter
     Properties:

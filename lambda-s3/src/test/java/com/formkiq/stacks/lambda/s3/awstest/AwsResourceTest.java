@@ -470,11 +470,12 @@ public class AwsResourceTest extends AbstractAwsTest {
   @Test
   public void testSsmParameters() {
     String appenvironment = getAppenvironment();
+    String edition = getEdition();
 
-    assertTrue(
-        getDocumentsbucketname().startsWith("formkiq-core-" + appenvironment + "-documents-"));
-    assertTrue(
-        getStagingdocumentsbucketname().startsWith("formkiq-core-" + appenvironment + "-staging-"));
+    assertTrue(getDocumentsbucketname()
+        .startsWith("formkiq-" + edition + "-" + appenvironment + "-documents-"));
+    assertTrue(getStagingdocumentsbucketname()
+        .startsWith("formkiq-" + edition + "-" + appenvironment + "-staging-"));
     assertTrue(getSsmService()
         .getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn")
         .contains("SnsDocumentEvent"));

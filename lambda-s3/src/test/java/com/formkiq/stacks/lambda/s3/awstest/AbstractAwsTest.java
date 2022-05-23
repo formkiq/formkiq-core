@@ -54,6 +54,8 @@ public abstract class AbstractAwsTest {
   private static Region awsregion;
   /** App Environment Name. */
   private static String appenvironment;
+  /** App Edition Name. */
+  private static String edition;
   /** {@link SqsService}. */
   private static SqsService sqsService;
   /** {@link S3Service}. */
@@ -104,6 +106,8 @@ public abstract class AbstractAwsTest {
     ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
 
+    edition =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
     sesbucketname =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
     documentsbucketname =
@@ -155,6 +159,15 @@ public abstract class AbstractAwsTest {
    */
   protected static DocumentService getDocumentService() {
     return documentService;
+  }
+
+  /**
+   * Get App Edition.
+   * 
+   * @return {@link String}
+   */
+  public static String getEdition() {
+    return edition;
   }
 
   /**
