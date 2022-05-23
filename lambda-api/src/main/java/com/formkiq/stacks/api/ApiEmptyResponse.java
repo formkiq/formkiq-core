@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
-import com.formkiq.lambda.apigateway.ApiResponse;
+import com.formkiq.aws.services.lambda.ApiResponse;
 
 /** Empty {@link ApiResponse}. */
 public class ApiEmptyResponse implements ApiResponse {

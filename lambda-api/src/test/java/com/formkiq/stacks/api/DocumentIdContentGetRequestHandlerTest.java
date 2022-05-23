@@ -23,9 +23,9 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.api.TestServices.AWS_REGION;
-import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.nio.charset.StandardCharsets;
@@ -38,8 +38,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/content. */

@@ -33,7 +33,7 @@ Parameters:
     Description: The type of FormKiQ installation
     Default: "core"
     Type: String
-    AllowedValues: ["core", "pro"]
+    AllowedValues: ["core", "enterprise"]
   
   Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
@@ -46,70 +46,98 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Cognito User Pool"
-      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolId"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/cognito/UserPoolId"
       Type: String
-      Value: !Ref CognitoUserPool
+      Value: 
+        Ref: CognitoUserPool
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   CognitoUserPoolArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Cognito User Pool Arn"
-      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolArn"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/cognito/UserPoolArn"
       Type: String
-      Value: !Ref CognitoUserPoolArn
+      Value: 
+        Ref: CognitoUserPoolArn
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CognitoUserPoolClientIdParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Cognito User Pool Client"
-      Name: !Sub "/formkiq/${AppEnvironment}/cognito/UserPoolClientId"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/cognito/UserPoolClientId"
       Type: String
-      Value: !Ref CognitoUserPoolClient
+      Value: 
+        Ref: CognitoUserPoolClient
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CognitoIdentityPoolIdParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Cognito Identity Pool"
-      Name: !Sub "/formkiq/${AppEnvironment}/cognito/IdentityPoolId"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/cognito/IdentityPoolId"
       Type: String
-      Value: !Ref CognitoIdentityPool
+      Value: 
+        Ref: CognitoIdentityPool
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CustomMessageAdminCreateUserSubjectParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "AdminCreateUser Email Subject"
-      Name: !Sub "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Subject"
+      Name: 
+        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Subject"
       Type: String
       Value: "Welcome to FormKiQ"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CustomMessageAdminCreateUserMessageParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "AdminCreateUser Email Message"
-      Name: !Sub "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Message"
+      Name: 
+        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Message"
       Type: String
       Value: "Hello {username} {email},<br /><br />Welcome to FormKiQ.<br /><br />FormKiQ gives you full control of your organization's documents, including storage, search, data extraction, and workflows.<br />All in Your AWS Cloud.<br /><br />Log into your FormKiQ account ${link}"
       Tags:
-        Application: !Sub "FormKiQ ${FormKiQType}"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"

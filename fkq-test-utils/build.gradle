@@ -1,0 +1,17 @@
+
+description = "FormKiQ Test Utils"
+
+dependencies {
+	implementation project(':aws-cognito')
+    implementation project(':aws-s3')
+	implementation project(':aws-sqs')
+	implementation project(':aws-ssm')
+    implementation project(':dynamodb-documents')
+	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
+	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.7.0'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.0'
+	implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
+	implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.1'
+	implementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
+}

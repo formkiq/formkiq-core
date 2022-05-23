@@ -23,20 +23,20 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.lambda.apigateway.ApiAuthorizer;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
-import com.formkiq.lambda.apigateway.ApiMapResponse;
-import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
-import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.stacks.common.objects.DynamicObject;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */

@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
@@ -33,12 +33,12 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.lambda.apigateway.ApiAuthorizer;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
-import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
-import com.formkiq.lambda.apigateway.AwsServiceCache;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.api.ApiDocumentVersion;
 import com.formkiq.stacks.api.ApiDocumentVersionsResponse;

@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.InvalidConditionsException;
 import com.formkiq.stacks.dynamodb.SearchQuery;
 
 /** Query Request. */
@@ -61,7 +60,7 @@ public class QueryRequest {
   /** Is {@link QueryRequest} object valid. */
   public void isValid() {
     if (this.query == null) {
-      throw new InvalidConditionsException("'query' field is required.");
+      throw new IllegalArgumentException("'query' field is required.");
     }
 
     this.query.isValid();

@@ -49,12 +49,17 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.stacks.dynamodb.PaginationResults;
+import com.formkiq.stacks.dynamodb.SearchQuery;
+import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
@@ -127,6 +132,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** {@link DocumentService}. */
   private DocumentService service;
+  /** {@link DocumentSearchService}. */
+  private DocumentSearchService searchService;
   /** {@link S3Service}. */
   private S3Service s3;
   /** {@link SqsService}. */
@@ -143,9 +150,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /** constructor. */
   public StagingS3Create() {
     this(System.getenv(),
-        new DocumentServiceImpl(
-            new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-            System.getenv("DOCUMENTS_TABLE")),
+        new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
@@ -154,14 +159,16 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * constructor.
    *
    * @param map {@link Map}
-   * @param documentService {@link DocumentService}
+   * @param dynamoDb {@link DynamoDbConnectionBuilder}
    * @param s3Builder {@link S3ConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    */
-  protected StagingS3Create(final Map<String, String> map, final DocumentService documentService,
+  protected StagingS3Create(final Map<String, String> map, final DynamoDbConnectionBuilder dynamoDb,
       final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder) {
 
-    this.service = documentService;
+    String documentsTable = map.get("DOCUMENTS_TABLE");
+    this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
+    this.searchService = new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable);
     this.s3 = new S3Service(s3Builder);
     this.sqsService = new SqsService(sqsBuilder);
 
@@ -228,37 +235,90 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String key = resetDatabaseKey(siteId, originalkey);
 
     boolean uuid = isUuid(key);
-    String documentId = uuid ? key : UUID.randomUUID().toString();
-
+    String documentIdForPath = !uuid ? getDocumentIdForPath(siteId, key) : null;
+    String documentId =
+        documentIdForPath != null ? documentIdForPath : uuid ? key : UUID.randomUUID().toString();
+    
     String destKey = createDatabaseKey(siteId, documentId);
-
-    logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
-        destKey, this.documentsBucket));
 
     S3ObjectMetadata metadata = this.s3.getObjectMetadata(s3Client, bucket, originalkey);
 
-    String username = metadata.getMetadata().entrySet().stream()
-        .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(s -> s.getValue())
-        .orElse("System");
+    // if file path isn't in the database it's already saved
+    if (documentIdForPath == null) {
+      String username = metadata.getMetadata().entrySet().stream()
+          .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(s -> s.getValue())
+          .orElse("System");
 
-    DynamicDocumentItem doc = new DynamicDocumentItem(Collections.emptyMap());
-    doc.setDocumentId(documentId);
-    doc.setContentLength(metadata.getContentLength());
-    doc.setContentType(metadata.getContentType());
-    doc.setUserId(username);
-    doc.setChecksum(metadata.getEtag());
-    doc.setInsertedDate(date);
+      DynamicDocumentItem doc = new DynamicDocumentItem(Collections.emptyMap());
+      doc.setDocumentId(documentId);
+      doc.setContentLength(metadata.getContentLength());
+      doc.setContentType(metadata.getContentType());
+      doc.setUserId(username);
+      doc.setChecksum(metadata.getEtag());
+      doc.setInsertedDate(date);
 
-    if (!uuid) {
-      doc.setPath(key);
+      if (!uuid) {
+        doc.setPath(key);
+      }
+
+      this.service.saveDocumentItemWithTag(siteId, doc);
     }
 
-    this.service.saveDocumentItemWithTag(siteId, doc);
+    logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
+        destKey, this.documentsBucket));
 
     this.s3.copyObject(s3Client, bucket, originalkey, this.documentsBucket, destKey,
         metadata.getContentType());
   }
 
+  /**
+   * Generate {@link Map} of DocumentId / Content.
+   * @param doc {@link DynamicDocumentItem}
+   * @return {@link Map}
+   */
+  private Map<String, String> createContentMap(final DynamicDocumentItem doc) {
+
+    Map<String, String> map = new HashMap<>();
+
+    if (doc.hasString("content")) {
+      if (doc.hasString("documentId")) {
+        map.put(doc.getString("documentId"), doc.getString("content"));
+      }
+    }
+
+    List<DynamicObject> documents = doc.getList("documents");
+    for (DynamicObject document : documents) {
+      if (document.hasString("content") && document.hasString("documentId")) {
+        map.put(document.getString("documentId"), document.getString("content"));
+      }
+    }
+
+    return map;
+  }
+
+  /**
+   * Generate {@link Map} of DocumentId / Content Type.
+   * @param doc {@link DynamicDocumentItem}
+   * @return {@link Map}
+   */
+  private Map<String, String> createContentTypeMap(final DynamicDocumentItem doc) {
+
+    Map<String, String> map = new HashMap<>();
+
+    if (doc.hasString("documentId") && doc.getContentType() != null) {
+      map.put(doc.getString("documentId"), doc.getContentType());
+    }
+
+    List<DynamicObject> documents = doc.getList("documents");
+    for (DynamicObject document : documents) {
+      if (document.hasString("contentType") && document.hasString("documentId")) {
+        map.put(document.getString("documentId"), document.getString("contentType"));
+      }
+    }
+
+    return map;
+  }
+  
   /**
    * Delete S3 Object.
    *
@@ -272,6 +332,18 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String msg = String.format("Removing %s from bucket %s.", key, bucket);
     logger.log(msg);
     this.s3.deleteObject(s3Client, bucket, key);
+  }
+
+  /**
+   * Find DocumentId for File Path.
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link String}
+   */
+  private String getDocumentIdForPath(final String siteId, final String path) {
+    SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
+    PaginationResults<DynamicDocumentItem> result = this.searchService.search(siteId, q, null, 1);
+    return !result.getResults().isEmpty() ? result.getResults().get(0).getDocumentId() : null;
   }
 
   @SuppressWarnings("unchecked")
@@ -377,6 +449,24 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
+   * Update Document Id, if needed.
+   * 
+   * @param doc {@link DynamicDocumentItem}s
+   */
+  private void updateDocumentIdIfNeeded(final DynamicDocumentItem doc) {
+    if (!doc.hasString("documentId")) {
+      doc.put("documentId", UUID.randomUUID().toString());
+    }
+
+    List<DynamicObject> documents = doc.getList("documents");
+    for (DynamicObject document : documents) {
+      if (!document.hasString("documentId")) {
+        document.put("documentId", UUID.randomUUID().toString());
+      }
+    }
+  }
+
+  /**
    * Write {@link DynamicDocumentItem} to S3 & DynamoDB.
    *
    * @param s3Client {@link S3Client}
@@ -436,71 +526,5 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
 
     return wrote;
-  }
-
-  /**
-   * Update Document Id, if needed.
-   * 
-   * @param doc {@link DynamicDocumentItem}s
-   */
-  private void updateDocumentIdIfNeeded(final DynamicDocumentItem doc) {
-    if (!doc.hasString("documentId")) {
-      doc.put("documentId", UUID.randomUUID().toString());
-    }
-
-    List<DynamicObject> documents = doc.getList("documents");
-    for (DynamicObject document : documents) {
-      if (!document.hasString("documentId")) {
-        document.put("documentId", UUID.randomUUID().toString());
-      }
-    }
-  }
-
-  /**
-   * Generate {@link Map} of DocumentId / Content.
-   * @param doc {@link DynamicDocumentItem}
-   * @return {@link Map}
-   */
-  private Map<String, String> createContentMap(final DynamicDocumentItem doc) {
-
-    Map<String, String> map = new HashMap<>();
-
-    if (doc.hasString("content")) {
-      if (doc.hasString("documentId")) {
-        map.put(doc.getString("documentId"), doc.getString("content"));
-      }
-    }
-
-    List<DynamicObject> documents = doc.getList("documents");
-    for (DynamicObject document : documents) {
-      if (document.hasString("content") && document.hasString("documentId")) {
-        map.put(document.getString("documentId"), document.getString("content"));
-      }
-    }
-
-    return map;
-  }
-  
-  /**
-   * Generate {@link Map} of DocumentId / Content Type.
-   * @param doc {@link DynamicDocumentItem}
-   * @return {@link Map}
-   */
-  private Map<String, String> createContentTypeMap(final DynamicDocumentItem doc) {
-
-    Map<String, String> map = new HashMap<>();
-
-    if (doc.hasString("documentId") && doc.getContentType() != null) {
-      map.put(doc.getString("documentId"), doc.getContentType());
-    }
-
-    List<DynamicObject> documents = doc.getList("documents");
-    for (DynamicObject document : documents) {
-      if (document.hasString("contentType") && document.hasString("documentId")) {
-        map.put(document.getString("documentId"), document.getString("contentType"));
-      }
-    }
-
-    return map;
   }
 }

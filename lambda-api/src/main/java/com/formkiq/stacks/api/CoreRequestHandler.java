@@ -27,13 +27,20 @@ import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiMessageResponse;
+import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiResponseError;
+import com.formkiq.aws.services.lambda.LambdaInputRecord;
+import com.formkiq.aws.services.lambda.NotFoundException;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.lambda.apigateway.AbstractApiRequestHandler;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
-import com.formkiq.lambda.apigateway.exception.NotFoundException;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
@@ -42,6 +49,7 @@ import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
@@ -71,7 +79,9 @@ import software.amazon.awssdk.regions.Region;
 @Reflectable
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
     DocumentTags.class, PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class,
-    PresetTag.class, Preset.class})
+    PresetTag.class, Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class,
+    ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
+    ApiPagination.class})
 public class CoreRequestHandler extends AbstractApiRequestHandler {
 
   /** Is Public Urls Enabled. */
@@ -112,9 +122,20 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
     URL_MAP.put("/search", new SearchRequestHandler());
     URL_MAP.put("/documents/upload", new DocumentsUploadRequestHandler());
     URL_MAP.put("/documents/{documentId}/upload", new DocumentsIdUploadRequestHandler());
+    URL_MAP.put("/documents/{documentId}/ocr", new DocumentsOcrRequestHandler());
     URL_MAP.put("/webhooks/{webhookId}/tags", new WebhooksTagsRequestHandler());
     URL_MAP.put("/webhooks/{webhookId}", new WebhooksIdRequestHandler());
     URL_MAP.put("/webhooks", new WebhooksRequestHandler());
+  }
+
+  /**
+   * Whether to enable public urls.
+   * 
+   * @param map {@link Map}
+   * @return boolean
+   */
+  protected static boolean isEnablePublicUrls(final Map<String, String> map) {
+    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
   }
 
   /**
@@ -140,8 +161,9 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
 
   @Override
   @SuppressWarnings("returncount")
-  public ApiGatewayRequestHandler findRequestHandler(final String method, final String resource)
-      throws NotFoundException {
+  public ApiGatewayRequestHandler findRequestHandler(
+      final Map<String, ApiGatewayRequestHandler> urlMap, final String method,
+      final String resource) throws NotFoundException {
 
     String s = "options".equals(method) ? method : resource;
 
@@ -165,13 +187,12 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
     throw new NotFoundException(resource + " not found");
   }
 
-  /**
-   * Whether to enable public urls.
-   * 
-   * @param map {@link Map}
-   * @return boolean
-   */
-  protected static boolean isEnablePublicUrls(final Map<String, String> map) {
-    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  @Override
+  public Map<String, ApiGatewayRequestHandler> getUrlMap() {
+    return URL_MAP;
+  }
+
+  @Override
+  public void handleSqsRequest(final LambdaInputRecord record) {    
   }
 }

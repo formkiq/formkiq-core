@@ -31,13 +31,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.lambda.apigateway.AwsServiceCache;
-import com.formkiq.stacks.api.DynamoDbExtension;
-import com.formkiq.stacks.api.DynamoDbTestServices;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.stacks.dynamodb.DynamoDbHelper;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 
 /**
  * Unit Tests for {@link DocumentsRestrictionsMaxContentLength}.

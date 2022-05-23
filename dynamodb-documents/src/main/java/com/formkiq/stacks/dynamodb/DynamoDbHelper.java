@@ -45,6 +45,11 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 /** Test Helper utility class for DynamoDB. */
 public class DynamoDbHelper {
 
+  /** Documents DynamoDB Table Name. */
+  public static final String DOCUMENTS_TABLE = "Documents";
+  /** Cache DynamoDB Table Name. */
+  public static final String CACHE_TABLE = "Cache";
+  
   /** {@link DynamoDbClient}. */
   private DynamoDbClient db;
   /** {@link DocumentService}. */
@@ -71,7 +76,7 @@ public class DynamoDbHelper {
    */
   public DynamoDbHelper(final DynamoDbConnectionBuilder builder)
       throws IOException, URISyntaxException {
-    this(builder, "Documents", "Cache");
+    this(builder, DOCUMENTS_TABLE, CACHE_TABLE);
   }
 
   /**
@@ -192,8 +197,10 @@ public class DynamoDbHelper {
 
     ScanResponse result = this.db.scan(sr);
 
-    List<String> documents = result.items().stream().filter(i -> i.get("SK").s().equals("document"))
-        .map(i -> i.get("PK").s()).collect(Collectors.toList());
+    List<String> documents = result.items().stream().filter(i -> {
+      String s = i.get("SK").s();
+      return "document".equals(s) || "ocr#".equals(s) || i.containsKey("documentId");
+    }).map(i -> i.get("PK").s()).collect(Collectors.toList());
 
     return new PaginationResults<String>(documents, token);
   }

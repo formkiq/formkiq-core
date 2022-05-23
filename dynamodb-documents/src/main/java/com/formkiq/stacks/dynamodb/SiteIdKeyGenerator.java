@@ -122,6 +122,8 @@ public final class SiteIdKeyGenerator {
     String text = s;
     if (siteId != null && s != null) {
       text = s.replaceAll("^" + siteId + "\\/", "");
+    } else if (siteId == null && s != null) {
+      text = s.replaceAll("^" + DEFAULT_SITE_ID + "\\/", "");
     }
 
     return text;

@@ -23,21 +23,21 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.lambda.apigateway.ApiResponseStatus.SC_OK;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.lambda.apigateway.ApiAuthorizer;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEventUtil;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestHandler;
-import com.formkiq.lambda.apigateway.ApiMapResponse;
-import com.formkiq.lambda.apigateway.ApiPagination;
-import com.formkiq.lambda.apigateway.ApiRequestHandlerResponse;
-import com.formkiq.lambda.apigateway.AwsServiceCache;
-import com.formkiq.lambda.apigateway.exception.BadException;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamoDbCacheService;

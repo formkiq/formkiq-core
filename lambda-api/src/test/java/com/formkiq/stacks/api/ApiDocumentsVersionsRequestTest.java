@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.api.TestServices.BUCKET_NAME;
 import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -34,8 +34,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/versions. */

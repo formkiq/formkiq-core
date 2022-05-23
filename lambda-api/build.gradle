@@ -5,6 +5,7 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.1.1'
 	
+	implementation project(':fkq-lambda-core')
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
@@ -21,15 +22,16 @@ dependencies {
 	testImplementation project(':aws-cognito')
 	testImplementation project(':aws-iam')
 	testImplementation project(':aws-sts')
+	testImplementation project(':fkq-test-utils')
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.17.167'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.17.167'
 	
-	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.6.2'
+	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.7.0'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
     testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.1'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
-    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
 	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
 }
 
@@ -94,17 +96,9 @@ task assembleTemplate {
 		exec {
 			commandLine "bash", "-c", "cp ${buildDir}/lambda-api-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/api/"
 		}
-		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/template-snippet.yaml src/main/resources/cloudformation/api.yaml src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/template-sar.yaml"
-		}
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "yq d ${buildDir}/template-sar.yaml 'Metadata' > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
-		}
-		// build SAR distribution
-		exec {
-			commandLine "bash", "-c", "sam package --template-file ${buildDir}/template-sar.yaml --resolve-s3 --region ${testregion} --profile ${testprofile} --output-template-file ${buildDir}/distributions/formkiq-core/sar/api/template.yaml"
+			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }
@@ -114,7 +108,7 @@ task assembleOpenApiTemplate {
 	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
 	doLast {
 		exec {
-			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/api.yaml src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
+			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
 		}
 		exec {
 			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-jwt.yaml > ${buildDir}/../../openapi-jwt.yaml"
@@ -123,7 +117,7 @@ task assembleOpenApiTemplate {
 			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-jwt.yaml -g asciidoc -o ${buildDir}/openapi-jwt"
 		}
 		exec {
-			commandLine "bash", "-c", "yq m --overwrite src/main/resources/cloudformation/api-iam.yaml src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
+			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
 		}
 		exec {
 			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../openapi-iam.yaml"

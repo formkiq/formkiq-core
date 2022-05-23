@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.api.TestServices.getSqsWebsocketQueueUrl;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.testutils.aws.TestServices.getSqsWebsocketQueueUrl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -39,13 +39,15 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.ApiMessageResponse;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.PaginationResults;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for request /documents/{documentId}/tags. */

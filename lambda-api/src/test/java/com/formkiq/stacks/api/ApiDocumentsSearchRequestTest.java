@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.lambda.apigateway.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.models.DocumentSearch;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
@@ -45,6 +45,8 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.SearchQuery;
 import com.formkiq.stacks.dynamodb.SearchTagCriteria;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /search. */
 @ExtendWith(LocalStackExtension.class)

@@ -60,52 +60,81 @@ Parameters:
      
 Resources:
 
+  EditionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "FormKiQ Edition"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/edition"
+      Type: String
+      Value: "core"
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   VersionParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "FormKiQ Version"
-      Name: !Sub "/formkiq/${AppEnvironment}/version"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/version"
       Type: String
       Value: "{{version}}"
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
       
   RegionParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Installation Region"
-      Name: !Sub "/formkiq/${AppEnvironment}/region"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/region"
       Type: String
-      Value: !Ref "AWS::Region"
+      Value: 
+        Ref: "AWS::Region"
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CoreStorage:
     Type: AWS::Serverless::Application
     Properties:
       Location: storage/template.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
+        AppEnvironment: 
+          Ref: AppEnvironment
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CoreConsole:
     Type: AWS::Serverless::Application
     Properties:
       Location: console/template.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        AdminEmail: !Ref AdminEmail
+        AppEnvironment: 
+          Ref: AppEnvironment
+        AdminEmail: 
+          Ref: AdminEmail
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleInstall:
     Type: AWS::Serverless::Application
@@ -114,17 +143,36 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        ConsoleVersion: !GetAtt CoreConsole.Outputs.ConsoleVersion
-        ConsoleBucket: !GetAtt CoreConsole.Outputs.ConsoleBucket
-        ApiUrl: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
-        WebsocketApiUrl: !GetAtt WebsocketApi.Outputs.WebsocketApiUrl
-        AuthApiUrl: !GetAtt Cognito.Outputs.ApiEndpoint
-        AllowAdminCreateUserOnly: !Sub "${AllowAdminCreateUserOnly}"
+        AppEnvironment: 
+          Ref: AppEnvironment
+        ConsoleVersion: 
+          Fn::GetAtt: 
+          - CoreConsole
+          - Outputs.ConsoleVersion
+        ConsoleBucket: 
+          Fn::GetAtt: 
+          - CoreConsole
+          - Outputs.ConsoleBucket
+        ApiUrl: 
+          Fn::GetAtt: 
+          - CoreApi
+          - Outputs.DocumentsHttpApiUrl
+        WebsocketApiUrl: 
+          Fn::GetAtt: 
+          - WebsocketApi
+          - Outputs.WebsocketApiUrl
+        AuthApiUrl: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.ApiEndpoint
+        AllowAdminCreateUserOnly: 
+          Fn::Sub: "${AllowAdminCreateUserOnly}"
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   Cognito:
     Type: AWS::Serverless::Application
@@ -133,15 +181,26 @@ Resources:
     Properties:
       Location: cognito/template.yaml
       Parameters:
-        UserPoolName: !Sub "${AWS::StackName}-${AppEnvironment}"
-        AllowAdminCreateUserOnly: !Sub "${AllowAdminCreateUserOnly}"
-        PasswordMinimumLength: !Sub "${PasswordMinimumLength}"
-        PasswordRequireLowercase: !Sub "${PasswordRequireLowercase}"
-        PasswordRequireNumbers: !Sub "${PasswordRequireNumbers}"
-        PasswordRequireSymbols: !Sub "${PasswordRequireSymbols}"
-        PasswordRequireUppercase: !Sub "${PasswordRequireUppercase}"
-        Domain: !Sub "${AppEnvironment}${AWS::AccountId}"
-        RedirectUrl: !GetAtt CoreConsole.Outputs.ConsoleUrl
+        UserPoolName: 
+          Fn::Sub: "${AWS::StackName}-${AppEnvironment}"
+        AllowAdminCreateUserOnly: 
+          Fn::Sub: "${AllowAdminCreateUserOnly}"
+        PasswordMinimumLength: 
+          Fn::Sub: "${PasswordMinimumLength}"
+        PasswordRequireLowercase: 
+          Fn::Sub: "${PasswordRequireLowercase}"
+        PasswordRequireNumbers: 
+          Fn::Sub: "${PasswordRequireNumbers}"
+        PasswordRequireSymbols: 
+          Fn::Sub: "${PasswordRequireSymbols}"
+        PasswordRequireUppercase: 
+          Fn::Sub: "${PasswordRequireUppercase}"
+        Domain: 
+          Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
+        RedirectUrl:
+          Fn::GetAtt:
+          - CoreConsole
+          - Outputs.ConsoleUrl
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -150,12 +209,28 @@ Resources:
     Properties:
       Location: ./ssm-template.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolArn: !GetAtt Cognito.Outputs.CognitoUserPoolArn
-        CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
-        CognitoIdentityPool: !GetAtt Cognito.Outputs.CognitoIdentityPoolId
-        Domain: !GetAtt Cognito.Outputs.Domain
+        AppEnvironment: 
+          Ref: AppEnvironment
+        CognitoUserPool: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolId
+        CognitoUserPoolArn: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolArn
+        CognitoUserPoolClient: 
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoUserPoolClientId
+        CognitoIdentityPool: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoIdentityPoolId
+        Domain: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.Domain
         
   CoreApi:
     Type: AWS::Serverless::Application
@@ -165,20 +240,38 @@ Resources:
     Properties:
       Location: api/template.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        EnablePublicUrls: !Ref EnablePublicUrls
-        PasswordMinimumLength: !Ref PasswordMinimumLength
-        PasswordRequireLowercase: !Ref PasswordRequireLowercase
-        PasswordRequireNumbers: !Ref PasswordRequireNumbers
-        PasswordRequireSymbols: !Ref PasswordRequireSymbols
-        PasswordRequireUppercase: !Ref PasswordRequireUppercase
-        CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
-        WebsocketSqsQueueUrl: !GetAtt WebsocketApi.Outputs.SqsQueueUrl
+        AppEnvironment: 
+          Ref: AppEnvironment
+        EnablePublicUrls: 
+          Ref: EnablePublicUrls
+        PasswordMinimumLength: 
+          Ref: PasswordMinimumLength
+        PasswordRequireLowercase: 
+          Ref: PasswordRequireLowercase
+        PasswordRequireNumbers: 
+          Ref: PasswordRequireNumbers
+        PasswordRequireSymbols: 
+          Ref: PasswordRequireSymbols
+        PasswordRequireUppercase: 
+          Ref: PasswordRequireUppercase
+        CognitoUserPool: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolId
+        CognitoUserPoolClient: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolClientId
+        WebsocketSqsQueueUrl: 
+          Fn::GetAtt: 
+          - WebsocketApi
+          - Outputs.SqsQueueUrl
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   ModuleEmailNotify:
     Type: AWS::Serverless::Application
@@ -187,12 +280,16 @@ Resources:
     Properties:
       Location: module-email-notify/template.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        Email: !Ref AdminEmail
+        AppEnvironment: 
+          Ref: AppEnvironment
+        Email: 
+          Ref: AdminEmail
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleUsers:
     Type: AWS::Serverless::Application
@@ -202,16 +299,32 @@ Resources:
     Properties:
       Location: console/template-users.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        AdminEmail: !Ref AdminEmail
-        CognitoUserPool: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolArn: !GetAtt Cognito.Outputs.CognitoUserPoolArn
-        CognitoIdentityPool: !GetAtt Cognito.Outputs.CognitoIdentityPoolId
-        CognitoUserPoolClient: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+        AppEnvironment: 
+          Ref: AppEnvironment
+        AdminEmail: 
+          Ref: AdminEmail
+        CognitoUserPool: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolId
+        CognitoUserPoolArn: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolArn
+        CognitoIdentityPool: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoIdentityPoolId
+        CognitoUserPoolClient: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolClientId
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
 
   WebsocketApi:
     Type: AWS::Serverless::Application
@@ -220,54 +333,100 @@ Resources:
     Properties:
       Location: websocket-api/template.yaml
       Parameters:
-        AppEnvironment: !Ref AppEnvironment
-        CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+        AppEnvironment: 
+          Ref: AppEnvironment
+        CognitoUserPoolId: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId: 
+          Fn::GetAtt: 
+          - Cognito
+          - Outputs.CognitoUserPoolClientId
       Tags:
         Application: "FormKiQ Core"
-        AppEnvironment: !Sub "${AppEnvironment}"
-        StackName: !Sub "${AWS::StackName}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod
-    Value: !Ref AppEnvironment
+    Value: 
+      Ref: AppEnvironment
   IamApiUrl:
     Description: "The URL for the API endpoint that uses IAM authorization"
-    Value: !GetAtt CoreApi.Outputs.DocumentsIamApiUrl
+    Value: 
+      Fn::GetAtt: 
+      - CoreApi
+      - Outputs.DocumentsIamApiUrl
   HttpApiUrl:
     Description: "The URL for the API endpoint that uses Cognito authorization"
-    Value: !GetAtt CoreApi.Outputs.DocumentsHttpApiUrl
+    Value: 
+      Fn::GetAtt: 
+      - CoreApi
+      - Outputs.DocumentsHttpApiUrl
   WebsocketApiUrl:
     Description: "The URL for the Websocket API endpoint"
-    Value: !GetAtt WebsocketApi.Outputs.WebsocketApiUrl    
+    Value: 
+      Fn::GetAtt: 
+      - WebsocketApi
+      - Outputs.WebsocketApiUrl    
   ConsoleUrl:
     Description: The URL for the FormKiQ Console
-    Value: !GetAtt CoreConsole.Outputs.ConsoleUrl
+    Value: 
+      Fn::GetAtt: 
+      - CoreConsole
+      - Outputs.ConsoleUrl
   ConsoleS3Bucket:
     Description: The Console S3 Bucket
-    Value: !GetAtt CoreConsole.Outputs.ConsoleBucket
+    Value: 
+      Fn::GetAtt: 
+      - CoreConsole
+      - Outputs.ConsoleBucket
   CognitoUserPoolId:
     Description: "The Cognito User Pool Id"
-    Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
+    Value: 
+      Fn::GetAtt: 
+      - Cognito
+      - Outputs.CognitoUserPoolId
   CognitoUserPoolArn:
     Description: "The Cognito User Pool Arn"
-    Value: !GetAtt Cognito.Outputs.CognitoUserPoolArn
+    Value: 
+      Fn::GetAtt: 
+      - Cognito
+      - Outputs.CognitoUserPoolArn
   CognitoClientId:
     Description: "The Cognito Client Id"
-    Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+    Value: 
+      Fn::GetAtt: 
+      - Cognito
+      - Outputs.CognitoUserPoolClientId
   FormKiQVersion:
     Description: "The FormKiQ Version"
     Value: {{version}}
   SnsDocumentEventArn:
     Description: SNS Topic for Document Events
-    Value: !GetAtt CoreStorage.Outputs.SnsDocumentEventArn
+    Value: 
+      Fn::GetAtt: 
+      - CoreStorage
+      - Outputs.SnsDocumentEventArn
   CognitoApiEndpoint:
     Description: The Cognito Login API endpoint
-    Value: !GetAtt Cognito.Outputs.ApiEndpoint
+    Value: 
+      Fn::GetAtt: 
+      - Cognito
+      - Outputs.ApiEndpoint
   DocumentsS3Buckets:
     Description: Documents Bucket.
-    Value: !GetAtt CoreStorage.Outputs.DocumentsS3Buckets
+    Value: 
+      Fn::GetAtt: 
+      - CoreStorage
+      - Outputs.DocumentsS3Buckets
   DocumentsStageS3Bucket:
     Description: Documents Staging Bucket.
-    Value: !GetAtt CoreStorage.Outputs.DocumentsStageS3Bucket
+    Value: 
+      Fn::GetAtt: 
+      - CoreStorage
+      - Outputs.DocumentsStageS3Bucket

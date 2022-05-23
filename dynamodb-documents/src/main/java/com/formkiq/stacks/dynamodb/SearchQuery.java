@@ -66,7 +66,7 @@ public class SearchQuery {
   /** Is {@link SearchQuery} object valid. */
   public void isValid() {
     if (this.tag == null) {
-      throw new InvalidConditionsException("'tag' attribute is required.");
+      throw new IllegalArgumentException("'tag' attribute is required.");
     }
 
     isSearchTagValid();
