@@ -113,7 +113,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/TagSchema'
+                      $ref: '#/components/schemas/TagSchemaBody'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1775,6 +1775,33 @@ Resources:
               description: "List of Tag Schemas"
               items:
                 $ref: "#/components/schemas/TagSchema"
+            TagSchemaBody:
+              type: "object"
+              properties:
+                schema:
+                  type: "object"
+                  properties:
+                    tags:
+                      type: "object"
+                      properties:
+                        compositeKeys:
+                          type: "array"
+                          description: "List of Composite Keys"
+                          items:
+                            $ref: "#/components/schemas/TagSchemaCompositeKey"
+                        required:
+                          type: "array"
+                          description: "List of Required Tags"
+                          items:
+                            $ref: "#/components/schemas/TagSchemaRequired"
+                        optional:
+                          type: "array"
+                          description: "List of Optional Tags"
+                          items:
+                            $ref: "#/components/schemas/TagSchemaOptional"
+                        allowAdditionalTags:
+                          type: "boolean"
+                          default: true                
             TagSchema:
               type: "object"
               properties:
@@ -1802,6 +1829,12 @@ Resources:
                         allowAdditionalTags:
                           type: "boolean"
                           default: true
+                userId:
+                  type: "string"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"                           
             TagSchemaCompositeKey:
               type: "object"
               properties:
