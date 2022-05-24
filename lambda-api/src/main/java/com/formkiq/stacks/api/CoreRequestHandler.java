@@ -58,6 +58,8 @@ import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
+import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
+import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
@@ -123,6 +125,8 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
     URL_MAP.put("/documents/upload", new DocumentsUploadRequestHandler());
     URL_MAP.put("/documents/{documentId}/upload", new DocumentsIdUploadRequestHandler());
     URL_MAP.put("/documents/{documentId}/ocr", new DocumentsOcrRequestHandler());
+    URL_MAP.put("/tagSchemas", new TagSchemasRequestHandler());
+    URL_MAP.put("/tagSchemas/{tagSchemaId}", new TagSchemasIdRequestHandler());
     URL_MAP.put("/webhooks/{webhookId}/tags", new WebhooksTagsRequestHandler());
     URL_MAP.put("/webhooks/{webhookId}", new WebhooksIdRequestHandler());
     URL_MAP.put("/webhooks", new WebhooksRequestHandler());
