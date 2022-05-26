@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 
 /** Services for Querying, Updating Documents. */
 public interface DocumentService {
@@ -161,7 +163,7 @@ public interface DocumentService {
    * @param includeChildDocuments boolean
    * @param token {@link PaginationMapToken}
    * @param limit int
-   * @return {@link PaginationResult} {@link DocumentItem}
+   * @return {@link PaginationResults} {@link DocumentItem}
    */
   PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
       boolean includeChildDocuments, PaginationMapToken token, int limit);

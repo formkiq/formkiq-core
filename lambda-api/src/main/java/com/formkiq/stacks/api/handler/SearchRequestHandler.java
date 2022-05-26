@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -38,11 +40,10 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
+import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.DynamoDbCacheService;
-import com.formkiq.stacks.dynamodb.PaginationMapToken;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -61,7 +62,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    DynamoDbCacheService cacheService = awsservice.documentCacheService();
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+    DynamoDbCacheService cacheService = serviceCache.documentCacheService();
     ApiPagination pagination = getPagination(cacheService, event);
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
@@ -85,7 +87,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     
     String siteId = authorizer.getSiteId();
     PaginationResults<DynamicDocumentItem> results =
-        awsservice.documentSearchService().search(siteId, q.query(), ptoken, limit);
+        serviceCache.documentSearchService().search(siteId, q.query(), ptoken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);

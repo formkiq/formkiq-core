@@ -26,7 +26,9 @@ package com.formkiq.stacks.dynamodb;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {

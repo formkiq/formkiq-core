@@ -33,6 +33,73 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 public interface ApiGatewayRequestHandler {
 
   /**
+   * Called Before "delete" method is called.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsServices {@link AwsServiceCache}
+   */
+  default void beforeDelete(LambdaLogger logger, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) {    
+  }
+  
+  
+  /**
+   * Called Before "get" method is called.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsServices {@link AwsServiceCache}
+   */
+  default void beforeGet(LambdaLogger logger, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) {    
+  }
+  
+  /**
+   * Called Before "head" method is called.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsServices {@link AwsServiceCache}
+   */
+  default void beforeHead(LambdaLogger logger, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) {    
+  }
+  
+  /**
+   * Called Before "patch" method is called.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsServices {@link AwsServiceCache}
+   */
+  default void beforePatch(LambdaLogger logger, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) {    
+  }
+  
+  /**
+   * Called Before "post" method is called.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsServices {@link AwsServiceCache}
+   */
+  default void beforePost(LambdaLogger logger, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) {    
+  }
+  
+  /**
+   * Called Before "put" method is called.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param awsServices {@link AwsServiceCache}
+   */
+  default void beforePut(LambdaLogger logger, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) {    
+  }
+  
+  /**
    * DELETE Request Handler.
    *
    * @param logger {@link LambdaLogger}
@@ -91,6 +158,16 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
+  }
+
+  /**
+   * Is Method a Readonly method.
+   * 
+   * @param method {@link String}
+   * @return boolean
+   */
+  default boolean isReadonly(final String method) {
+    return "get".equals(method) || "head".equals(method);
   }
 
   /**
@@ -163,15 +240,5 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
-  }
-
-  /**
-   * Is Method a Readonly method.
-   * 
-   * @param method {@link String}
-   * @return boolean
-   */
-  default boolean isReadonly(final String method) {
-    return "get".equals(method) || "head".equals(method);
   }
 }

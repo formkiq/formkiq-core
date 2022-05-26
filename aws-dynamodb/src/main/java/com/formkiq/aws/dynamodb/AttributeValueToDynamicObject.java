@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**

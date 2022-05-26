@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.getSiteId;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -54,8 +56,6 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.SiteIdKeyGenerator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;

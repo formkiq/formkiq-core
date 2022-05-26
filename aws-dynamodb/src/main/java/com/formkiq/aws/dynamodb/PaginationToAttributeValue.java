@@ -21,38 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb;
 
-import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * Cache Service.
+ * Convert {@link PaginationMapToken} to {@link Map} {@link AttributeValue}.
  *
  */
-public interface CacheService {
+public class PaginationToAttributeValue
+    implements Function<PaginationMapToken, Map<String, AttributeValue>> {
 
-  /**
-   * Get Cache Key Expiry Date.
-   * 
-   * @param key {@link String}
-   * @return {@link Date}
-   */
-  Date getExpiryDate(String key);
+  @Override
+  public Map<String, AttributeValue> apply(final PaginationMapToken token) {
 
-  /**
-   * Read Value from Cache.
-   * 
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  String read(String key);
+    Map<String, AttributeValue> map = null;
 
-  /**
-   * Write to Cache.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   * @param cacheInDays int
-   */
-  void write(String key, String value, int cacheInDays);
+    if (token != null) {
+      map = new HashMap<>();
+      for (Map.Entry<String, Object> e : token.getAttributeMap().entrySet()) {
+        map.put(e.getKey(), AttributeValue.builder().s(e.getValue().toString()).build());
+      }
+    }
+
+    return map;
+  }
 }

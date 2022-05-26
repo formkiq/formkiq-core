@@ -20,12 +20,12 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -50,7 +51,7 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.NotFoundException;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
@@ -149,7 +150,7 @@ public class DocumentIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String documentBucket = awsservice.documents3bucket();
+    String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     String documentId = event.getPathParameters().get("documentId");
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
@@ -194,9 +195,8 @@ public class DocumentIdRequestHandler
     if (documentId != null) {
       Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
       String key = createS3Key(siteId, documentId);
-      url = awsservice.s3Service()
-          .presignPostUrl(awsservice.documents3bucket(), key, duration, Optional.empty())
-          .toString();
+      url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          key, duration, Optional.empty()).toString();
     }
 
     return url;
@@ -239,11 +239,13 @@ public class DocumentIdRequestHandler
     
     String siteId = authorizer.getSiteId();
     int limit = getLimit(logger, event);
-    ApiPagination token = getPagination(awsservice.documentCacheService(), event);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+
+    ApiPagination token = getPagination(serviceCache.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
-    ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
+    ApiPagination pagination = getPagination(serviceCache.documentCacheService(), event);
     
-    PaginationResult<DocumentItem> presult = awsservice.documentService().findDocument(siteId,
+    PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
         documentId, true, token != null ? token.getStartkey() : null, limit);
     DocumentItem result = presult.getResult();
 
@@ -251,7 +253,7 @@ public class DocumentIdRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    ApiPagination current = createPagination(awsservice.documentCacheService(), event, pagination,
+    ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
         presult.getToken(), limit);
     
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
@@ -277,10 +279,11 @@ public class DocumentIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     String documentId = UUID.randomUUID().toString();
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
-      if (awsservice.documentService().findDocument(siteId, documentId) == null) {
+      if (cacheService.documentService().findDocument(siteId, documentId) == null) {
         throw new NotFoundException("Document " + documentId + " not found.");
       }
     }
@@ -311,7 +314,7 @@ public class DocumentIdRequestHandler
     logger.log("setting userId: " + item.getString("userId") + " contentType: "
         + item.getString("contentType"));
 
-    putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
+    putObjectToStaging(logger, cacheService, maxDocumentCount, siteId, item);
 
     Map<String, String> uploadUrls =
         generateUploadUrls(awsservice, siteId, documentId, item, documents);
@@ -345,7 +348,7 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param item {@link DynamicObject}
    */
-  private void putObjectToStaging(final LambdaLogger logger, final AwsServiceCache awsservice,
+  private void putObjectToStaging(final LambdaLogger logger, final CoreAwsServiceCache awsservice,
       final String maxDocumentCount, final String siteId, final DynamicObject item) {
 
     List<DynamicObject> documents = item.getList("documents");
@@ -356,11 +359,12 @@ public class DocumentIdRequestHandler
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
     String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
-    logger.log("s3 putObject " + key + " into bucket " + awsservice.stages3bucket());
+    String stageS3Bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
+    logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
 
     S3Service s3 = awsservice.s3Service();
     try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, awsservice.stages3bucket(), key, bytes, item.getString("contentType"));
+      s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
 
       if (maxDocumentCount != null) {
         awsservice.documentCountService().incrementDocumentCount(siteId);

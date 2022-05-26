@@ -11,6 +11,7 @@
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
 		<allow pkg="com.formkiq.aws.services.lambda" />
 		<allow pkg="com.formkiq.aws.sqs" />
@@ -20,6 +21,12 @@
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.utils" />
+		
+		<subpackage name="services">
+			<allow pkg="java.text" />
+			<allow pkg="software.amazon.awssdk.services.dynamodb" />
+		</subpackage>
+		
 	</subpackage>
 	
 </import-control>

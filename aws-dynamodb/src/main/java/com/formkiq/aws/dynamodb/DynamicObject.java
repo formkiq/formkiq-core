@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.common.objects;
+package com.formkiq.aws.dynamodb;
 
 import java.util.ArrayList;
 import java.util.Date;

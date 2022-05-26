@@ -40,6 +40,7 @@ import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.NotFoundException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 
@@ -62,7 +63,9 @@ public class DocumentTagRequestHandler
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
-    DocumentService documentService = awsservice.documentService();
+    
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = cacheService.documentService();    
 
     DocumentTag docTag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (docTag == null) {
@@ -86,7 +89,9 @@ public class DocumentTagRequestHandler
     String tagKey = event.getPathParameters().get("tagKey");
     String siteId = authorizer.getSiteId();
     
-    DocumentTag tag = awsservice.documentService().findDocumentTag(siteId, documentId, tagKey);
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DocumentTag tag = cacheService.documentService().findDocumentTag(siteId, documentId, tagKey);
+    
     if (tag == null) {
       throw new NotFoundException("Tag " + tagKey + " not found.");
     }
@@ -139,7 +144,8 @@ public class DocumentTagRequestHandler
     }
 
     String siteId = authorizer.getSiteId();
-    DocumentService documentService = awsservice.documentService();
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = cacheService.documentService();
 
     if (event.getHttpMethod().equalsIgnoreCase("put")) {
       if (documentService.findDocument(siteId, documentId) == null) {

@@ -21,32 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.graalvm.annotations.Reflectable;
 
-/**
- * Convert {@link PaginationMapToken} to {@link Map} {@link AttributeValue}.
- *
- */
-public class PaginationToAttributeValue
-    implements Function<PaginationMapToken, Map<String, AttributeValue>> {
+/** Pagination Token for Results. */
+@Reflectable
+public class PaginationMapToken {
+
+  /** {@link Object} {@link Map}. */
+  @Reflectable
+  private Map<String, Object> attributeMap;
+
+  /**
+   * constructor.
+   *
+   * @param map {@link Map}
+   */
+  public PaginationMapToken(final Map<String, Object> map) {
+    this.attributeMap = map;
+  }
+
+  /**
+   * Get Attribute Map.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, Object> getAttributeMap() {
+    return this.attributeMap;
+  }
 
   @Override
-  public Map<String, AttributeValue> apply(final PaginationMapToken token) {
-
-    Map<String, AttributeValue> map = null;
-
-    if (token != null) {
-      map = new HashMap<>();
-      for (Map.Entry<String, Object> e : token.getAttributeMap().entrySet()) {
-        map.put(e.getKey(), AttributeValue.builder().s(e.getValue().toString()).build());
-      }
-    }
-
-    return map;
+  public String toString() {
+    return this.attributeMap.toString();
   }
 }

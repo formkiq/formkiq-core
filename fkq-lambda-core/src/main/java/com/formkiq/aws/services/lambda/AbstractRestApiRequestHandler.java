@@ -116,14 +116,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     switch (method) {
       case "get":
+        handler.beforeGet(logger, event, authorizer, awsServices);
         response = handler.get(logger, event, authorizer, awsServices);
         break;
 
       case "delete":
+        handler.beforeDelete(logger, event, authorizer, awsServices);
         response = handler.delete(logger, event, authorizer, awsServices);
         break;
 
       case "head":
+        handler.beforeHead(logger, event, authorizer, awsServices);
         response = handler.head(logger, event, authorizer, awsServices);
         break;
 
@@ -132,14 +135,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         break;
 
       case "patch":
+        handler.beforePatch(logger, event, authorizer, awsServices);
         response = handler.patch(logger, event, authorizer, awsServices);
         break;
 
       case "post":
+        handler.beforePost(logger, event, authorizer, awsServices);
         response = handler.post(logger, event, authorizer, awsServices);
         break;
 
       case "put":
+        handler.beforePut(logger, event, authorizer, awsServices);
         response = handler.put(logger, event, authorizer, awsServices);
         break;
       default:
@@ -453,7 +459,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           m.put("message", body);
     
           String json = this.gson.toJson(m);
-          aws.sqsService().sendMessage(aws.websocketSqsUrl(), json);
+          aws.sqsService().sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           break;
 
         default:

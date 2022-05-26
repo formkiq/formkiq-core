@@ -6,8 +6,8 @@
 <import-control pkg="com.formkiq">
 	<subpackage name="lambda">
 		<subpackage name="apigateway">
-						
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
+			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			
 			<allow pkg="com.formkiq.aws.services.lambda" />
@@ -46,6 +46,7 @@
 			
 			<allow pkg="software.amazon.awssdk" />
 			
+			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.aws.services.lambda" />
 			<allow pkg="com.formkiq.aws.s3" />
 			<allow pkg="com.formkiq.aws.sqs" />

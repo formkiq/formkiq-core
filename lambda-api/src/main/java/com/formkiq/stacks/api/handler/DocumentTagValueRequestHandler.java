@@ -35,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}/{tagValue}". */
@@ -57,7 +58,9 @@ public class DocumentTagValueRequestHandler
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
     String tagValue = map.get("tagValue");
-    DocumentService documentService = awsservice.documentService();
+    
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = cacheService.documentService();
 
     boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);
     if (!removed) {

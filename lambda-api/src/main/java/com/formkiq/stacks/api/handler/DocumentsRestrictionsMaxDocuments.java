@@ -24,7 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.aws.services.lambda.services.ConfigService;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /**
  * {@link DocumentsRestrictions} for Max Number of Documents.
@@ -46,7 +47,8 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
     if (value != null) {
       try {
         long max = Long.parseLong(value);
-        long doccount = awsservice.documentCountService().getDocumentCount(siteId);
+        long doccount =
+            (CoreAwsServiceCache.cast(awsservice)).documentCountService().getDocumentCount(siteId);
         enforced = (doccount + 1) > max;
 
       } catch (NumberFormatException e) {

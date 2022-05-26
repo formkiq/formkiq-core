@@ -20,8 +20,8 @@
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -45,13 +45,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.Test;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 import com.formkiq.stacks.dynamodb.SearchQuery;
 import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 import com.google.gson.Gson;

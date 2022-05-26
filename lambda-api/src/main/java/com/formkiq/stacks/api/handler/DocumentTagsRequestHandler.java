@@ -31,6 +31,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -41,14 +43,13 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
-import com.formkiq.stacks.dynamodb.CacheService;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DocumentTags;
-import com.formkiq.stacks.dynamodb.PaginationMapToken;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags". */
 public class DocumentTagsRequestHandler
@@ -65,7 +66,8 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
     
-    CacheService cacheService = awsservice.documentCacheService();
+    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
+    CacheService cacheService = coreServices.documentCacheService();
     ApiPagination pagination = getPagination(cacheService, event);
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
 
@@ -75,7 +77,7 @@ public class DocumentTagsRequestHandler
     String documentId = event.getPathParameters().get("documentId");
 
     PaginationResults<DocumentTag> results =
-        awsservice.documentService().findDocumentTags(siteId, documentId, ptoken, limit);
+        coreServices.documentService().findDocumentTags(siteId, documentId, ptoken, limit);
 
     results.getResults().forEach(r -> r.setDocumentId(null));
 
@@ -137,7 +139,7 @@ public class DocumentTagsRequestHandler
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-
+    
     DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
     DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
 
@@ -162,8 +164,9 @@ public class DocumentTagsRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     String siteId = authorizer.getSiteId();
     
-    awsservice.documentService().deleteDocumentTag(siteId, documentId, "untagged");
-    awsservice.documentService().addTags(siteId, documentId, tags.getTags(), null);
+    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
+    coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
+    coreServices.documentService().addTags(siteId, documentId, tags.getTags(), null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
         : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");

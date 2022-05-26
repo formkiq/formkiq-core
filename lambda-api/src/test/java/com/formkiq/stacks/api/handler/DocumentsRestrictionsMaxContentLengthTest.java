@@ -23,19 +23,21 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbHelper;
+import com.formkiq.aws.services.lambda.services.ConfigService;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 
@@ -61,9 +63,9 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @BeforeEach
   public void before() throws URISyntaxException, IOException {
     DynamoDbConnectionBuilder adb = DynamoDbTestServices.getDynamoDbConnection(null);
-    DynamoDbHelper dbhelper = new DynamoDbHelper(adb);
-    this.awsservice = new AwsServiceCache().dbConnection(adb, dbhelper.getDocumentTable(), "")
-        .appEnvironment("unittest");
+    Map<String, String> map = Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "CACHE_TABLE",
+        "", "APP_ENVIRONMENT", "unittest");
+    this.awsservice = new CoreAwsServiceCache().environment(map).dbConnection(adb);
   }
 
   /**
@@ -92,9 +94,10 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = null;
     String siteId = UUID.randomUUID().toString();
     
-    DynamicObject ob = this.awsservice.configService().get(siteId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+    DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    this.awsservice.configService().save(siteId, ob);
+    serviceCache.configService().save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);
@@ -113,9 +116,10 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = Long.valueOf("10");
     String siteId = UUID.randomUUID().toString();
     
-    DynamicObject ob = this.awsservice.configService().get(siteId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+    DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    this.awsservice.configService().save(siteId, ob);
+    serviceCache.configService().save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);
@@ -135,9 +139,10 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = Long.valueOf("15");
     String siteId = UUID.randomUUID().toString();
     
-    DynamicObject ob = this.awsservice.configService().get(siteId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+    DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    this.awsservice.configService().save(siteId, ob);
+    serviceCache.configService().save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);
@@ -156,9 +161,10 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = Long.valueOf(0);
     String siteId = UUID.randomUUID().toString();
     
-    DynamicObject ob = this.awsservice.configService().get(siteId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+    DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    this.awsservice.configService().save(siteId, ob);
+    serviceCache.configService().save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);

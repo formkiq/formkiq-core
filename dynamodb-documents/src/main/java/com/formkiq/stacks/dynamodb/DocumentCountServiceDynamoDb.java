@@ -23,10 +23,11 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;

@@ -15,6 +15,7 @@
 		<allow pkg="com.amazonaws.util" />
 		<allow pkg="com.amazonaws.xray" />
 		
+		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />

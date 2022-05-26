@@ -25,7 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Date;
 import java.util.function.Function;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamicObject;
 
 /**
  * 

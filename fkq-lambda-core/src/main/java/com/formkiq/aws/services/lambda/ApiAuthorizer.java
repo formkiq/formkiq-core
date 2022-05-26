@@ -23,7 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

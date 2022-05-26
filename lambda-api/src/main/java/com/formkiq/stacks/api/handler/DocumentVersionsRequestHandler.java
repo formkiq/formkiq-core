@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -76,8 +76,8 @@ public class DocumentVersionsRequestHandler
     S3Service s3service = awsservice.s3Service();
     try (S3Client s3 = s3service.buildClient()) {
 
-      ListObjectVersionsResponse response =
-          s3service.getObjectVersions(s3, awsservice.documents3bucket(), s3key, next);
+      ListObjectVersionsResponse response = s3service.getObjectVersions(s3,
+          awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, next);
 
       List<ApiDocumentVersion> list = response.versions().stream().map(v -> {
 

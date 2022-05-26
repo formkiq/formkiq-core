@@ -43,6 +43,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.stacks.api.ApiUrlResponse;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -85,7 +86,7 @@ public class DocumentsUploadRequestHandler
     Map<String, String> query = event.getQueryStringParameters();
 
     String siteId = authorizer.getSiteId();
-    DocumentService service = awsservice.documentService();
+    DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
 
     if (query != null && query.containsKey("path")) {
 
@@ -113,7 +114,8 @@ public class DocumentsUploadRequestHandler
         service.saveDocument(siteId, item, tags);
 
         if (value != null) {
-          awsservice.documentCountService().incrementDocumentCount(siteId);
+          (CoreAwsServiceCache.cast(awsservice)).documentCountService()
+              .incrementDocumentCount(siteId);
         }
       } else {
         throw new BadException("Max Number of Documents reached");
@@ -141,8 +143,8 @@ public class DocumentsUploadRequestHandler
     String key = siteId != null ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
     Optional<Long> contentLength = calculateContentLength(awsservice, logger, query, siteId);
-    URL url = awsservice.s3Service().presignPostUrl(awsservice.documents3bucket(), key, duration,
-        contentLength);
+    URL url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+        key, duration, contentLength);
 
     String urlstring = url.toString();
     return urlstring;

@@ -23,12 +23,15 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 
 /** Unit Tests for {@link DocumentCountServiceDynamoDb}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -45,7 +48,7 @@ public class DocumentCountServiceDynamoDbTest {
   @BeforeEach
   public void before() throws Exception {
     this.service = new DocumentCountServiceDynamoDb(
-        DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
+        DynamoDbTestServices.getDynamoDbConnection(null), DOCUMENTS_TABLE);
   }
 
   /**

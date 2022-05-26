@@ -27,7 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamicObject;
 
 /**
  * 

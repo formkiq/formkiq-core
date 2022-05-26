@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.services.lambda.services.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -37,6 +37,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -49,8 +51,7 @@ import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.UnauthorizedException;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.StringUtils;
 
@@ -77,8 +78,8 @@ public class PublicWebhooksRequestHandler
     }
   }
 
-  private DynamicObject buildDynamicObject(final AwsServiceCache awsservice, final String siteId,
-      final String webhookId, final DynamicObject hook, final String body,
+  private DynamicObject buildDynamicObject(final CoreAwsServiceCache awsservice,
+      final String siteId, final String webhookId, final DynamicObject hook, final String body,
       final String contentType) {
     
     DynamicObject item = new DynamicObject(new HashMap<>());
@@ -240,7 +241,7 @@ public class PublicWebhooksRequestHandler
     return expired;
   }
 
-  private boolean isIdempotencyCached(final AwsServiceCache awsservice,
+  private boolean isIdempotencyCached(final CoreAwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
     
     boolean cached = false;
@@ -267,10 +268,11 @@ public class PublicWebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = getParameter(event, "siteId");
-        
+    String siteId = getParameter(event, "siteId");        
     String webhookId = getPathParameter(event, "webhooks");
-    DynamicObject hook = awsservice.webhookService().findWebhook(siteId, webhookId);
+    
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DynamicObject hook = cacheService.webhookService().findWebhook(siteId, webhookId);
     
     checkIsWebhookValid(hook);
     
@@ -282,9 +284,10 @@ public class PublicWebhooksRequestHandler
       throw new BadException("body isn't valid JSON");
     }
     
-    DynamicObject item = buildDynamicObject(awsservice, siteId, webhookId, hook, body, contentType);
-    
-    if (!isIdempotencyCached(awsservice, event, siteId, item)) {
+    DynamicObject item =
+        buildDynamicObject(cacheService, siteId, webhookId, hook, body, contentType);
+
+    if (!isIdempotencyCached(cacheService, event, siteId, item)) {
       putObjectToStaging(logger, awsservice, item, siteId);
     }
     
@@ -305,12 +308,13 @@ public class PublicWebhooksRequestHandler
 
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
+    String stages3bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
-    logger.log("s3 putObject " + key + " into bucket " + awsservice.stages3bucket());
+    logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
 
     S3Service s3 = awsservice.s3Service();
     try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, awsservice.stages3bucket(), key, bytes, item.getString("contentType"));
+      s3.putObject(client, stages3bucket, key, bytes, item.getString("contentType"));
     }
   }
 }

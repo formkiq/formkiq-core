@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.Assert.assertEquals;

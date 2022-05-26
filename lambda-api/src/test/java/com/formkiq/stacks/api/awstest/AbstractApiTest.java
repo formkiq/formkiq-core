@@ -20,8 +20,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.common.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
@@ -39,8 +39,11 @@ import java.util.Map;
 import org.junit.BeforeClass;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.iam.IamConnectionBuilder;
 import com.formkiq.aws.iam.IamService;
+import com.formkiq.aws.services.lambda.services.ConfigService;
+import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
@@ -55,9 +58,6 @@ import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.regions.Region;

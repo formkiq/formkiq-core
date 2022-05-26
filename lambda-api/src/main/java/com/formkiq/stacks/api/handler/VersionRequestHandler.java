@@ -47,10 +47,10 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String key = "/formkiq/" + awsservice.appEnvironment() + "/version";
+    String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/version";
     String version = awsservice.ssmService().getParameterValue(key);
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("version", version, "type", awsservice.formkiqType())));
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(
+        Map.of("version", version, "type", awsservice.environment("FORMKIQ_TYPE"))));
   }
 
   @Override

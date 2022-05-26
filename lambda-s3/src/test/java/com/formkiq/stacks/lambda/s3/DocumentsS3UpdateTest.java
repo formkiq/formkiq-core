@@ -23,8 +23,10 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static org.junit.Assert.assertEquals;
@@ -50,13 +52,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.stacks.dynamodb.DbKeys;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -65,13 +69,11 @@ import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbHelper;
-import com.formkiq.stacks.dynamodb.PaginationResults;
-import com.formkiq.stacks.lambda.s3.util.DynamoDbExtension;
-import com.formkiq.stacks.lambda.s3.util.DynamoDbTestServices;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbHelper;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -183,9 +185,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
-    if (!dbHelper.isDocumentsTableExists()) {
-      dbHelper.createDocumentsTable();
-      dbHelper.createCacheTable();
+    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
+      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
+      dbHelper.createCacheTable(CACHE_TABLE);
     }
   }
 
@@ -309,7 +311,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       s3service.deleteAllFiles(s3, "example-bucket");
     }
 
-    dbHelper.truncateDocumentsTable();
+    dbHelper.truncateTable(DOCUMENTS_TABLE);
 
     Map<String, String> map = new HashMap<>();
     map.put("SQS_ERROR_URL",
@@ -841,7 +843,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(dbHelper.getDocumentTable()).build();
+          .tableName(DOCUMENTS_TABLE).build();
       
       try (DynamoDbClient db = dbBuilder.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
@@ -849,7 +851,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
         for (String tagKey : Arrays.asList("untagged", "userId")) {
           r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-              .tableName(dbHelper.getDocumentTable()).build();
+              .tableName(DOCUMENTS_TABLE).build();
 
           result = db.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());

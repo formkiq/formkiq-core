@@ -20,13 +20,15 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.stacks.dynamodb.DocumentService.DATE_FORMAT;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
+import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -56,26 +58,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.DbKeys;
 import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
 import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbHelper;
-import com.formkiq.stacks.lambda.s3.util.DynamoDbExtension;
-import com.formkiq.stacks.lambda.s3.util.DynamoDbTestServices;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbHelper;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -204,9 +206,9 @@ public class StagingS3CreateTest implements DbKeys {
     snsService.subscribe(snsCreateTopic, "sqs",
         "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_CREATE_QUEUE);
 
-    if (!dbHelper.isDocumentsTableExists()) {
-      dbHelper.createDocumentsTable();
-      dbHelper.createCacheTable();
+    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
+      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
+      dbHelper.createCacheTable(CACHE_TABLE);
     }
   }
 
@@ -246,7 +248,7 @@ public class StagingS3CreateTest implements DbKeys {
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
 
-    dbHelper.truncateDocumentsTable();
+    dbHelper.truncateTable(DOCUMENTS_TABLE);
 
     try (S3Client c = s3.buildClient()) {
       s3.deleteAllFiles(c, STAGING_BUCKET);
@@ -692,7 +694,7 @@ public class StagingS3CreateTest implements DbKeys {
       }
       
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(dbHelper.getDocumentTable()).build();
+          .tableName(DOCUMENTS_TABLE).build();
 
       try (DynamoDbClient db = dbBuilder.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();

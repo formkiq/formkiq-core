@@ -20,10 +20,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.aws.services.lambda.services.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -42,7 +43,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.TooManyRequestsException;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
@@ -56,9 +57,10 @@ public class WebhooksRequestHandler
 
     String siteId = authorizer.getSiteId();
     String url = awsServices.ssmService().getParameterValue(
-        "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
+        "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
-    List<DynamicObject> list = awsServices.webhookService().findWebhooks(siteId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    List<DynamicObject> list = serviceCache.webhookService().findWebhooks(siteId);
 
     List<Map<String, Object>> webhooks = list.stream().map(m -> {
 
@@ -90,7 +92,7 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
-  private Date getTtlDate(final AwsServiceCache awsservice, final String siteId,
+  private Date getTtlDate(final CoreAwsServiceCache awsservice, final String siteId,
       final DynamicObject o) {
     Date ttlDate = null;
     String ttl = o.getString("ttl");
@@ -112,7 +114,8 @@ public class WebhooksRequestHandler
       final String siteId) {
     
     boolean over = false;
-    DynamicObject config = awsservice.config(siteId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+    DynamicObject config = serviceCache.config(siteId);
     
     String maxString = config.getString(MAX_WEBHOOKS);
     
@@ -121,7 +124,7 @@ public class WebhooksRequestHandler
       try {
         
         int max = Integer.parseInt(maxString);
-        int numberOfWebhooks = awsservice.webhookService().findWebhooks(siteId).size();
+        int numberOfWebhooks = serviceCache.webhookService().findWebhooks(siteId).size();
     
         if (awsservice.debug()) {
           logger.log("found config for maximum webhooks " + maxString);
@@ -171,12 +174,14 @@ public class WebhooksRequestHandler
   private String saveWebhook(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
       final String siteId, final DynamicObject o) {
     
-    Date ttlDate = getTtlDate(awsservice, siteId, o);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+    
+    Date ttlDate = getTtlDate(serviceCache, siteId, o);
 
     String name = o.getString("name");
     String userId = getCallingCognitoUsername(event);
     String enabled = o.containsKey("enabled") ? o.getString("enabled") : "true";
-    String id = awsservice.webhookService().saveWebhook(siteId, name, userId, ttlDate, enabled);
+    String id = serviceCache.webhookService().saveWebhook(siteId, name, userId, ttlDate, enabled);
 
     if (o.containsKey("tags")) {
       List<DynamicObject> dtags = o.getList("tags");
@@ -185,7 +190,7 @@ public class WebhooksRequestHandler
       Collection<DocumentTag> tags = dtags.stream()
           .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
           .collect(Collectors.toList());
-      awsservice.webhookService().addTags(siteId, id, tags, ttlDate);
+      serviceCache.webhookService().addTags(siteId, id, tags, ttlDate);
     }
     
     return id;

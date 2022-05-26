@@ -16,8 +16,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.GenericContainer;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbHelper;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 
 /**
  * 
@@ -27,6 +26,10 @@ import com.formkiq.stacks.dynamodb.DynamoDbHelper;
 public class DynamoDbExtension
     implements BeforeAllCallback, BeforeEachCallback, ExtensionContext.Store.CloseableResource {
 
+  /** Documents Table Name. */
+  public static final String DOCUMENTS_TABLE = "Documents";
+  /** Cache Table Name. */
+  public static final String CACHE_TABLE = "Cache";
   /** {@link DynamoDbConnectionBuilder}. */
   private DynamoDbConnectionBuilder dbConnection;
   /** {@link GenericContainer}. */
@@ -46,22 +49,20 @@ public class DynamoDbExtension
         new DynamoDbHelper(DynamoDbTestServices.getDynamoDbConnection(this.dynamoDbLocal));
 
     DynamoDbHelper dbHelper = new DynamoDbHelper(this.dbConnection);
-    if (!dbHelper.isDocumentsTableExists()) {
-      dbHelper.createDocumentsTable();
+    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
+      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
     }
 
-    if (!dbHelper.isCacheTableExists()) {
-      dbHelper.createCacheTable();
+    if (!dbHelper.isTableExists(CACHE_TABLE)) {
+      dbHelper.createCacheTable(CACHE_TABLE);
     }
   }
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
-    this.dbhelper.truncateDocumentDates();
-    this.dbhelper.truncateWebhooks();
-    this.dbhelper.truncateDocumentsTable();
-    this.dbhelper.truncateConfig();
-    if (0 != this.dbhelper.getDocumentItemCount()) {
+    this.dbhelper.truncateTable(DOCUMENTS_TABLE);
+    this.dbhelper.truncateTable(CACHE_TABLE);
+    if (0 != this.dbhelper.getDocumentItemCount(DOCUMENTS_TABLE)) {
       throw new RuntimeException("Database is not empty");
     }
   }

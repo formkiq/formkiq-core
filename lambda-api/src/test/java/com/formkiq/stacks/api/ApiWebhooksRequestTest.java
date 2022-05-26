@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.aws.services.lambda.services.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -42,11 +42,11 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentTag;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -234,7 +234,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertNotNull(dtag.getString("TimeToLive"));
     epoch = Long.parseLong(dtag.getString("TimeToLive"));
     ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
-    now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2);
+    now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(2).plusHours(2);
     assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
   }
   

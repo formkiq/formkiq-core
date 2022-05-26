@@ -13,6 +13,7 @@
 			<allow pkg="software.amazon.awssdk.services.sns.model" />			
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			
+			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.aws.s3" />
 			<allow pkg="com.formkiq.aws.sns" />
 			<allow pkg="com.formkiq.aws.sqs" />

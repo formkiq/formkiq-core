@@ -20,8 +20,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 import org.junit.AfterClass;
 import org.junit.Test;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -64,7 +65,6 @@ import com.formkiq.stacks.client.requests.GetDocumentsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
 import com.formkiq.stacks.common.formats.MimeType;
-import com.formkiq.stacks.common.objects.DynamicObject;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 

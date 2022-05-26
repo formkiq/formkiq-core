@@ -20,16 +20,16 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_PK;
-import static com.formkiq.stacks.dynamodb.DbKeys.GSI1_SK;
-import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_PK;
-import static com.formkiq.stacks.dynamodb.DbKeys.GSI2_SK;
-import static com.formkiq.stacks.dynamodb.DbKeys.PK;
-import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAG;
-import static com.formkiq.stacks.dynamodb.DbKeys.PREFIX_TAGS;
-import static com.formkiq.stacks.dynamodb.DbKeys.SK;
-import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAG;
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_TAGS;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;

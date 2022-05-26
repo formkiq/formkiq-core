@@ -23,14 +23,15 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -40,7 +41,7 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.NotFoundException;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
@@ -55,10 +56,12 @@ public class WebhooksIdRequestHandler
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     
-    if (awsServices.webhookService().findWebhook(siteId, id) == null) {
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    
+    if (serviceCache.webhookService().findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    awsServices.webhookService().deleteWebhook(siteId, id);
+    serviceCache.webhookService().deleteWebhook(siteId, id);
     
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMessageResponse("'" + id + "' object deleted"));
@@ -71,13 +74,14 @@ public class WebhooksIdRequestHandler
     
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    DynamicObject m = awsServices.webhookService().findWebhook(siteId, id);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    DynamicObject m = serviceCache.webhookService().findWebhook(siteId, id);
     if (m == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
     
     String url = awsServices.ssmService().getParameterValue(
-        "/formkiq/" + awsServices.appEnvironment() + "/api/DocumentsPublicHttpUrl");
+        "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
     String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
     
@@ -112,7 +116,9 @@ public class WebhooksIdRequestHandler
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     
-    WebhooksService webhookService = awsServices.webhookService();
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    
+    WebhooksService webhookService = serviceCache.webhookService();
     
     if (webhookService.findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");

@@ -22,6 +22,7 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,9 +49,15 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -61,14 +68,16 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentServiceImplTest implements DbKeys {
 
-  /** {@link DynamoDbHelper}. */
-  private DynamoDbHelper dbhelper;
-
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-  /** Document Table. */
+  /** {@link DocumentService}. */
   private DocumentService service;
+
+  /** {@link DocumentSearchService}. */
+  private DocumentSearchService searchService;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
 
   /**
    * Before Test.
@@ -79,9 +88,9 @@ public class DocumentServiceImplTest implements DbKeys {
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    this.dbhelper = DynamoDbTestServices.getDynamoDbHelper(null);
-    this.service =
-        new DocumentServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
+    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentServiceImpl(this.db, DOCUMENTS_TABLE);
+    this.searchService = new DocumentSearchServiceImpl(this.service, this.db, DOCUMENTS_TABLE);
   }
 
   /**
@@ -204,7 +213,7 @@ public class DocumentServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQuery().tag(s);
       
       PaginationResults<DynamicDocumentItem> list =
-          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -249,7 +258,7 @@ public class DocumentServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQuery().tag(s);
       
       PaginationResults<DynamicDocumentItem> list =
-          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -320,7 +329,7 @@ public class DocumentServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQuery().tag(s);
       
       PaginationResults<DynamicDocumentItem> list =
-          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -1499,17 +1508,17 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(this.dbhelper.getDocumentTable()).build();
+          .tableName(DOCUMENTS_TABLE).build();
 
-      try (DynamoDbClient db = this.dbhelper.getDb()) {
-        Map<String, AttributeValue> result = db.getItem(r).item();
+      try (DynamoDbClient client = this.db.build()) {
+        Map<String, AttributeValue> result = client.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
 
         for (String tagKey : Arrays.asList("untagged", "userId")) {
           r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-              .tableName(this.dbhelper.getDocumentTable()).build();
+              .tableName(DOCUMENTS_TABLE).build();
 
-          result = db.getItem(r).item();
+          result = client.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
         }
       }

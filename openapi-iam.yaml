@@ -2,7 +2,7 @@
         info:
           title: FormKiQ IAM API
           description: FormKiQ IAM API
-          version: 1.7.0
+          version: 1.7.5
         paths:
           /version:
             get:
@@ -54,6 +54,96 @@
                         $ref: '#/components/schemas/Sites'
               security:
               - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /tagSchemas:
+            get:
+              description: Returns the list of tagSchemas
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/TagSchemas'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              description: Creates a new TagSchema
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/TagSchemaBody'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentPostResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /tagSchemas/{tagSchemaId}:
+            get:
+              description: Retrieves a TagSchema's details, i.e., metadata
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/TagSchema'
+              security:
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents:
@@ -124,22 +214,22 @@
                           contentType: text/plain
                           content: This is sample data file
                           tags:
-                          - key:type
-                          - value:sample
+                          - key: type
+                          - value: sample
                       Nested_Document:
                         value:
                           path: doc1.txt
                           contentType: text/plain
                           content: This is document1 content
                           tags:
-                          - key:type
-                          - value:document1
+                          - key: type
+                          - value: document1
                           documents:
                           - contentType: text/plain
                             content: This is sub document1 content
                             tags:
-                            - key:type
-                            - value:subdocument1
+                            - key: type
+                            - value: subdocument1
               responses:
                 "201":
                   description: 201 CREATED
@@ -1012,6 +1102,13 @@
               required: true
               schema:
                 type: string
+            tagSchemaIdParam:
+              name: tagSchemaId
+              in: path
+              description: Tag Schema Identifier
+              required: true
+              schema:
+                type: string
             tagkeyParam:
               name: tagKey
               in: path
@@ -1631,12 +1728,12 @@
               example:
                 parseTypes:
                 - TEXT
-                - FORM
-                - TABLE
+                - FORMS
+                - TABLES
               properties:
                 parseTypes:
                   type: array
-                  description: OCR Parse types - TEXT, FORM, TABLE
+                  description: OCR Parse types - TEXT, FORMS, TABLES
                   items:
                     type: string
             Version:
@@ -1667,6 +1764,113 @@
                 uploadEmail:
                   type: string
                   description: SiteId document upload email address
+            TagSchemas:
+              type: object
+              properties:
+                schemas:
+                  $ref: '#/components/schemas/TagSchemaList'
+            TagSchemaList:
+              type: array
+              description: List of Tag Schemas
+              items:
+                $ref: '#/components/schemas/TagSchema'
+            TagSchemaBody:
+              type: object
+              properties:
+                schema:
+                  type: object
+                  properties:
+                    tags:
+                      type: object
+                      properties:
+                        compositeKeys:
+                          type: array
+                          description: List of Composite Keys
+                          items:
+                            $ref: '#/components/schemas/TagSchemaCompositeKey'
+                        required:
+                          type: array
+                          description: List of Required Tags
+                          items:
+                            $ref: '#/components/schemas/TagSchemaRequired'
+                        optional:
+                          type: array
+                          description: List of Optional Tags
+                          items:
+                            $ref: '#/components/schemas/TagSchemaOptional'
+                        allowAdditionalTags:
+                          type: boolean
+                          default: true
+            TagSchema:
+              type: object
+              properties:
+                schema:
+                  type: object
+                  properties:
+                    tags:
+                      type: object
+                      properties:
+                        compositeKeys:
+                          type: array
+                          description: List of Composite Keys
+                          items:
+                            $ref: '#/components/schemas/TagSchemaCompositeKey'
+                        required:
+                          type: array
+                          description: List of Required Tags
+                          items:
+                            $ref: '#/components/schemas/TagSchemaRequired'
+                        optional:
+                          type: array
+                          description: List of Optional Tags
+                          items:
+                            $ref: '#/components/schemas/TagSchemaOptional'
+                        allowAdditionalTags:
+                          type: boolean
+                          default: true
+                userId:
+                  type: string
+                insertedDate:
+                  type: string
+                  format: date-time
+                  description: Inserted Timestamp
+            TagSchemaCompositeKey:
+              type: object
+              properties:
+                key:
+                  type: array
+                  items:
+                    type: string
+            TagSchemaRequired:
+              type: object
+              properties:
+                key:
+                  type: string
+                defaultValues:
+                  type: array
+                  description: Default values
+                  items:
+                    type: string
+                values:
+                  type: array
+                  description: Only valid values
+                  items:
+                    type: string
+            TagSchemaOptional:
+              type: object
+              properties:
+                key:
+                  type: string
+                defaultValues:
+                  type: array
+                  description: Default values
+                  items:
+                    type: string
+                values:
+                  type: array
+                  description: Only valid values
+                  items:
+                    type: string
           securitySchemes:
             AuthorizationCognito:
               type: oauth2

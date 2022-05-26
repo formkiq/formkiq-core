@@ -21,39 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.services.lambda.services;
 
-import java.util.Map;
-import com.formkiq.graalvm.annotations.Reflectable;
+import java.util.Date;
 
-/** Pagination Token for Results. */
-@Reflectable
-public class PaginationMapToken {
-
-  /** {@link Object} {@link Map}. */
-  @Reflectable
-  private Map<String, Object> attributeMap;
+/**
+ * Cache Service.
+ *
+ */
+public interface CacheService {
 
   /**
-   * constructor.
-   *
-   * @param map {@link Map}
+   * Get Cache Key Expiry Date.
+   * 
+   * @param key {@link String}
+   * @return {@link Date}
    */
-  public PaginationMapToken(final Map<String, Object> map) {
-    this.attributeMap = map;
-  }
+  Date getExpiryDate(String key);
 
   /**
-   * Get Attribute Map.
-   *
-   * @return {@link Map}
+   * Read Value from Cache.
+   * 
+   * @param key {@link String}
+   * @return {@link String}
    */
-  public Map<String, Object> getAttributeMap() {
-    return this.attributeMap;
-  }
+  String read(String key);
 
-  @Override
-  public String toString() {
-    return this.attributeMap.toString();
-  }
+  /**
+   * Write to Cache.
+   * 
+   * @param key {@link String}
+   * @param value {@link String}
+   * @param cacheInDays int
+   */
+  void write(String key, String value, int cacheInDays);
 }

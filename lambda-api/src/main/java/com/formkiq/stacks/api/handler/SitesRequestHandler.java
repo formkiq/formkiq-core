@@ -23,13 +23,14 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -37,7 +38,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -78,7 +79,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
    * @return {@link String}
    */
   private String getMailDomain(final AwsServiceCache awsservice) {
-    String key = "/formkiq/" + awsservice.appEnvironment() + "/maildomain";
+    String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/maildomain";
     return awsservice.ssmService().getParameterValue(key);
   }
 
@@ -119,8 +120,9 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
     List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
-      DynamicObject config = awsservice.config(siteId);
+      DynamicObject config = serviceCache.config(siteId);
       config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
       return config;
     }).collect(Collectors.toList());
@@ -156,8 +158,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
         String siteId = site.getString("siteId");
         if (writeSiteIds.contains(siteId)) {
-          String key =
-              String.format("/formkiq/%s/siteid/%s/email", awsservice.appEnvironment(), siteId);
+          String key = String.format("/formkiq/%s/siteid/%s/email",
+              awsservice.environment("APP_ENVIRONMENT"), siteId);
           site.put("uploadEmail", awsservice.ssmService().getParameterValue(key));
         }
       });
@@ -172,14 +174,14 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
           String email = generateUploadEmail(logger, awsservice, mailDomain);
           site.put("uploadEmail", email);
 
-          String key =
-              String.format("/formkiq/%s/siteid/%s/email", awsservice.appEnvironment(), siteId);
+          String key = String.format("/formkiq/%s/siteid/%s/email",
+              awsservice.environment("APP_ENVIRONMENT"), siteId);
           awsservice.ssmService().putParameter(key, email);
 
           String[] strs = email.split("@");
           key = String.format("/formkiq/ses/%s/%s", strs[1], strs[0]);
           String val = "{\"siteId\":\"" + siteId + "\", \"appEnvironment\":\""
-              + awsservice.appEnvironment() + "\"}";
+              + awsservice.environment("APP_ENVIRONMENT") + "\"}";
           awsservice.ssmService().putParameter(key, val);
         }
 

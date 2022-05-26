@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3.awstest;
 import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import org.junit.BeforeClass;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -40,7 +41,6 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 

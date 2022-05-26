@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.lambda.apigateway;
+package com.formkiq.stacks.api;
 
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 
 /**
  * 
@@ -55,12 +55,8 @@ public abstract class AbstractApiRequestHandler extends AbstractRestApiRequestHa
       final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs) {
 
-    awsServices = new AwsServiceCache()
-        .dbConnection(builder, map.get("DOCUMENTS_TABLE"), map.get("CACHE_TABLE")).s3Connection(s3)
-        .sqsConnection(sqs).ssmConnection(ssm).stages3bucket(map.get("STAGE_DOCUMENTS_S3_BUCKET"))
-        .debug("true".equals(map.get("DEBUG"))).appEnvironment(map.get("APP_ENVIRONMENT"))
-        .formkiqType(map.get("FORMKIQ_TYPE")).documents3bucket(map.get("DOCUMENTS_S3_BUCKET"))
-        .websocketSqsUrl(map.get("WEBSOCKET_SQS_URL"));
+    awsServices = new CoreAwsServiceCache().environment(map).dbConnection(builder).s3Connection(s3)
+        .sqsConnection(sqs).ssmConnection(ssm).debug("true".equals(map.get("DEBUG")));
 
     awsServices.init();
   }

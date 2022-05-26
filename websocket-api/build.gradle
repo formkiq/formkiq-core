@@ -6,6 +6,7 @@ dependencies {
 	testImplementation project(':aws-sqs')
 	testImplementation project(':aws-ssm')
 	testImplementation project(':aws-cognito')
+	testImplementation project(':aws-dynamodb')
 	testImplementation project(':dynamodb-documents')
 	
 	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.17.167'

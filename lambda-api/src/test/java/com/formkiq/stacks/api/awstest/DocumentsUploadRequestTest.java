@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.net.URI;
@@ -38,12 +38,12 @@ import java.util.UUID;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.DocumentContent;
 import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.formkiq.stacks.common.formats.MimeType;
-import com.formkiq.stacks.common.objects.DynamicObject;
 
 /**
  * GET, OPTIONS /documents/upload tests.

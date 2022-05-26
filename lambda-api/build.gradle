@@ -9,6 +9,7 @@ dependencies {
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
+	implementation project(':aws-dynamodb')
 	implementation project(':dynamodb-documents')
 	
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'

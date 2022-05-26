@@ -6,7 +6,7 @@ dependencies {
     implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
-    implementation project(':dynamodb-documents')
+    implementation project(':aws-dynamodb')
 	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
 	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.7.0'

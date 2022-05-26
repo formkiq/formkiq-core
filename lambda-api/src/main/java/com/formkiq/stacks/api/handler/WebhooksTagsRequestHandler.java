@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -43,10 +45,9 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.NotFoundException;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentTag;
 import com.formkiq.stacks.dynamodb.DocumentTagType;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler
@@ -62,7 +63,9 @@ public class WebhooksTagsRequestHandler
     
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    PaginationResults<DynamicObject> list = awsServices.webhookService().findTags(siteId, id, null);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    PaginationResults<DynamicObject> list =
+        serviceCache.webhookService().findTags(siteId, id, null);
     
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();
@@ -103,7 +106,8 @@ public class WebhooksTagsRequestHandler
     tag.setInsertedDate(new Date());
     tag.setUserId(getCallingCognitoUsername(event));
     
-    DynamicObject webhook = awsServices.webhookService().findWebhook(siteId, id);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
     if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
@@ -115,7 +119,7 @@ public class WebhooksTagsRequestHandler
       ttl = new Date(epoch * TO_MILLIS);
     }
     
-    awsServices.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
+    serviceCache.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

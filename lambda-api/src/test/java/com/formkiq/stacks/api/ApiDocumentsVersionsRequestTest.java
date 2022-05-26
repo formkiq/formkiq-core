@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

@@ -18,13 +18,13 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.services.lambda;
 
-import static com.formkiq.stacks.dynamodb.ConfigService.DOCUMENT_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.services.lambda.services.ConfigService.DOCUMENT_TIME_TO_LIVE;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_WEBHOOKS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import java.util.Arrays;
@@ -34,7 +34,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.services.lambda.services.ConfigService;
+import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 
 /** 
  * Unit Tests for {@link ConfigServiceImpl}. 

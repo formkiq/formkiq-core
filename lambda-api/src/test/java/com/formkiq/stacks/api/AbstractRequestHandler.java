@@ -41,13 +41,12 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
@@ -66,40 +65,6 @@ public abstract class AbstractRequestHandler {
   /** Cache Table. */
   private static String cacheTable = "Cache";
 
-  // /**
-  // * Get App Environment.
-  // *
-  // * @return {@link String}
-  // */
-  // public static String getAppenvironment() {
-  // return appenvironment;
-  // }
-
-  // /**
-  // * Get Aws Region.
-  // *
-  // * @return {@link Region}
-  // */
-  // public static Region getAwsRegion() {
-  // return awsRegion;
-  // }
-
-  // /**
-  // * Get Sqs Document Formats Queue Url.
-  // *
-  // * @return {@link String}
-  // */
-  // public static String getSqsDocumentFormatsQueueUrl() {
-  // return sqsDocumentFormatsQueueUrl;
-  // }
-  //
-  // /**
-  // * Get SqsWebsocketQueueUrl.
-  // * @return {@link String}
-  // */
-  // public static String getSqsWebsocketQueueUrl() {
-  // return sqsWebsocketQueueUrl;
-  // }
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
 
@@ -109,12 +74,9 @@ public abstract class AbstractRequestHandler {
   /** {@link LambdaLogger}. */
   private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
 
-  // /** {@link DynamoDbHelper}. */
-  // private DynamoDbHelper dbhelper;
-
-  /** {@link AwsServiceCache}. */
-  private AwsServiceCache awsServices;
-
+  /** {@link CoreAwsServiceCache}. */
+  private CoreAwsServiceCache awsServices;
+  
   /**
    * Add header to {@link ApiGatewayRequestEvent}.
    * 
@@ -199,7 +161,7 @@ public abstract class AbstractRequestHandler {
 
     createApiRequestHandler(this.map);
 
-    this.awsServices = new CoreRequestHandler().getAwsServices();
+    this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
     SqsService sqsservice = this.awsServices.sqsService();
     for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl())) {
@@ -239,31 +201,13 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get {@link AwsServiceCache}.
+   * Get {@link CoreAwsServiceCache}.
    * 
-   * @return {@link AwsServiceCache}
+   * @return {@link CoreAwsServiceCache}
    */
-  public AwsServiceCache getAwsServices() {
+  public CoreAwsServiceCache getAwsServices() {
     return this.awsServices;
   }
-
-  // /**
-  // * Documents Bucket Name.
-  // *
-  // * @return {@link String}
-  // */
-  // public String getBucketName() {
-  // return bucketName;
-  // }
-
-  // /**
-  // * Get {@link DynamoDbHelper}.
-  // *
-  // * @return {@link DynamoDbHelper}
-  // */
-  // public DynamoDbHelper getDbhelper() {
-  // return this.dbhelper;
-  // }
 
   /**
    * Get {@link DocumentService}.

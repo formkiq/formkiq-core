@@ -18,9 +18,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import static com.formkiq.stacks.dynamodb.DbKeys.TAG_DELIMINATOR;
+package com.formkiq.aws.dynamodb;
 
 /**
  * 
@@ -74,7 +72,7 @@ public final class SiteIdKeyGenerator {
    * @return {@link String}
    */
   public static String getDeliminator(final String s, final int element) {
-    String[] strs = s.split(TAG_DELIMINATOR);
+    String[] strs = s.split(DbKeys.TAG_DELIMINATOR);
     return strs.length > element ? strs[element] : null;
   }
 
