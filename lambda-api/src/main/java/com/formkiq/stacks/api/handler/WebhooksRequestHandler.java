@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -44,7 +45,6 @@ import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.TooManyRequestsException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentTag;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler

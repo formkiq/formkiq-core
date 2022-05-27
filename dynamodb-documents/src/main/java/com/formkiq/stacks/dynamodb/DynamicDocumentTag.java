@@ -25,6 +25,8 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 
 /**
  * 

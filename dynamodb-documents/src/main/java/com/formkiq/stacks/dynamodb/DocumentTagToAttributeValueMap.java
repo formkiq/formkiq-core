@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**

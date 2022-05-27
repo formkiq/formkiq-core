@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -46,8 +48,6 @@ import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.BadException;
 import com.formkiq.aws.services.lambda.NotFoundException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentTag;
-import com.formkiq.stacks.dynamodb.DocumentTagType;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler

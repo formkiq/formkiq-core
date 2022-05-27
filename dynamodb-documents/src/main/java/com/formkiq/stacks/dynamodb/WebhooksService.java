@@ -29,6 +29,7 @@ import java.util.List;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {

@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 
 /**
  * 
