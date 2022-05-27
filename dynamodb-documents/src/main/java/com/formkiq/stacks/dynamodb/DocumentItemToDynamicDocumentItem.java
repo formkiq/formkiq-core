@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.stacks.common.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

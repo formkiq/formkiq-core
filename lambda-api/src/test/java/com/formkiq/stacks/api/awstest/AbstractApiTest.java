@@ -21,7 +21,7 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.common.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
