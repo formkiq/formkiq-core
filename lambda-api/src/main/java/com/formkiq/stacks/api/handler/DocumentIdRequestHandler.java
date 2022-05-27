@@ -241,7 +241,7 @@ public class DocumentIdRequestHandler
     int limit = getLimit(logger, event);
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
-    ApiPagination token = getPagination(serviceCache.documentCacheService(), event);
+    ApiPagination token = getPagination(awsservice.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
     ApiPagination pagination = getPagination(serviceCache.documentCacheService(), event);
     

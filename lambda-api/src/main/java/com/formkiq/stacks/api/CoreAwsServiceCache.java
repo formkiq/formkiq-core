@@ -4,7 +4,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
-import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentCountServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -42,8 +41,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   private DocumentService documentService;
   /** {@link WebhooksService}. */
   private WebhooksService webhookService;
-  /** {@link DynamoDbCacheService}. */
-  private DynamoDbCacheService documentCacheService;
   /** {@link DocumentCountService}. */
   private DocumentCountService documentCountService;
   
@@ -66,19 +63,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
       this.configService = new ConfigServiceImpl(dbConnection(), environment("DOCUMENTS_TABLE"));
     }
     return this.configService;
-  }
-  
-  /**
-   * Get {@link DynamoDbCacheService}.
-   * 
-   * @return {@link DynamoDbCacheService}
-   */
-  public DynamoDbCacheService documentCacheService() {
-    if (this.documentCacheService == null) {
-      this.documentCacheService =
-          new DynamoDbCacheService(dbConnection(), environment("CACHE_TABLE"));
-    }
-    return this.documentCacheService;
   }
   
   /**

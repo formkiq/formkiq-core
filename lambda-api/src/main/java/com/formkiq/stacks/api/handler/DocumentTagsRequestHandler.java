@@ -67,7 +67,7 @@ public class DocumentTagsRequestHandler
       final AwsServiceCache awsservice) throws Exception {
     
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
-    CacheService cacheService = coreServices.documentCacheService();
+    CacheService cacheService = awsservice.documentCacheService();
     ApiPagination pagination = getPagination(cacheService, event);
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
 

@@ -85,7 +85,7 @@ public class DocumentsRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
-    ApiPagination pagination = getPagination(serviceCache.documentCacheService(), event);
+    ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
 
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
@@ -60,13 +61,15 @@ public class AwsServiceCache {
   private boolean debug;
   /** Environment {@link Map}. */
   private Map<String, String> environment;
+  /** {@link DynamoDbCacheService}. */
+  private DynamoDbCacheService documentCacheService;
 
   /**
    * constructor.
    */
   public AwsServiceCache() {
   }
-
+  
   /**
    * Get {@link DynamoDbConnectionBuilder}.
    * @return {@link DynamoDbConnectionBuilder}
@@ -85,7 +88,7 @@ public class AwsServiceCache {
     this.dbConnection = connection;
     return this;
   }
-  
+
   /**
    * Is Debug.
    * 
@@ -94,7 +97,7 @@ public class AwsServiceCache {
   public boolean debug() {
     return this.debug;
   }
-
+  
   /**
    * Set Debug Mode.
    * 
@@ -104,6 +107,19 @@ public class AwsServiceCache {
   public AwsServiceCache debug(final boolean isDebug) {
     this.debug = isDebug;
     return this;
+  }
+
+  /**
+   * Get {@link DynamoDbCacheService}.
+   * 
+   * @return {@link DynamoDbCacheService}
+   */
+  public DynamoDbCacheService documentCacheService() {
+    if (this.documentCacheService == null) {
+      this.documentCacheService =
+          new DynamoDbCacheService(dbConnection(), environment("CACHE_TABLE"));
+    }
+    return this.documentCacheService;
   }
 
   /**

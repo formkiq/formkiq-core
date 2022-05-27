@@ -63,7 +63,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final AwsServiceCache awsservice) throws Exception {
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
-    DynamoDbCacheService cacheService = serviceCache.documentCacheService();
+    DynamoDbCacheService cacheService = awsservice.documentCacheService();
     ApiPagination pagination = getPagination(cacheService, event);
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
