@@ -5,7 +5,7 @@ import java.util.Collections;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.services.lambda.ValidationError;
+import com.formkiq.aws.services.lambda.validation.ValidationError;
 
 /**
  * 

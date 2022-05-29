@@ -24,7 +24,7 @@
 package com.formkiq.aws.services.lambda.exceptions;
 
 import java.util.Collection;
-import com.formkiq.aws.services.lambda.ValidationError;
+import com.formkiq.aws.services.lambda.validation.ValidationError;
 
 /** {@link Exception} that will return a 400 error. */
 public class ValidationException extends Exception {

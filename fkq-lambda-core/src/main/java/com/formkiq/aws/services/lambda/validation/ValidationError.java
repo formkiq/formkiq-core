@@ -10,7 +10,7 @@
  * terms under which you may use this code.
  *
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.services.lambda.validation;
 
 /**
  * 

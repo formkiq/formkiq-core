@@ -52,10 +52,10 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.ValidationError;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.ValidationException;
+import com.formkiq.aws.services.lambda.validation.ValidationError;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.PaginationResult;
@@ -382,9 +382,10 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
    * @throws ValidationException ValidationException
+   * @throws BadException BadException
    */
   private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item) throws ValidationException {
+      final DynamicDocumentItem item) throws ValidationException, BadException {
     Collection<ValidationError> errors =
         cacheService.documentTagSchemaEvents().addTagsEvent(siteId, item);
     if (!errors.isEmpty()) {
