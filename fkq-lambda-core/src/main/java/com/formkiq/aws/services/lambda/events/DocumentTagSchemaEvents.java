@@ -5,6 +5,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ValidationError;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 
 /**
  * 
@@ -20,9 +21,10 @@ public interface DocumentTagSchemaEvents {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
+   * @throws BadException BadException
    */
   Collection<ValidationError> addTagsEvent(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags);
+      Collection<DocumentTag> tags) throws BadException;
 
   /**
    * Add {@link DocumentTag} Event.
@@ -30,8 +32,10 @@ public interface DocumentTagSchemaEvents {
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @return {@link Collection} {@link ValidationError}
+   * @throws BadException BadException
    */
-  Collection<ValidationError> addTagsEvent(String siteId, DynamicDocumentItem item);
+  Collection<ValidationError> addTagsEvent(String siteId, DynamicDocumentItem item)
+      throws BadException;
 
   /**
    * Delete {@link DocumentTag} Event.
@@ -40,9 +44,10 @@ public interface DocumentTagSchemaEvents {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link String}
    * @return {@link Collection} {@link ValidationError}
+   * @throws BadException BadException
    */
   Collection<ValidationError> removeTagsEvent(String siteId, DocumentItem item,
-      Collection<String> tags);
+      Collection<String> tags) throws BadException;
   
   /**
    * Replace {@link DocumentTag} Event.
@@ -51,7 +56,8 @@ public interface DocumentTagSchemaEvents {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
+   * @throws BadException BadException
    */
   Collection<ValidationError> replaceTagsEvent(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags);
+      Collection<DocumentTag> tags) throws BadException;
 }
