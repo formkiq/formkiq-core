@@ -25,10 +25,12 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -38,8 +40,10 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.ValidationError;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -71,8 +75,21 @@ public class DocumentTagRequestHandler
     if (docTag == null) {
       throw new NotFoundException("Tag '" + tagKey + "' not found.");
     }
+    
+    DocumentItem document = cacheService.documentService().findDocument(siteId, documentId);
+    if (document == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
 
-    documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
+    List<String> tags = Arrays.asList(tagKey);
+    
+    Collection<ValidationError> errors =
+        awsservice.documentTagSchemaEvents().removeTagsEvent(siteId, document, tags);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+    
+    documentService.removeTags(siteId, documentId, tags);
 
     ApiResponse resp =
         new ApiMessageResponse("Removed '" + tagKey + "' from document '" + documentId + "'.");
@@ -95,7 +112,7 @@ public class DocumentTagRequestHandler
     if (tag == null) {
       throw new NotFoundException("Tag " + tagKey + " not found.");
     }
-
+    
     ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
     resp.setKey(tagKey);
     resp.setValue(tag.getValue());
@@ -147,10 +164,9 @@ public class DocumentTagRequestHandler
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
     DocumentService documentService = cacheService.documentService();
 
-    if (event.getHttpMethod().equalsIgnoreCase("put")) {
-      if (documentService.findDocument(siteId, documentId) == null) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
+    DocumentItem document = documentService.findDocument(siteId, documentId);
+    if (document == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
     }
 
     Date now = new Date();
@@ -172,7 +188,14 @@ public class DocumentTagRequestHandler
       tag.setValues(values);
     }
 
-    documentService.addTags(siteId, documentId, Arrays.asList(tag), null);
+    List<DocumentTag> tags = Arrays.asList(tag);
+    Collection<ValidationError> errors =
+        awsservice.documentTagSchemaEvents().replaceTagsEvent(siteId, document, tags);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+    
+    documentService.addTags(siteId, documentId, tags, null);
 
     ApiResponse resp = new ApiMessageResponse(
         "Updated tag '" + tagKey + "' on document '" + documentId + "'.");

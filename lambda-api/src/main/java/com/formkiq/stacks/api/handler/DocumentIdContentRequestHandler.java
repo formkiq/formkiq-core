@@ -29,6 +29,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -37,10 +38,9 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.common.formats.MimeType;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
@@ -63,6 +64,8 @@ public class AwsServiceCache {
   private Map<String, String> environment;
   /** {@link DynamoDbCacheService}. */
   private DynamoDbCacheService documentCacheService;
+  /** {@link DocumentTagSchemaEvents}. */
+  private DocumentTagSchemaEvents documentTagSchemaEvents;
 
   /**
    * constructor.
@@ -120,6 +123,24 @@ public class AwsServiceCache {
           new DynamoDbCacheService(dbConnection(), environment("CACHE_TABLE"));
     }
     return this.documentCacheService;
+  }
+
+  /**
+   * Get {@link DocumentTagSchemaEvents}.
+   * @return {@link DocumentTagSchemaEvents}
+   */
+  public DocumentTagSchemaEvents documentTagSchemaEvents() {
+    return this.documentTagSchemaEvents;
+  }
+
+  /**
+   * Set {@link DocumentTagSchemaEvents}.
+   * @param events {@link DocumentTagSchemaEvents}
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache documentTagSchemaEvents(final DocumentTagSchemaEvents events) {
+    this.documentTagSchemaEvents = events;
+    return this;
   }
 
   /**
@@ -197,7 +218,7 @@ public class AwsServiceCache {
     this.sqsConnection = connection;
     return this;
   }
-
+  
   /**
    * Get {@link SqsService}.
    * 
@@ -217,7 +238,7 @@ public class AwsServiceCache {
   public SsmConnectionBuilder ssmConnection() {
     return this.ssmConnection;
   }
-  
+
   /**
    * Set {@link SsmConnectionBuilder}.
    * 

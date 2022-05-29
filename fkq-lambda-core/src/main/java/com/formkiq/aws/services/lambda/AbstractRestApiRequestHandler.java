@@ -46,6 +46,13 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
+import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.services.lambda.exceptions.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 import software.amazon.awssdk.utils.StringUtils;
@@ -386,6 +393,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     } catch (NotImplementedException e) {
       buildResponse(logger, awsServices, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
+    } catch (ValidationException e) {
+      buildResponse(logger, awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
+          new ApiResponseError(e.errors()));
     } catch (Exception e) {
       logError(logger, e);
 

@@ -142,11 +142,6 @@ public abstract class AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
 
-    // this.dbhelper = new DynamoDbHelper(TestServices.getDynamoDbConnection(DYNAMODB_PORT));
-    // this.dbhelper.truncateDocumentsTable();
-    // this.dbhelper.truncateWebhooks();
-    // this.dbhelper.truncateConfig();
-
     this.map.put("APP_ENVIRONMENT", TestServices.FORMKIQ_APP_ENVIRONMENT);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
     this.map.put("CACHE_TABLE", cacheTable);

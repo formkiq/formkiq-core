@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.services.lambda.exceptions;
 
-/** {@link Exception} that will return a 429 Too Many Requests. */
-public class TooManyRequestsException extends Exception {
+/** {@link Exception} that will return a 400 error. */
+public class BadException extends Exception {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625320614270509L;
@@ -34,7 +34,7 @@ public class TooManyRequestsException extends Exception {
    *
    * @param msg {@link String}
    */
-  public TooManyRequestsException(final String msg) {
+  public BadException(final String msg) {
     super(msg);
   }
 }

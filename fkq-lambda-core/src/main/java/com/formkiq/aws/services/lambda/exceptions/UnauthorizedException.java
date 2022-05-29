@@ -21,20 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.services.lambda.exceptions;
 
-/** {@link Exception} that will return a 501 error. */
-public class NotImplementedException extends Exception {
+/** {@link Exception} that will return a 403 error. */
+public class UnauthorizedException extends Exception {
 
   /** serialVersionUID. */
-  private static final long serialVersionUID = -3307625320614270509L;
+  private static final long serialVersionUID = -3307625920614270509L;
 
   /**
    * constructor.
    *
    * @param msg {@link String}
    */
-  public NotImplementedException(final String msg) {
+  public UnauthorizedException(final String msg) {
     super(msg);
   }
 }

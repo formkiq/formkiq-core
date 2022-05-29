@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.Collection;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Error Response. */
@@ -32,6 +33,17 @@ public class ApiResponseError implements ApiResponse {
   /** Error Message. */
   @Reflectable
   private String message;
+  /** Error Message. */
+  @Reflectable
+  private Collection<ValidationError> errors;
+  
+  /**
+   * constructor.
+   * @param validationErrors {@link Collection} {@link ValidationError}
+   */
+  public ApiResponseError(final Collection<ValidationError> validationErrors) {
+    this.errors = validationErrors;
+  }
 
   /**
    * constructor.
@@ -40,6 +52,14 @@ public class ApiResponseError implements ApiResponse {
    */
   public ApiResponseError(final String s) {
     this.message = s;
+  }
+
+  /**
+   * Get {@link ValidationError} errors.
+   * @return {@link Collection} {@link ValidationError}
+   */
+  public Collection<ValidationError> getErrors() {
+    return this.errors;
   }
 
   /**

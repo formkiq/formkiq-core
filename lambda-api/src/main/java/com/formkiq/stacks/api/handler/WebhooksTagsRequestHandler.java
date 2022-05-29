@@ -45,8 +45,8 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */

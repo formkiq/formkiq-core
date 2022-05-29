@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.model;
 
 import java.util.Date;
 import java.util.List;
@@ -91,6 +91,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getTagSchemaId() {
+    return getString("tagSchemaId");
+  }
+
+  @Override
   public String getTimeToLive() {
     return getString("TimeToLive");
   }
@@ -139,6 +144,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setPath(final String path) {
     put("path", path);
+  }
+
+  @Override
+  public void setTagSchemaId(final String id) {
+    put("tagSchemaId", id);
   }
 
   @Override

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Searches for {@link DocumentItem}. */

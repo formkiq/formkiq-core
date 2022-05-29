@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.services.lambda.exceptions;
 
 /** {@link Exception} that will return a 403 error. */
-public class UnauthorizedException extends Exception {
+public class ForbiddenException extends Exception {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625920614270509L;
@@ -34,7 +34,7 @@ public class UnauthorizedException extends Exception {
    *
    * @param msg {@link String}
    */
-  public UnauthorizedException(final String msg) {
+  public ForbiddenException(final String msg) {
     super(msg);
   }
 }

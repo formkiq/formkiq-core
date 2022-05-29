@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 
 /**
  * 

@@ -1160,6 +1160,29 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents request with invalid TagSchema.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments13() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      getAwsServices().documentTagSchemaEvents(new DocumentEventsErrors());
+      
+      // when
+      DynamicObject obj =
+          handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
+
+      // then
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}",
+          obj.getString("body"));
+    }
+  }
+  
+  /**
    * Verify S3 File.
    * 
    * @param key {@link String}

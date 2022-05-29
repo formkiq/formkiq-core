@@ -39,7 +39,7 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.graalvm.annotations.Reflectable;

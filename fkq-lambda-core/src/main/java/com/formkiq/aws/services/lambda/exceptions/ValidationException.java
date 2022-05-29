@@ -21,20 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.services.lambda.exceptions;
+
+import java.util.Collection;
+import com.formkiq.aws.services.lambda.ValidationError;
 
 /** {@link Exception} that will return a 400 error. */
-public class BadException extends Exception {
+public class ValidationException extends Exception {
 
   /** serialVersionUID. */
-  private static final long serialVersionUID = -3307625320614270509L;
+  private static final long serialVersionUID = -3307615320614370509L;
+  /** {@link ValidationError}. */
+  private Collection<ValidationError> errors;
 
   /**
    * constructor.
-   *
-   * @param msg {@link String}
+   * @param validationErrors {@link Collection} {@link ValidationError}
    */
-  public BadException(final String msg) {
-    super(msg);
+  public ValidationException(final Collection<ValidationError> validationErrors) {
+    super("validation errors");
+    this.errors = validationErrors;
+  }
+
+  /**
+   * Get {@link ValidationError}.
+   * @return {@link Collection} {@link ValidationError}
+   */
+  public Collection<ValidationError> errors() {
+    return this.errors;
   }
 }

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.services.lambda.exceptions;
 
 /** {@link Exception} that will return a 404 error. */
 public class NotFoundException extends Exception {

@@ -42,8 +42,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.TooManyRequestsException;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */

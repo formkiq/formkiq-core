@@ -30,7 +30,9 @@ import java.util.Optional;
 import java.util.Set;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 
 /** Services for Querying, Updating Documents. */
 public interface DocumentService {

@@ -21,28 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.services.lambda.exceptions;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+/** {@link Exception} that will return a 429 Too Many Requests. */
+public class TooManyRequestsException extends Exception {
 
-/**
- * 
- * Document Search Service.
- *
- */
-public interface DocumentSearchService {
+  /** serialVersionUID. */
+  private static final long serialVersionUID = -3307625320614270509L;
 
   /**
-   * Search for Documents.
+   * constructor.
    *
-   * @param siteId Optional Grouping siteId
-   * @param search {@link SearchQuery}
-   * @param token {@link PaginationMapToken}
-   * @param maxresults int
-   * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @param msg {@link String}
    */
-  PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
-      PaginationMapToken token, int maxresults);
+  public TooManyRequestsException(final String msg) {
+    super(msg);
+  }
 }

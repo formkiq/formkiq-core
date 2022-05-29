@@ -28,6 +28,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -49,12 +52,12 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.ValidationError;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.PaginationResult;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -290,7 +293,7 @@ public class DocumentIdRequestHandler
 
     String maxDocumentCount = null;
 
-    DynamicObject item = fromBodyToDynamicObject(logger, event);
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
     updateContentType(event, item);
 
     List<DynamicObject> documents = item.getList("documents");
@@ -314,6 +317,7 @@ public class DocumentIdRequestHandler
     logger.log("setting userId: " + item.getString("userId") + " contentType: "
         + item.getString("contentType"));
 
+    validateTagSchema(cacheService, siteId, item);
     putObjectToStaging(logger, cacheService, maxDocumentCount, siteId, item);
 
     Map<String, String> uploadUrls =
@@ -323,20 +327,6 @@ public class DocumentIdRequestHandler
     ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
 
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
-  }
-
-  /**
-   * Update Content-Type on {@link DynamicObject} based on {@link ApiGatewayRequestEvent}.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param item {@link DynamicObject}
-   */
-  private void updateContentType(final ApiGatewayRequestEvent event, final DynamicObject item) {
-    String contentType = getContentType(event);
-
-    if (!item.containsKey("contentType") && contentType != null) {
-      item.put("contentType", contentType);
-    }
   }
 
   /**
@@ -369,6 +359,36 @@ public class DocumentIdRequestHandler
       if (maxDocumentCount != null) {
         awsservice.documentCountService().incrementDocumentCount(siteId);
       }
+    }
+  }
+
+  /**
+   * Update Content-Type on {@link DynamicObject} based on {@link ApiGatewayRequestEvent}.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param item {@link DynamicObject}
+   */
+  private void updateContentType(final ApiGatewayRequestEvent event, final DynamicObject item) {
+    String contentType = getContentType(event);
+
+    if (!item.containsKey("contentType") && contentType != null) {
+      item.put("contentType", contentType);
+    }
+  }
+
+  /**
+   * Validate {@link DynamicDocumentItem} against a TagSchema.
+   * @param cacheService {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param item {@link DynamicDocumentItem}
+   * @throws ValidationException ValidationException
+   */
+  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
+      final DynamicDocumentItem item) throws ValidationException {
+    Collection<ValidationError> errors =
+        cacheService.documentTagSchemaEvents().addTagsEvent(siteId, item);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
     }
   }
 }

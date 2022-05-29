@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -44,7 +46,10 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
+import com.formkiq.aws.services.lambda.ValidationError;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.ValidationException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
@@ -140,6 +145,9 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
     
+    final String siteId = authorizer.getSiteId();
+    final String documentId = event.getPathParameters().get("documentId");
+    
     DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
     DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
 
@@ -148,6 +156,12 @@ public class DocumentTagsRequestHandler
     
     if (!tagValid && !tagsValid) {
       throw new BadException("invalid json body");
+    }
+    
+    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
+    DocumentItem item = coreServices.documentService().findDocument(siteId, documentId);
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
     }
 
     if (!tagsValid) {
@@ -160,12 +174,15 @@ public class DocumentTagsRequestHandler
       t.setInsertedDate(new Date());
       t.setUserId(getCallingCognitoUsername(event));
     });
-
-    String documentId = event.getPathParameters().get("documentId");
-    String siteId = authorizer.getSiteId();
     
-    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
+    
+    Collection<ValidationError> errors =
+        coreServices.documentTagSchemaEvents().addTagsEvent(siteId, item, tags.getTags());
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+    
     coreServices.documentService().addTags(siteId, documentId, tags.getTags(), null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")

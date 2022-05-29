@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.model;
 
 import java.util.Date;
 import java.util.List;
@@ -86,6 +86,12 @@ public interface DocumentItem {
   String getPath();
 
   /**
+   * Get Tag Schema Id.
+   * @return {@link String}
+   */
+  String getTagSchemaId();
+
+  /**
    * Get Time To Live.
    *
    * @return {@link String}
@@ -147,13 +153,19 @@ public interface DocumentItem {
    * @param date {@link Date}
    */
   void setInsertedDate(Date date);
-
+  
   /**
    * Set Path.
    *
    * @param filepath {@link String}
    */
   void setPath(String filepath);
+  
+  /**
+   * Set TagSchema Id.
+   * @param id {@link String}
+   */
+  void setTagSchemaId(String id);
   
   /**
    * Set Time To Live.
