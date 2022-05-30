@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
 import com.formkiq.aws.services.lambda.validation.ValidationError;
 
@@ -33,12 +32,6 @@ public class DocumentEventsErrors implements DocumentTagSchemaEvents {
   @Override
   public Collection<ValidationError> addTagsEvent(final String siteId, final DocumentItem item,
       final Collection<DocumentTag> tags) {
-    return Arrays.asList(new DummyValidationError());
-  }
-
-  @Override
-  public Collection<ValidationError> addTagsEvent(final String siteId,
-      final DynamicDocumentItem item, final Collection<DocumentTag> tags) {
     return Arrays.asList(new DummyValidationError());
   }
 
