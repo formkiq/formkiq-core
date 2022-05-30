@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.text.SimpleDateFormat;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,10 +35,14 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
+import java.util.TimeZone;
 
 /** Date Helper class. */
 public final class DateUtil {
 
+  /** Date Format. */
+  public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+  
   /**
    * Formats TZ String to start with '+' or '-'.
    * 
@@ -63,6 +68,17 @@ public final class DateUtil {
     }
 
     return ret;
+  }
+
+  /**
+   * String to ISO Standard format.
+   * @return {@link SimpleDateFormat}
+   */
+  public static SimpleDateFormat getIsoDateFormatter() {
+    SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
+    TimeZone tz = TimeZone.getTimeZone("UTC");
+    df.setTimeZone(tz);    
+    return df;
   }
 
   /**
@@ -119,7 +135,7 @@ public final class DateUtil {
 
     return zoneDate;
   }
-
+  
   /** private constructor. */
   private DateUtil() {}
 }

@@ -26,7 +26,6 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.stacks.dynamodb.DocumentService.DATE_FORMAT;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -53,6 +52,7 @@ import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
+import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
@@ -203,7 +203,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       if (obj.containsKey("insertedDate")) {
 
-        SimpleDateFormat f = new SimpleDateFormat(DATE_FORMAT);
+        SimpleDateFormat f = DateUtil.getIsoDateFormatter();
 
         try {
           obj.setInsertedDate(f.parse(obj.getString("insertedDate")));

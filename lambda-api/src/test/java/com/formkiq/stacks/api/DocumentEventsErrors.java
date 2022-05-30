@@ -38,7 +38,7 @@ public class DocumentEventsErrors implements DocumentTagSchemaEvents {
 
   @Override
   public Collection<ValidationError> addTagsEvent(final String siteId,
-      final DynamicDocumentItem item) {
+      final DynamicDocumentItem item, final Collection<DocumentTag> tags) {
     return Arrays.asList(new DummyValidationError());
   }
 

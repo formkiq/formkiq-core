@@ -5,6 +5,7 @@ import java.util.Collections;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.validation.ValidationError;
 
 /**
@@ -21,7 +22,7 @@ public class DocumentTagSchemaEventsEmpty implements DocumentTagSchemaEvents {
 
   @Override
   public Collection<ValidationError> addTagsEvent(final String siteId,
-      final DynamicDocumentItem item) {
+      final DynamicDocumentItem item, final Collection<DocumentTag> tags) throws BadException {
     return Collections.emptyList();
   }
 

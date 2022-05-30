@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -57,7 +58,9 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.ValidationException;
 import com.formkiq.aws.services.lambda.validation.ValidationError;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -386,8 +389,16 @@ public class DocumentIdRequestHandler
    */
   private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
       final DynamicDocumentItem item) throws ValidationException, BadException {
+    
+    List<DynamicObject> doctags = item.getList("tags");
+    DynamicObjectToDocumentTag transform =
+        new DynamicObjectToDocumentTag(DateUtil.getIsoDateFormatter());
+    List<DocumentTag> tags = doctags.stream().map(t -> {
+      return transform.apply(t);
+    }).collect(Collectors.toList());
+    
     Collection<ValidationError> errors =
-        cacheService.documentTagSchemaEvents().addTagsEvent(siteId, item);
+        cacheService.documentTagSchemaEvents().addTagsEvent(siteId, item, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

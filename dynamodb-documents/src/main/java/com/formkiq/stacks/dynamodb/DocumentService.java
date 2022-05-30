@@ -37,8 +37,6 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 /** Services for Querying, Updating Documents. */
 public interface DocumentService {
 
-  /** Date Format. */
-  String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
   /** System Defined Tags. */

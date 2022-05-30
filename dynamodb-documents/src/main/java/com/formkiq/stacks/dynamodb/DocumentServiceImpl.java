@@ -78,7 +78,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private SimpleDateFormat yyyymmddFormat;
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df;
+  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   /** Documents Table Name. */
   private String documentTableName;
@@ -101,11 +101,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     this.documentTableName = documentsTable;
 
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
-    this.df = new SimpleDateFormat(DATE_FORMAT);
 
     TimeZone tz = TimeZone.getTimeZone("UTC");
     this.yyyymmddFormat.setTimeZone(tz);
-    this.df.setTimeZone(tz);
   }
 
   @Override
@@ -1041,27 +1039,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final DynamicDocumentItem doc, final Date date, final String username) {
 
     boolean docexists = exists(siteId, doc.getDocumentId());
-    List<DocumentTag> tags = new ArrayList<>();
     List<DynamicObject> doctags = doc.getList("tags");
-
-    tags.addAll(doctags.stream().map(t -> {
-      
-      DocumentTagType type = null;
-      if (t.hasString("type")) {
-        type = DocumentTagType.valueOf(t.getString("type").toUpperCase());
-      }
-
-      DocumentTag tag =
-          new DocumentTag(null, t.getString("key"), t.getString("value"), date, username, type);
-      
-      if (t.containsKey("values")) {
-        tag.setValue(null);
-        tag.setValues(t.getStringList("values"));
-      }
-      
+    List<DocumentTag> tags = doctags.stream().map(t -> {
+      DynamicObjectToDocumentTag transform = new DynamicObjectToDocumentTag(this.df);
+      DocumentTag tag = transform.apply(t);
+      tag.setInsertedDate(date);
+      tag.setUserId(username);
       return tag;
-      
-    }).collect(Collectors.toList()));
+    }).collect(Collectors.toList());
 
     if (!docexists && tags.isEmpty()) {
       tags.add(
@@ -1131,8 +1116,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       saveDocument(keys, siteId, dockey, null, false, doc.getString("TimeToLive"));
 
       List<DynamicObject> doctags = subdoc.getList("tags");
-      tags = doctags.stream().map(t -> new DynamicObjectToDocumentTag().apply(t))
-          .collect(Collectors.toList());
+      tags = doctags.stream().map(t -> {
+        DynamicObjectToDocumentTag transformer = new DynamicObjectToDocumentTag(this.df);
+        return transformer.apply(t);
+      }).collect(Collectors.toList());
 
       keys = keysDocument(siteId, subdoc.getString("documentId"));
       saveDocument(keys, siteId, document, tags, false, doc.getString("TimeToLive"));

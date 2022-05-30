@@ -31,11 +31,12 @@ public interface DocumentTagSchemaEvents {
    * 
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
+   * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
    * @throws BadException BadException
    */
-  Collection<ValidationError> addTagsEvent(String siteId, DynamicDocumentItem item)
-      throws BadException;
+  Collection<ValidationError> addTagsEvent(String siteId, DynamicDocumentItem item,
+      Collection<DocumentTag> tags) throws BadException;
 
   /**
    * Delete {@link DocumentTag} Event.

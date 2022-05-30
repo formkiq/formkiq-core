@@ -83,7 +83,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
     this.dynamoDB = builder.build();
     this.documentTableName = documentsTable;
-    this.df = new SimpleDateFormat(DocumentService.DATE_FORMAT);
+    this.df = DateUtil.getIsoDateFormatter();
   }
 
   @Override

@@ -23,7 +23,6 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.stacks.dynamodb.DocumentService.DATE_FORMAT;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
@@ -71,6 +70,7 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
@@ -221,7 +221,8 @@ public class StagingS3CreateTest implements DbKeys {
   }
   
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).create();
+  private Gson gson =
+      new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
 
   /** Environment Map. */
   private Map<String, String> env = new HashMap<>();
