@@ -39,6 +39,8 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
+import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
+import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEventsEmpty;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
@@ -101,7 +103,8 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
           new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
               .setCredentials(EnvironmentVariableCredentialsProvider.create()),
           new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
-              .setCredentials(EnvironmentVariableCredentialsProvider.create()));
+              .setCredentials(EnvironmentVariableCredentialsProvider.create()),
+          new DocumentTagSchemaEventsEmpty());
     }
     
     buildUrlMap();
@@ -149,12 +152,14 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sqs {@link SqsConnectionBuilder}
+   * @param schemaEvents {@link DocumentTagSchemaEvents} 
    */
   protected static void setUpHandler(final Map<String, String> map,
       final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
-      final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs) {
+      final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
+      final DocumentTagSchemaEvents schemaEvents) {
 
-    setAwsServiceCache(map, builder, s3, ssm, sqs);
+    setAwsServiceCache(map, builder, s3, ssm, sqs, schemaEvents);
 
     isEnablePublicUrls = isEnablePublicUrls(map);
   }

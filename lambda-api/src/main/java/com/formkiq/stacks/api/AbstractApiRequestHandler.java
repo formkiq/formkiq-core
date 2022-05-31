@@ -29,7 +29,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEventsEmpty;
+import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 
@@ -51,14 +51,16 @@ public abstract class AbstractApiRequestHandler extends AbstractRestApiRequestHa
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sqs {@link SqsConnectionBuilder}
+   * @param schemaEvents {@link DocumentTagSchemaEvents}
    */
   protected static void setAwsServiceCache(final Map<String, String> map,
       final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
-      final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs) {
+      final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
+      final DocumentTagSchemaEvents schemaEvents) {
 
     awsServices = new CoreAwsServiceCache().environment(map).dbConnection(builder).s3Connection(s3)
         .sqsConnection(sqs).ssmConnection(ssm).debug("true".equals(map.get("DEBUG")))
-        .documentTagSchemaEvents(new DocumentTagSchemaEventsEmpty());
+        .documentTagSchemaEvents(schemaEvents);
 
     awsServices.init();
   }
