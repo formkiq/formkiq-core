@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -38,6 +39,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiResponseError;
+import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
 import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEventsEmpty;
@@ -85,17 +87,19 @@ import software.amazon.awssdk.regions.Region;
     PresetTag.class, Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class,
     ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
     ApiPagination.class})
-public class CoreRequestHandler extends AbstractApiRequestHandler {
+public class CoreRequestHandler extends AbstractRestApiRequestHandler {
 
   /** Is Public Urls Enabled. */
   private static boolean isEnablePublicUrls;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache awsServices;
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
   static {
 
     if (System.getenv("AWS_REGION") != null) {
-      setUpHandler(System.getenv(),
+      configureHandler(System.getenv(),
           new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
               .setCredentials(EnvironmentVariableCredentialsProvider.create()),
           new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
@@ -109,41 +113,38 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
     
     buildUrlMap();
   }
-
-  protected static void buildUrlMap() {
-    URL_MAP.put("options", new DocumentsOptionsRequestHandler());
-    URL_MAP.put("/version", new VersionRequestHandler());
-    URL_MAP.put("/sites", new SitesRequestHandler());
-    URL_MAP.put("/documents", new DocumentsRequestHandler());
-    URL_MAP.put("/documents/{documentId}", new DocumentIdRequestHandler());
-    URL_MAP.put("/documents/{documentId}/versions", new DocumentVersionsRequestHandler());
-    URL_MAP.put("/documents/{documentId}/tags", new DocumentTagsRequestHandler());
-    URL_MAP.put("/documents/{documentId}/tags/{tagKey}/{tagValue}",
-        new DocumentTagValueRequestHandler());
-    URL_MAP.put("/documents/{documentId}/tags/{tagKey}", new DocumentTagRequestHandler());
-    URL_MAP.put("/documents/{documentId}/url", new DocumentIdUrlRequestHandler());
-    URL_MAP.put("/documents/{documentId}/content", new DocumentIdContentRequestHandler());
-    URL_MAP.put("/search", new SearchRequestHandler());
-    URL_MAP.put("/documents/upload", new DocumentsUploadRequestHandler());
-    URL_MAP.put("/documents/{documentId}/upload", new DocumentsIdUploadRequestHandler());
-    URL_MAP.put("/documents/{documentId}/ocr", new DocumentsOcrRequestHandler());
-    URL_MAP.put("/tagSchemas", new TagSchemasRequestHandler());
-    URL_MAP.put("/tagSchemas/{tagSchemaId}", new TagSchemasIdRequestHandler());
-    URL_MAP.put("/webhooks/{webhookId}/tags", new WebhooksTagsRequestHandler());
-    URL_MAP.put("/webhooks/{webhookId}", new WebhooksIdRequestHandler());
-    URL_MAP.put("/webhooks", new WebhooksRequestHandler());
-  }
-
+  
   /**
-   * Whether to enable public urls.
-   * 
-   * @param map {@link Map}
-   * @return boolean
+   * Add Url Request Handler Mapping.
+   * @param handler {@link ApiGatewayRequestHandler}
    */
-  protected static boolean isEnablePublicUrls(final Map<String, String> map) {
-    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
+    URL_MAP.put(handler.getRequestUrl(), handler);
   }
 
+  private static void buildUrlMap() {
+    URL_MAP.put("options", new DocumentsOptionsRequestHandler());
+    addRequestHandler(new VersionRequestHandler());
+    addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new DocumentsRequestHandler());
+    addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new DocumentVersionsRequestHandler());
+    addRequestHandler(new DocumentTagsRequestHandler());
+    addRequestHandler(new DocumentTagValueRequestHandler());
+    addRequestHandler(new DocumentTagRequestHandler());
+    addRequestHandler(new DocumentIdUrlRequestHandler());
+    addRequestHandler(new DocumentIdContentRequestHandler());
+    addRequestHandler(new SearchRequestHandler());
+    addRequestHandler(new DocumentsUploadRequestHandler());
+    addRequestHandler(new DocumentsIdUploadRequestHandler());
+    addRequestHandler(new DocumentsOcrRequestHandler());
+    addRequestHandler(new TagSchemasRequestHandler());
+    addRequestHandler(new TagSchemasIdRequestHandler());
+    addRequestHandler(new WebhooksTagsRequestHandler());
+    addRequestHandler(new WebhooksIdRequestHandler());
+    addRequestHandler(new WebhooksRequestHandler());
+  }
+  
   /**
    * Setup Api Request Handlers.
    *
@@ -154,14 +155,28 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
    * @param sqs {@link SqsConnectionBuilder}
    * @param schemaEvents {@link DocumentTagSchemaEvents} 
    */
-  protected static void setUpHandler(final Map<String, String> map,
+  public static void configureHandler(final Map<String, String> map,
       final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
       final DocumentTagSchemaEvents schemaEvents) {
 
-    setAwsServiceCache(map, builder, s3, ssm, sqs, schemaEvents);
+    awsServices = new CoreAwsServiceCache().environment(map).dbConnection(builder).s3Connection(s3)
+        .sqsConnection(sqs).ssmConnection(ssm).debug("true".equals(map.get("DEBUG")))
+        .documentTagSchemaEvents(schemaEvents);
+
+    awsServices.init();
 
     isEnablePublicUrls = isEnablePublicUrls(map);
+  }
+
+  /**
+   * Whether to enable public urls.
+   * 
+   * @param map {@link Map}
+   * @return boolean
+   */
+  private static boolean isEnablePublicUrls(final Map<String, String> map) {
+    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
   }
 
   /** constructor. */
@@ -193,6 +208,11 @@ public class CoreRequestHandler extends AbstractApiRequestHandler {
     }
       
     throw new NotFoundException(resource + " not found");
+  }
+
+  @Override
+  public AwsServiceCache getAwsServices() {
+    return awsServices;
   }
 
   @Override

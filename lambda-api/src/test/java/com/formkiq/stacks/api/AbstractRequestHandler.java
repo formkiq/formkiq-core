@@ -179,7 +179,7 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    CoreRequestHandler.setUpHandler(prop, DynamoDbTestServices.getDynamoDbConnection(null),
+    CoreRequestHandler.configureHandler(prop, DynamoDbTestServices.getDynamoDbConnection(null),
         TestServices.getS3Connection(), TestServices.getSsmConnection(),
         TestServices.getSqsConnection(), new DocumentTagSchemaEventsEmpty());
   }
