@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
+import java.util.List;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Search Query. */
@@ -33,6 +34,9 @@ public class SearchQuery {
   /** {@link SearchTagCriteria}. */
   @Reflectable
   private SearchTagCriteria tag;
+  /** {@link List} {@link SearchTagCriteria}. */
+  @Reflectable
+  private List<SearchTagCriteria> tags;
   /** Collection of Document Ids use {@link SearchTagCriteria} against. */
   @Reflectable
   private Collection<String> documentIds;
@@ -58,20 +62,6 @@ public class SearchQuery {
     return this;
   }
 
-  /** Is {@link SearchTagCriteria} valid. */
-  private void isSearchTagValid() {
-    this.tag.isValid();
-  }
-
-  /** Is {@link SearchQuery} object valid. */
-  public void isValid() {
-    if (this.tag == null) {
-      throw new IllegalArgumentException("'tag' attribute is required.");
-    }
-
-    isSearchTagValid();
-  }
-
   /**
    * Get {@link SearchTagCriteria}.
    *
@@ -89,6 +79,24 @@ public class SearchQuery {
    */
   public SearchQuery tag(final SearchTagCriteria searchtag) {
     this.tag = searchtag;
+    return this;
+  }
+
+  /**
+   * Get {@link List} {@link SearchTagCriteria}.
+   * @return {@link List} {@link SearchTagCriteria}
+   */
+  public List<SearchTagCriteria> tags() {
+    return this.tags;
+  }
+
+  /**
+   * Set {@link List} {@link SearchTagCriteria}.
+   * @param list {@link List} {@link SearchTagCriteria}
+   * @return {@link SearchQuery}
+   */
+  public SearchQuery tags(final List<SearchTagCriteria> list) {
+    this.tags = list;
     return this;
   }
 }

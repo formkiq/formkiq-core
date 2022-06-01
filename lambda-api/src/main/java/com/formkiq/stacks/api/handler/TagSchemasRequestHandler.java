@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
+import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -47,8 +48,7 @@ public class TagSchemasRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    ApiMapResponse resp = new ApiMapResponse();
-    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
+    return post(logger, event, authorizer, awsservice);
   }
 
   @Override
@@ -61,6 +61,7 @@ public class TagSchemasRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
     ApiMapResponse resp = new ApiMapResponse();
+    resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
   }
 }

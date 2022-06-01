@@ -56,13 +56,4 @@ public class QueryRequest {
     this.query = q;
     return this;
   }
-
-  /** Is {@link QueryRequest} object valid. */
-  public void isValid() {
-    if (this.query == null) {
-      throw new IllegalArgumentException("'query' field is required.");
-    }
-
-    this.query.isValid();
-  }
 }

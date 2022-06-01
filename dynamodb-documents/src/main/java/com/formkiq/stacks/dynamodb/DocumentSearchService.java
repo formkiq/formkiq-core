@@ -45,4 +45,10 @@ public interface DocumentSearchService {
    */
   PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
       PaginationMapToken token, int maxresults);
+  
+  /**
+   * Does {@link DocumentSearchService} Support Multi Tag Search.
+   * @return boolean
+   */
+  boolean supportMultiTagSearch();
 }

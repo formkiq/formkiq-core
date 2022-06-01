@@ -94,6 +94,26 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   /**
+   * Filter {@link AttributeValue} by {@link SearchTagCriteria}.
+   * @param search {@link SearchTagCriteria}
+   * @param v {@link AttributeValue}
+   * @return boolean
+   */
+  private boolean filterByValue(final SearchTagCriteria search, final AttributeValue v) {
+    boolean filter = false;
+
+    if (search.beginsWith() != null) {
+      filter = v.s().startsWith(search.beginsWith());
+    } else if (!Objects.notNull(search.eqOr()).isEmpty()) {
+      filter = search.eqOr().contains(v.s());
+    } else if (search.eq() != null) {
+      filter = v.s().equals(search.eq());
+    }
+
+    return filter;
+  }
+
+  /**
    * Filter Document Tags.
    * @param docMap {@link Map}
    * @param search {@link SearchTagCriteria}
@@ -133,26 +153,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     return map;
-  }
-
-  /**
-   * Filter {@link AttributeValue} by {@link SearchTagCriteria}.
-   * @param search {@link SearchTagCriteria}
-   * @param v {@link AttributeValue}
-   * @return boolean
-   */
-  private boolean filterByValue(final SearchTagCriteria search, final AttributeValue v) {
-    boolean filter = false;
-
-    if (search.beginsWith() != null) {
-      filter = v.s().startsWith(search.beginsWith());
-    } else if (!Objects.notNull(search.eqOr()).isEmpty()) {
-      filter = search.eqOr().contains(v.s());
-    } else if (search.eq() != null) {
-      filter = v.s().equals(search.eq());
-    }
-
-    return filter;
   }
 
   /**
@@ -273,6 +273,38 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   /**
+   * Find Document that match tagKey & tagValues.
+   *
+   * @param siteId DynamoDB PK siteId
+   * @param key {@link String}
+   * @param eqOr {@link Collection} {@link String}
+   * @param maxresults int
+   * @return {@link PaginationResults}
+   */
+  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(final String siteId,
+      final String key, final Collection<String> eqOr, final int maxresults) {
+    
+    List<DynamicDocumentItem> list = new ArrayList<>();
+    for (String eq : eqOr) {
+      PaginationResults<DynamicDocumentItem> result =
+          findDocumentsWithTagAndValue(siteId, key, eq, null, maxresults);
+      list.addAll(result.getResults());
+    }
+    
+    return new PaginationResults<DynamicDocumentItem>(list, null);
+  }
+
+  /**
+   * Get Search Key.
+   * @param search {@link SearchTagCriteria}
+   * @return {@link String}
+   */
+  protected String getSearchKey(final SearchTagCriteria search) {
+    String key = search.key();
+    return key;
+  }
+
+  /**
    * {@link SearchTagCriteria} has filter criteria.
    * @param search {@link SearchTagCriteria}
    * @return boolean
@@ -287,10 +319,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchQuery query, final PaginationMapToken token, final int maxresults) {
 
     SearchTagCriteria search = query.tag();
-    search.isValid();
+    String key = getSearchKey(search);
 
     PaginationResults<DynamicDocumentItem> result = null;
-    String key = search.key();
 
     Collection<String> documentIds = query.documentIds();
     
@@ -330,28 +361,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     return result;
-  }
-
-  /**
-   * Find Document that match tagKey & tagValues.
-   *
-   * @param siteId DynamoDB PK siteId
-   * @param key {@link String}
-   * @param eqOr {@link Collection} {@link String}
-   * @param maxresults int
-   * @return {@link PaginationResults}
-   */
-  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(final String siteId,
-      final String key, final Collection<String> eqOr, final int maxresults) {
-    
-    List<DynamicDocumentItem> list = new ArrayList<>();
-    for (String eq : eqOr) {
-      PaginationResults<DynamicDocumentItem> result =
-          findDocumentsWithTagAndValue(siteId, key, eq, null, maxresults);
-      list.addAll(result.getResults());
-    }
-    
-    return new PaginationResults<DynamicDocumentItem>(list, null);
   }
 
   /**
@@ -418,5 +427,10 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     });
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
+  }
+
+  @Override
+  public boolean supportMultiTagSearch() {
+    return false;
   }
 }

@@ -115,27 +115,6 @@ public class SearchTagCriteria {
     this.eqOr = s;
     return this;
   }
-  
-  /**
-   * {@link String} has value.
-   *
-   * @param s {@link String}
-   * @return boolean
-   */
-  private boolean hasValue(final String s) {
-    return s != null && s.length() > 0;
-  }
-
-  /**
-   * Is {@link SearchTagCriteria} valid for DynamoDB.
-   *
-   * @throws IllegalArgumentException IllegalArgumentException
-   */
-  public void isValid() {
-    if (!hasValue(this.key)) {
-      throw new IllegalArgumentException("'key' attribute is required.");
-    }
-  }
 
   /**
    * Get Tag Key.

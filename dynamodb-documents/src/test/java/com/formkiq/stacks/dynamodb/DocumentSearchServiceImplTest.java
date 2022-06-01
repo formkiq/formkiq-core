@@ -29,7 +29,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -227,32 +226,9 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Missing TagValue. */
-  @Test
-  public void testSearch03() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String tagName = null;
-      String tagValue = "today";
-      PaginationMapToken startkey = null;
-      SearchTagCriteria c = new SearchTagCriteria(tagName);
-      c.eq(tagValue);
-      SearchQuery q = new SearchQuery().tag(c);
-
-      // when
-      try {
-        this.searchService.search(prefix, q, startkey, MAX_RESULTS);
-        fail();
-      } catch (Exception e) {
-        // then
-        assertEquals("'key' attribute is required.", e.getMessage());
-      }
-    }
-  }
-
   /** Search by 'beginsWith' Tag Key & Value. */
   @Test
-  public void testSearch04() {
+  public void testSearch03() {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData(prefix);
@@ -283,7 +259,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search by 'eq' Tag Key & Value & paginating. */
   @Test
-  public void testSearch05() {
+  public void testSearch04() {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -323,7 +299,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search multi-value tag 'eq' Tag Key & Value. */
   @Test
-  public void testSearch06() {
+  public void testSearch05() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -362,7 +338,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for tag 'eq' with DocumentId. */
   @Test
-  public void testSearch07() {
+  public void testSearch06() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -409,7 +385,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for tag with DocumentId. */
   @Test
-  public void testSearch08() {
+  public void testSearch07() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given - tag only
       PaginationMapToken startkey = null;
@@ -444,7 +420,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for wrong eq with DocumentId. */
   @Test
-  public void testSearch09() {
+  public void testSearch08() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given - wrong value
       PaginationMapToken startkey = null;
@@ -468,7 +444,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for tag 'beginsWith' with DocumentId. */
   @Test
-  public void testSearch10() {
+  public void testSearch09() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -507,7 +483,7 @@ public class DocumentSearchServiceImplTest {
 
   /** Search for 100 DocumentIds. */
   @Test
-  public void testSearch11() {
+  public void testSearch10() {
     // given
     String siteId = null;
     final int count = 100;
@@ -535,7 +511,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for tag 'eq' with DocumentId & values. */
   @Test
-  public void testSearch12() {
+  public void testSearch11() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -583,7 +559,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for tag 'eqOr' with DocumentId & values. */
   @Test
-  public void testSearch13() {
+  public void testSearch12() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -650,7 +626,7 @@ public class DocumentSearchServiceImplTest {
   
   /** Search for tag 'eqOr'. */
   @Test
-  public void testSearch14() {
+  public void testSearch13() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);

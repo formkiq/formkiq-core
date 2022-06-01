@@ -460,4 +460,59 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(ten, documents.size());
     }
   }
+  
+  /**
+   * Test Setting multiple tags.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest10() throws Exception {    
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest()
+          .query(new SearchQuery().tags(Arrays.asList(new SearchTagCriteria().key("test"))));      
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      String expected = "{" + getHeaders() + ",\"body\":"
+          + "\"{\\\"message\\\":\\\"Feature only available in FormKiQ Enterprise\\\"}\","
+          + "\"statusCode\":402}";
+      assertEquals(expected, response);
+    }
+  }
+  
+  /**
+   * Missing Tag Key.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest11() throws Exception {    
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest().query(new SearchQuery().tag(new SearchTagCriteria()));
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      String expected = "{" + getHeaders() + ",\"body\":"
+          + "\"{\\\"message\\\":\\\"'tag' attribute is required.\\\"}\","
+          + "\"statusCode\":400}";
+      assertEquals(expected, response);
+    }
+  }
 }
