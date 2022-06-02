@@ -52,7 +52,7 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
-import com.formkiq.aws.services.lambda.exceptions.ValidationException;
+import com.formkiq.plugins.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 import software.amazon.awssdk.utils.StringUtils;

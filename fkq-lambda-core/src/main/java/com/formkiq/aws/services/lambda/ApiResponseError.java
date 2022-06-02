@@ -24,8 +24,8 @@
 package com.formkiq.aws.services.lambda;
 
 import java.util.Collection;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.plugins.validation.ValidationError;
 
 /** Error Response. */
 @Reflectable

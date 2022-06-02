@@ -49,7 +49,10 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -73,6 +76,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /** {@link DynamoDbClient}. */
   private final DynamoDbClient dynamoDB;
+  
+  /** {@link DocumentTagSchemaPlugin}. */
+  private DocumentTagSchemaPlugin tagSchemaPlugin;
 
   /**
    * constructor.
@@ -80,10 +86,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param documentService {@link DocumentService}
    * @param builder {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param plugin {@link DocumentTagSchemaPlugin}
    */
   public DocumentSearchServiceImpl(final DocumentService documentService,
-      final DynamoDbConnectionBuilder builder, final String documentsTable) {
+      final DynamoDbConnectionBuilder builder, final String documentsTable,
+      final DocumentTagSchemaPlugin plugin) {
+    
     this.docService = documentService;
+    this.tagSchemaPlugin = plugin;
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
@@ -319,6 +329,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchQuery query, final PaginationMapToken token, final int maxresults) {
 
     SearchTagCriteria search = query.tag();
+    
+    if (this.tagSchemaPlugin != null) {
+      search = this.tagSchemaPlugin.createMultiTagSearch(query);
+    }
+    
     String key = getSearchKey(search);
 
     PaginationResults<DynamicDocumentItem> result = null;
@@ -427,10 +442,5 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     });
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
-  }
-
-  @Override
-  public boolean supportMultiTagSearch() {
-    return false;
   }
 }

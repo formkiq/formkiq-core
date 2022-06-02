@@ -45,6 +45,8 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -58,8 +60,6 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.SearchQuery;
-import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
@@ -168,7 +168,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     String documentsTable = map.get("DOCUMENTS_TABLE");
     this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
-    this.searchService = new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable);
+    this.searchService =
+        new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable, null);
     this.s3 = new S3Service(s3Builder);
     this.sqsService = new SqsService(sqsBuilder);
 

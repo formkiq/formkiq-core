@@ -1,17 +1,18 @@
-package com.formkiq.aws.services.lambda.events;
+package com.formkiq.plugins.tagschema;
 
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.plugins.validation.ValidationError;
 
 /**
  * 
  * Document Events.
  *
  */
-public interface DocumentTagSchemaEvents {
+public interface DocumentTagSchemaPlugin {
 
   /**
    * Add {@link DocumentTag} Event.
@@ -20,11 +21,23 @@ public interface DocumentTagSchemaEvents {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
-   * @throws BadException BadException
    */
   Collection<ValidationError> addTagsEvent(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags) throws BadException;
+      Collection<DocumentTag> tags);
 
+  /**
+   * Create Multi-Value {@link SearchTagCriteria}.
+   * @param query {@link SearchQuery}
+   * @return {@link SearchTagCriteria}
+   */
+  SearchTagCriteria createMultiTagSearch(SearchQuery query);
+  
+  /**
+   * Is TagSchema Active.
+   * @return boolean
+   */
+  boolean isActive();
+  
   /**
    * Delete {@link DocumentTag} Event.
    * 
@@ -32,10 +45,9 @@ public interface DocumentTagSchemaEvents {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link String}
    * @return {@link Collection} {@link ValidationError}
-   * @throws BadException BadException
    */
   Collection<ValidationError> removeTagsEvent(String siteId, DocumentItem item,
-      Collection<String> tags) throws BadException;
+      Collection<String> tags);
   
   /**
    * Replace {@link DocumentTag} Event.
@@ -44,8 +56,7 @@ public interface DocumentTagSchemaEvents {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
-   * @throws BadException BadException
    */
   Collection<ValidationError> replaceTagsEvent(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags) throws BadException;
+      Collection<DocumentTag> tags);
 }

@@ -410,7 +410,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument04() throws Exception {
-    getAwsServices().documentTagSchemaEvents(new DocumentEventsErrors());
+    getAwsServices().documentTagSchemaPlugin(new DocumentEventsErrors());
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final Date now = new Date();
@@ -1133,7 +1133,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags10() throws Exception {
-    getAwsServices().documentTagSchemaEvents(new DocumentEventsErrors());
+    getAwsServices().documentTagSchemaPlugin(new DocumentEventsErrors());
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId = UUID.randomUUID().toString();
@@ -1164,7 +1164,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags11() throws Exception {
-    getAwsServices().documentTagSchemaEvents(new DocumentEventsErrors());
+    getAwsServices().documentTagSchemaPlugin(new DocumentEventsErrors());
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId = UUID.randomUUID().toString();

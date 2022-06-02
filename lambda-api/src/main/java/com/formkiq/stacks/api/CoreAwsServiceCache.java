@@ -86,7 +86,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   public DocumentSearchService documentSearchService() {
     if (this.documentSearchService == null) {
       this.documentSearchService = new DocumentSearchServiceImpl(documentService(),
-          dbConnection(), environment("DOCUMENTS_TABLE"));
+          dbConnection(), environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin());
     }
     return this.documentSearchService;
   }

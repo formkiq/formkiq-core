@@ -28,13 +28,13 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 
 /**
  * Get Aws Services from Cache.
@@ -64,8 +64,8 @@ public class AwsServiceCache {
   private Map<String, String> environment;
   /** {@link DynamoDbCacheService}. */
   private DynamoDbCacheService documentCacheService;
-  /** {@link DocumentTagSchemaEvents}. */
-  private DocumentTagSchemaEvents documentTagSchemaEvents;
+  /** {@link DocumentTagSchemaPlugin}. */
+  private DocumentTagSchemaPlugin documentTagSchemaPlugin;
 
   /**
    * constructor.
@@ -126,20 +126,20 @@ public class AwsServiceCache {
   }
 
   /**
-   * Get {@link DocumentTagSchemaEvents}.
-   * @return {@link DocumentTagSchemaEvents}
+   * Get {@link DocumentTagSchemaPlugin}.
+   * @return {@link DocumentTagSchemaPlugin}
    */
-  public DocumentTagSchemaEvents documentTagSchemaEvents() {
-    return this.documentTagSchemaEvents;
+  public DocumentTagSchemaPlugin documentTagSchemaPlugin() {
+    return this.documentTagSchemaPlugin;
   }
 
   /**
-   * Set {@link DocumentTagSchemaEvents}.
-   * @param events {@link DocumentTagSchemaEvents}
+   * Set {@link DocumentTagSchemaPlugin}.
+   * @param plugin {@link DocumentTagSchemaPlugin}
    * @return {@link AwsServiceCache}
    */
-  public AwsServiceCache documentTagSchemaEvents(final DocumentTagSchemaEvents events) {
-    this.documentTagSchemaEvents = events;
+  public AwsServiceCache documentTagSchemaPlugin(final DocumentTagSchemaPlugin plugin) {
+    this.documentTagSchemaPlugin = plugin;
     return this;
   }
 

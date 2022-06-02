@@ -38,8 +38,8 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.exceptions.ValidationException;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
@@ -73,7 +73,7 @@ public class DocumentTagValueRequestHandler
     }
     
     Collection<ValidationError> errors =
-        awsservice.documentTagSchemaEvents().removeTagsEvent(siteId, item, Arrays.asList(tagKey));
+        awsservice.documentTagSchemaPlugin().removeTagsEvent(siteId, item, Arrays.asList(tagKey));
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

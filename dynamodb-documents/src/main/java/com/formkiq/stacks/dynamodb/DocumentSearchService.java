@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
 
 /**
  * 
@@ -45,10 +46,4 @@ public interface DocumentSearchService {
    */
   PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
       PaginationMapToken token, int maxresults);
-  
-  /**
-   * Does {@link DocumentSearchService} Support Multi Tag Search.
-   * @return boolean
-   */
-  boolean supportMultiTagSearch();
 }

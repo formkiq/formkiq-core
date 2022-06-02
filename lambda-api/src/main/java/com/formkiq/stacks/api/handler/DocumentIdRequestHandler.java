@@ -55,8 +55,8 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.exceptions.ValidationException;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -398,7 +398,7 @@ public class DocumentIdRequestHandler
     }).collect(Collectors.toList());
     
     Collection<ValidationError> errors =
-        cacheService.documentTagSchemaEvents().addTagsEvent(siteId, item, tags);
+        cacheService.documentTagSchemaPlugin().addTagsEvent(siteId, item, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

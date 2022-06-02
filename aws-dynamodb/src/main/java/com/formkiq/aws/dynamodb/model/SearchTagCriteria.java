@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.model;
 
 import java.util.Collection;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Searches for {@link DocumentItem}. */

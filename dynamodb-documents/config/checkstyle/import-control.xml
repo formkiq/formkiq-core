@@ -17,6 +17,7 @@
 		
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
+		<allow pkg="com.formkiq.plugins.tagschema" />
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		

@@ -33,6 +33,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -47,7 +48,6 @@ import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
@@ -108,8 +108,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     checkIsRequestValid(q);
 
     DocumentSearchService documentSearchService = serviceCache.documentSearchService();
-    
-    if (q.query().tag() == null && !documentSearchService.supportMultiTagSearch()) {
+
+    if (q.query().tag() == null && !serviceCache.documentTagSchemaPlugin().isActive()) {
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
       response = new ApiRequestHandlerResponse(SC_PAYMENT, resp);

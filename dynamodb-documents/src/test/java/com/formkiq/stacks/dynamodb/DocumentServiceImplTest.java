@@ -60,6 +60,8 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -94,7 +96,8 @@ public class DocumentServiceImplTest implements DbKeys {
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
     this.db = DynamoDbTestServices.getDynamoDbConnection(null);
     this.service = new DocumentServiceImpl(this.db, DOCUMENTS_TABLE);
-    this.searchService = new DocumentSearchServiceImpl(this.service, this.db, DOCUMENTS_TABLE);
+    this.searchService =
+        new DocumentSearchServiceImpl(this.service, this.db, DOCUMENTS_TABLE, null);
   }
 
   /**

@@ -45,9 +45,9 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEventsEmpty;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
@@ -179,9 +179,10 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    CoreRequestHandler.configureHandler(prop, DynamoDbTestServices.getDynamoDbConnection(null),
-        TestServices.getS3Connection(), TestServices.getSsmConnection(),
-        TestServices.getSqsConnection(), new DocumentTagSchemaEventsEmpty());
+    AbstractCoreRequestHandler.configureHandler(prop,
+        DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(),
+        TestServices.getSsmConnection(), TestServices.getSqsConnection(),
+        new DocumentTagSchemaPluginEmpty());
   }
 
   /**

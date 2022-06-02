@@ -48,9 +48,9 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.exceptions.ValidationException;
 import com.formkiq.aws.services.lambda.services.CacheService;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
@@ -178,7 +178,7 @@ public class DocumentTagsRequestHandler
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
     
     Collection<ValidationError> errors =
-        coreServices.documentTagSchemaEvents().addTagsEvent(siteId, item, tags.getTags());
+        coreServices.documentTagSchemaPlugin().addTagsEvent(siteId, item, tags.getTags());
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

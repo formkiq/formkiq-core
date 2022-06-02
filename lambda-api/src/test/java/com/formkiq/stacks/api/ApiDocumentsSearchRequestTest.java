@@ -37,14 +37,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.models.DocumentSearch;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.SearchQuery;
-import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 

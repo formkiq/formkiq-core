@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
+import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.SearchQuery;
 
 /** Query Request. */
 @Reflectable

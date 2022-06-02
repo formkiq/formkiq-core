@@ -1168,7 +1168,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocuments13() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      getAwsServices().documentTagSchemaEvents(new DocumentEventsErrors());
+      getAwsServices().documentTagSchemaPlugin(new DocumentEventsErrors());
       
       // when
       DynamicObject obj =

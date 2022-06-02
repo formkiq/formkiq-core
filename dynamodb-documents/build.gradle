@@ -4,6 +4,7 @@ description = "DocumentStore Dynamodb"
 dependencies {
 
 	implementation project(':aws-dynamodb')
+	implementation project(':fkq-plugins')
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
     
 	testImplementation project(':aws-ssm')

@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.exceptions;
+package com.formkiq.plugins.validation;
 
 import java.util.Collection;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
 
 /** {@link Exception} that will return a 400 error. */
 public class ValidationException extends Exception {

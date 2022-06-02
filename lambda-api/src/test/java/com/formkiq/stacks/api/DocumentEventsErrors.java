@@ -4,15 +4,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.services.lambda.events.DocumentTagSchemaEvents;
-import com.formkiq.aws.services.lambda.validation.ValidationError;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.validation.ValidationError;
 
 /**
  * 
- * {@link DocumentTagSchemaEvents} that returns test {@link ValidationError}.
+ * {@link DocumentTagSchemaPlugin} that returns test {@link ValidationError}.
  *
  */
-public class DocumentEventsErrors implements DocumentTagSchemaEvents {
+public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
   private static final class DummyValidationError implements ValidationError {
     /** Test Error Message. */
     private String error = "test error";
@@ -33,6 +35,16 @@ public class DocumentEventsErrors implements DocumentTagSchemaEvents {
   public Collection<ValidationError> addTagsEvent(final String siteId, final DocumentItem item,
       final Collection<DocumentTag> tags) {
     return Arrays.asList(new DummyValidationError());
+  }
+
+  @Override
+  public SearchTagCriteria createMultiTagSearch(final SearchQuery query) {
+    return query.tag();
+  }
+
+  @Override
+  public boolean isActive() {
+    return false;
   }
 
   @Override
