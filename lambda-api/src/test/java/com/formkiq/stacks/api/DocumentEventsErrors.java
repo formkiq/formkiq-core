@@ -32,8 +32,8 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
   }
 
   @Override
-  public Collection<ValidationError> addTagsEvent(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags) {
+  public Collection<ValidationError> validateAndAddCompositeKeys(final String siteId,
+      final DocumentItem item, final Collection<DocumentTag> tags, final String userId) {
     return Arrays.asList(new DummyValidationError());
   }
 
@@ -48,14 +48,20 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
   }
 
   @Override
-  public Collection<ValidationError> removeTagsEvent(final String siteId, final DocumentItem item,
-      final Collection<String> tags) {
+  public Collection<ValidationError> validateAddTags(final String siteId, final DocumentItem item,
+      final Collection<DocumentTag> tags) {
     return Arrays.asList(new DummyValidationError());
   }
 
   @Override
-  public Collection<ValidationError> replaceTagsEvent(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags) {
+  public Collection<ValidationError> validateRemoveTags(final String siteId,
+      final DocumentItem item, final Collection<String> tags) {
+    return Arrays.asList(new DummyValidationError());
+  }
+
+  @Override
+  public Collection<ValidationError> validateReplaceTags(final String siteId,
+      final DocumentItem item, final Collection<DocumentTag> tags) {
     return Arrays.asList(new DummyValidationError());
   }
 }

@@ -169,16 +169,19 @@ public class DocumentTagsRequestHandler
       tags.setTags(Arrays.asList(tag));
     }
     
+    String userId = getCallingCognitoUsername(event);
+    
     tags.getTags().forEach(t -> {
       t.setType(DocumentTagType.USERDEFINED);
       t.setInsertedDate(new Date());
-      t.setUserId(getCallingCognitoUsername(event));
+      t.setUserId(userId);
     });
     
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
     
-    Collection<ValidationError> errors =
-        coreServices.documentTagSchemaPlugin().addTagsEvent(siteId, item, tags.getTags());
+    Collection<ValidationError> errors = coreServices.documentTagSchemaPlugin()
+        .validateAndAddCompositeKeys(siteId, item, tags.getTags(), userId);
+    
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

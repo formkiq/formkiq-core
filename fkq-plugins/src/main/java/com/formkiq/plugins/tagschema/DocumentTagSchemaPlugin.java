@@ -15,15 +15,15 @@ import com.formkiq.plugins.validation.ValidationError;
 public interface DocumentTagSchemaPlugin {
 
   /**
-   * Add {@link DocumentTag} Event.
-   * 
+   * Add Composite Keys.
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @param userId {@link String} 
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> addTagsEvent(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags);
+  Collection<ValidationError> validateAndAddCompositeKeys(String siteId, DocumentItem item,
+      Collection<DocumentTag> tags, String userId);
 
   /**
    * Create Multi-Value {@link SearchTagCriteria}.
@@ -39,6 +39,17 @@ public interface DocumentTagSchemaPlugin {
   boolean isActive();
   
   /**
+   * Validate Add {@link DocumentTag}.
+   * 
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   * @param tags {@link Collection} {@link DocumentTag}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> validateAddTags(String siteId, DocumentItem item,
+      Collection<DocumentTag> tags);
+  
+  /**
    * Delete {@link DocumentTag} Event.
    * 
    * @param siteId {@link String}
@@ -46,7 +57,7 @@ public interface DocumentTagSchemaPlugin {
    * @param tags {@link Collection} {@link String}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> removeTagsEvent(String siteId, DocumentItem item,
+  Collection<ValidationError> validateRemoveTags(String siteId, DocumentItem item,
       Collection<String> tags);
   
   /**
@@ -57,6 +68,6 @@ public interface DocumentTagSchemaPlugin {
    * @param tags {@link Collection} {@link DocumentTag}
    * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> replaceTagsEvent(String siteId, DocumentItem item,
+  Collection<ValidationError> validateReplaceTags(String siteId, DocumentItem item,
       Collection<DocumentTag> tags);
 }

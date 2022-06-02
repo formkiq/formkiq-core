@@ -72,8 +72,8 @@ public class DocumentTagValueRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
     
-    Collection<ValidationError> errors =
-        awsservice.documentTagSchemaPlugin().removeTagsEvent(siteId, item, Arrays.asList(tagKey));
+    Collection<ValidationError> errors = awsservice.documentTagSchemaPlugin()
+        .validateRemoveTags(siteId, item, Arrays.asList(tagKey));
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

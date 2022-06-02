@@ -60,6 +60,8 @@ import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
+import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -320,7 +322,7 @@ public class DocumentIdRequestHandler
     logger.log("setting userId: " + item.getString("userId") + " contentType: "
         + item.getString("contentType"));
 
-    validateTagSchema(cacheService, siteId, item);
+    validateTagSchema(cacheService, siteId, item, item.getUserId());
     putObjectToStaging(logger, cacheService, maxDocumentCount, siteId, item);
 
     Map<String, String> uploadUrls =
@@ -384,23 +386,30 @@ public class DocumentIdRequestHandler
    * @param cacheService {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
+   * @param userId {@link String}
    * @throws ValidationException ValidationException
    * @throws BadException BadException
    */
   private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item) throws ValidationException, BadException {
-    
+      final DynamicDocumentItem item, final String userId)
+      throws ValidationException, BadException {
+
     List<DynamicObject> doctags = item.getList("tags");
     DynamicObjectToDocumentTag transform =
         new DynamicObjectToDocumentTag(DateUtil.getIsoDateFormatter());
     List<DocumentTag> tags = doctags.stream().map(t -> {
       return transform.apply(t);
     }).collect(Collectors.toList());
-    
-    Collection<ValidationError> errors =
-        cacheService.documentTagSchemaPlugin().addTagsEvent(siteId, item, tags);
+
+    Collection<ValidationError> errors = cacheService.documentTagSchemaPlugin()
+        .validateAndAddCompositeKeys(siteId, item, tags, userId);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+
+    DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
+    List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
+    item.put("tags", objs);
   }
 }

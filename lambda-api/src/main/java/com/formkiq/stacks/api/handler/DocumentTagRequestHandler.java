@@ -84,7 +84,7 @@ public class DocumentTagRequestHandler
     List<String> tags = Arrays.asList(tagKey);
     
     Collection<ValidationError> errors =
-        awsservice.documentTagSchemaPlugin().removeTagsEvent(siteId, document, tags);
+        awsservice.documentTagSchemaPlugin().validateRemoveTags(siteId, document, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
@@ -190,7 +190,7 @@ public class DocumentTagRequestHandler
 
     List<DocumentTag> tags = Arrays.asList(tag);
     Collection<ValidationError> errors =
-        awsservice.documentTagSchemaPlugin().replaceTagsEvent(siteId, document, tags);
+        awsservice.documentTagSchemaPlugin().validateReplaceTags(siteId, document, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
