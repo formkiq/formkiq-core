@@ -49,6 +49,7 @@ import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
@@ -179,14 +180,16 @@ public class DocumentTagsRequestHandler
     
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
     
-    Collection<ValidationError> errors = coreServices.documentTagSchemaPlugin()
-        .validateAndAddCompositeKeys(siteId, item, tags.getTags(), userId);
+    DocumentTagSchemaPlugin plugin = coreServices.documentTagSchemaPlugin();
+    Collection<ValidationError> errors =
+        plugin.validateAddTags(siteId, item, tags.getTags(), false);
     
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    
-    coreServices.documentService().addTags(siteId, documentId, tags.getTags(), null);
+
+    Collection<DocumentTag> newTags = plugin.addCompositeKeys(siteId, item, tags.getTags(), userId);
+    coreServices.documentService().addTags(siteId, documentId, newTags, null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
         : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");

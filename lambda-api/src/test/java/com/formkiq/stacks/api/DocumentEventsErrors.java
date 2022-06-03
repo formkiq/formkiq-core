@@ -32,9 +32,9 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
   }
 
   @Override
-  public Collection<ValidationError> validateAndAddCompositeKeys(final String siteId,
-      final DocumentItem item, final Collection<DocumentTag> tags, final String userId) {
-    return Arrays.asList(new DummyValidationError());
+  public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
+      final Collection<DocumentTag> tags, final String userId) {
+    return tags;
   }
 
   @Override
@@ -49,7 +49,7 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
 
   @Override
   public Collection<ValidationError> validateAddTags(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags) {
+      final Collection<DocumentTag> tags, final boolean validateRequiredTags) {
     return Arrays.asList(new DummyValidationError());
   }
 

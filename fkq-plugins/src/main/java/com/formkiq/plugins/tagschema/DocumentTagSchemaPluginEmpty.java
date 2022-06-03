@@ -14,10 +14,11 @@ import com.formkiq.plugins.validation.ValidationError;
  *
  */
 public class DocumentTagSchemaPluginEmpty implements DocumentTagSchemaPlugin {
+
   @Override
-  public Collection<ValidationError> validateAndAddCompositeKeys(final String siteId,
-      final DocumentItem item, final Collection<DocumentTag> tags, final String userId) {
-    return Collections.emptyList();
+  public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
+      final Collection<DocumentTag> tags, final String userId) {
+    return tags;
   }
 
   @Override
@@ -29,10 +30,10 @@ public class DocumentTagSchemaPluginEmpty implements DocumentTagSchemaPlugin {
   public boolean isActive() {
     return false;
   }
-  
+
   @Override
   public Collection<ValidationError> validateAddTags(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags) {
+      final Collection<DocumentTag> tags, final boolean validateRequiredTags) {
     return Collections.emptyList();
   }
 

@@ -35,5 +35,7 @@ public enum DocumentTagType {
   /** User Defined tags. */
   USERDEFINED,
   /** System Defined Tags. */
-  SYSTEMDEFINED;
+  SYSTEMDEFINED,
+  /** System Defined Composite Key tags. */
+  COMPOSITE;
 }

@@ -104,6 +104,10 @@ public class AttributeValueToDocumentItem
     if (map.containsKey("belongsToDocumentId")) {
       item.setBelongsToDocumentId(map.get("belongsToDocumentId").s());
     }
+
+    if (map.containsKey("tagSchemaId")) {
+      item.setTagSchemaId(map.get("tagSchemaId").s());
+    }
     
     if (map.containsKey("TimeToLive")) {
       item.setTimeToLive(map.get("TimeToLive").n());

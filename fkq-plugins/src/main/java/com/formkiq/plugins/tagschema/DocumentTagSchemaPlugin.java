@@ -20,9 +20,9 @@ public interface DocumentTagSchemaPlugin {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param userId {@link String} 
-   * @return {@link Collection} {@link ValidationError}
+   * @return {@link Collection} {@link DocumentTag}
    */
-  Collection<ValidationError> validateAndAddCompositeKeys(String siteId, DocumentItem item,
+  Collection<DocumentTag> addCompositeKeys(String siteId, DocumentItem item,
       Collection<DocumentTag> tags, String userId);
 
   /**
@@ -44,10 +44,11 @@ public interface DocumentTagSchemaPlugin {
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
+   * @param validateRequiredTags boolean
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validateAddTags(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags);
+      Collection<DocumentTag> tags, boolean validateRequiredTags);
   
   /**
    * Delete {@link DocumentTag} Event.

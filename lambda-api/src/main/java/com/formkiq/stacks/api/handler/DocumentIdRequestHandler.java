@@ -55,6 +55,7 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
@@ -322,7 +323,7 @@ public class DocumentIdRequestHandler
     logger.log("setting userId: " + item.getString("userId") + " contentType: "
         + item.getString("contentType"));
 
-    validateTagSchema(cacheService, siteId, item, item.getUserId());
+    validateTagSchema(cacheService, siteId, item, item.getUserId(), isUpdate);
     putObjectToStaging(logger, cacheService, maxDocumentCount, siteId, item);
 
     Map<String, String> uploadUrls =
@@ -387,11 +388,12 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
    * @param userId {@link String}
+   * @param isUpdate boolean
    * @throws ValidationException ValidationException
    * @throws BadException BadException
    */
   private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item, final String userId)
+      final DynamicDocumentItem item, final String userId, final boolean isUpdate)
       throws ValidationException, BadException {
 
     List<DynamicObject> doctags = item.getList("tags");
@@ -401,12 +403,16 @@ public class DocumentIdRequestHandler
       return transform.apply(t);
     }).collect(Collectors.toList());
 
-    Collection<ValidationError> errors = cacheService.documentTagSchemaPlugin()
-        .validateAndAddCompositeKeys(siteId, item, tags, userId);
+    DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
+    
+    Collection<ValidationError> errors = plugin.validateAddTags(siteId, item, tags, !isUpdate);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+    
+    tags = plugin.addCompositeKeys(siteId, item, tags, userId).stream().map(t -> t)
+        .collect(Collectors.toList());
 
     DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
     List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
