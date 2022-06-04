@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -188,13 +189,17 @@ public class DocumentTagRequestHandler
       tag.setValues(values);
     }
 
-    List<DocumentTag> tags = Arrays.asList(tag);
-    Collection<ValidationError> errors =
-        awsservice.documentTagSchemaPlugin().validateReplaceTags(siteId, document, tags);
+    List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    Collection<DocumentTag> newTags = awsservice.documentTagSchemaPlugin().addCompositeKeys(siteId,
+        document, tags, userId, false, errors);
+    
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
     
+    tags.addAll(newTags);
     documentService.addTags(siteId, documentId, tags, null);
 
     ApiResponse resp = new ApiMessageResponse(
