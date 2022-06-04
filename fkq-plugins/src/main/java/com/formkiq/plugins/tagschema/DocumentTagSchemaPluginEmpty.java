@@ -17,8 +17,9 @@ public class DocumentTagSchemaPluginEmpty implements DocumentTagSchemaPlugin {
 
   @Override
   public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final String userId) {
-    return tags;
+      final Collection<DocumentTag> tags, final String userId,
+      final Collection<ValidationError> errors) {
+    return Collections.emptyList();
   }
 
   @Override

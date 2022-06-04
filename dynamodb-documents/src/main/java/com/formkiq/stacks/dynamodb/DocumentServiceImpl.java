@@ -1089,6 +1089,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setUserId(doc.getUserId());
     item.setInsertedDate(doc.getInsertedDate() != null ? doc.getInsertedDate() : date);
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
+    item.setTagSchemaId(doc.getTagSchemaId());
 
     List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
 

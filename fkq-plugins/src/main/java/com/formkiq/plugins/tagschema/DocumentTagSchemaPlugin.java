@@ -20,10 +20,11 @@ public interface DocumentTagSchemaPlugin {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param userId {@link String} 
+   * @param errors {@link Collection} {@link ValidationError}
    * @return {@link Collection} {@link DocumentTag}
    */
   Collection<DocumentTag> addCompositeKeys(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags, String userId);
+      Collection<DocumentTag> tags, String userId, Collection<ValidationError> errors);
 
   /**
    * Create Multi-Value {@link SearchTagCriteria}.

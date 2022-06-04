@@ -411,9 +411,15 @@ public class DocumentIdRequestHandler
       throw new ValidationException(errors);
     }
     
-    tags = plugin.addCompositeKeys(siteId, item, tags, userId).stream().map(t -> t)
-        .collect(Collectors.toList());
+    List<DocumentTag> compositeTags = plugin.addCompositeKeys(siteId, item, tags, userId, errors)
+        .stream().map(t -> t).collect(Collectors.toList());
 
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+    
+    tags.addAll(compositeTags);
+    
     DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
     List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
     item.put("tags", objs);

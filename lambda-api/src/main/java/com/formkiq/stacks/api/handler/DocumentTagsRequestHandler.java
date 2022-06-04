@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -188,8 +189,17 @@ public class DocumentTagsRequestHandler
       throw new ValidationException(errors);
     }
 
-    Collection<DocumentTag> newTags = plugin.addCompositeKeys(siteId, item, tags.getTags(), userId);
-    coreServices.documentService().addTags(siteId, documentId, newTags, null);
+    Collection<DocumentTag> newTags =
+        plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, errors);
+    
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+    
+    List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
+    allTags.addAll(newTags);
+    
+    coreServices.documentService().addTags(siteId, documentId, allTags, null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
         : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");

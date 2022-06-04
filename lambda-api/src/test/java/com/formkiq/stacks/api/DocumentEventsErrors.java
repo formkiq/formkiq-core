@@ -33,7 +33,8 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
 
   @Override
   public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final String userId) {
+      final Collection<DocumentTag> tags, final String userId,
+      final Collection<ValidationError> errors) {
     return tags;
   }
 
