@@ -28,6 +28,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -405,14 +406,11 @@ public class DocumentIdRequestHandler
 
     DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
     
-    Collection<ValidationError> errors = plugin.validateAddTags(siteId, item, tags, !isUpdate);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    Collection<ValidationError> errors = new ArrayList<>();
     
-    List<DocumentTag> compositeTags = plugin.addCompositeKeys(siteId, item, tags, userId, errors)
-        .stream().map(t -> t).collect(Collectors.toList());
+    List<DocumentTag> compositeTags =
+        plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)
+            .collect(Collectors.toList());
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);

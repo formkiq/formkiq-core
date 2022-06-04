@@ -182,20 +182,16 @@ public class DocumentTagsRequestHandler
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
     
     DocumentTagSchemaPlugin plugin = coreServices.documentTagSchemaPlugin();
-    Collection<ValidationError> errors =
-        plugin.validateAddTags(siteId, item, tags.getTags(), false);
     
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    Collection<DocumentTag> newTags =
+        plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, false, errors);
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, errors);
-    
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-    
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
     allTags.addAll(newTags);
     

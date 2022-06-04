@@ -2,6 +2,7 @@ package com.formkiq.stacks.api;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
@@ -33,9 +34,10 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
 
   @Override
   public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final String userId,
+      final Collection<DocumentTag> tags, final String userId, final boolean validateRequiredTags,
       final Collection<ValidationError> errors) {
-    return tags;
+    errors.add(new DummyValidationError());
+    return Collections.emptyList();
   }
 
   @Override
@@ -46,12 +48,6 @@ public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
   @Override
   public boolean isActive() {
     return false;
-  }
-
-  @Override
-  public Collection<ValidationError> validateAddTags(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final boolean validateRequiredTags) {
-    return Arrays.asList(new DummyValidationError());
   }
 
   @Override

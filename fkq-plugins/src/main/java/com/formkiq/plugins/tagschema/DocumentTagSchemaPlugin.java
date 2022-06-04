@@ -20,11 +20,13 @@ public interface DocumentTagSchemaPlugin {
    * @param item {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param userId {@link String} 
+   * @param validateRequiredTags boolean
    * @param errors {@link Collection} {@link ValidationError}
    * @return {@link Collection} {@link DocumentTag}
    */
   Collection<DocumentTag> addCompositeKeys(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags, String userId, Collection<ValidationError> errors);
+      Collection<DocumentTag> tags, String userId, boolean validateRequiredTags,
+      Collection<ValidationError> errors);
 
   /**
    * Create Multi-Value {@link SearchTagCriteria}.
@@ -38,18 +40,6 @@ public interface DocumentTagSchemaPlugin {
    * @return boolean
    */
   boolean isActive();
-  
-  /**
-   * Validate Add {@link DocumentTag}.
-   * 
-   * @param siteId {@link String}
-   * @param item {@link DocumentItem}
-   * @param tags {@link Collection} {@link DocumentTag}
-   * @param validateRequiredTags boolean
-   * @return {@link Collection} {@link ValidationError}
-   */
-  Collection<ValidationError> validateAddTags(String siteId, DocumentItem item,
-      Collection<DocumentTag> tags, boolean validateRequiredTags);
   
   /**
    * Delete {@link DocumentTag} Event.

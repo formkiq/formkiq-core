@@ -17,7 +17,7 @@ public class DocumentTagSchemaPluginEmpty implements DocumentTagSchemaPlugin {
 
   @Override
   public Collection<DocumentTag> addCompositeKeys(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final String userId,
+      final Collection<DocumentTag> tags, final String userId, final boolean validateRequiredTags,
       final Collection<ValidationError> errors) {
     return Collections.emptyList();
   }
@@ -30,12 +30,6 @@ public class DocumentTagSchemaPluginEmpty implements DocumentTagSchemaPlugin {
   @Override
   public boolean isActive() {
     return false;
-  }
-
-  @Override
-  public Collection<ValidationError> validateAddTags(final String siteId, final DocumentItem item,
-      final Collection<DocumentTag> tags, final boolean validateRequiredTags) {
-    return Collections.emptyList();
   }
 
   @Override
