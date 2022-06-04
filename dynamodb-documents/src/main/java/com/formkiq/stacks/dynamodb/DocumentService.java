@@ -33,9 +33,10 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.plugins.tagschema.DocumentTagLoader;
 
 /** Services for Querying, Updating Documents. */
-public interface DocumentService {
+public interface DocumentService extends DocumentTagLoader {
 
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;

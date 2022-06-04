@@ -500,20 +500,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return results;
   }
   
-  /**
-   * Sort {@link DocumentItem} to match DocumentIds {@link List}.
-   * @param documentIds {@link List} {@link String}
-   * @param documents {@link List} {@link DocumentItem}
-   * @return {@link List} {@link DocumentItem}
-   */
-  private List<DocumentItem> sortByIds(final List<String> documentIds,
-      final List<DocumentItem> documents) {
-    Map<String, DocumentItem> map = documents.stream()
-        .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
-    return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
-        .collect(Collectors.toList());
-  }
-
   @Override
   public PaginationResults<DocumentItem> findDocumentsByDate(final String siteId,
       final ZonedDateTime date, final PaginationMapToken token, final int maxresults) {
@@ -619,6 +605,21 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     QueryRequest q = req.build();        
     QueryResponse result = this.dynamoDB.query(q);
     return result;
+  }
+
+  @Override
+  public Collection<DocumentTag> findDocumentTags(final String siteId, final String documentId,
+      final Collection<String> tagKeys) {
+    
+    Collection<DocumentTag> tags = new ArrayList<>();
+    tagKeys.forEach(tagKey -> {
+      DocumentTag tag = findDocumentTag(siteId, documentId, tagKey);
+      if (tag != null) {
+        tags.add(tag);
+      }
+    });
+
+    return tags;
   }
 
   @Override
@@ -1165,5 +1166,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return preset;
+  }
+
+  /**
+   * Sort {@link DocumentItem} to match DocumentIds {@link List}.
+   * @param documentIds {@link List} {@link String}
+   * @param documents {@link List} {@link DocumentItem}
+   * @return {@link List} {@link DocumentItem}
+   */
+  private List<DocumentItem> sortByIds(final List<String> documentIds,
+      final List<DocumentItem> documents) {
+    Map<String, DocumentItem> map = documents.stream()
+        .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
+    return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
+        .collect(Collectors.toList());
   }
 }
