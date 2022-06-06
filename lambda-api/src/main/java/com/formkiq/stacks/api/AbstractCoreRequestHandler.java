@@ -154,6 +154,14 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   public AwsServiceCache getAwsServices() {
     return awsServices;
   }
+  
+  /**
+   * Get {@link AwsServiceCache}.
+   * @return {@link AwsServiceCache}
+   */
+  public static AwsServiceCache getAwsServicesCache() {
+    return awsServices;
+  }
 
   @Override
   public Map<String, ApiGatewayRequestHandler> getUrlMap() {
