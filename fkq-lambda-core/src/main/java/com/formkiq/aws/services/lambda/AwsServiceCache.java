@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -44,6 +45,17 @@ public class AwsServiceCache {
 
   /** The number of minutes to hold in cache. */
   private static final int CACHE_MINUTES = 15;
+  /** {@link AwsServiceExtension}. */
+  private static final Map<Class<?>, AwsServiceExtension<?>> EXTENSIONS = new HashMap<>();
+  /**
+   * Registers an {@link AwsServiceExtension}.
+   * @param clazz {@link Class}
+   * @param <T> Type of Class
+   * @param extension {@link AwsServiceExtension}
+   */
+  public static <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
+    EXTENSIONS.put(clazz, extension);
+  }
   /** {@link DynamoDbConnectionBuilder}. */
   private DynamoDbConnectionBuilder dbConnection;
   /** {@link S3ConnectionBuilder}. */
@@ -64,9 +76,10 @@ public class AwsServiceCache {
   private Map<String, String> environment;
   /** {@link DynamoDbCacheService}. */
   private DynamoDbCacheService documentCacheService;
+
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin documentTagSchemaPlugin;
-
+  
   /**
    * constructor.
    */
@@ -80,7 +93,7 @@ public class AwsServiceCache {
   public DynamoDbConnectionBuilder dbConnection() {
     return this.dbConnection;
   }
-
+  
   /**
    * Set {@link DynamoDbConnectionBuilder}.
    * 
@@ -100,7 +113,7 @@ public class AwsServiceCache {
   public boolean debug() {
     return this.debug;
   }
-  
+
   /**
    * Set Debug Mode.
    * 
@@ -111,7 +124,7 @@ public class AwsServiceCache {
     this.debug = isDebug;
     return this;
   }
-
+  
   /**
    * Get {@link DynamoDbCacheService}.
    * 
@@ -160,6 +173,17 @@ public class AwsServiceCache {
    */
   public String environment(final String key) {
     return this.environment.get(key);
+  }
+
+  /**
+   * Load {@link AwsServiceExtension}.
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getExtension(final Class<T> clazz) {
+    return (T) EXTENSIONS.get(clazz).loadService(this);
   }
 
   /**

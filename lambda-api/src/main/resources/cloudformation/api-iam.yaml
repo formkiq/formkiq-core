@@ -80,7 +80,12 @@ Resources:
                 in: "query"
                 description: "Next page of results token"
                 schema:
-                  type: "string"              
+                  type: "string"
+              - name: "previous"
+                in: "query"
+                description: "Previous page of results token"
+                schema:
+                  type: "string"                  
               responses:
                 '200':
                   description: "200 OK"
@@ -127,7 +132,20 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentPostResponse'
+                        $ref: '#/components/schemas/TagSchemaPostResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -154,6 +172,20 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/TagSchema'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              description: Delete a TagSchema
+              tags:
+              - Enterprise API      
+              parameters:
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1111,7 +1143,7 @@ Resources:
               description: Tag Schema Identifier
               required: true
               schema:
-                type: string
+                type: string            
             tagkeyParam:
               name: tagKey
               in: path
@@ -1765,76 +1797,119 @@ Resources:
                 uploadEmail:
                   type: "string"
                   description: "SiteId document upload email address"
+            TagSchemaPostResponse:
+              type: "object"
+              properties:
+                tagSchemaId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Tag Schema Identifier" 
+            ErrorsResponse:
+              type: object
+              properties:
+                errors:
+                  $ref: "#/components/schemas/ErrorsList"
+            ErrorsList:
+              type: "array"
+              description: "List of errors"
+              items:
+                $ref: "#/components/schemas/Error"
+            Error:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Error Key"
+                error:
+                  type: "string"
+                  description: "Error Message"                
             TagSchemas:
               type: "object"
               properties:
                 schemas:
-                  $ref: "#/components/schemas/TagSchemaList"
-            TagSchemaList:
+                  $ref: "#/components/schemas/TagSchemaSummaryList"
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
+            TagSchemaSummaryList:
               type: "array"
               description: "List of Tag Schemas"
               items:
-                $ref: "#/components/schemas/TagSchema"
+                $ref: "#/components/schemas/TagSchemaSummary"
             TagSchemaBody:
               type: "object"
               properties:
-                schema:
+                name:
+                  type: "string"                  
+                tags:
                   type: "object"
                   properties:
-                    tags:
-                      type: "object"
-                      properties:
-                        compositeKeys:
-                          type: "array"
-                          description: "List of Composite Keys"
-                          items:
-                            $ref: "#/components/schemas/TagSchemaCompositeKey"
-                        required:
-                          type: "array"
-                          description: "List of Required Tags"
-                          items:
-                            $ref: "#/components/schemas/TagSchemaRequired"
-                        optional:
-                          type: "array"
-                          description: "List of Optional Tags"
-                          items:
-                            $ref: "#/components/schemas/TagSchemaOptional"
-                        allowAdditionalTags:
-                          type: "boolean"
-                          default: true                
-            TagSchema:
+                    compositeKeys:
+                      type: "array"
+                      description: "List of Composite Keys"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaCompositeKey"
+                    required:
+                      type: "array"
+                      description: "List of Required Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaRequired"
+                    optional:
+                      type: "array"
+                      description: "List of Optional Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaOptional"
+                    allowAdditionalTags:
+                      type: "boolean"
+                      default: true
+            TagSchemaSummary:
               type: "object"
               properties:
-                schema:
-                  type: "object"
-                  properties:
-                    tags:
-                      type: "object"
-                      properties:
-                        compositeKeys:
-                          type: "array"
-                          description: "List of Composite Keys"
-                          items:
-                            $ref: "#/components/schemas/TagSchemaCompositeKey"
-                        required:
-                          type: "array"
-                          description: "List of Required Tags"
-                          items:
-                            $ref: "#/components/schemas/TagSchemaRequired"
-                        optional:
-                          type: "array"
-                          description: "List of Optional Tags"
-                          items:
-                            $ref: "#/components/schemas/TagSchemaOptional"
-                        allowAdditionalTags:
-                          type: "boolean"
-                          default: true
+                tagSchemaId:
+                  type: "string"
+                name:
+                  type: "string"
                 userId:
                   type: "string"
                 insertedDate:
                   type: "string"
                   format: "date-time"
-                  description: "Inserted Timestamp"                           
+                  description: "Inserted Timestamp"                          
+            TagSchema:
+              type: "object"
+              properties:
+                tagSchemaId:
+                  type: "string"
+                name:
+                  type: "string"
+                userId:
+                  type: "string"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"                  
+                tags:
+                  type: "object"
+                  properties:
+                    compositeKeys:
+                      type: "array"
+                      description: "List of Composite Keys"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaCompositeKey"
+                    required:
+                      type: "array"
+                      description: "List of Required Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaRequired"
+                    optional:
+                      type: "array"
+                      description: "List of Optional Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaOptional"
+                    allowAdditionalTags:
+                      type: "boolean"
+                      default: true
             TagSchemaCompositeKey:
               type: "object"
               properties:
@@ -1852,7 +1927,7 @@ Resources:
                   description: "Default values"
                   items:
                     type: "string"
-                values:
+                allowedValues:
                   type: "array"
                   description: "Only valid values"
                   items:
@@ -1867,7 +1942,7 @@ Resources:
                   description: "Default values"
                   items:
                     type: "string"
-                values:
+                allowedValues:
                   type: "array"
                   description: "Only valid values"
                   items:
