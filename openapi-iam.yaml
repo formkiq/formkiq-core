@@ -92,7 +92,7 @@
                       schema:
                         $ref: '#/components/schemas/TagSchemas'
               security:
-              - AuthorizationCognito: []
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -135,7 +135,7 @@
                       schema:
                         $ref: '#/components/schemas/ErrorsResponse'
               security:
-              - AuthorizationCognito: []
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /tagSchemas/{tagSchemaId}:
@@ -161,7 +161,7 @@
                       schema:
                         $ref: '#/components/schemas/TagSchema'
               security:
-              - AuthorizationCognito: []
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
@@ -175,7 +175,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - AuthorizationCognito: []
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents:
