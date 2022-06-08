@@ -1433,6 +1433,9 @@ Resources:
               - "content"
               type: "object"
               properties:
+                tagSchemaId:
+                  type: "string"
+                  description: "Tag Schema Id"
                 path:
                   type: "string"
                   description: "Path or Name of document"
