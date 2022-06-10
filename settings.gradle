@@ -1,3 +1,7 @@
+/*pluginManagement {
+    includeBuild '../graalvm-native-plugin'
+}*/
+
 include 'console'
 include 'aws-cognito'
 include 'aws-iam'

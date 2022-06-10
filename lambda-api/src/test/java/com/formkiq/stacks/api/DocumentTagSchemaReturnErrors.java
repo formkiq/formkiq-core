@@ -15,7 +15,7 @@ import com.formkiq.plugins.validation.ValidationError;
  * {@link DocumentTagSchemaPlugin} that returns test {@link ValidationError}.
  *
  */
-public class DocumentEventsErrors implements DocumentTagSchemaPlugin {
+public class DocumentTagSchemaReturnErrors implements DocumentTagSchemaPlugin {
   private static final class DummyValidationError implements ValidationError {
     /** Test Error Message. */
     private String error = "test error";

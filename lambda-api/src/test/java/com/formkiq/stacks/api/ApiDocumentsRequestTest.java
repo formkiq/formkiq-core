@@ -1168,7 +1168,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocuments13() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      getAwsServices().documentTagSchemaPlugin(new DocumentEventsErrors());
+      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
       
       // when
       DynamicObject obj =
@@ -1179,6 +1179,50 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals("400.0", obj.getString("statusCode"));
       assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}",
           obj.getString("body"));
+    }
+  }
+  
+  /**
+   * POST /documents request with valid TagSchema and added compositeKey.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocuments14() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnNewTags());
+      
+      // when
+      DynamicObject obj =
+          handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNotNull(body.getString("documentId"));
+      assertNull(body.getString("next"));
+      assertNull(body.getString("previous"));
+
+      String key = getKey(siteId, body);
+      String documentId = body.getString("documentId");
+
+      assertTrue(
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
+
+      assertNotNull(documentId);
+
+      verifyS3(key, true, "a0dac80d-18b3-472b-88da-79e75082b662@formkiq.com");
+      
+      try (S3Client s3 = getS3().buildClient()) {
+        String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
+        Map<String, Object> map = fromJson(content, Map.class);
+        assertEquals("true", map.get("newCompositeTags").toString());
+      }
     }
   }
   

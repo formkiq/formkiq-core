@@ -202,7 +202,7 @@ Resources:
       Timeout: 600
       MemorySize: 512
       CodeUri: ./websocket-api.zip
-      AutoPublishCodeSha256: 0E88FEF466DE7769DD559283C1443B7B62D03CA56B0FFC9128F93ABA919BFDF2
+      AutoPublishCodeSha256: F86B9F6EC649A8A75B7D40A5C866C432344898B2769617A997E5FE45BC121067
       Environment:
         Variables:
           API_URL: 

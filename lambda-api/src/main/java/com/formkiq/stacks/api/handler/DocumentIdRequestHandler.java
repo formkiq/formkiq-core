@@ -411,7 +411,9 @@ public class DocumentIdRequestHandler
     List<DocumentTag> compositeTags =
         plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)
             .collect(Collectors.toList());
-
+    
+    final boolean newCompositeTags = !compositeTags.isEmpty();
+    
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
@@ -421,5 +423,6 @@ public class DocumentIdRequestHandler
     DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
     List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
     item.put("tags", objs);
+    item.put("newCompositeTags", Boolean.valueOf(newCompositeTags));
   }
 }

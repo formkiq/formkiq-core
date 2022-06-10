@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -36,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -52,8 +55,16 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
+import com.formkiq.stacks.client.FormKiqClient;
+import com.formkiq.stacks.client.FormKiqClientConnection;
+import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.requests.AddDocumentTag;
+import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -65,6 +76,7 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
@@ -74,7 +86,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_B64_EXT = ".fkb64";
-
+  
   /**
    * Get Bucket Name.
    *
@@ -130,29 +142,40 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     return SdkHttpUtils.urlDecode(value);
   }
 
-  /** {@link DocumentService}. */
-  private DocumentService service;
-  /** {@link DocumentSearchService}. */
-  private DocumentSearchService searchService;
-  /** {@link S3Service}. */
-  private S3Service s3;
-  /** {@link SqsService}. */
-  private SqsService sqsService;
+  /** App Environment. */
+  private String appEnvironment;
   /** {@link String}. */
   private String documentsBucket;
-
+  /** IAM Documents Url. */
+  private String documentsIamUrl = null;
+  /** {@link FormKiqClient}. */
+  private FormKiqClient formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
 
+  /** {@link S3Service}. */
+  private S3Service s3;
+
+  /** {@link DocumentSearchService}. */
+  private DocumentSearchService searchService;
+
+  /** {@link DocumentService}. */
+  private DocumentService service;
+  
   /** SQS Error Queue. */
   private String sqsErrorQueue;
-
+  /** {@link SqsService}. */
+  private SqsService sqsService;
+  /** {@link SsmConnectionBuilder}. */
+  private SsmConnectionBuilder ssmConnection;
+  
   /** constructor. */
   public StagingS3Create() {
     this(System.getenv(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
+        new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
 
   /**
@@ -162,19 +185,23 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param dynamoDb {@link DynamoDbConnectionBuilder}
    * @param s3Builder {@link S3ConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
+   * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
    */
   protected StagingS3Create(final Map<String, String> map, final DynamoDbConnectionBuilder dynamoDb,
-      final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder) {
-
+      final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder,
+      final SsmConnectionBuilder ssmConnectionBuilder) {
+    
     String documentsTable = map.get("DOCUMENTS_TABLE");
     this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
     this.searchService =
         new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable, null);
     this.s3 = new S3Service(s3Builder);
     this.sqsService = new SqsService(sqsBuilder);
+    this.ssmConnection = ssmConnectionBuilder;
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.sqsErrorQueue = map.get("SQS_ERROR_URL");
+    this.appEnvironment = map.get("APP_ENVIRONMENT");
   }
 
   /**
@@ -321,6 +348,24 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
   
   /**
+   * Build connection to the IAM API url.
+   */
+  private void createFormKiQConnectionIfNeeded() {
+    
+    if (this.documentsIamUrl == null) {
+      final int cacheTime = 5;
+      SsmService ssmService = new SsmServiceCache(this.ssmConnection, cacheTime, TimeUnit.MINUTES);
+      this.documentsIamUrl =
+          ssmService.getParameterValue("/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
+    }
+    
+    if (this.formkiqClient == null) {
+      FormKiqClientConnection fkqConnection = new FormKiqClientConnection(this.documentsIamUrl);
+      this.formkiqClient = new FormKiqClientV1(fkqConnection);
+    }
+  }
+
+  /**
    * Delete S3 Object.
    *
    * @param s3Client {@link S3Client}
@@ -382,14 +427,49 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
+   * If document has a tagschema that needs to be processed.
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   * @throws InterruptedException  InterruptedException
+   * @throws IOException IOException
+   */
+  private void postDocumentTags(final String siteId, final DynamicDocumentItem doc)
+      throws IOException, InterruptedException {
+    
+    List<DynamicObject> tags = doc.getList("tags");
+    
+    if (!tags.isEmpty()) {
+      
+      List<AddDocumentTag> addTags = tags.stream().map(t -> {
+        
+        List<String> values = t.containsKey("values") ? values = t.getStringList("values") : null;
+        
+        AddDocumentTag tag =
+            new AddDocumentTag().key(t.getString("key")).value(t.getString("value")).values(values);
+        
+        return tag;
+        
+      }).collect(Collectors.toList());
+      
+      String documentId = doc.getDocumentId();
+      AddDocumentTagRequest req =
+          new AddDocumentTagRequest().siteId(siteId).documentId(documentId).tags(addTags);
+            
+      this.formkiqClient.addDocumentTag(req);
+    }
+  }
+
+  /**
    * Process S3 Event.
    * 
    * @param logger {@link LambdaLogger}
    * @param date {@link Date}
    * @param event {@link Map}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
    */
   private void processEvent(final LambdaLogger logger, final Date date,
-      final Map<String, Object> event) {
+      final Map<String, Object> event) throws IOException, InterruptedException {
 
     String eventName = event.get("eventName").toString();
     boolean objectCreated = eventName.contains("ObjectCreated");
@@ -408,6 +488,15 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
         if (doc != null) {
           write(s, logger, doc, date, siteId);
+          
+          String tagSchemaId = doc.getString("tagSchemaId");
+          Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
+          
+          if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
+            createFormKiQConnectionIfNeeded();
+            postDocumentTags(siteId, doc);
+          }
+          
         } else {
           copyFile(s, logger, bucket, documentId, date);
         }
@@ -444,7 +533,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       } else {
         logger.log("handling " + records.size() + " record(s).");
 
-        processEvent(logger, date, event);
+        try {
+          processEvent(logger, date, event);
+        } catch (IOException | InterruptedException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
       }
     }
   }
