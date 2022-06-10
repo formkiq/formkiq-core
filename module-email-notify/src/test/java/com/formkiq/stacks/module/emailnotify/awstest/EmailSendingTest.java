@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -171,6 +172,7 @@ public class EmailSendingTest {
    * @throws Exception Exception
    */
   @Test(timeout = TIMEOUT)
+  @Ignore
   public void testSendingEmail01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();

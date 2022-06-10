@@ -273,23 +273,23 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
-  ModuleEmailNotify:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreConsole
-    Properties:
-      Location: module-email-notify/template.yaml
-      Parameters:
-        AppEnvironment: 
-          Ref: AppEnvironment
-        Email: 
-          Ref: AdminEmail
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+#  ModuleEmailNotify:
+#    Type: AWS::Serverless::Application
+#    DependsOn:
+#      - CoreConsole
+#    Properties:
+#      Location: module-email-notify/template.yaml
+#      Parameters:
+#        AppEnvironment: 
+#          Ref: AppEnvironment
+#        Email: 
+#          Ref: AdminEmail
+#      Tags:
+#        Application: "FormKiQ Core"
+#        AppEnvironment: 
+#          Fn::Sub: "${AppEnvironment}"
+#        StackName: 
+#          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleUsers:
     Type: AWS::Serverless::Application
