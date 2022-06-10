@@ -11,6 +11,7 @@
 - [What is FormKiQ Core](#-what-is-formkiq-core)
   - [Features](#features)
   - [Demo](#demo)
+  - [Installation](#installation)
   - [How much does it cost to run?](#how-much-does-it-cost-to-run)
   - [Examples](#examples)
     - [Web Form Example - Contact Form](#web-form-example---contact-form)
@@ -61,9 +62,11 @@ https://docs.formkiq.com/
 
 ### Demo
 
-You can install and demo FormKiQ by following our [Installation and Getting Started tutorials](https://docs.formkiq.com/docs/1.6.0/tutorials).
-
 For a guided demo of FormKiQ Core or our enterprise offering, you can [schedule a demo meeting with us through our website](https://www.formkiq.com/contact).
+
+## Installation
+
+You can install and try FormKiQ within minutes by following our [Installation and Getting Started tutorials](https://docs.formkiq.com/docs/1.6.0/tutorials).
 
 ### How much does it cost to run
 
