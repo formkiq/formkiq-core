@@ -66,7 +66,7 @@ For a guided demo of FormKiQ Core or our enterprise offering, you can [schedule 
 
 ## Installation
 
-You can install and try FormKiQ within minutes by following our [Installation and Getting Started tutorials](https://docs.formkiq.com/docs/1.7.0/tutorials).
+You can install and try FormKiQ within minutes by following our [Installation and Getting Started tutorials](https://docs.formkiq.com/docs/1.6.0/tutorials).
 
 ### How much does it cost to run
 
@@ -127,7 +127,7 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 
 ## Building from source
 
-Please see our [docs](https://docs.formkiq.com/docs/1.7.0/reference/README.html#building-from-source) for instructions.
+Please see our [docs](https://docs.formkiq.com/docs/1.6.0/reference/README.html#building-from-source) for instructions.
 
 ## License
 
