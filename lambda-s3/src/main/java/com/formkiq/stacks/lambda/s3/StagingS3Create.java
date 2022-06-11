@@ -59,6 +59,9 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.graalvm.annotations.ReflectableClass;
+import com.formkiq.graalvm.annotations.ReflectableClasses;
+import com.formkiq.graalvm.annotations.ReflectableField;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -73,6 +76,8 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
@@ -81,7 +86,14 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
-@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentTagType.class})
+@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentTagType.class,
+    AddDocumentTag.class})
+@ReflectableClasses({
+    @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")}),
+    @ReflectableClass(className = AddDocumentTag.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
+            @ReflectableField(name = "values")})})
 public class StagingS3Create implements RequestHandler<Map<String, Object>, Void> {
 
   /** Extension for FormKiQ config file. */
@@ -149,7 +161,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /** IAM Documents Url. */
   private String documentsIamUrl = null;
   /** {@link FormKiqClient}. */
-  private FormKiqClient formkiqClient = null;
+  private FormKiqClientV1 formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
 
@@ -168,10 +180,15 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private SqsService sqsService;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
+  /** {@link Region}. */
+  private Region region;
+  /** {@link AwsCredentials}. */
+  private AwsCredentials credentials;
   
   /** constructor. */
   public StagingS3Create() {
-    this(System.getenv(),
+    this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
+        EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
@@ -182,15 +199,20 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * constructor.
    *
    * @param map {@link Map}
+   * @param awsRegion {@link Region} 
+   * @param awsCredentials {@link AwsCredentials}
    * @param dynamoDb {@link DynamoDbConnectionBuilder}
    * @param s3Builder {@link S3ConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
    */
-  protected StagingS3Create(final Map<String, String> map, final DynamoDbConnectionBuilder dynamoDb,
+  protected StagingS3Create(final Map<String, String> map, final Region awsRegion,
+      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dynamoDb,
       final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder,
       final SsmConnectionBuilder ssmConnectionBuilder) {
     
+    this.region = awsRegion;
+    this.credentials = awsCredentials;
     String documentsTable = map.get("DOCUMENTS_TABLE");
     this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
     this.searchService =
@@ -360,7 +382,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
     
     if (this.formkiqClient == null) {
-      FormKiqClientConnection fkqConnection = new FormKiqClientConnection(this.documentsIamUrl);
+      FormKiqClientConnection fkqConnection = new FormKiqClientConnection(this.documentsIamUrl)
+          .region(this.region);
+      
+      if (this.credentials != null) {
+        fkqConnection = fkqConnection.credentials(this.credentials);
+      }
+      
       this.formkiqClient = new FormKiqClientV1(fkqConnection);
     }
   }
@@ -536,7 +564,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         try {
           processEvent(logger, date, event);
         } catch (IOException | InterruptedException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
         }
       }

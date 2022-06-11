@@ -519,6 +519,17 @@ Resources:
             - sns:Publish
             Resource:
             - Ref: SnsDocumentEvent
+          - Effect: Allow
+            Action:
+            - ssm:GetParameter
+            Resource: 
+            - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+          - Effect: Allow
+            Action:
+            - execute-api:Invoke
+            - execute-api:ManageConnections
+            Resource: 
+            - arn:aws:execute-api:*:*:*            
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter

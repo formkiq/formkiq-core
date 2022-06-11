@@ -433,8 +433,8 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    final StagingS3Create handler =
-        new StagingS3Create(this.env, dbBuilder, s3Builder, sqsBuilder, ssmBuilder);
+    final StagingS3Create handler = new StagingS3Create(this.env, Region.US_EAST_1, null, dbBuilder,
+        s3Builder, sqsBuilder, ssmBuilder);
 
     Void result = handler.handleRequest(map, this.context);
     assertNull(result);
@@ -1014,8 +1014,8 @@ public class StagingS3CreateTest implements DbKeys {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
-    final StagingS3Create handler =
-        new StagingS3Create(this.env, dbBuilder, s3Builder, sqsBuilder, ssmBuilder);
+    final StagingS3Create handler = new StagingS3Create(this.env, Region.US_EAST_1, null, dbBuilder,
+        s3Builder, sqsBuilder, ssmBuilder);
 
     // when
     Void result = handler.handleRequest(map, this.context);
