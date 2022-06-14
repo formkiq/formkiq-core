@@ -206,6 +206,12 @@ Resources:
           Fn::GetAtt:
           - CoreConsole
           - Outputs.ConsoleUrl
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   SsmProperties:
     Type: AWS::Serverless::Application
