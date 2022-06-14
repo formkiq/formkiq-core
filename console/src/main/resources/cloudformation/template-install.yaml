@@ -55,6 +55,17 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
     
+  CognitoHostedUi:
+    Description: Amazon Cognito Hosted UI Url
+    AllowedPattern: ".+"
+    Type: String
+    
+  UserAuthentication:
+    Description: How are the users authenticating
+    AllowedPattern: ".+"
+    Type: String
+    Default: "cognito"
+    
 Resources:
 
   ConsoleInstallerParameter:
@@ -113,6 +124,10 @@ Resources:
             Fn::Sub: "${Brand}"
           ALLOW_ADMIN_CREATE_USER_ONLY: 
             Fn::Sub: "${AllowAdminCreateUserOnly}"
+          COGNITO_HOSTED_UI:
+            Ref: CognitoHostedUi
+          USER_AUTHENTICATION:
+            Ref: UserAuthentication
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role
