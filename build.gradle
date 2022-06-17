@@ -11,17 +11,22 @@ plugins {
 
 repositories { mavenCentral() }
 
-spotless { 
-  java { 
-    eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
-    licenseHeaderFile project.rootProject.file("LICENSE")  
-  } 
-}
-
 allprojects {
   version = '1.7.5'
   ext.awsCognitoVersion = '1.4.0'
   group = 'com.formkiq.stacks'
+  
+	apply plugin: 'com.diffplug.spotless'
+  
+	spotless { 
+	  java { 
+	    eclipse().configFile project.rootProject.file("spotless.eclipseformat.xml")
+	    licenseHeaderFile project.rootProject.file("LICENSE")  
+	  } 
+	}
+	
+	spotlessJavaCheck.dependsOn 'spotlessJavaApply'
+	
 }
 
 subprojects {
@@ -34,7 +39,6 @@ subprojects {
   apply plugin: 'java-library'
   apply plugin: 'checkstyle'
   apply plugin: 'com.github.spotbugs'
-  apply plugin: 'com.diffplug.spotless'
   apply plugin: 'com.github.ben-manes.versions'
   apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
   
@@ -48,8 +52,6 @@ subprojects {
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
   }
-
-  spotlessJavaCheck.dependsOn 'spotlessJavaApply'
 
   spotbugs {
     excludeFilter = file("$rootDir/config/gradle/spotbugs-exclude.xml")

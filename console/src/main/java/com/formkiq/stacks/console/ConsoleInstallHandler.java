@@ -155,11 +155,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String userAuthentication = this.environmentMap.get("USER_AUTHENTICATION");
 
     String documentApi = this.environmentMap.get("API_URL");
-    
+
     String chartApi = brand.contains("24hourcharts") ? "https://chartapi.24hourcharts.com" : "";
 
     String webSocketApi = this.environmentMap.get("API_WEBSOCKET_URL");
-    
+
     String json = String.format(
         "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
             + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"},"

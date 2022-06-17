@@ -62,7 +62,7 @@ public class AwsResourceTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-    
+
     Region region = Region.of(System.getProperty("testregion"));
 
     String awsprofile = System.getProperty("testprofile");
