@@ -40,13 +40,13 @@ import software.amazon.awssdk.services.s3.S3Client;
  */
 public class LocalStackExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
- 
+
   /** {@link LocalStackContainer}. */
   private LocalStackContainer localstack = null;
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
-    
+
     this.localstack = TestServices.getLocalStack();
     this.localstack.start();
 

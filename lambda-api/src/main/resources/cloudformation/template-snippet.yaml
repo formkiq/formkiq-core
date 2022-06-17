@@ -92,6 +92,7 @@ Resources:
     - DocumentsApiRequestsRole
     Properties:
       Handler: com.formkiq.stacks.api.CoreRequestHandler
+      Description: Lambda function that processes API requests
       Runtime: provided
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"

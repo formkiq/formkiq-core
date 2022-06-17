@@ -72,7 +72,7 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
               .setCredentials(EnvironmentVariableCredentialsProvider.create()),
           new DocumentTagSchemaPluginEmpty());
     }
-    
+
     AbstractCoreRequestHandler.buildUrlMap();
   }
 }

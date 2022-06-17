@@ -53,7 +53,7 @@ public interface DocumentService extends DocumentTagLoader {
    * @param timeToLive {@link String}
    */
   void addTags(String siteId, String documentId, Collection<DocumentTag> tags, String timeToLive);
-  
+
   /**
    * Delete Document.
    *
@@ -72,7 +72,7 @@ public interface DocumentService extends DocumentTagLoader {
    */
   @Deprecated
   void deleteDocumentFormat(String siteId, String documentId, String contentType);
-  
+
   /**
    * Delete All Document Formats.
    *
@@ -141,6 +141,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Returns whether document exists.
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
@@ -238,6 +239,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Find most recent inserted document {@link ZonedDateTime}.
+   * 
    * @return {@link ZonedDateTime}
    */
   ZonedDateTime findMostDocumentDate();
@@ -305,7 +307,7 @@ public interface DocumentService extends DocumentTagLoader {
    * @return boolean
    */
   boolean removeTag(String siteId, String documentId, String tagKey, String tagValue);
-  
+
   /**
    * Remove Tags from Document.
    *

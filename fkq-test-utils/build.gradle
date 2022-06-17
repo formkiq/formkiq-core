@@ -4,6 +4,7 @@ description = "FormKiQ Test Utils"
 dependencies {
 	implementation project(':aws-cognito')
     implementation project(':aws-s3')
+	implementation project(':aws-sns')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
     implementation project(':aws-dynamodb')

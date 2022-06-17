@@ -38,7 +38,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
-  
+
   /**
    * Get /documents/{documentId}/ocr request.
    *
@@ -49,8 +49,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentOcr01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-ocr01.json");
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-ocr01.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", "1");
 
@@ -66,7 +65,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
-  
+
   /**
    * POST /documents/{documentId}/ocr request.
    *
@@ -80,7 +79,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", "1");
-      
+
       // when
       String response = handleRequest(event);
 

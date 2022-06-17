@@ -25,6 +25,8 @@ package com.formkiq.module.actions;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +56,28 @@ public class ActionsServiceDynamoDbTest {
 
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
+  }
+
+  /**
+   * Has Actions.
+   */
+  @Test
+  public void hasActions01() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String userId0 = "joe";
+      String documentId0 = UUID.randomUUID().toString();
+      String documentId1 = UUID.randomUUID().toString();
+
+      Action action0 = new Action().type(ActionType.OCR).userId(userId0);
+
+      // when
+      service.saveActions(siteId, documentId0, Arrays.asList(action0));
+
+      // then
+      assertTrue(service.hasActions(siteId, documentId0));
+      assertFalse(service.hasActions(siteId, documentId1));
+    }
   }
 
   /**

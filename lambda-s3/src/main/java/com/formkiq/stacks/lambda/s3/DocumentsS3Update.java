@@ -26,6 +26,10 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
+import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
+import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -46,10 +50,14 @@ import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.module.documentevents.DocumentEventService;
+import com.formkiq.module.documentevents.DocumentEventServiceSns;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -61,16 +69,12 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
-import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
 @Reflectable
 public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Void> {
 
-  /** Max Sns Message Size. */
-  private static final int MAX_SNS_MESSAGE_SIZE = 256000;
-  
   /**
    * Get Bucket Name.
    *
@@ -121,8 +125,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private S3Service s3service;
   /** {@link SqsService}. */
   private SqsService sqsService;
-  /** {@link SnsService}. */
-  private SnsService snsService;
+  /** {@link DocumentEventService}. */
+  private DocumentEventService documentEventService;
+  /** {@link ActionsService}. */
+  private ActionsService actionsService;
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
@@ -130,9 +136,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /** constructor. */
   public DocumentsS3Update() {
     this(System.getenv(),
-        new DocumentServiceImpl(
-            new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-            System.getenv("DOCUMENTS_TABLE")),
+        new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SnsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
@@ -142,22 +146,22 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * constructor.
    * 
    * @param map {@link Map}
-   * @param documentService {@link DocumentService}
+   * @param db {@link DynamoDbConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
    */
-  protected DocumentsS3Update(final Map<String, String> map, final DocumentService documentService,
+  protected DocumentsS3Update(final Map<String, String> map, final DynamoDbConnectionBuilder db,
       final S3ConnectionBuilder s3builder, final SqsConnectionBuilder sqsBuilder,
       final SnsConnectionBuilder snsBuilder) {
 
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-
-    this.service = documentService;
+    this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
+    this.service = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
     this.sqsService = new SqsService(sqsBuilder);
-    this.snsService = new SnsService(snsBuilder);
+    this.documentEventService = new DocumentEventServiceSns(snsBuilder);
   }
 
   /**
@@ -264,7 +268,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     logger.log(msg);
 
     this.service.deleteDocument(siteId, documentId);
-    sendSnsMessage(logger, "delete", siteId, doc, bucket, key, null);
+    sendSnsMessage(logger, DELETE, siteId, doc, bucket, key, null);
   }
 
   /**
@@ -345,14 +349,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           logger.log("original " + this.gson.toJson(item));
           logger.log("new " + this.gson.toJson(doc));
         }
-        
+
         this.service.saveDocumentItemWithTag(siteId, doc);
 
         this.service.deleteDocumentFormats(siteId, item.getDocumentId());
 
         String content = getContent(s3bucket, key, s3, resp, doc);
-        
-        sendSnsMessage(logger, create ? "create" : "update", siteId, doc, s3bucket, key, content);
+
+        sendSnsMessage(logger, create ? CREATE : UPDATE, siteId, doc, s3bucket, key, content);
 
       } else {
         logger.log("Cannot find document " + documentId + " in site " + siteId);
@@ -362,14 +366,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   private String getContent(final String s3bucket, final String key, final S3Client s3,
       final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
-    
+
     String content = null;
 
     if (MimeType.isPlainText(doc.getContentType()) && resp.getContentLength() != null
-        && resp.getContentLength().longValue() < MAX_SNS_MESSAGE_SIZE) {
+        && resp.getContentLength().longValue() < DocumentEventServiceSns.MAX_SNS_MESSAGE_SIZE) {
       content = this.s3service.getContentAsString(s3, s3bucket, key, null);
     }
-    
+
     return content;
   }
 
@@ -449,56 +453,45 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param content {@link String}
    */
   private void sendSnsMessage(final LambdaLogger logger, final String eventType,
-      final String siteId, final DynamicDocumentItem doc, final String s3Bucket,
-      final String s3Key, final String content) {
+      final String siteId, final DynamicDocumentItem doc, final String s3Bucket, final String s3Key,
+      final String content) {
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    
-    DocumentEvent event =
-        new DocumentEvent().siteId(site).documentId(resetDatabaseKey(siteId, doc.getDocumentId()))
-            .s3bucket(s3Bucket).s3key(s3Key).type(eventType).userId(doc.getUserId())
-            .contentType(doc.getContentType()).path(doc.getPath());
-    
+    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
+
+    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket)
+        .s3key(s3Key).type(eventType).userId(doc.getUserId()).contentType(doc.getContentType())
+        .path(doc.getPath());
+
     if ("application/json".equals(doc.getContentType())) {
       event.content(content);
     }
-    
-    String eventJson = this.gson.toJson(event);
-    if (eventJson.length() > MAX_SNS_MESSAGE_SIZE) {
-      event.content(null);
-      eventJson = this.gson.toJson(event);
-    }
-    
+
+    String eventJson = this.documentEventService.publish(this.snsDocumentEvent, event);
+
     boolean debug = "true".equals(System.getenv("DEBUG"));
     if (debug) {
       logger.log("event: " + eventJson);
     }
 
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
-    
-    MessageAttributeValue typeAttr =
-        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
-    MessageAttributeValue siteIdAttr =
-        MessageAttributeValue.builder().dataType("String")
-            .stringValue(convertToPrintableCharacters(event.siteId())).build();
-    
-    Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
-    
-    if (doc.getUserId() != null) {
-      MessageAttributeValue userIdAttr = MessageAttributeValue.builder().dataType("String")
-          .stringValue(convertToPrintableCharacters(event.userId())).build();
-      tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
+
+    if (CREATE.equals(eventType) && this.actionsService.hasActions(siteId, documentId)) {
+      sendDocumentActionsEvent(logger, site, documentId);
     }
-    
-    for (Map.Entry<String, MessageAttributeValue> e : tags.entrySet()) {
-      logger.log("Adding Message Attribute: '" + e.getKey() + "', attributes: "
-          + e.getValue().dataType() + " " + e.getValue().stringValue());
-    }
-    
-    this.snsService.publish(this.snsDocumentEvent, eventJson, tags);
   }
-  
-  static String convertToPrintableCharacters(final String s) {
-    return s.replaceAll("[^A-Za-z0-9/-]", "");
+
+  /**
+   * Send Actions SNS message.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  private void sendDocumentActionsEvent(final LambdaLogger logger, final String siteId,
+      final String documentId) {
+    DocumentEvent event = new DocumentEvent().siteId(siteId).documentId(documentId).type(ACTIONS);
+    logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
+    this.documentEventService.publish(this.snsDocumentEvent, event);
   }
 }

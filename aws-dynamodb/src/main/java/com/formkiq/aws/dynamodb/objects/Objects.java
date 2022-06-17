@@ -44,7 +44,7 @@ public class Objects {
   public static <T> Collection<T> notNull(final Collection<T> list) {
     return list != null ? list : Collections.emptyList();
   }
-  
+
   /**
    * Returns a {@link List} that is guarantee not to be null.
    * 

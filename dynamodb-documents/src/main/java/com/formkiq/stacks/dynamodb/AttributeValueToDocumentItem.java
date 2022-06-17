@@ -73,6 +73,7 @@ public class AttributeValueToDocumentItem
 
   /**
    * Convert {@link Map} {@link String} {@link AttributeValue} to {@link DocumentItem}.
+   * 
    * @param map {@link Map} {@link String} {@link AttributeValue}
    * @return {@link DocumentItem}
    */
@@ -108,7 +109,7 @@ public class AttributeValueToDocumentItem
     if (map.containsKey("tagSchemaId")) {
       item.setTagSchemaId(map.get("tagSchemaId").s());
     }
-    
+
     if (map.containsKey("TimeToLive")) {
       item.setTimeToLive(map.get("TimeToLive").n());
     }

@@ -177,8 +177,7 @@ public class DocumentsUploadRequestHandler
         throw new BadException("'contentLength' is required");
       }
 
-      String maxContentLengthBytes =
-          this.restrictionMaxContentLength.getValue(awsservice, siteId);
+      String maxContentLengthBytes = this.restrictionMaxContentLength.getValue(awsservice, siteId);
       throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
     }
 

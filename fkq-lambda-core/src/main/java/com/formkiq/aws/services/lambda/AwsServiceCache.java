@@ -47,8 +47,10 @@ public class AwsServiceCache {
   private static final int CACHE_MINUTES = 15;
   /** {@link AwsServiceExtension}. */
   private static final Map<Class<?>, AwsServiceExtension<?>> EXTENSIONS = new HashMap<>();
+
   /**
    * Registers an {@link AwsServiceExtension}.
+   * 
    * @param clazz {@link Class}
    * @param <T> Type of Class
    * @param extension {@link AwsServiceExtension}
@@ -56,6 +58,7 @@ public class AwsServiceCache {
   public static <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
     EXTENSIONS.put(clazz, extension);
   }
+
   /** {@link DynamoDbConnectionBuilder}. */
   private DynamoDbConnectionBuilder dbConnection;
   /** {@link S3ConnectionBuilder}. */
@@ -79,21 +82,21 @@ public class AwsServiceCache {
 
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin documentTagSchemaPlugin;
-  
+
   /**
    * constructor.
    */
-  public AwsServiceCache() {
-  }
-  
+  public AwsServiceCache() {}
+
   /**
    * Get {@link DynamoDbConnectionBuilder}.
+   * 
    * @return {@link DynamoDbConnectionBuilder}
    */
   public DynamoDbConnectionBuilder dbConnection() {
     return this.dbConnection;
   }
-  
+
   /**
    * Set {@link DynamoDbConnectionBuilder}.
    * 
@@ -124,7 +127,7 @@ public class AwsServiceCache {
     this.debug = isDebug;
     return this;
   }
-  
+
   /**
    * Get {@link DynamoDbCacheService}.
    * 
@@ -140,6 +143,7 @@ public class AwsServiceCache {
 
   /**
    * Get {@link DocumentTagSchemaPlugin}.
+   * 
    * @return {@link DocumentTagSchemaPlugin}
    */
   public DocumentTagSchemaPlugin documentTagSchemaPlugin() {
@@ -148,6 +152,7 @@ public class AwsServiceCache {
 
   /**
    * Set {@link DocumentTagSchemaPlugin}.
+   * 
    * @param plugin {@link DocumentTagSchemaPlugin}
    * @return {@link AwsServiceCache}
    */
@@ -158,6 +163,7 @@ public class AwsServiceCache {
 
   /**
    * Set Environment {@link Map} parameters.
+   * 
    * @param map {@link Map}
    * @return {@link AwsServiceCache}
    */
@@ -168,6 +174,7 @@ public class AwsServiceCache {
 
   /**
    * Get Environment {@link Map} parameters.
+   * 
    * @param key {@link String}
    * @return {@link String}
    */
@@ -177,6 +184,7 @@ public class AwsServiceCache {
 
   /**
    * Load {@link AwsServiceExtension}.
+   * 
    * @param <T> Type of Class.
    * @param clazz {@link Class}
    * @return Class instance
@@ -195,6 +203,7 @@ public class AwsServiceCache {
 
   /**
    * Get {@link S3ConnectionBuilder}.
+   * 
    * @return {@link S3ConnectionBuilder}
    */
   public S3ConnectionBuilder s3Connection() {
@@ -226,6 +235,7 @@ public class AwsServiceCache {
 
   /**
    * Get {@link SqsConnectionBuilder}.
+   * 
    * @return {@link SqsConnectionBuilder}
    */
   public SqsConnectionBuilder sqsConnection() {
@@ -242,7 +252,7 @@ public class AwsServiceCache {
     this.sqsConnection = connection;
     return this;
   }
-  
+
   /**
    * Get {@link SqsService}.
    * 
@@ -257,6 +267,7 @@ public class AwsServiceCache {
 
   /**
    * Get {@link SsmConnectionBuilder}.
+   * 
    * @return {@link SsmConnectionBuilder}
    */
   public SsmConnectionBuilder ssmConnection() {

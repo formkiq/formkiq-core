@@ -68,16 +68,16 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   private static final int SLEEP = 1000;
   /** {@link HttpClient}. */
   private HttpClient http = HttpClient.newHttpClient();
-  
+
   /**
    * before.
    */
   @Before
   public void before() {
     getConfigService().delete(SITEID0);
-    getConfigService().delete(SITEID1);    
+    getConfigService().delete(SITEID1);
   }
-  
+
   /**
    * After Class.
    */

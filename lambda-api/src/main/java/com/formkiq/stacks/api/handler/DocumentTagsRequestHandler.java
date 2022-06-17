@@ -72,7 +72,7 @@ public class DocumentTagsRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    
+
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
     CacheService cacheService = awsservice.documentCacheService();
     ApiPagination pagination = getPagination(cacheService, event);
@@ -121,15 +121,17 @@ public class DocumentTagsRequestHandler
 
   /**
    * Is Valid {@link DocumentTag}.
+   * 
    * @param tag {@link DocumentTag}
    * @return boolean
    */
   private boolean isValid(final DocumentTag tag) {
     return tag.getKey() != null && tag.getKey().length() > 0;
   }
-  
+
   /**
    * Is Valid {@link DocumentTags}.
+   * 
    * @param tags {@link DocumentTags}
    * @return boolean
    */
@@ -141,25 +143,25 @@ public class DocumentTagsRequestHandler
             .findFirst().isPresent()
         : false;
   }
-  
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    
+
     final String siteId = authorizer.getSiteId();
     final String documentId = event.getPathParameters().get("documentId");
-    
+
     DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
     DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
 
     boolean tagValid = isValid(tag);
     boolean tagsValid = isValid(tags);
-    
+
     if (!tagValid && !tagsValid) {
       throw new BadException("invalid json body");
     }
-    
+
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
     DocumentItem item = coreServices.documentService().findDocument(siteId, documentId);
     if (item == null) {
@@ -170,19 +172,19 @@ public class DocumentTagsRequestHandler
       tags = new DocumentTags();
       tags.setTags(Arrays.asList(tag));
     }
-    
+
     String userId = getCallingCognitoUsername(event);
-    
+
     tags.getTags().forEach(t -> {
       t.setType(DocumentTagType.USERDEFINED);
       t.setInsertedDate(new Date());
       t.setUserId(userId);
     });
-    
+
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
-    
+
     DocumentTagSchemaPlugin plugin = coreServices.documentTagSchemaPlugin();
-    
+
     Collection<ValidationError> errors = new ArrayList<>();
 
     Collection<DocumentTag> newTags =
@@ -194,12 +196,12 @@ public class DocumentTagsRequestHandler
 
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
     allTags.addAll(newTags);
-    
+
     coreServices.documentService().addTags(siteId, documentId, allTags, null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
         : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-    
+
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 }

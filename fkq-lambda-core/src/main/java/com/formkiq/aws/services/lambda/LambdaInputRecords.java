@@ -48,6 +48,7 @@ public class LambdaInputRecords {
 
   /**
    * Get Records.
+   * 
    * @return {@link List} {@link LambdaInputRecord}
    */
   public List<LambdaInputRecord> getRecords() {
@@ -56,6 +57,7 @@ public class LambdaInputRecords {
 
   /**
    * Set Records.
+   * 
    * @param list {@link List} {@link LambdaInputRecord}
    */
   public void setRecords(final List<LambdaInputRecord> list) {

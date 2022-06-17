@@ -19,6 +19,9 @@
 			<allow pkg="com.formkiq.aws.sqs" />
 			<allow pkg="com.formkiq.aws.ssm" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
+			<allow pkg="com.formkiq.module.actions" />
+			<allow pkg="com.formkiq.module.actions.services" />
+			<allow pkg="com.formkiq.module.documentevents" />
 			<allow pkg="com.formkiq.stacks.client" />
 			<allow pkg="com.formkiq.stacks.common.objects" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />

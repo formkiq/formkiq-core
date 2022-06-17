@@ -55,7 +55,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   /** Maximum number of Document Ids that can be sent. */
   private static final int MAX_DOCUMENT_IDS = 100;
-  
+
   /**
    * constructor.
    *
@@ -64,6 +64,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   /**
    * Is {@link QueryRequest} valid.
+   * 
    * @param q {@link QueryRequest}
    * @throws BadException BadException
    */
@@ -71,13 +72,13 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     if (q == null || q.query() == null || (q.query().tag() == null && q.query().tags() == null)) {
       throw new BadException("Invalid JSON body.");
     }
-    
+
     if (q.query().tag() != null) {
       if (StringUtils.isEmpty(q.query().tag().key())) {
         throw new BadException("'tag' attribute is required.");
       }
     }
-    
+
     for (SearchTagCriteria tag : Objects.notNull(q.query().tags())) {
       if (StringUtils.isEmpty(tag.key())) {
         throw new BadException("'tag' attribute is required.");
@@ -113,7 +114,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
       response = new ApiRequestHandlerResponse(SC_PAYMENT, resp);
-      
+
     } else {
 
       DynamoDbCacheService cacheService = awsservice.documentCacheService();
@@ -149,7 +150,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       ApiMapResponse resp = new ApiMapResponse(map);
       response = new ApiRequestHandlerResponse(SC_OK, resp);
     }
-    
+
     return response;
   }
 }

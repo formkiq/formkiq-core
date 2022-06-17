@@ -54,17 +54,18 @@ public class DocumentsRestrictionsMaxContentLengthTest {
       new DocumentsRestrictionsMaxContentLength();
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsservice;
-  
+
   /**
    * Before Tests.
+   * 
    * @throws URISyntaxException URISyntaxException
    * @throws IOException IOException
    */
   @BeforeEach
   public void before() throws URISyntaxException, IOException {
     DynamoDbConnectionBuilder adb = DynamoDbTestServices.getDynamoDbConnection(null);
-    Map<String, String> map = Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "CACHE_TABLE",
-        "", "APP_ENVIRONMENT", "unittest");
+    Map<String, String> map = Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "CACHE_TABLE", "",
+        "APP_ENVIRONMENT", "unittest");
     this.awsservice = new CoreAwsServiceCache().environment(map).dbConnection(adb);
   }
 
@@ -93,7 +94,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = null;
     String siteId = UUID.randomUUID().toString();
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
     DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
@@ -115,7 +116,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf("10");
     String siteId = UUID.randomUUID().toString();
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
     DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
@@ -138,7 +139,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf("15");
     String siteId = UUID.randomUUID().toString();
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
     DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
@@ -160,7 +161,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf(0);
     String siteId = UUID.randomUUID().toString();
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
     DynamicObject ob = serviceCache.configService().get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");

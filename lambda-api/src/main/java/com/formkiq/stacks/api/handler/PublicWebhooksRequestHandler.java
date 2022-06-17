@@ -67,9 +67,9 @@ public class PublicWebhooksRequestHandler
   private static boolean isContentTypeJson(final String contentType) {
     return contentType != null && "application/json".equals(contentType);
   }
-  
+
   private static boolean isJsonValid(final String json) {
-    
+
     try {
       GSON.fromJson(json, Object.class);
       return true;
@@ -81,20 +81,20 @@ public class PublicWebhooksRequestHandler
   private DynamicObject buildDynamicObject(final CoreAwsServiceCache awsservice,
       final String siteId, final String webhookId, final DynamicObject hook, final String body,
       final String contentType) {
-    
+
     DynamicObject item = new DynamicObject(new HashMap<>());
-    
+
     final String documentId = UUID.randomUUID().toString();
-    
+
     if (contentType != null) {
       item.put("contentType", contentType);
     }
-    
+
     item.put("content", body);
     item.put("documentId", documentId);
     item.put("userId", "webhook/" + hook.getOrDefault("path", "webhook"));
     item.put("path", "webhooks/" + webhookId);
-    
+
     if (hook.containsKey("TimeToLive")) {
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
@@ -103,7 +103,7 @@ public class PublicWebhooksRequestHandler
         item.put("TimeToLive", ttl);
       }
     }
-    
+
     if (siteId != null) {
       item.put("siteId", siteId);
     }
@@ -115,67 +115,67 @@ public class PublicWebhooksRequestHandler
     ApiRequestHandlerResponse response;
     StringBuilder sb = new StringBuilder();
     sb.append(redirectUri);
-    
+
     Map<String, String> queryMap = decodeQueryString(body);
-    
+
     String responseFields = getParameter(event, "responseFields");
     if (StringUtils.isNotBlank(responseFields)) {
       String[] fields = responseFields.split(",");
       for (int i = 0; i < fields.length; i++) {
         String value = queryMap.get(fields[i]);
         sb.append(i == 0 && redirectUri.indexOf("?") == -1 ? "?" : "&");
-        sb.append(fields[i] + "=" + value);          
+        sb.append(fields[i] + "=" + value);
       }
     }
-    
-    response = new ApiRequestHandlerResponse(MOVED_PERMANENTLY,
-        new ApiRedirectResponse(sb.toString()));
+
+    response =
+        new ApiRequestHandlerResponse(MOVED_PERMANENTLY, new ApiRedirectResponse(sb.toString()));
     return response;
   }
-  
+
   private ApiRequestHandlerResponse buildResponse(final ApiGatewayRequestEvent event,
       final DynamicObject item) {
-    
+
     String body = item.getString("content");
     String documentId = item.getString("documentId");
     String contentType = item.getString("contentType");
-    
-    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("documentId", documentId)));
-    
+
+    ApiRequestHandlerResponse response =
+        new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("documentId", documentId)));
+
     String redirectUri = getParameter(event, "redirect_uri");
-    
+
     if ("application/x-www-form-urlencoded".equals(contentType)
         && StringUtils.isNotBlank(redirectUri)) {
-      
+
       response = buildRedirect(event, redirectUri, body);
-      
+
     } else if (StringUtils.isNotBlank(redirectUri)) {
-      response = new ApiRequestHandlerResponse(MOVED_PERMANENTLY,
-          new ApiRedirectResponse(redirectUri));
+      response =
+          new ApiRequestHandlerResponse(MOVED_PERMANENTLY, new ApiRedirectResponse(redirectUri));
     }
-    
+
     return response;
   }
-  
+
   private void checkIsWebhookValid(final DynamicObject hook)
       throws BadException, TooManyRequestsException, UnauthorizedException {
     if (hook == null || isExpired(hook)) {
       throw new BadException("invalid webhook url");
     }
-    
+
     boolean isPrivate = isEnabled(hook, "private");
     boolean isEnabled = isEnabled(hook, "true");
-    
+
     if (isPrivate && !isSupportPrivate()) {
       throw new UnauthorizedException("webhook is private");
     }
-    
+
     if (!isPrivate && !isEnabled) {
       throw new TooManyRequestsException("webhook is disabled");
     }
   }
-  
+
   protected boolean isSupportPrivate() {
     return false;
   }
@@ -194,7 +194,7 @@ public class PublicWebhooksRequestHandler
 
     return params;
   }
-  
+
   private String getIdempotencyKey(final ApiGatewayRequestEvent event) {
     return event.getHeaders().get("Idempotency-Key");
   }
@@ -206,33 +206,35 @@ public class PublicWebhooksRequestHandler
 
   /**
    * Is Webhook Enabled.
+   * 
    * @param obj {@link DynamicObject}
    * @param val {@link String}
    * @return boolean
    */
   private boolean isEnabled(final DynamicObject obj, final String val) {
-    
+
     boolean enabled = false;
-    
+
     if (obj.containsKey("enabled") && obj.getString("enabled").equals(val)) {
       enabled = true;
     }
 
     return enabled;
   }
-  
+
   /**
    * Is object expired.
+   * 
    * @param obj {@link DynamicObject}
    * @return boolean
    */
   private boolean isExpired(final DynamicObject obj) {
-    
+
     boolean expired = false;
-    
+
     if (obj.containsKey("TimeToLive")) {
       long epoch = Long.parseLong(obj.getString("TimeToLive"));
-      
+
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
       ZonedDateTime date = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
       expired = now.isAfter(date);
@@ -243,15 +245,15 @@ public class PublicWebhooksRequestHandler
 
   private boolean isIdempotencyCached(final CoreAwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
-    
+
     boolean cached = false;
     String idempotencyKey = getIdempotencyKey(event);
-    
+
     if (idempotencyKey != null) {
-      
+
       String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
       String documentId = awsservice.documentCacheService().read(key);
-      
+
       if (documentId != null) {
         item.put("documentId", documentId);
         cached = true;
@@ -259,7 +261,7 @@ public class PublicWebhooksRequestHandler
         awsservice.documentCacheService().write(key, item.getString("documentId"), 2);
       }
     }
-    
+
     return cached;
   }
 
@@ -268,34 +270,35 @@ public class PublicWebhooksRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = getParameter(event, "siteId");        
+    String siteId = getParameter(event, "siteId");
     String webhookId = getPathParameter(event, "webhooks");
-    
+
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
     DynamicObject hook = cacheService.webhookService().findWebhook(siteId, webhookId);
-    
+
     checkIsWebhookValid(hook);
-    
+
     String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
-    
+
     String contentType = getContentType(event);
 
     if (isContentTypeJson(contentType) && !isJsonValid(body)) {
       throw new BadException("body isn't valid JSON");
     }
-    
+
     DynamicObject item =
         buildDynamicObject(cacheService, siteId, webhookId, hook, body, contentType);
 
     if (!isIdempotencyCached(cacheService, event, siteId, item)) {
       putObjectToStaging(logger, awsservice, item, siteId);
     }
-    
+
     return buildResponse(event, item);
   }
 
   /**
    * Put Object to Staging Bucket.
+   * 
    * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
    * @param item {@link DynamicObject}
@@ -303,7 +306,7 @@ public class PublicWebhooksRequestHandler
    */
   private void putObjectToStaging(final LambdaLogger logger, final AwsServiceCache awsservice,
       final DynamicObject item, final String siteId) {
-    
+
     String s = GSON.toJson(item);
 
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);

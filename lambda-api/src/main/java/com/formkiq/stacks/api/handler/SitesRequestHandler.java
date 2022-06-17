@@ -45,7 +45,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   /** {@link Random}. */
   private Random rnd = new Random();
-  
+
   /**
    * constructor.
    *
@@ -126,7 +126,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
       return config;
     }).collect(Collectors.toList());
-    
+
     sites.forEach(ob -> {
       ob.remove("PK");
       ob.remove("SK");
@@ -168,7 +168,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
         String siteId = site.getString("siteId");
         String uploadEmail = site.getString("uploadEmail");
-        
+
         if (uploadEmail == null && writeSiteIds.contains(siteId)) {
 
           String email = generateUploadEmail(logger, awsservice, mailDomain);

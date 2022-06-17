@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -77,10 +80,10 @@ public class DocumentTagToAttributeValueMap
 
   @Override
   public List<Map<String, AttributeValue>> apply(final DocumentTag tag) {
-    
+
     List<Map<String, AttributeValue>> list = new ArrayList<>();
     if (isValueList(tag)) {
-      
+
       int idx = -1;
       for (String tagValue : tag.getValues()) {
         Map<String, AttributeValue> pkvalues =
@@ -91,7 +94,7 @@ public class DocumentTagToAttributeValueMap
           idx++;
         }
       }
-      
+
     } else {
       Map<String, AttributeValue> pkvalues =
           buildTagAttributeValue(this.site, this.document, tag, tag.getValue(), -1);
@@ -99,7 +102,7 @@ public class DocumentTagToAttributeValueMap
     }
     return list;
   }
-  
+
   /**
    * Build Tag {@link AttributeValue}.
    *
@@ -124,7 +127,7 @@ public class DocumentTagToAttributeValueMap
     String pk = createDatabaseKey(siteId, this.keyPrefix + documentId);
     String sk = tagValueIndex > -1 ? PREFIX_TAGS + tagKey + TAG_DELIMINATOR + "idx" + tagValueIndex
         : PREFIX_TAGS + tagKey;
-    
+
     pkvalues.put(PK, AttributeValue.builder().s(pk).build());
     pkvalues.put(SK, AttributeValue.builder().s(sk).build());
 
@@ -155,7 +158,7 @@ public class DocumentTagToAttributeValueMap
           .map(s -> AttributeValue.builder().s(s).build()).collect(Collectors.toList());
       pkvalues.put("tagValues", AttributeValue.builder().l(values).build());
     }
-    
+
     if (tag.getUserId() != null) {
       pkvalues.put("userId", AttributeValue.builder().s(tag.getUserId()).build());
     }
@@ -167,6 +170,7 @@ public class DocumentTagToAttributeValueMap
 
   /**
    * Is Has Value List.
+   * 
    * @param tag {@link DocumentTag}
    * @return boolean
    */

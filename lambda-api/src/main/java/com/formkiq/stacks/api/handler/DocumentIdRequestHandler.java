@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -246,7 +249,7 @@ public class DocumentIdRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    
+
     String siteId = authorizer.getSiteId();
     int limit = getLimit(logger, event);
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
@@ -254,7 +257,7 @@ public class DocumentIdRequestHandler
     ApiPagination token = getPagination(awsservice.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
     ApiPagination pagination = getPagination(serviceCache.documentCacheService(), event);
-    
+
     PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
         documentId, true, token != null ? token.getStartkey() : null, limit);
     DocumentItem result = presult.getResult();
@@ -265,7 +268,7 @@ public class DocumentIdRequestHandler
 
     ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
         presult.getToken(), limit);
-    
+
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
     item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     item.put("previous", current.getPrevious());
@@ -385,6 +388,7 @@ public class DocumentIdRequestHandler
 
   /**
    * Validate {@link DynamicDocumentItem} against a TagSchema.
+   * 
    * @param cacheService {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
@@ -405,21 +409,21 @@ public class DocumentIdRequestHandler
     }).collect(Collectors.toList());
 
     DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
-    
+
     Collection<ValidationError> errors = new ArrayList<>();
-    
+
     List<DocumentTag> compositeTags =
         plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)
             .collect(Collectors.toList());
-    
+
     final boolean newCompositeTags = !compositeTags.isEmpty();
-    
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    
+
     tags.addAll(compositeTags);
-    
+
     DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
     List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
     item.put("tags", objs);

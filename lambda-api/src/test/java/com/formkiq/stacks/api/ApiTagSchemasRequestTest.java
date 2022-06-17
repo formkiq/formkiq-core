@@ -38,7 +38,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiTagSchemasRequestTest extends AbstractRequestHandler {
-  
+
   /**
    * Get /tagSchemas request.
    *
@@ -49,8 +49,7 @@ public class ApiTagSchemasRequestTest extends AbstractRequestHandler {
   public void testHandleGet01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-tagschemas.json");
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-tagschemas.json");
       addParameter(event, "siteId", siteId);
 
       // when
@@ -65,7 +64,7 @@ public class ApiTagSchemasRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
-  
+
   /**
    * Get /tagSchemas/{tagSchemaId} request.
    *
@@ -76,8 +75,7 @@ public class ApiTagSchemasRequestTest extends AbstractRequestHandler {
   public void testHandleGet02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-tagschemas-tagschemaid.json");
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-tagschemas-tagschemaid.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "tagSchemaId", "1");
 
@@ -93,7 +91,7 @@ public class ApiTagSchemasRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
-  
+
   /**
    * POST /tagSchemas request.
    *
@@ -106,7 +104,7 @@ public class ApiTagSchemasRequestTest extends AbstractRequestHandler {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-tagschemas.json");
       addParameter(event, "siteId", siteId);
-      
+
       // when
       String response = handleRequest(event);
 

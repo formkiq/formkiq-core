@@ -68,28 +68,28 @@ public class DocumentTagRequestHandler
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
-    
+
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DocumentService documentService = cacheService.documentService();    
+    DocumentService documentService = cacheService.documentService();
 
     DocumentTag docTag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (docTag == null) {
       throw new NotFoundException("Tag '" + tagKey + "' not found.");
     }
-    
+
     DocumentItem document = cacheService.documentService().findDocument(siteId, documentId);
     if (document == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
     List<String> tags = Arrays.asList(tagKey);
-    
+
     Collection<ValidationError> errors =
         awsservice.documentTagSchemaPlugin().validateRemoveTags(siteId, document, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    
+
     documentService.removeTags(siteId, documentId, tags);
 
     ApiResponse resp =
@@ -106,14 +106,14 @@ public class DocumentTagRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     String tagKey = event.getPathParameters().get("tagKey");
     String siteId = authorizer.getSiteId();
-    
+
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
     DocumentTag tag = cacheService.documentService().findDocumentTag(siteId, documentId, tagKey);
-    
+
     if (tag == null) {
       throw new NotFoundException("Tag " + tagKey + " not found.");
     }
-    
+
     ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
     resp.setKey(tagKey);
     resp.setValue(tag.getValue());
@@ -133,6 +133,7 @@ public class DocumentTagRequestHandler
 
   /**
    * Is Changing Tag from Value to Values or Values to Value.
+   * 
    * @param tag {@link DocumentTag}
    * @param value {@link String}
    * @param values {@link List} {@link String}
@@ -182,7 +183,7 @@ public class DocumentTagRequestHandler
     if (isTagValueTypeChanged(tag, value, values)) {
       documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
     }
-    
+
     tag = new DocumentTag(null, tagKey, value, now, userId);
     if (values != null) {
       tag.setValue(null);
@@ -194,16 +195,16 @@ public class DocumentTagRequestHandler
 
     Collection<DocumentTag> newTags = awsservice.documentTagSchemaPlugin().addCompositeKeys(siteId,
         document, tags, userId, false, errors);
-    
+
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    
+
     tags.addAll(newTags);
     documentService.addTags(siteId, documentId, tags, null);
 
-    ApiResponse resp = new ApiMessageResponse(
-        "Updated tag '" + tagKey + "' on document '" + documentId + "'.");
+    ApiResponse resp =
+        new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }

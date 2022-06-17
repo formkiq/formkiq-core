@@ -56,9 +56,10 @@ public class LambdaInputRecord {
    * constructor.
    */
   public LambdaInputRecord() {}
-  
+
   /**
    * Get Message Id.
+   * 
    * @return {@link String}
    */
   public String getMessageId() {
@@ -67,6 +68,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Message Id.
+   * 
    * @param id {@link String}
    */
   public void setMessageId(final String id) {
@@ -75,6 +77,7 @@ public class LambdaInputRecord {
 
   /**
    * Get Receipt Handle.
+   * 
    * @return {@link String}
    */
   public String getReceiptHandle() {
@@ -83,6 +86,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Receipt Handle.
+   * 
    * @param receipt {@link String}
    */
   public void setReceiptHandle(final String receipt) {
@@ -91,6 +95,7 @@ public class LambdaInputRecord {
 
   /**
    * Get Body.
+   * 
    * @return {@link String}
    */
   public String getBody() {
@@ -99,6 +104,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Body.
+   * 
    * @param s {@link String}
    */
   public void setBody(final String s) {
@@ -107,6 +113,7 @@ public class LambdaInputRecord {
 
   /**
    * Get Attributes.
+   * 
    * @return {@link Map}
    */
   public Map<String, String> getAttributes() {
@@ -115,6 +122,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Attributes.
+   * 
    * @param map {@link Map}
    */
   public void setAttributes(final Map<String, String> map) {
@@ -123,6 +131,7 @@ public class LambdaInputRecord {
 
   /**
    * Get Message Attributes.
+   * 
    * @return {@link Map}
    */
   public Map<String, String> getMessageAttributes() {
@@ -131,6 +140,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Message Attributes.
+   * 
    * @param map {@link Map}
    */
   public void setMessageAttributes(final Map<String, String> map) {
@@ -139,6 +149,7 @@ public class LambdaInputRecord {
 
   /**
    * Get Md5 Hash of Body.
+   * 
    * @return {@link String}
    */
   public String getMd5OfBody() {
@@ -147,6 +158,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Md5 Hash.
+   * 
    * @param md5 {@link String}
    */
   public void setMd5OfBody(final String md5) {
@@ -155,6 +167,7 @@ public class LambdaInputRecord {
 
   /**
    * Get Event Source.
+   * 
    * @return {@link String}
    */
   public String getEventSource() {
@@ -163,6 +176,7 @@ public class LambdaInputRecord {
 
   /**
    * Set Event Source.
+   * 
    * @param source {@link String}
    */
   public void setEventSource(final String source) {
@@ -171,6 +185,7 @@ public class LambdaInputRecord {
 
   /**
    * Get AWS Region.
+   * 
    * @return {@link String}
    */
   public String getAwsRegion() {
@@ -179,6 +194,7 @@ public class LambdaInputRecord {
 
   /**
    * Set AWS Region.
+   * 
    * @param region {@link String}
    */
   public void setAwsRegion(final String region) {

@@ -66,19 +66,19 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
     assertEquals(mapsize, m.size());
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
+
     Map<String, Object> body = fromJson(m.get("body"), Map.class);
     assertNotNull(body.get("documentId"));
     assertNotNull(body.get("uploadUrl"));
     List<Map<String, Object>> documents = (List<Map<String, Object>>) body.get("documents");
     assertEquals(mapsize, documents.size());
-    
+
     assertNotNull(documents.get(0).get("documentId"));
     assertNull(documents.get(0).get("uploadUrl"));
-    
+
     assertNotNull(documents.get(1).get("uploadUrl"));
     assertNotNull(documents.get(1).get("documentId"));
-    
+
     assertNotNull(documents.get(2).get("uploadUrl"));
     assertNotNull(documents.get(2).get("documentId"));
   }

@@ -79,21 +79,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   @Override
   public List<Action> getActions(final String siteId, final String documentId) {
-    String pk = getPk(siteId, documentId);
-    String sk = "action" + TAG_DELIMINATOR;
-
-    String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
-    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(pk).build(),
-        ":sk", AttributeValue.builder().s(sk).build());
-
-    QueryRequest q =
-        QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE).build();
-
-    QueryResponse result = this.dynamoDB.query(q);
-
-    AttributeValueToAction transform = new AttributeValueToAction();
-    return result.items().stream().map(r -> transform.apply(r)).collect(Collectors.toList());
+    return queryActions(siteId, documentId, null, null);
   }
 
   /**
@@ -116,6 +102,41 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    */
   private String getSk(final Action action, final int idx) {
     return "action" + TAG_DELIMINATOR + idx + TAG_DELIMINATOR + action.type().name();
+  }
+
+  @Override
+  public boolean hasActions(final String siteId, final String documentId) {
+    List<Action> actions = queryActions(siteId, documentId, PK, null);
+    return !actions.isEmpty();
+  }
+
+  /**
+   * Query Document Actions.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param projectionExpression {@link String}
+   * @param limit {@link Integer}
+   * @return {@link List} {@link Action}
+   */
+  private List<Action> queryActions(final String siteId, final String documentId,
+      final String projectionExpression, final Integer limit) {
+
+    String pk = getPk(siteId, documentId);
+    String sk = "action" + TAG_DELIMINATOR;
+
+    String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
+    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(pk).build(),
+        ":sk", AttributeValue.builder().s(sk).build());
+
+    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
+        .keyConditionExpression(expression).expressionAttributeValues(values)
+        .projectionExpression(projectionExpression).limit(limit).build();
+
+    QueryResponse result = this.dynamoDB.query(q);
+
+    AttributeValueToAction transform = new AttributeValueToAction();
+    return result.items().stream().map(r -> transform.apply(r)).collect(Collectors.toList());
   }
 
   @Override

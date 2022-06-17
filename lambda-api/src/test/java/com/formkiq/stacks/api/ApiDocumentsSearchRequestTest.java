@@ -55,7 +55,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
   /** Match Tag element count. */
   private static final int MATCH_COUNT = 3;
-  
+
   /**
    * Invalid search.
    *
@@ -225,7 +225,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
     }
   }
-  
+
   /**
    * InValid POST search body.
    *
@@ -248,7 +248,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
     }
   }
-  
+
   /**
    * Valid POST search no results.
    *
@@ -278,7 +278,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(0, documents.size());
     }
   }
-  
+
   /**
    * Valid POST search by eq/eqOr tagValue and valid/invalid DocumentId.
    *
@@ -299,12 +299,12 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
         addParameter(event, "siteId", siteId);
         event.setIsBase64Encoded(Boolean.FALSE);
-        
+
         DocumentSearch s = new DocumentSearch().query(
             new DocumentSearchQuery().tag(new DocumentSearchTag().key("category").eq("person"))
                 .documentIds(Arrays.asList(documentId)));
         event.setBody(GsonUtil.getInstance().toJson(s));
-        
+
         if ("eqOr".equals(op)) {
           s.query().tag().eq(null).eqOr(Arrays.asList("person"));
         }
@@ -351,7 +351,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       }
     }
   }
-  
+
   /**
    * Valid POST search by eq tagValue and TOO many DocumentId.
    *
@@ -360,7 +360,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest08() throws Exception {
     final int count = 101;
-    
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
@@ -373,7 +373,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         ids.add(UUID.randomUUID().toString());
       }
       q.query().documentsIds(ids);
-      
+
       event.setIsBase64Encoded(Boolean.FALSE);
       event.setBody(GsonUtil.getInstance().toJson(q));
 
@@ -387,7 +387,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
     }
   }
-  
+
   /**
    * Valid POST search by eq tagValue with > 10 Document.
    *
@@ -407,7 +407,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       for (int i = 0; i < count; i++) {
         String documentId = UUID.randomUUID().toString();
         Date now = new Date();
-        
+
         documentIds.add(documentId);
 
         DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
@@ -416,14 +416,14 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         getDocumentService().saveDocument(siteId,
             new DocumentItemDynamoDb(documentId, now, username), Arrays.asList(item));
       }
-      
+
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
       addParameter(event, "siteId", siteId);
       event.setIsBase64Encoded(Boolean.FALSE);
       QueryRequest q = new QueryRequest().query(new SearchQuery()
           .tag(new SearchTagCriteria().key(tagKey).eq(tagvalue)).documentsIds(documentIds));
       event.setBody(GsonUtil.getInstance().toJson(q));
-      
+
       // when
       String response = handleRequest(event);
 
@@ -438,12 +438,12 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(count, documents.size());
-      
+
       // given not search by documentIds should be limited to 10
       q = new QueryRequest().query(new SearchQuery()
           .tag(new SearchTagCriteria().key(tagKey).eq(tagvalue)).documentsIds(null));
       event.setBody(GsonUtil.getInstance().toJson(q));
-      
+
       // when
       response = handleRequest(event);
 
@@ -460,21 +460,21 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(ten, documents.size());
     }
   }
-  
+
   /**
    * Test Setting multiple tags.
    *
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest10() throws Exception {    
+  public void testHandleSearchRequest10() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
       addParameter(event, "siteId", siteId);
       event.setIsBase64Encoded(Boolean.FALSE);
       QueryRequest q = new QueryRequest()
-          .query(new SearchQuery().tags(Arrays.asList(new SearchTagCriteria().key("test"))));      
+          .query(new SearchQuery().tags(Arrays.asList(new SearchTagCriteria().key("test"))));
       event.setIsBase64Encoded(Boolean.FALSE);
       event.setBody(GsonUtil.getInstance().toJson(q));
 
@@ -488,14 +488,14 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
     }
   }
-  
+
   /**
    * Missing Tag Key.
    *
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleSearchRequest11() throws Exception {    
+  public void testHandleSearchRequest11() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
@@ -510,8 +510,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
       // then
       String expected = "{" + getHeaders() + ",\"body\":"
-          + "\"{\\\"message\\\":\\\"'tag' attribute is required.\\\"}\","
-          + "\"statusCode\":400}";
+          + "\"{\\\"message\\\":\\\"'tag' attribute is required.\\\"}\"," + "\"statusCode\":400}";
       assertEquals(expected, response);
     }
   }

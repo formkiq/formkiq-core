@@ -64,7 +64,7 @@ public enum MimeType {
   public String getContentType() {
     return this.contentType;
   }
-  
+
   /**
    * Is Content Type plain text.
    * 

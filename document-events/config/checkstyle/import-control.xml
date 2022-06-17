@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.module">
+	
+	<subpackage name="documentevents">
+		
+		<allow pkg="java.util" />
+		<allow pkg="com.formkiq.aws.sns" />
+		<allow pkg="com.formkiq.graalvm.annotations" />
+		<allow pkg="com.google.gson" />
+		<allow pkg="software.amazon.awssdk.services.sns.model" />
+
+	</subpackage>
+	
+</import-control>

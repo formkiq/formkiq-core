@@ -194,7 +194,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
   }
-  
+
   /**
    * Get /sites with Config.
    *

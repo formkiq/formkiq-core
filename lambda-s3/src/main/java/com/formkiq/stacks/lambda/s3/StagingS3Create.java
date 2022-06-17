@@ -63,6 +63,10 @@ import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.formkiq.graalvm.annotations.ReflectableClasses;
 import com.formkiq.graalvm.annotations.ReflectableField;
 import com.formkiq.graalvm.annotations.ReflectableImport;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -98,7 +102,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_B64_EXT = ".fkb64";
-  
+
   /**
    * Get Bucket Name.
    *
@@ -173,7 +177,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** {@link DocumentService}. */
   private DocumentService service;
-  
+  /** {@link ActionsService}. */
+  private ActionsService actionsService;
   /** SQS Error Queue. */
   private String sqsErrorQueue;
   /** {@link SqsService}. */
@@ -184,7 +189,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private Region region;
   /** {@link AwsCredentials}. */
   private AwsCredentials credentials;
-  
+
   /** constructor. */
   public StagingS3Create() {
     this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
@@ -199,7 +204,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * constructor.
    *
    * @param map {@link Map}
-   * @param awsRegion {@link Region} 
+   * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    * @param dynamoDb {@link DynamoDbConnectionBuilder}
    * @param s3Builder {@link S3ConnectionBuilder}
@@ -210,13 +215,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dynamoDb,
       final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder,
       final SsmConnectionBuilder ssmConnectionBuilder) {
-    
+
     this.region = awsRegion;
     this.credentials = awsCredentials;
     String documentsTable = map.get("DOCUMENTS_TABLE");
     this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
     this.searchService =
         new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable, null);
+    this.actionsService = new ActionsServiceDynamoDb(dynamoDb, documentsTable);
     this.s3 = new S3Service(s3Builder);
     this.sqsService = new SqsService(sqsBuilder);
     this.ssmConnection = ssmConnectionBuilder;
@@ -288,7 +294,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String documentIdForPath = !uuid ? getDocumentIdForPath(siteId, key) : null;
     String documentId =
         documentIdForPath != null ? documentIdForPath : uuid ? key : UUID.randomUUID().toString();
-    
+
     String destKey = createDatabaseKey(siteId, documentId);
 
     S3ObjectMetadata metadata = this.s3.getObjectMetadata(s3Client, bucket, originalkey);
@@ -311,7 +317,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         doc.setPath(key);
       }
 
-      this.service.saveDocumentItemWithTag(siteId, doc);
+      saveDocument(siteId, doc);
     }
 
     logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
@@ -322,7 +328,28 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
+   * Save {@link DynamicDocumentItem}.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   */
+  private void saveDocument(final String siteId, final DynamicDocumentItem doc) {
+    this.service.saveDocumentItemWithTag(siteId, doc);
+
+    if (doc.containsKey("actions")) {
+
+      DynamicObjectToAction transform = new DynamicObjectToAction();
+      List<DynamicObject> list = doc.getList("actions");
+      List<Action> actions =
+          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
+
+      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
+    }
+  }
+
+  /**
    * Generate {@link Map} of DocumentId / Content.
+   * 
    * @param doc {@link DynamicDocumentItem}
    * @return {@link Map}
    */
@@ -348,6 +375,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Generate {@link Map} of DocumentId / Content Type.
+   * 
    * @param doc {@link DynamicDocumentItem}
    * @return {@link Map}
    */
@@ -368,27 +396,27 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     return map;
   }
-  
+
   /**
    * Build connection to the IAM API url.
    */
   private void createFormKiQConnectionIfNeeded() {
-    
+
     if (this.documentsIamUrl == null) {
       final int cacheTime = 5;
       SsmService ssmService = new SsmServiceCache(this.ssmConnection, cacheTime, TimeUnit.MINUTES);
       this.documentsIamUrl =
           ssmService.getParameterValue("/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
     }
-    
+
     if (this.formkiqClient == null) {
-      FormKiqClientConnection fkqConnection = new FormKiqClientConnection(this.documentsIamUrl)
-          .region(this.region);
-      
+      FormKiqClientConnection fkqConnection =
+          new FormKiqClientConnection(this.documentsIamUrl).region(this.region);
+
       if (this.credentials != null) {
         fkqConnection = fkqConnection.credentials(this.credentials);
       }
-      
+
       this.formkiqClient = new FormKiqClientV1(fkqConnection);
     }
   }
@@ -410,6 +438,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Find DocumentId for File Path.
+   * 
    * @param siteId {@link String}
    * @param path {@link String}
    * @return {@link String}
@@ -456,33 +485,34 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * If document has a tagschema that needs to be processed.
+   * 
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
-   * @throws InterruptedException  InterruptedException
+   * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
   private void postDocumentTags(final String siteId, final DynamicDocumentItem doc)
       throws IOException, InterruptedException {
-    
+
     List<DynamicObject> tags = doc.getList("tags");
-    
+
     if (!tags.isEmpty()) {
-      
+
       List<AddDocumentTag> addTags = tags.stream().map(t -> {
-        
+
         List<String> values = t.containsKey("values") ? values = t.getStringList("values") : null;
-        
+
         AddDocumentTag tag =
             new AddDocumentTag().key(t.getString("key")).value(t.getString("value")).values(values);
-        
+
         return tag;
-        
+
       }).collect(Collectors.toList());
-      
+
       String documentId = doc.getDocumentId();
       AddDocumentTagRequest req =
           new AddDocumentTagRequest().siteId(siteId).documentId(documentId).tags(addTags);
-            
+
       this.formkiqClient.addDocumentTag(req);
     }
   }
@@ -516,15 +546,15 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
         if (doc != null) {
           write(s, logger, doc, date, siteId);
-          
+
           String tagSchemaId = doc.getString("tagSchemaId");
           Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
-          
+
           if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
             createFormKiQConnectionIfNeeded();
             postDocumentTags(siteId, doc);
           }
-          
+
         } else {
           copyFile(s, logger, bucket, documentId, date);
         }
@@ -605,7 +635,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       logger.log(String.format("Inserted %s into bucket %s as %s", doc.getPath(),
           this.documentsBucket, createDatabaseKey(siteId, doc.getDocumentId())));
 
-      this.service.saveDocumentItemWithTag(siteId, doc);
+      saveDocument(siteId, doc);
 
     } else {
       logger.log(String.format("Skipping %s no content", doc.getPath()));
@@ -614,6 +644,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Writes File to S3.
+   * 
    * @param logger {@link LambdaLogger}
    * @param s3Client {@link S3Client}
    * @param siteId {@link String}
@@ -639,7 +670,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       String key = createDatabaseKey(siteId, e.getKey());
       String contentType = contentTypeMap.get(e.getKey());
-      
+
       PutObjectResponse response =
           this.s3.putObject(s3Client, this.documentsBucket, key, bytes, contentType);
       doc.setChecksum(response.eTag());

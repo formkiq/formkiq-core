@@ -76,7 +76,7 @@ public abstract class AbstractAwsTest {
   private static DocumentService documentService;
   /** {@link DocumentSearchService}. */
   private static DocumentSearchService searchService;
-  
+
   /**
    * beforeclass.
    * 
@@ -84,7 +84,7 @@ public abstract class AbstractAwsTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-            
+
     awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
@@ -106,8 +106,7 @@ public abstract class AbstractAwsTest {
     ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
 
-    edition =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
+    edition = ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
     sesbucketname =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
     documentsbucketname =
@@ -182,6 +181,7 @@ public abstract class AbstractAwsTest {
 
   /**
    * Get {@link DocumentSearchService}.
+   * 
    * @return {@link DocumentSearchService}
    */
   public static DocumentSearchService getSearchService() {

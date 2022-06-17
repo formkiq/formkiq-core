@@ -52,7 +52,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
 
   /** {@link LocalStackContainer}. */
   private LocalStackContainer localstack = TestServices.getLocalStack();
-  
+
   /**
    * /documents/{documentId}/content request.
    * 
@@ -148,7 +148,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   public void testHandleGetDocumentContent03() throws Exception {
     testReturnContent("text/plain");
   }
-  
+
   /**
    * /documents/{documentId}/content request.
    * 
@@ -160,9 +160,10 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   public void testHandleGetDocumentContent04() throws Exception {
     testReturnContent("application/x-www-form-urlencoded");
   }
-  
+
   /**
    * Test Content is returned.
+   * 
    * @param contentType {@link String}
    * @throws Exception Exception
    */
@@ -176,8 +177,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
       String content = "this is a test";
       String s3key = createS3Key(siteId, documentId);
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8),
-            null);
+        getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
       }
 
       ApiGatewayRequestEvent event =

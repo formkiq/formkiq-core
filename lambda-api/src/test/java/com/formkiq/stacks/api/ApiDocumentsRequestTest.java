@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -122,7 +125,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       final InputStream instream2 =
           new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
       ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-      
+
       // when
       getHandler().handleRequest(instream2, outstream, getMockContext());
 
@@ -171,8 +174,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       // given
       String filename = "test.pdf";
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, filename,
-            "testdata".getBytes(StandardCharsets.UTF_8), null);
+        getS3().putObject(s3, BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8),
+            null);
       }
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
@@ -194,8 +197,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String filename = "test.txt";
 
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, filename,
-            "testdata".getBytes(StandardCharsets.UTF_8), null);
+        getS3().putObject(s3, BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8),
+            null);
       }
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
@@ -1169,7 +1172,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
       getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
-      
+
       // when
       DynamicObject obj =
           handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
@@ -1181,7 +1184,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
           obj.getString("body"));
     }
   }
-  
+
   /**
    * POST /documents request with valid TagSchema and added compositeKey.
    *
@@ -1193,7 +1196,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
       getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnNewTags());
-      
+
       // when
       DynamicObject obj =
           handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
@@ -1217,7 +1220,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNotNull(documentId);
 
       verifyS3(key, true, "a0dac80d-18b3-472b-88da-79e75082b662@formkiq.com");
-      
+
       try (S3Client s3 = getS3().buildClient()) {
         String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
         Map<String, Object> map = fromJson(content, Map.class);
@@ -1225,7 +1228,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       }
     }
   }
-  
+
   /**
    * Verify S3 File.
    * 

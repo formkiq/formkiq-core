@@ -89,6 +89,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: com.formkiq.stacks.console.ConsoleInstallHandler
+      Description: Lambda function that Installs the FormKiQ Console
       Runtime: java11
       Timeout: 300
       MemorySize: 512

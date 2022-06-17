@@ -115,7 +115,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertPreflightedCorsHeaders(options.headers());
     }
   }
-  
+
   /**
    * Test /search for specific DocumentIds.
    * 
@@ -140,7 +140,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertNotNull(doc.userId());
     }
   }
-  
+
   /**
    * Test /search for invalid specific DocumentIds.
    * 
@@ -151,9 +151,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
       addDocumentWithoutFile(client);
-      SearchDocumentsRequest req =
-          new SearchDocumentsRequest().tagKey("untagged")
-              .documentIds(Arrays.asList(UUID.randomUUID().toString()));
+      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("untagged")
+          .documentIds(Arrays.asList(UUID.randomUUID().toString()));
       // when
       Documents documents = client.search(req);
 
@@ -161,7 +160,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertEquals(0, documents.documents().size());
     }
   }
-  
+
   /**
    * Test /search for specific DocumentIds & eq.
    * 
@@ -177,7 +176,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       client.addDocumentTag(tagRequest);
       SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("test").eq("somevalue")
           .documentIds(Arrays.asList(documentId));
-      
+
       // when
       Documents documents = client.search(req);
 
@@ -188,19 +187,19 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertEquals(documentId, doc.documentId());
       assertNotNull(doc.insertedDate());
       assertNotNull(doc.userId());
-      
+
       // given
       req = new SearchDocumentsRequest().tagKey("test").eq("somevalue2")
           .documentIds(Arrays.asList(documentId));
-      
+
       // when
       documents = client.search(req);
-      
+
       // then
       assertEquals(0, documents.documents().size());
     }
   }
-  
+
   /**
    * Test /search for specific DocumentIds & eqOr.
    * 
@@ -216,7 +215,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       client.addDocumentTag(tagRequest);
       SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("test")
           .eqOr(Arrays.asList("somevalue")).documentIds(Arrays.asList(documentId));
-      
+
       // when
       Documents documents = client.search(req);
 
@@ -227,11 +226,11 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertEquals(documentId, doc.documentId());
       assertNotNull(doc.insertedDate());
       assertNotNull(doc.userId());
-      
+
       // given
       req = new SearchDocumentsRequest().tagKey("test").eqOr(Arrays.asList("somevalue2"))
           .documentIds(Arrays.asList(documentId));
-      
+
       // when
       documents = client.search(req);
 
@@ -239,7 +238,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertEquals(0, documents.documents().size());
     }
   }
-  
+
   /**
    * Test /search for eq & eqOr.
    * 
@@ -254,9 +253,9 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
       client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey(tagKey)
-          .eqOr(Arrays.asList("somevalue"));
-      
+      SearchDocumentsRequest req =
+          new SearchDocumentsRequest().tagKey(tagKey).eqOr(Arrays.asList("somevalue"));
+
       // when
       Documents documents = client.search(req);
 
@@ -267,10 +266,10 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertEquals(documentId, doc.documentId());
       assertNotNull(doc.insertedDate());
       assertNotNull(doc.userId());
-      
+
       // given
       req = new SearchDocumentsRequest().tagKey(tagKey).eqOr(Arrays.asList("somevalue2"));
-      
+
       // when
       documents = client.search(req);
 

@@ -111,8 +111,8 @@ public class DocumentsRequestHandler
     final PaginationResults<DocumentItem> results =
         serviceCache.documentService().findDocumentsByDate(siteId, date, ptoken, limit);
 
-    ApiPagination current = createPagination(serviceCache.documentCacheService(), event,
-        pagination, results.getToken(), limit);
+    ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
+        results.getToken(), limit);
 
     List<DocumentItem> documents = subList(results.getResults(), limit);
 
@@ -151,7 +151,7 @@ public class DocumentsRequestHandler
         throw new BadException("Invalid date string: " + dateString);
       }
     } else {
-      
+
       date = awsservice.documentService().findMostDocumentDate();
       if (date == null) {
         date = ZonedDateTime.now();

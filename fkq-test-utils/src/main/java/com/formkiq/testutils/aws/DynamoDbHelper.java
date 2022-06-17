@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.testutils.aws;
 
@@ -61,6 +64,7 @@ public class DynamoDbHelper {
 
   /**
    * Create Cache Table.
+   * 
    * @param tableName {@link String}
    */
   public void createCacheTable(final String tableName) {
@@ -77,9 +81,9 @@ public class DynamoDbHelper {
     AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
         .attributeType(ScalarAttributeType.S).build();
 
-    CreateTableRequest table = CreateTableRequest.builder().tableName(tableName)
-        .keySchema(pk, sk).attributeDefinitions(a1, a2).provisionedThroughput(ProvisionedThroughput
-            .builder().writeCapacityUnits(capacity).readCapacityUnits(capacity).build())
+    CreateTableRequest table = CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
+        .attributeDefinitions(a1, a2).provisionedThroughput(ProvisionedThroughput.builder()
+            .writeCapacityUnits(capacity).readCapacityUnits(capacity).build())
         .build();
 
     this.db.createTable(table);
@@ -87,6 +91,7 @@ public class DynamoDbHelper {
 
   /**
    * Create Documents Table.
+   * 
    * @param tableName {@link String}
    */
   public void createDocumentsTable(final String tableName) {
@@ -133,10 +138,10 @@ public class DynamoDbHelper {
             .readCapacityUnits(capacity).build())
         .build();
 
-    CreateTableRequest table = CreateTableRequest.builder().tableName(tableName)
-        .keySchema(pk, sk).attributeDefinitions(a1, a2, a3, a4, a5, a6)
-        .globalSecondaryIndexes(si1, si2).provisionedThroughput(ProvisionedThroughput.builder()
-            .writeCapacityUnits(capacity).readCapacityUnits(capacity).build())
+    CreateTableRequest table = CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
+        .attributeDefinitions(a1, a2, a3, a4, a5, a6).globalSecondaryIndexes(si1, si2)
+        .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(capacity)
+            .readCapacityUnits(capacity).build())
         .build();
 
     this.db.createTable(table);
@@ -144,6 +149,7 @@ public class DynamoDbHelper {
 
   /**
    * Get Document Item Count.
+   * 
    * @param tableName {@link String}
    *
    * @return int
@@ -160,14 +166,14 @@ public class DynamoDbHelper {
 
   /**
    * Is Documents Table Exist.
+   * 
    * @param tableName {@link String}
    * 
    * @return boolean
    */
   public boolean isTableExists(final String tableName) {
     try {
-      return this.db
-          .describeTable(DescribeTableRequest.builder().tableName(tableName).build())
+      return this.db.describeTable(DescribeTableRequest.builder().tableName(tableName).build())
           .table() != null;
     } catch (ResourceNotFoundException e) {
       return false;
@@ -176,6 +182,7 @@ public class DynamoDbHelper {
 
   /**
    * Truncate Documents Table.
+   * 
    * @param tableName {@link String}
    * 
    */

@@ -42,7 +42,7 @@ public final class DateUtil {
 
   /** Date Format. */
   public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
-  
+
   /**
    * Formats TZ String to start with '+' or '-'.
    * 
@@ -72,12 +72,13 @@ public final class DateUtil {
 
   /**
    * String to ISO Standard format.
+   * 
    * @return {@link SimpleDateFormat}
    */
   public static SimpleDateFormat getIsoDateFormatter() {
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     TimeZone tz = TimeZone.getTimeZone("UTC");
-    df.setTimeZone(tz);    
+    df.setTimeZone(tz);
     return df;
   }
 
@@ -135,7 +136,7 @@ public final class DateUtil {
 
     return zoneDate;
   }
-  
+
   /** private constructor. */
   private DateUtil() {}
 }

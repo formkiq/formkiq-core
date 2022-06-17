@@ -38,7 +38,7 @@ import software.amazon.awssdk.regions.Region;
  *
  */
 public final class DynamoDbTestServices {
-  
+
   /** Aws Region. */
   private static final Region AWS_REGION = Region.US_EAST_1;
   /** DynamoDB Local {@link GenericContainer}. */
@@ -50,6 +50,7 @@ public final class DynamoDbTestServices {
 
   /**
    * Get Singleton Instance of {@link DynamoDbConnectionBuilder}.
+   * 
    * @param dynamoDb {@link GenericContainer}
    * @return {@link DynamoDbConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
@@ -59,16 +60,17 @@ public final class DynamoDbTestServices {
     if (dbConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
-      
+
       dbConnection = new DynamoDbConnectionBuilder().setRegion(AWS_REGION).setCredentials(cred)
           .setEndpointOverride("http://localhost:" + dynamoDb.getFirstMappedPort());
     }
 
     return dbConnection;
   }
-  
+
   /**
    * Get Singleton Instance of {@link DynamoDbHelper}.
+   * 
    * @param dynamoDb {@link GenericContainer}
    * @return {@link DynamoDbConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
@@ -76,28 +78,28 @@ public final class DynamoDbTestServices {
    */
   public static DynamoDbHelper getDynamoDbHelper(final GenericContainer<?> dynamoDb)
       throws URISyntaxException, IOException {
-    if (dbHelper == null) {      
+    if (dbHelper == null) {
       dbHelper = new DynamoDbHelper(getDynamoDbConnection(dynamoDb));
     }
 
     return dbHelper;
   }
-  
+
   /**
    * Get Singleton Instance of {@link GenericContainer}.
+   * 
    * @return {@link GenericContainer}
    */
   @SuppressWarnings("resource")
   public static GenericContainer<?> getDynamoDbLocal() {
     if (dynamoDbLocal == null) {
       final Integer exposedPort = Integer.valueOf(8000);
-      dynamoDbLocal = new GenericContainer<>("amazon/dynamodb-local:1.13.5")
-        .withExposedPorts(exposedPort);
+      dynamoDbLocal =
+          new GenericContainer<>("amazon/dynamodb-local:1.13.5").withExposedPorts(exposedPort);
     }
-    
+
     return dynamoDbLocal;
   }
 
-  private DynamoDbTestServices() {
-  }
+  private DynamoDbTestServices() {}
 }

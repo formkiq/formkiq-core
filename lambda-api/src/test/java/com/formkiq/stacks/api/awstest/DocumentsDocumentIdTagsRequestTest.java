@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api.awstest;
 
@@ -128,7 +131,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       }
     }
   }
-  
+
   /**
    * Test /documents/{documentId}/tags with tagValues.
    * 
@@ -337,7 +340,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       }
     }
   }
-  
+
   /**
    * Test DELETE /documents/{documentId}/tags/{tagKey}/{tagValue}.
    * 
@@ -347,7 +350,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   public void testDocumentsTags05() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      
+
       // given
       String documentId = addDocumentWithoutFile(client);
       GetDocumentTagsKeyRequest req =
@@ -397,7 +400,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       }
     }
   }
-  
+
   /**
    * Test POST /documents/{documentId}/tags with multiple tags.
    * 
@@ -411,12 +414,10 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
 
       // given
       String documentId = addDocumentWithoutFile(client);
-      AddDocumentTag tag0 = new AddDocumentTag().key("test1")
-          .value("somevalue");
+      AddDocumentTag tag0 = new AddDocumentTag().key("test1").value("somevalue");
       AddDocumentTag tag1 = new AddDocumentTag().key("test2");
-      AddDocumentTag tag2 =
-          new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz"));
-      
+      AddDocumentTag tag2 = new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz"));
+
       List<AddDocumentTag> tags = Arrays.asList(tag0, tag1, tag2);
       AddDocumentTagRequest request = new AddDocumentTagRequest().documentId(documentId).tags(tags);
       OptionsDocumentTagsRequest optionReq =
@@ -450,13 +451,13 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
         assertEquals("somevalue", map.get("value"));
         verifyUserId(map);
         assertNotNull(map.get("insertedDate"));
-        
+
         map = list.get(1);
         assertEquals("test2", map.get("key"));
         assertEquals("", map.get("value"));
         verifyUserId(map);
         assertNotNull(map.get("insertedDate"));
-        
+
         map = list.get(2);
         assertEquals("test3", map.get("key"));
         assertNull(map.get("value"));
@@ -469,7 +470,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       }
     }
   }
-  
+
   /**
    * Verify UserId.
    * 

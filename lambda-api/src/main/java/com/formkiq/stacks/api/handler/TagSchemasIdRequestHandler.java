@@ -55,7 +55,7 @@ public class TagSchemasIdRequestHandler
   public String getRequestUrl() {
     return "/tagSchemas/{tagSchemaId}";
   }
-  
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,

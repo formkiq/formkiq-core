@@ -68,7 +68,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   private static final int STATUS_NOT_FOUND = 404;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
-  
+
   /**
    * /webhooks Options.
    * 
@@ -82,7 +82,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
           client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
     }
   }
-  
+
   /**
    * Test POST /public/webhooks.
    * 
@@ -130,7 +130,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
       assertTrue(client.deleteWebhook(new DeleteWebhookRequest().webhookId(id)));
     }
   }
-  
+
   /**
    * Test POST /public/webhooks missing endpoint UUID.
    * 
@@ -160,7 +160,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
     assertEquals(STATUS_NOT_FOUND, response.statusCode());
     assertEquals("{\"message\":\"Not Found\"}", response.body());
   }
-  
+
   /**
    * Test POST /public/webhook/invalid endpoint UUID.
    * 
@@ -190,7 +190,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
     assertEquals(STATUS_BAD, response.statusCode());
     assertEquals("{\"message\":\"invalid webhook url\"}", response.body());
   }
-  
+
   /**
    * Test POST /public/webhooks with private webhook.
    * 
@@ -221,5 +221,5 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
       // then
       assertEquals(STATUS_UNAUTHORIZED, response.statusCode());
     }
-  }  
+  }
 }

@@ -45,7 +45,7 @@ public enum ApiResponseStatus {
   /** {@code 401 bad request} (HTTP/1.0 - RFC 1945). */
   SC_UNAUTHORIZED(401),
   /** {@code 402 forbidden} (HTTP/1.0 - RFC 1945). */
-  SC_PAYMENT(402),  
+  SC_PAYMENT(402),
   /** {@code 403 forbidden} (HTTP/1.0 - RFC 1945). */
   SC_FORBIDDEN(403),
   /** {@code 404 notfound} (HTTP/1.0 - RFC 1945). */

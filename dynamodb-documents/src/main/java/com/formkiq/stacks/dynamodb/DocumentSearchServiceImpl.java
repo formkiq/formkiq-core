@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -77,7 +80,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /** {@link DynamoDbClient}. */
   private final DynamoDbClient dynamoDB;
-  
+
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin tagSchemaPlugin;
 
@@ -92,7 +95,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   public DocumentSearchServiceImpl(final DocumentService documentService,
       final DynamoDbConnectionBuilder builder, final String documentsTable,
       final DocumentTagSchemaPlugin plugin) {
-    
+
     this.docService = documentService;
     this.tagSchemaPlugin = plugin;
 
@@ -106,6 +109,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /**
    * Filter {@link AttributeValue} by {@link SearchTagCriteria}.
+   * 
    * @param search {@link SearchTagCriteria}
    * @param v {@link AttributeValue}
    * @return boolean
@@ -126,6 +130,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /**
    * Filter Document Tags.
+   * 
    * @param docMap {@link Map}
    * @param search {@link SearchTagCriteria}
    * @return {@link Map}
@@ -134,26 +139,26 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final Map<String, Map<String, AttributeValue>> docMap, final SearchTagCriteria search) {
 
     Map<String, Map<String, AttributeValue>> map = docMap;
-    
+
     if (hasFilter(search)) {
 
       map = map.entrySet().stream().filter(x -> {
-        
+
         AttributeValue value = x.getValue().get("tagValue");
         AttributeValue values = x.getValue().get("tagValues");
-        
+
         boolean result = false;
         if (values != null) {
 
           Optional<AttributeValue> val =
               values.l().stream().filter(v -> filterByValue(search, v)).findFirst();
-          
+
           result = val.isPresent();
           if (result) {
             x.getValue().remove("tagValues");
             x.getValue().put("tagValue", val.get());
           }
-         
+
         } else if (value != null) {
           result = filterByValue(search, value);
         }
@@ -168,6 +173,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /**
    * Find Document Tag records.
+   * 
    * @param siteId DynamoDB siteId.
    * @param documentIds {@link Collection} {@link String}
    * @param tagKey {@link String}
@@ -175,7 +181,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    */
   private Map<String, Map<String, AttributeValue>> findDocumentsTags(final String siteId,
       final Collection<String> documentIds, final String tagKey) {
-    
+
     Map<String, Map<String, AttributeValue>> map = new HashMap<>();
 
     List<Map<String, AttributeValue>> keys = documentIds.stream()
@@ -183,19 +189,19 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
             AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_DOCS + id)).build(), SK,
             AttributeValue.builder().s(PREFIX_TAGS + tagKey).build()))
         .collect(Collectors.toList());
-    
+
     Map<String, KeysAndAttributes> items =
         Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
     BatchGetItemRequest batchReq = BatchGetItemRequest.builder().requestItems(items).build();
     BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
 
     Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
-    
+
     if (!values.isEmpty()) {
       List<Map<String, AttributeValue>> list = values.iterator().next();
-      
+
       list.forEach(m -> {
-        
+
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("type", m.get("type"));
         item.put("tagKey", m.get("tagKey"));
@@ -207,11 +213,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         if (m.containsKey("tagValues")) {
           item.put("tagValues", m.get("tagValues"));
         }
-        
+
         String documentId = m.get("documentId").s();
         map.put(documentId, item);
       });
-    }    
+    }
 
     return map;
   }
@@ -220,7 +226,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * Find Document that match tagKey & tagValue.
    *
    * @param siteId DynamoDB siteId.
-   * @param query {@link SearchQuery} 
+   * @param query {@link SearchQuery}
    * @param key {@link String}
    * @param value {@link String}
    * @param token {@link PaginationMapToken}
@@ -228,8 +234,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsTagStartWith(final String siteId,
-      final SearchQuery query, final String key, final String value,
-      final PaginationMapToken token, final int maxresults) {
+      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final int maxresults) {
 
     String expression = GSI2_PK + " = :pk and begins_with(" + GSI2_SK + ", :sk)";
 
@@ -253,8 +259,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTag(final String siteId,
-      final SearchQuery query, final String key, final String value,
-      final PaginationMapToken token, final int maxresults) {
+      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final int maxresults) {
 
     String expression = GSI2_PK + " = :pk";
 
@@ -277,8 +283,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValue(final String siteId,
-      final SearchQuery query, final String key, final String value,
-      final PaginationMapToken token, final int maxresults) {
+      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final int maxresults) {
 
     String expression = GSI1_PK + " = :pk";
 
@@ -301,19 +307,20 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(final String siteId,
       final SearchQuery query, final String key, final Collection<String> eqOr,
       final int maxresults) {
-    
+
     List<DynamicDocumentItem> list = new ArrayList<>();
     for (String eq : eqOr) {
       PaginationResults<DynamicDocumentItem> result =
           findDocumentsWithTagAndValue(siteId, query, key, eq, null, maxresults);
       list.addAll(result.getResults());
     }
-    
+
     return new PaginationResults<DynamicDocumentItem>(list, null);
   }
 
   /**
    * Get Search Key.
+   * 
    * @param search {@link SearchTagCriteria}
    * @return {@link String}
    */
@@ -324,6 +331,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /**
    * {@link SearchTagCriteria} has filter criteria.
+   * 
    * @param search {@link SearchTagCriteria}
    * @return boolean
    */
@@ -333,31 +341,31 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   @Override
-  public PaginationResults<DynamicDocumentItem> search(final String siteId,
-      final SearchQuery query, final PaginationMapToken token, final int maxresults) {
+  public PaginationResults<DynamicDocumentItem> search(final String siteId, final SearchQuery query,
+      final PaginationMapToken token, final int maxresults) {
 
     SearchTagCriteria search = query.tag();
-    
+
     if (this.tagSchemaPlugin != null) {
       search = this.tagSchemaPlugin.createMultiTagSearch(query);
     }
-    
+
     String key = getSearchKey(search);
 
     PaginationResults<DynamicDocumentItem> result = null;
 
     Collection<String> documentIds = query.documentIds();
-    
+
     if (!Objects.notNull(documentIds).isEmpty()) {
 
       Map<String, Map<String, AttributeValue>> docs = findDocumentsTags(siteId, documentIds, key);
-      
+
       Map<String, Map<String, AttributeValue>> filteredDocs = filterDocumentTags(docs, search);
-      
+
       List<String> fetchDocumentIds = new ArrayList<>(filteredDocs.keySet());
 
       List<DocumentItem> list = this.docService.findDocuments(siteId, fetchDocumentIds);
-     
+
       List<DynamicDocumentItem> results =
           list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
               .collect(Collectors.toList()) : Collections.emptyList();
@@ -369,9 +377,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       });
 
       result = new PaginationResults<>(results, null);
-      
+
     } else {
-      
+
       if (!Objects.notNull(search.eqOr()).isEmpty()) {
         result = findDocumentsWithTagAndValues(siteId, query, key, search.eqOr(), maxresults);
       } else if (search.eq() != null) {
@@ -438,11 +446,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         tags.put(documentId, tag);
       }
     });
-    
+
     List<String> documentIds = new ArrayList<>(tags.keySet());
 
     List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
-   
+
     List<DynamicDocumentItem> results =
         list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
             .collect(Collectors.toList()) : Collections.emptyList();
@@ -453,7 +461,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
 
       if (!notNull(query.tags()).isEmpty()) {
-        updateToMatchedTags(query, r);        
+        updateToMatchedTags(query, r);
       }
     });
 
@@ -462,13 +470,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /**
    * Update Search Result from matchedTag to matchedTags.
+   * 
    * @param query {@link SearchQuery}
    * @param r {@link DynamicDocumentItem}
    */
   private void updateToMatchedTags(final SearchQuery query, final DynamicDocumentItem r) {
-    
+
     List<DynamicDocumentItem> matchedTags = new ArrayList<>();
-    
+
     List<SearchTagCriteria> tags = query.tags();
     for (SearchTagCriteria c : tags) {
       DynamicDocumentItem tag = new DynamicDocumentItem(new HashMap<>());
@@ -477,7 +486,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       tag.put("type", DocumentTagType.USERDEFINED.name());
       matchedTags.add(tag);
     }
-    
+
     r.put("matchedTags", matchedTags);
     r.remove("matchedTag");
   }

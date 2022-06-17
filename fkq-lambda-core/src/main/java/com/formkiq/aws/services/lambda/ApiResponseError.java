@@ -37,9 +37,10 @@ public class ApiResponseError implements ApiResponse {
   /** Error Message. */
   @Reflectable
   private Collection<ValidationError> errors;
-  
+
   /**
    * constructor.
+   * 
    * @param validationErrors {@link Collection} {@link ValidationError}
    */
   public ApiResponseError(final Collection<ValidationError> validationErrors) {
@@ -57,6 +58,7 @@ public class ApiResponseError implements ApiResponse {
 
   /**
    * Get {@link ValidationError} errors.
+   * 
    * @return {@link Collection} {@link ValidationError}
    */
   public Collection<ValidationError> getErrors() {

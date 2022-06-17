@@ -44,6 +44,15 @@ public interface ActionsService {
   List<Action> getActions(String siteId, String documentId);
 
   /**
+   * Whether SiteId / DocumentId combination has any actions.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean hasActions(String siteId, String documentId);
+
+  /**
    * Save {@link List} {@link Action}.
    * 
    * @param siteId {@link String}

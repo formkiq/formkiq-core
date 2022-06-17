@@ -177,7 +177,7 @@ public class ApiAuthorizer {
   public String getSiteId() {
     return this.siteId != null && !this.siteId.equals(DEFAULT_SITE_ID) ? this.siteId : null;
   }
-  
+
   /**
    * Get Site Id, including DEFAULT.
    * 
@@ -214,7 +214,7 @@ public class ApiAuthorizer {
   private boolean isIamCaller() {
     return this.isCallerAssumeRole() || this.isCallerIamUser();
   }
-  
+
   /**
    * Get Site Ids.
    * 

@@ -90,7 +90,7 @@ public class DocumentTag {
     setUserId(user);
     setType(tagType);
   }
-  
+
   /**
    * constructor.
    *
@@ -171,7 +171,7 @@ public class DocumentTag {
     this.value = s;
     return this;
   }
-  
+
   /**
    * Get Values.
    * 
@@ -205,7 +205,7 @@ public class DocumentTag {
    * Set User Id.
    *
    * @param user {@link String}
-   * @return {@link DocumentTag} 
+   * @return {@link DocumentTag}
    */
   public DocumentTag setUserId(final String user) {
     this.userId = user;

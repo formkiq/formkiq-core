@@ -55,23 +55,23 @@ public class WebhooksIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
-    
+
     if (serviceCache.webhookService().findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
     serviceCache.webhookService().deleteWebhook(siteId, id);
-    
+
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMessageResponse("'" + id + "' object deleted"));
   }
-  
+
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
-    
+
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
@@ -79,17 +79,17 @@ public class WebhooksIdRequestHandler
     if (m == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    
+
     String url = awsServices.ssmService().getParameterValue(
         "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
     String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
-    
+
     String u = url + path + "/webhooks/" + m.getString("documentId");
     if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
       u += "?siteId=" + siteId;
     }
-    
+
     Map<String, Object> map = new HashMap<>();
     map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     map.put("id", m.getString("documentId"));
@@ -107,7 +107,7 @@ public class WebhooksIdRequestHandler
   public String getRequestUrl() {
     return "/webhooks/{webhookId}";
   }
-  
+
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -115,27 +115,27 @@ public class WebhooksIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
-    
+
     WebhooksService webhookService = serviceCache.webhookService();
-    
+
     if (webhookService.findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    
+
     DynamicObject obj = fromBodyToDynamicObject(logger, event);
-    
+
     Map<String, Object> map = new HashMap<>();
-    
+
     if (obj.containsKey("name")) {
       map.put("name", obj.getString("name"));
     }
-    
+
     if (obj.containsKey("enabled")) {
       map.put("enabled", obj.getBoolean("enabled"));
     }
-    
+
     Date ttlDate = null;
     if (obj.containsKey("ttl")) {
       ZonedDateTime now =
@@ -145,11 +145,11 @@ public class WebhooksIdRequestHandler
     }
 
     webhookService.updateWebhook(siteId, id, new DynamicObject(map));
-    
+
     if (ttlDate != null) {
       webhookService.updateTimeToLive(siteId, id, ttlDate);
     }
-    
+
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMessageResponse("'" + id + "' object updated"));
   }

@@ -40,15 +40,16 @@ public class DynamicObjectToDocumentTag implements Function<DynamicObject, Docum
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df;
-  
+
   /**
    * constructor.
+   * 
    * @param formatter {@link SimpleDateFormat}
    */
   public DynamicObjectToDocumentTag(final SimpleDateFormat formatter) {
     this.df = formatter;
   }
-  
+
   @Override
   public DocumentTag apply(final DynamicObject t) {
     DocumentTag tag = new DocumentTag();
@@ -65,7 +66,7 @@ public class DynamicObjectToDocumentTag implements Function<DynamicObject, Docum
 
     Object ob = t.get("insertedDate");
     if (ob instanceof Date) {
-      tag.setInsertedDate((Date) ob);      
+      tag.setInsertedDate((Date) ob);
     } else if (ob instanceof String) {
       try {
         tag.setInsertedDate(this.df.parse(ob.toString()));
@@ -78,7 +79,7 @@ public class DynamicObjectToDocumentTag implements Function<DynamicObject, Docum
       tag.setValue(null);
       tag.setValues(t.getStringList("values"));
     }
-      
+
     if (tag.getInsertedDate() == null) {
       tag.setInsertedDate(new Date());
     }

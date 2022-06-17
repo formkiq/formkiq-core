@@ -140,7 +140,7 @@ public class DynamicObject extends HashMap<String, Object> {
     Object obj = getOrDefault(key, null);
     return obj != null ? (List<String>) obj : null;
   }
-  
+
   /**
    * Whether key has value.
    * 

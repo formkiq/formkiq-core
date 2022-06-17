@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -53,7 +56,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,9 +65,6 @@ import org.mockserver.mock.action.ExpectationResponseCallback;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
-import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -75,13 +74,16 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -90,11 +92,10 @@ import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -105,6 +106,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for {@link StagingS3Create}. */
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class StagingS3CreateTest implements DbKeys {
 
   /** App Environment. */
@@ -120,12 +122,6 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
-  /** LocalStack {@link DockerImageName}. */
-  private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:0.12.2");  
-  /** {@link LocalStackContainer}. */
-  private static LocalStackContainer localstack = new LocalStackContainer(localStackImage)
-      .withServices(Service.S3, Service.SQS, Service.SNS, Service.SSM);
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
 
@@ -135,16 +131,14 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link S3Service}. */
   private static S3Service s3;
 
-  /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Builder;
   /** {@link DocumentService}. */
   private static DocumentService service;
+  /** {@link ActionsService}. */
+  private static ActionsService actionsService;
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate";
   /** SQS Sns Queue. */
   private static final String SNS_SQS_DELETE_QUEUE = "sqssnsDelete";
-  /** {@link SnsConnectionBuilder}. */
-  private static SnsConnectionBuilder snsBuilder;
   /** SQS Create Url. */
   private static String snsCreateTopic;
   /** SNS Update Topic Arn. */
@@ -155,14 +149,10 @@ public class StagingS3CreateTest implements DbKeys {
   private static String snsSqsCreateQueueUrl;
   /** SQS Sns Delete QueueUrl. */
   private static String snsSqsDeleteQueueUrl;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsBuilder;
   /** SQS Error Url. */
   private static String sqsErrorUrl;
   /** {@link SqsService}. */
   private static SqsService sqsService;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmBuilder;
   /** Document S3 Staging Bucket. */
   private static final String STAGING_BUCKET = "example-bucket";
   /** Test server URL. */
@@ -170,14 +160,6 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** UUID 1. */
   private static final String UUID1 = "b53c92cf-f7b9-4787-9541-76574ec70d71";
-
-  /**
-   * afterClass().
-   */
-  @AfterAll
-  public static void afterClass() {
-    localstack.stop();
-  }
 
   /**
    * Before Class.
@@ -189,36 +171,21 @@ public class StagingS3CreateTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
-    Region region = Region.US_EAST_1;
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+    s3Builder = TestServices.getS3Connection();
+    sqsBuilder = TestServices.getSqsConnection();
+    ssmBuilder = TestServices.getSsmConnection();
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
+    dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
 
-    localstack.start();
-
-    snsBuilder = new SnsConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SNS).toString())
-        .setRegion(region).setCredentials(cred);
-
-    sqsBuilder = new SqsConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SQS).toString())
-        .setRegion(region).setCredentials(cred);
-    sqsService = new SqsService(sqsBuilder);
-
-    s3Builder = new S3ConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString())
-        .setRegion(region).setCredentials(cred);
-
-    ssmBuilder = new SsmConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString())
-        .setRegion(region).setCredentials(cred);
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
-    service = new DocumentServiceImpl(dbBuilder, "Documents");
-    dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
 
     s3 = new S3Service(s3Builder);
+    sqsService = new SqsService(sqsBuilder);
+
+    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     createResources();
 
@@ -229,7 +196,7 @@ public class StagingS3CreateTest implements DbKeys {
    * Create Mock Server.
    */
   private static void createMockServer() {
-    
+
     mockServer = startClientAndServer(Integer.valueOf(PORT));
 
     final String documentId = "12345";
@@ -246,7 +213,7 @@ public class StagingS3CreateTest implements DbKeys {
             assertEquals("document", list.get(0).get("value"));
             assertEquals("status", list.get(1).get("key"));
             assertEquals("[active, notactive]", list.get(1).get("values").toString());
-            
+
             String siteId = null;
             Optional<Parameter> p = httpRequest.getQueryStringParameterList().stream()
                 .filter(s -> "siteId".equals(s.getName().getValue())).findFirst();
@@ -264,8 +231,10 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Creates AWS Resources.
+   * 
+   * @throws URISyntaxException URISyntaxException
    */
-  private static void createResources() {
+  private static void createResources() throws URISyntaxException {
 
     try (S3Client c = s3.buildClient()) {
       s3.createBucket(c, DOCUMENTS_BUCKET);
@@ -284,7 +253,7 @@ public class StagingS3CreateTest implements DbKeys {
       sqsErrorUrl = sqsService.createQueue(ERROR_SQS_QUEUE).queueUrl();
     }
 
-    snsService = new SnsService(snsBuilder);
+    snsService = new SnsService(TestServices.getSnsConnection());
     snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
     snsService.subscribe(snsDeleteTopic, "sqs",
         "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_DELETE_QUEUE);
@@ -307,6 +276,12 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** {@link LambdaLoggerRecorder}. */
   private LambdaLoggerRecorder logger;
+  /** {@link S3ConnectionBuilder}. */
+  private static S3ConnectionBuilder s3Builder;
+  /** {@link SqsConnectionBuilder}. */
+  private static SqsConnectionBuilder sqsBuilder;
+  /** {@link SsmConnectionBuilder}. */
+  private static SsmConnectionBuilder ssmBuilder;
 
   /**
    * Assert {@link DocumentTag} Equals.
@@ -341,7 +316,7 @@ public class StagingS3CreateTest implements DbKeys {
     this.env.put("SQS_ERROR_URL", sqsErrorUrl);
     this.env.put("DOCUMENTS_TABLE", "Documents");
     this.env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    
+
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
 
@@ -987,9 +962,57 @@ public class StagingS3CreateTest implements DbKeys {
 
         assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "test", "value",
             "novalue", "type", "USERDEFINED", "userId", "joe"));
-        
+
         assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "userId", "value",
             "joesmith", "type", "SYSTEMDEFINED", "userId", "joesmith"));
+      }
+    }
+  }
+
+  /**
+   * Test .fkb64 file with actions.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension10() throws IOException {
+
+    final String documentId = "12345";
+    Map<String, Object> data = new HashMap<>();
+    data.put("documentId", documentId);
+    data.put("userId", "joesmith");
+    data.put("contentType", "text/plain");
+    data.put("tagSchemaId", UUID.randomUUID().toString());
+    data.put("isBase64", Boolean.TRUE);
+    data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
+    data.put("actions",
+        Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId", "joesmith")));
+
+    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      this.logger.reset();
+
+      String key = createDatabaseKey(siteId, "documentId.fkb64");
+
+      Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
+
+      try (S3Client c = s3.buildClient()) {
+
+        byte[] content = gson.toJson(ditem).getBytes(UTF_8);
+        s3.putObject(c, STAGING_BUCKET, key, content, null, null);
+
+        // when
+        handleRequest(map);
+
+        // then
+        assertFalse(s3.getObjectMetadata(c, STAGING_BUCKET, documentId).isObjectExists());
+
+        List<Action> actions = actionsService.getActions(siteId, documentId);
+        assertEquals(1, actions.size());
+        assertEquals("OCR", actions.get(0).type().name());
+        assertEquals("PENDING", actions.get(0).status().name());
+        assertEquals("joesmith", actions.get(0).userId());
       }
     }
   }

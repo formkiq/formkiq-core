@@ -51,7 +51,7 @@ public interface ApiGatewayRequestEventUtil {
 
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
-  
+
   /** {@link Gson}. */
   Gson GSON = GsonUtil.getInstance();
 
@@ -160,9 +160,10 @@ public interface ApiGatewayRequestEventUtil {
       }
     }
   }
-  
+
   /**
    * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   * 
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link String}
    * @throws BadException BadException
@@ -172,16 +173,16 @@ public interface ApiGatewayRequestEventUtil {
     if (body == null) {
       throw new BadException("request body is required");
     }
-    
+
     if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
       byte[] bytes = Base64.getDecoder().decode(body);
       body = new String(bytes, StandardCharsets.UTF_8);
     }
-    
+
     if (StringUtils.isEmpty(body)) {
       throw new BadException("request body is required");
     }
-    
+
     return body;
   }
 
@@ -240,7 +241,7 @@ public interface ApiGatewayRequestEventUtil {
     }
     return username;
   }
-  
+
   /**
    * Get ContentType from {@link ApiGatewayRequestEvent}.
    * 
@@ -410,7 +411,7 @@ public interface ApiGatewayRequestEventUtil {
   default void setPathParameter(final ApiGatewayRequestEvent event, final String key,
       final String value) {
     Map<String, String> q = new HashMap<>();
-    
+
     if (event.getPathParameters() != null) {
       q.putAll(event.getPathParameters());
     }

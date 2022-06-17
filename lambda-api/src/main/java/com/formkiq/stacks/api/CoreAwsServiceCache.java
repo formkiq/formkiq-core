@@ -1,3 +1,26 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -22,6 +45,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
 
   /**
    * Casts {@link AwsServiceCache} to {@link CoreAwsServiceCache}.
+   * 
    * @param service {@link AwsServiceCache}
    * @return {@link CoreAwsServiceCache}
    */
@@ -29,10 +53,10 @@ public class CoreAwsServiceCache extends AwsServiceCache {
     if (service instanceof CoreAwsServiceCache) {
       return (CoreAwsServiceCache) service;
     }
-    
+
     throw new UnsupportedOperationException("expected CoreAwsServiceCache.class");
   }
-  
+
   /** {@link DocumentSearchService}. */
   private DocumentSearchService documentSearchService;
   /** {@link ConfigService}. */
@@ -43,16 +67,17 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   private WebhooksService webhookService;
   /** {@link DocumentCountService}. */
   private DocumentCountService documentCountService;
-  
+
   /**
    * Get SiteId Config.
+   * 
    * @param siteId {@link String}
    * @return {@link DynamicObject}
    */
   public DynamicObject config(final String siteId) {
     return configService().get(siteId);
   }
-  
+
   /**
    * Get {@link ConfigService}.
    * 
@@ -64,7 +89,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
     }
     return this.configService;
   }
-  
+
   /**
    * Get {@link DocumentCountService}.
    * 
@@ -85,8 +110,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public DocumentSearchService documentSearchService() {
     if (this.documentSearchService == null) {
-      this.documentSearchService = new DocumentSearchServiceImpl(documentService(),
-          dbConnection(), environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin());
+      this.documentSearchService = new DocumentSearchServiceImpl(documentService(), dbConnection(),
+          environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin());
     }
     return this.documentSearchService;
   }
@@ -111,8 +136,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public WebhooksService webhookService() {
     if (this.webhookService == null) {
-      this.webhookService =
-          new WebhooksServiceImpl(dbConnection(), environment("DOCUMENTS_TABLE"));
+      this.webhookService = new WebhooksServiceImpl(dbConnection(), environment("DOCUMENTS_TABLE"));
     }
     return this.webhookService;
   }

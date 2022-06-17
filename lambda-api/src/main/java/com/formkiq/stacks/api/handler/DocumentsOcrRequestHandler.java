@@ -55,7 +55,7 @@ public class DocumentsOcrRequestHandler
   public String getRequestUrl() {
     return "/documents/{documentId}/ocr";
   }
-  
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,

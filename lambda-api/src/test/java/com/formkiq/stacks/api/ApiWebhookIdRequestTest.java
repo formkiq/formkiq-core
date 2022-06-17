@@ -43,7 +43,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
-  
+
   /**
    * Delete /webhooks/{webhookId}.
    *
@@ -59,15 +59,15 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
     assertEquals("default", result.get("siteId"));
     assertNotNull(result.get("id"));
-    
+
     String id = result.get("id").toString();
-    
+
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", id);
 
-    // when 
+    // when
     response = handleRequest(event);
-    
+
     // then
     m = GsonUtil.getInstance().fromJson(response, Map.class);
 
@@ -76,7 +76,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
   }
-  
+
   /**
    * Delete /webhooks/{webhookId} not found.
    *
@@ -87,13 +87,13 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   public void testDeleteWebhooks02() throws Exception {
     // given
     String id = UUID.randomUUID().toString();
-    
+
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", id);
 
-    // when 
+    // when
     String response = handleRequest(event);
-    
+
     // then
     Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
@@ -102,7 +102,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     assertEquals("404.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
   }
-  
+
   /**
    * Delete /webhooks/{webhookId} and webhook tags.
    *
@@ -114,7 +114,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     // given
     ApiGatewayRequestEvent req = toRequestEvent("/request-post-webhooks01.json");
     req.setBody("{\"name\":\"john smith\",tags:[{key:\"dynamodb\"}]}");
-    
+
     String response = handleRequest(req);
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
@@ -122,13 +122,13 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     assertEquals("default", result.get("siteId"));
     assertNotNull(result.get("id"));
     String id = result.get("id").toString();
-    
+
     ApiGatewayRequestEvent event = toRequestEvent("/request-delete-webhooks-webhookid01.json");
     setPathParameter(event, "webhookId", id);
 
-    // when 
+    // when
     response = handleRequest(event);
-    
+
     // then
     m = GsonUtil.getInstance().fromJson(response, Map.class);
 
@@ -148,7 +148,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
     assertEquals(0, ((List<Object>) result.get("tags")).size());
   }
-  
+
   /**
    * GET /webhooks/{webhookId}.
    *
@@ -157,10 +157,11 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testGetWebhook01() throws Exception {
-    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
-    
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
+        "http://localhost:8080");
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given      
+      // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
 
@@ -205,7 +206,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       verifyUrl(siteId, id, result, true);
     }
   }
-  
+
   /**
    * GET /webhooks/{webhookId} with PRIVATE.
    *
@@ -214,10 +215,11 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testGetWebhook02() throws Exception {
-    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
-    
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
+        "http://localhost:8080");
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given      
+      // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
       event.setBody("{\"name\":\"john smith\",\"enabled\":\"private\"}");
@@ -263,7 +265,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       verifyUrl(siteId, id, result, false);
     }
   }
-  
+
   private void verifyUrl(final String siteId, final String id, final Map<String, Object> result,
       final boolean publicUrl) {
     String path = publicUrl ? "/public" : "/private";
@@ -277,7 +279,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
           result.get("url"));
     }
   }
-  
+
   /**
    * PATCH /webhooks/{webhookId}.
    *
@@ -287,8 +289,9 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
   @Test
   public void testPatchWebhook01() throws Exception {
     Date date = new Date();
-    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl", "http://localhost:8080");
-    
+    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
+        "http://localhost:8080");
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String id =
@@ -316,7 +319,7 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
       event = toRequestEvent("/request-get-webhooks-webhookid01.json");
       setPathParameter(event, "webhookId", id);
       addParameter(event, "siteId", siteId);
-      
+
       // when
       response = handleRequest(event);
 

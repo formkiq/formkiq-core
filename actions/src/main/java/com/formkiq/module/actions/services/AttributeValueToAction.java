@@ -45,10 +45,10 @@ public class AttributeValueToAction implements Function<Map<String, AttributeVal
     action.userId(userId);
 
     String type = map.containsKey("type") ? map.get("type").s() : null;
-    action.type(ActionType.valueOf(type));
+    action.type(type != null ? ActionType.valueOf(type.toUpperCase()) : null);
 
     String status = map.containsKey("status") ? map.get("status").s() : null;
-    action.status(ActionStatus.valueOf(status));
+    action.status(status != null ? ActionStatus.valueOf(status.toUpperCase()) : null);
 
     return action;
   }

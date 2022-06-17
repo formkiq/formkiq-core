@@ -47,7 +47,7 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
 
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
- 
+
   /**
    * Post /private/webhooks with enabled=private .
    *
@@ -84,7 +84,7 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
       }
     }
   }
-  
+
   @SuppressWarnings("unchecked")
   private String verifyDocumentId(final Map<String, String> m) {
     Map<String, Object> body = fromJson(m.get("body"), Map.class);
@@ -92,40 +92,40 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     assertNotNull(documentId);
     return documentId;
   }
-  
+
   private void verifyHeaders(final Map<String, String> map, final String statusCode) {
     final int mapsize = 3;
     assertEquals(mapsize, map.size());
     assertEquals(statusCode, String.valueOf(map.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(map.get("headers")));
   }
-  
+
   @SuppressWarnings("unchecked")
   private void verifyS3File(final String webhookId, final String siteId, final String documentId,
       final String name, final String contentType, final boolean hasTimeToLive) {
-    
+
     // verify s3 file
     try (S3Client s3 = getS3().buildClient()) {
-      
+
       String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
       String json = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
-      
+
       Map<String, Object> map = fromJson(json, Map.class);
       assertEquals(documentId, map.get("documentId"));
       assertEquals("webhook/" + name, map.get("userId"));
       assertEquals("webhooks/" + webhookId, map.get("path"));
       assertEquals("{\"name\":\"john smith\"}", map.get("content"));
-      
+
       if (contentType != null) {
         assertEquals("application/json", map.get("contentType"));
       }
-      
+
       if (hasTimeToLive) {
         DynamicObject obj = getAwsServices().webhookService().findWebhook(siteId, webhookId);
         assertNotNull(obj.get("TimeToLive"));
         assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
       }
-      
+
       s3.deleteObject(DeleteObjectRequest.builder().bucket(STAGE_BUCKET_NAME).key(key).build());
     }
   }

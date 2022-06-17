@@ -63,7 +63,7 @@ public class DocumentTagValueRequestHandler
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
     String tagValue = map.get("tagValue");
-    
+
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
     DocumentService documentService = cacheService.documentService();
 
@@ -71,13 +71,13 @@ public class DocumentTagValueRequestHandler
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
-    
+
     Collection<ValidationError> errors = awsservice.documentTagSchemaPlugin()
         .validateRemoveTags(siteId, item, Arrays.asList(tagKey));
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    
+
     boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);
     if (!removed) {
       throw new NotFoundException("Tag/Value combination not found.");

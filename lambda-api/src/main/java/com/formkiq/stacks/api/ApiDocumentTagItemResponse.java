@@ -120,7 +120,7 @@ public class ApiDocumentTagItemResponse implements ApiResponse {
   public void setValues(final List<String> list) {
     this.values = list;
   }
-  
+
   /**
    * Get UserId.
    * 

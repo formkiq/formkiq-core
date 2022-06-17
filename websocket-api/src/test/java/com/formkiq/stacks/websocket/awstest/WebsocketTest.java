@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.websocket.awstest;
 
@@ -64,7 +67,7 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
  *
  */
 public class WebsocketTest {
-  
+
   /** {@link Gson}. */
   private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
 
@@ -80,7 +83,7 @@ public class WebsocketTest {
   private static final String USER_PASSWORD = USER_TEMP_PASSWORD + "!";
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
-  
+
   /** Web Connections Table. */
   private static String webconnectionsTable;
   /** WebSocket SQS Url. */
@@ -95,7 +98,7 @@ public class WebsocketTest {
   private static SqsService sqsService;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
-  
+
   /**
    * Add User and/or Login Cognito.
    * 
@@ -103,7 +106,7 @@ public class WebsocketTest {
    * @param groupName {@link String}
    */
   private static void addAndLoginCognito(final String username, final String groupName) {
-    
+
     if (!adminCognitoService.isUserExists(username)) {
 
       adminCognitoService.addUser(username, USER_TEMP_PASSWORD);
@@ -113,7 +116,7 @@ public class WebsocketTest {
         adminCognitoService.addGroup(groupName);
         adminCognitoService.addUserToGroup(username, groupName);
       }
-      
+
     } else {
 
       AdminGetUserResponse user = adminCognitoService.getUser(username);
@@ -122,7 +125,7 @@ public class WebsocketTest {
       }
     }
   }
-  
+
   /**
    * beforeclass.
    * 
@@ -140,7 +143,7 @@ public class WebsocketTest {
         new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     sqsService = new SqsService(sqsConnection);
-    
+
     SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
@@ -149,7 +152,7 @@ public class WebsocketTest {
     websocketSqsUrl = ssmService.getParameterValue("/formkiq/" + app + "/sqs/WebsocketUrl");
 
     websocketUrl = ssmService.getParameterValue("/formkiq/" + app + "/api/WebsocketUrl");
-    
+
     String cognitoUserPoolId =
         ssmService.getParameterValue("/formkiq/" + app + "/cognito/UserPoolId");
 
@@ -163,32 +166,32 @@ public class WebsocketTest {
         new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
             .setCredentials(awsprofile).setRegion(awsregion);
     adminCognitoService = new CognitoService(adminBuilder);
-    
+
     addAndLoginCognito(USER_EMAIL, GROUP);
     token = adminCognitoService.login(USER_EMAIL, USER_PASSWORD);
-    
+
     String rootHttpUrl = ssmService.getParameterValue("/formkiq/" + app + "/api/DocumentsHttpUrl");
-    
+
     FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)
         .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
         .header("Access-Control-Request-Method", Arrays.asList("GET"));
-    
+
     httpClient = new FormKiqClientV1(connection);
-    
+
     webconnectionsTable =
         ssmService.getParameterValue("/formkiq/" + app + "/dynamodb/WebConnectionsTableName");
-    dbConnection =
-        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
   }
-  
+
   /** {@link HttpClient}. */
   private HttpClient http = HttpClient.newHttpClient();
-  
+
   /**
    * Add Document Tag.
+   * 
    * @param client {@link FormKiqClientV1}
    * @param documentId {@link String}
-   * @throws IOException IOException 
+   * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
   private void addDocumentTag(final FormKiqClientV1 client, final String documentId)
@@ -198,7 +201,7 @@ public class WebsocketTest {
     HttpResponse<String> response = client.addDocumentTagAsHttpResponse(request);
     assertEquals("201", String.valueOf(response.statusCode()));
   }
-  
+
   /**
    * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
@@ -236,7 +239,7 @@ public class WebsocketTest {
 
     return map.get("documentId").toString();
   }
-  
+
   /**
    * Test Connecting with missing Authentication header.
    * 
@@ -246,18 +249,18 @@ public class WebsocketTest {
   public void testConnectMissingAuthenticationHeader() throws Exception {
     // given
     WebSocketClientImpl client = new WebSocketClientImpl(new URI(websocketUrl));
-    
+
     // when
     client.connectBlocking();
-    
+
     // then
     assertFalse(client.isOnOpen());
     assertTrue(client.isOnClose());
     assertEquals(0, client.getMessages().size());
     assertEquals(0, client.getErrors().size());
     assertEquals("1002", String.valueOf(client.getCloseCode()));
-    
-    // given    
+
+    // given
     // when
     client.closeBlocking();
 
@@ -268,7 +271,7 @@ public class WebsocketTest {
     assertEquals(0, client.getErrors().size());
     assertEquals("1002", String.valueOf(client.getCloseCode()));
   }
-  
+
   /**
    * Test Connecting with valid credentials.
    * 
@@ -281,7 +284,7 @@ public class WebsocketTest {
       // given
       final int sleep = 500;
       WebSocketClientImpl client = null;
-      
+
       if (useHeader.booleanValue()) {
         client = new WebSocketClientImpl(new URI(websocketUrl));
         client.addHeader("Authentication", token.idToken());
@@ -330,12 +333,12 @@ public class WebsocketTest {
           + "\\\"message\\\":\\\"this is a test\\\"}\"}", client.getMessages().get(0));
       assertEquals(0, client.getErrors().size());
       assertEquals("1000", String.valueOf(client.getCloseCode()));
-      
+
       Thread.sleep(sleep * 2);
       verifyDbConnections();
     }
   }
-  
+
   private void verifyDbConnections() {
     try (DynamoDbClient client = dbConnection.build()) {
       ScanResponse response =
@@ -346,6 +349,7 @@ public class WebsocketTest {
 
   /**
    * Test Receiving Web Notify.
+   * 
    * @throws Exception Exception
    */
   @Test(timeout = TIMEOUT)
@@ -359,7 +363,7 @@ public class WebsocketTest {
     // when
     String documentId = addDocumentWithoutFile(httpClient);
     addDocumentTag(httpClient, documentId);
-        
+
     // then
     while (true) {
       if (!client.getMessages().isEmpty()) {
@@ -370,10 +374,10 @@ public class WebsocketTest {
             + "\\\\\\\"key\\\\\\\":\\\\\\\"test\\\\\\\"}\\\"}\"}", client.getMessages().get(0));
         break;
       }
-      
+
       Thread.sleep(sleep);
     }
-    
+
     assertEquals(0, client.getErrors().size());
   }
 }

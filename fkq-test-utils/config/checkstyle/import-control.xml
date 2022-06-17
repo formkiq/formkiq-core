@@ -11,6 +11,7 @@
 		<allow pkg="com.formkiq.aws.cognito" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
+		<allow pkg="com.formkiq.aws.sns" />
 		<allow pkg="com.formkiq.aws.sqs" />
 		<allow pkg="com.formkiq.aws.ssm" />
 		<allow pkg="com.formkiq.stacks.client" />

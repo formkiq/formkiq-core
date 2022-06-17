@@ -87,6 +87,7 @@ public interface DocumentItem {
 
   /**
    * Get Tag Schema Id.
+   * 
    * @return {@link String}
    */
   String getTagSchemaId();
@@ -153,27 +154,28 @@ public interface DocumentItem {
    * @param date {@link Date}
    */
   void setInsertedDate(Date date);
-  
+
   /**
    * Set Path.
    *
    * @param filepath {@link String}
    */
   void setPath(String filepath);
-  
+
   /**
    * Set TagSchema Id.
+   * 
    * @param id {@link String}
    */
   void setTagSchemaId(String id);
-  
+
   /**
    * Set Time To Live.
    *
    * @param ttl {@link String}
    */
   void setTimeToLive(String ttl);
-  
+
   /**
    * Set User Id.
    *

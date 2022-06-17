@@ -43,13 +43,13 @@ public class PublicDocumentsRequestHandler
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    
+
     Map<String, Object> auth = event.getRequestContext().getAuthorizer();
     if (auth == null) {
       auth = new HashMap<>();
       event.getRequestContext().setAuthorizer(auth);
     }
-    
+
     Map<String, Object> claims = (Map<String, Object>) auth.get("claims");
     if (claims == null) {
       claims = new HashMap<>();

@@ -35,6 +35,7 @@ public class ValidationException extends Exception {
 
   /**
    * constructor.
+   * 
    * @param validationErrors {@link Collection} {@link ValidationError}
    */
   public ValidationException(final Collection<ValidationError> validationErrors) {
@@ -44,6 +45,7 @@ public class ValidationException extends Exception {
 
   /**
    * Get {@link ValidationError}.
+   * 
    * @return {@link Collection} {@link ValidationError}
    */
   public Collection<ValidationError> errors() {

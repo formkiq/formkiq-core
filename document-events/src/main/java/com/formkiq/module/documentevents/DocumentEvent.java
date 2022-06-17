@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
+package com.formkiq.module.documentevents;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -50,7 +50,7 @@ public class DocumentEvent {
   private String contentType;
   /** Docuemnt Path. */
   private String path;
-  
+
   /**
    * constructor.
    */
@@ -157,7 +157,7 @@ public class DocumentEvent {
     this.type = eventtype;
     return this;
   }
-  
+
   /**
    * Get {@link DocumentEvent} UserId.
    * 
@@ -177,7 +177,7 @@ public class DocumentEvent {
     this.userId = user;
     return this;
   }
-  
+
   /**
    * Get {@link DocumentEvent} Content.
    * 
@@ -197,7 +197,7 @@ public class DocumentEvent {
     this.content = data;
     return this;
   }
-  
+
   /**
    * Get {@link DocumentEvent} Content-Type.
    * 
@@ -217,7 +217,7 @@ public class DocumentEvent {
     this.contentType = data;
     return this;
   }
-  
+
   /**
    * Get {@link DocumentEvent} Path.
    * 

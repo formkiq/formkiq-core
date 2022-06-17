@@ -39,7 +39,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
-  
+
   /**
    * Get /webhooks/{webhookId}/tags empty.
    *
@@ -51,7 +51,7 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     // given
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
 
-    // when 
+    // when
     String response = handleRequest(event);
 
     // then
@@ -63,7 +63,7 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     assertEquals("{\"tags\":[]}", m.get("body"));
   }
-  
+
   /**
    * Get /webhooks/{webhookId}/tags empty.
    *
@@ -78,7 +78,7 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks-webhookid-tags01.json");
     setPathParameter(event, "webhookId", webhookId);
 
-    // when 
+    // when
     String response = handleRequest(event);
 
     // then
@@ -89,12 +89,12 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     assertEquals("201.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     assertEquals("{\"message\":\"Created Tag 'category'.\"}", m.get("body"));
-    
+
     // given
     event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
     setPathParameter(event, "webhookId", webhookId);
-    
-    // when 
+
+    // when
     response = handleRequest(event);
 
     // then
@@ -103,13 +103,13 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    
+
     Map<String, Object> body = fromJson(m.get("body"), Map.class);
     DynamicObject obj = new DynamicObject(body);
-    
+
     List<DynamicObject> list = obj.getList("tags");
     assertEquals(1, list.size());
-    
+
     assertEquals(webhookId, list.get(0).getString("webhookId"));
     assertEquals("USERDEFINED", list.get(0).getString("type"));
     assertEquals("8a73dfef-26d3-43d8-87aa-b3ec358e43ba@formkiq.com",

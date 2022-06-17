@@ -54,7 +54,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
   /** {@link LocalStackContainer}. */
   private LocalStackContainer localstack = TestServices.getLocalStack();
-  
+
   @Override
   @BeforeEach
   public void before() throws Exception {
@@ -233,7 +233,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     String maxContentLengthBytes = "2783034";
     getAwsServices().configService().save(null,
         new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
-    
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       if (siteId != null) {

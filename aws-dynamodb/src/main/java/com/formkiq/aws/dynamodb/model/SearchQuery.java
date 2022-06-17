@@ -46,6 +46,7 @@ public class SearchQuery {
 
   /**
    * Get Document Ids.
+   * 
    * @return {@link Collection} {@link String}
    */
   public Collection<String> documentIds() {
@@ -54,6 +55,7 @@ public class SearchQuery {
 
   /**
    * Set Document Ids.
+   * 
    * @param ids {@link Collection} {@link String}
    * @return {@link SearchQuery}
    */
@@ -84,6 +86,7 @@ public class SearchQuery {
 
   /**
    * Get {@link List} {@link SearchTagCriteria}.
+   * 
    * @return {@link List} {@link SearchTagCriteria}
    */
   public List<SearchTagCriteria> tags() {
@@ -92,6 +95,7 @@ public class SearchQuery {
 
   /**
    * Set {@link List} {@link SearchTagCriteria}.
+   * 
    * @param list {@link List} {@link SearchTagCriteria}
    * @return {@link SearchQuery}
    */

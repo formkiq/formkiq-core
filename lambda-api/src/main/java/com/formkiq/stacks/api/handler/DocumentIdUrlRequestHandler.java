@@ -82,7 +82,7 @@ public class DocumentIdUrlRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    
+
     String documentId = event.getPathParameters().get("documentId");
     String versionId = getParameter(event, "versionId");
     String siteId = authorizer.getSiteId();
@@ -117,7 +117,7 @@ public class DocumentIdUrlRequestHandler
       final String documentId, final String versionId) {
 
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    
+
     URL url = null;
     String contentType = getContentType(event);
     String siteId = authorizer.getSiteId();

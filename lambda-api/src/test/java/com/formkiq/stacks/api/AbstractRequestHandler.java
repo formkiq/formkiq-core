@@ -77,7 +77,7 @@ public abstract class AbstractRequestHandler {
 
   /** {@link CoreAwsServiceCache}. */
   private CoreAwsServiceCache awsServices;
-  
+
   /**
    * Add header to {@link ApiGatewayRequestEvent}.
    * 
@@ -113,7 +113,7 @@ public abstract class AbstractRequestHandler {
       if (event.getQueryStringParameters() != null) {
         queryMap.putAll(event.getQueryStringParameters());
       }
-          
+
       queryMap.put(parameter, value);
       event.setQueryStringParameters(queryMap);
     }
@@ -253,7 +253,7 @@ public abstract class AbstractRequestHandler {
   public Map<String, String> getMap() {
     return Collections.unmodifiableMap(this.map);
   }
-  
+
   /**
    * Get Mock {@link Context}.
    *
@@ -371,7 +371,7 @@ public abstract class AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   public void setCognitoGroup(final ApiGatewayRequestEvent event, final String... cognitoGroups) {
-    
+
     ApiGatewayRequestContext requestContext = event.getRequestContext();
     Map<String, Object> authorizer = requestContext.getAuthorizer();
     if (authorizer == null) {
@@ -391,6 +391,7 @@ public abstract class AbstractRequestHandler {
 
   /**
    * Set Environment Variable.
+   * 
    * @param key {@link String}
    * @param value {@link String}
    */
@@ -437,7 +438,7 @@ public abstract class AbstractRequestHandler {
     }
 
     claims.put("cognito:username", username);
-    
+
     requestContext.setAuthorizer(authorizer);
     event.setRequestContext(requestContext);
   }

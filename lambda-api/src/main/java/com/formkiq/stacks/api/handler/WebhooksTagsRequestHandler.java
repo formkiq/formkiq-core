@@ -52,31 +52,31 @@ import com.formkiq.stacks.api.CoreAwsServiceCache;
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
-  
+
   /** Convert to Milliseconds. */
   private static final long TO_MILLIS = 1000L;
-  
+
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
-    
+
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
     PaginationResults<DynamicObject> list =
         serviceCache.webhookService().findTags(siteId, id, null);
-    
+
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();
-      
+
       map.put("insertedDate", m.getString("inserteddate"));
       map.put("webhookId", id);
       map.put("type", m.getString("type"));
       map.put("userId", m.getString("userId"));
       map.put("value", m.getString("tagValue"));
       map.put("key", m.getString("tagKey"));
-            
+
       return map;
     }).collect(Collectors.toList());
 
@@ -87,7 +87,7 @@ public class WebhooksTagsRequestHandler
   public String getRequestUrl() {
     return "/webhooks/{webhookId}/tags";
   }
-  
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -105,20 +105,20 @@ public class WebhooksTagsRequestHandler
     tag.setType(DocumentTagType.USERDEFINED);
     tag.setInsertedDate(new Date());
     tag.setUserId(getCallingCognitoUsername(event));
-    
+
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
     DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
     if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    
+
     Date ttl = null;
     String ttlString = webhook.getString("TimeToLive");
     if (ttlString != null) {
       long epoch = Long.parseLong(ttlString);
       ttl = new Date(epoch * TO_MILLIS);
     }
-    
+
     serviceCache.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
