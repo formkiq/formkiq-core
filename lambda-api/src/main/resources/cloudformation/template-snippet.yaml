@@ -99,7 +99,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
-      AutoPublishCodeSha256: F86B9F6EC649A8A75B7D40A5C866C432344898B2769617A997E5FE45BC121067
+      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
       Environment:
         Variables:
           APP_ENVIRONMENT: 

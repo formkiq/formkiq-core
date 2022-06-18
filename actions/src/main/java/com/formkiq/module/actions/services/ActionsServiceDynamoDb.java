@@ -162,6 +162,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       addS(values, "status", action.status().name());
       addS(values, "documentId", documentId);
       addS(values, "userId", action.userId());
+      addM(values, "parameters", action.parameters());
       addN(values, "TimeToLive", ttl);
 
       PutRequest put = PutRequest.builder().item(values).build();

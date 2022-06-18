@@ -26,9 +26,11 @@ package com.formkiq.module.actions;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -94,7 +96,8 @@ public class ActionsServiceDynamoDbTest {
       String documentId0 = UUID.randomUUID().toString();
       String documentId1 = UUID.randomUUID().toString();
 
-      Action action0 = new Action().type(ActionType.OCR).userId(userId0);
+      Action action0 =
+          new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
       Action action1 =
           new Action().type(ActionType.OCR).userId(userId1).status(ActionStatus.COMPLETE);
 
@@ -108,12 +111,14 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(ActionStatus.PENDING, results.get(0).status());
       assertEquals(ActionType.OCR, results.get(0).type());
       assertEquals(userId0, results.get(0).userId());
+      assertEquals("{test=1234}", results.get(0).parameters().toString());
 
       results = service.getActions(siteId, documentId1);
       assertEquals(1, results.size());
       assertEquals(ActionStatus.COMPLETE, results.get(0).status());
       assertEquals(ActionType.OCR, results.get(0).type());
       assertEquals(userId1, results.get(0).userId());
+      assertNull(results.get(0).parameters());
 
       // given
       action0.status(ActionStatus.FAILED);

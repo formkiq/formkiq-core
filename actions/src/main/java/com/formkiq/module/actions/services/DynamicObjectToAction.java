@@ -25,6 +25,7 @@ package com.formkiq.module.actions.services;
 
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -49,8 +50,15 @@ public class DynamicObjectToAction implements Function<DynamicObject, Action> {
     action.type(type != null ? ActionType.valueOf(type.toUpperCase()) : null);
 
     String status = obj.containsKey("status") ? obj.getString("status") : null;
-    action.status(status != null ? ActionStatus.valueOf(status.toUpperCase()) : null);
+    action
+        .status(status != null ? ActionStatus.valueOf(status.toUpperCase()) : ActionStatus.PENDING);
 
+    if (obj.containsKey("parameters")) {
+      Map<String, String> parameters = obj.getMap("parameters").entrySet().stream()
+          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()));
+      action.parameters(parameters);
+    }
+    
     return action;
   }
 }

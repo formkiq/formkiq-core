@@ -39,10 +39,13 @@ public interface DbKeys {
 
   /** Partition Key of Table. */
   String PK = "PK";
-
+  
   /** Sort Key of Table. */
   String SK = "SK";
-
+  
+  /** Composite Tag Key Deliminator. */
+  String TAG_DELIMINATOR = "#";
+  
   /** Global Secondary Index 1. */
   String GSI1 = "GSI1";
 
@@ -61,36 +64,53 @@ public interface DbKeys {
   /** Global Secondary Index 2 Sort Key. */
   String GSI2_SK = GSI2 + SK;
 
-  /** Composite Tag Key Deliminator. */
-  String TAG_DELIMINATOR = "#";
-
   /** Config Partition Key Prefix. */
   String PREFIX_CONFIG = "configs" + TAG_DELIMINATOR;
 
-  /** Webhooks Partition Key Prefix. */
-  String PREFIX_WEBHOOKS = "webhooks" + TAG_DELIMINATOR;
-  /** Webhooks Partition Key Prefix. */
-  String PREFIX_WEBHOOK = "webhook" + TAG_DELIMINATOR;
   /** Documents Partition Key Prefix. */
   String PREFIX_DOCS = "docs" + TAG_DELIMINATOR;
-  /** TAGS Partition Key Prefix. */
-  String PREFIX_TAG = "tag" + TAG_DELIMINATOR;
-  /** TAGS Partition Keys Prefix. */
-  String PREFIX_TAGS = "tags" + TAG_DELIMINATOR;
-  /** Document Date Time Series Partition Keys Prefix. */
-  String PREFIX_DOCUMENT_DATE_TS = "docts" + TAG_DELIMINATOR;
+
   /** Document Date Partition Keys Prefix. */
   String PREFIX_DOCUMENT_DATE = "docdate";
+
+  /** Document Date Time Series Partition Keys Prefix. */
+  String PREFIX_DOCUMENT_DATE_TS = "docts" + TAG_DELIMINATOR;
   /** Document Format Prefix. */
   String PREFIX_DOCUMENT_FORMAT = "format" + TAG_DELIMINATOR;
   /** FORMATS Partition Key Prefix. */
   String PREFIX_FORMATS = "formats" + TAG_DELIMINATOR;
-
   /** Preset Partition Key Prefix. */
   String PREFIX_PRESETS = "pre";
-
   /** Preset Tag Partition Key Prefix. */
   String PREFIX_PRESETTAGS = "pretag";
+  /** TAGS Partition Key Prefix. */
+  String PREFIX_TAG = "tag" + TAG_DELIMINATOR;
+  /** TAGS Partition Keys Prefix. */
+  String PREFIX_TAGS = "tags" + TAG_DELIMINATOR;
+  /** Webhooks Partition Key Prefix. */
+  String PREFIX_WEBHOOK = "webhook" + TAG_DELIMINATOR;
+  /** Webhooks Partition Key Prefix. */
+  String PREFIX_WEBHOOKS = "webhooks" + TAG_DELIMINATOR;
+
+  /**
+   * Add {@link Map} to {@link Map} {@link AttributeValue}.
+   * 
+   * @param map {@link Map} {@link AttributeValue}
+   * @param key {@link String}
+   * @param value {@link Map}
+   */
+  default void addM(final Map<String, AttributeValue> map, final String key,
+      final Map<String, String> value) {
+    if (value != null) {
+      
+      Map<String, AttributeValue> attr = new HashMap<>();
+      for (Map.Entry<String, String> e : value.entrySet()) {
+        attr.put(e.getKey(), AttributeValue.builder().s(e.getValue()).build());
+      }
+      
+      map.put(key, AttributeValue.builder().m(attr).build());
+    }
+  }
 
   /**
    * Add Number to {@link Map} {@link AttributeValue}.
@@ -104,7 +124,7 @@ public interface DbKeys {
       map.put(key, AttributeValue.builder().n(value).build());
     }
   }
-
+  
   /**
    * Add {@link String} to {@link Map} {@link AttributeValue}.
    * 

@@ -25,6 +25,7 @@ package com.formkiq.module.actions.services;
 
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -48,8 +49,15 @@ public class AttributeValueToAction implements Function<Map<String, AttributeVal
     action.type(type != null ? ActionType.valueOf(type.toUpperCase()) : null);
 
     String status = map.containsKey("status") ? map.get("status").s() : null;
-    action.status(status != null ? ActionStatus.valueOf(status.toUpperCase()) : null);
+    action
+        .status(status != null ? ActionStatus.valueOf(status.toUpperCase()) : ActionStatus.PENDING);
 
+    if (map.containsKey("parameters")) {
+      Map<String, String> parameters = map.get("parameters").m().entrySet().stream()
+          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().s()));
+      action.parameters(parameters);
+    }
+    
     return action;
   }
 }

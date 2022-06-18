@@ -23,11 +23,15 @@
  */
 package com.formkiq.module.actions;
 
+import java.util.Map;
+
 /**
  * Action.
  */
 public class Action {
 
+  /** Action Parameters. */
+  private Map<String, String> parameters;
   /** Is Action Completed. */
   private ActionStatus status;
   /** Type of Action. */
@@ -40,6 +44,24 @@ public class Action {
    */
   public Action() {
     this.status = ActionStatus.PENDING;
+  }
+
+  /**
+   * Get Action parameters {@link Map}.
+   * @return {@link Map}
+   */
+  public Map<String, String> parameters() {
+    return this.parameters;
+  }
+
+  /**
+   * Set Action parameters {@link Map}.
+   * @param map {@link Map}
+   * @return {@link Action}
+   */
+  public Action parameters(final Map<String, String> map) {
+    this.parameters = map;
+    return this;
   }
 
   /**

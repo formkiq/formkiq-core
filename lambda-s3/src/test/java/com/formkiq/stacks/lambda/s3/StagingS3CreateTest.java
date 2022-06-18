@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -109,6 +110,8 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 @ExtendWith(LocalStackExtension.class)
 public class StagingS3CreateTest implements DbKeys {
 
+  /** {@link ActionsService}. */
+  private static ActionsService actionsService;
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
   /** {@link DynamoDbConnectionBuilder}. */
@@ -122,6 +125,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
+
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
 
@@ -130,11 +134,10 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** {@link S3Service}. */
   private static S3Service s3;
-
+  /** {@link S3ConnectionBuilder}. */
+  private static S3ConnectionBuilder s3Builder;
   /** {@link DocumentService}. */
   private static DocumentService service;
-  /** {@link ActionsService}. */
-  private static ActionsService actionsService;
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate";
   /** SQS Sns Queue. */
@@ -149,17 +152,33 @@ public class StagingS3CreateTest implements DbKeys {
   private static String snsSqsCreateQueueUrl;
   /** SQS Sns Delete QueueUrl. */
   private static String snsSqsDeleteQueueUrl;
+  /** {@link SqsConnectionBuilder}. */
+  private static SqsConnectionBuilder sqsBuilder;
   /** SQS Error Url. */
   private static String sqsErrorUrl;
   /** {@link SqsService}. */
   private static SqsService sqsService;
+
+  /** {@link SsmConnectionBuilder}. */
+  private static SsmConnectionBuilder ssmBuilder;
+
   /** Document S3 Staging Bucket. */
   private static final String STAGING_BUCKET = "example-bucket";
+  
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
   /** UUID 1. */
   private static final String UUID1 = "b53c92cf-f7b9-4787-9541-76574ec70d71";
+
+  /**
+   * After Class.
+   * 
+   */
+  @AfterAll
+  public static void afterClass() {
+    mockServer.stop();
+  }
 
   /**
    * Before Class.
@@ -267,21 +286,12 @@ public class StagingS3CreateTest implements DbKeys {
       dbHelper.createCacheTable(CACHE_TABLE);
     }
   }
-
   /** {@link LambdaContextRecorder}. */
   private LambdaContextRecorder context;
-
   /** Environment Map. */
   private Map<String, String> env = new HashMap<>();
-
   /** {@link LambdaLoggerRecorder}. */
   private LambdaLoggerRecorder logger;
-  /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Builder;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsBuilder;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmBuilder;
 
   /**
    * Assert {@link DocumentTag} Equals.
@@ -314,7 +324,7 @@ public class StagingS3CreateTest implements DbKeys {
     this.env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
     this.env.put("SNS_CREATE_TOPIC", snsCreateTopic);
     this.env.put("SQS_ERROR_URL", sqsErrorUrl);
-    this.env.put("DOCUMENTS_TABLE", "Documents");
+    this.env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     this.env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
 
     this.context = new LambdaContextRecorder();
@@ -985,8 +995,8 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("tagSchemaId", UUID.randomUUID().toString());
     data.put("isBase64", Boolean.TRUE);
     data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
-    data.put("actions",
-        Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId", "joesmith")));
+    data.put("actions", Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId",
+        "joesmith", "parameters", Map.of("test", "1234"))));
 
     DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 

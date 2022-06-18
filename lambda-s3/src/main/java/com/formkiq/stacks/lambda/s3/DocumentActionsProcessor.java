@@ -3,38 +3,52 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.stacks.client.FormKiqClient;
+import com.formkiq.stacks.client.FormKiqClientConnection;
+import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
+import com.formkiq.stacks.client.requests.OcrParseType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -46,29 +60,21 @@ import software.amazon.awssdk.regions.Region;
 @ReflectableImport(classes = DocumentEvent.class)
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void> {
 
+  /** {@link ActionsService}. */
+  private ActionsService actionsService;
+
+  /** IAM Documents Url. */
+  private String documentsIamUrl;
+  /** {@link FormKiqClient}. */
+  private FormKiqClientV1 formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-
-  // /** {@link ActionsService}. */
-  // private ActionsService actionsService;
-  /** SQS Error Queue. */
-  private String sqsErrorQueue;
-  /** {@link SqsService}. */
-  private SqsService sqsService;
-  // /** {@link SsmConnectionBuilder}. */
-  // private SsmConnectionBuilder ssmConnection;
-  // /** {@link Region}. */
-  // private Region region;
-  // /** {@link AwsCredentials}. */
-  // private AwsCredentials credentials;
 
   /** constructor. */
   public DocumentActionsProcessor() {
     this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
         EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
 
@@ -78,37 +84,58 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param map {@link Map}
    * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
-   * @param dynamoDb {@link DynamoDbConnectionBuilder}
-   * @param s3Builder {@link S3ConnectionBuilder}
-   * @param sqsBuilder {@link SqsConnectionBuilder}
-   * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
+   * @param db {@link DynamoDbConnectionBuilder}
+   * @param ssm {@link SsmConnectionBuilder}
    */
   protected DocumentActionsProcessor(final Map<String, String> map, final Region awsRegion,
-      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dynamoDb,
-      final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder,
-      final SsmConnectionBuilder ssmConnectionBuilder) {
+      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder db,
+      final SsmConnectionBuilder ssm) {
 
-    // this.region = awsRegion;
-    // this.credentials = awsCredentials;
-    // String documentsTable = map.get("DOCUMENTS_TABLE");
-    // this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
-    // this.searchService =
-    // new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable, null);
-    // this.actionsService = new ActionsServiceDynamoDb(dynamoDb, documentsTable);
-    // this.s3 = new S3Service(s3Builder);
-    this.sqsService = new SqsService(sqsBuilder);
-    // this.ssmConnection = ssmConnectionBuilder;
+    this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
+    
+    String appEnvironment = map.get("APP_ENVIRONMENT");
+    final int cacheTime = 5;
+    SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
+    this.documentsIamUrl =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+    
+    FormKiqClientConnection fkqConnection =
+        new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
 
-    // this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
-    this.sqsErrorQueue = map.get("SQS_ERROR_URL");
-    // this.appEnvironment = map.get("APP_ENVIRONMENT");
+    if (awsCredentials != null) {
+      fkqConnection = fkqConnection.credentials(awsCredentials);
+    }
+
+    this.formkiqClient = new FormKiqClientV1(fkqConnection);    
   }
 
+  /**
+   * Get ParseTypes from {@link Action} parameters.
+   * @param action {@link Action}
+   * @return {@link List} {@link OcrParseType}
+   */
+  List<OcrParseType> getOcrParseTypes(final Action action) {
+    
+    Map<String, String> parameters = notNull(action.parameters());
+    String s = parameters.containsKey("parseTypes") ? parameters.get("parseTypes") : "TEXT";
+    
+    List<OcrParseType> ocrParseTypes = Arrays.asList(s.split(",")).stream().map(t -> {
+      try {
+        return OcrParseType.valueOf(t.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        e.printStackTrace();
+        return OcrParseType.TEXT;
+      }
+    }).distinct().collect(Collectors.toList());
+    
+    return ocrParseTypes;
+  }
+  
+  @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
     String json = null;
-    // Date date = new Date();
 
     try {
 
@@ -119,21 +146,75 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         logger.log(json);
       }
 
-      // List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      // processRecords(logger, date, records);
+      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+      processRecords(logger, records);
 
     } catch (Exception e) {
       e.printStackTrace();
-
-      if (json == null) {
-        json = this.gson.toJson(map);
-      }
-
-      if (this.sqsErrorQueue != null) {
-        this.sqsService.sendMessage(this.sqsErrorQueue, json);
-      }
     }
 
     return null;
+  }
+
+  /**
+   * Process {@link DocumentEvent}.
+   * @param logger {@link LambdaLogger}
+   * @param event {@link DocumentEvent}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException 
+   */
+  private void processEvent(final LambdaLogger logger, final DocumentEvent event)
+      throws IOException, InterruptedException {
+
+    if (ACTIONS.equals(event.type())) {
+
+      String siteId = event.siteId();
+      String documentId = event.documentId();
+
+      List<Action> actions = this.actionsService.getActions(siteId, documentId);
+      Optional<Action> o = actions.stream().filter(
+          a -> ActionStatus.PENDING.equals(a.status()) || ActionStatus.FAILED.equals(a.status()))
+          .findFirst();
+
+      if (o.isPresent()) {
+
+        Action action = o.get();
+        if (ActionType.OCR.equals(action.type())) {
+
+          List<OcrParseType> parseTypes = getOcrParseTypes(action);
+
+          this.formkiqClient.addDocumentOcr(new AddDocumentOcrRequest().siteId(siteId)
+              .documentId(documentId).parseTypes(parseTypes));
+        }
+      }
+    }
+  }
+
+  /**
+   * Process Event Records.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param records {@link List} {@link Map}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
+  @SuppressWarnings("unchecked")
+  private void processRecords(final LambdaLogger logger, final List<Map<String, Object>> records)
+      throws IOException, InterruptedException {
+
+    for (Map<String, Object> e : records) {
+
+      if (e.containsKey("body")) {
+
+        String body = e.get("body").toString();
+
+        Map<String, Object> map = this.gson.fromJson(body, Map.class);
+        if (map.containsKey("Message")) {
+          DocumentEvent event =
+              this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
+          processEvent(logger, event);
+        }
+      }
+    }
   }
 }
