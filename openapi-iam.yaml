@@ -1425,6 +1425,19 @@
                       value:
                         type: string
                         description: Tag value
+            DocumentAction:
+              type: object
+              description: Document action
+              properties:
+                type:
+                  type: string
+                  description: 'Type of action (supported values: ocr)'
+                parameters:
+                  type: object
+                  properties:
+                    ocrParseTypes:
+                      type: string
+                      description: OCR Parse types - TEXT, FORMS, TABLES
             DocumentBody:
               required:
               - content
@@ -1457,6 +1470,11 @@
                       value:
                         type: string
                         description: Tag value
+                actions:
+                  type: array
+                  description: List of document actions
+                  items:
+                    $ref: '#/components/schemas/DocumentAction'
                 documents:
                   type: array
                   description: List of related documents

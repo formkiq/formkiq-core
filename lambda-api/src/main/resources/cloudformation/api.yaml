@@ -1435,6 +1435,12 @@ Resources:
                 type:
                   type: "string"
                   description: "Type of action (supported values: ocr)"
+                parameters:
+                  type: "object"
+                  properties:
+                    ocrParseTypes:
+                      type: "string"
+                      description: "OCR Parse types - TEXT, FORMS, TABLES"
             DocumentBody:
               required:
               - "content"

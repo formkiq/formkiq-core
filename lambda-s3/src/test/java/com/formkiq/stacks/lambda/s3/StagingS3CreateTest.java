@@ -164,7 +164,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** Document S3 Staging Bucket. */
   private static final String STAGING_BUCKET = "example-bucket";
-  
+
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -286,6 +286,7 @@ public class StagingS3CreateTest implements DbKeys {
       dbHelper.createCacheTable(CACHE_TABLE);
     }
   }
+
   /** {@link LambdaContextRecorder}. */
   private LambdaContextRecorder context;
   /** Environment Map. */

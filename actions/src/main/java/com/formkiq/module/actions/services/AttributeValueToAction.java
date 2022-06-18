@@ -57,7 +57,7 @@ public class AttributeValueToAction implements Function<Map<String, AttributeVal
           .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().s()));
       action.parameters(parameters);
     }
-    
+
     return action;
   }
 }

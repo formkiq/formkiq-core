@@ -9,6 +9,9 @@
 	
 		<subpackage name="s3">
 		
+			<allow pkg="org.mockserver.mock.action" />
+			<allow pkg="org.mockserver.model" />
+		
 			<allow pkg="software.amazon.awssdk.auth.credentials" />	
 			<allow pkg="software.amazon.awssdk.services.sns.model" />			
 			<allow pkg="com.amazonaws.services.lambda.runtime" />

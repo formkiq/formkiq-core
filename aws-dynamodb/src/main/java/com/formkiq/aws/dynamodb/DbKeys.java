@@ -39,13 +39,13 @@ public interface DbKeys {
 
   /** Partition Key of Table. */
   String PK = "PK";
-  
+
   /** Sort Key of Table. */
   String SK = "SK";
-  
+
   /** Composite Tag Key Deliminator. */
   String TAG_DELIMINATOR = "#";
-  
+
   /** Global Secondary Index 1. */
   String GSI1 = "GSI1";
 
@@ -102,12 +102,12 @@ public interface DbKeys {
   default void addM(final Map<String, AttributeValue> map, final String key,
       final Map<String, String> value) {
     if (value != null) {
-      
+
       Map<String, AttributeValue> attr = new HashMap<>();
       for (Map.Entry<String, String> e : value.entrySet()) {
         attr.put(e.getKey(), AttributeValue.builder().s(e.getValue()).build());
       }
-      
+
       map.put(key, AttributeValue.builder().m(attr).build());
     }
   }
@@ -124,7 +124,7 @@ public interface DbKeys {
       map.put(key, AttributeValue.builder().n(value).build());
     }
   }
-  
+
   /**
    * Add {@link String} to {@link Map} {@link AttributeValue}.
    * 

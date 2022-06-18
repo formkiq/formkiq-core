@@ -48,6 +48,7 @@ public class Action {
 
   /**
    * Get Action parameters {@link Map}.
+   * 
    * @return {@link Map}
    */
   public Map<String, String> parameters() {
@@ -56,6 +57,7 @@ public class Action {
 
   /**
    * Set Action parameters {@link Map}.
+   * 
    * @param map {@link Map}
    * @return {@link Action}
    */

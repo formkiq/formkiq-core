@@ -43,9 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.mock.action.ExpectationResponseCallback;
 import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
@@ -78,19 +76,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /** {@link Gson}. */
   private static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-  
-  /** Last {@link HttpRequest}. */
-  private static HttpRequest lastRequest = null;
+
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
-  
+
   /** Port to run Test server. */
   private static final int PORT = 8080;
   /** {@link DocumentActionsProcessor}. */
   private static DocumentActionsProcessor processor;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
-  
+  /** {@link RequestRecordExpectationResponseCallback}. */
+  private static RequestRecordExpectationResponseCallback callback =
+      new RequestRecordExpectationResponseCallback();
+
   /**
    * After Class.
    * 
@@ -114,19 +113,19 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     createMockServer();
-    
+
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection();
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
-    
+
     Map<String, String> env = new HashMap<>();
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    
-    processor = new DocumentActionsProcessor(env, Region.US_EAST_1,
-        null, dbBuilder, TestServices.getSsmConnection());
+
+    processor = new DocumentActionsProcessor(env, Region.US_EAST_1, null, dbBuilder,
+        TestServices.getSsmConnection());
   }
-  
+
   /**
    * Create Mock Server.
    */
@@ -134,22 +133,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     mockServer = startClientAndServer(Integer.valueOf(PORT));
 
-    mockServer.when(request().withMethod("POST"))
-        .respond(new ExpectationResponseCallback() {
-
-          @Override
-          public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
-
-            lastRequest = httpRequest;
-
-            return org.mockserver.model.HttpResponse.response("{}");
-          }
-        });
+    mockServer.when(request().withMethod("POST")).respond(callback);
   }
 
   /** {@link LambdaContextRecorder}. */
   private LambdaContextRecorder context;
-  
+
   /**
    * before.
    */
@@ -164,19 +153,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testGetOcrParseTypes01() {
     assertEquals("[TEXT]", processor.getOcrParseTypes(new Action()).toString());
-    
+
     // invalid
     Map<String, String> parameters = Map.of("parseTypes", "ADAD,IUJK");
     assertEquals("[TEXT]",
         processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
-    
+
     parameters = Map.of("parseTypes", "tEXT, forms, TABLES");
     assertEquals("[TEXT, FORMS, TABLES]",
         processor.getOcrParseTypes(new Action().parameters(parameters)).toString());
   }
-  
+
   /**
    * Handle OCR Action.
+   * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    */
@@ -188,7 +178,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = UUID.randomUUID().toString();
       List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR));
       actionsService.saveActions(siteId, documentId, actions);
-      
+
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
               documentId, "default", siteId != null ? siteId : "default");
@@ -197,6 +187,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
+      HttpRequest lastRequest = callback.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
       map = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertEquals("[TEXT]", map.get("parseTypes").toString());

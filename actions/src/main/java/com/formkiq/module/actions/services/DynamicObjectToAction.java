@@ -58,7 +58,7 @@ public class DynamicObjectToAction implements Function<DynamicObject, Action> {
           .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()));
       action.parameters(parameters);
     }
-    
+
     return action;
   }
 }

@@ -21,51 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.objects;
+package com.formkiq.stacks.lambda.s3;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import org.mockserver.mock.action.ExpectationResponseCallback;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 
 /**
  * 
- * Objects Helper.
+ * Record.
  *
  */
-public class Objects {
+public class RequestRecordExpectationResponseCallback implements ExpectationResponseCallback {
+  /** {@link HttpRequest}. */
+  private HttpRequest lastRequest;
 
   /**
-   * Returns a {@link Collection} that is guarantee not to be null.
-   * 
-   * @param <T> Type
-   * @param list {@link List}
-   * @return {@link List}
+   * constructor.
    */
-  public static <T> Collection<T> notNull(final Collection<T> list) {
-    return list != null ? list : Collections.emptyList();
+  public RequestRecordExpectationResponseCallback() {}
+
+  /**
+   * Get Last {@link HttpRequest}.
+   * 
+   * @return {@link HttpRequest}
+   */
+  public HttpRequest getLastRequest() {
+    return this.lastRequest;
   }
 
-  /**
-   * Returns a {@link List} that is guarantee not to be null.
-   * 
-   * @param <T> Type
-   * @param list {@link List}
-   * @return {@link List}
-   */
-  public static <T> List<T> notNull(final List<T> list) {
-    return list != null ? list : Collections.emptyList();
-  }
+  @Override
+  public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
 
-  /**
-   * Returns a {@link List} that is guarantee not to be null.
-   * 
-   * @param <T> Type
-   * @param <S> Type
-   * @param map {@link List}
-   * @return {@link List}
-   */
-  public static <T, S> Map<T, S> notNull(final Map<T, S> map) {
-    return map != null ? map : Collections.emptyMap();
+    this.lastRequest = httpRequest;
+
+    return org.mockserver.model.HttpResponse.response("{}");
   }
 }
