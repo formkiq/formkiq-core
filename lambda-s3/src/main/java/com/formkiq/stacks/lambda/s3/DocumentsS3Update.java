@@ -26,7 +26,6 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
 import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
 import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
@@ -476,22 +475,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
 
-    if (CREATE.equals(eventType) && this.actionsService.hasActions(siteId, documentId)) {
-      sendDocumentActionsEvent(logger, site, documentId);
+    if (CREATE.equals(eventType)) {
+      this.actionsService.publishNextActionEvent(this.documentEventService, this.snsDocumentEvent,
+          site, documentId);
     }
-  }
-
-  /**
-   * Send Actions SNS message.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   */
-  private void sendDocumentActionsEvent(final LambdaLogger logger, final String siteId,
-      final String documentId) {
-    DocumentEvent event = new DocumentEvent().siteId(siteId).documentId(documentId).type(ACTIONS);
-    logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
-    this.documentEventService.publish(this.snsDocumentEvent, event);
   }
 }

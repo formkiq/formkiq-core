@@ -16,6 +16,7 @@
 		
 		<subpackage name="services">
 			<allow pkg="com.formkiq.module.actions" />
+			<allow pkg="com.formkiq.module.documentevents" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />	
 		</subpackage>

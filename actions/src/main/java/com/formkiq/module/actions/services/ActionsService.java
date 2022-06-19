@@ -23,9 +23,13 @@
  */
 package com.formkiq.module.actions.services;
 
+import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import java.util.List;
+import java.util.Optional;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.module.documentevents.DocumentEventService;
 
 /**
  * 
@@ -33,6 +37,26 @@ import com.formkiq.module.actions.ActionStatus;
  *
  */
 public interface ActionsService {
+
+  /**
+   * Publishes Next Action Event, if there's another action to process.
+   * 
+   * @param documentEventService {@link DocumentEventService}
+   * @param topicArn {@link String}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  default void publishNextActionEvent(final DocumentEventService documentEventService,
+      final String topicArn, final String siteId, final String documentId) {
+
+    List<Action> actions = getActions(siteId, documentId);
+    Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
+
+    if (o.isPresent()) {
+      DocumentEvent event = new DocumentEvent().siteId(siteId).documentId(documentId).type(ACTIONS);
+      documentEventService.publish(topicArn, event);
+    }
+  }
 
   /**
    * Get {@link List} {@link Action} for a document.

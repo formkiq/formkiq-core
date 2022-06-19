@@ -42,10 +42,10 @@ import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -177,9 +177,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       String documentId = event.documentId();
 
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
-      Optional<Action> o = actions.stream().filter(
-          a -> ActionStatus.PENDING.equals(a.status()) || ActionStatus.FAILED.equals(a.status()))
-          .findFirst();
+      Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
 
       if (o.isPresent()) {
 
