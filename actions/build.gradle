@@ -3,6 +3,7 @@ description = "FormKiQ Actions"
 
 dependencies {
 	implementation project(':aws-dynamodb')
+	implementation project(':aws-sns')
 	implementation project(':document-events')
 	
 	testImplementation project(':fkq-test-utils')

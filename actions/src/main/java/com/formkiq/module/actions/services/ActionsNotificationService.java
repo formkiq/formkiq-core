@@ -25,49 +25,19 @@ package com.formkiq.module.actions.services;
 
 import java.util.List;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
 
 /**
  * 
- * FormKiQ Actions Service.
+ * Actions Notifications.
  *
  */
-public interface ActionsService {
-
+public interface ActionsNotificationService {
   /**
-   * Get {@link List} {@link Action} for a document.
+   * Publishes Next Action Event, if there's another action to process.
    * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link List} {@link Action}
-   */
-  List<Action> getActions(String siteId, String documentId);
-
-  /**
-   * Whether SiteId / DocumentId combination has any actions.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return boolean
-   */
-  boolean hasActions(String siteId, String documentId);
-
-  /**
-   * Save {@link List} {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
-   */
-  void saveActions(String siteId, String documentId, List<Action> actions);
-
-  /**
-   * Update {@link Action} {@link ActionStatus}.
-   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param action {@link Action}
-   * @param index int
    */
-  void updateActionStatus(String siteId, String documentId, Action action, int index);
+  void publishNextActionEvent(List<Action> actions, String siteId, String documentId);
 }

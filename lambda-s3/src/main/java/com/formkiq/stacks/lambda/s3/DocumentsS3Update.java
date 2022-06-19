@@ -52,6 +52,9 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsNotificationService;
+import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
@@ -128,6 +131,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private DocumentEventService documentEventService;
   /** {@link ActionsService}. */
   private ActionsService actionsService;
+  /** {@link ActionsNotificationService}. */
+  private ActionsNotificationService notificationService;
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
@@ -161,6 +166,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     this.s3service = new S3Service(s3builder);
     this.sqsService = new SqsService(sqsBuilder);
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
+    this.notificationService =
+        new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
   }
 
   /**
@@ -476,8 +483,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
-      this.actionsService.publishNextActionEvent(this.documentEventService, this.snsDocumentEvent,
-          site, documentId);
+      List<Action> actions = this.actionsService.getActions(siteId, documentId);
+      this.notificationService.publishNextActionEvent(actions, site, documentId);
     }
   }
 }
