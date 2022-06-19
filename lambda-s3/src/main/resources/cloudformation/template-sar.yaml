@@ -212,9 +212,11 @@ Resources:
       AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
       Environment:
         Variables:
+          DOCUMENTS_TABLE: 
+            Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false
+          DEBUG: false          
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
