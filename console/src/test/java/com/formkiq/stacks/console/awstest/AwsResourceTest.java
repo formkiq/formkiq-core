@@ -40,6 +40,10 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
+import com.formkiq.testutils.aws.FkqCognitoService;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -48,6 +52,10 @@ import software.amazon.awssdk.services.s3.S3Client;
  */
 public class AwsResourceTest {
 
+  /** Cognito User. */
+  private static final String USER = "test12384@formkiq.com";
+  /** Cognito Password. */
+  private static final String PASSWORD = "uae82nj23njd!@";
   /** App Environment Name. */
   private static String appenvironment;
   /** {@link SsmService}. */
@@ -75,6 +83,10 @@ public class AwsResourceTest {
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(region);
     s3 = new S3Service(s3Builder);
+
+    FkqCognitoService cognito = new FkqCognitoService(awsprofile, region, appenvironment);
+    cognito.addUser(USER, PASSWORD);
+    cognito.addUserToGroup(USER, "default");
   }
 
   /**
@@ -129,5 +141,35 @@ public class AwsResourceTest {
 
     String text = response.body();
     assertTrue(text.contains("<title>FormKiQ Cloud Console</title>"));
+  }
+  
+  /**
+   * Test Logging into console.
+   */
+  @Test
+  public void testLogin() {
+    String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
+
+    try (Playwright playwright = Playwright.create()) {
+      try (Browser browser = playwright.chromium().launch()) {
+        try (Page page = browser.newPage()) {
+          page.navigate(url);
+          assertEquals("FormKiQ Cloud Console", page.title());
+
+          page.click("[placeholder=\"me@mycompany.com\"]");
+          page.fill("[placeholder=\"me@mycompany.com\"]", USER);
+          page.click("[placeholder=\"******\"]");
+          page.fill("[placeholder=\"******\"]", PASSWORD);
+          page.waitForNavigation(() -> {
+            page.click("button:has-text(\"Sign In\")");
+          });
+          
+          page.waitForNavigation(() -> {
+            page.click("text=Documents");
+          });
+          assertEquals("Recent Documents - FormKiQ", page.title());
+        }
+      }
+    }
   }
 }
