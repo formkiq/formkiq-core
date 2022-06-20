@@ -23,7 +23,9 @@
  */
 package com.formkiq.module.actions.services;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.List;
 import java.util.Optional;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
@@ -63,7 +65,8 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
     Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
 
     if (o.isPresent()) {
-      DocumentEvent event = new DocumentEvent().siteId(siteId).documentId(documentId).type(ACTIONS);
+      String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
+      DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
       this.documentEventService.publish(this.topicArn, event);
     }
   }
