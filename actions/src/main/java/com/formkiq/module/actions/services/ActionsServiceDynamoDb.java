@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -194,5 +196,24 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
         .attributeUpdates(values).build());
+  }
+
+  @Override
+  public List<Action> updateActionStatus(final String siteId, final String documentId,
+      final ActionType type, final ActionStatus status) {
+    
+    int idx = 0;
+    NextActionPredicate pred = new NextActionPredicate();
+    List<Action> actionlist = getActions(siteId, documentId);
+    for (Action action : actionlist) {
+      if (pred.test(action) && action.type().equals(type)) {
+        action.status(ActionStatus.COMPLETE);
+        updateActionStatus(siteId, documentId, action, idx);
+        break;
+      }
+      idx++;
+    }
+    
+    return actionlist;
   }
 }
