@@ -207,7 +207,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     List<Action> actionlist = getActions(siteId, documentId);
     for (Action action : actionlist) {
       if (pred.test(action) && action.type().equals(type)) {
-        action.status(ActionStatus.COMPLETE);
+        action.status(status);
         updateActionStatus(siteId, documentId, action, idx);
         break;
       }
