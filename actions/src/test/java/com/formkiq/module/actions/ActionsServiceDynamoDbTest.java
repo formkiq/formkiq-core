@@ -131,7 +131,7 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(ActionStatus.FAILED, results.get(0).status());
     }
   }
-  
+
   /**
    * Update Action Status.
    */
@@ -145,7 +145,7 @@ public class ActionsServiceDynamoDbTest {
           new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
-      
+
       // when
       service.updateActionStatus(siteId, documentId, ActionType.OCR, ActionStatus.COMPLETE);
 

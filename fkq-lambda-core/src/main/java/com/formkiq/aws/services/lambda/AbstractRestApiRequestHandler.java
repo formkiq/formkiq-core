@@ -282,6 +282,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Handler for Sqs Requests.
+   * 
    * @param logger {@link LambdaLogger}
    * @param awsServices {@link AwsServiceCache}
    * @param record {@link LambdaInputRecord}

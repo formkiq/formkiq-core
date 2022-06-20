@@ -201,7 +201,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   @Override
   public List<Action> updateActionStatus(final String siteId, final String documentId,
       final ActionType type, final ActionStatus status) {
-    
+
     int idx = 0;
     NextActionPredicate pred = new NextActionPredicate();
     List<Action> actionlist = getActions(siteId, documentId);
@@ -213,7 +213,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       }
       idx++;
     }
-    
+
     return actionlist;
   }
 }

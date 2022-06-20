@@ -25,6 +25,7 @@ package com.formkiq.stacks.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
@@ -193,7 +194,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   }
 
   @Override
-  public void handleSqsRequest(final LambdaInputRecord record) {
-
+  public void handleSqsRequest(final LambdaLogger logger, final AwsServiceCache services,
+      final LambdaInputRecord record) {
+    // empty
   }
 }

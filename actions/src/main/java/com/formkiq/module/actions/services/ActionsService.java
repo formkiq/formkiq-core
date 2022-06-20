@@ -71,9 +71,10 @@ public interface ActionsService {
    * @param index int
    */
   void updateActionStatus(String siteId, String documentId, Action action, int index);
-  
+
   /**
-   * Updates {@link ActionStatus}. 
+   * Updates {@link ActionStatus}.
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param type {@link ActionType}
