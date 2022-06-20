@@ -274,7 +274,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
       for (LambdaInputRecord record : records.getRecords()) {
         if ("aws:sqs".equals(record.getEventSource())) {
-          handleSqsRequest(record);
+          handleSqsRequest(logger, awsServices, record);
         }
       }
     }
@@ -282,11 +282,13 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Handler for Sqs Requests.
-   * 
+   * @param logger {@link LambdaLogger}
+   * @param awsServices {@link AwsServiceCache}
    * @param record {@link LambdaInputRecord}
    * @throws IOException IOException
    */
-  public abstract void handleSqsRequest(LambdaInputRecord record) throws IOException;
+  public abstract void handleSqsRequest(LambdaLogger logger, AwsServiceCache awsServices,
+      LambdaInputRecord record) throws IOException;
 
   /**
    * Whether {@link ApiGatewayRequestEvent} has access.
