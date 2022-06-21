@@ -33,8 +33,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.services.ActionsServiceExtension;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
@@ -123,6 +125,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
       final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
       final DocumentTagSchemaPlugin schemaEvents) {
+
+    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
 
     awsServices = new CoreAwsServiceCache().environment(map).dbConnection(builder).s3Connection(s3)
         .sqsConnection(sqs).ssmConnection(ssm).debug("true".equals(map.get("DEBUG")))

@@ -6,7 +6,8 @@ dependencies {
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
 	implementation project(':aws-dynamodb')
-	implementation project(':fkq-plugins')	
+	implementation project(':fkq-plugins')
+	implementation project(':actions')	
 	
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
 	implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.0'

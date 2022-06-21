@@ -67,7 +67,7 @@ public class DynamicObjectToDocumentTag implements Function<DynamicObject, Docum
     Object ob = t.get("insertedDate");
     if (ob instanceof Date) {
       tag.setInsertedDate((Date) ob);
-    } else if (ob instanceof String) {
+    } else if (this.df != null && ob instanceof String) {
       try {
         tag.setInsertedDate(this.df.parse(ob.toString()));
       } catch (ParseException e) {

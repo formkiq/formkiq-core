@@ -58,6 +58,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 import software.amazon.awssdk.utils.IoUtils;
 
+
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
@@ -281,15 +282,6 @@ public abstract class AbstractRequestHandler {
   public String getSsmParameter(final String key) {
     return this.awsServices.ssmService().getParameterValue(key);
   }
-
-  // /**
-  // * Get Staging Document Bucket Name.
-  // *
-  // * @return {@link String}
-  // */
-  // public String getStages3bucket() {
-  // return stages3bucket;
-  // }
 
   /**
    * Handle Request.

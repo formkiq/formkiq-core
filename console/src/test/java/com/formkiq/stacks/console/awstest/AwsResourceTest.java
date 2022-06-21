@@ -142,7 +142,7 @@ public class AwsResourceTest {
     String text = response.body();
     assertTrue(text.contains("<title>FormKiQ Cloud Console</title>"));
   }
-  
+
   /**
    * Test Logging into console.
    */
@@ -163,7 +163,7 @@ public class AwsResourceTest {
           page.waitForNavigation(() -> {
             page.click("button:has-text(\"Sign In\")");
           });
-          
+
           page.waitForNavigation(() -> {
             page.click("text=Documents");
           });

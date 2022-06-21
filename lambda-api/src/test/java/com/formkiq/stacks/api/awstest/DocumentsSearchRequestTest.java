@@ -33,6 +33,8 @@ import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Document;
+import com.formkiq.stacks.client.models.DocumentSearchQuery;
+import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.client.models.Documents;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
@@ -55,7 +57,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsRawSearch01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("untagged");
+      SearchDocumentsRequest req = new SearchDocumentsRequest()
+          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
       // when
       HttpResponse<String> response = client.searchAsHttpResponse(req);
       assertEquals("200", String.valueOf(response.statusCode()));
@@ -77,7 +80,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
       addDocumentWithoutFile(client);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("untagged");
+      SearchDocumentsRequest req = new SearchDocumentsRequest()
+          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
       // when
       Documents documents = client.search(req);
 
@@ -101,7 +105,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
       String next = "3aa3a255-6a67-4d05-8e67-f7a22b827433";
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("untagged").next(next);
+      SearchDocumentsRequest req = new SearchDocumentsRequest()
+          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))).next(next);
 
       // when
       HttpResponse<String> response = client.searchAsHttpResponse(req);
@@ -126,8 +131,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
       String documentId = addDocumentWithoutFile(client);
-      SearchDocumentsRequest req =
-          new SearchDocumentsRequest().tagKey("untagged").documentIds(Arrays.asList(documentId));
+      SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+          .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
       // when
       Documents documents = client.search(req);
 
@@ -151,8 +156,10 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
       addDocumentWithoutFile(client);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("untagged")
-          .documentIds(Arrays.asList(UUID.randomUUID().toString()));
+      SearchDocumentsRequest req = new SearchDocumentsRequest()
+          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))
+              .documentIds(Arrays.asList(UUID.randomUUID().toString())));
+
       // when
       Documents documents = client.search(req);
 
@@ -174,8 +181,9 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("test").eq("somevalue")
-          .documentIds(Arrays.asList(documentId));
+      SearchDocumentsRequest req = new SearchDocumentsRequest()
+          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue"))
+              .documentIds(Arrays.asList(documentId)));
 
       // when
       Documents documents = client.search(req);
@@ -189,8 +197,9 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertNotNull(doc.userId());
 
       // given
-      req = new SearchDocumentsRequest().tagKey("test").eq("somevalue2")
-          .documentIds(Arrays.asList(documentId));
+      req = new SearchDocumentsRequest()
+          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue2"))
+              .documentIds(Arrays.asList(documentId)));
 
       // when
       documents = client.search(req);
@@ -213,8 +222,9 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().tagKey("test")
-          .eqOr(Arrays.asList("somevalue")).documentIds(Arrays.asList(documentId));
+      SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+          .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue")))
+          .documentIds(Arrays.asList(documentId)));
 
       // when
       Documents documents = client.search(req);
@@ -228,8 +238,9 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertNotNull(doc.userId());
 
       // given
-      req = new SearchDocumentsRequest().tagKey("test").eqOr(Arrays.asList("somevalue2"))
-          .documentIds(Arrays.asList(documentId));
+      req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+          .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue2")))
+          .documentIds(Arrays.asList(documentId)));
 
       // when
       documents = client.search(req);
@@ -253,8 +264,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
       client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req =
-          new SearchDocumentsRequest().tagKey(tagKey).eqOr(Arrays.asList("somevalue"));
+      SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+          .tag(new DocumentSearchTag().key(tagKey).eqOr(Arrays.asList("somevalue"))));
 
       // when
       Documents documents = client.search(req);
@@ -268,7 +279,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       assertNotNull(doc.userId());
 
       // given
-      req = new SearchDocumentsRequest().tagKey(tagKey).eqOr(Arrays.asList("somevalue2"));
+      req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+          .tag(new DocumentSearchTag().key(tagKey).eqOr(Arrays.asList("somevalue2"))));
 
       // when
       documents = client.search(req);

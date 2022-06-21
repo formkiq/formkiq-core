@@ -643,6 +643,37 @@
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
+              tags:
+              - Documents
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/durationParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentUploadBody'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentPostResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /documents/{documentId}/upload:
             get:
               parameters:
@@ -1166,7 +1197,6 @@
               name: duration
               in: query
               description: Indicates the number of hours request is valid for
-              required: true
               schema:
                 type: integer
           schemas:
@@ -1438,6 +1468,34 @@
                     ocrParseTypes:
                       type: string
                       description: OCR Parse types - TEXT, FORMS, TABLES
+            DocumentUploadBody:
+              required:
+              - content
+              type: object
+              properties:
+                tagSchemaId:
+                  type: string
+                  description: Tag Schema Id
+                path:
+                  type: string
+                  description: Path or Name of document
+                tags:
+                  type: array
+                  description: List of tags
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        description: Tag key
+                      value:
+                        type: string
+                        description: Tag value
+                actions:
+                  type: array
+                  description: List of document actions
+                  items:
+                    $ref: '#/components/schemas/DocumentAction'
             DocumentBody:
               required:
               - content

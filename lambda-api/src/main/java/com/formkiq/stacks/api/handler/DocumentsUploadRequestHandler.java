@@ -24,20 +24,24 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -45,10 +49,16 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.DynamicObjectToAction;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 
 /** {@link ApiGatewayRequestHandler} for GET "/documents/upload". */
 public class DocumentsUploadRequestHandler
@@ -56,12 +66,12 @@ public class DocumentsUploadRequestHandler
 
   /** Default Duration Hours. */
   private static final int DEFAULT_DURATION_HOURS = 48;
-  /** {@link DocumentsRestrictionsMaxDocuments}. */
-  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
-      new DocumentsRestrictionsMaxDocuments();
   /** {@link DocumentsRestrictionsMaxContentLength}. */
   private DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
       new DocumentsRestrictionsMaxContentLength();
+  /** {@link DocumentsRestrictionsMaxDocuments}. */
+  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
+      new DocumentsRestrictionsMaxDocuments();
 
   /**
    * constructor.
@@ -69,85 +79,123 @@ public class DocumentsUploadRequestHandler
    */
   public DocumentsUploadRequestHandler() {}
 
-  @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
+  /**
+   * Build Presigned Url Response.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param awsservice {@link CoreAwsServiceCache}
+   * @param siteId {@link String}
+   * @param item {@link DynamicDocumentItem}
+   * @return {@link ApiRequestHandlerResponse}
+   * @throws UnsupportedEncodingException UnsupportedEncodingException
+   * @throws BadException BadException
+   * @throws ValidationException ValidationException
+   */
+  private ApiRequestHandlerResponse buildPresignedResponse(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final CoreAwsServiceCache awsservice, final String siteId,
+      final DynamicDocumentItem item)
+      throws UnsupportedEncodingException, BadException, ValidationException {
 
-    boolean documentExists = false;
-
-    Date date = new Date();
-    String documentId = UUID.randomUUID().toString();
-    String username = getCallingCognitoUsername(event);
-    DocumentItem item = new DocumentItemDynamoDb(documentId, date, username);
+    String path = item.getPath();
+    Date date = item.getInsertedDate();
+    String documentId = item.getDocumentId();
+    String username = item.getUserId();
 
     List<DocumentTag> tags = new ArrayList<>();
+    if (item.containsKey("tags")) {
+      tags = item.getList("tags").stream().map(new DynamicObjectToDocumentTag(null))
+          .map(t -> t.setInsertedDate(date)).collect(Collectors.toList());
+    }
 
-    Map<String, String> query = event.getQueryStringParameters();
+    if (tags.isEmpty()) {
+      tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
+          DocumentTagType.SYSTEMDEFINED));
+    }
 
-    String siteId = authorizer.getSiteId();
-    DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
+    if (path != null) {
 
-    if (query != null && query.containsKey("path")) {
-
-      String path = query.get("path");
       path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
 
-      item.setPath(path);
       tags.add(
           new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
     }
 
-    String urlstring = generatePresignedUrl(awsservice, logger, siteId, documentId, query);
+    validateTagSchema(awsservice, siteId, item, username, tags);
+
+    String urlstring = generatePresignedUrl(event, awsservice, logger, siteId, documentId);
     logger.log("generated presign url: " + urlstring + " for document " + documentId);
 
-    if (!documentExists) {
+    String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
 
-      tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
-          DocumentTagType.SYSTEMDEFINED));
+    if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
-      String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
+      DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
+      logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+      service.saveDocument(siteId, item, tags);
 
-      if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
-
-        logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
-        service.saveDocument(siteId, item, tags);
-
-        if (value != null) {
-          (CoreAwsServiceCache.cast(awsservice)).documentCountService()
-              .incrementDocumentCount(siteId);
-        }
-      } else {
-        throw new BadException("Max Number of Documents reached");
+      if (item.containsKey("actions")) {
+        ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+        List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
+            .collect(Collectors.toList());
+        actionsService.saveActions(siteId, documentId, actions);
       }
+
+      if (value != null) {
+        (CoreAwsServiceCache.cast(awsservice)).documentCountService()
+            .incrementDocumentCount(siteId);
+      }
+    } else {
+      throw new BadException("Max Number of Documents reached");
     }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
   }
 
   /**
-   * Generate Presigned URL.
-   *
-   * @param awsservice {@link AwsServiceCache}
-   * @param logger {@link LambdaLogger}
+   * Validate {@link DynamicDocumentItem} against a TagSchema.
+   * 
+   * @param cacheService {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param query {@link Map}
-   * @return {@link String}
+   * @param item {@link DynamicDocumentItem}
+   * @param userId {@link String}
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws ValidationException ValidationException
    * @throws BadException BadException
    */
-  private String generatePresignedUrl(final AwsServiceCache awsservice, final LambdaLogger logger,
-      final String siteId, final String documentId, final Map<String, String> query)
-      throws BadException {
+  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
+      final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
+      throws ValidationException, BadException {
 
-    String key = siteId != null ? siteId + "/" + documentId : documentId;
-    Duration duration = caculateDuration(query);
-    Optional<Long> contentLength = calculateContentLength(awsservice, logger, query, siteId);
-    URL url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-        key, duration, contentLength);
+    DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
 
-    String urlstring = url.toString();
-    return urlstring;
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    List<DocumentTag> compositeTags =
+        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
+            .collect(Collectors.toList());
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    tags.addAll(compositeTags);
+  }
+
+  /**
+   * Calculate Duration.
+   * 
+   * @param query {@link Map}
+   * @return {@link Duration}
+   */
+  private Duration caculateDuration(final Map<String, String> query) {
+
+    Integer durationHours =
+        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
+            : Integer.valueOf(DEFAULT_DURATION_HOURS);
+
+    Duration duration = Duration.ofHours(durationHours.intValue());
+    return duration;
   }
 
   /**
@@ -185,23 +233,69 @@ public class DocumentsUploadRequestHandler
   }
 
   /**
-   * Calculate Duration.
-   * 
-   * @param query {@link Map}
-   * @return {@link Duration}
+   * Generate Presigned URL.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param awsservice {@link AwsServiceCache}
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link String}
+   * @throws BadException BadException
    */
-  private Duration caculateDuration(final Map<String, String> query) {
+  private String generatePresignedUrl(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final LambdaLogger logger, final String siteId,
+      final String documentId) throws BadException {
 
-    Integer durationHours =
-        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
-            : Integer.valueOf(DEFAULT_DURATION_HOURS);
+    Map<String, String> query = event.getQueryStringParameters();
+    String key = siteId != null ? siteId + "/" + documentId : documentId;
+    Duration duration = caculateDuration(query);
+    Optional<Long> contentLength = calculateContentLength(awsservice, logger, query, siteId);
+    URL url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+        key, duration, contentLength);
 
-    Duration duration = Duration.ofHours(durationHours.intValue());
-    return duration;
+    String urlstring = url.toString();
+    return urlstring;
+  }
+
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
+    item.setInsertedDate(new Date());
+    item.setDocumentId(UUID.randomUUID().toString());
+    item.setUserId(getCallingCognitoUsername(event));
+
+    Map<String, String> query = event.getQueryStringParameters();
+
+    String siteId = authorizer.getSiteId();
+
+    String path = query != null && query.containsKey("path") ? query.get("path") : null;
+    item.setPath(path);
+
+    return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
+        item);
   }
 
   @Override
   public String getRequestUrl() {
     return "/documents/upload";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
+    item.setDocumentId(UUID.randomUUID().toString());
+    item.setUserId(getCallingCognitoUsername(event));
+    item.setInsertedDate(new Date());
+
+    String siteId = authorizer.getSiteId();
+    return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
+        item);
   }
 }

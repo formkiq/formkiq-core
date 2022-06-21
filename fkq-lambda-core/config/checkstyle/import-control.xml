@@ -25,6 +25,7 @@
 		<allow pkg="software.amazon.awssdk.utils" />
 		
 		<subpackage name="services">
+			<allow pkg="com.formkiq.module.actions.services" />
 			<allow pkg="java.text" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 		</subpackage>

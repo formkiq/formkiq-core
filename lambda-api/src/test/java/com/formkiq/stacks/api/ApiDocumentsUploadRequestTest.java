@@ -25,11 +25,13 @@ package com.formkiq.stacks.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,19 +41,28 @@ import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.stacks.client.models.AddLargeDocument;
+import com.formkiq.stacks.client.models.DocumentActionType;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 
-/** Unit Tests for uploading /documents. */
+/** Unit Tests for uploading /documents/uploads. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
+  /** Results Limit. */
+  private static final int LIMIT = 10;
   /** {@link LocalStackContainer}. */
   private LocalStackContainer localstack = TestServices.getLocalStack();
 
@@ -105,6 +116,150 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
           assertTrue(getLogger().containsString(" on path " + null));
         }
       }
+    }
+  }
+
+  /**
+   * Valid POST generate upload document signed url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String path = "/bleh/test.txt";
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      com.formkiq.stacks.client.models.DocumentAction action0 =
+          new com.formkiq.stacks.client.models.DocumentAction().type(DocumentActionType.OCR);
+      AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
+          .actions(Arrays.asList(action0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      ApiUrlResponse resp = expectResponse(response);
+      assertFalse(resp.getUrl().contains("content-length"));
+
+      if (siteId != null) {
+        assertTrue(getLogger().containsString(
+            "generated presign url: " + this.localstack.getEndpointOverride(Service.S3).toString()
+                + "/testbucket/" + siteId));
+      } else {
+        assertTrue(getLogger().containsString("generated presign url: "
+            + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
+      }
+
+      String documentId = resp.getDocumentId();
+      assertNotNull(document);
+
+      ActionsService actionsService = getAwsServices().getExtension(ActionsService.class);
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionType.OCR, actions.get(0).type());
+      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+
+      int i = 0;
+      final int expectedCount = 2;
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(expectedCount, tags.size());
+      assertEquals("path", tags.get(i++).getKey());
+      assertEquals("test", tags.get(i).getKey());
+      assertEquals("this", tags.get(i++).getValue());
+    }
+  }
+
+  /**
+   * fails TagSchema required tags.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload02() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      final String tagSchemaId = UUID.randomUUID().toString();
+      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      AddLargeDocument document =
+          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}", m.get("body"));
+    }
+  }
+
+  /**
+   * Valid POST generate upload document signed url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload03() throws Exception {
+    // given
+    getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnNewTags());
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String tagSchemaId = UUID.randomUUID().toString();
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      AddLargeDocument document =
+          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      ApiUrlResponse resp = expectResponse(response);
+
+      String documentId = resp.getDocumentId();
+      assertNotNull(document);
+
+      int i = 0;
+      final int expectedCount = 2;
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(expectedCount, tags.size());
+      assertEquals("test", tags.get(i).getKey());
+      assertEquals("this", tags.get(i++).getValue());
+      assertEquals("testtag", tags.get(i).getKey());
+      assertEquals("testvalue", tags.get(i++).getValue());
     }
   }
 
