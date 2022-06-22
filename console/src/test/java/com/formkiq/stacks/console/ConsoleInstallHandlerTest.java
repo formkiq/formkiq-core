@@ -69,7 +69,7 @@ public class ConsoleInstallHandlerTest {
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack =
       new LocalStackContainer(localStackImage).withServices(Service.S3);
-  
+
   /**
    * Before Class.
    * 
@@ -84,7 +84,7 @@ public class ConsoleInstallHandlerTest {
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
     localstack.start();
-    
+
     s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
         .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString());
 
@@ -113,11 +113,14 @@ public class ConsoleInstallHandlerTest {
     map.put("REGION", "us-east-1");
     map.put("DISTRIBUTION_BUCKET", "distrobucket");
     map.put("CONSOLE_BUCKET", "destbucket");
-    map.put("API_URL", "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
+    map.put("API_URL",
+        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("API_AUTH_URL", "https://auth.execute-api.us-east-1.amazonaws.com/prod/");
-    map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");  
+    map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("BRAND", "24hourcharts");
     map.put("ALLOW_ADMIN_CREATE_USER_ONLY", "false");
+    map.put("COGNITO_HOSTED_UI", "https://test2622653865277.auth.us-east-2.amazoncognito.com");
+    map.put("USER_AUTHENTICATION", "cognito");
 
     this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
@@ -149,7 +152,7 @@ public class ConsoleInstallHandlerTest {
   private Map<String, Object> createInput(final String requestType) {
     Map<String, Object> map = new HashMap<>();
     map.put("RequestType", requestType);
-    map.put("ResponseURL", "https://cloudformation-custom-resource");    
+    map.put("ResponseURL", "https://cloudformation-custom-resource");
     return map;
   }
 
@@ -173,13 +176,16 @@ public class ConsoleInstallHandlerTest {
    */
   private void verifyConfigWritten() {
     String config = String.format(
-        "{%n\"url\": {%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
+        "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
             + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"}"
-            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\"}",
+            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\","
+            + "\"userAuthentication\":\"cognito\"}",
+        "https://test2622653865277.auth.us-east-2.amazoncognito.com",
         "https://auth.execute-api.us-east-1.amazonaws.com/prod/",
         "https://chartapi.24hourcharts.com", "wss://me.execute-api.us-east-1.amazonaws.com/prod/",
-        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1", "24hourcharts", "false");
-    
+        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1",
+        "24hourcharts", "false");
+
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }
 

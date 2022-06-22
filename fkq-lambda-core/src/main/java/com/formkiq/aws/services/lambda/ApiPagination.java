@@ -24,8 +24,8 @@
 package com.formkiq.aws.services.lambda;
 
 import java.util.UUID;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.PaginationMapToken;
 
 /**
  * Class for holding results paginating information.

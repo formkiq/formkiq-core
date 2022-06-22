@@ -28,12 +28,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.plugins.tagschema.DocumentTagLoader;
 
 /** Services for Querying, Updating Documents. */
-public interface DocumentService {
+public interface DocumentService extends DocumentTagLoader {
 
-  /** Date Format. */
-  String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
   /** System Defined Tags. */
@@ -49,7 +53,7 @@ public interface DocumentService {
    * @param timeToLive {@link String}
    */
   void addTags(String siteId, String documentId, Collection<DocumentTag> tags, String timeToLive);
-  
+
   /**
    * Delete Document.
    *
@@ -68,7 +72,7 @@ public interface DocumentService {
    */
   @Deprecated
   void deleteDocumentFormat(String siteId, String documentId, String contentType);
-  
+
   /**
    * Delete All Document Formats.
    *
@@ -137,6 +141,7 @@ public interface DocumentService {
 
   /**
    * Returns whether document exists.
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
@@ -161,7 +166,7 @@ public interface DocumentService {
    * @param includeChildDocuments boolean
    * @param token {@link PaginationMapToken}
    * @param limit int
-   * @return {@link PaginationResult} {@link DocumentItem}
+   * @return {@link PaginationResults} {@link DocumentItem}
    */
   PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
       boolean includeChildDocuments, PaginationMapToken token, int limit);
@@ -234,6 +239,7 @@ public interface DocumentService {
 
   /**
    * Find most recent inserted document {@link ZonedDateTime}.
+   * 
    * @return {@link ZonedDateTime}
    */
   ZonedDateTime findMostDocumentDate();
@@ -301,7 +307,7 @@ public interface DocumentService {
    * @return boolean
    */
   boolean removeTag(String siteId, String documentId, String tagKey, String tagValue);
-  
+
   /**
    * Remove Tags from Document.
    *

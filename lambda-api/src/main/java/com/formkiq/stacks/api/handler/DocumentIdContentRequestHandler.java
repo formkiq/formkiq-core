@@ -23,12 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -37,9 +38,9 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.common.formats.MimeType;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */
@@ -60,7 +61,8 @@ public class DocumentIdContentRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     String versionId = getParameter(event, "versionId");
 
-    DocumentItem item = awsservice.documentService().findDocument(siteId, documentId);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+    DocumentItem item = serviceCache.documentService().findDocument(siteId, documentId);
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
@@ -75,7 +77,7 @@ public class DocumentIdContentRequestHandler
       try (S3Client s3 = awsservice.s3Service().buildClient()) {
 
         String content = awsservice.s3Service().getContentAsString(s3,
-            awsservice.documents3bucket(), s3key, versionId);
+            awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, versionId);
 
         response = new ApiMapResponse(Map.of("content", content, "contentType",
             item.getContentType(), "isBase64", Boolean.FALSE));
@@ -84,8 +86,8 @@ public class DocumentIdContentRequestHandler
     } else {
 
       Duration duration = Duration.ofHours(1);
-      URL url = awsservice.s3Service().presignGetUrl(awsservice.documents3bucket(), s3key, duration,
-          versionId);
+      URL url = awsservice.s3Service().presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          s3key, duration, versionId);
 
       response = new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType",
           item.getContentType() != null ? item.getContentType() : "application/octet-stream"));

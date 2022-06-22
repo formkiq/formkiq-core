@@ -32,6 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -41,39 +45,38 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.NotFoundException;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.DocumentTag;
-import com.formkiq.stacks.dynamodb.DocumentTagType;
-import com.formkiq.stacks.dynamodb.PaginationResults;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
-  
+
   /** Convert to Milliseconds. */
   private static final long TO_MILLIS = 1000L;
-  
+
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsServices) throws Exception {
-    
+
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
-    PaginationResults<DynamicObject> list = awsServices.webhookService().findTags(siteId, id, null);
-    
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    PaginationResults<DynamicObject> list =
+        serviceCache.webhookService().findTags(siteId, id, null);
+
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();
-      
+
       map.put("insertedDate", m.getString("inserteddate"));
       map.put("webhookId", id);
       map.put("type", m.getString("type"));
       map.put("userId", m.getString("userId"));
       map.put("value", m.getString("tagValue"));
       map.put("key", m.getString("tagKey"));
-            
+
       return map;
     }).collect(Collectors.toList());
 
@@ -84,7 +87,7 @@ public class WebhooksTagsRequestHandler
   public String getRequestUrl() {
     return "/webhooks/{webhookId}/tags";
   }
-  
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -102,20 +105,21 @@ public class WebhooksTagsRequestHandler
     tag.setType(DocumentTagType.USERDEFINED);
     tag.setInsertedDate(new Date());
     tag.setUserId(getCallingCognitoUsername(event));
-    
-    DynamicObject webhook = awsServices.webhookService().findWebhook(siteId, id);
+
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
     if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    
+
     Date ttl = null;
     String ttlString = webhook.getString("TimeToLive");
     if (ttlString != null) {
       long epoch = Long.parseLong(ttlString);
       ttl = new Date(epoch * TO_MILLIS);
     }
-    
-    awsServices.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
+
+    serviceCache.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

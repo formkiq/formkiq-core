@@ -3,24 +3,27 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
@@ -46,10 +49,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -122,7 +125,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       final InputStream instream2 =
           new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
       ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-      
+
       // when
       getHandler().handleRequest(instream2, outstream, getMockContext());
 
@@ -171,8 +174,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       // given
       String filename = "test.pdf";
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, filename,
-            "testdata".getBytes(StandardCharsets.UTF_8), null);
+        getS3().putObject(s3, BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8),
+            null);
       }
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
@@ -194,8 +197,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String filename = "test.txt";
 
       try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, filename,
-            "testdata".getBytes(StandardCharsets.UTF_8), null);
+        getS3().putObject(s3, BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8),
+            null);
       }
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
@@ -1155,6 +1158,73 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       try (S3Client s3 = getS3().buildClient()) {
         assertEquals("text/html",
             getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).getContentType());
+      }
+    }
+  }
+
+  /**
+   * POST /documents request with invalid TagSchema.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments13() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+
+      // when
+      DynamicObject obj =
+          handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
+
+      // then
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}",
+          obj.getString("body"));
+    }
+  }
+
+  /**
+   * POST /documents request with valid TagSchema and added compositeKey.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocuments14() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnNewTags());
+
+      // when
+      DynamicObject obj =
+          handleRequest("/request-post-documents-documentid13.json", siteId, null, null);
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNotNull(body.getString("documentId"));
+      assertNull(body.getString("next"));
+      assertNull(body.getString("previous"));
+
+      String key = getKey(siteId, body);
+      String documentId = body.getString("documentId");
+
+      assertTrue(
+          getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
+
+      assertNotNull(documentId);
+
+      verifyS3(key, true, "a0dac80d-18b3-472b-88da-79e75082b662@formkiq.com");
+
+      try (S3Client s3 = getS3().buildClient()) {
+        String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
+        Map<String, Object> map = fromJson(content, Map.class);
+        assertEquals("true", map.get("newCompositeTags").toString());
       }
     }
   }

@@ -12,7 +12,7 @@ Parameters:
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
-    Default: 512
+    Default: 1024
     MinValue: 128
     MaxValue: 3008
   
@@ -196,19 +196,62 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}"
 
-  StagingS3Create:
+  DocumentActionsProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
     - S3LambdaRolePolicy
     Properties:
-      Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
+      Handler: com.formkiq.stacks.lambda.s3.DocumentActionsProcessor
+      Description: Lambda function to process Document Actions requests
       Runtime: provided
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: 0E88FEF466DE7769DD559283C1443B7B62D03CA56B0FFC9128F93ABA919BFDF2
+      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      Environment:
+        Variables:
+          DOCUMENTS_TABLE: 
+            Ref: Documents
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false          
+      Role: 
+        Fn::GetAtt:
+        - S3LambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+      Events:
+        ActionsEvent:
+          Type: SQS
+          Properties:
+            Queue: 
+              Fn::GetAtt: 
+              - DocumentActionsQueue
+              - Arn
+            BatchSize: 10          
+          
+  StagingS3Create:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - S3LambdaRolePolicy
+    Properties:
+      Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
+      Description: Lambda function that processes document written to the Staging S3 Bucket
+      Runtime: provided
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-s3-graalvm.zip
+      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
       Environment:
         Variables:
           DOCUMENTS_S3_BUCKET: 
@@ -272,13 +315,14 @@ Resources:
     - S3LambdaRolePolicy
     Properties:    
       Handler: com.formkiq.stacks.lambda.s3.DocumentsS3Update
+      Description: Lambda function that processes document written to the Documents S3 Bucket
       Runtime: provided
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: 0E88FEF466DE7769DD559283C1443B7B62D03CA56B0FFC9128F93ABA919BFDF2
+      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
       Environment:
         Variables:
           DOCUMENTS_TABLE: 
@@ -309,6 +353,22 @@ Resources:
               - Arn
             BatchSize: 10
 
+  DocumentActionsQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+              
   DocumentsUpdateQueue:
     Type: "AWS::SQS::Queue"
     Properties:
@@ -342,6 +402,46 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  DocumentActionsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: 
+    - DocumentActionsQueue
+    - SnsDocumentEvent
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: s3SendMessagesToQueue
+          Effect: Allow
+          Principal:
+            Service: sns.amazonaws.com
+          Action: sqs:SendMessage
+          Resource: 
+            Fn::GetAtt: 
+            - DocumentActionsQueue
+            - Arn
+          Condition:
+            ArnLike:
+              aws:SourceArn:
+                Ref: SnsDocumentEvent
+      Queues:
+      - Ref: DocumentActionsQueue
+      
+  SnsDocumentsCreateSubscriptionSqs:
+    Type: AWS::SNS::Subscription
+    DependsOn:
+    - DocumentActionsProcessor
+    Properties:
+      Protocol: sqs
+      Endpoint: 
+        Fn::GetAtt:
+        - DocumentActionsQueue
+        - Arn
+      TopicArn:
+        Ref: SnsDocumentEvent
+      FilterPolicy: '{"type": ["actions"]}'      
+      
   DocumentsUpdateQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     DependsOn: 
@@ -512,6 +612,9 @@ Resources:
             - sqs:GetQueueAttributes
             Resource:
             - Fn::GetAtt: 
+              - DocumentActionsQueue
+              - Arn
+            - Fn::GetAtt: 
               - DocumentsUpdateQueue
               - Arn
           - Effect: Allow
@@ -519,6 +622,17 @@ Resources:
             - sns:Publish
             Resource:
             - Ref: SnsDocumentEvent
+          - Effect: Allow
+            Action:
+            - ssm:GetParameter
+            Resource: 
+            - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+          - Effect: Allow
+            Action:
+            - execute-api:Invoke
+            - execute-api:ManageConnections
+            Resource: 
+            - arn:aws:execute-api:*:*:*            
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter

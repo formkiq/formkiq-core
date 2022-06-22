@@ -46,6 +46,13 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
+import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.plugins.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 import software.amazon.awssdk.utils.StringUtils;
@@ -59,7 +66,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
- 
+
   /**
    * Handle Exception.
    *
@@ -99,6 +106,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Call Handler Rest Method.
+   * 
    * @param logger {@link LambdaLogger}
    * @param method {@link String}
    * @param event {@link ApiGatewayRequestEvent}
@@ -110,20 +118,23 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private ApiRequestHandlerResponse callHandlerMethod(final LambdaLogger logger,
       final String method, final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final ApiGatewayRequestHandler handler) throws Exception {
-    
+
     ApiRequestHandlerResponse response = null;
     AwsServiceCache awsServices = getAwsServices();
 
     switch (method) {
       case "get":
+        handler.beforeGet(logger, event, authorizer, awsServices);
         response = handler.get(logger, event, authorizer, awsServices);
         break;
 
       case "delete":
+        handler.beforeDelete(logger, event, authorizer, awsServices);
         response = handler.delete(logger, event, authorizer, awsServices);
         break;
 
       case "head":
+        handler.beforeHead(logger, event, authorizer, awsServices);
         response = handler.head(logger, event, authorizer, awsServices);
         break;
 
@@ -132,14 +143,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         break;
 
       case "patch":
+        handler.beforePatch(logger, event, authorizer, awsServices);
         response = handler.patch(logger, event, authorizer, awsServices);
         break;
 
       case "post":
+        handler.beforePost(logger, event, authorizer, awsServices);
         response = handler.post(logger, event, authorizer, awsServices);
         break;
 
       case "put":
+        handler.beforePut(logger, event, authorizer, awsServices);
         response = handler.put(logger, event, authorizer, awsServices);
         break;
       default:
@@ -165,6 +179,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Find Request Handler.
+   * 
    * @param urlMap {@link Map}
    * @param method {@link String}
    * @param resource {@link String}
@@ -179,7 +194,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     if (hander != null) {
       return hander;
     }
-      
+
     throw new NotFoundException(resource + " not found");
   }
 
@@ -192,8 +207,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @return {@link ApiGatewayRequestEvent}
    * @throws IOException IOException
    */
-  private ApiGatewayRequestEvent getApiGatewayEvent(final String str,
-      final LambdaLogger logger, final AwsServiceCache awsservice) throws IOException {
+  private ApiGatewayRequestEvent getApiGatewayEvent(final String str, final LambdaLogger logger,
+      final AwsServiceCache awsservice) throws IOException {
 
     if (awsservice.debug()) {
       logger.log(str);
@@ -202,7 +217,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
     return event;
   }
-  
+
   /**
    * Get {@link AwsServiceCache}.
    *
@@ -212,6 +227,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   * 
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link String}
    * @throws BadException BadException
@@ -221,21 +237,22 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     if (body == null) {
       throw new BadException("request body is required");
     }
-    
+
     if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
       byte[] bytes = Base64.getDecoder().decode(body);
       body = new String(bytes, StandardCharsets.UTF_8);
     }
-    
+
     if (StringUtils.isEmpty(body)) {
       throw new BadException("request body is required");
     }
-    
+
     return body;
   }
 
   /**
    * Get URL Map.
+   * 
    * @return {@link Map}
    */
   public abstract Map<String, ApiGatewayRequestHandler> getUrlMap();
@@ -245,11 +262,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final Context context) throws IOException {
 
     LambdaLogger logger = context.getLogger();
-    
+
     AwsServiceCache awsServices = getAwsServices();
 
     String str = IoUtils.toUtf8String(input);
-    
+
     ApiGatewayRequestEvent event = getApiGatewayEvent(str, logger, awsServices);
     if (!isEmpty(event)) {
       processApiGatewayRequest(logger, event, awsServices, output);
@@ -257,18 +274,22 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
       for (LambdaInputRecord record : records.getRecords()) {
         if ("aws:sqs".equals(record.getEventSource())) {
-          handleSqsRequest(record);
+          handleSqsRequest(logger, awsServices, record);
         }
       }
     }
   }
-  
+
   /**
    * Handler for Sqs Requests.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param awsServices {@link AwsServiceCache}
    * @param record {@link LambdaInputRecord}
    * @throws IOException IOException
    */
-  public abstract void handleSqsRequest(LambdaInputRecord record) throws IOException;
+  public abstract void handleSqsRequest(LambdaLogger logger, AwsServiceCache awsServices,
+      LambdaInputRecord record) throws IOException;
 
   /**
    * Whether {@link ApiGatewayRequestEvent} has access.
@@ -307,9 +328,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private boolean isCheckAccess(final String method) {
     return !"options".equals(method);
   }
-  
+
   /**
    * Is {@link ApiGatewayRequestEvent} empty.
+   * 
    * @param event {@link ApiGatewayRequestEvent}
    * @return boolean
    */
@@ -343,6 +365,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Processes API Gateway Requests.
+   * 
    * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param awsServices {@link AwsServiceCache}
@@ -352,7 +375,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private void processApiGatewayRequest(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
       final OutputStream output) throws IOException {
-    
+
     ApiAuthorizer authorizer = new ApiAuthorizer(event);
 
     try {
@@ -380,6 +403,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     } catch (NotImplementedException e) {
       buildResponse(logger, awsServices, output, SC_NOT_IMPLEMENTED, Collections.emptyMap(),
           new ApiResponseError(e.getMessage()));
+    } catch (ValidationException e) {
+      buildResponse(logger, awsServices, output, SC_BAD_REQUEST, Collections.emptyMap(),
+          new ApiResponseError(e.errors()));
     } catch (Exception e) {
       logError(logger, e);
 
@@ -420,6 +446,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /**
    * Processes the Response.
+   * 
    * @param authorizer {@link ApiAuthorizer}
    * @param event {@link ApiGatewayRequestEvent}
    * @param resp {@link ApiRequestHandlerResponse}
@@ -429,9 +456,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiRequestHandlerResponse resp) throws BadException {
 
     String webnotify = event.getQueryStringParameter("webnotify");
-    
+
     if ("true".equals(webnotify)) {
-      
+
       AwsServiceCache aws = getAwsServices();
       switch (resp.getStatus()) {
         case SC_OK:
@@ -440,20 +467,20 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           String siteId = authorizer.getSiteId();
           String body = getBodyAsString(event);
           String documentId = event.getPathParameters().get("documentId");
-          
+
           Map<String, String> m = new HashMap<>();
           if (siteId != null) {
             m.put("siteId", siteId);
           }
-          
+
           if (documentId != null) {
             m.put("documentId", documentId);
           }
-          
+
           m.put("message", body);
-    
+
           String json = this.gson.toJson(m);
-          aws.sqsService().sendMessage(aws.websocketSqsUrl(), json);
+          aws.sqsService().sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           break;
 
         default:

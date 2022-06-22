@@ -35,16 +35,16 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.models.DocumentSearch;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
-import com.formkiq.stacks.common.objects.DynamicObject;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentTag;
-import com.formkiq.stacks.dynamodb.SearchQuery;
-import com.formkiq.stacks.dynamodb.SearchTagCriteria;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -55,7 +55,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
   /** Match Tag element count. */
   private static final int MATCH_COUNT = 3;
-  
+
   /**
    * Invalid search.
    *
@@ -225,7 +225,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
     }
   }
-  
+
   /**
    * InValid POST search body.
    *
@@ -248,7 +248,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
     }
   }
-  
+
   /**
    * Valid POST search no results.
    *
@@ -278,7 +278,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(0, documents.size());
     }
   }
-  
+
   /**
    * Valid POST search by eq/eqOr tagValue and valid/invalid DocumentId.
    *
@@ -299,12 +299,12 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
         addParameter(event, "siteId", siteId);
         event.setIsBase64Encoded(Boolean.FALSE);
-        
+
         DocumentSearch s = new DocumentSearch().query(
             new DocumentSearchQuery().tag(new DocumentSearchTag().key("category").eq("person"))
                 .documentIds(Arrays.asList(documentId)));
         event.setBody(GsonUtil.getInstance().toJson(s));
-        
+
         if ("eqOr".equals(op)) {
           s.query().tag().eq(null).eqOr(Arrays.asList("person"));
         }
@@ -351,7 +351,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       }
     }
   }
-  
+
   /**
    * Valid POST search by eq tagValue and TOO many DocumentId.
    *
@@ -360,7 +360,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest08() throws Exception {
     final int count = 101;
-    
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
@@ -373,7 +373,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         ids.add(UUID.randomUUID().toString());
       }
       q.query().documentsIds(ids);
-      
+
       event.setIsBase64Encoded(Boolean.FALSE);
       event.setBody(GsonUtil.getInstance().toJson(q));
 
@@ -387,7 +387,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
     }
   }
-  
+
   /**
    * Valid POST search by eq tagValue with > 10 Document.
    *
@@ -407,7 +407,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       for (int i = 0; i < count; i++) {
         String documentId = UUID.randomUUID().toString();
         Date now = new Date();
-        
+
         documentIds.add(documentId);
 
         DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
@@ -416,14 +416,14 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         getDocumentService().saveDocument(siteId,
             new DocumentItemDynamoDb(documentId, now, username), Arrays.asList(item));
       }
-      
+
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
       addParameter(event, "siteId", siteId);
       event.setIsBase64Encoded(Boolean.FALSE);
       QueryRequest q = new QueryRequest().query(new SearchQuery()
           .tag(new SearchTagCriteria().key(tagKey).eq(tagvalue)).documentsIds(documentIds));
       event.setBody(GsonUtil.getInstance().toJson(q));
-      
+
       // when
       String response = handleRequest(event);
 
@@ -438,12 +438,12 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(count, documents.size());
-      
+
       // given not search by documentIds should be limited to 10
       q = new QueryRequest().query(new SearchQuery()
           .tag(new SearchTagCriteria().key(tagKey).eq(tagvalue)).documentsIds(null));
       event.setBody(GsonUtil.getInstance().toJson(q));
-      
+
       // when
       response = handleRequest(event);
 
@@ -458,6 +458,60 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
       documents = resp.getList("documents");
       assertEquals(ten, documents.size());
+    }
+  }
+
+  /**
+   * Test Setting multiple tags.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest10() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest()
+          .query(new SearchQuery().tags(Arrays.asList(new SearchTagCriteria().key("test"))));
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      String expected = "{" + getHeaders() + ",\"body\":"
+          + "\"{\\\"message\\\":\\\"Feature only available in FormKiQ Enterprise\\\"}\","
+          + "\"statusCode\":402}";
+      assertEquals(expected, response);
+    }
+  }
+
+  /**
+   * Missing Tag Key.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequest11() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest().query(new SearchQuery().tag(new SearchTagCriteria()));
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      String expected = "{" + getHeaders() + ",\"body\":"
+          + "\"{\\\"message\\\":\\\"'tag' attribute is required.\\\"}\"," + "\"statusCode\":400}";
+      assertEquals(expected, response);
     }
   }
 }

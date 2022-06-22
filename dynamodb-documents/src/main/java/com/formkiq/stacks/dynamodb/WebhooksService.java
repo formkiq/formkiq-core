@@ -26,11 +26,14 @@ package com.formkiq.stacks.dynamodb;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {
-  
+
   /**
    * Add Tags to Webhook.
    * 
@@ -40,7 +43,7 @@ public interface WebhooksService {
    * @param ttl {@link Date}
    */
   void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, Date ttl);
-  
+
   /**
    * Delete Webhook.
    *
@@ -48,7 +51,7 @@ public interface WebhooksService {
    * @param id {@link String}
    */
   void deleteWebhook(String siteId, String id);
-  
+
   /**
    * Find Webhook Tag.
    *
@@ -59,7 +62,7 @@ public interface WebhooksService {
    * @return {@link DynamicObject}
    */
   DynamicObject findTag(String siteId, String webhookId, String tagKey);
-  
+
   /**
    * Find Webhook Tags.
    *
@@ -74,6 +77,7 @@ public interface WebhooksService {
 
   /**
    * Find Webhook.
+   * 
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @return {@link DynamicObject}
@@ -101,9 +105,10 @@ public interface WebhooksService {
    * @return {@link String}
    */
   String saveWebhook(String siteId, String name, String userId, Date ttl, String enabled);
-  
+
   /**
    * Update Webhook TimeToLive.
+   * 
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @param ttl {@link Date}
@@ -112,9 +117,10 @@ public interface WebhooksService {
 
   /**
    * Update Webhook.
+   * 
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @param obj {@link DynamicObject}
    */
-  void updateWebhook(String siteId, String webhookId, DynamicObject obj);  
+  void updateWebhook(String siteId, String webhookId, DynamicObject obj);
 }

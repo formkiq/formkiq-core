@@ -64,7 +64,7 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
   private static final int STATUS_UNAUTHORIZED = 401;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
-  
+
   /**
    * /webhooks Options.
    * 
@@ -78,7 +78,7 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
           client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
     }
   }
-  
+
   /**
    * Test POST /private/webhooks.
    * 
@@ -90,10 +90,10 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
       // given
       String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
       String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
-      
+
       Map<String, List<String>> headers = Map.of("Authorization",
           Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
-      
+
       Optional<HttpHeaders> o =
           Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
             @Override
@@ -140,9 +140,9 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
       // given
       String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
       String urlpath = getRootHttpUrl() + "/private/webhooks/" + id;
-      
+
       Map<String, List<String>> headers = Map.of("Content-Type", Arrays.asList("text/plain"));
-      
+
       Optional<HttpHeaders> o =
           Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
             @Override
@@ -160,5 +160,5 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
       // then
       assertEquals(STATUS_UNAUTHORIZED, response.statusCode());
     }
-  }  
+  }
 }

@@ -151,19 +151,22 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String brand = this.environmentMap.get("BRAND");
     String allowAdminCreateUserOnly = this.environmentMap.get("ALLOW_ADMIN_CREATE_USER_ONLY");
     String authApi = this.environmentMap.get("API_AUTH_URL");
+    String cognitoHostedUi = this.environmentMap.get("COGNITO_HOSTED_UI");
+    String userAuthentication = this.environmentMap.get("USER_AUTHENTICATION");
 
     String documentApi = this.environmentMap.get("API_URL");
-    
+
     String chartApi = brand.contains("24hourcharts") ? "https://chartapi.24hourcharts.com" : "";
 
     String webSocketApi = this.environmentMap.get("API_WEBSOCKET_URL");
-    
+
     String json = String.format(
-        "{%n\"url\": {%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
+        "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
             + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"},"
-            + "\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\"}",
-        authApi, chartApi, webSocketApi, documentApi, consoleversion, brand,
-        allowAdminCreateUserOnly);
+            + "\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\","
+            + "\"userAuthentication\":\"%s\"}",
+        cognitoHostedUi, authApi, chartApi, webSocketApi, documentApi, consoleversion, brand,
+        allowAdminCreateUserOnly, userAuthentication);
 
     String fileName = consoleversion + "/assets/config.json";
 

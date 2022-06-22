@@ -52,7 +52,7 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
   /** {@link LocalStackContainer}. */
   private LocalStackContainer localstack = TestServices.getLocalStack();
-  
+
   /**
    * /documents/{documentId}/url request.
    * 

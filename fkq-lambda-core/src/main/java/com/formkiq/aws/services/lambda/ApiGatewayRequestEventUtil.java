@@ -23,7 +23,6 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,9 +34,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.CacheService;
-import com.formkiq.stacks.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import software.amazon.awssdk.utils.StringUtils;
@@ -48,6 +48,9 @@ import software.amazon.awssdk.utils.StringUtils;
  *
  */
 public interface ApiGatewayRequestEventUtil {
+
+  /** The Default maximum results returned. */
+  int MAX_RESULTS = 10;
 
   /** {@link Gson}. */
   Gson GSON = GsonUtil.getInstance();
@@ -157,9 +160,10 @@ public interface ApiGatewayRequestEventUtil {
       }
     }
   }
-  
+
   /**
    * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   * 
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link String}
    * @throws BadException BadException
@@ -169,16 +173,16 @@ public interface ApiGatewayRequestEventUtil {
     if (body == null) {
       throw new BadException("request body is required");
     }
-    
+
     if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
       byte[] bytes = Base64.getDecoder().decode(body);
       body = new String(bytes, StandardCharsets.UTF_8);
     }
-    
+
     if (StringUtils.isEmpty(body)) {
       throw new BadException("request body is required");
     }
-    
+
     return body;
   }
 
@@ -237,7 +241,7 @@ public interface ApiGatewayRequestEventUtil {
     }
     return username;
   }
-  
+
   /**
    * Get ContentType from {@link ApiGatewayRequestEvent}.
    * 
@@ -407,7 +411,7 @@ public interface ApiGatewayRequestEventUtil {
   default void setPathParameter(final ApiGatewayRequestEvent event, final String key,
       final String value) {
     Map<String, String> q = new HashMap<>();
-    
+
     if (event.getPathParameters() != null) {
       q.putAll(event.getPathParameters());
     }

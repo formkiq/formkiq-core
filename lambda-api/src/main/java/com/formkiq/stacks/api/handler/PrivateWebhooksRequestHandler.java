@@ -32,7 +32,7 @@ public class PrivateWebhooksRequestHandler extends PublicWebhooksRequestHandler 
   protected boolean isSupportPrivate() {
     return true;
   }
-  
+
   @Override
   public String getRequestUrl() {
     return "/private/webhooks";

@@ -27,13 +27,13 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import java.util.Collections;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.dynamodb.CacheService;
-import com.formkiq.stacks.dynamodb.PaginationMapToken;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 import com.google.gson.Gson;
 
 /**

@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.List;
 import java.util.Map;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
 
 /**
  * Pagination Result for a DynamoDB Query.

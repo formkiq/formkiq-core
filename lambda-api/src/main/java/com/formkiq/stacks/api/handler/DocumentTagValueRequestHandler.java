@@ -24,8 +24,11 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -34,7 +37,10 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationException;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}/{tagValue}". */
@@ -57,7 +63,20 @@ public class DocumentTagValueRequestHandler
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
     String tagValue = map.get("tagValue");
-    DocumentService documentService = awsservice.documentService();
+
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = cacheService.documentService();
+
+    DocumentItem item = documentService.findDocument(siteId, documentId);
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
+
+    Collection<ValidationError> errors = awsservice.documentTagSchemaPlugin()
+        .validateRemoveTags(siteId, item, Arrays.asList(tagKey));
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
 
     boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);
     if (!removed) {

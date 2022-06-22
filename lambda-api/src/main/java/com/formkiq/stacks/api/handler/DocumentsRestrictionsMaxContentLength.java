@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 
 /**
  * {@link DocumentsRestrictions} for Max Number of Documents.

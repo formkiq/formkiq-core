@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.module.emailnotify.awstest;
 
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -69,7 +73,7 @@ public class EmailSendingTest {
   private static S3Service s3Service;
   /** S3 Staging Bucket. */
   private static String stagingdocumentsbucketname;
-  
+
   /**
    * Assert Received Message.
    * 
@@ -95,7 +99,7 @@ public class EmailSendingTest {
     assertEquals("A document has been created in FormKiQ", map.get("Subject"));
     assertNotNull(map.get("Message"));
   }
-  
+
   /**
    * beforeclass.
    * 
@@ -103,10 +107,10 @@ public class EmailSendingTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-    
+
     Region awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
-    
+
     final SqsConnectionBuilder sqsConnection =
         new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     final SsmConnectionBuilder ssmBuilder =
@@ -120,14 +124,14 @@ public class EmailSendingTest {
     sqsService = new SqsService(sqsConnection);
     SsmService ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
-    
+
     String app = System.getProperty("testappenvironment");
-    snsDocumentEmailArn = ssmService
-        .getParameterValue("/formkiq/" + app + "/sns/DocumentsEmailNotificationArn");
+    snsDocumentEmailArn =
+        ssmService.getParameterValue("/formkiq/" + app + "/sns/DocumentsEmailNotificationArn");
     stagingdocumentsbucketname =
         ssmService.getParameterValue("/formkiq/" + app + "/s3/DocumentsStageS3Bucket");
   }
-  
+
   /**
    * Create SQS Queue.
    * 
@@ -142,7 +146,7 @@ public class EmailSendingTest {
         CreateQueueRequest.builder().queueName(queueName).attributes(attributes).build();
     return sqsService.createQueue(request);
   }
-  
+
   /**
    * Subscribe Sqs to Sns.
    * 
@@ -165,12 +169,14 @@ public class EmailSendingTest {
     String subscriptionArn = snsService.subscribe(topicArn, "sqs", queueArn).subscriptionArn();
     return subscriptionArn;
   }
-  
+
   /**
    * Test Sending Email.
+   * 
    * @throws Exception Exception
    */
   @Test(timeout = TIMEOUT)
+  @Ignore
   public void testSendingEmail01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();
@@ -196,7 +202,7 @@ public class EmailSendingTest {
       sqsService.deleteQueue(documentEmailQueueUrl);
     }
   }
-  
+
   /**
    * Write File to Staging S3.
    * 

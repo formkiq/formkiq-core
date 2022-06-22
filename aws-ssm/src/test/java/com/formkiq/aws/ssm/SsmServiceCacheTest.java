@@ -55,7 +55,7 @@ public class SsmServiceCacheTest {
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack =
       new LocalStackContainer(localStackImage).withServices(Service.SSM);
-  
+
   /** {@link SsmServiceCache}. */
   private static SsmServiceCache cache;
   /** {@link SsmConnectionBuilder}. */
@@ -78,10 +78,10 @@ public class SsmServiceCacheTest {
 
     ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
         .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString());
-    
+
     cache = new SsmServiceCache(ssmConnection, 1, TimeUnit.SECONDS);
   }
-  
+
   /**
    * AfterClass.
    */

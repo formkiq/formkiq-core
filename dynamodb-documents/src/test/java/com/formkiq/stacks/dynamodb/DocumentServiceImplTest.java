@@ -3,25 +3,29 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,9 +52,21 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -61,14 +77,16 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentServiceImplTest implements DbKeys {
 
-  /** {@link DynamoDbHelper}. */
-  private DynamoDbHelper dbhelper;
-
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-  /** Document Table. */
+  /** {@link DocumentService}. */
   private DocumentService service;
+
+  /** {@link DocumentSearchService}. */
+  private DocumentSearchService searchService;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
 
   /**
    * Before Test.
@@ -79,9 +97,10 @@ public class DocumentServiceImplTest implements DbKeys {
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    this.dbhelper = DynamoDbTestServices.getDynamoDbHelper(null);
-    this.service =
-        new DocumentServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
+    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentServiceImpl(this.db, DOCUMENTS_TABLE);
+    this.searchService =
+        new DocumentSearchServiceImpl(this.service, this.db, DOCUMENTS_TABLE, null);
   }
 
   /**
@@ -202,9 +221,9 @@ public class DocumentServiceImplTest implements DbKeys {
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
       SearchQuery q = new SearchQuery().tag(s);
-      
+
       PaginationResults<DynamicDocumentItem> list =
-          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -247,9 +266,9 @@ public class DocumentServiceImplTest implements DbKeys {
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
       SearchQuery q = new SearchQuery().tag(s);
-      
+
       PaginationResults<DynamicDocumentItem> list =
-          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -303,7 +322,7 @@ public class DocumentServiceImplTest implements DbKeys {
           this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertNull(results.getToken());
       assertEquals(count, results.getResults().size());
-       
+
       assertEquals(tagKey, results.getResults().get(0).getKey());
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
       assertNull(results.getResults().get(0).getValue());
@@ -313,14 +332,14 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(1).getType());
       assertEquals("active", results.getResults().get(1).getValue());
       assertNull(results.getResults().get(1).getValues());
-      
+
       assertEquals(tagValues, this.service.findDocumentTag(siteId, documentId, tagKey).getValues());
 
       SearchTagCriteria s = new SearchTagCriteria(tagKey);
       SearchQuery q = new SearchQuery().tag(s);
-      
+
       PaginationResults<DynamicDocumentItem> list =
-          this.dbhelper.getSearchService().search(siteId, q, null, MAX_RESULTS);
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
       assertNull(list.getToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
@@ -1081,7 +1100,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       assertEquals(1,
           this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
-      
+
       // when
       this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
 
@@ -1090,7 +1109,7 @@ public class DocumentServiceImplTest implements DbKeys {
           this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
     }
   }
-  
+
   /**
    * Test Remove 1 tag value from a 2 multi-value Document Tag.
    */
@@ -1112,7 +1131,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertEquals("[abc, xyz]", results.get(0).getValues().toString());
       assertNull(results.get(0).getValue());
-      
+
       // when
       assertTrue(this.service.removeTag(siteId, docid, tagKey, "xyz"));
 
@@ -1123,7 +1142,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("abc", results.get(0).getValue());
     }
   }
-  
+
   /**
    * Test Remove 1 tag value from a 3 multi-value Document Tag.
    */
@@ -1145,7 +1164,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertEquals("[abc, mno, xyz]", results.get(0).getValues().toString());
       assertNull(results.get(0).getValue());
-      
+
       // when
       assertTrue(this.service.removeTag(siteId, docid, tagKey, "xyz"));
 
@@ -1156,7 +1175,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(results.get(0).getValue());
     }
   }
-  
+
   /**
    * Test Remove 1 tag value from a 1 multi-value Document Tag.
    */
@@ -1178,7 +1197,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertEquals("[xyz]", results.get(0).getValues().toString());
       assertNull(results.get(0).getValue());
-      
+
       // when
       assertTrue(this.service.removeTag(siteId, docid, tagKey, "xyz"));
 
@@ -1187,7 +1206,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(0, results.size());
     }
   }
-  
+
   /**
    * Test Remove tag value.
    */
@@ -1209,7 +1228,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertNull(results.get(0).getValues());
       assertEquals(tagValue, results.get(0).getValue());
-      
+
       // when
       assertTrue(this.service.removeTag(siteId, docid, tagKey, tagValue));
 
@@ -1218,7 +1237,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(0, results.size());
     }
   }
-  
+
   /**
    * Test Remove wrong tag value.
    */
@@ -1240,7 +1259,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertNull(results.get(0).getValues());
       assertEquals(tagValue, results.get(0).getValue());
-      
+
       // when
       assertFalse(this.service.removeTag(siteId, docid, tagKey, tagValue + "!"));
 
@@ -1249,7 +1268,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
     }
   }
-  
+
   /**
    * Test Save {@link DocumentItem} with {@link DocumentTag}.
    */
@@ -1499,17 +1518,17 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(this.dbhelper.getDocumentTable()).build();
+          .tableName(DOCUMENTS_TABLE).build();
 
-      try (DynamoDbClient db = this.dbhelper.getDb()) {
-        Map<String, AttributeValue> result = db.getItem(r).item();
+      try (DynamoDbClient client = this.db.build()) {
+        Map<String, AttributeValue> result = client.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
 
         for (String tagKey : Arrays.asList("untagged", "userId")) {
           r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-              .tableName(this.dbhelper.getDocumentTable()).build();
+              .tableName(DOCUMENTS_TABLE).build();
 
-          result = db.getItem(r).item();
+          result = client.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
         }
       }

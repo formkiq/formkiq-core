@@ -23,26 +23,27 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -80,11 +81,13 @@ public class DocumentIdUrlRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+
     String documentId = event.getPathParameters().get("documentId");
     String versionId = getParameter(event, "versionId");
     String siteId = authorizer.getSiteId();
 
-    DocumentItem item = awsservice.documentService().findDocument(siteId, documentId);
+    DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
@@ -113,6 +116,8 @@ public class DocumentIdUrlRequestHandler
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
       final String documentId, final String versionId) {
 
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+
     URL url = null;
     String contentType = getContentType(event);
     String siteId = authorizer.getSiteId();
@@ -129,13 +134,13 @@ public class DocumentIdUrlRequestHandler
           + documentId);
 
       String s3key = createS3Key(siteId, documentId);
-      url = awsservice.s3Service().presignGetUrl(awsservice.documents3bucket(), s3key, duration,
-          versionId);
+      url = awsservice.s3Service().presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          s3key, duration, versionId);
 
     } else {
 
       Optional<DocumentFormat> format =
-          awsservice.documentService().findDocumentFormat(siteId, documentId, contentType);
+          cacheService.documentService().findDocumentFormat(siteId, documentId, contentType);
 
       if (format.isPresent()) {
 
@@ -145,8 +150,8 @@ public class DocumentIdUrlRequestHandler
         }
 
         String s3key = createS3Key(siteId, documentId, contentType);
-        url = awsservice.s3Service().presignGetUrl(awsservice.documents3bucket(), s3key, duration,
-            versionId);
+        url = awsservice.s3Service().presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+            s3key, duration, versionId);
 
       } else if (awsservice.debug()) {
 

@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -36,6 +36,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -44,13 +48,10 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.PaginationMapToken;
-import com.formkiq.stacks.dynamodb.PaginationResults;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/documents". */
@@ -83,6 +84,7 @@ public class DocumentsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
     ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
 
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
@@ -103,14 +105,14 @@ public class DocumentsRequestHandler
       }
     }
 
-    ZonedDateTime date = transformToDate(logger, awsservice, dateString, tz);
+    ZonedDateTime date = transformToDate(logger, serviceCache, dateString, tz);
 
     String siteId = authorizer.getSiteId();
     final PaginationResults<DocumentItem> results =
-        awsservice.documentService().findDocumentsByDate(siteId, date, ptoken, limit);
+        serviceCache.documentService().findDocumentsByDate(siteId, date, ptoken, limit);
 
-    ApiPagination current = createPagination(awsservice.documentCacheService(), event,
-        pagination, results.getToken(), limit);
+    ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
+        results.getToken(), limit);
 
     List<DocumentItem> documents = subList(results.getResults(), limit);
 
@@ -130,14 +132,15 @@ public class DocumentsRequestHandler
    * Transform {@link String} to {@link ZonedDateTime}.
    *
    * @param logger {@link LambdaLogger}
-   * @param awsservice {@link AwsServiceCache}
+   * @param awsservice {@link CoreAwsServiceCache}
    * @param dateString {@link String}
    * @param tz {@link String}
    * @return {@link Date}
    * @throws BadException BadException
    */
-  private ZonedDateTime transformToDate(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String dateString, final String tz) throws BadException {
+  private ZonedDateTime transformToDate(final LambdaLogger logger,
+      final CoreAwsServiceCache awsservice, final String dateString, final String tz)
+      throws BadException {
 
     ZonedDateTime date = null;
 
@@ -148,7 +151,7 @@ public class DocumentsRequestHandler
         throw new BadException("Invalid date string: " + dateString);
       }
     } else {
-      
+
       date = awsservice.documentService().findMostDocumentDate();
       if (date == null) {
         date = ZonedDateTime.now();

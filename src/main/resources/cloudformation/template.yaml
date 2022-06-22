@@ -140,6 +140,7 @@ Resources:
     Type: AWS::Serverless::Application
     DependsOn:
       - CoreApi
+      - Cognito
     Properties:
       Location: console/template-install.yaml
       Parameters:
@@ -167,6 +168,10 @@ Resources:
           - Outputs.ApiEndpoint
         AllowAdminCreateUserOnly: 
           Fn::Sub: "${AllowAdminCreateUserOnly}"
+        CognitoHostedUi:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoHostedUi
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -201,6 +206,12 @@ Resources:
           Fn::GetAtt:
           - CoreConsole
           - Outputs.ConsoleUrl
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -273,23 +284,23 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
-  ModuleEmailNotify:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreConsole
-    Properties:
-      Location: module-email-notify/template.yaml
-      Parameters:
-        AppEnvironment: 
-          Ref: AppEnvironment
-        Email: 
-          Ref: AdminEmail
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+#  ModuleEmailNotify:
+#    Type: AWS::Serverless::Application
+#    DependsOn:
+#      - CoreConsole
+#    Properties:
+#      Location: module-email-notify/template.yaml
+#      Parameters:
+#        AppEnvironment: 
+#          Ref: AppEnvironment
+#        Email: 
+#          Ref: AdminEmail
+#      Tags:
+#        Application: "FormKiQ Core"
+#        AppEnvironment: 
+#          Fn::Sub: "${AppEnvironment}"
+#        StackName: 
+#          Fn::Sub: "${AWS::StackName}"
 
   CoreConsoleUsers:
     Type: AWS::Serverless::Application

@@ -23,9 +23,13 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Function;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 
 /**
  * 
@@ -33,6 +37,18 @@ import com.formkiq.stacks.common.objects.DynamicObject;
  *
  */
 public class DynamicObjectToDocumentTag implements Function<DynamicObject, DocumentTag> {
+
+  /** {@link SimpleDateFormat}. */
+  private SimpleDateFormat df;
+
+  /**
+   * constructor.
+   * 
+   * @param formatter {@link SimpleDateFormat}
+   */
+  public DynamicObjectToDocumentTag(final SimpleDateFormat formatter) {
+    this.df = formatter;
+  }
 
   @Override
   public DocumentTag apply(final DynamicObject t) {
@@ -47,7 +63,22 @@ public class DynamicObjectToDocumentTag implements Function<DynamicObject, Docum
     }
     tag.setUserId(t.getString("userId"));
     tag.setValue(t.getString("value"));
-    tag.setInsertedDate(t.getDate("insertedDate"));
+
+    Object ob = t.get("insertedDate");
+    if (ob instanceof Date) {
+      tag.setInsertedDate((Date) ob);
+    } else if (this.df != null && ob instanceof String) {
+      try {
+        tag.setInsertedDate(this.df.parse(ob.toString()));
+      } catch (ParseException e) {
+        tag.setInsertedDate(new Date());
+      }
+    }
+
+    if (t.containsKey("values")) {
+      tag.setValue(null);
+      tag.setValues(t.getStringList("values"));
+    }
 
     if (tag.getInsertedDate() == null) {
       tag.setInsertedDate(new Date());

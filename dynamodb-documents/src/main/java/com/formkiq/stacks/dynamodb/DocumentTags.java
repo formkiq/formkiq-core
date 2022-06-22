@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.List;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** {@link List} of {@link DocumentItemDynamoDb} tags. */

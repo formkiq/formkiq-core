@@ -23,7 +23,7 @@
  */
 package com.formkiq.lambda.apigateway.util;
 
-import com.formkiq.stacks.dynamodb.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

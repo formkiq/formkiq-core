@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
+import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.SearchQuery;
 
 /** Query Request. */
 @Reflectable
@@ -55,14 +55,5 @@ public class QueryRequest {
   public QueryRequest query(final SearchQuery q) {
     this.query = q;
     return this;
-  }
-
-  /** Is {@link QueryRequest} object valid. */
-  public void isValid() {
-    if (this.query == null) {
-      throw new IllegalArgumentException("'query' field is required.");
-    }
-
-    this.query.isValid();
   }
 }

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -72,6 +73,7 @@ public class AttributeValueToDocumentItem
 
   /**
    * Convert {@link Map} {@link String} {@link AttributeValue} to {@link DocumentItem}.
+   * 
    * @param map {@link Map} {@link String} {@link AttributeValue}
    * @return {@link DocumentItem}
    */
@@ -103,7 +105,11 @@ public class AttributeValueToDocumentItem
     if (map.containsKey("belongsToDocumentId")) {
       item.setBelongsToDocumentId(map.get("belongsToDocumentId").s());
     }
-    
+
+    if (map.containsKey("tagSchemaId")) {
+      item.setTagSchemaId(map.get("tagSchemaId").s());
+    }
+
     if (map.containsKey("TimeToLive")) {
       item.setTimeToLive(map.get("TimeToLive").n());
     }

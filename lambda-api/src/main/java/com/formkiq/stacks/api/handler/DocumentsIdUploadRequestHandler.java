@@ -35,20 +35,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.NotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.stacks.api.ApiUrlResponse;
-import com.formkiq.stacks.dynamodb.DocumentItem;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentTag;
-import com.formkiq.stacks.dynamodb.DocumentTagType;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/upload". */
 public class DocumentsIdUploadRequestHandler
@@ -69,12 +70,83 @@ public class DocumentsIdUploadRequestHandler
    */
   public DocumentsIdUploadRequestHandler() {}
 
+  /**
+   * Calculate Duration.
+   * 
+   * @param query {@link Map}
+   * @return {@link Duration}
+   */
+  private Duration caculateDuration(final Map<String, String> query) {
+
+    Integer durationHours =
+        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
+            : Integer.valueOf(DEFAULT_DURATION_HOURS);
+
+    Duration duration = Duration.ofHours(durationHours.intValue());
+    return duration;
+  }
+
+  /**
+   * Calculate Content Length.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param query {@link Map}
+   * @param siteId {@link String}
+   * @return {@link Optional} {@link Long}
+   * @throws BadException BadException
+   */
+  private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
+      final Map<String, String> query, final String siteId) throws BadException {
+
+    Long contentLength = query != null && query.containsKey("contentLength")
+        ? Long.valueOf(query.get("contentLength"))
+        : null;
+
+    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
+    if (value != null
+        && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
+
+      if (contentLength == null) {
+        throw new BadException("'contentLength' is required");
+      }
+
+      String maxContentLengthBytes = this.restrictionMaxContentLength.getValue(awsservice, siteId);
+      throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
+    }
+
+    return contentLength != null ? Optional.of(contentLength) : Optional.empty();
+  }
+
+  /**
+   * Generate Presigned URL.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param query {@link Map}
+   * @return {@link String}
+   * @throws BadException BadException
+   */
+  private String generatePresignedUrl(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final Map<String, String> query) throws BadException {
+
+    String key = siteId != null ? siteId + "/" + documentId : documentId;
+    Duration duration = caculateDuration(query);
+    Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
+    URL url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+        key, duration, contentLength);
+
+    String urlstring = url.toString();
+    return urlstring;
+  }
+
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     boolean documentExists = false;
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     Date date = new Date();
     String documentId = UUID.randomUUID().toString();
@@ -87,7 +159,7 @@ public class DocumentsIdUploadRequestHandler
     Map<String, String> query = event.getQueryStringParameters();
 
     String siteId = authorizer.getSiteId();
-    DocumentService service = awsservice.documentService();
+    DocumentService service = cacheService.documentService();
 
     if (map != null && map.containsKey("documentId")) {
 
@@ -126,7 +198,7 @@ public class DocumentsIdUploadRequestHandler
         service.saveDocument(siteId, item, tags);
 
         if (value != null) {
-          awsservice.documentCountService().incrementDocumentCount(siteId);
+          cacheService.documentCountService().incrementDocumentCount(siteId);
         }
       } else {
         throw new BadException("Max Number of Documents reached");
@@ -134,77 +206,6 @@ public class DocumentsIdUploadRequestHandler
     }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
-  }
-
-  /**
-   * Generate Presigned URL.
-   *
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param query {@link Map}
-   * @return {@link String}
-   * @throws BadException BadException
-   */
-  private String generatePresignedUrl(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final Map<String, String> query) throws BadException {
-
-    String key = siteId != null ? siteId + "/" + documentId : documentId;
-    Duration duration = caculateDuration(query);
-    Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
-    URL url = awsservice.s3Service().presignPostUrl(awsservice.documents3bucket(), key, duration,
-        contentLength);
-
-    String urlstring = url.toString();
-    return urlstring;
-  }
-
-  /**
-   * Calculate Content Length.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param query {@link Map}
-   * @param siteId {@link String}
-   * @return {@link Optional} {@link Long}
-   * @throws BadException BadException
-   */
-  private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
-      final Map<String, String> query, final String siteId) throws BadException {
-
-    Long contentLength = query != null && query.containsKey("contentLength")
-        ? Long.valueOf(query.get("contentLength"))
-        : null;
-
-    String value = this.restrictionMaxContentLength.getValue(awsservice, siteId);
-    if (value != null
-        && this.restrictionMaxContentLength.enforced(awsservice, siteId, value, contentLength)) {
-
-      if (contentLength == null) {
-        throw new BadException("'contentLength' is required");
-      }
-
-      String maxContentLengthBytes =
-          this.restrictionMaxContentLength.getValue(awsservice, siteId);
-      throw new BadException("'contentLength' cannot exceed " + maxContentLengthBytes + " bytes");
-    }
-
-    return contentLength != null ? Optional.of(contentLength) : Optional.empty();
-  }
-
-  /**
-   * Calculate Duration.
-   * 
-   * @param query {@link Map}
-   * @return {@link Duration}
-   */
-  private Duration caculateDuration(final Map<String, String> query) {
-
-    Integer durationHours =
-        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
-            : Integer.valueOf(DEFAULT_DURATION_HOURS);
-
-    Duration duration = Duration.ofHours(durationHours.intValue());
-    return duration;
   }
 
   @Override

@@ -14,7 +14,7 @@ Resources:
           title: 
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.7.0"
+          version: "1.7.5"
         paths:
           /version:
             get:
@@ -67,7 +67,129 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"       
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /tagSchemas:
+            get:
+              description: Returns the list of tagSchemas
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - name: "next"
+                in: "query"
+                description: "Next page of results token"
+                schema:
+                  type: "string"
+              - name: "previous"
+                in: "query"
+                description: "Previous page of results token"
+                schema:
+                  type: "string"                  
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/TagSchemas"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Creates a new TagSchema
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/TagSchemaBody'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/TagSchemaPostResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /tagSchemas/{tagSchemaId}:
+            get:
+              description: Retrieves a TagSchema's details, i.e., metadata
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/TagSchema'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              description: Delete a TagSchema
+              tags:
+              - Enterprise API      
+              parameters:
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents:
             get:
               tags:
@@ -135,17 +257,17 @@ Resources:
                           path: test.txt
                           contentType: text/plain
                           content: This is sample data file
-                          tags: [key:type,value:sample]
+                          tags: [key: type, value: sample]
                       Nested_Document:
                         value:
                           path: doc1.txt
                           contentType: text/plain
                           content: This is document1 content
-                          tags: [key:type,value:document1]
+                          tags: [key: type, value: document1]
                           documents: [{
                             contentType: text/plain,
                             content: This is sub document1 content,
-                            tags: [key:type,value:subdocument1]
+                            tags: [key: type, value: subdocument1]
                           }]
               responses:
                 '201':
@@ -526,6 +648,37 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
+              tags:
+              - Documents      
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/durationParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentUploadBody'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentPostResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
           /documents/{documentId}/upload:
             get:
               parameters:
@@ -1015,6 +1168,13 @@ Resources:
               required: true
               schema:
                 type: string
+            tagSchemaIdParam:
+              name: tagSchemaId
+              in: path
+              description: Tag Schema Identifier
+              required: true
+              schema:
+                type: string            
             tagkeyParam:
               name: tagKey
               in: path
@@ -1040,7 +1200,6 @@ Resources:
               name: duration
               in: query
               description: Indicates the number of hours request is valid for
-              required: true
               schema:
                 type: integer
           schemas:
@@ -1298,12 +1457,56 @@ Resources:
                         description: "Tag key"
                       value:
                         type: "string"
-                        description: "Tag value"                  
+                        description: "Tag value"
+            DocumentAction:
+              type: "object"
+              description: "Document action"
+              properties:
+                type:
+                  type: "string"
+                  description: "Type of action (supported values: ocr)"
+                parameters:
+                  type: "object"
+                  properties:
+                    ocrParseTypes:
+                      type: "string"
+                      description: "OCR Parse types - TEXT, FORMS, TABLES"
+            DocumentUploadBody:
+              required:
+              - "content"
+              type: "object"
+              properties:
+                tagSchemaId:
+                  type: "string"
+                  description: "Tag Schema Id"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                tags:
+                  type: "array"
+                  description: "List of tags"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                        description: "Tag key"
+                      value:
+                        type: "string"
+                        description: "Tag value"
+                actions:
+                  type: "array"
+                  description: "List of document actions"
+                  items:
+                    $ref: "#/components/schemas/DocumentAction"
             DocumentBody:
               required:
               - "content"
               type: "object"
               properties:
+                tagSchemaId:
+                  type: "string"
+                  description: "Tag Schema Id"
                 path:
                   type: "string"
                   description: "Path or Name of document"
@@ -1328,6 +1531,11 @@ Resources:
                       value:
                         type: "string"
                         description: "Tag value"
+                actions:
+                  type: "array"
+                  description: "List of document actions"
+                  items:
+                    $ref: "#/components/schemas/DocumentAction"
                 documents:
                   type: "array"
                   description: "List of related documents"
@@ -1632,12 +1840,12 @@ Resources:
               example:
                 parseTypes:
                   - TEXT
-                  - FORM
-                  - TABLE
+                  - FORMS
+                  - TABLES
               properties:
                 parseTypes:
                   type: "array"
-                  description: "OCR Parse types - TEXT, FORM, TABLE"
+                  description: "OCR Parse types - TEXT, FORMS, TABLES"
                   items:
                     type: "string"
             Version:
@@ -1668,6 +1876,156 @@ Resources:
                 uploadEmail:
                   type: "string"
                   description: "SiteId document upload email address"
+            TagSchemaPostResponse:
+              type: "object"
+              properties:
+                tagSchemaId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Tag Schema Identifier" 
+            ErrorsResponse:
+              type: object
+              properties:
+                errors:
+                  $ref: "#/components/schemas/ErrorsList"
+            ErrorsList:
+              type: "array"
+              description: "List of errors"
+              items:
+                $ref: "#/components/schemas/Error"
+            Error:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Error Key"
+                error:
+                  type: "string"
+                  description: "Error Message"                
+            TagSchemas:
+              type: "object"
+              properties:
+                schemas:
+                  $ref: "#/components/schemas/TagSchemaSummaryList"
+                next:
+                  type: "string"
+                previous:
+                  type: "string"
+            TagSchemaSummaryList:
+              type: "array"
+              description: "List of Tag Schemas"
+              items:
+                $ref: "#/components/schemas/TagSchemaSummary"
+            TagSchemaBody:
+              type: "object"
+              properties:
+                name:
+                  type: "string"                  
+                tags:
+                  type: "object"
+                  properties:
+                    compositeKeys:
+                      type: "array"
+                      description: "List of Composite Keys"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaCompositeKey"
+                    required:
+                      type: "array"
+                      description: "List of Required Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaRequired"
+                    optional:
+                      type: "array"
+                      description: "List of Optional Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaOptional"
+                    allowAdditionalTags:
+                      type: "boolean"
+                      default: true
+            TagSchemaSummary:
+              type: "object"
+              properties:
+                tagSchemaId:
+                  type: "string"
+                name:
+                  type: "string"
+                userId:
+                  type: "string"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"                          
+            TagSchema:
+              type: "object"
+              properties:
+                tagSchemaId:
+                  type: "string"
+                name:
+                  type: "string"
+                userId:
+                  type: "string"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"                  
+                tags:
+                  type: "object"
+                  properties:
+                    compositeKeys:
+                      type: "array"
+                      description: "List of Composite Keys"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaCompositeKey"
+                    required:
+                      type: "array"
+                      description: "List of Required Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaRequired"
+                    optional:
+                      type: "array"
+                      description: "List of Optional Tags"
+                      items:
+                        $ref: "#/components/schemas/TagSchemaOptional"
+                    allowAdditionalTags:
+                      type: "boolean"
+                      default: true
+            TagSchemaCompositeKey:
+              type: "object"
+              properties:
+                key:
+                  type: "array"
+                  items:
+                    type: "string"
+            TagSchemaRequired:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                defaultValues:
+                  type: "array"
+                  description: "Default values"
+                  items:
+                    type: "string"
+                allowedValues:
+                  type: "array"
+                  description: "Only valid values"
+                  items:
+                    type: "string"                  
+            TagSchemaOptional:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                defaultValues:
+                  type: "array"
+                  description: "Default values"
+                  items:
+                    type: "string"
+                allowedValues:
+                  type: "array"
+                  description: "Only valid values"
+                  items:
+                    type: "string"
           securitySchemes:
             AuthorizationCognito:
               type: oauth2

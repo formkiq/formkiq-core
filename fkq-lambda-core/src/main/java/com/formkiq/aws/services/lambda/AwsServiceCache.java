@@ -23,27 +23,19 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
-import com.formkiq.stacks.dynamodb.DocumentCountServiceDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DynamoDbCacheService;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.WebhooksService;
-import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 
 /**
  * Get Aws Services from Cache.
@@ -53,6 +45,20 @@ public class AwsServiceCache {
 
   /** The number of minutes to hold in cache. */
   private static final int CACHE_MINUTES = 15;
+  /** {@link AwsServiceExtension}. */
+  private static final Map<Class<?>, AwsServiceExtension<?>> EXTENSIONS = new HashMap<>();
+
+  /**
+   * Registers an {@link AwsServiceExtension}.
+   * 
+   * @param clazz {@link Class}
+   * @param <T> Type of Class
+   * @param extension {@link AwsServiceExtension}
+   */
+  public static <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
+    EXTENSIONS.put(clazz, extension);
+  }
+
   /** {@link DynamoDbConnectionBuilder}. */
   private DynamoDbConnectionBuilder dbConnection;
   /** {@link S3ConnectionBuilder}. */
@@ -63,100 +69,42 @@ public class AwsServiceCache {
   private SqsConnectionBuilder sqsConnection;
   /** {@link S3Service}. */
   private S3Service s3Service;
-  /** {@link String}. */
-  private String dbDocumentsTable;
-  /** {@link String}. */
-  private String dbCacheTable;
-  /** {@link ConfigService}. */
-  private ConfigService configService;
-  /** {@link DocumentService}. */
-  private DocumentService documentService;
-  /** {@link WebhooksService}. */
-  private WebhooksService webhookService;
-  /** {@link DocumentSearchService}. */
-  private DocumentSearchService documentSearchService;
   /** {@link SsmService}. */
   private SsmService ssmService;
   /** {@link SqsService}. */
   private SqsService sqsService;
-  /** {@link DynamoDbCacheService}. */
-  private DynamoDbCacheService documentCacheService;
-  /** {@link DocumentCountService}. */
-  private DocumentCountService documentCountService;
-  /** S3 Staging Bucket. */
-  private String stages3bucket;
-  /** App Environment. */
-  private String appEnvironment;
-  /** FormKiQ Type. */
-  private String formkiqType;
   /** Is Debug Mode. */
   private boolean debug;
-  /** Documents S3 Bucket. */
-  private String documentsS3bucket;
-  /** Web Socket Sqs Url. */
-  private String websocketSqsUrl;
+  /** Environment {@link Map}. */
+  private Map<String, String> environment;
+  /** {@link DynamoDbCacheService}. */
+  private DynamoDbCacheService documentCacheService;
+
+  /** {@link DocumentTagSchemaPlugin}. */
+  private DocumentTagSchemaPlugin documentTagSchemaPlugin;
 
   /**
    * constructor.
    */
-  public AwsServiceCache() {
-
-  }
+  public AwsServiceCache() {}
 
   /**
-   * Get App Environment.
+   * Get {@link DynamoDbConnectionBuilder}.
    * 
-   * @return {@link String}
+   * @return {@link DynamoDbConnectionBuilder}
    */
-  public String appEnvironment() {
-    return this.appEnvironment;
+  public DynamoDbConnectionBuilder dbConnection() {
+    return this.dbConnection;
   }
 
-  /**
-   * Set App Environment.
-   * 
-   * @param env {@link String}
-   * @return {@link AwsServiceCache}
-   */
-  public AwsServiceCache appEnvironment(final String env) {
-    this.appEnvironment = env;
-    return this;
-  }
-
-  /**
-   * Get SiteId Config.
-   * @param siteId {@link String}
-   * @return {@link DynamicObject}
-   */
-  public DynamicObject config(final String siteId) {
-    return configService().get(siteId);
-  }
-
-  /**
-   * Get {@link ConfigService}.
-   * 
-   * @return {@link ConfigService}
-   */
-  public ConfigService configService() {
-    if (this.configService == null) {
-      this.configService = new ConfigServiceImpl(this.dbConnection, this.dbDocumentsTable);
-    }
-    return this.configService;
-  }
-  
   /**
    * Set {@link DynamoDbConnectionBuilder}.
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
-   * @param documentsTable {@link String}
-   * @param cacheTable {@link String}
    * @return {@link AwsServiceCache}
    */
-  public AwsServiceCache dbConnection(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final String cacheTable) {
+  public AwsServiceCache dbConnection(final DynamoDbConnectionBuilder connection) {
     this.dbConnection = connection;
-    this.dbDocumentsTable = documentsTable;
-    this.dbCacheTable = cacheTable;
     return this;
   }
 
@@ -187,87 +135,63 @@ public class AwsServiceCache {
    */
   public DynamoDbCacheService documentCacheService() {
     if (this.documentCacheService == null) {
-      this.documentCacheService = new DynamoDbCacheService(this.dbConnection, this.dbCacheTable);
+      this.documentCacheService =
+          new DynamoDbCacheService(dbConnection(), environment("CACHE_TABLE"));
     }
     return this.documentCacheService;
   }
 
   /**
-   * Get {@link DocumentCountService}.
+   * Get {@link DocumentTagSchemaPlugin}.
    * 
-   * @return {@link DocumentCountService}
+   * @return {@link DocumentTagSchemaPlugin}
    */
-  public DocumentCountService documentCountService() {
-    if (this.documentCountService == null) {
-      this.documentCountService =
-          new DocumentCountServiceDynamoDb(this.dbConnection, this.dbDocumentsTable);
-    }
-    return this.documentCountService;
+  public DocumentTagSchemaPlugin documentTagSchemaPlugin() {
+    return this.documentTagSchemaPlugin;
   }
 
   /**
-   * Get Documents S3 Bucket.
+   * Set {@link DocumentTagSchemaPlugin}.
    * 
-   * @return {@link String}
-   */
-  public String documents3bucket() {
-    return this.documentsS3bucket;
-  }
-
-  /**
-   * Set Documents S3 Bucket.
-   * 
-   * @param s3bucket {@link String}
+   * @param plugin {@link DocumentTagSchemaPlugin}
    * @return {@link AwsServiceCache}
    */
-  public AwsServiceCache documents3bucket(final String s3bucket) {
-    this.documentsS3bucket = s3bucket;
+  public AwsServiceCache documentTagSchemaPlugin(final DocumentTagSchemaPlugin plugin) {
+    this.documentTagSchemaPlugin = plugin;
     return this;
   }
 
   /**
-   * Get {@link DocumentSearchService}.
+   * Set Environment {@link Map} parameters.
    * 
-   * @return {@link DocumentSearchService}
-   */
-  public DocumentSearchService documentSearchService() {
-    if (this.documentSearchService == null) {
-      this.documentSearchService = new DocumentSearchServiceImpl(documentService(),
-          this.dbConnection, this.dbDocumentsTable);
-    }
-    return this.documentSearchService;
-  }
-
-  /**
-   * Get {@link DocumentService}.
-   * 
-   * @return {@link DocumentService}
-   */
-  public DocumentService documentService() {
-    if (this.documentService == null) {
-      this.documentService = new DocumentServiceImpl(this.dbConnection, this.dbDocumentsTable);
-    }
-    return this.documentService;
-  }
-  
-  /**
-   * Get FormKiQ Type.
-   * 
-   * @return {@link String}
-   */
-  public String formkiqType() {
-    return this.formkiqType;
-  }
-
-  /**
-   * Set FormKiQ Type Environment.
-   * 
-   * @param type {@link String}
+   * @param map {@link Map}
    * @return {@link AwsServiceCache}
    */
-  public AwsServiceCache formkiqType(final String type) {
-    this.formkiqType = type;
+  public AwsServiceCache environment(final Map<String, String> map) {
+    this.environment = map;
     return this;
+  }
+
+  /**
+   * Get Environment {@link Map} parameters.
+   * 
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  public String environment(final String key) {
+    return this.environment.get(key);
+  }
+
+  /**
+   * Load {@link AwsServiceExtension}.
+   * 
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getExtension(final Class<T> clazz) {
+    return (T) EXTENSIONS.get(clazz).loadService(this);
   }
 
   /**
@@ -275,6 +199,15 @@ public class AwsServiceCache {
    */
   public void init() {
     this.dbConnection.initDbClient();
+  }
+
+  /**
+   * Get {@link S3ConnectionBuilder}.
+   * 
+   * @return {@link S3ConnectionBuilder}
+   */
+  public S3ConnectionBuilder s3Connection() {
+    return this.s3Connection;
   }
 
   /**
@@ -301,6 +234,15 @@ public class AwsServiceCache {
   }
 
   /**
+   * Get {@link SqsConnectionBuilder}.
+   * 
+   * @return {@link SqsConnectionBuilder}
+   */
+  public SqsConnectionBuilder sqsConnection() {
+    return this.sqsConnection;
+  }
+
+  /**
    * Set {@link SqsConnectionBuilder}.
    * 
    * @param connection {@link SqsConnectionBuilder}
@@ -324,6 +266,15 @@ public class AwsServiceCache {
   }
 
   /**
+   * Get {@link SsmConnectionBuilder}.
+   * 
+   * @return {@link SsmConnectionBuilder}
+   */
+  public SsmConnectionBuilder ssmConnection() {
+    return this.ssmConnection;
+  }
+
+  /**
    * Set {@link SsmConnectionBuilder}.
    * 
    * @param connection {@link SsmConnectionBuilder}
@@ -344,57 +295,5 @@ public class AwsServiceCache {
       this.ssmService = new SsmServiceCache(this.ssmConnection, CACHE_MINUTES, TimeUnit.MINUTES);
     }
     return this.ssmService;
-  }
-
-  /**
-   * Get Staging S3 Bucket.
-   * 
-   * @return {@link String}
-   */
-  public String stages3bucket() {
-    return this.stages3bucket;
-  }
-
-  /**
-   * Set Staging S3 Bucket.
-   * 
-   * @param s3bucket {@link String}
-   * @return {@link AwsServiceCache}
-   */
-  public AwsServiceCache stages3bucket(final String s3bucket) {
-    this.stages3bucket = s3bucket;
-    return this;
-  }
-
-  /**
-   * Get {@link WebhooksService}.
-   * 
-   * @return {@link WebhooksService}
-   */
-  public WebhooksService webhookService() {
-    if (this.webhookService == null) {
-      this.webhookService = new WebhooksServiceImpl(this.dbConnection, this.dbDocumentsTable);
-    }
-    return this.webhookService;
-  }
-
-  /**
-   * Get Web Socket Sqs Url.
-   * 
-   * @return {@link String}
-   */
-  public String websocketSqsUrl() {
-    return this.websocketSqsUrl;
-  }
-  
-  /**
-   * Set Web Socket Sqs Url.
-   * 
-   * @param url {@link String}
-   * @return {@link AwsServiceCache}
-   */
-  public AwsServiceCache websocketSqsUrl(final String url) {
-    this.websocketSqsUrl = url;
-    return this;
   }
 }

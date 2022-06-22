@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3.awstest;
 import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import org.junit.BeforeClass;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -40,7 +41,6 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -76,7 +76,7 @@ public abstract class AbstractAwsTest {
   private static DocumentService documentService;
   /** {@link DocumentSearchService}. */
   private static DocumentSearchService searchService;
-  
+
   /**
    * beforeclass.
    * 
@@ -84,7 +84,7 @@ public abstract class AbstractAwsTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException {
-            
+
     awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
@@ -106,8 +106,7 @@ public abstract class AbstractAwsTest {
     ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
 
-    edition =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
+    edition = ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
     sesbucketname =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
     documentsbucketname =
@@ -122,7 +121,8 @@ public abstract class AbstractAwsTest {
     DynamoDbConnectionBuilder dbConnection =
         new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     documentService = new DocumentServiceImpl(dbConnection, documentsTable);
-    searchService = new DocumentSearchServiceImpl(documentService, dbConnection, documentsTable);
+    searchService =
+        new DocumentSearchServiceImpl(documentService, dbConnection, documentsTable, null);
   }
 
   /**
@@ -181,6 +181,7 @@ public abstract class AbstractAwsTest {
 
   /**
    * Get {@link DocumentSearchService}.
+   * 
    * @return {@link DocumentSearchService}
    */
   public static DocumentSearchService getSearchService() {

@@ -24,11 +24,11 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -44,19 +44,30 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 
 /** Unit Tests for {@link DocumentSearchServiceImpl}. */
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentSearchServiceImplTest {
 
-  /** {@link DynamoDbHelper}. */
-  private DynamoDbHelper dbhelper;
-
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-  /** Document Table. */
+  /** {@link DocumentService}. */
   private DocumentService service;
+
+  /** {@link DocumentService}. */
+  private DocumentSearchService searchService;
 
   /**
    * Before Test.
@@ -67,9 +78,9 @@ public class DocumentSearchServiceImplTest {
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    this.dbhelper = DynamoDbTestServices.getDynamoDbHelper(null);
-    this.service =
-        new DocumentServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
+    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentServiceImpl(db, DOCUMENTS_TABLE);
+    this.searchService = new DocumentSearchServiceImpl(this.service, db, DOCUMENTS_TABLE, null);
   }
 
   /**
@@ -128,6 +139,7 @@ public class DocumentSearchServiceImplTest {
 
   /**
    * Create a Test Document with 2 tags.
+   * 
    * @param tags {@link Map}
    * @param value whether to set value or values
    * @return {@link DynamicDocumentItem}
@@ -140,7 +152,7 @@ public class DocumentSearchServiceImplTest {
         UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
         Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
-    
+
     List<Map<String, Object>> list = new ArrayList<>();
     doc.put("tags", list);
 
@@ -175,7 +187,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -209,7 +221,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
@@ -217,32 +229,9 @@ public class DocumentSearchServiceImplTest {
     }
   }
 
-  /** Missing TagValue. */
-  @Test
-  public void testSearch03() {
-    for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String tagName = null;
-      String tagValue = "today";
-      PaginationMapToken startkey = null;
-      SearchTagCriteria c = new SearchTagCriteria(tagName);
-      c.eq(tagValue);
-      SearchQuery q = new SearchQuery().tag(c);
-
-      // when
-      try {
-        this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
-        fail();
-      } catch (Exception e) {
-        // then
-        assertEquals("'key' attribute is required.", e.getMessage());
-      }
-    }
-  }
-
   /** Search by 'beginsWith' Tag Key & Value. */
   @Test
-  public void testSearch04() {
+  public void testSearch03() {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData(prefix);
@@ -254,7 +243,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(prefix, q, startkey, MAX_RESULTS);
+          this.searchService.search(prefix, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
@@ -270,10 +259,10 @@ public class DocumentSearchServiceImplTest {
       });
     }
   }
-  
+
   /** Search by 'eq' Tag Key & Value & paginating. */
   @Test
-  public void testSearch05() {
+  public void testSearch04() {
     for (String prefix : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -289,7 +278,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(prefix, q, startkey, limit);
+          this.searchService.search(prefix, q, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -300,7 +289,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results2 =
-          this.dbhelper.getSearchService().search(prefix, q, startkey, limit);
+          this.searchService.search(prefix, q, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -310,10 +299,10 @@ public class DocumentSearchServiceImplTest {
       assertEquals("active", results.getResults().get(0).getMap("matchedTag").get("value"));
     }
   }
-  
+
   /** Search multi-value tag 'eq' Tag Key & Value. */
   @Test
-  public void testSearch06() {
+  public void testSearch05() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       createTestData("finance");
@@ -323,7 +312,7 @@ public class DocumentSearchServiceImplTest {
           new DocumentTag(item.getDocumentId(), "status", null, new Date(), "testuser")
               .setValues(Arrays.asList("active", "notactive"));
       this.service.saveDocument(siteId, item, Arrays.asList(tag));
-      
+
       String tagKey = "status";
       String tagValue = "notactive";
       PaginationMapToken startkey = null;
@@ -333,7 +322,7 @@ public class DocumentSearchServiceImplTest {
 
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -349,10 +338,10 @@ public class DocumentSearchServiceImplTest {
       });
     }
   }
-  
+
   /** Search for tag 'eq' with DocumentId. */
   @Test
-  public void testSearch07() {
+  public void testSearch06() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -361,17 +350,17 @@ public class DocumentSearchServiceImplTest {
       this.service.saveDocumentItemWithTag(siteId, doc0);
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
-      
+
       SearchTagCriteria c = new SearchTagCriteria("category").eq("thing");
       SearchQuery q = new SearchQuery().tag(c);
       q.documentsIds(
           Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
-      
+
       PaginationMapToken startkey = null;
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -387,38 +376,38 @@ public class DocumentSearchServiceImplTest {
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
       });
-      
+
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
   }
-  
+
   /** Search for tag with DocumentId. */
   @Test
-  public void testSearch08() {
+  public void testSearch07() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given - tag only
       PaginationMapToken startkey = null;
       SearchTagCriteria c = new SearchTagCriteria("category");
       SearchQuery q = new SearchQuery().tag(c);
-      
+
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
       DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
       DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
       this.service.saveDocumentItemWithTag(siteId, doc0);
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
-      
+
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(2, results.getResults().size());
-      
+
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
         assertNull(s.getPath());
@@ -431,34 +420,34 @@ public class DocumentSearchServiceImplTest {
       });
     }
   }
-  
+
   /** Search for wrong eq with DocumentId. */
   @Test
-  public void testSearch09() {
+  public void testSearch08() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given - wrong value
       PaginationMapToken startkey = null;
       SearchTagCriteria c = new SearchTagCriteria("category").eq("thing123");
       SearchQuery q = new SearchQuery().tag(c);
-      
+
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
       DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
       DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
       this.service.saveDocumentItemWithTag(siteId, doc0);
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
-      
+
       // when
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
   }
-  
+
   /** Search for tag 'beginsWith' with DocumentId. */
   @Test
-  public void testSearch10() {
+  public void testSearch09() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -467,16 +456,16 @@ public class DocumentSearchServiceImplTest {
       this.service.saveDocumentItemWithTag(siteId, doc0);
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
-      
+
       SearchTagCriteria c = new SearchTagCriteria("category").beginsWith("th");
       SearchQuery q = new SearchQuery().tag(c);
       q.documentsIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId()));
-      
+
       PaginationMapToken startkey = null;
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -497,7 +486,7 @@ public class DocumentSearchServiceImplTest {
 
   /** Search for 100 DocumentIds. */
   @Test
-  public void testSearch11() {
+  public void testSearch10() {
     // given
     String siteId = null;
     final int count = 100;
@@ -517,15 +506,15 @@ public class DocumentSearchServiceImplTest {
 
     // when - wrong document id
     PaginationResults<DynamicDocumentItem> results =
-        this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+        this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
     // then
     assertEquals(count, results.getResults().size());
   }
-  
+
   /** Search for tag 'eq' with DocumentId & values. */
   @Test
-  public void testSearch12() {
+  public void testSearch11() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -535,17 +524,17 @@ public class DocumentSearchServiceImplTest {
       this.service.saveDocumentItemWithTag(siteId, doc0);
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
-      
+
       SearchTagCriteria c = new SearchTagCriteria("category").eq("thing");
       SearchQuery q = new SearchQuery().tag(c);
       q.documentsIds(
           Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
-      
+
       PaginationMapToken startkey = null;
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
@@ -561,19 +550,19 @@ public class DocumentSearchServiceImplTest {
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
       });
-      
+
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
   }
-  
+
   /** Search for tag 'eqOr' with DocumentId & values. */
   @Test
-  public void testSearch13() {
+  public void testSearch12() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -587,24 +576,24 @@ public class DocumentSearchServiceImplTest {
       doc3.setDocumentId("4");
       DynamicDocumentItem doc4 = createTestDocumentWithTags(Map.of("category", "person5"), true);
       doc4.setDocumentId("5");
-      
+
       this.service.saveDocumentItemWithTag(siteId, doc0);
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
       this.service.saveDocumentItemWithTag(siteId, doc3);
       this.service.saveDocumentItemWithTag(siteId, doc4);
-      
+
       SearchTagCriteria c =
           new SearchTagCriteria("category").eqOr(Arrays.asList("thing", "person2"));
       SearchQuery q = new SearchQuery().tag(c);
       q.documentsIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId(),
           doc3.getDocumentId()));
-      
+
       PaginationMapToken startkey = null;
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       final int count = 2;
@@ -627,20 +616,20 @@ public class DocumentSearchServiceImplTest {
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
       });
-      
+
       // given
       q.documentsIds(Arrays.asList("123"));
       // when
-      results = this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
       // then
       list = results.getResults();
       assertEquals(0, list.size());
     }
   }
-  
+
   /** Search for tag 'eqOr'. */
   @Test
-  public void testSearch14() {
+  public void testSearch13() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
@@ -651,16 +640,16 @@ public class DocumentSearchServiceImplTest {
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
       this.service.saveDocumentItemWithTag(siteId, doc3);
-      
+
       SearchTagCriteria c =
           new SearchTagCriteria("category").eqOr(Arrays.asList("thing", "person1"));
       SearchQuery q = new SearchQuery().tag(c);
-      
+
       PaginationMapToken startkey = null;
 
       // when - wrong document id
       PaginationResults<DynamicDocumentItem> results =
-          this.dbhelper.getSearchService().search(siteId, q, startkey, MAX_RESULTS);
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
@@ -669,7 +658,7 @@ public class DocumentSearchServiceImplTest {
 
       assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
       assertEquals("person1", list.get(1).getMap("matchedTag").get("value"));
-      
+
       list.forEach(s -> {
         assertNotNull(s.getInsertedDate());
         assertNull(s.getPath());

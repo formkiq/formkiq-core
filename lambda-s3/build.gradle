@@ -8,21 +8,26 @@ dependencies {
 	implementation project(':aws-sns')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
+	implementation project(':aws-dynamodb')
+	implementation project(':fkq-plugins')
 	implementation project(':dynamodb-documents')
+	implementation project(':document-events')
+	implementation project(':actions')
 	
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.0'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
+	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.7.5'
     
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
-	
+	testImplementation project(':fkq-test-utils')
     testImplementation group: 'junit', name: 'junit', version:'4.+'
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
 
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.17.167'
-	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.167'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.17.207'
+	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.207'
 
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.8.2'
     testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.8.2'
@@ -30,7 +35,7 @@ dependencies {
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
     testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
 	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
-	
+	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.13.2'
 }
 
 compileJava {

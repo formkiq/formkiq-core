@@ -41,13 +41,13 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.common.objects.DynamicObject;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
@@ -58,6 +58,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 import software.amazon.awssdk.utils.IoUtils;
 
+
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
@@ -66,40 +67,6 @@ public abstract class AbstractRequestHandler {
   /** Cache Table. */
   private static String cacheTable = "Cache";
 
-  // /**
-  // * Get App Environment.
-  // *
-  // * @return {@link String}
-  // */
-  // public static String getAppenvironment() {
-  // return appenvironment;
-  // }
-
-  // /**
-  // * Get Aws Region.
-  // *
-  // * @return {@link Region}
-  // */
-  // public static Region getAwsRegion() {
-  // return awsRegion;
-  // }
-
-  // /**
-  // * Get Sqs Document Formats Queue Url.
-  // *
-  // * @return {@link String}
-  // */
-  // public static String getSqsDocumentFormatsQueueUrl() {
-  // return sqsDocumentFormatsQueueUrl;
-  // }
-  //
-  // /**
-  // * Get SqsWebsocketQueueUrl.
-  // * @return {@link String}
-  // */
-  // public static String getSqsWebsocketQueueUrl() {
-  // return sqsWebsocketQueueUrl;
-  // }
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
 
@@ -109,11 +76,8 @@ public abstract class AbstractRequestHandler {
   /** {@link LambdaLogger}. */
   private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
 
-  // /** {@link DynamoDbHelper}. */
-  // private DynamoDbHelper dbhelper;
-
-  /** {@link AwsServiceCache}. */
-  private AwsServiceCache awsServices;
+  /** {@link CoreAwsServiceCache}. */
+  private CoreAwsServiceCache awsServices;
 
   /**
    * Add header to {@link ApiGatewayRequestEvent}.
@@ -150,7 +114,7 @@ public abstract class AbstractRequestHandler {
       if (event.getQueryStringParameters() != null) {
         queryMap.putAll(event.getQueryStringParameters());
       }
-          
+
       queryMap.put(parameter, value);
       event.setQueryStringParameters(queryMap);
     }
@@ -180,11 +144,6 @@ public abstract class AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
 
-    // this.dbhelper = new DynamoDbHelper(TestServices.getDynamoDbConnection(DYNAMODB_PORT));
-    // this.dbhelper.truncateDocumentsTable();
-    // this.dbhelper.truncateWebhooks();
-    // this.dbhelper.truncateConfig();
-
     this.map.put("APP_ENVIRONMENT", TestServices.FORMKIQ_APP_ENVIRONMENT);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
     this.map.put("CACHE_TABLE", cacheTable);
@@ -199,7 +158,7 @@ public abstract class AbstractRequestHandler {
 
     createApiRequestHandler(this.map);
 
-    this.awsServices = new CoreRequestHandler().getAwsServices();
+    this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
     SqsService sqsservice = this.awsServices.sqsService();
     for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl())) {
@@ -221,9 +180,10 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    CoreRequestHandler.setUpHandler(prop, DynamoDbTestServices.getDynamoDbConnection(null),
-        TestServices.getS3Connection(), TestServices.getSsmConnection(),
-        TestServices.getSqsConnection());
+    AbstractCoreRequestHandler.configureHandler(prop,
+        DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(),
+        TestServices.getSsmConnection(), TestServices.getSqsConnection(),
+        new DocumentTagSchemaPluginEmpty());
   }
 
   /**
@@ -239,31 +199,13 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get {@link AwsServiceCache}.
+   * Get {@link CoreAwsServiceCache}.
    * 
-   * @return {@link AwsServiceCache}
+   * @return {@link CoreAwsServiceCache}
    */
-  public AwsServiceCache getAwsServices() {
+  public CoreAwsServiceCache getAwsServices() {
     return this.awsServices;
   }
-
-  // /**
-  // * Documents Bucket Name.
-  // *
-  // * @return {@link String}
-  // */
-  // public String getBucketName() {
-  // return bucketName;
-  // }
-
-  // /**
-  // * Get {@link DynamoDbHelper}.
-  // *
-  // * @return {@link DynamoDbHelper}
-  // */
-  // public DynamoDbHelper getDbhelper() {
-  // return this.dbhelper;
-  // }
 
   /**
    * Get {@link DocumentService}.
@@ -312,7 +254,7 @@ public abstract class AbstractRequestHandler {
   public Map<String, String> getMap() {
     return Collections.unmodifiableMap(this.map);
   }
-  
+
   /**
    * Get Mock {@link Context}.
    *
@@ -340,15 +282,6 @@ public abstract class AbstractRequestHandler {
   public String getSsmParameter(final String key) {
     return this.awsServices.ssmService().getParameterValue(key);
   }
-
-  // /**
-  // * Get Staging Document Bucket Name.
-  // *
-  // * @return {@link String}
-  // */
-  // public String getStages3bucket() {
-  // return stages3bucket;
-  // }
 
   /**
    * Handle Request.
@@ -430,7 +363,7 @@ public abstract class AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   public void setCognitoGroup(final ApiGatewayRequestEvent event, final String... cognitoGroups) {
-    
+
     ApiGatewayRequestContext requestContext = event.getRequestContext();
     Map<String, Object> authorizer = requestContext.getAuthorizer();
     if (authorizer == null) {
@@ -450,6 +383,7 @@ public abstract class AbstractRequestHandler {
 
   /**
    * Set Environment Variable.
+   * 
    * @param key {@link String}
    * @param value {@link String}
    */
@@ -496,7 +430,7 @@ public abstract class AbstractRequestHandler {
     }
 
     claims.put("cognito:username", username);
-    
+
     requestContext.setAuthorizer(authorizer);
     event.setRequestContext(requestContext);
   }

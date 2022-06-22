@@ -23,10 +23,16 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
+import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
+import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
+import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -41,43 +47,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
-import org.testcontainers.utility.DockerImageName;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
-import com.formkiq.stacks.dynamodb.DbKeys;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
-import com.formkiq.stacks.dynamodb.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentTag;
-import com.formkiq.stacks.dynamodb.DocumentTagType;
-import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
-import com.formkiq.stacks.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.stacks.dynamodb.DynamoDbHelper;
-import com.formkiq.stacks.dynamodb.PaginationResults;
-import com.formkiq.stacks.lambda.s3.util.DynamoDbExtension;
-import com.formkiq.stacks.lambda.s3.util.DynamoDbTestServices;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbHelper;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -88,14 +94,9 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** {@link DocumentsS3Update} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class DocumentsS3UpdateTest implements DbKeys {
 
-  /** LocalStack {@link DockerImageName}. */
-  private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:0.12.2");
-  /** {@link LocalStackContainer}. */
-  private static LocalStackContainer localstack =
-      new LocalStackContainer(localStackImage).withServices(Service.S3, Service.SQS, Service.SNS);
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30000L;
   /** Bucket Key. */
@@ -110,6 +111,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   /** {@link DocumentService}. */
   private static DocumentServiceImpl service;
+  /** {@link DocumentService}. */
+  private static ActionsService actionsService;
   /** {@link SnsConnectionBuilder}. */
   private static SnsConnectionBuilder snsBuilder;
   /** {@link SqsConnectionBuilder}. */
@@ -141,28 +144,16 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
-    Region region = Region.US_EAST_1;
-    AwsCredentialsProvider cred = StaticCredentialsProvider
-        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+    s3Builder = TestServices.getS3Connection();
+    sqsBuilder = TestServices.getSqsConnection();
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
+    dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
+    snsBuilder = TestServices.getSnsConnection();
 
-    localstack.start();
-    
-    snsBuilder = new SnsConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SNS).toString())
-        .setRegion(region).setCredentials(cred);
-
-    sqsBuilder = new SqsConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SQS).toString())
-        .setRegion(region).setCredentials(cred);
     sqsService = new SqsService(sqsBuilder);
 
-    s3Builder = new S3ConnectionBuilder()
-        .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString())
-        .setRegion(region).setCredentials(cred);
-
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
-
-    service = new DocumentServiceImpl(dbBuilder, "Documents");
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
+    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);
@@ -183,20 +174,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
-    if (!dbHelper.isDocumentsTableExists()) {
-      dbHelper.createDocumentsTable();
-      dbHelper.createCacheTable();
+    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
+      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
+      dbHelper.createCacheTable(CACHE_TABLE);
     }
   }
 
-  /**
-   * afterClass().
-   */
-  @AfterAll
-  public static void afterClass() {
-    localstack.stop();
-  }
-  
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link LambdaContextRecorder}. */
@@ -209,7 +192,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   private void addS3File(final String key, final String contentType, final boolean addTags,
       final String content) {
-    
+
     Map<String, String> metadata = new HashMap<>();
     metadata.put("Content-Type", contentType);
 
@@ -227,6 +210,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   /**
    * Assert {@link DocumentTag}.
+   * 
    * @param expected {@link DocumentTag}
    * @param actual {@link DocumentTag}
    */
@@ -235,13 +219,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertEquals(expected.getValue(), actual.getValue());
     assertEquals(expected.getDocumentId(), actual.getDocumentId());
     assertEquals(expected.getType(), actual.getType());
-    
+
     if (expected.getUserId() != null) {
       assertEquals(expected.getUserId(), actual.getUserId());
     } else {
       assertNotNull(actual.getUserId());
     }
-    
+
     assertNotNull(actual.getInsertedDate());
   }
 
@@ -263,28 +247,29 @@ public class DocumentsS3UpdateTest implements DbKeys {
     List<Message> msgs = sqsService.receiveMessages(sqsQueueUrl).messages();
     while (msgs.size() != 1) {
       Thread.sleep(SLEEP);
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
     }
     assertEquals(1, msgs.size());
 
     sqsService.deleteMessage(sqsQueueUrl, msgs.get(0).receiptHandle());
     Map<String, String> map = this.gson.fromJson(msgs.get(0).body(), Map.class);
     String message = map.get("Message");
-    
+
     map = this.gson.fromJson(message, Map.class);
     assertNotNull(map.get("documentId"));
     assertEquals(eventType, map.get("type"));
-    
+
     if (!childDoc) {
       assertNotNull(map.get("path"));
     }
-    
+
     if (hasContent) {
       assertEquals("text/plain", map.get("contentType"));
       assertNotNull(map.get("content"));
     } else {
       assertNull(map.get("content"));
     }
-    
+
     if (!"delete".equals(eventType)) {
       assertNotNull(map.get("userId"));
     }
@@ -301,6 +286,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * 
    * @throws URISyntaxException URISyntaxException
    */
+  @SuppressWarnings("resource")
   @BeforeEach
   public void before() throws URISyntaxException {
 
@@ -309,16 +295,18 @@ public class DocumentsS3UpdateTest implements DbKeys {
       s3service.deleteAllFiles(s3, "example-bucket");
     }
 
-    dbHelper.truncateDocumentsTable();
+    dbHelper.truncateTable(DOCUMENTS_TABLE);
 
     Map<String, String> map = new HashMap<>();
+    map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("SQS_ERROR_URL",
-        localstack.getEndpointOverride(Service.SQS).toString() + "/queue/" + ERROR_SQS_QUEUE);
+        TestServices.getLocalStack().getEndpointOverride(Service.SQS).toString() + "/queue/"
+            + ERROR_SQS_QUEUE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
-    this.handler = new DocumentsS3Update(map, service, s3Builder, sqsBuilder, snsBuilder);
+    this.handler = new DocumentsS3Update(map, dbBuilder, s3Builder, sqsBuilder, snsBuilder);
 
     for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
@@ -334,12 +322,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   /**
    * Create {@link DynamicDocumentItem} with Child Documents.
+   * 
    * @param now {@link Date}
    * @return {@link DynamicDocumentItem}
    */
   private DynamicDocumentItem createSubDocuments(final Date now) {
     String username = UUID.randomUUID() + "@formkiq.com";
-    
+
     DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
         UUID.randomUUID().toString(), "userId", username, "insertedDate", now));
     doc.setContentType("text/plain");
@@ -383,21 +372,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     // then
     return service.findDocument(siteId, documentId);
   }
-  
-  /**
-   * Test convertToPrintableCharacters.
-   */
-  @Test
-  public void testConvertToPrintableCharacters01() {
-    String s = "öäü How to do in java .\" com A função, Ãugent";
-    assertEquals("HowtodoinjavacomAfunougent",
-        DocumentsS3Update.convertToPrintableCharacters(s));
-    assertEquals("webhook/Mostpopularboynamesxlsx",
-        DocumentsS3Update.convertToPrintableCharacters("webhook/\"Mostpopularboynames.xlsx\""));
-    assertEquals("FK79tpEN51",
-        DocumentsS3Update.convertToPrintableCharacters("FK79tpEN51"));
-  }
-  
+
   /**
    * Create Document Request without existing Tags/Formats.
    *
@@ -421,7 +396,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      
+
       addS3File(key, "pdf", false, "testdata");
 
       // when
@@ -433,7 +408,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       final int count = 3;
       assertEquals(count, tags.getResults().size());
-      
+
       int i = 0;
       assertEquals("path", tags.getResults().get(i).getKey());
       assertEquals("test.txt", tags.getResults().get(i).getValue());
@@ -441,7 +416,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
       assertEquals("joe", tags.getResults().get(i).getUserId());
       assertNotNull(tags.getResults().get(i++).getInsertedDate());
-      
+
       assertEquals("untagged", tags.getResults().get(i).getKey());
       assertEquals("true", tags.getResults().get(i).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
@@ -459,10 +434,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
     }
   }
-  
+
   /**
    * Update Document Request with existing Tags.
    *
@@ -485,7 +460,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("asd");
       doc.setPath("test.txt");
-      
+
       DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
           "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
       doc.put("tags", Arrays.asList(tag));
@@ -499,7 +474,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocumentFormat(siteId, format);
 
       addS3File(key, "pdf", true, "testdata");
-      
+
       // when
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
@@ -527,10 +502,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "update", false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, UPDATE, false, false);
     }
   }
-  
+
   /**
    * Delete Document Request.
    *
@@ -560,16 +535,16 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       addS3File(key, "pdf", false, "testdata");
-      
+
       // when
       DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
       assertNull(item);
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "delete", false, true);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, DELETE, false, true);
     }
   }
-  
+
   /**
    * Create Document Request on child document.
    *
@@ -604,7 +579,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       addS3File(key, "pdf", false, "testdata");
-      
+
       // when
       final DocumentItem item = handleRequest(siteId, child.getDocumentId(), map);
 
@@ -615,9 +590,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m =
-            client.getItem(GetItemRequest.builder().tableName("Documents")
+            client.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
                 .key(keysDocument(siteId, child.getDocumentId())).build()).item();
-        assertNull(m.get(GSI1_PK)); 
+        assertNull(m.get(GSI1_PK));
       }
 
       final int count = 3;
@@ -630,7 +605,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertDocumentTagEquals(new DocumentTag().setKey("untagged").setValue("true")
           .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
           tags.getResults().get(i++));
-       
+
       assertDocumentTagEquals(new DocumentTag().setKey("userId").setValue("joe")
           .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
           tags.getResults().get(i++));
@@ -638,8 +613,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, true);
-      
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, true);
+
       tags = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -663,9 +638,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       String key = createDatabaseKey(siteId, doc.getDocumentId());
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
-      
+
       addS3File(key, "pdf", false, "testdata");
-      
+
       // when
       DocumentItem item = handleRequest(siteId, doc.getDocumentId(), map);
       DocumentItem itemchild =
@@ -673,16 +648,17 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       try (DynamoDbClient client = dbBuilder.build()) {
-        Map<String, AttributeValue> m = client.getItem(GetItemRequest.builder()
-            .tableName("Documents").key(keysDocument(siteId, doc.getDocumentId())).build()).item();
-        assertNotNull(m.get(GSI1_PK)); 
-        
+        Map<String, AttributeValue> m =
+            client.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
+                .key(keysDocument(siteId, doc.getDocumentId())).build()).item();
+        assertNotNull(m.get(GSI1_PK));
+
         Map<String, AttributeValue> mchild =
-            client.getItem(GetItemRequest.builder().tableName("Documents")
+            client.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
                 .key(keysDocument(siteId, itemchild.getDocumentId())).build()).item();
         assertNull(mchild.get(GSI1_PK));
       }
-      
+
       assertEquals(doc.getDocumentId(), item.getDocumentId());
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
@@ -690,8 +666,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")
           .setType(DocumentTagType.USERDEFINED).setDocumentId(doc.getDocumentId()),
           tags.getResults().get(0));
-      assertDocumentTagEquals(new DocumentTag().setKey("userId").setValue(doc.getUserId())
-          .setType(DocumentTagType.SYSTEMDEFINED).setDocumentId(doc.getDocumentId()),
+      assertDocumentTagEquals(
+          new DocumentTag().setKey("userId").setValue(doc.getUserId())
+              .setType(DocumentTagType.SYSTEMDEFINED).setDocumentId(doc.getDocumentId()),
           tags.getResults().get(1));
 
       tags = service.findDocumentTags(siteId, itemchild.getDocumentId(), null, MAX_RESULTS);
@@ -701,7 +678,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           tags.getResults().get(0));
     }
   }
-  
+
   /**
    * Create Document Request with Text Content.
    *
@@ -725,7 +702,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      
+
       addS3File(key, "text/plain", false, "testdata");
 
       // when
@@ -733,7 +710,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
     }
   }
 
@@ -760,7 +737,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      
+
       String content = loadFile(this, "/256kb-text.txt");
       addS3File(key, "text/plain", false, content);
 
@@ -769,7 +746,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
     }
   }
 
@@ -796,7 +773,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      
+
       String content = loadFile(this, "/255kb-text.txt");
       addS3File(key, "text/plain", false, content);
 
@@ -805,10 +782,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
     }
   }
-  
+
   /**
    * Create Document Request without existing Tags/Formats and TTL.
    *
@@ -833,7 +810,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setPath("test.txt");
       doc.put("TimeToLive", ttl);
       service.saveDocumentItemWithTag(siteId, doc);
-      
+
       addS3File(key, "pdf", false, "testdata");
 
       // when
@@ -841,15 +818,15 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(dbHelper.getDocumentTable()).build();
-      
+          .tableName(DOCUMENTS_TABLE).build();
+
       try (DynamoDbClient db = dbBuilder.build()) {
         Map<String, AttributeValue> result = db.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
 
         for (String tagKey : Arrays.asList("untagged", "userId")) {
           r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
-              .tableName(dbHelper.getDocumentTable()).build();
+              .tableName(DOCUMENTS_TABLE).build();
 
           result = db.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
@@ -857,10 +834,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       }
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
-      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, "create", false, false);
+      assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
     }
   }
-  
+
   /**
    * Verify {@link DocumentItem}.
    * 
@@ -872,7 +849,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   private DocumentItem verifyDocumentSaved(final String siteId, final DocumentItem item,
       final String contentType, final String contentLength) {
-    
+
     assertTrue(this.logger
         .containsString("saving document " + createDatabaseKey(siteId, item.getDocumentId())));
 
@@ -885,5 +862,64 @@ public class DocumentsS3UpdateTest implements DbKeys {
     }
 
     return item;
+  }
+
+  /**
+   * Create Document Request with ACTIONS.
+   *
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  public void testHandleRequest10() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String key = createDatabaseKey(siteId, BUCKET_KEY);
+      final Map<String, Object> map =
+          loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      doc.setInsertedDate(new Date());
+      doc.setDocumentId(BUCKET_KEY);
+      doc.setUserId("joe");
+      doc.setPath("test.txt");
+      service.saveDocumentItemWithTag(siteId, doc);
+      actionsService.saveActions(siteId, doc.getDocumentId(),
+          Arrays.asList(new Action().type(ActionType.OCR)));
+
+      addS3File(key, "pdf", false, "testdata");
+
+      // when
+      handleRequest(siteId, BUCKET_KEY, map);
+
+      // then
+      DocumentEvent e0 = null;
+      DocumentEvent e1 = null;
+
+      List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+
+      while (e0 == null || e1 == null) {
+        for (Message m : msgs) {
+          Map<String, String> bodyMap = this.gson.fromJson(m.body(), Map.class);
+          DocumentEvent de = this.gson.fromJson(bodyMap.get("Message"), DocumentEvent.class);
+          if (de.type().equals(CREATE)) {
+            e0 = de;
+          } else if (de.type().equals(ACTIONS)) {
+            e1 = de;
+          }
+        }
+        Thread.sleep(SLEEP);
+        msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+      }
+
+      assertEquals(siteId != null ? siteId : "default", e0.siteId());
+      assertEquals(doc.getDocumentId(), e0.documentId());
+      assertEquals("test.txt", e0.path());
+
+      assertEquals(siteId != null ? siteId : "default", e1.siteId());
+      assertEquals(doc.getDocumentId(), e1.documentId());
+    }
   }
 }

@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Date;
 import java.util.List;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Holder class for Document(s). */
@@ -59,6 +60,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Time to Live. */
   @Reflectable
   private String timeToLive;
+  /** Tag Schema Id. */
+  @Reflectable
+  private String tagSchemaId;
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -118,6 +122,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public String getTagSchemaId() {
+    return this.tagSchemaId;
+  }
+
+  @Override
   public String getTimeToLive() {
     return this.timeToLive;
   }
@@ -165,6 +174,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setPath(final String filepath) {
     this.path = filepath;
+  }
+
+  @Override
+  public void setTagSchemaId(final String id) {
+    this.tagSchemaId = id;
   }
 
   @Override

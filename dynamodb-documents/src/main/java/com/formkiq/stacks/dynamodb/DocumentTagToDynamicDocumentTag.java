@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 
 /**
  * 
@@ -41,12 +42,12 @@ public class DocumentTagToDynamicDocumentTag implements Function<DocumentTag, Dy
     map.put("key", tag.getKey());
     map.put("type", tag.getType().name());
     map.put("userId", tag.getUserId());
-    
+
     if (tag.getValue() != null) {
-      map.put("value", tag.getValue());      
+      map.put("value", tag.getValue());
     }
-    
-    if (tag.getValues() != null) {      
+
+    if (tag.getValues() != null) {
       map.put("values", tag.getValues());
     }
 

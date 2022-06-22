@@ -3,31 +3,36 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.stacks.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +40,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -48,12 +57,17 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.BadException;
-import com.formkiq.aws.services.lambda.NotFoundException;
-import com.formkiq.stacks.common.objects.DynamicObject;
-import com.formkiq.stacks.dynamodb.DocumentItem;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.plugins.validation.ValidationException;
+import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.DynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
+import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
+import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -149,7 +163,7 @@ public class DocumentIdRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String documentBucket = awsservice.documents3bucket();
+    String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     String documentId = event.getPathParameters().get("documentId");
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
@@ -194,9 +208,8 @@ public class DocumentIdRequestHandler
     if (documentId != null) {
       Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
       String key = createS3Key(siteId, documentId);
-      url = awsservice.s3Service()
-          .presignPostUrl(awsservice.documents3bucket(), key, duration, Optional.empty())
-          .toString();
+      url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          key, duration, Optional.empty()).toString();
     }
 
     return url;
@@ -236,14 +249,16 @@ public class DocumentIdRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    
+
     String siteId = authorizer.getSiteId();
     int limit = getLimit(logger, event);
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+
     ApiPagination token = getPagination(awsservice.documentCacheService(), event);
     String documentId = event.getPathParameters().get("documentId");
-    ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
-    
-    PaginationResult<DocumentItem> presult = awsservice.documentService().findDocument(siteId,
+    ApiPagination pagination = getPagination(serviceCache.documentCacheService(), event);
+
+    PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
         documentId, true, token != null ? token.getStartkey() : null, limit);
     DocumentItem result = presult.getResult();
 
@@ -251,9 +266,9 @@ public class DocumentIdRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    ApiPagination current = createPagination(awsservice.documentCacheService(), event, pagination,
+    ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
         presult.getToken(), limit);
-    
+
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
     item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     item.put("previous", current.getPrevious());
@@ -277,17 +292,18 @@ public class DocumentIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     String documentId = UUID.randomUUID().toString();
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
-      if (awsservice.documentService().findDocument(siteId, documentId) == null) {
+      if (cacheService.documentService().findDocument(siteId, documentId) == null) {
         throw new NotFoundException("Document " + documentId + " not found.");
       }
     }
 
     String maxDocumentCount = null;
 
-    DynamicObject item = fromBodyToDynamicObject(logger, event);
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
     updateContentType(event, item);
 
     List<DynamicObject> documents = item.getList("documents");
@@ -311,7 +327,8 @@ public class DocumentIdRequestHandler
     logger.log("setting userId: " + item.getString("userId") + " contentType: "
         + item.getString("contentType"));
 
-    putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
+    validateTagSchema(cacheService, siteId, item, item.getUserId(), isUpdate);
+    putObjectToStaging(logger, cacheService, maxDocumentCount, siteId, item);
 
     Map<String, String> uploadUrls =
         generateUploadUrls(awsservice, siteId, documentId, item, documents);
@@ -320,6 +337,39 @@ public class DocumentIdRequestHandler
     ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
 
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
+  }
+
+  /**
+   * Put Object to Staging Bucket.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param awsservice {@link AwsServiceCache}
+   * @param maxDocumentCount {@link String}
+   * @param siteId {@link String}
+   * @param item {@link DynamicObject}
+   */
+  private void putObjectToStaging(final LambdaLogger logger, final CoreAwsServiceCache awsservice,
+      final String maxDocumentCount, final String siteId, final DynamicObject item) {
+
+    List<DynamicObject> documents = item.getList("documents");
+    item.put("documents", documents);
+
+    String s = GSON.toJson(item);
+
+    byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+
+    String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
+    String stageS3Bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
+    logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
+
+    S3Service s3 = awsservice.s3Service();
+    try (S3Client client = s3.buildClient()) {
+      s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
+
+      if (maxDocumentCount != null) {
+        awsservice.documentCountService().incrementDocumentCount(siteId);
+      }
+    }
   }
 
   /**
@@ -337,34 +387,46 @@ public class DocumentIdRequestHandler
   }
 
   /**
-   * Put Object to Staging Bucket.
+   * Validate {@link DynamicDocumentItem} against a TagSchema.
    * 
-   * @param logger {@link LambdaLogger}
-   * @param awsservice {@link AwsServiceCache}
-   * @param maxDocumentCount {@link String}
+   * @param cacheService {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param item {@link DynamicObject}
+   * @param item {@link DynamicDocumentItem}
+   * @param userId {@link String}
+   * @param isUpdate boolean
+   * @throws ValidationException ValidationException
+   * @throws BadException BadException
    */
-  private void putObjectToStaging(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String maxDocumentCount, final String siteId, final DynamicObject item) {
+  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
+      final DynamicDocumentItem item, final String userId, final boolean isUpdate)
+      throws ValidationException, BadException {
 
-    List<DynamicObject> documents = item.getList("documents");
-    item.put("documents", documents);
+    List<DynamicObject> doctags = item.getList("tags");
+    DynamicObjectToDocumentTag transform =
+        new DynamicObjectToDocumentTag(DateUtil.getIsoDateFormatter());
+    List<DocumentTag> tags = doctags.stream().map(t -> {
+      return transform.apply(t);
+    }).collect(Collectors.toList());
 
-    String s = GSON.toJson(item);
+    DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
 
-    byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+    Collection<ValidationError> errors = new ArrayList<>();
 
-    String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
-    logger.log("s3 putObject " + key + " into bucket " + awsservice.stages3bucket());
+    List<DocumentTag> compositeTags =
+        plugin.addCompositeKeys(siteId, item, tags, userId, !isUpdate, errors).stream().map(t -> t)
+            .collect(Collectors.toList());
 
-    S3Service s3 = awsservice.s3Service();
-    try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, awsservice.stages3bucket(), key, bytes, item.getString("contentType"));
+    final boolean newCompositeTags = !compositeTags.isEmpty();
 
-      if (maxDocumentCount != null) {
-        awsservice.documentCountService().incrementDocumentCount(siteId);
-      }
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
     }
+
+    tags.addAll(compositeTags);
+
+    DocumentTagToDynamicDocumentTag tf = new DocumentTagToDynamicDocumentTag();
+    List<DynamicDocumentTag> objs = tags.stream().map(tf).collect(Collectors.toList());
+    item.put("tags", objs);
+    item.put("newCompositeTags", Boolean.valueOf(newCompositeTags));
   }
 }
