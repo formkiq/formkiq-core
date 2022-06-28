@@ -32,6 +32,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -41,7 +42,9 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.formkiq.testutils.aws.FkqCognitoService;
+import com.google.gson.GsonBuilder;
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import software.amazon.awssdk.regions.Region;
@@ -145,10 +148,21 @@ public class AwsResourceTest {
 
   /**
    * Test Logging into console.
+   * @throws URISyntaxException URISyntaxException  
+   * @throws InterruptedException InterruptedException 
+   * @throws IOException IOException 
    */
+  @SuppressWarnings("unchecked")
   @Test
-  public void testLogin() {
+  public void testLogin() throws URISyntaxException, IOException, InterruptedException {
     String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
+    String configUrl = url + "/assets/config.json";
+
+    HttpRequest request = HttpRequest.newBuilder().uri(new URI(configUrl)).GET().build();
+    HttpClient client = HttpClient.newHttpClient();
+    HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+    Map<String, Object> map = new GsonBuilder().create().fromJson(response.body(), Map.class);
+    String userAuthentication = map.get("userAuthentication").toString();
 
     try (Playwright playwright = Playwright.create()) {
       try (Browser browser = playwright.chromium().launch()) {
@@ -156,18 +170,26 @@ public class AwsResourceTest {
           page.navigate(url);
           assertEquals("FormKiQ Cloud Console", page.title());
 
-          page.click("[placeholder=\"me@mycompany.com\"]");
-          page.fill("[placeholder=\"me@mycompany.com\"]", USER);
-          page.click("[placeholder=\"******\"]");
-          page.fill("[placeholder=\"******\"]", PASSWORD);
-          page.waitForNavigation(() -> {
-            page.click("button:has-text(\"Sign In\")");
-          });
+          if ("saml".equals(userAuthentication)) {
+            page.waitForNavigation(() -> {
+              page.waitForSelector("text=Sign In");
+              Locator element = page.locator("text=Sign In");
+              assertEquals(1, element.count());
+            });
+          } else {
+            page.click("[placeholder=\"me@mycompany.com\"]");
+            page.fill("[placeholder=\"me@mycompany.com\"]", USER);
+            page.click("[placeholder=\"******\"]");
+            page.fill("[placeholder=\"******\"]", PASSWORD);
+            page.waitForNavigation(() -> {
+              page.click("button:has-text(\"Sign In\")");
+            });
 
-          page.waitForNavigation(() -> {
-            page.click("text=Documents");
-          });
-          assertEquals("Recent Documents - FormKiQ", page.title());
+            page.waitForNavigation(() -> {
+              page.click("text=Documents");
+            });
+            assertEquals("Recent Documents - FormKiQ", page.title());
+          }
         }
       }
     }

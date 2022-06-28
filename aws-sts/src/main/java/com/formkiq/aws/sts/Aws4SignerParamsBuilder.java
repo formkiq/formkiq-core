@@ -35,7 +35,7 @@ import software.amazon.awssdk.services.sts.model.Credentials;
 
 /**
  * 
- * S3 Connection Builder.
+ * Aws4 Signer Builder.
  *
  */
 public class Aws4SignerParamsBuilder {
