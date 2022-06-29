@@ -31,7 +31,7 @@ jobs:
     - name: add binary to path
       run: |
         mkdir -p $GITHUB_WORKSPACE/bin
-        curl -o ytt https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
+        curl -L -o ytt https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
         chmod +x $GITHUB_WORKSPACE/bin/ytt
         ytt --version
     - name: Build with Gradle
