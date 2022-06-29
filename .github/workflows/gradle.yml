@@ -33,7 +33,7 @@ jobs:
         mkdir -p $GITHUB_WORKSPACE/bin
         curl -L -o $GITHUB_WORKSPACE/bin/ytt https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
         chmod +x $GITHUB_WORKSPACE/bin/ytt
-        echo "::add-path::$GITHUB_WORKSPACE/bin"
+        echo $GITHUB_WORKSPACE/bin/ytt >> $GITHUB_PATH
         ytt --version
     - name: Build with Gradle
       uses: gradle/gradle-build-action@0d13054264b0bb894ded474f08ebb30921341cee
