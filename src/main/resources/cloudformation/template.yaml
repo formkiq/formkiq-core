@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core
@@ -82,7 +85,7 @@ Resources:
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/version"
       Type: String
-      Value: "{{version}}"
+      Value: #@ data.values.version or assert.fail("missing version")
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -284,24 +287,6 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
-#  ModuleEmailNotify:
-#    Type: AWS::Serverless::Application
-#    DependsOn:
-#      - CoreConsole
-#    Properties:
-#      Location: module-email-notify/template.yaml
-#      Parameters:
-#        AppEnvironment: 
-#          Ref: AppEnvironment
-#        Email: 
-#          Ref: AdminEmail
-#      Tags:
-#        Application: "FormKiQ Core"
-#        AppEnvironment: 
-#          Fn::Sub: "${AppEnvironment}"
-#        StackName: 
-#          Fn::Sub: "${AWS::StackName}"
-
   CoreConsoleUsers:
     Type: AWS::Serverless::Application
     DependsOn:
@@ -416,7 +401,7 @@ Outputs:
       - Outputs.CognitoUserPoolClientId
   FormKiQVersion:
     Description: "The FormKiQ Version"
-    Value: {{version}}
+    Value: #@ data.values.version or assert.fail("missing version")
   SnsDocumentEventArn:
     Description: SNS Topic for Document Events
     Value: 

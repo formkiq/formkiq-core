@@ -119,7 +119,7 @@ task assembleTemplate {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/* ${buildDir}/distributions/formkiq-core/sam/"
 		}
 		exec {
-			commandLine "bash", "-c", "box tokenReplace path=${buildDir}/distributions/formkiq-core/sam/*.yaml token=\"{{version}}\" replacement=\"${project.version}\""
+			commandLine "bash", "-c", "ytt --data-value version=${project.version} -f ${buildDir}/distributions/formkiq-core/sam/template.yaml --output-files ${buildDir}/distributions/formkiq-core/sam"
 		}
 		exec {
 			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"

@@ -148,9 +148,10 @@ public class AwsResourceTest {
 
   /**
    * Test Logging into console.
-   * @throws URISyntaxException URISyntaxException  
-   * @throws InterruptedException InterruptedException 
-   * @throws IOException IOException 
+   * 
+   * @throws URISyntaxException URISyntaxException
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
   @Test
