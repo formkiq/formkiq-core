@@ -35,7 +35,9 @@ jobs:
         chmod +x "$HOME/.local/bin/ytt"
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         ytt --version
-        npm install @openapitools/openapi-generator-cli -g
+        npm install openapi-generator -g
+        alias openapi-generator=openapi-generator-cli
+        openapi-generator version
     - name: Build with Gradle
       uses: gradle/gradle-build-action@0d13054264b0bb894ded474f08ebb30921341cee
       with:
