@@ -24,11 +24,8 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +52,6 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  */
 public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
-  /** MilliSeconds per Second. */
-  private static final int MILLISECONDS = 1000;
   /** Document Table Name. */
   private String documentTableName;
   /** {@link DynamoDbClient}. */
@@ -147,9 +142,6 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     List<WriteRequest> list = new ArrayList<>();
 
-    ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
-    Date tomorrowttl = Date.from(tomorrow.toInstant());
-    String ttl = String.valueOf(tomorrowttl.getTime() / MILLISECONDS);
     int idx = 0;
 
     for (Action action : actions) {
@@ -165,7 +157,6 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       addS(values, "documentId", documentId);
       addS(values, "userId", action.userId());
       addM(values, "parameters", action.parameters());
-      addN(values, "TimeToLive", ttl);
 
       PutRequest put = PutRequest.builder().item(values).build();
       WriteRequest req = WriteRequest.builder().putRequest(put).build();
