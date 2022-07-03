@@ -71,6 +71,8 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 
 /**
  * 
@@ -145,6 +147,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(schemaEvents));
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
+    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
 
     awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 

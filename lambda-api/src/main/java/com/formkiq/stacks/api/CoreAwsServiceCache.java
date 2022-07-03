@@ -34,7 +34,6 @@ import com.formkiq.stacks.dynamodb.DocumentCountServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
 
@@ -63,8 +62,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   private DocumentSearchService documentSearchService;
   /** {@link ConfigService}. */
   private ConfigService configService;
-  /** {@link DocumentService}. */
-  private DocumentService documentService;
   /** {@link WebhooksService}. */
   private WebhooksService webhookService;
   /** {@link DocumentCountService}. */
@@ -128,11 +125,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    * @return {@link DocumentService}
    */
   public DocumentService documentService() {
-    if (this.documentService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
-      this.documentService = new DocumentServiceImpl(db, environment("DOCUMENTS_TABLE"));
-    }
-    return this.documentService;
+    return getExtension(DocumentService.class);
   }
 
   /**
