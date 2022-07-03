@@ -45,7 +45,11 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
+import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -410,7 +414,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument04() throws Exception {
-    getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final Date now = new Date();
@@ -842,10 +848,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       assertTrue(getLogger().containsString("response: " + expected));
 
-      ReceiveMessageResponse msgs =
-          getAwsServices().sqsService().receiveMessages(getSqsWebsocketQueueUrl());
+      SqsService sqsService = getAwsServices().getExtension(SqsService.class);
+      ReceiveMessageResponse msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl());
       while (msgs.messages().isEmpty()) {
-        msgs = getAwsServices().sqsService().receiveMessages(getSqsWebsocketQueueUrl());
+        msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl());
         Thread.sleep(sleep);
       }
 
@@ -1133,7 +1139,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags10() throws Exception {
-    getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId = UUID.randomUUID().toString();
@@ -1164,7 +1172,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags11() throws Exception {
-    getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId = UUID.randomUUID().toString();

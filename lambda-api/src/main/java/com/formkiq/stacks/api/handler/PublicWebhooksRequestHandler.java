@@ -47,10 +47,11 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRedirectResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.StringUtils;
@@ -251,14 +252,16 @@ public class PublicWebhooksRequestHandler
 
     if (idempotencyKey != null) {
 
+      CacheService cacheService = awsservice.getExtension(CacheService.class);
+
       String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
-      String documentId = awsservice.documentCacheService().read(key);
+      String documentId = cacheService.read(key);
 
       if (documentId != null) {
         item.put("documentId", documentId);
         cached = true;
       } else {
-        awsservice.documentCacheService().write(key, item.getString("documentId"), 2);
+        cacheService.write(key, item.getString("documentId"), 2);
       }
     }
 
@@ -315,7 +318,7 @@ public class PublicWebhooksRequestHandler
     String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
     logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
 
-    S3Service s3 = awsservice.s3Service();
+    S3Service s3 = awsservice.getExtension(S3Service.class);
     try (S3Client client = s3.buildClient()) {
       s3.putObject(client, stages3bucket, key, bytes, item.getString("contentType"));
     }

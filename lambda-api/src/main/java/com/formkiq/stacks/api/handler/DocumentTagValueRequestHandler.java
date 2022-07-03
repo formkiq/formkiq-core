@@ -36,8 +36,9 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
@@ -72,8 +73,9 @@ public class DocumentTagValueRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    Collection<ValidationError> errors = awsservice.documentTagSchemaPlugin()
-        .validateRemoveTags(siteId, item, Arrays.asList(tagKey));
+    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+    Collection<ValidationError> errors =
+        plugin.validateRemoveTags(siteId, item, Arrays.asList(tagKey));
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }

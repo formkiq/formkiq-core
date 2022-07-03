@@ -46,10 +46,10 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
@@ -74,7 +74,8 @@ public class DocumentTagsRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
-    CacheService cacheService = awsservice.documentCacheService();
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
     ApiPagination pagination = getPagination(cacheService, event);
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
 
@@ -183,7 +184,7 @@ public class DocumentTagsRequestHandler
 
     coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
 
-    DocumentTagSchemaPlugin plugin = coreServices.documentTagSchemaPlugin();
+    DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
 
     Collection<ValidationError> errors = new ArrayList<>();
 

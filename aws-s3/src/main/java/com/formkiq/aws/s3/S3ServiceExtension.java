@@ -21,36 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
+package com.formkiq.aws.s3;
 
-import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.AwsServiceExtension;
-import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link ActionsService}.
+ * {@link AwsServiceExtension} for {@link S3Service}.
  *
  */
-public class ActionsServiceExtension implements AwsServiceExtension<ActionsService> {
+public class S3ServiceExtension implements AwsServiceExtension<S3Service> {
 
-  /** {@link ActionsService}. */
-  private ActionsService service;
+  /** {@link S3Service}. */
+  private S3Service service;
+  /** {@link S3ConnectionBuilder}. */
+  private S3ConnectionBuilder connection;
 
   /**
    * constructor.
+   * 
+   * @param s3Connection {@link S3ConnectionBuilder}
    */
-  public ActionsServiceExtension() {
-
+  public S3ServiceExtension(final S3ConnectionBuilder s3Connection) {
+    this.connection = s3Connection;
   }
 
   @Override
-  public ActionsService loadService(final AwsServiceCache awsServiceCache) {
-
+  public S3Service loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      this.service = new ActionsServiceDynamoDb(awsServiceCache.dbConnection(),
-          awsServiceCache.environment("DOCUMENTS_TABLE"));
+      this.service = new S3Service(this.connection);
     }
 
     return this.service;

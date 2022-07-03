@@ -3,4 +3,5 @@ description = "FKQ Plugins"
 
 dependencies {
 	implementation project(':aws-dynamodb')
+	implementation project(':fkq-lambda-services')
 }

@@ -40,9 +40,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
@@ -84,8 +85,8 @@ public class DocumentTagRequestHandler
 
     List<String> tags = Arrays.asList(tagKey);
 
-    Collection<ValidationError> errors =
-        awsservice.documentTagSchemaPlugin().validateRemoveTags(siteId, document, tags);
+    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+    Collection<ValidationError> errors = plugin.validateRemoveTags(siteId, document, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
@@ -193,8 +194,9 @@ public class DocumentTagRequestHandler
     List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
     Collection<ValidationError> errors = new ArrayList<>();
 
-    Collection<DocumentTag> newTags = awsservice.documentTagSchemaPlugin().addCompositeKeys(siteId,
-        document, tags, userId, false, errors);
+    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+    Collection<DocumentTag> newTags =
+        plugin.addCompositeKeys(siteId, document, tags, userId, false, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);

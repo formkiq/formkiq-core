@@ -32,7 +32,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/version". */
 public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -47,8 +48,9 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
+    SsmService ssmService = awsservice.getExtension(SsmService.class);
     String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/version";
-    String version = awsservice.ssmService().getParameterValue(key);
+    String version = ssmService.getParameterValue(key);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(
         Map.of("version", version, "type", awsservice.environment("FORMKIQ_TYPE"))));
   }

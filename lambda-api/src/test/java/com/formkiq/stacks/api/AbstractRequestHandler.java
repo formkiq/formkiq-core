@@ -46,6 +46,7 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -160,7 +161,7 @@ public abstract class AbstractRequestHandler {
 
     this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
-    SqsService sqsservice = this.awsServices.sqsService();
+    SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
     for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl())) {
       ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
       while (response.messages().size() > 0) {
@@ -270,7 +271,7 @@ public abstract class AbstractRequestHandler {
    * @return {@link S3Service}
    */
   public S3Service getS3() {
-    return this.awsServices.s3Service();
+    return this.awsServices.getExtension(S3Service.class);
   }
 
   /**
@@ -280,7 +281,16 @@ public abstract class AbstractRequestHandler {
    * @return {@link String}
    */
   public String getSsmParameter(final String key) {
-    return this.awsServices.ssmService().getParameterValue(key);
+    return getSsmService().getParameterValue(key);
+  }
+
+  /**
+   * Get {@link SsmService}.
+   * 
+   * @return {@link SsmService}
+   */
+  private SsmService getSsmService() {
+    return this.awsServices.getExtension(SsmService.class);
   }
 
   /**
@@ -338,7 +348,7 @@ public abstract class AbstractRequestHandler {
    * @param value {@link String}
    */
   public void putSsmParameter(final String name, final String value) {
-    this.awsServices.ssmService().putParameter(name, value);
+    getSsmService().putParameter(name, value);
   }
 
   /**
@@ -348,7 +358,7 @@ public abstract class AbstractRequestHandler {
    */
   public void removeSsmParameter(final String name) {
     try {
-      this.awsServices.ssmService().removeParameter(name);
+      getSsmService().removeParameter(name);
     } catch (ParameterNotFoundException e) {
       // ignore property error
     }

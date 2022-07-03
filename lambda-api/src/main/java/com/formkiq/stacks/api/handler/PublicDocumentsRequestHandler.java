@@ -31,7 +31,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/public/documents". */
 public class PublicDocumentsRequestHandler

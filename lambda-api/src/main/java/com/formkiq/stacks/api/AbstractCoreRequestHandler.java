@@ -27,17 +27,27 @@ import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.services.ActionsServiceExtension;
+import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
@@ -115,24 +125,28 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    * Setup Api Request Handlers.
    *
    * @param map {@link Map}
-   * @param builder {@link DynamoDbConnectionBuilder}
+   * @param db {@link DynamoDbConnectionBuilder}
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sqs {@link SqsConnectionBuilder}
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
   public static void configureHandler(final Map<String, String> map,
-      final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
+      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3,
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
       final DocumentTagSchemaPlugin schemaEvents) {
 
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(db));
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssm));
+    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
+    AwsServiceCache.register(SqsService.class, new SqsServiceExtension(sqs));
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(schemaEvents));
+    AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
 
-    awsServices = new CoreAwsServiceCache().environment(map).dbConnection(builder).s3Connection(s3)
-        .sqsConnection(sqs).ssmConnection(ssm).debug("true".equals(map.get("DEBUG")))
-        .documentTagSchemaPlugin(schemaEvents);
-
-    awsServices.init();
+    awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
     isEnablePublicUrls = isEnablePublicUrls(map);
   }

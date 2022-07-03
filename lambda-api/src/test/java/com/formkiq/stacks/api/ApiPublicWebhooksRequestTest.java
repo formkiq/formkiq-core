@@ -43,6 +43,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -505,7 +506,9 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       verifyS3File(id, siteId, documentId, name, null, false);
 
       String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
-      assertEquals(documentId, getAwsServices().documentCacheService().read(key));
+
+      CacheService cacheService = getAwsServices().getExtension(CacheService.class);
+      assertEquals(documentId, cacheService.read(key));
 
       // given
       // when

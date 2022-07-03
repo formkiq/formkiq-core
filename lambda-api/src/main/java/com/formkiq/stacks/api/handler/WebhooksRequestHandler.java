@@ -44,9 +44,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
@@ -59,7 +60,8 @@ public class WebhooksRequestHandler
       final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorizer.getSiteId();
-    String url = awsServices.ssmService().getParameterValue(
+    SsmService ssmService = awsServices.getExtension(SsmService.class);
+    String url = ssmService.getParameterValue(
         "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);

@@ -39,8 +39,9 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
@@ -80,7 +81,8 @@ public class WebhooksIdRequestHandler
       throw new NotFoundException("Webhook 'id' not found");
     }
 
-    String url = awsServices.ssmService().getParameterValue(
+    SsmService ssmService = awsServices.getExtension(SsmService.class);
+    String url = ssmService.getParameterValue(
         "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
     String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";

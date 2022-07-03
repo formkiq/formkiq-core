@@ -38,8 +38,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiDocumentVersion;
 import com.formkiq.stacks.api.ApiDocumentVersionsResponse;
 import com.formkiq.stacks.dynamodb.DateUtil;
@@ -73,7 +73,7 @@ public class DocumentVersionsRequestHandler
 
     String s3key = createDatabaseKey(siteId, documentId);
 
-    S3Service s3service = awsservice.s3Service();
+    S3Service s3service = awsservice.getExtension(S3Service.class);
     try (S3Client s3 = s3service.buildClient()) {
 
       ListObjectVersionsResponse response = s3service.getObjectVersions(s3,

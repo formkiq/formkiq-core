@@ -56,9 +56,10 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
@@ -169,7 +170,7 @@ public class DocumentIdRequestHandler
 
     try {
 
-      S3Service s3Service = awsservice.s3Service();
+      S3Service s3Service = awsservice.getExtension(S3Service.class);
       try (S3Client s3 = s3Service.buildClient()) {
         S3ObjectMetadata md = s3Service.getObjectMetadata(s3, documentBucket, documentId);
 
@@ -208,8 +209,9 @@ public class DocumentIdRequestHandler
     if (documentId != null) {
       Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
       String key = createS3Key(siteId, documentId);
-      url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-          key, duration, Optional.empty()).toString();
+      S3Service s3Service = awsservice.getExtension(S3Service.class);
+      url = s3Service.presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
+          Optional.empty()).toString();
     }
 
     return url;
@@ -254,9 +256,11 @@ public class DocumentIdRequestHandler
     int limit = getLimit(logger, event);
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
-    ApiPagination token = getPagination(awsservice.documentCacheService(), event);
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination token = getPagination(cacheService, event);
     String documentId = event.getPathParameters().get("documentId");
-    ApiPagination pagination = getPagination(serviceCache.documentCacheService(), event);
+    ApiPagination pagination = getPagination(cacheService, event);
 
     PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
         documentId, true, token != null ? token.getStartkey() : null, limit);
@@ -266,8 +270,8 @@ public class DocumentIdRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
-        presult.getToken(), limit);
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, presult.getToken(), limit);
 
     DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
     item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -362,7 +366,7 @@ public class DocumentIdRequestHandler
     String stageS3Bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
     logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
 
-    S3Service s3 = awsservice.s3Service();
+    S3Service s3 = awsservice.getExtension(S3Service.class);
     try (S3Client client = s3.buildClient()) {
       s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
 
@@ -408,7 +412,7 @@ public class DocumentIdRequestHandler
       return transform.apply(t);
     }).collect(Collectors.toList());
 
-    DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
+    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
 
     Collection<ValidationError> errors = new ArrayList<>();
 

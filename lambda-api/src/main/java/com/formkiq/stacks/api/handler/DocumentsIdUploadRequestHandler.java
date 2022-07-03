@@ -38,14 +38,15 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -133,8 +134,9 @@ public class DocumentsIdUploadRequestHandler
     String key = siteId != null ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
     Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
-    URL url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-        key, duration, contentLength);
+    S3Service s3Service = awsservice.getExtension(S3Service.class);
+    URL url = s3Service.presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
+        contentLength);
 
     String urlstring = url.toString();
     return urlstring;

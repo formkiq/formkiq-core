@@ -42,9 +42,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
+import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -110,14 +111,16 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     DocumentSearchService documentSearchService = serviceCache.documentSearchService();
 
-    if (q.query().tag() == null && !serviceCache.documentTagSchemaPlugin().isActive()) {
+    if (q.query().tag() == null
+        && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive()) {
+
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
       response = new ApiRequestHandlerResponse(SC_PAYMENT, resp);
 
     } else {
 
-      DynamoDbCacheService cacheService = awsservice.documentCacheService();
+      CacheService cacheService = awsservice.getExtension(CacheService.class);
       ApiPagination pagination = getPagination(cacheService, event);
       int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
       PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;

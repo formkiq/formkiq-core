@@ -53,6 +53,9 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -1171,7 +1174,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocuments13() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+      AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
 
       // when
       DynamicObject obj =
@@ -1195,7 +1199,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocuments14() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnNewTags());
+      AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
 
       // when
       DynamicObject obj =

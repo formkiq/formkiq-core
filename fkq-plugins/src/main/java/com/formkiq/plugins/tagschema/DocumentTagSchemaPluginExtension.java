@@ -21,22 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.plugins.tagschema;
+
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Extension to {@link AwsServiceCache} to allow custom creation of service classes.
- * 
- * @param <T> Type of Class.
+ * {@link AwsServiceExtension} for {@link DocumentTagSchemaPlugin}.
  *
  */
-public interface AwsServiceExtension<T> {
+public class DocumentTagSchemaPluginExtension
+    implements AwsServiceExtension<DocumentTagSchemaPlugin> {
+
+  /** {@link DocumentTagSchemaPlugin}. */
+  private DocumentTagSchemaPlugin plugin;
 
   /**
-   * Load Service.
+   * constructor.
    * 
-   * @param awsServiceCache {@link AwsServiceCache}
-   * @return T Type of class
+   * @param documentTagSchemaPlugin {@link DocumentTagSchemaPlugin}
    */
-  T loadService(AwsServiceCache awsServiceCache);
+  public DocumentTagSchemaPluginExtension(final DocumentTagSchemaPlugin documentTagSchemaPlugin) {
+    this.plugin = documentTagSchemaPlugin;
+  }
+
+  @Override
+  public DocumentTagSchemaPlugin loadService(final AwsServiceCache awsServiceCache) {
+    return this.plugin;
+  }
 }
