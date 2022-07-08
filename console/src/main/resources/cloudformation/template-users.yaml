@@ -127,6 +127,42 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  AdminGroupRoleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Admin Group Role"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/AdminGroupRole"
+      Type: String
+      Value: 
+        Ref: AdminGroupRole
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  AdminGroupRoleArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Admin Group Role"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/AdminGroupRoleArn"
+      Type: String
+      Value: 
+        Fn::GetAtt: 
+        - AdminGroupRole
+        - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   AdminGroupRole: 
     Type: "AWS::IAM::Role"
     Properties:
