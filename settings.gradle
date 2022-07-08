@@ -1,3 +1,5 @@
+rootProject.name = 'formkiq-core'
+
 /*pluginManagement {
     includeBuild '../graalvm-native-plugin'
 }*/
