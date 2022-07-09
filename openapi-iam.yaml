@@ -771,6 +771,49 @@
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /searchFulltext:
+            post:
+              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch) ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Search
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - name: previous
+                in: query
+                description: Previous page of results token
+                schema:
+                  type: string
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentFulltextSearchBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentSearchResults'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /documents/{documentId}/ocr:
             get:
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
@@ -828,6 +871,52 @@
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+          /documents/{documentId}/fulltext:
+            delete:
+              description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            put:
+              description: Retrieve all text found within a document; text can be parsed from some content types, e.g. text/*, or from a previous /ocr request for a document. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/FulltextBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextResult'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /public/documents:
             post:
               description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
@@ -1402,6 +1491,44 @@
                       belongsToDocumentId:
                         type: string
                         description: Parent Document Identifier
+            DocumentFulltextSearchBody:
+              required:
+              - query
+              type: object
+              description: Document full text search
+              properties:
+                query:
+                  $ref: '#/components/schemas/DocumentFulltextSearch'
+            DocumentFulltextSearch:
+              type: object
+              description: Document full text search criteria
+              properties:
+                text:
+                  type: string
+                  description: Full text search
+                tags:
+                  $ref: '#/components/schemas/DocumentFulltextTags'
+            DocumentFulltextTags:
+              type: array
+              description: List of search tags
+              items:
+                $ref: '#/components/schemas/DocumentFulltextTag'
+            DocumentFulltextTag:
+              required:
+              - key
+              type: object
+              properties:
+                eq:
+                  type: string
+                  description: Searches for strings that eq
+                eqOr:
+                  type: array
+                  description: Searches for ANY strings that eq
+                  items:
+                    type: string
+                key:
+                  type: string
+                  description: Tag key to search
             DocumentSearchBody:
               required:
               - query
@@ -1834,6 +1961,14 @@
                 message:
                   type: string
                   description: OCR processing message
+            FulltextResult:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
+            FulltextBody:
+              type: object
             OcrBody:
               type: object
               example:
@@ -2058,6 +2193,20 @@
               type: aws_proxy
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
+              uri:
+                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            fulltextLambdaApi200:
               uri:
                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
