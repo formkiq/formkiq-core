@@ -292,3 +292,9 @@ Resources:
           Fn::GetAtt: 
           - CognitoNoAccessRole
           - Arn
+Outputs:
+  AdminGroupRoleArn:
+    Value: 
+      Fn::GetAtt: 
+      - AdminGroupRole
+      - Arn
