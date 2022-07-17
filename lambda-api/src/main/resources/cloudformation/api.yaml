@@ -802,7 +802,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentSearchResults'
+                        $ref: '#/components/schemas/FulltextSearchResults'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1738,6 +1738,36 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
+            FulltextSearchResults:
+              type: "object"
+              properties:
+                documents:
+                  $ref: "#/components/schemas/FulltextSearchItems"
+            FulltextSearchItems:
+              type: "array"
+              description: "List of search result documents"
+              items:
+                $ref: "#/components/schemas/FulltextDocument"
+            FulltextDocument:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                createdBy:
+                  type: "string"
+                  description: "User who added document"
             DocumentSearchResults:
               type: "object"
               properties:
