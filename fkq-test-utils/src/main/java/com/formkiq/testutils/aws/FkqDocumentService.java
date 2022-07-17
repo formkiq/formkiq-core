@@ -32,7 +32,9 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -44,17 +46,19 @@ import com.google.gson.GsonBuilder;
  */
 public class FkqDocumentService {
 
+  /** 200 OK. */
+  private static final int STATUS_OK = 200;
   /** {@link HttpClient}. */
   private HttpClient http = HttpClient.newHttpClient();
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
 
   /**
    * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
    * @param client {@link FormKiqClientV1}
    * @param siteId {@link String}
+   * @param path {@link String}
    * @param content byte[]
    * @param contentType {@link String}
    * @return {@link String}
@@ -62,12 +66,13 @@ public class FkqDocumentService {
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  public String addDocument(final FormKiqClientV1 client, final String siteId, final byte[] content,
-      final String contentType) throws IOException, URISyntaxException, InterruptedException {
+  public String addDocument(final FormKiqClientV1 client, final String siteId, final String path,
+      final byte[] content, final String contentType)
+      throws IOException, URISyntaxException, InterruptedException {
     // given
     final int status = 200;
     GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().siteId(siteId).contentLength(content.length);
+        new GetDocumentUploadRequest().siteId(siteId).path(path).contentLength(content.length);
 
     // when
     HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
@@ -95,5 +100,32 @@ public class FkqDocumentService {
   protected Map<String, Object> toMap(final HttpResponse<String> response) throws IOException {
     Map<String, Object> m = this.gson.fromJson(response.body(), Map.class);
     return m;
+  }
+  
+  /**
+   * Fetch Document.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public void waitForDocumentContent(final FormKiqClientV1 client, final String siteId,
+      final String documentId) throws IOException, InterruptedException, URISyntaxException {
+
+    GetDocumentContentRequest request =
+        new GetDocumentContentRequest().siteId(siteId).documentId(documentId);
+
+    while (true) {
+
+      HttpResponse<String> response = client.getDocumentContentAsHttpResponse(request);
+      if (STATUS_OK == response.statusCode()) {
+        break;
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
   }
 }

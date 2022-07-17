@@ -193,6 +193,13 @@ Resources:
               ForAnyValue:StringLike:
                 cognito-identity.amazonaws.com:amr:
                 - "authenticated"
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - "sts:AssumeRole"
       Path: "/"
       Policies: 
         - 
@@ -200,7 +207,13 @@ Resources:
             Fn::Sub: "${AWS::StackName}-AdminGroupRole"
           PolicyDocument: 
             Version: "2012-10-17"
-            Statement: 
+            Statement:
+              - Effect: Allow
+                Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                Resource: "*"            
               - 
                 Effect: "Allow"
                 Action: [ "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminCreateUser", "cognito-idp:AdminDeleteUser", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminRemoveUserFromGroup", "cognito-idp:AdminResetUserPassword", "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup" ]
