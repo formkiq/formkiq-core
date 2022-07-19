@@ -780,16 +780,6 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
-              - name: previous
-                in: query
-                description: Previous page of results token
-                schema:
-                  type: string
               requestBody:
                 required: true
                 content:
@@ -809,7 +799,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentSearchResults'
+                        $ref: '#/components/schemas/FulltextSearchResults'
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
@@ -1747,6 +1737,36 @@
                 key:
                   type: string
                   description: Tag key
+            FulltextSearchResults:
+              type: object
+              properties:
+                documents:
+                  $ref: '#/components/schemas/FulltextSearchItems'
+            FulltextSearchItems:
+              type: array
+              description: List of search result documents
+              items:
+                $ref: '#/components/schemas/FulltextDocument'
+            FulltextDocument:
+              type: object
+              properties:
+                siteId:
+                  type: string
+                  description: Site Identifier
+                path:
+                  type: string
+                  description: Path or Name of document
+                insertedDate:
+                  type: string
+                  format: date-time
+                  description: Inserted Timestamp
+                documentId:
+                  type: string
+                  format: uuid
+                  description: Document Identifier
+                createdBy:
+                  type: string
+                  description: User who added document
             DocumentSearchResults:
               type: object
               properties:

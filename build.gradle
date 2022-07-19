@@ -9,6 +9,8 @@ plugins {
   id 'de.undercouch.download' version '5.0.5'
 }
 
+def moduleName = "formkiq-core"
+
 repositories { mavenCentral() }
 
 allprojects {
@@ -128,6 +130,22 @@ task assembleTemplate {
 }
 
 check.dependsOn ':buildSamZip'
+
+/**
+ * SAM Packges Uploads enterprise build to the customer's bucket.
+ */
+task uploadToCustomerBucket {
+  dependsOn build
+  outputs.upToDateWhen { false }
+  doLast {
+    exec {
+      commandLine "bash", "-c", "sam package --s3-prefix ${project.version} --s3-bucket ${moduleName} --template-file ${buildDir}/distributions/${moduleName}/sam/template.yaml --region ${testregion} --output-template-file ${buildDir}/distributions/${moduleName}/sam/template-${project.version}.yaml --profile ${testprofile}"
+    }
+    exec {
+      commandLine "bash", "-c", "aws s3 cp ${buildDir}/distributions/${moduleName}/sam/template-${project.version}.yaml s3://${moduleName}/${project.version}/template.yaml --only-show-errors --profile ${testprofile}"
+    }
+  }
+}
 
 task deploy {
     dependsOn assembleTemplate
