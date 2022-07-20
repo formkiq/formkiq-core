@@ -152,17 +152,17 @@ public abstract class AbstractRequestHandler {
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     this.map.put("AWS_REGION", AWS_REGION.toString());
     this.map.put("DEBUG", "true");
-    this.map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl());
+    this.map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl(null));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
-    this.map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl());
+    this.map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl(null));
 
     createApiRequestHandler(this.map);
 
     this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
-    for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl())) {
+    for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
       ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
       while (response.messages().size() > 0) {
         for (Message msg : response.messages()) {
@@ -182,8 +182,8 @@ public abstract class AbstractRequestHandler {
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
     AbstractCoreRequestHandler.configureHandler(prop,
-        DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(),
-        TestServices.getSsmConnection(), TestServices.getSqsConnection(),
+        DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(null),
+        TestServices.getSsmConnection(null), TestServices.getSqsConnection(null),
         new DocumentTagSchemaPluginEmpty());
   }
 

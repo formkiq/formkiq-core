@@ -190,9 +190,9 @@ public class StagingS3CreateTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
-    s3Builder = TestServices.getS3Connection();
-    sqsBuilder = TestServices.getSqsConnection();
-    ssmBuilder = TestServices.getSsmConnection();
+    s3Builder = TestServices.getS3Connection(null);
+    sqsBuilder = TestServices.getSqsConnection(null);
+    ssmBuilder = TestServices.getSsmConnection(null);
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
 
@@ -272,7 +272,7 @@ public class StagingS3CreateTest implements DbKeys {
       sqsErrorUrl = sqsService.createQueue(ERROR_SQS_QUEUE).queueUrl();
     }
 
-    snsService = new SnsService(TestServices.getSnsConnection());
+    snsService = new SnsService(TestServices.getSnsConnection(null));
     snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
     snsService.subscribe(snsDeleteTopic, "sqs",
         "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_DELETE_QUEUE);

@@ -114,7 +114,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     createMockServer();
 
-    SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection();
+    SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
@@ -123,7 +123,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
 
     processor = new DocumentActionsProcessor(env, Region.US_EAST_1, null, dbBuilder,
-        TestServices.getSsmConnection());
+        TestServices.getSsmConnection(null));
   }
 
   /**

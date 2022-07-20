@@ -50,7 +50,7 @@ public class LocalStackExtension
     this.localstack = TestServices.getLocalStack();
     this.localstack.start();
 
-    S3Service s3service = new S3Service(TestServices.getS3Connection());
+    S3Service s3service = new S3Service(TestServices.getS3Connection(null));
     try (S3Client s3 = s3service.buildClient()) {
 
       if (!s3service.exists(s3, BUCKET_NAME)) {
@@ -62,7 +62,7 @@ public class LocalStackExtension
       }
     }
 
-    new SsmServiceImpl(TestServices.getSsmConnection())
+    new SsmServiceImpl(TestServices.getSsmConnection(null))
         .putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
   }
 

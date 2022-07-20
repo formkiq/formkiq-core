@@ -849,9 +849,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(getLogger().containsString("response: " + expected));
 
       SqsService sqsService = getAwsServices().getExtension(SqsService.class);
-      ReceiveMessageResponse msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl());
+      ReceiveMessageResponse msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
       while (msgs.messages().isEmpty()) {
-        msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl());
+        msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
         Thread.sleep(sleep);
       }
 

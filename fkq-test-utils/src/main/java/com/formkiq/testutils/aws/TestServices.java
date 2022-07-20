@@ -93,18 +93,21 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link S3ConnectionBuilder}.
+   * @param endpointOverride {@link String}
    * 
    * @return {@link S3ConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
   @SuppressWarnings("resource")
-  public static S3ConnectionBuilder getS3Connection() throws URISyntaxException {
+  public static S3ConnectionBuilder getS3Connection(final String endpointOverride)
+      throws URISyntaxException {
     if (s3Connection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getLocalStack().getEndpointOverride(Service.S3).toString());
+          .setEndpointOverride(endpointOverride != null ? endpointOverride
+              : getLocalStack().getEndpointOverride(Service.S3).toString());
     }
 
     return s3Connection;
@@ -112,18 +115,21 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link SnsConnectionBuilder}.
+   * @param endpointOverride {@link String}
    * 
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
   @SuppressWarnings("resource")
-  public static SnsConnectionBuilder getSnsConnection() throws URISyntaxException {
+  public static SnsConnectionBuilder getSnsConnection(final String endpointOverride)
+      throws URISyntaxException {
     if (snsConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       snsConnection = new SnsConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getLocalStack().getEndpointOverride(Service.SNS).toString());
+          .setEndpointOverride(endpointOverride != null ? endpointOverride
+              : getLocalStack().getEndpointOverride(Service.SNS).toString());
     }
 
     return snsConnection;
@@ -131,18 +137,21 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link SqsConnectionBuilder}.
+   * @param endpointOverride {@link String}
    * 
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
   @SuppressWarnings("resource")
-  public static SqsConnectionBuilder getSqsConnection() throws URISyntaxException {
+  public static SqsConnectionBuilder getSqsConnection(final String endpointOverride)
+      throws URISyntaxException {
     if (sqsConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       sqsConnection = new SqsConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getLocalStack().getEndpointOverride(Service.SQS).toString());
+          .setEndpointOverride(endpointOverride != null ? endpointOverride
+              : getLocalStack().getEndpointOverride(Service.SQS).toString());
     }
 
     return sqsConnection;
@@ -150,14 +159,16 @@ public final class TestServices {
 
   /**
    * Get Sqs Documents Formats Queue Url.
+   * @param endpointOverride {@link String}
    * 
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
-  public static String getSqsDocumentFormatsQueueUrl() throws URISyntaxException {
+  public static String getSqsDocumentFormatsQueueUrl(final String endpointOverride)
+      throws URISyntaxException {
     if (sqsDocumentFormatsQueueUrl == null) {
       sqsDocumentFormatsQueueUrl =
-          getSqsService().createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
+          getSqsService(endpointOverride).createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
     }
 
     return sqsDocumentFormatsQueueUrl;
@@ -165,13 +176,14 @@ public final class TestServices {
 
   /**
    * Get Singleton Instance of {@link SqsService}.
+   * @param endpointOverride {@link String}
    * 
    * @return {@link SqsService}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SqsService getSqsService() throws URISyntaxException {
+  public static SqsService getSqsService(final String endpointOverride) throws URISyntaxException {
     if (sqsservice == null) {
-      sqsservice = new SqsService(getSqsConnection());
+      sqsservice = new SqsService(getSqsConnection(endpointOverride));
     }
 
     return sqsservice;
@@ -180,12 +192,16 @@ public final class TestServices {
   /**
    * Get Sqs Documents Formats Queue Url.
    * 
+   * @param endpointOverride {@link String}
+   * 
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
-  public static String getSqsWebsocketQueueUrl() throws URISyntaxException {
+  public static String getSqsWebsocketQueueUrl(final String endpointOverride)
+      throws URISyntaxException {
     if (sqsWebsocketQueueUrl == null) {
-      sqsWebsocketQueueUrl = getSqsService().createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
+      sqsWebsocketQueueUrl =
+          getSqsService(endpointOverride).createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
     }
 
     return sqsWebsocketQueueUrl;
@@ -193,18 +209,21 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link SsmConnectionBuilder}.
+   * @param endpointOverride {@link String}
    * 
    * @return {@link SsmConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
   @SuppressWarnings("resource")
-  public static SsmConnectionBuilder getSsmConnection() throws URISyntaxException {
+  public static SsmConnectionBuilder getSsmConnection(final String endpointOverride)
+      throws URISyntaxException {
     if (ssmConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getLocalStack().getEndpointOverride(Service.SSM).toString());
+          .setEndpointOverride(endpointOverride != null ? endpointOverride
+              : getLocalStack().getEndpointOverride(Service.SSM).toString());
     }
 
     return ssmConnection;

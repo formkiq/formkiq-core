@@ -144,11 +144,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
-    s3Builder = TestServices.getS3Connection();
-    sqsBuilder = TestServices.getSqsConnection();
+    s3Builder = TestServices.getS3Connection(null);
+    sqsBuilder = TestServices.getSqsConnection(null);
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
-    snsBuilder = TestServices.getSnsConnection();
+    snsBuilder = TestServices.getSnsConnection(null);
 
     sqsService = new SqsService(sqsBuilder);
 
