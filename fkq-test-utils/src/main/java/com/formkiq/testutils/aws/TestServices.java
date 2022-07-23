@@ -52,6 +52,8 @@ public final class TestServices {
   public static final String FORMKIQ_APP_ENVIRONMENT = "test";
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack = null;
+  /** Default Localstack Endpoint. */
+  private static final String LOCALSTACK_ENDPOINT = "http://localhost:4566";
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
       DockerImageName.parse("localstack/localstack:0.12.2");
@@ -77,6 +79,25 @@ public final class TestServices {
   public static final String STAGE_BUCKET_NAME = "stagebucket";
 
   /**
+   * Get Local Stack Endpoint.
+   * 
+   * @param service {@link Service}
+   * @param endpointOverride {@link String}
+   * @return {@link String}
+   */
+  @SuppressWarnings("resource")
+  private static String getEndpoint(final Service service, final String endpointOverride) {
+    String endpoint = endpointOverride;
+
+    if (endpoint == null) {
+      endpoint = localstack != null ? getLocalStack().getEndpointOverride(service).toString()
+          : LOCALSTACK_ENDPOINT;
+    }
+
+    return endpoint;
+  }
+
+  /**
    * Get Singleton Instance of {@link LocalStackContainer}.
    * 
    * @return {@link LocalStackContainer}
@@ -93,12 +114,12 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link S3ConnectionBuilder}.
+   * 
    * @param endpointOverride {@link String}
    * 
    * @return {@link S3ConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  @SuppressWarnings("resource")
   public static S3ConnectionBuilder getS3Connection(final String endpointOverride)
       throws URISyntaxException {
     if (s3Connection == null) {
@@ -106,8 +127,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(endpointOverride != null ? endpointOverride
-              : getLocalStack().getEndpointOverride(Service.S3).toString());
+          .setEndpointOverride(getEndpoint(Service.S3, endpointOverride));
     }
 
     return s3Connection;
@@ -115,12 +135,12 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link SnsConnectionBuilder}.
+   * 
    * @param endpointOverride {@link String}
    * 
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  @SuppressWarnings("resource")
   public static SnsConnectionBuilder getSnsConnection(final String endpointOverride)
       throws URISyntaxException {
     if (snsConnection == null) {
@@ -128,8 +148,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       snsConnection = new SnsConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(endpointOverride != null ? endpointOverride
-              : getLocalStack().getEndpointOverride(Service.SNS).toString());
+          .setEndpointOverride(getEndpoint(Service.SNS, endpointOverride));
     }
 
     return snsConnection;
@@ -137,12 +156,12 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link SqsConnectionBuilder}.
+   * 
    * @param endpointOverride {@link String}
    * 
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  @SuppressWarnings("resource")
   public static SqsConnectionBuilder getSqsConnection(final String endpointOverride)
       throws URISyntaxException {
     if (sqsConnection == null) {
@@ -150,8 +169,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       sqsConnection = new SqsConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(endpointOverride != null ? endpointOverride
-              : getLocalStack().getEndpointOverride(Service.SQS).toString());
+          .setEndpointOverride(getEndpoint(Service.SQS, endpointOverride));
     }
 
     return sqsConnection;
@@ -159,6 +177,7 @@ public final class TestServices {
 
   /**
    * Get Sqs Documents Formats Queue Url.
+   * 
    * @param endpointOverride {@link String}
    * 
    * @return {@link String}
@@ -176,6 +195,7 @@ public final class TestServices {
 
   /**
    * Get Singleton Instance of {@link SqsService}.
+   * 
    * @param endpointOverride {@link String}
    * 
    * @return {@link SqsService}
@@ -209,12 +229,12 @@ public final class TestServices {
 
   /**
    * Get Singleton {@link SsmConnectionBuilder}.
+   * 
    * @param endpointOverride {@link String}
    * 
    * @return {@link SsmConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  @SuppressWarnings("resource")
   public static SsmConnectionBuilder getSsmConnection(final String endpointOverride)
       throws URISyntaxException {
     if (ssmConnection == null) {
@@ -222,8 +242,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(endpointOverride != null ? endpointOverride
-              : getLocalStack().getEndpointOverride(Service.SSM).toString());
+          .setEndpointOverride(getEndpoint(Service.SSM, endpointOverride));
     }
 
     return ssmConnection;

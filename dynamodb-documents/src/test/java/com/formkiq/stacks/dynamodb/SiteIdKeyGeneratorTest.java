@@ -103,6 +103,8 @@ public class SiteIdKeyGeneratorTest {
     assertNull(getSiteId(id));
     assertEquals(siteId, getSiteId(siteId + "/" + id));
     assertNull(getSiteId(DEFAULT_SITE_ID + "/" + id));
+    assertNull(getSiteId("formkiq:://sample/test.txt.fkb64"));
+    assertEquals("bleh", getSiteId("bleh/formkiq:://sample/test.txt.fkb64"));
   }
 
   /**

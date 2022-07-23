@@ -44,11 +44,16 @@ public class LocalStackExtension
   /** {@link LocalStackContainer}. */
   private LocalStackContainer localstack = null;
 
+  /** Start Local Stack. */
+  private boolean startLocalStack = true;
+
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    this.localstack = TestServices.getLocalStack();
-    this.localstack.start();
+    if (this.startLocalStack) {
+      this.localstack = TestServices.getLocalStack();
+      this.localstack.start();
+    }
 
     S3Service s3service = new S3Service(TestServices.getS3Connection(null));
     try (S3Client s3 = s3service.buildClient()) {
@@ -71,5 +76,16 @@ public class LocalStackExtension
     if (this.localstack != null) {
       this.localstack.stop();
     }
+  }
+
+  /**
+   * Enable using a manually started local stack instead of starting one.
+   * 
+   * @param start boolean
+   * @return {@link LocalStackExtension}
+   */
+  public LocalStackExtension startLocalStack(final boolean start) {
+    this.startLocalStack = start;
+    return this;
   }
 }
