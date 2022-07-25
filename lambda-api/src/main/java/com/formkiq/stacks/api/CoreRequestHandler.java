@@ -41,6 +41,7 @@ import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
+import com.formkiq.module.actions.Action;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTags;
@@ -55,7 +56,7 @@ import software.amazon.awssdk.regions.Region;
     DocumentTags.class, PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class,
     PresetTag.class, Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class,
     ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
-    ApiPagination.class})
+    ApiPagination.class, Action.class})
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   static {

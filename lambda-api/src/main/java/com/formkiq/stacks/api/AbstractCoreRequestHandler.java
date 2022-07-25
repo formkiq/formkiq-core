@@ -55,6 +55,7 @@ import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsActionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
@@ -110,6 +111,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentIdRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
+    addRequestHandler(new DocumentsActionsRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
     addRequestHandler(new DocumentTagRequestHandler());
     addRequestHandler(new DocumentIdUrlRequestHandler());
