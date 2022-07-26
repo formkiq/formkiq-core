@@ -125,8 +125,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksTagsRequestHandler());
     addRequestHandler(new WebhooksIdRequestHandler());
     addRequestHandler(new WebhooksRequestHandler());
-    addRequestHandler(new DocumentsRequestHandler(URL_MAP));
-    addRequestHandler(new DocumentIdRequestHandler(URL_MAP));
+    addRequestHandler(new DocumentsRequestHandler());
+    addRequestHandler(new DocumentIdRequestHandler());
   }
 
   /**
@@ -182,7 +182,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     String s = "options".equals(method) ? method : resource;
 
     if (isEnablePublicUrls && "/public/documents".equals(s)) {
-      return new PublicDocumentsRequestHandler(urlMap);
+      return new PublicDocumentsRequestHandler();
     }
 
     if (s.startsWith("/public/webhooks")) {

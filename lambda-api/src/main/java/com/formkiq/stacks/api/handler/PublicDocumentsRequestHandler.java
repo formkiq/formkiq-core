@@ -37,17 +37,22 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 public class PublicDocumentsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** Url Map. */
-  private Map<String, ApiGatewayRequestHandler> urls;
+  /** {@link DocumentsRequestHandler}. */
+  private DocumentsRequestHandler handler = new DocumentsRequestHandler();
 
   /**
    * constructor.
-   * 
-   * @param urlMap {@link Map} {@link ApiGatewayRequestHandler}
-   *
    */
-  public PublicDocumentsRequestHandler(final Map<String, ApiGatewayRequestHandler> urlMap) {
-    this.urls = urlMap;
+  public PublicDocumentsRequestHandler() {}
+
+  @Override
+  public String getRequestUrl() {
+    return "/public/documents";
+  }
+
+  @Override
+  public void init(final Map<String, ApiGatewayRequestHandler> urlMap) {
+    this.handler.init(urlMap);
   }
 
   @SuppressWarnings("unchecked")
@@ -70,12 +75,6 @@ public class PublicDocumentsRequestHandler
 
     claims.put("cognito:username", "public");
 
-    return new DocumentsRequestHandler(this.urls).post(logger, event, authorizer, awsservice);
-
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/public/documents";
+    return this.handler.post(logger, event, authorizer, awsservice);
   }
 }

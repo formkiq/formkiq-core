@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -172,6 +173,15 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
+  }
+
+  /**
+   * Init {@link ApiGatewayRequestHandler}.
+   * 
+   * @param urlMap {@link Map} {@link ApiGatewayRequestHandler}
+   */
+  default void init(final Map<String, ApiGatewayRequestHandler> urlMap) {
+    // empty
   }
 
   /**

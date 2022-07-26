@@ -61,28 +61,18 @@ public class DocumentsRequestHandler
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df;
-  /** Url Map. */
-  private Map<String, ApiGatewayRequestHandler> urls;
+  /** {@link DocumentIdRequestHandler}. */
+  private DocumentIdRequestHandler handler = new DocumentIdRequestHandler();
 
   /**
    * constructor.
-   * 
-   * @param urlMap {@link Map} {@link ApiGatewayRequestHandler}
    *
    */
-  public DocumentsRequestHandler(final Map<String, ApiGatewayRequestHandler> urlMap) {
+  public DocumentsRequestHandler() {
     this.df = new SimpleDateFormat("yyyy-MM-dd");
 
     TimeZone tz = TimeZone.getTimeZone("UTC");
     this.df.setTimeZone(tz);
-    this.urls = urlMap;
-  }
-
-  @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    return new DocumentIdRequestHandler(this.urls).patch(logger, event, authorizer, awsservice);
   }
 
   @Override
@@ -135,6 +125,23 @@ public class DocumentsRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
+  @Override
+  public String getRequestUrl() {
+    return "/documents";
+  }
+
+  @Override
+  public void init(final Map<String, ApiGatewayRequestHandler> urlMap) {
+    this.handler.init(urlMap);
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+    return this.handler.patch(logger, event, authorizer, awsservice);
+  }
+
   /**
    * Transform {@link String} to {@link ZonedDateTime}.
    *
@@ -166,10 +173,5 @@ public class DocumentsRequestHandler
     }
 
     return date;
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/documents";
   }
 }

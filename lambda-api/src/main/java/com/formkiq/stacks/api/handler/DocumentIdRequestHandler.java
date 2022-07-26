@@ -83,23 +83,18 @@ public class DocumentIdRequestHandler
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
 
+  /** {@link List} {@link ApiGatewayRequestHandler}. */
+  private List<ApiGatewayRequestHandler> deleteUrls = new ArrayList<>();
+
   /** {@link DocumentsRestrictionsMaxDocuments}. */
   private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
       new DocumentsRestrictionsMaxDocuments();
 
-  /** {@link List} {@link ApiGatewayRequestHandler}. */
-  private List<ApiGatewayRequestHandler> deleteUrls = new ArrayList<>();
-
   /**
    * constructor.
-   * 
-   * @param urlMap {@link Map}
    *
    */
-  public DocumentIdRequestHandler(final Map<String, ApiGatewayRequestHandler> urlMap) {
-    this.deleteUrls.add(urlMap.get(DocumentsOcrRequestHandler.URL));
-    this.deleteUrls.add(urlMap.get(DocumentsFulltextRequestHandler.URL));
-  }
+  public DocumentIdRequestHandler() {}
 
   /**
    * Add field to object.
@@ -297,6 +292,14 @@ public class DocumentIdRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}";
+  }
+
+  @Override
+  public void init(final Map<String, ApiGatewayRequestHandler> urlMap) {
+    if (this.deleteUrls.isEmpty()) {
+      this.deleteUrls.add(urlMap.get(DocumentsOcrRequestHandler.URL));
+      this.deleteUrls.add(urlMap.get(DocumentsFulltextRequestHandler.URL));
+    }
   }
 
   @Override
