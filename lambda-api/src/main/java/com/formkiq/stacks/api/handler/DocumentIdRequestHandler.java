@@ -87,11 +87,19 @@ public class DocumentIdRequestHandler
   private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
       new DocumentsRestrictionsMaxDocuments();
 
+  /** {@link List} {@link ApiGatewayRequestHandler}. */
+  private List<ApiGatewayRequestHandler> deleteUrls = new ArrayList<>();
+
   /**
    * constructor.
+   * 
+   * @param urlMap {@link Map}
    *
    */
-  public DocumentIdRequestHandler() {}
+  public DocumentIdRequestHandler(final Map<String, ApiGatewayRequestHandler> urlMap) {
+    this.deleteUrls.add(urlMap.get(DocumentsOcrRequestHandler.URL));
+    this.deleteUrls.add(urlMap.get(DocumentsFulltextRequestHandler.URL));
+  }
 
   /**
    * Add field to object.
@@ -166,6 +174,11 @@ public class DocumentIdRequestHandler
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     String documentId = event.getPathParameters().get("documentId");
+
+    for (ApiGatewayRequestHandler handler : this.deleteUrls) {
+      handler.delete(logger, event, authorizer, awsservice);
+    }
+
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
     try {

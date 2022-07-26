@@ -93,7 +93,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
-  
+
   /**
    * PATCH /documents/{documentId}/ocr request.
    *
@@ -121,7 +121,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
-  
+
   /**
    * POST /documents/{documentId}/ocr request.
    *

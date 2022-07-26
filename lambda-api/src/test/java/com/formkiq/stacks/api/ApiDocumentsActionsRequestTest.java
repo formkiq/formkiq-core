@@ -47,14 +47,14 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
 
   /** {@link ActionsService}. */
   private ActionsService service;
-  
+
   @Override
   @BeforeEach
   public void before() throws Exception {
     super.before();
     this.service = getAwsServices().getExtension(ActionsService.class);
   }
-  
+
   /**
    * Get /documents/{documentId}/actio s request.
    *
@@ -68,7 +68,7 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       String documentId = UUID.randomUUID().toString();
       this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
-      
+
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-actions01.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId);
@@ -83,14 +83,14 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      
+
       Map<String, Object> actionsMap = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
       List<Map<String, Object>> list = (List<Map<String, Object>>) actionsMap.get("actions");
       assertEquals(1, list.size());
       assertEquals("OCR", list.get(0).get("type"));
       assertEquals("COMPLETE", list.get(0).get("status"));
-      assertEquals("{test=this}", list.get(0).get("parameters").toString());      
+      assertEquals("{test=this}", list.get(0).get("parameters").toString());
     }
   }
- 
+
 }

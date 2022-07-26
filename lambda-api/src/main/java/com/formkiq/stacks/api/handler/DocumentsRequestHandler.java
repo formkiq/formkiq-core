@@ -61,23 +61,28 @@ public class DocumentsRequestHandler
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df;
+  /** Url Map. */
+  private Map<String, ApiGatewayRequestHandler> urls;
 
   /**
    * constructor.
+   * 
+   * @param urlMap {@link Map} {@link ApiGatewayRequestHandler}
    *
    */
-  public DocumentsRequestHandler() {
+  public DocumentsRequestHandler(final Map<String, ApiGatewayRequestHandler> urlMap) {
     this.df = new SimpleDateFormat("yyyy-MM-dd");
 
     TimeZone tz = TimeZone.getTimeZone("UTC");
     this.df.setTimeZone(tz);
+    this.urls = urlMap;
   }
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    return new DocumentIdRequestHandler().patch(logger, event, authorizer, awsservice);
+    return new DocumentIdRequestHandler(this.urls).patch(logger, event, authorizer, awsservice);
   }
 
   @Override

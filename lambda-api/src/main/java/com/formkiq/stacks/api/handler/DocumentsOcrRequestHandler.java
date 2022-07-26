@@ -37,6 +37,9 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 public class DocumentsOcrRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** {@link DocumentsOcrRequestHandler} URL. */
+  public static final String URL = "/documents/{documentId}/ocr";
+
   /**
    * constructor.
    *
@@ -61,9 +64,9 @@ public class DocumentsOcrRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/documents/{documentId}/ocr";
+    return URL;
   }
-  
+
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -71,7 +74,7 @@ public class DocumentsOcrRequestHandler
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
   }
-  
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,

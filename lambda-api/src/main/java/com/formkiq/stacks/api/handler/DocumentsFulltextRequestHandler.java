@@ -33,9 +33,12 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
-/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/ocr". */
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/fulltext". */
 public class DocumentsFulltextRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /** {@link DocumentsFulltextRequestHandler} URL. */
+  public static final String URL = "/documents/{documentId}/fulltext";
 
   /**
    * constructor.
@@ -53,7 +56,7 @@ public class DocumentsFulltextRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/documents/{documentId}/fulltext";
+    return URL;
   }
 
   @Override

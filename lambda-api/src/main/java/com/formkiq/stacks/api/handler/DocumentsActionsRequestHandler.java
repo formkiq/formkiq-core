@@ -51,16 +51,16 @@ public class DocumentsActionsRequestHandler
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    
+
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    
+
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
-    
+
     ApiMapResponse resp = new ApiMapResponse();
     resp.setMap(Map.of("actions", actions));
-    
+
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
