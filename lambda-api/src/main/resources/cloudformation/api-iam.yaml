@@ -893,7 +893,7 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DocumentOcrResult'
-            patch:
+            put:
               description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise API
