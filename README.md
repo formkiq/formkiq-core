@@ -13,6 +13,7 @@
   - [Demo](#demo)
   - [Installation](#installation)
   - [How much does it cost to run?](#how-much-does-it-cost-to-run)
+  - [Use Cases](#use-cases)
   - [Examples](#examples)
     - [Web Form Example - Contact Form](#web-form-example---contact-form)
     - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
@@ -82,6 +83,13 @@ AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. Thi
 | [Amazon S3](https://aws.amazon.com/s3/pricing/) |   $0.023 per GB / Month|
 | [AWS Lambda](https://aws.amazon.com/lambda/pricing/) |   approx. first 400,000 requests Free per Month|
 | |$0.0000168667 per additional request
+
+### Use Cases
+
+- [Job Application Form](https://www.formkiq.com/use-cases/job-application-form)
+- [Document Management Module for an Existing App](https://www.formkiq.com/use-cases/document-management-module-for-an-existing-application)
+- [Digital Document Processing Service](https://www.formkiq.com/use-cases/digital-document-processing-service)
+- [Product Leasing System](https://www.formkiq.com/use-cases/product-leasing-system)
 
 ### Examples
 
