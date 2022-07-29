@@ -11,10 +11,10 @@ Resources:
       Body:
         openapi: "3.0.1"
         info:
-          title: 
+          title:
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.7.5"
+          version: "1.8.0"
         paths:
           /version:
             get:
@@ -988,6 +988,38 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            patch:
+              description: Updates Opensearch document; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/FulltextUpdateBody'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextResult'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"                
           /public/documents:
             post:
               description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
@@ -2106,6 +2138,32 @@ Resources:
                   description: Full text processing message
             FulltextBody:
               type: object
+            FulltextUpdateBody:
+              type: object
+              properties:
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                content:
+                  type: "string"
+                  description: "Document content"
+                tags:
+                  type: "array"
+                  description: "List of tags"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                        description: "Tag key"
+                      value:
+                        type: "string"
+                        description: "Tag value"
+                      values:
+                        description: "Tag values"
+                        type: "array"
+                        items:
+                          type: "string"
             OcrBody:
               type: object
               example:
