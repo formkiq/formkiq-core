@@ -893,6 +893,10 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DocumentOcrResult'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"                        
             put:
               description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
               tags:
@@ -939,7 +943,7 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
           /documents/{documentId}/fulltext:
             delete:
               description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
@@ -1016,6 +1020,41 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/FulltextResult'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/fulltext/tags/{tagKey}:
+            delete:
+              description: Removes document tags from full text search; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'              
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
+            delete:
+              description: Removes document tag/value from full text search; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/tagvalueParam'              
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
@@ -2138,6 +2177,26 @@ Resources:
                   description: Full text processing message
             FulltextBody:
               type: object
+            DeleteFulltextTags:
+              type: object
+              properties:
+                tags:
+                  type: "array"
+                  description: "List of tags"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                        description: "Tag key"
+                      value:
+                        type: "string"
+                        description: "Tag value"
+                      values:
+                        description: "Tag values"
+                        type: "array"
+                        items:
+                          type: "string"
             FulltextUpdateBody:
               type: object
               properties:
