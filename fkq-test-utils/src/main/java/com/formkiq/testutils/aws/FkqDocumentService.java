@@ -1,4 +1,5 @@
 /**
+
  * MIT License
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
@@ -35,9 +36,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
+import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
@@ -48,10 +51,10 @@ public class FkqDocumentService {
 
   /** 200 OK. */
   private static final int STATUS_OK = 200;
-  /** {@link HttpClient}. */
-  private HttpClient http = HttpClient.newHttpClient();
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+  /** {@link HttpClient}. */
+  private HttpClient http = HttpClient.newHttpClient();
 
   /**
    * Add "file" but this just creates DynamoDB record and not the S3 file.
@@ -123,6 +126,38 @@ public class FkqDocumentService {
       HttpResponse<String> response = client.getDocumentContentAsHttpResponse(request);
       if (STATUS_OK == response.statusCode()) {
         break;
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+  
+  /**
+   * Fetch Document Content Type.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @SuppressWarnings("unchecked")
+  public void waitForDocumentContentType(final FormKiqClientV1 client, final String siteId,
+      final String documentId) throws IOException, InterruptedException, URISyntaxException {
+
+    GetDocumentRequest request =
+        new GetDocumentRequest().siteId(siteId).documentId(documentId);
+
+    while (true) {
+
+      HttpResponse<String> response = client.getDocumentAsHttpResponse(request);
+      if (STATUS_OK == response.statusCode()) {
+        Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
+        String contentType = (String) map.get("contentType");
+        if (!StringUtils.isEmpty(contentType)) {
+          break;
+        }
       }
 
       TimeUnit.SECONDS.sleep(1);
