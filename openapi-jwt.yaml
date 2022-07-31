@@ -958,7 +958,7 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             put:
-              description: Retrieve all text found within a document; text can be parsed from some content types, e.g. text/*, or from a previous /ocr request for a document. ONLY available with FormKiQ Enterprise
+              description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise API
               - Enterprise Fulltext
@@ -2176,6 +2176,16 @@
                   description: Full text processing message
             FulltextBody:
               type: object
+              properties:
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                content:
+                  type: string
+                  description: Document content
+                contentUrl:
+                  type: string
+                  description: Url which contains Document content
             DeleteFulltextTags:
               type: object
               properties:
