@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -33,10 +30,13 @@ import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -47,11 +47,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockserver.integration.ClientAndServer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -66,6 +68,9 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -97,6 +102,8 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsS3UpdateTest implements DbKeys {
 
+  /** App Environment. */
+  private static final String APP_ENVIRONMENT = "test";
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30000L;
   /** Bucket Key. */
@@ -115,6 +122,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static ActionsService actionsService;
   /** {@link SnsConnectionBuilder}. */
   private static SnsConnectionBuilder snsBuilder;
+  /** {@link SsmConnectionBuilder}. */
+  private static SsmConnectionBuilder ssmBuilder;
   /** {@link SqsConnectionBuilder}. */
   private static SqsConnectionBuilder sqsBuilder;
   /** {@link DynamoDbHelper}. */
@@ -133,7 +142,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static String sqsDocumentEventUrl;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
-
+  /** {@link ClientAndServer}. */
+  private static ClientAndServer mockServer;
+  /** Port to run Test server. */
+  private static final int PORT = 8080;
+  /** Test server URL. */
+  private static final String URL = "http://localhost:" + PORT;
+  
   /**
    * Before Class.
    * 
@@ -149,6 +164,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     snsBuilder = TestServices.getSnsConnection(null);
+    ssmBuilder = TestServices.getSsmConnection(null);
+    
+    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
     sqsService = new SqsService(sqsBuilder);
 
@@ -178,6 +197,29 @@ public class DocumentsS3UpdateTest implements DbKeys {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
       dbHelper.createCacheTable(CACHE_TABLE);
     }
+
+    createMockServer();
+  }
+
+  /**
+   * Create Mock Server.
+   */
+  private static void createMockServer() {
+
+    mockServer = startClientAndServer(Integer.valueOf(PORT));
+
+    Expectation402ResponseCallback callback = new Expectation402ResponseCallback();
+    mockServer.when(request().withMethod("POST")).respond(callback);
+    mockServer.when(request().withMethod("PUT")).respond(callback);
+  }
+
+  /**
+   * After Class.
+   * 
+   */
+  @AfterAll
+  public static void afterClass() {
+    mockServer.stop();
   }
 
   /** {@link Gson}. */
@@ -303,10 +345,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
         TestServices.getLocalStack().getEndpointOverride(Service.SQS).toString() + "/queue/"
             + ERROR_SQS_QUEUE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    map.put("AWS_REGION", AWS_REGION.id());
+    map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
-    this.handler = new DocumentsS3Update(map, dbBuilder, s3Builder, sqsBuilder, snsBuilder);
+    this.handler =
+        new DocumentsS3Update(map, null, dbBuilder, s3Builder, ssmBuilder, sqsBuilder, snsBuilder);
 
     for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
@@ -507,7 +552,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Delete Document Request.
+   * Delete Document Request - core.
    *
    * @throws Exception Exception
    */

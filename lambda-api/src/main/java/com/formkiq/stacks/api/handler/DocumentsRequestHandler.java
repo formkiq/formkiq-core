@@ -131,11 +131,6 @@ public class DocumentsRequestHandler
   }
 
   @Override
-  public void init(final Map<String, ApiGatewayRequestHandler> urlMap) {
-    this.handler.init(urlMap);
-  }
-
-  @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {

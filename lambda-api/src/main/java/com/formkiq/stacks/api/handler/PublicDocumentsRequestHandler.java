@@ -50,11 +50,6 @@ public class PublicDocumentsRequestHandler
     return "/public/documents";
   }
 
-  @Override
-  public void init(final Map<String, ApiGatewayRequestHandler> urlMap) {
-    this.handler.init(urlMap);
-  }
-
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,

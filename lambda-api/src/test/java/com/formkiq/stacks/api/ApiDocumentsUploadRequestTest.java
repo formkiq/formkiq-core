@@ -139,8 +139,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       addParameter(event, "siteId", siteId);
       com.formkiq.stacks.client.models.DocumentTag tag0 =
           new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-      com.formkiq.stacks.client.models.DocumentAction action0 =
-          new com.formkiq.stacks.client.models.DocumentAction().type(DocumentActionType.OCR);
+      com.formkiq.stacks.client.models.AddDocumentAction action0 =
+          new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
       AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
           .actions(Arrays.asList(action0));
       event.setBody(GsonUtil.getInstance().toJson(document));

@@ -124,8 +124,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     ApiRequestHandlerResponse response = null;
     AwsServiceCache awsServices = getAwsServices();
 
-    handler.init(getUrlMap());
-
     switch (method) {
       case "get":
         handler.beforeGet(logger, event, authorizer, awsServices);

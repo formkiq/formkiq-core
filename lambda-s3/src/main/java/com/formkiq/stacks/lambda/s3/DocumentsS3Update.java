@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -31,6 +28,7 @@ import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
 import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +49,9 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -60,6 +61,10 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.documentevents.DocumentEventService;
 import com.formkiq.module.documentevents.DocumentEventServiceSns;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.client.FormKiqClient;
+import com.formkiq.stacks.client.requests.DeleteDocumentFulltextRequest;
+import com.formkiq.stacks.client.requests.DeleteDocumentOcrRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -68,6 +73,8 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
@@ -133,15 +140,18 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private ActionsService actionsService;
   /** {@link ActionsNotificationService}. */
   private ActionsNotificationService notificationService;
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache services;
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
 
   /** constructor. */
   public DocumentsS3Update() {
-    this(System.getenv(),
+    this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SnsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
@@ -150,14 +160,22 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * constructor.
    * 
    * @param map {@link Map}
+   * @param creds {@link AwsCredentials}
    * @param db {@link DynamoDbConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
+   * @param ssmBuilder {@link SsmConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
    */
-  protected DocumentsS3Update(final Map<String, String> map, final DynamoDbConnectionBuilder db,
-      final S3ConnectionBuilder s3builder, final SqsConnectionBuilder sqsBuilder,
+  protected DocumentsS3Update(final Map<String, String> map, final AwsCredentials creds,
+      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3builder,
+      final SsmConnectionBuilder ssmBuilder, final SqsConnectionBuilder sqsBuilder,
       final SnsConnectionBuilder snsBuilder) {
+
+    Region region = Region.of(map.get("AWS_REGION"));
+    this.services = new AwsServiceCache().environment(map);
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssmBuilder));
+    AwsServiceCache.register(FormKiqClient.class, new FormKiQClientExtension(region, creds));
 
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
@@ -263,17 +281,31 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param key {@link String}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
    */
-  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key) {
+  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
+      throws IOException, InterruptedException {
 
     String siteId = getSiteId(key.toString());
     String documentId = resetDatabaseKey(siteId, key.toString());
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
 
     String msg = String.format("Removing %s from bucket %s.", key, bucket);
     logger.log(msg);
 
+    if (!"core".equals(this.services.formKiQType())) {
+      FormKiqClient fkClient = this.services.getExtension(FormKiqClient.class);
+
+      fkClient
+          .deleteDocumentOcr(new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
+
+      fkClient.deleteDocumentFulltext(
+          new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
+    }
+
     this.service.deleteDocument(siteId, documentId);
+
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
     sendSnsMessage(logger, DELETE, siteId, doc, bucket, key, null);
   }
 

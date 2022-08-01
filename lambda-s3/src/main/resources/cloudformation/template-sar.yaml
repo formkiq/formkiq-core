@@ -216,7 +216,9 @@ Resources:
             Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false          
+          DEBUG: false  
+          FormKiQType:
+            Ref: "${FormKiQType}"        
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -261,6 +263,8 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
+          FormKiQType:
+            Ref: "${FormKiQType}"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -331,7 +335,9 @@ Resources:
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
           SNS_DOCUMENT_EVENT: 
-            Ref: SnsDocumentEvent          
+            Ref: SnsDocumentEvent
+          FormKiQType:
+            Ref: "${FormKiQType}"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
