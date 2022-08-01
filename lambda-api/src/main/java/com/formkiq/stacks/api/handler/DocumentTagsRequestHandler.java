@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +57,10 @@ import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.models.UpdateFulltext;
+import com.formkiq.stacks.client.models.UpdateFulltextTag;
+import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentTags;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags". */
@@ -198,11 +203,47 @@ public class DocumentTagsRequestHandler
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
     allTags.addAll(newTags);
 
+    updateFulltextIfInstalled(awsservice, siteId, documentId, allTags);
+
     coreServices.documentService().addTags(siteId, documentId, allTags, null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
         : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
 
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
+  }
+
+  /**
+   * Update Fulltext index if Module available.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void updateFulltextIfInstalled(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final List<DocumentTag> tags)
+      throws IOException, InterruptedException {
+
+    if (awsservice.hasModule("fulltext")) {
+      FormKiqClientV1 client = awsservice.getExtension(FormKiqClientV1.class);
+
+      List<UpdateFulltextTag> updateTags =
+          tags.stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
+              .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
+                  .values(t.getValues()))
+              .collect(Collectors.toList());
+
+      if (!updateTags.isEmpty()) {
+        boolean updated = client.updateDocumentFulltext(new UpdateDocumentFulltextRequest()
+            .siteId(siteId).documentId(documentId).document(new UpdateFulltext().tags(updateTags)));
+
+        if (!updated) {
+          throw new IOException("unable to update Fulltext");
+        }
+      }
+    }
   }
 }

@@ -63,6 +63,7 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
     if (System.getenv("AWS_REGION") != null) {
       AbstractCoreRequestHandler.configureHandler(System.getenv(),
+          EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
           new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
               .setCredentials(EnvironmentVariableCredentialsProvider.create()),
           new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))

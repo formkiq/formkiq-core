@@ -38,6 +38,7 @@ dependencies {
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
 	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
+	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.13.2'
 }
 
 compileJava {

@@ -54,15 +54,6 @@ public class AwsServiceCache {
   private String formKiQType;
 
   /**
-   * Get FormKiQ Type.
-   * 
-   * @return {@link String}
-   */
-  public String formKiQType() {
-    return this.formKiQType;
-  }
-
-  /**
    * constructor.
    */
   public AwsServiceCache() {}
@@ -110,6 +101,15 @@ public class AwsServiceCache {
   }
 
   /**
+   * Get FormKiQ Type.
+   * 
+   * @return {@link String}
+   */
+  public String formKiQType() {
+    return this.formKiQType;
+  }
+
+  /**
    * Load {@link AwsServiceExtension}.
    * 
    * @param <T> Type of Class.
@@ -119,5 +119,15 @@ public class AwsServiceCache {
   @SuppressWarnings("unchecked")
   public <T> T getExtension(final Class<T> clazz) {
     return (T) EXTENSIONS.get(clazz).loadService(this);
+  }
+
+  /**
+   * Has Module.
+   * 
+   * @param module {@link String}
+   * @return boolean
+   */
+  public boolean hasModule(final String module) {
+    return "true".equals(environment("module_" + module));
   }
 }

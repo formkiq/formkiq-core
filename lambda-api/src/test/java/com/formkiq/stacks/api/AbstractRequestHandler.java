@@ -25,8 +25,10 @@ package com.formkiq.stacks.api;
 
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,7 +40,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockserver.integration.ClientAndServer;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -46,7 +52,9 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -63,22 +71,41 @@ import software.amazon.awssdk.utils.IoUtils;
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
-  /** Documents Table. */
-  private static String documentsTable = "Documents";
   /** Cache Table. */
   private static String cacheTable = "Cache";
+  /** Documents Table. */
+  private static String documentsTable = "Documents";
 
-  /** System Environment Map. */
-  private Map<String, String> map = new HashMap<>();
+  /** Port to run Test server. */
+  private static final int PORT = 8080;
 
-  /** {@link Context}. */
-  private Context context = new LambdaContextRecorder();
+  /** Test server URL. */
+  private static final String URL = "http://localhost:" + PORT;
 
-  /** {@link LambdaLogger}. */
-  private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
+  /**
+   * Before All Tests.
+   * 
+   * @throws Exception Exception
+   */
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
+    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
+    ssmService.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+  }
 
   /** {@link CoreAwsServiceCache}. */
   private CoreAwsServiceCache awsServices;
+
+  /** {@link Context}. */
+  private Context context = new LambdaContextRecorder();
+  /** {@link LambdaLogger}. */
+  private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
+  /** System Environment Map. */
+  private Map<String, String> map = new HashMap<>();
+
+  /** {@link ClientAndServer}. */
+  private ClientAndServer mockServer = null;
 
   /**
    * Add header to {@link ApiGatewayRequestEvent}.
@@ -122,6 +149,14 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
+   * After Each Test.
+   */
+  @AfterEach
+  public void after() {
+    stopMockServer();
+  }
+
+  /**
    * Assert Response Headers.
    * 
    * @param obj {@link DynamicObject}
@@ -145,7 +180,7 @@ public abstract class AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
 
-    this.map.put("APP_ENVIRONMENT", TestServices.FORMKIQ_APP_ENVIRONMENT);
+    this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
     this.map.put("CACHE_TABLE", cacheTable);
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
@@ -181,7 +216,7 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    AbstractCoreRequestHandler.configureHandler(prop,
+    AbstractCoreRequestHandler.configureHandler(prop, null,
         DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(null),
         TestServices.getSsmConnection(null), TestServices.getSqsConnection(null),
         new DocumentTagSchemaPluginEmpty());
@@ -266,6 +301,15 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
+   * Get {@link ClientAndServer}.
+   * 
+   * @return {@link ClientAndServer}
+   */
+  public ClientAndServer getMockServer() {
+    return this.mockServer;
+  }
+
+  /**
    * Get {@link S3Service}.
    *
    * @return {@link S3Service}
@@ -342,6 +386,16 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
+   * Add Environment Variable.
+   * 
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  public void putEnvironmentVariable(final String key, final String value) {
+    this.map.put(key, value);
+  }
+
+  /**
    * Put SSM Parameter.
    * 
    * @param name {@link String}
@@ -363,7 +417,6 @@ public abstract class AbstractRequestHandler {
       // ignore property error
     }
   }
-
 
   /**
    * Set Cognito Group.
@@ -400,6 +453,7 @@ public abstract class AbstractRequestHandler {
   public void setEnvironment(final String key, final String value) {
     this.map.put(key, value);
   }
+
 
   /**
    * Set Path Parameter.
@@ -443,6 +497,23 @@ public abstract class AbstractRequestHandler {
 
     requestContext.setAuthorizer(authorizer);
     event.setRequestContext(requestContext);
+  }
+
+  /**
+   * Start Mock Server.
+   */
+  public void startMockServer() {
+    this.mockServer = startClientAndServer(Integer.valueOf(PORT));
+  }
+
+  /**
+   * Stop Mock Server.
+   */
+  public void stopMockServer() {
+    if (this.mockServer != null) {
+      this.mockServer.stop();
+    }
+    this.mockServer = null;
   }
 
   /**

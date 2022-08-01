@@ -76,8 +76,11 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
+import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -137,13 +140,14 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    * Setup Api Request Handlers.
    *
    * @param map {@link Map}
+   * @param creds {@link AwsCredentials}
    * @param db {@link DynamoDbConnectionBuilder}
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sqs {@link SqsConnectionBuilder}
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
-  public static void configureHandler(final Map<String, String> map,
+  public static void configureHandler(final Map<String, String> map, final AwsCredentials creds,
       final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3,
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
       final DocumentTagSchemaPlugin schemaEvents) {
@@ -158,6 +162,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
         new DocumentTagSchemaPluginExtension(schemaEvents));
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+
+    Region region = Region.of(map.get("AWS_REGION"));
+    AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
     awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 

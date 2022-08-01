@@ -308,10 +308,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
-  private boolean hasModule(final String module) {
-    return "true".equals(this.services.environment("module_" + module));
-  }
-
   /**
    * Process S3 Event.
    * 
@@ -417,8 +413,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String msg = String.format("Removing %s from bucket %s.", key, bucket);
     logger.log(msg);
 
-    boolean moduleOcr = hasModule("ocr");
-    boolean moduleFulltext = hasModule("fulltext");
+    boolean moduleOcr = this.services.hasModule("ocr");
+    boolean moduleFulltext = this.services.hasModule("fulltext");
 
     if (moduleOcr || moduleFulltext) {
       FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
