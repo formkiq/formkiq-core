@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -117,7 +120,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static final String ERROR_SQS_QUEUE = "sqserror";
 
   /** {@link ClientAndServer}. */
-  private static ClientAndServer mockServer;
+  private ClientAndServer mockServer;
 
   /** Request OK Status. */
   private static final int OK = 200;
@@ -207,12 +210,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * 
    * @param statusCode int
    */
-  private static void createMockServer(final int statusCode) {
+  private void createMockServer(final int statusCode) {
 
-    mockServer = startClientAndServer(Integer.valueOf(PORT));
+    this.mockServer = startClientAndServer(Integer.valueOf(PORT));
 
     ExpectationStatusResponseCallback callback = new ExpectationStatusResponseCallback(statusCode);
-    mockServer.when(request().withMethod("DELETE")).respond(callback);
+    this.mockServer.when(request().withMethod("DELETE")).respond(callback);
   }
 
   /** {@link LambdaContextRecorder}. */
@@ -252,10 +255,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @AfterEach
   public void afterClass() {
-    if (mockServer != null) {
-      mockServer.stop();
+    if (this.mockServer != null) {
+      this.mockServer.stop();
     }
-    mockServer = null;
+    this.mockServer = null;
   }
 
   /**
