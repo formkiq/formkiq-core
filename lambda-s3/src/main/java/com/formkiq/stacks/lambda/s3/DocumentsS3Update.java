@@ -29,6 +29,7 @@ import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +63,7 @@ import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.documentevents.DocumentEventService;
 import com.formkiq.module.documentevents.DocumentEventServiceSns;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.client.FormKiqClient;
+import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.DeleteDocumentFulltextRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentOcrRequest;
 import com.formkiq.stacks.common.formats.MimeType;
@@ -83,6 +84,11 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
 @Reflectable
 public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Void> {
+
+  /** Bad Request. */
+  static final int BAD_REQUEST = 400;
+  /** Server Error. */
+  static final int SERVER_ERROR = 500;
 
   /**
    * Get Bucket Name.
@@ -124,27 +130,27 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return SdkHttpUtils.urlDecode(value);
   }
 
+  /** {@link ActionsService}. */
+  private ActionsService actionsService;
+  /** {@link DocumentEventService}. */
+  private DocumentEventService documentEventService;
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().create();
+  /** {@link ActionsNotificationService}. */
+  private ActionsNotificationService notificationService;
+  /** {@link S3Service}. */
+  private S3Service s3service;
+  /** {@link DocumentService}. */
+  private DocumentService service;
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache services;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
-  /** {@link DocumentService}. */
-  private DocumentService service;
-  /** {@link S3Service}. */
-  private S3Service s3service;
+
   /** {@link SqsService}. */
   private SqsService sqsService;
-  /** {@link DocumentEventService}. */
-  private DocumentEventService documentEventService;
-  /** {@link ActionsService}. */
-  private ActionsService actionsService;
-  /** {@link ActionsNotificationService}. */
-  private ActionsNotificationService notificationService;
-  /** {@link AwsServiceCache}. */
-  private AwsServiceCache services;
-
-  /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -175,7 +181,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     Region region = Region.of(map.get("AWS_REGION"));
     this.services = new AwsServiceCache().environment(map);
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssmBuilder));
-    AwsServiceCache.register(FormKiqClient.class, new FormKiQClientExtension(region, creds));
+    AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
@@ -186,6 +192,37 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
     this.notificationService =
         new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
+  }
+
+  /**
+   * Check Response for 400 / 500 throw exception.
+   * 
+   * @param module {@link String}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param response {@link HttpResponse}
+   * @throws IOException IOException
+   */
+  private void checkResponse(final String module, final String siteId, final String documentId,
+      final HttpResponse<String> response) throws IOException {
+    int statusCode = response.statusCode();
+    if (statusCode == BAD_REQUEST || statusCode == SERVER_ERROR) {
+      throw new IOException(String.format("Unable to delete document %s from site %s in module %s",
+          documentId, siteId, module));
+    }
+  }
+
+  private String getContent(final String s3bucket, final String key, final S3Client s3,
+      final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
+
+    String content = null;
+
+    if (MimeType.isPlainText(doc.getContentType()) && resp.getContentLength() != null
+        && resp.getContentLength().longValue() < DocumentEventServiceSns.MAX_SNS_MESSAGE_SIZE) {
+      content = this.s3service.getContentAsString(s3, s3bucket, key, null);
+    }
+
+    return content;
   }
 
   /**
@@ -268,45 +305,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
-  private void sendToDlq(final Map<String, Object> map) {
-    String json = this.gson.toJson(map);
-    if (this.sqsErrorUrl != null) {
-      this.sqsService.sendMessage(this.sqsErrorUrl, json);
-    }
-  }
-
-  /**
-   * Process S3 Delete Request.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @throws InterruptedException InterruptedException
-   * @throws IOException IOException
-   */
-  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
-      throws IOException, InterruptedException {
-
-    String siteId = getSiteId(key.toString());
-    String documentId = resetDatabaseKey(siteId, key.toString());
-
-    String msg = String.format("Removing %s from bucket %s.", key, bucket);
-    logger.log(msg);
-
-    if (!"core".equals(this.services.formKiQType())) {
-      FormKiqClient fkClient = this.services.getExtension(FormKiqClient.class);
-
-      fkClient
-          .deleteDocumentOcr(new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
-
-      fkClient.deleteDocumentFulltext(
-          new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
-    }
-
-    this.service.deleteDocument(siteId, documentId);
-
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
-    sendSnsMessage(logger, DELETE, siteId, doc, bucket, key, null);
+  private boolean hasModule(final String module) {
+    return "true".equals(this.services.environment("module_" + module));
   }
 
   /**
@@ -330,6 +330,113 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     map.put("eventName", eventName);
 
     return map;
+  }
+
+  /**
+   * Process Event Records.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param records {@link List} {@link Map}
+   * @return {@link Map}
+   * @throws FileNotFoundException FileNotFoundException
+   */
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> processRecords(final LambdaLogger logger,
+      final List<Map<String, Object>> records) throws FileNotFoundException {
+
+    List<Map<String, Object>> list = new ArrayList<>();
+
+    for (Map<String, Object> event : records) {
+
+      if (event.containsKey("body")) {
+
+        String body = event.get("body").toString();
+
+        Map<String, Object> map = this.gson.fromJson(body, Map.class);
+        list.addAll(processRecords(logger, map));
+
+      } else if (event.containsKey("eventName")) {
+        list.add(processEvent(logger, event));
+      } else {
+        list.addAll(processRecords(logger, event));
+      }
+    }
+
+    return list;
+  }
+
+  /**
+   * Process Event Records.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param map {@link Map}
+   * @return {@link List} {@link Map}
+   * @throws FileNotFoundException FileNotFoundException
+   */
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> processRecords(final LambdaLogger logger,
+      final Map<String, Object> map) throws FileNotFoundException {
+
+    List<Map<String, Object>> list = new ArrayList<>();
+
+    if (map.containsKey("Records")) {
+      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+      list.addAll(processRecords(logger, records));
+    } else if (map.containsKey("Message")) {
+      String body = map.get("Message").toString();
+      Map<String, Object> messageMap = this.gson.fromJson(body, Map.class);
+      list.addAll(processRecords(logger, messageMap));
+    } else if (map.containsKey("Sns")) {
+      Map<String, Object> messageMap = (Map<String, Object>) map.get("Sns");
+      list.addAll(processRecords(logger, messageMap));
+    } else if (map.containsKey("s3key")) {
+      list.add(map);
+    }
+
+    return list;
+  }
+
+  /**
+   * Process S3 Delete Request.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
+  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
+      throws IOException, InterruptedException {
+
+    String siteId = getSiteId(key.toString());
+    String documentId = resetDatabaseKey(siteId, key.toString());
+
+    String msg = String.format("Removing %s from bucket %s.", key, bucket);
+    logger.log(msg);
+
+    boolean moduleOcr = hasModule("ocr");
+    boolean moduleFulltext = hasModule("fulltext");
+
+    if (moduleOcr || moduleFulltext) {
+      FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
+
+      if (moduleOcr) {
+        HttpResponse<String> deleteDocumentHttpResponse = fkClient.deleteDocumentOcrAsHttpResponse(
+            new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
+        checkResponse("ocr", siteId, documentId, deleteDocumentHttpResponse);
+      }
+
+      if (moduleFulltext) {
+        HttpResponse<String> deleteDocumentFulltext = fkClient.deleteDocumentFulltextAsHttpResponse(
+            new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
+        checkResponse("fulltext", siteId, documentId, deleteDocumentFulltext);
+      }
+    }
+
+    this.service.deleteDocument(siteId, documentId);
+
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
+    sendSnsMessage(logger, DELETE, siteId, doc, bucket, key, null);
   }
 
   /**
@@ -402,83 +509,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
   }
 
-  private String getContent(final String s3bucket, final String key, final S3Client s3,
-      final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
-
-    String content = null;
-
-    if (MimeType.isPlainText(doc.getContentType()) && resp.getContentLength() != null
-        && resp.getContentLength().longValue() < DocumentEventServiceSns.MAX_SNS_MESSAGE_SIZE) {
-      content = this.s3service.getContentAsString(s3, s3bucket, key, null);
-    }
-
-    return content;
-  }
-
-  /**
-   * Process Event Records.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param records {@link List} {@link Map}
-   * @return {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
-   */
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> processRecords(final LambdaLogger logger,
-      final List<Map<String, Object>> records) throws FileNotFoundException {
-
-    List<Map<String, Object>> list = new ArrayList<>();
-
-    for (Map<String, Object> event : records) {
-
-      if (event.containsKey("body")) {
-
-        String body = event.get("body").toString();
-
-        Map<String, Object> map = this.gson.fromJson(body, Map.class);
-        list.addAll(processRecords(logger, map));
-
-      } else if (event.containsKey("eventName")) {
-        list.add(processEvent(logger, event));
-      } else {
-        list.addAll(processRecords(logger, event));
-      }
-    }
-
-    return list;
-  }
-
-  /**
-   * Process Event Records.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param map {@link Map}
-   * @return {@link List} {@link Map}
-   * @throws FileNotFoundException FileNotFoundException
-   */
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> processRecords(final LambdaLogger logger,
-      final Map<String, Object> map) throws FileNotFoundException {
-
-    List<Map<String, Object>> list = new ArrayList<>();
-
-    if (map.containsKey("Records")) {
-      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      list.addAll(processRecords(logger, records));
-    } else if (map.containsKey("Message")) {
-      String body = map.get("Message").toString();
-      Map<String, Object> messageMap = this.gson.fromJson(body, Map.class);
-      list.addAll(processRecords(logger, messageMap));
-    } else if (map.containsKey("Sns")) {
-      Map<String, Object> messageMap = (Map<String, Object>) map.get("Sns");
-      list.addAll(processRecords(logger, messageMap));
-    } else if (map.containsKey("s3key")) {
-      list.add(map);
-    }
-
-    return list;
-  }
-
   /**
    * Either sends the Create Message to SNS.
    * 
@@ -517,6 +547,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     if (CREATE.equals(eventType)) {
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
       this.notificationService.publishNextActionEvent(actions, site, documentId);
+    }
+  }
+
+  private void sendToDlq(final Map<String, Object> map) {
+    String json = this.gson.toJson(map);
+    if (this.sqsErrorUrl != null) {
+      this.sqsService.sendMessage(this.sqsErrorUrl, json);
     }
   }
 }

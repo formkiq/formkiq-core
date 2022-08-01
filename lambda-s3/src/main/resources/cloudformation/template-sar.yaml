@@ -218,7 +218,7 @@ Resources:
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false  
           FormKiQType:
-            Ref: "${FormKiQType}"        
+            Ref: "${FormKiQType}"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole

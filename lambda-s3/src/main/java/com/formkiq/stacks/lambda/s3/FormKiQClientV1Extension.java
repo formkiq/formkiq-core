@@ -15,10 +15,10 @@ import software.amazon.awssdk.regions.Region;
  * {@link FormKiqClient} implementation of {@link AwsServiceExtension}.
  *
  */
-public class FormKiQClientExtension implements AwsServiceExtension<FormKiqClient> {
+public class FormKiQClientV1Extension implements AwsServiceExtension<FormKiqClientV1> {
 
   /** {@link FormKiqClientV1}. */
-  private FormKiqClient formkiqClient = null;
+  private FormKiqClientV1 formkiqClient = null;
   /** {@link Region}. */
   private Region region;
   /** {@link AwsCredentials}. */
@@ -30,13 +30,13 @@ public class FormKiQClientExtension implements AwsServiceExtension<FormKiqClient
    * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    */
-  public FormKiQClientExtension(final Region awsRegion, final AwsCredentials awsCredentials) {
+  public FormKiQClientV1Extension(final Region awsRegion, final AwsCredentials awsCredentials) {
     this.region = awsRegion;
     this.credentials = awsCredentials;
   }
 
   @Override
-  public FormKiqClient loadService(final AwsServiceCache awsServiceCache) {
+  public FormKiqClientV1 loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.formkiqClient == null) {
       initFormKiQClient(awsServiceCache);

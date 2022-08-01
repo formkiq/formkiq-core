@@ -29,18 +29,23 @@ import org.mockserver.model.HttpResponse;
  * Return 402 Response.
  *
  */
-public class Expectation402ResponseCallback implements ExpectationResponseCallback {
+public class ExpectationStatusResponseCallback implements ExpectationResponseCallback {
 
   /** Response Code. */
-  private static final int CODE = 402;
+  private int status;
 
   /**
    * constructor.
+   * 
+   * @param statusCode int
    */
-  public Expectation402ResponseCallback() {}
+  public ExpectationStatusResponseCallback(final int statusCode) {
+    this.status = statusCode;
+  }
 
   @Override
   public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
-    return org.mockserver.model.HttpResponse.response("{}").withStatusCode(Integer.valueOf(CODE));
+    return org.mockserver.model.HttpResponse.response("{}")
+        .withStatusCode(Integer.valueOf(this.status));
   }
 }
