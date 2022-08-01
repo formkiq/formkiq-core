@@ -1,5 +1,4 @@
 /**
-
  * MIT License
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
@@ -131,7 +130,7 @@ public class FkqDocumentService {
       TimeUnit.SECONDS.sleep(1);
     }
   }
-  
+
   /**
    * Fetch Document Content Type.
    * 
@@ -146,8 +145,7 @@ public class FkqDocumentService {
   public void waitForDocumentContentType(final FormKiqClientV1 client, final String siteId,
       final String documentId) throws IOException, InterruptedException, URISyntaxException {
 
-    GetDocumentRequest request =
-        new GetDocumentRequest().siteId(siteId).documentId(documentId);
+    GetDocumentRequest request = new GetDocumentRequest().siteId(siteId).documentId(documentId);
 
     while (true) {
 

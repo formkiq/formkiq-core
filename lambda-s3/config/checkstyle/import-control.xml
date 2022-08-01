@@ -39,6 +39,7 @@
 			<allow pkg="java.net" />
 			<allow pkg="java.nio.charset" />
 			<allow pkg="java.text" />
+			<allow pkg="java.time" />
 			
 			<allow pkg="java.util" />
 			
