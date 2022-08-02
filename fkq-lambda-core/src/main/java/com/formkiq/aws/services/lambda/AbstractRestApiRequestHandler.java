@@ -197,7 +197,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       return hander;
     }
 
-    throw new NotFoundException(resource + " not found");
+    throw new NotFoundException(resource + " request handler not found");
   }
 
   /**

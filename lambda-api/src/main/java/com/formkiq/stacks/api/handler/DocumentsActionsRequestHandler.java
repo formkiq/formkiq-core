@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -55,11 +57,22 @@ public class DocumentsActionsRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
+    List<Map<String, Object>> list = new ArrayList<>();
+
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
 
+    for (Action action : actions) {
+      Map<String, Object> map = new HashMap<>();
+      map.put("userId", action.userId());
+      map.put("status", action.status().name().toLowerCase());
+      map.put("type", action.type().name().toLowerCase());
+      map.put("parameters", action.parameters());
+      list.add(map);
+    }
+
     ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("actions", actions));
+    resp.setMap(Map.of("actions", list));
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }

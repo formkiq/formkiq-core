@@ -58,6 +58,7 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
@@ -544,7 +545,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
+
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
+      actions.forEach(a -> a.status(ActionStatus.PENDING));
       this.notificationService.publishNextActionEvent(actions, site, documentId);
     }
   }

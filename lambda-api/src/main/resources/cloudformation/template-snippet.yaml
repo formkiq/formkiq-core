@@ -219,6 +219,8 @@ Resources:
           Action:
           - sts:AssumeRole
       Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess      
       Policies:
         -
           PolicyName: apigatewaylambdarole
