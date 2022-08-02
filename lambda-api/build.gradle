@@ -95,6 +95,10 @@ task assembleTemplate {
 	dependsOn buildZip
 	inputs.files("src/main/resources/cloudformation/template-snippet.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
+	
+	def randomtext = ('0'..'z').shuffled().take(10).join();
+	def sha256 = randomtext.digest('SHA-256')
+
 	doLast {
 		exec {
 			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/api"
@@ -104,7 +108,7 @@ task assembleTemplate {
 		}
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }

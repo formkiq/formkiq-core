@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Storage
@@ -209,7 +212,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
           DOCUMENTS_TABLE: 
@@ -253,7 +256,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
           DOCUMENTS_S3_BUCKET: 
@@ -326,7 +329,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
           DOCUMENTS_TABLE: 

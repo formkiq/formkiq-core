@@ -86,6 +86,10 @@ task assembleTemplate {
     dependsOn buildZip
 	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
+
+	def randomtext = ('0'..'z').shuffled().take(10).join();
+	def sha256 = randomtext.digest('SHA-256')
+
 	doLast {
 		exec {
 			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/storage && mkdir -p ${buildDir}/distributions/formkiq-core/sar/storage"
@@ -93,9 +97,8 @@ task assembleTemplate {
 		exec {
 			commandLine "bash", "-c", "cp ${buildDir}/lambda-s3-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/storage/"
 		}
-		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template-sar.yaml ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
 		}
 	}
 }

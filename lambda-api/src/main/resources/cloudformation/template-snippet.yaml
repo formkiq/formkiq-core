@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - API
@@ -99,7 +102,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
-      AutoPublishCodeSha256: FCB6D933C5B5FCD71A9EE4F9F9B9FB8AC1E719056BEAC9021B3C383FF2AFEE64
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
           APP_ENVIRONMENT: 
@@ -474,7 +477,7 @@ Outputs:
     Description: "API Gateway Group that allows invoking of endpoints"
     Value: 
       Ref: ApiGatewayInvokeGroup
-  ApiGatewayInvokeGroup:
+  ApiGatewayInvokeGroupArn:
     Description: "API Gateway Group ARN that allows invoking of endpoints"
     Value: 
       Fn::GetAtt:
