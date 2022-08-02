@@ -87,8 +87,8 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       Map<String, Object> actionsMap = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
       List<Map<String, Object>> list = (List<Map<String, Object>>) actionsMap.get("actions");
       assertEquals(1, list.size());
-      assertEquals("OCR", list.get(0).get("type"));
-      assertEquals("COMPLETE", list.get(0).get("status"));
+      assertEquals("ocr", list.get(0).get("type"));
+      assertEquals("complete", list.get(0).get("status"));
       assertEquals("{test=this}", list.get(0).get("parameters").toString());
     }
   }
