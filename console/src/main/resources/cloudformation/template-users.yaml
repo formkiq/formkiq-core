@@ -227,12 +227,16 @@ Resources:
                 - cognito-idp:AdminResetUserPassword
                 - cognito-idp:ListUsers
                 - cognito-idp:ListUsersInGroup
+                Resource: 
+                  Ref: CognitoUserPoolArn
+              - Effect: "Allow"
+                Action:
                 - cognito-identity:DescribeIdentityPool
                 - cognito-identity:GetIdentityPoolRoles
                 - cognito-identity:SetIdentityPoolRoles
-                Resource: 
-                  Ref: CognitoUserPoolArn
-
+                - iam:PassRole
+                Resource: "*"
+                  
   DefaultGroup:
     Type: "AWS::Cognito::UserPoolGroup"    
     Properties:
