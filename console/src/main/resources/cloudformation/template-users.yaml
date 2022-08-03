@@ -228,8 +228,8 @@ Resources:
                 - cognito-idp:ListUsers
                 - cognito-idp:ListUsersInGroup
                 - cognito-identity:DescribeIdentityPool
-				- cognito-identity:GetIdentityPoolRoles
-				- cognito-identity:SetIdentityPoolRoles
+                - cognito-identity:GetIdentityPoolRoles
+                - cognito-identity:SetIdentityPoolRoles
                 Resource: 
                   Ref: CognitoUserPoolArn
 
