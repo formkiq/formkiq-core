@@ -216,9 +216,20 @@ Resources:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
                 Resource: "*"            
-              - 
-                Effect: "Allow"
-                Action: [ "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminCreateUser", "cognito-idp:AdminDeleteUser", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminRemoveUserFromGroup", "cognito-idp:AdminResetUserPassword", "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup" ]
+              - Effect: "Allow"
+                Action:
+                - cognito-idp:AdminAddUserToGroup
+                - cognito-idp:AdminConfirmSignUp
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminListGroupsForUser
+                - cognito-idp:AdminRemoveUserFromGroup
+                - cognito-idp:AdminResetUserPassword
+                - cognito-idp:ListUsers
+                - cognito-idp:ListUsersInGroup
+                - cognito-identity:DescribeIdentityPool
+				- cognito-identity:GetIdentityPoolRoles
+				- cognito-identity:SetIdentityPoolRoles ]
                 Resource: 
                   Ref: CognitoUserPoolArn
 
