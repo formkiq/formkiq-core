@@ -242,8 +242,8 @@ public class ConsoleInstallHandlerTest {
       assertEquals("image/x-icon",
           s3.getObjectMetadata(s, "destbucket", "0.1/test.ico").getContentType());
 
-      assertEquals("application/javascript",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.js").getContentType());
+      assertTrue(s3.getObjectMetadata(s, "destbucket", "0.1/test.js").getContentType()
+          .endsWith("/javascript"));
 
       assertEquals("image/svg+xml",
           s3.getObjectMetadata(s, "destbucket", "0.1/test.svg").getContentType());
