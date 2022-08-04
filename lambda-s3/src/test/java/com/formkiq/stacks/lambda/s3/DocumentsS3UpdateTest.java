@@ -359,7 +359,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     map.put("AWS_REGION", AWS_REGION.id());
     map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
 
-    this.modules.forEach(m -> map.put("module_" + m, "true"));
+    this.modules.forEach(m -> map.put("MODULE_" + m, "true"));
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();

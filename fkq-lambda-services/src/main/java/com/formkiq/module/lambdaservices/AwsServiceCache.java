@@ -128,6 +128,6 @@ public class AwsServiceCache {
    * @return boolean
    */
   public boolean hasModule(final String module) {
-    return "true".equals(environment("module_" + module));
+    return "true".equals(environment("MODULE_" + module));
   }
 }

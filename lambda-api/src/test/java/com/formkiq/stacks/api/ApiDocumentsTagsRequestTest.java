@@ -294,7 +294,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleDeleteTagDocument05() throws Exception {
 
-    putEnvironmentVariable("module_fulltext", "true");
+    putEnvironmentVariable("MODULE_fulltext", "true");
 
     startMockServer();
 
@@ -512,7 +512,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   public void testHandleDeleteTagValue04() throws Exception {
 
     startMockServer();
-    putEnvironmentVariable("module_fulltext", "true");
+    putEnvironmentVariable("MODULE_fulltext", "true");
 
     RequestRecordExpectationResponseCallback callback =
         new RequestRecordExpectationResponseCallback();
@@ -1303,7 +1303,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   public void testHandlePostDocumentTags12() throws Exception {
 
     startMockServer();
-    putEnvironmentVariable("module_fulltext", "true");
+    putEnvironmentVariable("MODULE_fulltext", "true");
 
     RequestRecordExpectationResponseCallback callback =
         new RequestRecordExpectationResponseCallback();
@@ -1550,7 +1550,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("resource")
   @Test
   public void testHandlePutTags07() throws Exception {
-    putEnvironmentVariable("module_fulltext", "true");
+    putEnvironmentVariable("MODULE_fulltext", "true");
 
     startMockServer();
 
