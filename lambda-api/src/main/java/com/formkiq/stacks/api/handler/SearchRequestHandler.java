@@ -26,13 +26,17 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -49,6 +53,7 @@ import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
@@ -92,9 +97,62 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     return "/search";
   }
 
+  /**
+   * Get Response Tags.
+   * 
+   * @param awsservice {@link CoreAwsServiceCache}
+   * @param siteId {@link String}
+   * @param responseFields {@link SearchResponseFields}
+   * @param documents {@link List} {@link DynamicDocumentItem}
+   * @return {@link Map}
+   */
+  private Map<String, Collection<DocumentTag>> getResponseTags(final CoreAwsServiceCache awsservice,
+      final String siteId, final SearchResponseFields responseFields,
+      final List<DynamicDocumentItem> documents) {
+
+    Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
+
+    if (responseFields != null && !Objects.notNull(responseFields.tags()).isEmpty()) {
+
+      DocumentService service = awsservice.documentService();
+
+      List<String> documentIds =
+          documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toList());
+
+      map = service.findDocumentsTags(siteId, documentIds, responseFields.tags());
+    }
+
+    return map;
+  }
+
   @Override
   public boolean isReadonly(final String method) {
     return "post".equals(method) || "get".equals(method) || "head".equals(method);
+  }
+
+  /**
+   * Merge Response Tags into Response.
+   * 
+   * @param documents {@link List} {@link DynamicDocumentItem}
+   * @param responseTags {@link Map} {@link DocumentTag}
+   */
+  private void mergeResponseTags(final List<DynamicDocumentItem> documents,
+      final Map<String, Collection<DocumentTag>> responseTags) {
+
+    documents.forEach(doc -> {
+
+      Collection<DocumentTag> tags = responseTags.get(doc.getDocumentId());
+
+      List<Map<String, Object>> values = tags.stream().map(tag -> {
+        Map<String, Object> map = new HashMap<>();
+        map.put("key", tag.getKey());
+        map.put("value", tag.getValue());
+        map.put("values", tag.getValues());
+        return map;
+      }).collect(Collectors.toList());
+
+      doc.put("tags", values);
+    });
   }
 
   @Override
@@ -144,6 +202,10 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
           createPagination(cacheService, event, pagination, results.getToken(), limit);
 
       List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+
+      Map<String, Collection<DocumentTag>> responseTags =
+          getResponseTags(serviceCache, siteId, q.responseFields(), documents);
+      mergeResponseTags(documents, responseTags);
 
       Map<String, Object> map = new HashMap<>();
       map.put("documents", documents);

@@ -21,63 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.aws.dynamodb.model;
 
-import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.model.SearchResponseFields;
+import java.util.List;
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** Query Request. */
+/** Search Query. */
 @Reflectable
-public class QueryRequest {
+public class SearchResponseFields {
 
-  /** {@link SearchQuery}. */
+  /** Response Tags. */
   @Reflectable
-  private SearchQuery query;
-  /** {@link SearchResponseFields}. */
-  @Reflectable
-  private SearchResponseFields responseFields;
+  private List<String> tags;
 
   /** constructor. */
-  public QueryRequest() {}
+  public SearchResponseFields() {}
 
   /**
-   * Get {@link SearchQuery}.
+   * Get Response Tags.
    *
-   * @return {@link SearchQuery}
+   * @return {@link List}
    */
-  public SearchQuery query() {
-    return this.query;
+  public List<String> tags() {
+    return this.tags;
   }
 
   /**
-   * Set Query.
+   * Set Response Tags.
    *
-   * @param q {@link SearchQuery}
-   * @return {@link QueryRequest}
-   */
-  public QueryRequest query(final SearchQuery q) {
-    this.query = q;
-    return this;
-  }
-
-  /**
-   * Get {@link SearchResponseFields}.
-   * 
+   * @param responseTags {@link SearchTagCriteria}
    * @return {@link SearchResponseFields}
    */
-  public SearchResponseFields responseFields() {
-    return this.responseFields;
-  }
-
-  /**
-   * Set {@link SearchResponseFields}.
-   * 
-   * @param fields {@link SearchResponseFields}
-   * @return {@link QueryRequest}
-   */
-  public QueryRequest responseFields(final SearchResponseFields fields) {
-    this.responseFields = fields;
+  public SearchResponseFields tags(final List<String> responseTags) {
+    this.tags = responseTags;
     return this;
   }
 }

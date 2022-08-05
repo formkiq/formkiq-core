@@ -1534,4 +1534,57 @@ public class DocumentServiceImplTest implements DbKeys {
       }
     }
   }
+
+  /**
+   * Find Documents Tags.
+   */
+  @Test
+  public void testFindDocumentsTags01() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+      String tagKey0 = "category";
+      String tagValue0 = "person";
+      String tagKey1 = "playerId";
+      List<String> tagValue1 = Arrays.asList("111", "222");
+      List<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
+              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+
+      this.service.saveDocument(siteId, document, tags);
+
+      // when
+      final Map<String, Collection<DocumentTag>> tagMap0 = this.service.findDocumentsTags(siteId,
+          Arrays.asList(documentId), Arrays.asList(tagKey0, tagKey1));
+      final Map<String, Collection<DocumentTag>> tagMap1 =
+          this.service.findDocumentsTags(siteId, Arrays.asList(documentId), Arrays.asList(tagKey0));
+      final Map<String, Collection<DocumentTag>> tagMap2 =
+          this.service.findDocumentsTags(siteId, Arrays.asList(documentId), Arrays.asList(tagKey1));
+
+      // then
+      assertEquals(1, tagMap0.size());
+      Collection<DocumentTag> tags0 = tagMap0.get(documentId);
+      assertEquals(2, tags0.size());
+
+      Collection<DocumentTag> tags1 = tagMap1.get(documentId);
+      assertEquals(1, tags1.size());
+      DocumentTag next = tags1.iterator().next();
+      assertEquals(documentId, next.getDocumentId());
+      assertEquals(tagKey0, next.getKey());
+      assertEquals(tagValue0, next.getValue());
+      assertNull(next.getValues());
+
+      Collection<DocumentTag> tags2 = tagMap2.get(documentId);
+      assertEquals(1, tags2.size());
+      next = tags2.iterator().next();
+      assertEquals(documentId, next.getDocumentId());
+      assertEquals(tagKey1, next.getKey());
+      assertNull(next.getValue());
+      assertEquals("[111, 222]", next.getValues().toString());
+    }
+  }
 }
