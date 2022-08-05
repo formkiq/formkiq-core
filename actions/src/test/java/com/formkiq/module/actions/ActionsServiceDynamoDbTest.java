@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,10 +37,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Unit Tests for {@link ActionsServiceDynamoDbTest}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -47,6 +53,8 @@ public class ActionsServiceDynamoDbTest {
 
   /** {@link ActionsService}. */
   private static ActionsService service;
+  /** {@link DocumentService}. */
+  private static DocumentService documentService;
 
   /**
    * BeforeAll.
@@ -58,6 +66,7 @@ public class ActionsServiceDynamoDbTest {
 
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
+    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE);
   }
 
   /**
@@ -102,10 +111,19 @@ public class ActionsServiceDynamoDbTest {
           new Action().type(ActionType.OCR).userId(userId1).status(ActionStatus.COMPLETE);
 
       // when
-      service.saveActions(siteId, documentId0, Arrays.asList(action0));
+      List<Map<String, AttributeValue>> list =
+          service.saveActions(siteId, documentId0, Arrays.asList(action0));
       service.saveActions(siteId, documentId1, Arrays.asList(action1));
 
       // then
+      assertEquals(1, list.size());
+      if (siteId != null) {
+        assertEquals(siteId + "/docs#" + documentId0, list.get(0).get("PK").s());
+      } else {
+        assertEquals("docs#" + documentId0, list.get(0).get("PK").s());
+      }
+      assertEquals("action#0#OCR", list.get(0).get("SK").s());
+
       List<Action> results = service.getActions(siteId, documentId0);
       assertEquals(1, results.size());
       assertEquals(ActionStatus.PENDING, results.get(0).status());
@@ -151,6 +169,30 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
+    }
+  }
+
+  /**
+   * Test Delete Document & Document Actions.
+   */
+  @Test
+  public void testDeleteDocument() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      documentService.saveDocument(siteId, item, null);
+
+      Action action0 =
+          new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
+      service.saveActions(siteId, documentId, Arrays.asList(action0));
+
+      // when
+      documentService.deleteDocument(siteId, documentId);
+
+      // then
+      List<Action> actions = service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
     }
   }
 }

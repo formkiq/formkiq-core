@@ -24,9 +24,11 @@
 package com.formkiq.module.actions.services;
 
 import java.util.List;
+import java.util.Map;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
@@ -59,8 +61,10 @@ public interface ActionsService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
+   * @return {@link List} {@link Map}
    */
-  void saveActions(String siteId, String documentId, List<Action> actions);
+  List<Map<String, AttributeValue>> saveActions(String siteId, String documentId,
+      List<Action> actions);
 
   /**
    * Update {@link Action} {@link ActionStatus}.
