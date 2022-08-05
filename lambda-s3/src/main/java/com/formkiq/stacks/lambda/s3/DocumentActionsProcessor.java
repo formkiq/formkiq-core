@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -53,11 +54,11 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
-import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.SetDocumentFulltext;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
+import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
 import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
@@ -87,8 +88,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private DocumentService documentService;
   /** IAM Documents Url. */
   private String documentsIamUrl;
-  /** {@link FormKiqClient}. */
-  private FormKiqClient formkiqClient = null;
+  /** {@link FormKiqClientV1}. */
+  private FormKiqClientV1 formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
 
@@ -144,18 +145,41 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link String}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
    */
-  private String findContentUrl(final String siteId, final String documentId) {
+  @SuppressWarnings("unchecked")
+  private String findContentUrl(final String siteId, final String documentId)
+      throws IOException, InterruptedException {
 
+    String url = null;
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
     try (S3Client client = this.s3Service.buildClient()) {
 
-      String bucket =
-          MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
+      if (MimeType.isPlainText(item.getContentType())) {
+        String bucket =
+            MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
+        url = this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
 
-      return this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+      } else {
+
+        GetDocumentOcrRequest req =
+            new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
+
+        req.addQueryParameter("contentUrl", "true");
+        HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
+        Map<String, String> map = this.gson.fromJson(response.body(), Map.class);
+
+        if (map.containsKey("contentUrl")) {
+          url = map.get("contentUrl");
+        } else {
+          throw new IOException("Cannot find 'contentUrl' from OCR request");
+        }
+      }
+
+      return url;
     }
   }
 
@@ -229,6 +253,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       if (o.isPresent()) {
 
         Action action = o.get();
+        logger.log(String.format("Processing SiteId %s Document %s on action %s", siteId,
+            documentId, action.type()));
+
         try {
           if (ActionType.OCR.equals(action.type())) {
 
@@ -253,7 +280,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           this.actionsService.updateActionStatus(siteId, documentId, o.get().type(),
               ActionStatus.FAILED);
         }
+      } else {
+        logger
+            .log(String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));
       }
+    } else {
+      logger.log(String.format("Skipping event %s", event.type()));
     }
   }
 
