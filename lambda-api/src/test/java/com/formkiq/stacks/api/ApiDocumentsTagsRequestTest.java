@@ -1350,6 +1350,39 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents/{documentId}/tags with duplicate keys.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentTags13() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String documentId = UUID.randomUUID().toString();
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-documents-documentid-tags01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody("{\"tags\":[{\"key\": \"author\", \"value\": \"William Shakespeare\"},"
+          + "{\"key\": \"author\", \"value\": \"Kevin Bacon\"}]}");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> map = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", ((Double) map.get("statusCode")).toString());
+      assertEquals(
+          "{\"message\":\"Tag key can only be included once in body; "
+              + "please use 'values' to assign multiple tag values to that key\"}",
+          map.get("body").toString());
+    }
+  }
+
+  /**
    * PUT /documents/{documentId}/tags/{tagKey} VALUE request.
    *
    * @throws Exception an error has occurred

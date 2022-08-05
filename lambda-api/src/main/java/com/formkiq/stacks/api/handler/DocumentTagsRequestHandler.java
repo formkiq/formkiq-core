@@ -171,6 +171,14 @@ public class DocumentTagsRequestHandler
       throw new BadException("invalid json body");
     }
 
+    if (tagsValid) {
+      int size = tags.getTags().stream().map(t -> t.getKey()).collect(Collectors.toSet()).size();
+      if (size != tags.getTags().size()) {
+        throw new BadException("Tag key can only be included once in body; "
+            + "please use 'values' to assign multiple tag values to that key");
+      }
+    }
+
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
     DocumentItem item = coreServices.documentService().findDocument(siteId, documentId);
     if (item == null) {
