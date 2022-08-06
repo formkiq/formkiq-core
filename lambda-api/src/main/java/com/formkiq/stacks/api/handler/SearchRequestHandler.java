@@ -139,20 +139,23 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   private void mergeResponseTags(final List<DynamicDocumentItem> documents,
       final Map<String, Collection<DocumentTag>> responseTags) {
 
-    documents.forEach(doc -> {
+    if (!responseTags.isEmpty()) {
 
-      Collection<DocumentTag> tags = responseTags.get(doc.getDocumentId());
+      documents.forEach(doc -> {
 
-      List<Map<String, Object>> values = tags.stream().map(tag -> {
-        Map<String, Object> map = new HashMap<>();
-        map.put("key", tag.getKey());
-        map.put("value", tag.getValue());
-        map.put("values", tag.getValues());
-        return map;
-      }).collect(Collectors.toList());
+        Collection<DocumentTag> tags = Objects.notNull(responseTags.get(doc.getDocumentId()));
 
-      doc.put("tags", values);
-    });
+        List<Map<String, Object>> values = tags.stream().map(tag -> {
+          Map<String, Object> map = new HashMap<>();
+          map.put("key", tag.getKey());
+          map.put("value", tag.getValue());
+          map.put("values", tag.getValues());
+          return map;
+        }).collect(Collectors.toList());
+
+        doc.put("tags", values);
+      });
+    }
   }
 
   @Override
