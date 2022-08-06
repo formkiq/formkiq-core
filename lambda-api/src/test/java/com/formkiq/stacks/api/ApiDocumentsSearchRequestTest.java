@@ -534,12 +534,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       final String tagKey1 = "playerId";
       final String tagvalue1 = "111";
       final String username = "jsmith";
-      List<String> documentIds = new ArrayList<>();
 
       for (int i = 0; i < count; i++) {
         String documentId = UUID.randomUUID().toString();
-
-        documentIds.add(documentId);
 
         DocumentTag item0 = new DocumentTag(documentId, tagKey0, tagvalue0, now, username);
         DocumentTag item1 = new DocumentTag(documentId, tagKey1, tagvalue1, now, username);
