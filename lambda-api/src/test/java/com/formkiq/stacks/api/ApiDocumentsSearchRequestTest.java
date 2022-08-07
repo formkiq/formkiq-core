@@ -42,7 +42,6 @@ import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.client.models.DocumentSearch;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -126,14 +125,16 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
         addParameter(event, "siteId", siteId);
 
-        DocumentSearch s = new DocumentSearch().query(
+        DocumentSearchQuery dsq =
             new DocumentSearchQuery().tag(new DocumentSearchTag().key("category").eq("person"))
-                .documentIds(Arrays.asList(documentId)));
+                .documentIds(Arrays.asList(documentId));
+
+        Map<String, Object> s = Map.of("query", dsq);
         event.setBody(GsonUtil.getInstance().toJson(s));
         event.setIsBase64Encoded(Boolean.FALSE);
 
         if ("eqOr".equals(op)) {
-          s.query().tag().eq(null).eqOr(Arrays.asList("person"));
+          dsq.tag().eq(null).eqOr(Arrays.asList("person"));
         }
 
         DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
@@ -301,13 +302,14 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         addParameter(event, "siteId", siteId);
         event.setIsBase64Encoded(Boolean.FALSE);
 
-        DocumentSearch s = new DocumentSearch().query(
+        DocumentSearchQuery dsq =
             new DocumentSearchQuery().tag(new DocumentSearchTag().key("category").eq("person"))
-                .documentIds(Arrays.asList(documentId)));
+                .documentIds(Arrays.asList(documentId));
+        Map<String, Object> s = Map.of("query", dsq);
         event.setBody(GsonUtil.getInstance().toJson(s));
 
         if ("eqOr".equals(op)) {
-          s.query().tag().eq(null).eqOr(Arrays.asList("person"));
+          dsq.tag().eq(null).eqOr(Arrays.asList("person"));
         }
 
         for (String v : Arrays.asList("", "!")) {
@@ -340,7 +342,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         assertNull(resp.get("previous"));
 
         // given - invalid document id
-        s.query().documentIds(Arrays.asList("123"));
+        dsq.documentIds(Arrays.asList("123"));
         event.setBody(GsonUtil.getInstance().toJson(s));
         // when
         response = handleRequest(event);
