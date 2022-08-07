@@ -550,7 +550,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       event.setIsBase64Encoded(Boolean.FALSE);
       QueryRequest q = new QueryRequest()
           .query(new SearchQuery().tag(new SearchTagCriteria().key(tagKey0).eq(tagvalue0)))
-          .responseFields(new SearchResponseFields().tags(Arrays.asList("playerId")));
+          .responseFields(new SearchResponseFields().tags(Arrays.asList(tagKey1)));
       event.setBody(GsonUtil.getInstance().toJson(q));
 
       // when
@@ -564,11 +564,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(count, documents.size());
 
       documents.forEach(doc -> {
-        Collection<Map<String, Object>> tags = (Collection<Map<String, Object>>) doc.get("tags");
+        Map<String, Object> tags = (Map<String, Object>) doc.get("tags");
         assertEquals(1, tags.size());
-        Map<String, Object> next = tags.iterator().next();
-        assertEquals(tagKey1, next.get("key"));
-        assertEquals(tagvalue1, next.get("value"));
+        assertEquals(tagvalue1, tags.get(tagKey1));
       });
     }
   }

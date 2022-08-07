@@ -145,15 +145,17 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
         Collection<DocumentTag> tags = Objects.notNull(responseTags.get(doc.getDocumentId()));
 
-        List<Map<String, Object>> values = tags.stream().map(tag -> {
-          Map<String, Object> map = new HashMap<>();
-          map.put("key", tag.getKey());
-          map.put("value", tag.getValue());
-          map.put("values", tag.getValues());
-          return map;
-        }).collect(Collectors.toList());
-
-        doc.put("tags", values);
+        Map<String, Object> map = new HashMap<>();
+        
+        tags.forEach(tag -> {
+          if (tag.getValues() != null) {
+            map.put(tag.getKey(), tag.getValues());
+          } else {
+            map.put(tag.getKey(), tag.getValue());
+          }
+        });
+        
+        doc.put("tags", map);
       });
     }
   }

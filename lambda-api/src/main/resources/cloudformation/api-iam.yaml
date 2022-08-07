@@ -1927,6 +1927,8 @@ Resources:
                 createdBy:
                   type: "string"
                   description: "User who added document"
+                tags:
+                  type: "object"                  
             DocumentSearchResults:
               type: "object"
               properties:
@@ -1977,6 +1979,8 @@ Resources:
                   description: "Document version"
                 matchedTag:
                   $ref: "#/components/schemas/DocumentSearchMatchTag"
+                tags:
+                  type: "object"
             DocumentSearchMatchTag:
               type: "object"
               properties:
