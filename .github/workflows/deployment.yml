@@ -5,7 +5,7 @@
 # This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-name: S3 Deplyoment
+name: S3 Deployment
 
 on: 
   workflow_dispatch:
@@ -37,4 +37,5 @@ jobs:
         aws s3 cp s3://${S3_BUCKET}/formkiq-core/formkiq-core-${formKiQVersion}.zip .
         unzip formkiq-core*
         sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-us-east-1 --template-file template.yaml --region us-east-1 --output-template-file template-1.8.0.yaml
-        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-us-east-1/${formKiQVersion}/template.yaml"
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-us-east-1/${formKiQVersion}/template.yaml
+        
