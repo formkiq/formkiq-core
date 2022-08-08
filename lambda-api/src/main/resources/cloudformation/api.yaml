@@ -70,7 +70,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /tagSchemas:
             get:
-              description: Returns the list of tagSchemas
+              description: Returns the list of tagSchemas; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
               - Enterprise TagSchema
@@ -109,7 +109,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Creates a new TagSchema
+              description: Creates a new TagSchema; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
               - Enterprise TagSchema
@@ -154,7 +154,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /tagSchemas/{tagSchemaId}:
             get:
-              description: Retrieves a TagSchema's details, i.e., metadata
+              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
               - Enterprise TagSchema
@@ -180,7 +180,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete a TagSchema
+              description: Delete a TagSchema; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
               - Enterprise TagSchema
