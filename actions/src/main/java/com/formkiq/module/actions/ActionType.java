@@ -30,5 +30,7 @@ package com.formkiq.module.actions;
  */
 public enum ActionType {
   /** OCR. */
-  OCR;
+  OCR,
+  /** Full Text. */
+  FULLTEXT;
 }

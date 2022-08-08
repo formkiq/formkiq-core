@@ -23,16 +23,22 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -40,13 +46,20 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.models.DeleteFulltextTag;
+import com.formkiq.stacks.client.models.UpdateFulltext;
+import com.formkiq.stacks.client.models.UpdateFulltextTag;
+import com.formkiq.stacks.client.requests.DeleteFulltextTagsRequest;
+import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}". */
@@ -84,18 +97,42 @@ public class DocumentTagRequestHandler
 
     List<String> tags = Arrays.asList(tagKey);
 
-    Collection<ValidationError> errors =
-        awsservice.documentTagSchemaPlugin().validateRemoveTags(siteId, document, tags);
+    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+    Collection<ValidationError> errors = plugin.validateRemoveTags(siteId, document, tags);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
+    deleteFulltextTags(awsservice, siteId, documentId, tags);
     documentService.removeTags(siteId, documentId, tags);
 
     ApiResponse resp =
         new ApiMessageResponse("Removed '" + tagKey + "' from document '" + documentId + "'.");
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  /**
+   * Update Fulltext index if Module available.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void deleteFulltextTags(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final List<String> tags) throws IOException, InterruptedException {
+
+    if (awsservice.hasModule("fulltext")) {
+      FormKiqClientV1 client = awsservice.getExtension(FormKiqClientV1.class);
+
+      for (String tag : tags) {
+        client.deleteFulltextTags(new DeleteFulltextTagsRequest().siteId(siteId)
+            .documentId(documentId).tag(new DeleteFulltextTag().key(tag)));
+      }
+    }
   }
 
   @Override
@@ -193,14 +230,17 @@ public class DocumentTagRequestHandler
     List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
     Collection<ValidationError> errors = new ArrayList<>();
 
-    Collection<DocumentTag> newTags = awsservice.documentTagSchemaPlugin().addCompositeKeys(siteId,
-        document, tags, userId, false, errors);
+    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+    Collection<DocumentTag> newTags =
+        plugin.addCompositeKeys(siteId, document, tags, userId, false, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
     tags.addAll(newTags);
+
+    updateFulltextIfInstalled(awsservice, siteId, documentId, tags);
     documentService.addTags(siteId, documentId, tags, null);
 
     ApiResponse resp =
@@ -208,4 +248,41 @@ public class DocumentTagRequestHandler
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
+
+  /**
+   * Update Fulltext index if Module available.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void updateFulltextIfInstalled(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final List<DocumentTag> tags)
+      throws IOException, InterruptedException {
+
+    if (awsservice.hasModule("fulltext")) {
+      FormKiqClientV1 client = awsservice.getExtension(FormKiqClientV1.class);
+
+      List<UpdateFulltextTag> updateTags =
+          tags.stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
+              .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
+                  .values(t.getValues()))
+              .collect(Collectors.toList());
+
+      if (!updateTags.isEmpty()) {
+        HttpResponse<String> response = client
+            .updateDocumentFulltextAsHttpResponse(new UpdateDocumentFulltextRequest().siteId(siteId)
+                .documentId(documentId).document(new UpdateFulltext().tags(updateTags)));
+
+        if (response.statusCode() == SC_BAD_REQUEST.getStatusCode()
+            || response.statusCode() == SC_ERROR.getStatusCode()) {
+          throw new IOException("unable to update Fulltext");
+        }
+      }
+    }
+  }
+
 }

@@ -34,6 +34,7 @@ import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Document;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
+import com.formkiq.stacks.client.models.DocumentSearchResponseFields;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.client.models.Documents;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
@@ -182,13 +183,16 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
+          .responseFields(new DocumentSearchResponseFields().tags(Arrays.asList("test")))
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue"))
               .documentIds(Arrays.asList(documentId)));
 
       // when
       Documents documents = client.search(req);
+      HttpResponse<String> body = client.searchAsHttpResponse(req);
 
       // then
+      assertTrue(body.body().contains("\"tags\":{\"test\":\"somevalue\"}"));
       assertEquals(1, documents.documents().size());
 
       Document doc = documents.documents().get(0);

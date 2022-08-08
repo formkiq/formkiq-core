@@ -33,13 +33,14 @@ import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
@@ -128,14 +129,16 @@ public class DocumentIdUrlRequestHandler
       logger.log("Finding S3 Url for 'Content-Type' " + contentType);
     }
 
+    S3Service s3Service = awsservice.getExtension(S3Service.class);
+
     if (contentType == null || contentType.equals(item.getContentType())) {
 
       logger.log("Found default format " + contentType + " for siteId: " + siteId + " documentId: "
           + documentId);
 
       String s3key = createS3Key(siteId, documentId);
-      url = awsservice.s3Service().presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-          s3key, duration, versionId);
+      url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, duration,
+          versionId);
 
     } else {
 
@@ -150,8 +153,8 @@ public class DocumentIdUrlRequestHandler
         }
 
         String s3key = createS3Key(siteId, documentId, contentType);
-        url = awsservice.s3Service().presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-            s3key, duration, versionId);
+        url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
+            duration, versionId);
 
       } else if (awsservice.debug()) {
 

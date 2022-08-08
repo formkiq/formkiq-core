@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Query Request. */
@@ -33,6 +34,9 @@ public class QueryRequest {
   /** {@link SearchQuery}. */
   @Reflectable
   private SearchQuery query;
+  /** {@link SearchResponseFields}. */
+  @Reflectable
+  private SearchResponseFields responseFields;
 
   /** constructor. */
   public QueryRequest() {}
@@ -54,6 +58,26 @@ public class QueryRequest {
    */
   public QueryRequest query(final SearchQuery q) {
     this.query = q;
+    return this;
+  }
+
+  /**
+   * Get {@link SearchResponseFields}.
+   * 
+   * @return {@link SearchResponseFields}
+   */
+  public SearchResponseFields responseFields() {
+    return this.responseFields;
+  }
+
+  /**
+   * Set {@link SearchResponseFields}.
+   * 
+   * @param fields {@link SearchResponseFields}
+   * @return {@link QueryRequest}
+   */
+  public QueryRequest responseFields(final SearchResponseFields fields) {
+    this.responseFields = fields;
     return this;
   }
 }

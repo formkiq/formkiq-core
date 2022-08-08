@@ -31,12 +31,24 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/public/documents". */
 public class PublicDocumentsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** {@link DocumentsRequestHandler}. */
+  private DocumentsRequestHandler handler = new DocumentsRequestHandler();
+
+  /**
+   * constructor.
+   */
+  public PublicDocumentsRequestHandler() {}
+
+  @Override
+  public String getRequestUrl() {
+    return "/public/documents";
+  }
 
   @SuppressWarnings("unchecked")
   @Override
@@ -58,11 +70,6 @@ public class PublicDocumentsRequestHandler
 
     claims.put("cognito:username", "public");
 
-    return new DocumentsRequestHandler().post(logger, event, authorizer, awsservice);
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/public/documents";
+    return this.handler.post(logger, event, authorizer, awsservice);
   }
 }

@@ -42,16 +42,17 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.validation.ValidationError;
 import com.formkiq.plugins.validation.ValidationException;
@@ -167,7 +168,7 @@ public class DocumentsUploadRequestHandler
       final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
       throws ValidationException, BadException {
 
-    DocumentTagSchemaPlugin plugin = cacheService.documentTagSchemaPlugin();
+    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
 
     Collection<ValidationError> errors = new ArrayList<>();
 
@@ -251,8 +252,11 @@ public class DocumentsUploadRequestHandler
     String key = siteId != null ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
     Optional<Long> contentLength = calculateContentLength(awsservice, logger, query, siteId);
-    URL url = awsservice.s3Service().presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-        key, duration, contentLength);
+
+    S3Service s3Service = awsservice.getExtension(S3Service.class);
+
+    URL url = s3Service.presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
+        contentLength);
 
     String urlstring = url.toString();
     return urlstring;

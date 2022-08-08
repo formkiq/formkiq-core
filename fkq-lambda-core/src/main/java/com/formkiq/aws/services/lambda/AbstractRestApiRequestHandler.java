@@ -52,6 +52,8 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
@@ -195,7 +197,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       return hander;
     }
 
-    throw new NotFoundException(resource + " not found");
+    throw new NotFoundException(resource + " request handler not found");
   }
 
   /**
@@ -480,7 +482,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           m.put("message", body);
 
           String json = this.gson.toJson(m);
-          aws.sqsService().sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
+          SqsService sqsService = aws.getExtension(SqsService.class);
+          sqsService.sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           break;
 
         default:

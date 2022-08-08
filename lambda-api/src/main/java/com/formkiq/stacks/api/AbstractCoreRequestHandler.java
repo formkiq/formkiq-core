@@ -27,17 +27,27 @@ import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.services.ActionsServiceExtension;
+import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
@@ -45,6 +55,10 @@ import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsActionsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyHandler;
+import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyValueHandler;
 import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
@@ -53,6 +67,7 @@ import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
+import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
@@ -61,6 +76,11 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
+import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -92,47 +112,61 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
-    addRequestHandler(new DocumentsRequestHandler());
-    addRequestHandler(new DocumentIdRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
+    addRequestHandler(new DocumentsActionsRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
     addRequestHandler(new DocumentTagRequestHandler());
     addRequestHandler(new DocumentIdUrlRequestHandler());
     addRequestHandler(new DocumentIdContentRequestHandler());
     addRequestHandler(new SearchRequestHandler());
+    addRequestHandler(new SearchFulltextRequestHandler());
+    addRequestHandler(new DocumentsFulltextRequestTagsKeyHandler());
+    addRequestHandler(new DocumentsFulltextRequestTagsKeyValueHandler());
     addRequestHandler(new DocumentsUploadRequestHandler());
     addRequestHandler(new DocumentsIdUploadRequestHandler());
     addRequestHandler(new DocumentsOcrRequestHandler());
+    addRequestHandler(new DocumentsFulltextRequestHandler());
     addRequestHandler(new TagSchemasRequestHandler());
     addRequestHandler(new TagSchemasIdRequestHandler());
     addRequestHandler(new WebhooksTagsRequestHandler());
     addRequestHandler(new WebhooksIdRequestHandler());
     addRequestHandler(new WebhooksRequestHandler());
+    addRequestHandler(new DocumentsRequestHandler());
+    addRequestHandler(new DocumentIdRequestHandler());
   }
 
   /**
    * Setup Api Request Handlers.
    *
    * @param map {@link Map}
-   * @param builder {@link DynamoDbConnectionBuilder}
+   * @param creds {@link AwsCredentials}
+   * @param db {@link DynamoDbConnectionBuilder}
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sqs {@link SqsConnectionBuilder}
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
-  public static void configureHandler(final Map<String, String> map,
-      final DynamoDbConnectionBuilder builder, final S3ConnectionBuilder s3,
+  public static void configureHandler(final Map<String, String> map, final AwsCredentials creds,
+      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3,
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
       final DocumentTagSchemaPlugin schemaEvents) {
 
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(db));
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssm));
+    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
+    AwsServiceCache.register(SqsService.class, new SqsServiceExtension(sqs));
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(schemaEvents));
+    AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
+    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
 
-    awsServices = new CoreAwsServiceCache().environment(map).dbConnection(builder).s3Connection(s3)
-        .sqsConnection(sqs).ssmConnection(ssm).debug("true".equals(map.get("DEBUG")))
-        .documentTagSchemaPlugin(schemaEvents);
+    Region region = Region.of(map.get("AWS_REGION"));
+    AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
-    awsServices.init();
+    awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
     isEnablePublicUrls = isEnablePublicUrls(map);
   }

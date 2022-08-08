@@ -70,7 +70,7 @@ import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.AddDocumentTag;
+import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -101,7 +101,9 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 public class StagingS3Create implements RequestHandler<Map<String, Object>, Void> {
 
   /** Extension for FormKiQ config file. */
-  private static final String FORMKIQ_B64_EXT = ".fkb64";
+  public static final String FORMKIQ_B64_EXT = ".fkb64";
+  /** Virtual Folder Deliminator. */
+  public static final String VIRTUAL_FOLDER_DELIM = "::/";
 
   /**
    * Get Bucket Name.
@@ -238,12 +240,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
+   * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link DynamicDocumentItem}
    */
   @SuppressWarnings("unchecked")
   private DynamicDocumentItem configfile(final S3Client s3Client, final LambdaLogger logger,
-      final String bucket, final String documentId) {
+      final String bucket, final String siteId, final String documentId) {
 
     DynamicDocumentItem obj = null;
 
@@ -269,6 +272,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       } else {
         obj.setInsertedDate(new Date());
+      }
+
+      if (obj.getPath() != null && obj.getPath().contains(VIRTUAL_FOLDER_DELIM)) {
+        String realDocumentId = getDocumentIdForPath(siteId, obj.getPath());
+        obj.setDocumentId(realDocumentId);
       }
     }
 
@@ -542,7 +550,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       try (S3Client s = this.s3.buildClient()) {
 
-        DynamicDocumentItem doc = configfile(s, logger, bucket, documentId);
+        DynamicDocumentItem doc = configfile(s, logger, bucket, siteId, documentId);
 
         if (doc != null) {
           write(s, logger, doc, date, siteId);

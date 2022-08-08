@@ -11,16 +11,16 @@ Resources:
       Body:
         openapi: "3.0.1"
         info:
-          title: 
+          title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.7.5"
+          version: "1.8.0"
         paths:
           /version:
             get:
               description: Return the version of FormKiQ
               tags:
-              - Miscellaneous    
+              - Miscellaneous
               responses:
                 '200':
                   description: "200 OK"
@@ -41,7 +41,7 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"       
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites:
             get:
               description: Returns the list of sites that the user has access to
@@ -70,9 +70,10 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /tagSchemas:
             get:
-              description: Returns the list of tagSchemas
+              description: Returns the list of tagSchemas; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -85,7 +86,7 @@ Resources:
                 in: "query"
                 description: "Previous page of results token"
                 schema:
-                  type: "string"                  
+                  type: "string"
               responses:
                 '200':
                   description: "200 OK"
@@ -108,9 +109,10 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              description: Creates a new TagSchema
+              description: Creates a new TagSchema; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -152,9 +154,10 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /tagSchemas/{tagSchemaId}:
             get:
-              description: Retrieves a TagSchema's details, i.e., metadata
+              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -177,9 +180,10 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
-              description: Delete a TagSchema
+              description: Delete a TagSchema; ONLY available in FormKiQ Enterprise
               tags:
-              - Enterprise API      
+              - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -242,7 +246,7 @@ Resources:
             post:
               description: Creates a new document; body may include document content if less than 5 MB
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -291,7 +295,7 @@ Resources:
             get:
               description: Retrieves a document's details, i.e., metadata
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -316,7 +320,7 @@ Resources:
             patch:
               description: Update a document's details, i.e., metadata
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -339,7 +343,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentPostResponse'      
+                        $ref: '#/components/schemas/DocumentPostResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -347,7 +351,7 @@ Resources:
             delete:
               description: Delete a document
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -362,7 +366,7 @@ Resources:
             get:
               description: Get a listing of document content versions
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -393,7 +397,7 @@ Resources:
             get:
               description: Get a document's contents
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -413,7 +417,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentContent'              
+                        $ref: '#/components/schemas/DocumentContent'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -422,11 +426,11 @@ Resources:
             get:
               description: Get a listing of a document's tags
               tags:
-              - Document Tags     
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'              
+              - $ref: '#/components/parameters/limitParam'
               - name: next
                 in: query
                 description: "Next page of results token"
@@ -458,7 +462,7 @@ Resources:
             post:
               description: Add a single tag to a document; endpoint also accepts a different body parameter for adding multiple tags at one time
               tags:
-              - Document Tags      
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -491,7 +495,7 @@ Resources:
             post:
               description: Add multiple tags to a document; endpoint also accepts a different body parameter for adding a single tag
               tags:
-              - Document Tags      
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -507,12 +511,12 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags/{tagKey}:
             get:
               description: Get a document tag by using its key
               tags:
-              - Document Tags     
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -538,7 +542,7 @@ Resources:
             put:
               description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
               tags:
-              - Document Tags      
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -575,7 +579,7 @@ Resources:
             delete:
               description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
-              - Document Tags      
+              - Document Tags
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
@@ -592,7 +596,7 @@ Resources:
             get:
               description: Returns a URL for the document's contents that expires (default is 48 hours)
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -620,7 +624,7 @@ Resources:
             get:
               description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
               tags:
-              - Documents      
+              - Documents
               parameters:
                 - name: path
                   in: query
@@ -651,7 +655,7 @@ Resources:
             post:
               description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
               tags:
-              - Documents      
+              - Documents
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/durationParam'
@@ -678,7 +682,7 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/upload:
             get:
               parameters:
@@ -688,7 +692,7 @@ Resources:
               - $ref: '#/components/parameters/durationParam'
               description: Returns a URL that can be used to upload documents for a specific documentId (required for documents larger than 5 MB)
               tags:
-              - Documents      
+              - Documents
               responses:
                 '200':
                   description: 200 OK
@@ -711,10 +715,10 @@ Resources:
             post:
               description: Document search query request; documents are searched primarily using a document tag key and optional tag value, while an optional documentIds parameter is also available in the DocumentSearchBody to filter within up to 100 documentIds
               tags:
-              - Document Search      
+              - Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'              
+              - $ref: '#/components/parameters/limitParam'
               - name: next
                 in: query
                 description: "Next page of results token"
@@ -755,7 +759,7 @@ Resources:
                             tag:
                               key: category
                               eq: person
-                            documentIds: ["1", "2"]                              
+                            documentIds: ["1", "2"]
               responses:
                 '200':
                   description: 200 OK
@@ -774,11 +778,72 @@ Resources:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /searchFulltext:
+            post:
+              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch) ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Search
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentFulltextSearchBody'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextSearchResults'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/actions:
+            get:
+              description: Get Document Actions and their Status
+              tags:
+              - Document Actions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentActions'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
           /documents/{documentId}/ocr:
             get:
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -799,11 +864,12 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"          
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             post:
               description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -830,12 +896,174 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"                        
+            put:
+              description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise OCR
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOcrBody'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentOcrResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
+            delete:
+              description: Delete a Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise OCR
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
+          /documents/{documentId}/fulltext:
+            delete:
+              description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            put:
+              description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/FulltextBody'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+            patch:
+              description: Updates Opensearch document; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/FulltextUpdateBody'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/fulltext/tags/{tagKey}:
+            delete:
+              description: Removes document tags from full text search; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'              
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
+            delete:
+              description: Removes document tag/value from full text search; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/tagvalueParam'              
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"                
           /public/documents:
             post:
               description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
               tags:
-              - Public      
+              - Public
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -864,7 +1092,7 @@ Resources:
             post:
               description: Receives an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
               tags:
-              - Public      
+              - Public
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhooksParam'
@@ -873,7 +1101,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      type: object                
+                      type: object
               responses:
                 '200':
                   description: 200 OK
@@ -894,7 +1122,7 @@ Resources:
             post:
               description: Receives an incoming private webhook and creates a document based on the webhook's body; requires authentication
               tags:
-              - Webhooks      
+              - Webhooks
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhooksParam'
@@ -903,7 +1131,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      type: object                
+                      type: object
               responses:
                 '200':
                   description: 200 OK
@@ -919,7 +1147,7 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/DocumentId'
               security:
-              - AuthorizationCognito: []                        
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks:
@@ -953,7 +1181,7 @@ Resources:
             post:
               description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               tags:
-              - Webhooks      
+              - Webhooks
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -1012,7 +1240,7 @@ Resources:
             delete:
               description: Deletes a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
               tags:
-              - Webhooks      
+              - Webhooks
               parameters:
               - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -1022,11 +1250,11 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
               description: Updates a webhook's details, i.e., its metadata
               tags:
-              - Webhooks      
+              - Webhooks
               parameters:
               - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -1035,7 +1263,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/WebhookBody'              
+                      $ref: '#/components/schemas/WebhookBody'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1047,7 +1275,7 @@ Resources:
             get:
               description: Get a webhook's tags
               tags:
-              - Webhooks      
+              - Webhooks
               parameters:
               - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -1072,7 +1300,7 @@ Resources:
             post:
               description: Add a tag to a webhook
               tags:
-              - Webhooks      
+              - Webhooks
               parameters:
               - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -1096,7 +1324,7 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -1110,7 +1338,7 @@ Resources:
                 type: string
             Location:
               schema:
-                type: string        
+                type: string
           responses:
             200Cors:
               description: 200 OK
@@ -1146,7 +1374,7 @@ Resources:
               required: true
               description: Web Hook Param
               schema:
-                type: string                
+                type: string
             siteIdParam:
               name: siteId
               in: query
@@ -1174,7 +1402,7 @@ Resources:
               description: Tag Schema Identifier
               required: true
               schema:
-                type: string            
+                type: string
             tagkeyParam:
               name: tagKey
               in: path
@@ -1236,7 +1464,7 @@ Resources:
                   type: "string"
                   description: "Next page of results token"
                 versions:
-                  $ref: "#/components/schemas/DocumentItemVersions"    
+                  $ref: "#/components/schemas/DocumentItemVersions"
             DocumentItemsTags:
               type: "object"
               properties:
@@ -1291,7 +1519,7 @@ Resources:
                   format: "uuid"
                 siteId:
                   type: "string"
-                  description: "Site Identifier"                  
+                  description: "Site Identifier"
             DocumentPostResponse:
               type: "object"
               properties:
@@ -1405,6 +1633,46 @@ Resources:
                       belongsToDocumentId:
                         type: "string"
                         description: "Parent Document Identifier"
+            DocumentFulltextSearchBody:
+              required:
+              - "query"
+              type: "object"
+              description: "Document full text search"
+              properties:
+                query:
+                  $ref: "#/components/schemas/DocumentFulltextSearch"
+                responseFields:
+                  $ref: "#/components/schemas/SearchResponseFields"
+            DocumentFulltextSearch:
+              type: "object"
+              description: "Document full text search criteria"
+              properties:
+                text:
+                  type: "string"
+                  description: "Full text search"
+                tags:
+                  $ref: "#/components/schemas/DocumentFulltextTags"
+            DocumentFulltextTags:
+              type: "array"
+              description: "List of search tags"
+              items:
+                $ref: "#/components/schemas/DocumentFulltextTag"
+            DocumentFulltextTag:
+              required:
+              - "key"
+              type: "object"
+              properties:
+                eq:
+                  type: "string"
+                  description: "Searches for strings that eq"
+                eqOr:
+                  type: array
+                  description: "Searches for ANY strings that eq"
+                  items:
+                    type: "string"
+                key:
+                  type: "string"
+                  description: "Tag key to search"
             DocumentSearchBody:
               required:
               - "query"
@@ -1413,6 +1681,14 @@ Resources:
               properties:
                 query:
                   $ref: "#/components/schemas/DocumentSearchTag"
+                responseFields:
+                  $ref: "#/components/schemas/SearchResponseFields"
+            SearchResponseFields:
+              properties:
+                tags:
+                  type: "array"
+                  items:
+                    type: "string"
             DocumentSearchItemTag:
               required:
               - "key"
@@ -1431,7 +1707,7 @@ Resources:
                     type: "string"
                 key:
                   type: "string"
-                  description: "Tag key to search"                
+                  description: "Tag key to search"
             WebhookBody:
               required:
               - "name"
@@ -1458,13 +1734,13 @@ Resources:
                       value:
                         type: "string"
                         description: "Tag value"
-            DocumentAction:
+            DocumentBodyAction:
               type: "object"
               description: "Document action"
               properties:
                 type:
                   type: "string"
-                  description: "Type of action (supported values: ocr)"
+                  description: "Type of action (supported values: ocr, fulltext)"
                 parameters:
                   type: "object"
                   properties:
@@ -1498,7 +1774,7 @@ Resources:
                   type: "array"
                   description: "List of document actions"
                   items:
-                    $ref: "#/components/schemas/DocumentAction"
+                    $ref: "#/components/schemas/DocumentBodyAction"
             DocumentBody:
               required:
               - "content"
@@ -1535,7 +1811,7 @@ Resources:
                   type: "array"
                   description: "List of document actions"
                   items:
-                    $ref: "#/components/schemas/DocumentAction"
+                    $ref: "#/components/schemas/DocumentBodyAction"
                 documents:
                   type: "array"
                   description: "List of related documents"
@@ -1579,7 +1855,7 @@ Resources:
                   description: "Last modified date"
             DocumentTagsPost:
               required:
-              - "tags"            
+              - "tags"
               type: "object"
               properties:
                 tags:
@@ -1590,7 +1866,7 @@ Resources:
                   - key: category
                     value: person
                   - key: category
-                    values: [person,car]                  
+                    values: [person,car]
             DocumentItemTag:
               required:
               - "key"
@@ -1621,6 +1897,38 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
+            FulltextSearchResults:
+              type: "object"
+              properties:
+                documents:
+                  $ref: "#/components/schemas/FulltextSearchItems"
+            FulltextSearchItems:
+              type: "array"
+              description: "List of search result documents"
+              items:
+                $ref: "#/components/schemas/FulltextDocument"
+            FulltextDocument:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                createdBy:
+                  type: "string"
+                  description: "User who added document"
+                tags:
+                  type: "object"                  
             DocumentSearchResults:
               type: "object"
               properties:
@@ -1671,6 +1979,8 @@ Resources:
                   description: "Document version"
                 matchedTag:
                   $ref: "#/components/schemas/DocumentSearchMatchTag"
+                tags:
+                  type: "object"
             DocumentSearchMatchTag:
               type: "object"
               properties:
@@ -1763,7 +2073,7 @@ Resources:
                   description: "Webhook Identifier"
                 userId:
                   type: "string"
-                  description: "User who added document"                    
+                  description: "User who added document"
             WebhookTags:
               type: "object"
               properties:
@@ -1804,6 +2114,34 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
+            DocumentActions:
+              type: "object"
+              properties:
+                actions:
+                  $ref: "#/components/schemas/DocumentActionList"
+            DocumentActionList:
+              type: "array"
+              description: "List of document actions"
+              items:
+                $ref: "#/components/schemas/DocumentAction"
+            DocumentAction:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: Status of the Document Action (PENDING, COMPLETE, FAILED)
+                type:
+                  type: string
+                  description: Type of Document Action
+                userId:
+                  type: "string"
+                  description: "User who requested the Action"
+                parameters:
+                  type: "object"
+                  properties:
+                    ocrParseTypes:
+                      type: "string"
+                      description: "OCR Parse types - TEXT, FORMS, TABLES"                  
             DocumentOcr:
               type: object
               properties:
@@ -1815,7 +2153,7 @@ Resources:
                   description: The OCR technique used
                 ocrStatus:
                   type: string
-                  description: The status of the OCR request 
+                  description: The status of the OCR request
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
@@ -1835,6 +2173,70 @@ Resources:
                 message:
                   type: string
                   description: OCR processing message
+            FulltextResult:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
+            FulltextBody:
+              type: object
+              properties:
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                content:
+                  type: "string"
+                  description: "Document content"
+                contentUrl:
+                  type: "string"
+                  description: "Url which contains Document content"                
+            DeleteFulltextTags:
+              type: object
+              properties:
+                tags:
+                  type: "array"
+                  description: "List of tags"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                        description: "Tag key"
+                      value:
+                        type: "string"
+                        description: "Tag value"
+                      values:
+                        description: "Tag values"
+                        type: "array"
+                        items:
+                          type: "string"
+            FulltextUpdateBody:
+              type: object
+              properties:
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                content:
+                  type: "string"
+                  description: "Document content"
+                tags:
+                  type: "array"
+                  description: "List of tags"
+                  items:
+                    type: "object"
+                    properties:
+                      key:
+                        type: "string"
+                        description: "Tag key"
+                      value:
+                        type: "string"
+                        description: "Tag value"
+                      values:
+                        description: "Tag values"
+                        type: "array"
+                        items:
+                          type: "string"
             OcrBody:
               type: object
               example:
@@ -1848,6 +2250,20 @@ Resources:
                   description: "OCR Parse types - TEXT, FORMS, TABLES"
                   items:
                     type: "string"
+            SetOcrBody:
+              required:
+              - "content"
+              type: "object"
+              properties:
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                isBase64:
+                  type: "boolean"
+                  description: "Is Content Base64 encoded"
+                content:
+                  type: "string"
+                  description: "Document content"
             Version:
               type: object
               properties:
@@ -1882,7 +2298,7 @@ Resources:
                 tagSchemaId:
                   type: "string"
                   format: "uuid"
-                  description: "Tag Schema Identifier" 
+                  description: "Tag Schema Identifier"
             ErrorsResponse:
               type: object
               properties:
@@ -1901,7 +2317,7 @@ Resources:
                   description: "Error Key"
                 error:
                   type: "string"
-                  description: "Error Message"                
+                  description: "Error Message"
             TagSchemas:
               type: "object"
               properties:
@@ -1920,7 +2336,7 @@ Resources:
               type: "object"
               properties:
                 name:
-                  type: "string"                  
+                  type: "string"
                 tags:
                   type: "object"
                   properties:
@@ -1954,7 +2370,7 @@ Resources:
                 insertedDate:
                   type: "string"
                   format: "date-time"
-                  description: "Inserted Timestamp"                          
+                  description: "Inserted Timestamp"
             TagSchema:
               type: "object"
               properties:
@@ -1967,7 +2383,7 @@ Resources:
                 insertedDate:
                   type: "string"
                   format: "date-time"
-                  description: "Inserted Timestamp"                  
+                  description: "Inserted Timestamp"
                 tags:
                   type: "object"
                   properties:
@@ -2010,7 +2426,7 @@ Resources:
                   type: "array"
                   description: "Only valid values"
                   items:
-                    type: "string"                  
+                    type: "string"
             TagSchemaOptional:
               type: "object"
               properties:
@@ -2042,7 +2458,7 @@ Resources:
               type: "apiKey"
               name: "Authorization"
               in: "header"
-              x-amazon-apigateway-authtype: "awsSigv4"        
+              x-amazon-apigateway-authtype: "awsSigv4"
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
@@ -2059,6 +2475,20 @@ Resources:
               type: "aws_proxy"
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
+              uri:
+                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: "'*'"
+                    method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                    method.response.header.Access-Control-Allow-Origin: "'*'"
+              passthroughBehavior: "when_no_templates"
+              httpMethod: "POST"
+              type: "aws_proxy"
+              payloadFormatVersion: "1.0"
+            fulltextLambdaApi200:
               uri:
                 Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
@@ -2105,5 +2535,5 @@ Resources:
         - name: Application
           x-amazon-apigateway-tag-value: "FormKiQ"
         - name: AppEnvironment
-          x-amazon-apigateway-tag-value: 
+          x-amazon-apigateway-tag-value:
             Fn::Sub: "${AppEnvironment}"

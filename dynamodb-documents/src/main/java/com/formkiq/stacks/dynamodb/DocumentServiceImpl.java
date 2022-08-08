@@ -75,19 +75,19 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 /** Implementation of the {@link DocumentService}. */
 public class DocumentServiceImpl implements DocumentService, DbKeys {
 
-  /** {@link DateTimeFormatter}. */
-  private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-  /** {@link SimpleDateFormat} YYYY-mm-dd format. */
-  private SimpleDateFormat yyyymmddFormat;
-
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
   /** Documents Table Name. */
   private String documentTableName;
 
   /** {@link DynamoDbClient}. */
   private final DynamoDbClient dynamoDB;
+
+  /** {@link SimpleDateFormat} YYYY-mm-dd format. */
+  private SimpleDateFormat yyyymmddFormat;
+
+  /** {@link DateTimeFormatter}. */
+  private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   /**
    * constructor.
@@ -608,6 +608,43 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     QueryRequest q = req.build();
     QueryResponse result = this.dynamoDB.query(q);
     return result;
+  }
+
+  @Override
+  public Map<String, Collection<DocumentTag>> findDocumentsTags(final String siteId,
+      final List<String> documentIds, final List<String> tags) {
+
+    final Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
+    Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
+
+    documentIds.forEach(id -> {
+      tagMap.put(id, new ArrayList<>());
+      tags.forEach(tag -> {
+        Map<String, AttributeValue> key = keysDocumentTag(siteId, id, tag);
+        keys.add(key);
+      });
+    });
+
+    Map<String, KeysAndAttributes> requestedItems =
+        Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
+
+    BatchGetItemRequest batchReq =
+        BatchGetItemRequest.builder().requestItems(requestedItems).build();
+    BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+
+    Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
+    List<Map<String, AttributeValue>> result =
+        !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
+
+    AttributeValueToDocumentTag toDocumentTag = new AttributeValueToDocumentTag(siteId);
+    List<DocumentTag> list =
+        result.stream().map(a -> toDocumentTag.apply(a)).collect(Collectors.toList());
+
+    for (DocumentTag tag : list) {
+      tagMap.get(tag.getDocumentId()).add(tag);
+    }
+
+    return tagMap;
   }
 
   @Override

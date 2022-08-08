@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
@@ -224,6 +225,17 @@ public interface DocumentService extends DocumentTagLoader {
    * @return {@link DocumentTag}
    */
   DocumentTag findDocumentTag(String siteId, String documentId, String tagKey);
+
+  /**
+   * Find Document Tags for number of DocumentIds.
+   * 
+   * @param siteId {@link String}
+   * @param documentIds {@link List} {@link String}
+   * @param tags {@link List} {@link String}
+   * @return {@link Map}
+   */
+  Map<String, Collection<DocumentTag>> findDocumentsTags(String siteId, List<String> documentIds,
+      List<String> tags);
 
   /**
    * Find Tags for {@link DocumentItem}.

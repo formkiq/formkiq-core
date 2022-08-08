@@ -49,6 +49,9 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.client.models.AddLargeDocument;
 import com.formkiq.stacks.client.models.DocumentActionType;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -136,8 +139,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       addParameter(event, "siteId", siteId);
       com.formkiq.stacks.client.models.DocumentTag tag0 =
           new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-      com.formkiq.stacks.client.models.DocumentAction action0 =
-          new com.formkiq.stacks.client.models.DocumentAction().type(DocumentActionType.OCR);
+      com.formkiq.stacks.client.models.AddDocumentAction action0 =
+          new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
       AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
           .actions(Arrays.asList(action0));
       event.setBody(GsonUtil.getInstance().toJson(document));
@@ -193,7 +196,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       final String tagSchemaId = UUID.randomUUID().toString();
-      getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnErrors());
+      AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid.json");
@@ -225,7 +229,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload03() throws Exception {
     // given
-    getAwsServices().documentTagSchemaPlugin(new DocumentTagSchemaReturnNewTags());
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       String tagSchemaId = UUID.randomUUID().toString();

@@ -127,6 +127,42 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  AdminGroupRoleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Admin Group Role"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/AdminGroupRole"
+      Type: String
+      Value: 
+        Ref: AdminGroupRole
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  AdminGroupRoleArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito Admin Group Role"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/iam/AdminGroupRoleArn"
+      Type: String
+      Value: 
+        Fn::GetAtt: 
+        - AdminGroupRole
+        - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   AdminGroupRole: 
     Type: "AWS::IAM::Role"
     Properties:
@@ -157,20 +193,50 @@ Resources:
               ForAnyValue:StringLike:
                 cognito-identity.amazonaws.com:amr:
                 - "authenticated"
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - "sts:AssumeRole"
       Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole      
       Policies: 
         - 
           PolicyName: 
             Fn::Sub: "${AWS::StackName}-AdminGroupRole"
           PolicyDocument: 
             Version: "2012-10-17"
-            Statement: 
-              - 
-                Effect: "Allow"
-                Action: [ "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminCreateUser", "cognito-idp:AdminDeleteUser", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminRemoveUserFromGroup", "cognito-idp:AdminResetUserPassword", "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup" ]
+            Statement:
+              - Effect: Allow
+                Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                Resource: "*"            
+              - Effect: "Allow"
+                Action:
+                - cognito-idp:AdminAddUserToGroup
+                - cognito-idp:AdminConfirmSignUp
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminListGroupsForUser
+                - cognito-idp:AdminRemoveUserFromGroup
+                - cognito-idp:AdminResetUserPassword
+                - cognito-idp:ListUsers
+                - cognito-idp:ListUsersInGroup
                 Resource: 
                   Ref: CognitoUserPoolArn
-
+              - Effect: "Allow"
+                Action:
+                - cognito-identity:DescribeIdentityPool
+                - cognito-identity:GetIdentityPoolRoles
+                - cognito-identity:SetIdentityPoolRoles
+                - iam:PassRole
+                Resource: "*"
+                  
   DefaultGroup:
     Type: "AWS::Cognito::UserPoolGroup"    
     Properties:
@@ -256,3 +322,9 @@ Resources:
           Fn::GetAtt: 
           - CognitoNoAccessRole
           - Arn
+Outputs:
+  AdminGroupRoleArn:
+    Value: 
+      Fn::GetAtt: 
+      - AdminGroupRole
+      - Arn

@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.regex.Pattern;
+
 /**
  * 
  * Site Id Key Generator.
@@ -32,6 +34,12 @@ public final class SiteIdKeyGenerator {
 
   /** Default Site Id. */
   public static final String DEFAULT_SITE_ID = "default";
+  /**
+   * {@link Pattern} to split a {@link String} instead SiteId / DocumentId. (?<!/) # assert that the
+   * previous character is not a colon / # match a literal : character (?!/) # assert that the next
+   * character is not a colon
+   */
+  private static final Pattern SITE_DOC_ID = Pattern.compile("(?<!/)/(?!/)");
 
   /**
    * Build DynamoDB PK that handles with/out siteId.
@@ -86,8 +94,8 @@ public final class SiteIdKeyGenerator {
    * @return {@link String}
    */
   public static String getDocumentId(final String s) {
-    int pos = s != null ? s.indexOf("/") : 0;
-    return pos > 0 && s != null ? s.substring(pos + 1) : s;
+    String[] split = split(s);
+    return split[1];
   }
 
   /**
@@ -97,9 +105,19 @@ public final class SiteIdKeyGenerator {
    * @return {@link String}
    */
   public static String getSiteId(final String s) {
-    int pos = s != null ? s.indexOf("/") : 0;
-    String siteId = pos > 0 && s != null ? s.substring(0, pos) : null;
+    String[] split = split(s);
+    String siteId = split[0];
     return !DEFAULT_SITE_ID.equals(siteId) ? siteId : null;
+  }
+
+  /**
+   * Whether {@link String} has '//'.
+   * 
+   * @param s {@link String}
+   * @return boolean
+   */
+  private static boolean hasDoubleSlash(final String s) {
+    return s.indexOf("//") != -1;
   }
 
   /**
@@ -129,6 +147,39 @@ public final class SiteIdKeyGenerator {
     }
 
     return text;
+  }
+
+  private static String[] split(final String s) {
+
+    String siteId = null;
+    String documentId = null;
+
+    if (s != null) {
+
+      String[] strs = SITE_DOC_ID.split(s);
+
+      if (strs.length == 1) {
+        documentId = strs[0];
+      } else if (strs.length == 2) {
+        if (!hasDoubleSlash(strs[0])) {
+
+          siteId = strs[0];
+          documentId = strs[1];
+
+        } else {
+
+          documentId = String.join("", strs);
+        }
+      } else {
+        siteId = strs[0];
+        documentId = strs[1];
+        for (int i = 1; i < strs.length; i++) {
+          documentId += strs[i];
+        }
+      }
+    }
+
+    return new String[] {siteId, documentId};
   }
 
   /**

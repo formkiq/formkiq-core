@@ -21,38 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
+package com.formkiq.aws.dynamodb.model;
 
-import com.formkiq.aws.services.lambda.AwsServiceCache;
-import com.formkiq.aws.services.lambda.AwsServiceExtension;
-import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import java.util.List;
+import com.formkiq.graalvm.annotations.Reflectable;
 
-/**
- * 
- * {@link AwsServiceExtension} for {@link ActionsService}.
- *
- */
-public class ActionsServiceExtension implements AwsServiceExtension<ActionsService> {
+/** Search Query. */
+@Reflectable
+public class SearchResponseFields {
 
-  /** {@link ActionsService}. */
-  private ActionsService service;
+  /** Response Tags. */
+  @Reflectable
+  private List<String> tags;
+
+  /** constructor. */
+  public SearchResponseFields() {}
 
   /**
-   * constructor.
+   * Get Response Tags.
+   *
+   * @return {@link List}
    */
-  public ActionsServiceExtension() {
-
+  public List<String> tags() {
+    return this.tags;
   }
 
-  @Override
-  public ActionsService loadService(final AwsServiceCache awsServiceCache) {
-
-    if (this.service == null) {
-      this.service = new ActionsServiceDynamoDb(awsServiceCache.dbConnection(),
-          awsServiceCache.environment("DOCUMENTS_TABLE"));
-    }
-
-    return this.service;
+  /**
+   * Set Response Tags.
+   *
+   * @param responseTags {@link SearchTagCriteria}
+   * @return {@link SearchResponseFields}
+   */
+  public SearchResponseFields tags(final List<String> responseTags) {
+    this.tags = responseTags;
+    return this;
   }
 }

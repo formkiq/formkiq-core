@@ -21,22 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.s3;
+
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Extension to {@link AwsServiceCache} to allow custom creation of service classes.
- * 
- * @param <T> Type of Class.
+ * {@link AwsServiceExtension} for {@link S3Service}.
  *
  */
-public interface AwsServiceExtension<T> {
+public class S3ServiceExtension implements AwsServiceExtension<S3Service> {
+
+  /** {@link S3Service}. */
+  private S3Service service;
+  /** {@link S3ConnectionBuilder}. */
+  private S3ConnectionBuilder connection;
 
   /**
-   * Load Service.
+   * constructor.
    * 
-   * @param awsServiceCache {@link AwsServiceCache}
-   * @return T Type of class
+   * @param s3Connection {@link S3ConnectionBuilder}
    */
-  T loadService(AwsServiceCache awsServiceCache);
+  public S3ServiceExtension(final S3ConnectionBuilder s3Connection) {
+    this.connection = s3Connection;
+  }
+
+  @Override
+  public S3Service loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      this.service = new S3Service(this.connection);
+    }
+
+    return this.service;
+  }
 }

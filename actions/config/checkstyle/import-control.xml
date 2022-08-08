@@ -18,6 +18,7 @@
 			<allow pkg="com.formkiq.aws.sns" />
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.documentevents" />
+			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />	
 			<allow pkg="software.amazon.awssdk.utils" />

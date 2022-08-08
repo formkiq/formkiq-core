@@ -35,8 +35,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.services.lambda.services.ConfigService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -64,9 +65,13 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @BeforeEach
   public void before() throws URISyntaxException, IOException {
     DynamoDbConnectionBuilder adb = DynamoDbTestServices.getDynamoDbConnection(null);
+
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(adb));
+
     Map<String, String> map = Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "CACHE_TABLE", "",
         "APP_ENVIRONMENT", "unittest");
-    this.awsservice = new CoreAwsServiceCache().environment(map).dbConnection(adb);
+    this.awsservice = new CoreAwsServiceCache().environment(map);
   }
 
   /**

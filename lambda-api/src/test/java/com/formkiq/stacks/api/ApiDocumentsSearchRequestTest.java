@@ -38,10 +38,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.client.models.DocumentSearch;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -125,14 +125,16 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
         addParameter(event, "siteId", siteId);
 
-        DocumentSearch s = new DocumentSearch().query(
+        DocumentSearchQuery dsq =
             new DocumentSearchQuery().tag(new DocumentSearchTag().key("category").eq("person"))
-                .documentIds(Arrays.asList(documentId)));
+                .documentIds(Arrays.asList(documentId));
+
+        Map<String, Object> s = Map.of("query", dsq);
         event.setBody(GsonUtil.getInstance().toJson(s));
         event.setIsBase64Encoded(Boolean.FALSE);
 
         if ("eqOr".equals(op)) {
-          s.query().tag().eq(null).eqOr(Arrays.asList("person"));
+          dsq.tag().eq(null).eqOr(Arrays.asList("person"));
         }
 
         DocumentTag item = new DocumentTag(documentId, tagKey, tagvalue, now, username);
@@ -300,13 +302,14 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         addParameter(event, "siteId", siteId);
         event.setIsBase64Encoded(Boolean.FALSE);
 
-        DocumentSearch s = new DocumentSearch().query(
+        DocumentSearchQuery dsq =
             new DocumentSearchQuery().tag(new DocumentSearchTag().key("category").eq("person"))
-                .documentIds(Arrays.asList(documentId)));
+                .documentIds(Arrays.asList(documentId));
+        Map<String, Object> s = Map.of("query", dsq);
         event.setBody(GsonUtil.getInstance().toJson(s));
 
         if ("eqOr".equals(op)) {
-          s.query().tag().eq(null).eqOr(Arrays.asList("person"));
+          dsq.tag().eq(null).eqOr(Arrays.asList("person"));
         }
 
         for (String v : Arrays.asList("", "!")) {
@@ -339,7 +342,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         assertNull(resp.get("previous"));
 
         // given - invalid document id
-        s.query().documentIds(Arrays.asList("123"));
+        dsq.documentIds(Arrays.asList("123"));
         event.setBody(GsonUtil.getInstance().toJson(s));
         // when
         response = handleRequest(event);
@@ -512,6 +515,60 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       String expected = "{" + getHeaders() + ",\"body\":"
           + "\"{\\\"message\\\":\\\"'tag' attribute is required.\\\"}\"," + "\"statusCode\":400}";
       assertEquals(expected, response);
+    }
+  }
+
+  /**
+   * /search and return responseFields.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest12() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 3;
+      Date now = new Date();
+      final String tagKey0 = "category";
+      final String tagvalue0 = "person";
+      final String tagKey1 = "playerId";
+      final String tagvalue1 = "111";
+      final String username = "jsmith";
+
+      for (int i = 0; i < count; i++) {
+        String documentId = UUID.randomUUID().toString();
+
+        DocumentTag item0 = new DocumentTag(documentId, tagKey0, tagvalue0, now, username);
+        DocumentTag item1 = new DocumentTag(documentId, tagKey1, tagvalue1, now, username);
+
+        getDocumentService().saveDocument(siteId,
+            new DocumentItemDynamoDb(documentId, now, username), Arrays.asList(item0, item1));
+      }
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest()
+          .query(new SearchQuery().tag(new SearchTagCriteria().key(tagKey0).eq(tagvalue0)))
+          .responseFields(new SearchResponseFields().tags(Arrays.asList(tagKey1)));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(count, documents.size());
+
+      documents.forEach(doc -> {
+        Map<String, Object> tags = (Map<String, Object>) doc.get("tags");
+        assertEquals(1, tags.size());
+        assertEquals(tagvalue1, tags.get(tagKey1));
+      });
     }
   }
 }

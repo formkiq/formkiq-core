@@ -55,8 +55,10 @@
 			<allow pkg="com.formkiq.lambda.apigateway" />
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.actions.services" />
+			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.formkiq.plugins.tagschema" />
 			<allow pkg="com.formkiq.plugins.validation" />			
+			<allow pkg="com.formkiq.stacks.client" />
 			<allow pkg="com.formkiq.stacks.common.objects" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />
 			

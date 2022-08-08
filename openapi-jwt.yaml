@@ -2,7 +2,7 @@
         info:
           title: FormKiQ HTTP API
           description: FormKiQ HTTP API
-          version: 1.7.5
+          version: 1.8.0
         paths:
           /version:
             get:
@@ -61,6 +61,7 @@
               description: Returns the list of tagSchemas
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -99,6 +100,7 @@
               description: Creates a new TagSchema
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -143,6 +145,7 @@
               description: Retrieves a TagSchema's details, i.e., metadata
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -168,6 +171,7 @@
               description: Delete a TagSchema
               tags:
               - Enterprise API
+              - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -771,11 +775,72 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /searchFulltext:
+            post:
+              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch) ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Search
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/DocumentFulltextSearchBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextSearchResults'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /documents/{documentId}/actions:
+            get:
+              description: Get Document Actions and their Status
+              tags:
+              - Document Actions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentActions'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/ocr:
             get:
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -801,6 +866,7 @@
               description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise API
+              - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -828,6 +894,168 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+            put:
+              description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise OCR
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetOcrBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentOcrResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+            delete:
+              description: Delete a Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise OCR
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+          /documents/{documentId}/fulltext:
+            delete:
+              description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            put:
+              description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/FulltextBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+            patch:
+              description: Updates Opensearch document; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/FulltextUpdateBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /documents/{documentId}/fulltext/tags/{tagKey}:
+            delete:
+              description: Removes document tags from full text search; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
+            delete:
+              description: Removes document tag/value from full text search; ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise API
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/tagvalueParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /public/documents:
             post:
               description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
@@ -1402,6 +1630,46 @@
                       belongsToDocumentId:
                         type: string
                         description: Parent Document Identifier
+            DocumentFulltextSearchBody:
+              required:
+              - query
+              type: object
+              description: Document full text search
+              properties:
+                query:
+                  $ref: '#/components/schemas/DocumentFulltextSearch'
+                responseFields:
+                  $ref: '#/components/schemas/SearchResponseFields'
+            DocumentFulltextSearch:
+              type: object
+              description: Document full text search criteria
+              properties:
+                text:
+                  type: string
+                  description: Full text search
+                tags:
+                  $ref: '#/components/schemas/DocumentFulltextTags'
+            DocumentFulltextTags:
+              type: array
+              description: List of search tags
+              items:
+                $ref: '#/components/schemas/DocumentFulltextTag'
+            DocumentFulltextTag:
+              required:
+              - key
+              type: object
+              properties:
+                eq:
+                  type: string
+                  description: Searches for strings that eq
+                eqOr:
+                  type: array
+                  description: Searches for ANY strings that eq
+                  items:
+                    type: string
+                key:
+                  type: string
+                  description: Tag key to search
             DocumentSearchBody:
               required:
               - query
@@ -1410,6 +1678,14 @@
               properties:
                 query:
                   $ref: '#/components/schemas/DocumentSearchTag'
+                responseFields:
+                  $ref: '#/components/schemas/SearchResponseFields'
+            SearchResponseFields:
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
             DocumentSearchItemTag:
               required:
               - key
@@ -1455,13 +1731,13 @@
                       value:
                         type: string
                         description: Tag value
-            DocumentAction:
+            DocumentBodyAction:
               type: object
               description: Document action
               properties:
                 type:
                   type: string
-                  description: 'Type of action (supported values: ocr)'
+                  description: 'Type of action (supported values: ocr, fulltext)'
                 parameters:
                   type: object
                   properties:
@@ -1495,7 +1771,7 @@
                   type: array
                   description: List of document actions
                   items:
-                    $ref: '#/components/schemas/DocumentAction'
+                    $ref: '#/components/schemas/DocumentBodyAction'
             DocumentBody:
               required:
               - content
@@ -1532,7 +1808,7 @@
                   type: array
                   description: List of document actions
                   items:
-                    $ref: '#/components/schemas/DocumentAction'
+                    $ref: '#/components/schemas/DocumentBodyAction'
                 documents:
                   type: array
                   description: List of related documents
@@ -1620,6 +1896,38 @@
                 key:
                   type: string
                   description: Tag key
+            FulltextSearchResults:
+              type: object
+              properties:
+                documents:
+                  $ref: '#/components/schemas/FulltextSearchItems'
+            FulltextSearchItems:
+              type: array
+              description: List of search result documents
+              items:
+                $ref: '#/components/schemas/FulltextDocument'
+            FulltextDocument:
+              type: object
+              properties:
+                siteId:
+                  type: string
+                  description: Site Identifier
+                path:
+                  type: string
+                  description: Path or Name of document
+                insertedDate:
+                  type: string
+                  format: date-time
+                  description: Inserted Timestamp
+                documentId:
+                  type: string
+                  format: uuid
+                  description: Document Identifier
+                createdBy:
+                  type: string
+                  description: User who added document
+                tags:
+                  type: object
             DocumentSearchResults:
               type: object
               properties:
@@ -1670,6 +1978,8 @@
                   description: Document version
                 matchedTag:
                   $ref: '#/components/schemas/DocumentSearchMatchTag'
+                tags:
+                  type: object
             DocumentSearchMatchTag:
               type: object
               properties:
@@ -1803,6 +2113,34 @@
                 key:
                   type: string
                   description: Tag key
+            DocumentActions:
+              type: object
+              properties:
+                actions:
+                  $ref: '#/components/schemas/DocumentActionList'
+            DocumentActionList:
+              type: array
+              description: List of document actions
+              items:
+                $ref: '#/components/schemas/DocumentAction'
+            DocumentAction:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: Status of the Document Action (PENDING, COMPLETE, FAILED)
+                type:
+                  type: string
+                  description: Type of Document Action
+                userId:
+                  type: string
+                  description: User who requested the Action
+                parameters:
+                  type: object
+                  properties:
+                    ocrParseTypes:
+                      type: string
+                      description: OCR Parse types - TEXT, FORMS, TABLES
             DocumentOcr:
               type: object
               properties:
@@ -1834,6 +2172,70 @@
                 message:
                   type: string
                   description: OCR processing message
+            FulltextResult:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Full text processing message
+            FulltextBody:
+              type: object
+              properties:
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                content:
+                  type: string
+                  description: Document content
+                contentUrl:
+                  type: string
+                  description: Url which contains Document content
+            DeleteFulltextTags:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  description: List of tags
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        description: Tag key
+                      value:
+                        type: string
+                        description: Tag value
+                      values:
+                        description: Tag values
+                        type: array
+                        items:
+                          type: string
+            FulltextUpdateBody:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Path or Name of document
+                content:
+                  type: string
+                  description: Document content
+                tags:
+                  type: array
+                  description: List of tags
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        description: Tag key
+                      value:
+                        type: string
+                        description: Tag value
+                      values:
+                        description: Tag values
+                        type: array
+                        items:
+                          type: string
             OcrBody:
               type: object
               example:
@@ -1847,6 +2249,20 @@
                   description: OCR Parse types - TEXT, FORMS, TABLES
                   items:
                     type: string
+            SetOcrBody:
+              required:
+              - content
+              type: object
+              properties:
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                isBase64:
+                  type: boolean
+                  description: Is Content Base64 encoded
+                content:
+                  type: string
+                  description: Document content
             Version:
               type: object
               properties:
@@ -2058,6 +2474,20 @@
               type: aws_proxy
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
+              uri:
+                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            fulltextLambdaApi200:
               uri:
                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:

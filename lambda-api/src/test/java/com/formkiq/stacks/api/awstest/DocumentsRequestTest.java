@@ -56,7 +56,7 @@ import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.stacks.client.models.AddDocument;
 import com.formkiq.stacks.client.models.AddDocumentResponse;
-import com.formkiq.stacks.client.models.DocumentTag;
+import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.models.DocumentTags;
 import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.models.UpdateDocument;
@@ -603,10 +603,10 @@ public class DocumentsRequestTest extends AbstractApiTest {
       for (FormKiqClientV1 client : getFormKiqClients()) {
         // given
         AddDocument post = new AddDocument()
-            .tags(Arrays.asList(new DocumentTag().key("formName").value("Job Application Form")))
+            .tags(Arrays.asList(new AddDocumentTag().key("formName").value("Job Application Form")))
             .documents(Arrays.asList(new AddDocument().contentType("application/json")
                 .content("{\"firstName\": \"Jan\",\"lastName\": \"Doe\"}")
-                .tags(Arrays.asList(new DocumentTag().key("formData")))));
+                .tags(Arrays.asList(new AddDocumentTag().key("formData")))));
 
         AddDocumentRequest req =
             new AddDocumentRequest().document(post).enablePublicEndpoint(enablePublicEndpoint);

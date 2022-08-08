@@ -37,7 +37,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
@@ -80,7 +81,17 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
    */
   private String getMailDomain(final AwsServiceCache awsservice) {
     String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/maildomain";
-    return awsservice.ssmService().getParameterValue(key);
+    return getSsmService(awsservice).getParameterValue(key);
+  }
+
+  /**
+   * Get {@link SsmService}.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @return {@link SsmService}
+   */
+  private SsmService getSsmService(final AwsServiceCache awsservice) {
+    return awsservice.getExtension(SsmService.class);
   }
 
   /**
@@ -112,7 +123,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final String email) {
     String[] strs = email.split("@");
     String key = String.format("/formkiq/ses/%s/%s", strs[1], strs[0]);
-    return awsservice.ssmService().getParameterValue(key) != null;
+    return getSsmService(awsservice).getParameterValue(key) != null;
   }
 
   @Override
@@ -149,6 +160,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiAuthorizer authorizer, final List<DynamicObject> sites) {
 
     String mailDomain = getMailDomain(awsservice);
+    SsmService ssmService = getSsmService(awsservice);
 
     if (mailDomain != null) {
 
@@ -160,7 +172,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
         if (writeSiteIds.contains(siteId)) {
           String key = String.format("/formkiq/%s/siteid/%s/email",
               awsservice.environment("APP_ENVIRONMENT"), siteId);
-          site.put("uploadEmail", awsservice.ssmService().getParameterValue(key));
+          site.put("uploadEmail", ssmService.getParameterValue(key));
         }
       });
 
@@ -176,13 +188,13 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
           String key = String.format("/formkiq/%s/siteid/%s/email",
               awsservice.environment("APP_ENVIRONMENT"), siteId);
-          awsservice.ssmService().putParameter(key, email);
+          ssmService.putParameter(key, email);
 
           String[] strs = email.split("@");
           key = String.format("/formkiq/ses/%s/%s", strs[1], strs[0]);
           String val = "{\"siteId\":\"" + siteId + "\", \"appEnvironment\":\""
               + awsservice.environment("APP_ENVIRONMENT") + "\"}";
-          awsservice.ssmService().putParameter(key, val);
+          ssmService.putParameter(key, val);
         }
 
       });

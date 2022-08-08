@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.AddDocumentTag;
+import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentTagRequest;
 import com.formkiq.stacks.client.requests.GetDocumentTagsKeyRequest;

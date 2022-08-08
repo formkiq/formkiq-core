@@ -1,3 +1,5 @@
+rootProject.name = 'formkiq-core'
+
 /*pluginManagement {
     includeBuild '../graalvm-native-plugin'
 }*/
@@ -22,3 +24,4 @@ include 'aws-dynamodb'
 include 'fkq-plugins'
 include 'actions'
 include 'document-events'
+include 'fkq-lambda-services'

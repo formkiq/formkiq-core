@@ -40,6 +40,34 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
 
   /**
+   * DELETE /documents/{documentId}/ocr request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleDeleteDocumentOcr01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
+      event.setHttpMethod("DELETE");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", "1");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
+  }
+
+  /**
    * Get /documents/{documentId}/ocr request.
    *
    * @throws Exception an error has occurred
@@ -51,6 +79,34 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-ocr01.json");
       addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", "1");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId}/ocr request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePatchDocumentOcr01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
+      addParameter(event, "siteId", siteId);
+      event.setHttpMethod("PATCH");
       setPathParameter(event, "documentId", "1");
 
       // when

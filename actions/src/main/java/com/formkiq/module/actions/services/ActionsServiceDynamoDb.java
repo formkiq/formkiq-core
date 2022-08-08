@@ -24,11 +24,8 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +52,6 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  */
 public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
-  /** MilliSeconds per Second. */
-  private static final int MILLISECONDS = 1000;
   /** Document Table Name. */
   private String documentTableName;
   /** {@link DynamoDbClient}. */
@@ -92,7 +87,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    * @return {@link String}
    */
   private String getPk(final String siteId, final String documentId) {
-    return createDatabaseKey(siteId, "docactions#" + documentId);
+    return createDatabaseKey(siteId, PREFIX_DOCS + documentId);
   }
 
   /**
@@ -142,42 +137,45 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public void saveActions(final String siteId, final String documentId,
+  public List<Map<String, AttributeValue>> saveActions(final String siteId, final String documentId,
       final List<Action> actions) {
 
-    List<WriteRequest> list = new ArrayList<>();
-
-    ZonedDateTime tomorrow = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
-    Date tomorrowttl = Date.from(tomorrow.toInstant());
-    String ttl = String.valueOf(tomorrowttl.getTime() / MILLISECONDS);
     int idx = 0;
+
+    List<Map<String, AttributeValue>> values = new ArrayList<>();
 
     for (Action action : actions) {
 
-      Map<String, AttributeValue> values = new HashMap<>();
+      Map<String, AttributeValue> valueMap = new HashMap<>();
 
       String pk = getPk(siteId, documentId);
       String sk = getSk(action, idx);
-      addS(values, PK, pk);
-      addS(values, SK, sk);
-      addS(values, "type", action.type().name());
-      addS(values, "status", action.status().name());
-      addS(values, "documentId", documentId);
-      addS(values, "userId", action.userId());
-      addM(values, "parameters", action.parameters());
-      addN(values, "TimeToLive", ttl);
+      addS(valueMap, PK, pk);
+      addS(valueMap, SK, sk);
+      addS(valueMap, "type", action.type().name());
+      addS(valueMap, "status", action.status().name());
+      addS(valueMap, "documentId", documentId);
+      addS(valueMap, "userId", action.userId());
+      addM(valueMap, "parameters", action.parameters());
 
-      PutRequest put = PutRequest.builder().item(values).build();
-      WriteRequest req = WriteRequest.builder().putRequest(put).build();
-      list.add(req);
-
+      values.add(valueMap);
       idx++;
     }
+
+    List<WriteRequest> list = new ArrayList<>();
+
+    values.forEach(value -> {
+      PutRequest put = PutRequest.builder().item(value).build();
+      WriteRequest req = WriteRequest.builder().putRequest(put).build();
+      list.add(req);
+    });
 
     Map<String, Collection<WriteRequest>> items = Map.of(this.documentTableName, list);
 
     BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
     this.dynamoDB.batchWriteItem(batch);
+
+    return values;
   }
 
   @Override

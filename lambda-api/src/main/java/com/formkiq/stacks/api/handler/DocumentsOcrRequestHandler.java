@@ -31,17 +31,28 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/ocr". */
 public class DocumentsOcrRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /** {@link DocumentsOcrRequestHandler} URL. */
+  public static final String URL = "/documents/{documentId}/ocr";
 
   /**
    * constructor.
    *
    */
   public DocumentsOcrRequestHandler() {}
+
+  @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+    ApiMapResponse resp = new ApiMapResponse();
+    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
+  }
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
@@ -53,7 +64,15 @@ public class DocumentsOcrRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/documents/{documentId}/ocr";
+    return URL;
+  }
+
+  @Override
+  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+    ApiMapResponse resp = new ApiMapResponse();
+    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
   }
 
   @Override

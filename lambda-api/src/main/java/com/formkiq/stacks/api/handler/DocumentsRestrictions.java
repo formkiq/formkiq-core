@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.services.lambda.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /**

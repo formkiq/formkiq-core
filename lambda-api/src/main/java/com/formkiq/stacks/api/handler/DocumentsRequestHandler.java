@@ -47,8 +47,9 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.AwsServiceCache;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -60,6 +61,8 @@ public class DocumentsRequestHandler
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df;
+  /** {@link DocumentIdRequestHandler}. */
+  private DocumentIdRequestHandler handler = new DocumentIdRequestHandler();
 
   /**
    * constructor.
@@ -73,19 +76,13 @@ public class DocumentsRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    return new DocumentIdRequestHandler().patch(logger, event, authorizer, awsservice);
-  }
-
-  @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
-    ApiPagination pagination = getPagination(awsservice.documentCacheService(), event);
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+    ApiPagination pagination = getPagination(cacheService, event);
 
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
@@ -111,8 +108,8 @@ public class DocumentsRequestHandler
     final PaginationResults<DocumentItem> results =
         serviceCache.documentService().findDocumentsByDate(siteId, date, ptoken, limit);
 
-    ApiPagination current = createPagination(serviceCache.documentCacheService(), event, pagination,
-        results.getToken(), limit);
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getToken(), limit);
 
     List<DocumentItem> documents = subList(results.getResults(), limit);
 
@@ -126,6 +123,18 @@ public class DocumentsRequestHandler
     map.put("next", current.hasNext() ? current.getNext() : null);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/documents";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+    return this.handler.patch(logger, event, authorizer, awsservice);
   }
 
   /**
@@ -159,10 +168,5 @@ public class DocumentsRequestHandler
     }
 
     return date;
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/documents";
   }
 }

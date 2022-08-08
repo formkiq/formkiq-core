@@ -26,6 +26,8 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import java.io.IOException;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,27 +38,38 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
-import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.client.models.SetDocumentFulltext;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
+import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
+import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
+import com.formkiq.stacks.common.formats.MimeType;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -65,10 +78,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
   /** {@link ActionsService}. */
   private ActionsService actionsService;
-
+  /** {@link S3Service}. */
+  private S3Service s3Service;
+  /** S3 Documents Bucket. */
+  private String documentsBucket;
+  /** Ocr Bucket. */
+  private String ocrBucket;
+  /** {@link DocumentService}. */
+  private DocumentService documentService;
   /** IAM Documents Url. */
   private String documentsIamUrl;
-  /** {@link FormKiqClient}. */
+  /** {@link FormKiqClientV1}. */
   private FormKiqClientV1 formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
@@ -78,6 +98,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
         EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
 
@@ -88,12 +109,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    * @param db {@link DynamoDbConnectionBuilder}
+   * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    */
   protected DocumentActionsProcessor(final Map<String, String> map, final Region awsRegion,
       final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder db,
-      final SsmConnectionBuilder ssm) {
+      final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm) {
 
+    this.s3Service = new S3Service(s3);
+    this.documentService = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
     this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
@@ -101,6 +125,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+    this.documentsBucket =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
+    this.ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
 
     FormKiqClientConnection fkqConnection =
         new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
@@ -110,6 +137,50 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     }
 
     this.formkiqClient = new FormKiqClientV1(fkqConnection);
+  }
+
+  /**
+   * Find Content Url.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link String}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
+  @SuppressWarnings("unchecked")
+  private String findContentUrl(final String siteId, final String documentId)
+      throws IOException, InterruptedException {
+
+    String url = null;
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+
+    try (S3Client client = this.s3Service.buildClient()) {
+
+      if (MimeType.isPlainText(item.getContentType())) {
+        String bucket =
+            MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
+        url = this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+
+      } else {
+
+        GetDocumentOcrRequest req =
+            new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
+
+        req.addQueryParameter("contentUrl", "true");
+        HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
+        Map<String, String> map = this.gson.fromJson(response.body(), Map.class);
+
+        if (map.containsKey("contentUrl")) {
+          url = map.get("contentUrl");
+        } else {
+          throw new IOException("Cannot find 'contentUrl' from OCR request");
+        }
+      }
+
+      return url;
+    }
   }
 
   /**
@@ -182,14 +253,39 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       if (o.isPresent()) {
 
         Action action = o.get();
-        if (ActionType.OCR.equals(action.type())) {
+        logger.log(String.format("Processing SiteId %s Document %s on action %s", siteId,
+            documentId, action.type()));
 
-          List<OcrParseType> parseTypes = getOcrParseTypes(action);
+        try {
+          if (ActionType.OCR.equals(action.type())) {
 
-          this.formkiqClient.addDocumentOcr(new AddDocumentOcrRequest().siteId(siteId)
-              .documentId(documentId).parseTypes(parseTypes));
+            List<OcrParseType> parseTypes = getOcrParseTypes(action);
+
+            this.formkiqClient.addDocumentOcr(new AddDocumentOcrRequest().siteId(siteId)
+                .documentId(documentId).parseTypes(parseTypes));
+
+          } else if (ActionType.FULLTEXT.equals(action.type())) {
+
+            String contentUrl = findContentUrl(siteId, documentId);
+
+            SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrl(contentUrl);
+            SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().siteId(siteId)
+                .documentId(documentId).document(fulltext);
+
+            this.formkiqClient.setDocumentFulltext(req);
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+          action.status(ActionStatus.FAILED);
+          this.actionsService.updateActionStatus(siteId, documentId, o.get().type(),
+              ActionStatus.FAILED);
         }
+      } else {
+        logger
+            .log(String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));
       }
+    } else {
+      logger.log(String.format("Skipping event %s", event.type()));
     }
   }
 

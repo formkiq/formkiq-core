@@ -5,6 +5,7 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.1.1'
 	
+	implementation project(':fkq-lambda-services')
 	implementation project(':fkq-lambda-core')
 	implementation project(':fkq-plugins')
 	implementation project(':aws-s3')
@@ -19,6 +20,7 @@ dependencies {
     
     implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.0.0'
+    implementation group: 'com.formkiq.stacks', name: 'client', version:'1.8.2'
     
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
 
@@ -27,7 +29,6 @@ dependencies {
 	testImplementation project(':aws-sts')
 	testImplementation project(':fkq-test-utils')
 	
-	testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.7.5'
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.17.207'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.17.207'
 	
@@ -37,6 +38,7 @@ dependencies {
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.1'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.1'
 	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.9.3'
+	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.13.2'
 }
 
 compileJava {
@@ -93,6 +95,10 @@ task assembleTemplate {
 	dependsOn buildZip
 	inputs.files("src/main/resources/cloudformation/template-snippet.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
+	
+	def randomtext = ('0'..'z').shuffled().take(10).join();
+	def sha256 = randomtext.digest('SHA-256')
+
 	doLast {
 		exec {
 			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/api"
@@ -102,7 +108,7 @@ task assembleTemplate {
 		}
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }
