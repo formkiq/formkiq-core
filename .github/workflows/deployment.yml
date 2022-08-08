@@ -38,4 +38,14 @@ jobs:
         unzip formkiq-core*
         sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-us-east-1 --template-file template.yaml --region us-east-1 --output-template-file template-1.8.0.yaml
         aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-us-east-1/${formKiQVersion}/template.yaml
-        
+
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-us-east-2 --template-file template.yaml --region us-east-2 --output-template-file template-1.8.0.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-us-east-2/${formKiQVersion}/template.yaml
+
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-ca-central-1 --template-file template.yaml --region ca-central-1 --output-template-file template-1.8.0.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-ca-central-1/${formKiQVersion}/template.yaml
+
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-eu-central-1 --template-file template.yaml --region eu-central-1 --output-template-file template-1.8.0.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-eu-central-1/${formKiQVersion}/template.yaml
+
+
