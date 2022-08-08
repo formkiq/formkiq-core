@@ -17,6 +17,7 @@
   - [Examples](#examples)
     - [Web Form Example - Contact Form](#web-form-example---contact-form)
     - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
+- [Installation](#installation)
 - [Architecture](#architecture)
 - [Documentation](#documentation)
 - [Building from source](#building-from-source)
@@ -65,10 +66,6 @@ https://docs.formkiq.com/
 
 For a guided demo of FormKiQ Core or our enterprise offering, you can [schedule a demo meeting with us through our website](https://www.formkiq.com/contact).
 
-## Installation
-
-You can install and try FormKiQ within minutes by following our [Installation and Getting Started tutorials](https://docs.formkiq.com/docs/1.7.0/reference/README.html#installation).
-
 ### How much does it cost to run
 
 FormKiQ Core was created using [serverless technology](https://aws.amazon.com/serverless/). This means that there are no servers to manage; everything is managed by AWS. All AWS services FormKiQ uses pay-per-usage billing. You can start using FormKiQ with very little cost.
@@ -108,6 +105,19 @@ You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples be
 **https://github.com/formkiq/formkiq-webform-examples-jobapplication**
 
 ![Screenshot of Job Application Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-jobapplication/master/screenshot.png)
+
+## Installation
+
+The following are AWS CloudFormation scripts that can be used to install FormKiQ and other resources in a single click!
+
+[Full Installation Instructions](https://docs.formkiq.com/docs/1.8.0/reference/README.html#installation)
+
+| AWS Region   | Install Link  |
+| ------------- | -------------|
+| us-east-1 | [Install FormKiQ Core in US-EAST-1 region](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-us-east-1.s3.amazonaws.com/1.8.0/template.yaml)
+| us-east-2 | [Install FormKiQ Core in US-EAST-2 region](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-us-east-2.s3.amazonaws.com/1.8.0/template.yaml)
+| ca-central-1| [Install FormKiQ Core in CA-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-ca-central-1.s3.amazonaws.com/1.8.0/template.yaml)
+| eu-central-1| [Install FormKiQ Core in EU-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-eu-central-1.s3.amazonaws.com/1.8.0/template.yaml)
 
 ## Architecture
 
