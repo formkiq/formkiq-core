@@ -57,6 +57,8 @@ Please visit [our website](https://www.formkiq.com) to see the full list of feat
 
 The following are AWS CloudFormation scripts that can be used to install FormKiQ and other resources in a single click!
 
+[<img src="https://github.com/formkiq/formkiq-core/blob/3b64a239b76426550408b40b43fd815b69292441/install-play.png">](https://www.youtube.com/watch?v=jVIK2ZJZsKE "Install FormKiQ Core into any AWS Account - Click to Watch!")
+
 [Full Installation Instructions](https://docs.formkiq.com/docs/1.8.0/reference/README.html#installation)
 
 | AWS Region   | Install Link  |
