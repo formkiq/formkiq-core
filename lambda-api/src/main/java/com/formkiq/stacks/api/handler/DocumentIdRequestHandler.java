@@ -81,7 +81,7 @@ public class DocumentIdRequestHandler
   private static final int DEFAULT_DURATION_HOURS = 2;
 
   /** Extension for FormKiQ config file. */
-  private static final String FORMKIQ_DOC_EXT = ".fkb64";
+  public static final String FORMKIQ_DOC_EXT = ".fkb64";
 
   /** {@link DocumentsRestrictionsMaxDocuments}. */
   private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =

@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.stacks.api.handler.DocumentIdRequestHandler.FORMKIQ_DOC_EXT;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -33,17 +35,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request PATCH /documents/{documentId}. */
 @ExtendWith(LocalStackExtension.class)
@@ -165,6 +170,53 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
               + "X-Api-Key\",\"Content-Type\":\"application/json\"},"
               + "\"body\":\"{\\\"message\\\":\\\"" + "Access Denied\\\"}\","
               + "\"statusCode\":403}"));
+    }
+  }
+
+  /**
+   * POST /documents with TAG(s) only.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePatchDocuments05() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // given
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+
+      getDocumentService().saveDocument(siteId,
+          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody("{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}");
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assert200Response(siteId, response);
+
+      S3Service s3 = getS3();
+      String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+
+      try (S3Client client = s3.buildClient()) {
+        String json = s3.getContentAsString(client, STAGE_BUCKET_NAME, s3key, null);
+        Map<String, Object> map = fromJson(json, Map.class);
+        assertEquals(documentId, map.get("documentId"));
+
+        List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
+        assertEquals(1, tags.size());
+
+        assertEquals("USERDEFINED", tags.get(0).get("type"));
+        assertEquals("author", tags.get(0).get("key"));
+        assertEquals("Bacon", tags.get(0).get("value"));
+      }
     }
   }
 

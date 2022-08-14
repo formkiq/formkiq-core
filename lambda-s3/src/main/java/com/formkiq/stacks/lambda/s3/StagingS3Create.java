@@ -643,11 +643,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       logger.log(String.format("Inserted %s into bucket %s as %s", doc.getPath(),
           this.documentsBucket, createDatabaseKey(siteId, doc.getDocumentId())));
 
-      saveDocument(siteId, doc);
-
     } else {
       logger.log(String.format("Skipping %s no content", doc.getPath()));
     }
+
+    saveDocument(siteId, doc);
   }
 
   /**

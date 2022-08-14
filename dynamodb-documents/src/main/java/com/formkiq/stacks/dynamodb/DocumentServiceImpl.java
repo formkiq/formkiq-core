@@ -1031,7 +1031,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param document {@link DocumentItem}
    */
   private void saveDocumentDate(final DocumentItem document) {
-    Date insertedDate = document.getInsertedDate();
+    Date insertedDate =
+        document.getInsertedDate() != null ? document.getInsertedDate() : new Date();
     String shortdate = this.yyyymmddFormat.format(insertedDate);
 
     Map<String, AttributeValue> values =
