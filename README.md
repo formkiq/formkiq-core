@@ -10,24 +10,19 @@
 <details open>
 <summary>Table of Contents</summary>
 
-- [What is FormKiQ Core](#-what-is-formkiq-core)
-  - [Features](#features)
-  - [Demo](#demo)
-  - [Installation](#installation)
-  - [How much does it cost to run?](#how-much-does-it-cost-to-run)
-  - [Use Cases](#use-cases)
-  - [Examples](#examples)
-    - [Web Form Example - Contact Form](#web-form-example---contact-form)
-    - [Web Form Example - Job Application Form](#web-form-example---job-application-form)
+- [What is FormKiQ Core](#what-is-formkiq-core)
 - [Installation](#installation)
 - [Architecture](#architecture)
 - [Documentation](#documentation)
+- [How much does it cost to run?](#how-much-does-it-cost-to-run)
+- [Use Cases](#use-cases)
+- [Application Examples](#examples)
 - [Building from source](#building-from-source)
 - [License](#license)
 
 </details>
 
-## 💥 What is FormKiQ Core?
+## What is FormKiQ Core?
 
 **FormKiQ Core is an Open Source Headless Document Management System (DMS) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).**
 
@@ -58,56 +53,6 @@ Please visit [our website](https://www.formkiq.com) to see the full list of feat
 
 ✅ Includes an Intuitive User Interface (FormKiQ Console) for Document Management
 
-### Documentation
-
-Full FormKiQ Documentation can be found at
-
-https://docs.formkiq.com/
-
-### Demo
-
-For a guided demo of FormKiQ Core or our enterprise offering, you can [schedule a demo meeting with us through our website](https://www.formkiq.com/contact).
-
-### How much does it cost to run
-
-FormKiQ Core was created using [serverless technology](https://aws.amazon.com/serverless/). This means that there are no servers to manage; everything is managed by AWS. All AWS services FormKiQ uses pay-per-usage billing. You can start using FormKiQ with very little cost.
-AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. This means that some AWS services you can use for **free** pending you stay under the usage limits. Below is the list of services FormKiQ uses and their approximate usage costs, so give you an idea on how much it costs to run FormKiQ. (All costs in USD)
-| Service        | Cost  |
-| ------------- | -----|
-| [Amazon Api Gateway](https://aws.amazon.com/api-gateway/pricing/) |   $1.00 per million requests
-| [Amazon DynamoDB](https://aws.amazon.com/dynamodb/pricing/on-demand/)  |  First 25 GB Free |
-| |Write request units - $1.25 per million write request units |
-| |Read request units   $0.25 per million read request units |
-| [Amazon CloudFront](https://aws.amazon.com/cloudfront/pricing/) |   $0.085 per GB of Data Transfer Out to Internet||
-| [Amazon S3](https://aws.amazon.com/s3/pricing/) |   $0.023 per GB / Month|
-| [AWS Lambda](https://aws.amazon.com/lambda/pricing/) |   approx. first 400,000 requests Free per Month|
-| |$0.0000168667 per additional request
-
-### Use Cases
-
-- [Job Application Form](https://www.formkiq.com/use-cases/job-application-form)
-- [Document Management Module for an Existing App](https://www.formkiq.com/use-cases/document-management-module-for-an-existing-application)
-- [Digital Document Processing Service](https://www.formkiq.com/use-cases/digital-document-processing-service)
-- [Product Leasing System](https://www.formkiq.com/use-cases/product-leasing-system)
-
-### Examples
-
-FormKiQ core can be used immediately after being deployed to handle web form submissions on your website. (In fact, you don't even need to be hosting your site in AWS to use FormKiQ for processing your site visitor's form submissions.)
-
-**The easiest way to include FormKiQ on your website is through the [FormKiQ Client SDK npm module](https://www.npmjs.com/package/formkiq-client-sdk-javascript).**
-
-You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples below:
-
-#### Web Form Example - Contact Form
-**https://github.com/formkiq/formkiq-webform-examples-contact**
-
-![Screenshot of Contact Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-contact/master/screenshot.png)
-
-#### Web Form Example - Job Application Form
-**https://github.com/formkiq/formkiq-webform-examples-jobapplication**
-
-![Screenshot of Job Application Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-jobapplication/master/screenshot.png)
-
 ## Installation
 
 The following are AWS CloudFormation scripts that can be used to install FormKiQ and other resources in a single click!
@@ -133,6 +78,12 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 
 ✅ No servers to maintain or manage
 
+###Documentation
+
+Full FormKiQ Documentation can be found at
+
+https://docs.formkiq.com/
+
 ### List of AWS Services
 
 **FormKiQ core uses the following AWS technologies:**
@@ -144,6 +95,46 @@ FormKiQ Core has been architected using [Amazon Web Services (AWS)](https://aws.
 - API Gateway - to serve the RESTful API platform
 - Amazon Simple Notification Service (SNS) - document status notify system, allows applications to be notified that a document has been create/deleted or updated
 - AWS IAM and Amazon Cognito - User and System authentication
+
+## How much does it cost to run
+
+FormKiQ Core was created using [serverless technology](https://aws.amazon.com/serverless/). This means that there are no servers to manage; everything is managed by AWS. All AWS services FormKiQ uses pay-per-usage billing. You can start using FormKiQ with very little cost.
+AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. This means that some AWS services you can use for **free** pending you stay under the usage limits. Below is the list of services FormKiQ uses and their approximate usage costs, so give you an idea on how much it costs to run FormKiQ. (All costs in USD)
+| Service        | Cost  |
+| ------------- | -----|
+| [Amazon Api Gateway](https://aws.amazon.com/api-gateway/pricing/) |   $1.00 per million requests
+| [Amazon DynamoDB](https://aws.amazon.com/dynamodb/pricing/on-demand/)  |  First 25 GB Free |
+| |Write request units - $1.25 per million write request units |
+| |Read request units   $0.25 per million read request units |
+| [Amazon CloudFront](https://aws.amazon.com/cloudfront/pricing/) |   $0.085 per GB of Data Transfer Out to Internet||
+| [Amazon S3](https://aws.amazon.com/s3/pricing/) |   $0.023 per GB / Month|
+| [AWS Lambda](https://aws.amazon.com/lambda/pricing/) |   approx. first 400,000 requests Free per Month|
+| |$0.0000168667 per additional request
+
+## Use Cases
+
+- [Job Application Form](https://www.formkiq.com/use-cases/job-application-form)
+- [Document Management Module for an Existing App](https://www.formkiq.com/use-cases/document-management-module-for-an-existing-application)
+- [Digital Document Processing Service](https://www.formkiq.com/use-cases/digital-document-processing-service)
+- [Product Leasing System](https://www.formkiq.com/use-cases/product-leasing-system)
+
+## Examples
+
+FormKiQ core can be used immediately after being deployed to handle web form submissions on your website. (In fact, you don't even need to be hosting your site in AWS to use FormKiQ for processing your site visitor's form submissions.)
+
+**The easiest way to include FormKiQ on your website is through the [FormKiQ Client SDK npm module](https://www.npmjs.com/package/formkiq-client-sdk-javascript).**
+
+You can see FormKiQ Core and the FormKiQ Client SDK in action in the examples below:
+
+#### Web Form Example - Contact Form
+**https://github.com/formkiq/formkiq-webform-examples-contact**
+
+![Screenshot of Contact Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-contact/master/screenshot.png)
+
+#### Web Form Example - Job Application Form
+**https://github.com/formkiq/formkiq-webform-examples-jobapplication**
+
+![Screenshot of Job Application Form Example](https://raw.githubusercontent.com/formkiq/formkiq-webform-examples-jobapplication/master/screenshot.png)
 
 ## Building from source
 
