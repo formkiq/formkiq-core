@@ -14,7 +14,7 @@
 - [Installation](#installation)
 - [Architecture](#architecture)
 - [Documentation](#documentation)
-- [How much does it cost to run?](#how-much-does-it-cost-to-run)
+- [Client Libraries](#client-libraries)
 - [Use Cases](#use-cases)
 - [Application Examples](#examples)
 - [Building from source](#building-from-source)
@@ -98,7 +98,7 @@ https://docs.formkiq.com/
 - Amazon Simple Notification Service (SNS) - document status notify system, allows applications to be notified that a document has been create/deleted or updated
 - AWS IAM and Amazon Cognito - User and System authentication
 
-## How much does it cost to run
+### How much does it cost to run
 
 FormKiQ Core was created using [serverless technology](https://aws.amazon.com/serverless/). This means that there are no servers to manage; everything is managed by AWS. All AWS services FormKiQ uses pay-per-usage billing. You can start using FormKiQ with very little cost.
 AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. This means that some AWS services you can use for **free** pending you stay under the usage limits. Below is the list of services FormKiQ uses and their approximate usage costs, so give you an idea on how much it costs to run FormKiQ. (All costs in USD)
@@ -112,6 +112,15 @@ AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. Thi
 | [Amazon S3](https://aws.amazon.com/s3/pricing/) |   $0.023 per GB / Month|
 | [AWS Lambda](https://aws.amazon.com/lambda/pricing/) |   approx. first 400,000 requests Free per Month|
 | |$0.0000168667 per additional request
+
+## Client Libraries
+
+## Client libraries
+
+| Language | Client |
+|----------|--------|
+| Java     | [formkiq-client-sdk-java](https://github.com/formkiq/formkiq-client-sdk-java) | 
+
 
 ## Use Cases
 
