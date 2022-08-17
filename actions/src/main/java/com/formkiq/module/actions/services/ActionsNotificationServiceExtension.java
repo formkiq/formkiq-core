@@ -21,20 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.module.actions.services;
+
+import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Action Status.
+ * {@link AwsServiceExtension} for {@link ActionsNotificationService}.
  *
  */
-public enum ActionStatus {
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** Pending. */
-  PENDING,
-  /** Skipped. */
-  SKIPPED;
+public class ActionsNotificationServiceExtension
+    implements AwsServiceExtension<ActionsNotificationService> {
+
+  /** {@link ActionsNotificationService}. */
+  private ActionsNotificationService service;
+  /** {@link SnsConnectionBuilder}. */
+  private SnsConnectionBuilder sns;
+
+  /**
+   * constructor.
+   * 
+   * @param snsBuilder {@link SnsConnectionBuilder}
+   */
+  public ActionsNotificationServiceExtension(final SnsConnectionBuilder snsBuilder) {
+    this.sns = snsBuilder;
+  }
+
+  @Override
+  public ActionsNotificationService loadService(final AwsServiceCache awsServiceCache) {
+
+    if (this.service == null) {
+
+      this.service = new ActionsNotificationServiceImpl(
+          awsServiceCache.environment("SNS_DOCUMENT_EVENT"), this.sns);
+    }
+
+    return this.service;
+  }
 }
+
