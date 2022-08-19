@@ -548,6 +548,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
       actions.forEach(a -> a.status(ActionStatus.PENDING));
+      this.actionsService.saveActions(siteId, documentId, actions);
+      
       this.notificationService.publishNextActionEvent(actions, site, documentId);
     }
   }
