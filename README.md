@@ -125,7 +125,7 @@ AWS provides a [free tier](https://aws.amazon.com/free) to all AWS accounts. Thi
 ## Use Cases
 
 - [Job Application Form](https://www.formkiq.com/use-cases/job-application-form)
-- [Document Management Module for an Existing App](https://www.formkiq.com/use-cases/document-management-module-for-an-existing-application)
+- [Document Management Module for an Existing App](https://www.formkiq.com/use-cases/document-management-module)
 - [Digital Document Processing Service](https://www.formkiq.com/use-cases/digital-document-processing-service)
 - [Product Leasing System](https://www.formkiq.com/use-cases/product-leasing-system)
 
