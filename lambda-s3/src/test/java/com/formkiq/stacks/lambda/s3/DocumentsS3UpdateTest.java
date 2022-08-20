@@ -76,6 +76,7 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
@@ -919,7 +920,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
       actionsService.saveActions(siteId, doc.getDocumentId(),
-          Arrays.asList(new Action().type(ActionType.OCR)));
+          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -927,6 +928,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
       handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
+      assertEquals(1, actions.size());
+      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+      assertEquals(ActionType.OCR, actions.get(0).type());
+
       DocumentEvent e0 = null;
       DocumentEvent e1 = null;
 

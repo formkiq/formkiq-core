@@ -2,11 +2,11 @@
 plugins {
   id 'java-library'
   id 'checkstyle'
-  id 'com.github.spotbugs'  version '4.6.0'
-  id 'com.diffplug.spotless' version '6.4.2'
+  id 'com.github.spotbugs'  version '4.7.1'
+  id 'com.diffplug.spotless' version '6.9.1'
   id 'com.github.ben-manes.versions' version '0.42.0'
-  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.2.1'
-  id 'de.undercouch.download' version '5.0.5'
+  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.3.0'
+  id 'de.undercouch.download' version '5.1.1'
 }
 
 def moduleName = "formkiq-core"
@@ -14,7 +14,7 @@ def moduleName = "formkiq-core"
 repositories { mavenCentral() }
 
 allprojects {
-  version = '1.8.0'
+  version = '1.8.2'
   ext.awsCognitoVersion = '1.4.1'
   group = 'com.formkiq.stacks'
   

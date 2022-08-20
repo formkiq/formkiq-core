@@ -21,20 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.module.actions.services;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 
 /**
  * 
- * Action Status.
+ * Unit Tests for {@link NextActionPredicate}.
  *
  */
-public enum ActionStatus {
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** Pending. */
-  PENDING,
-  /** Skipped. */
-  SKIPPED;
+public class NextActionPredicateTest {
+
+  @Test
+  void test() {
+    assertTrue(new NextActionPredicate().test(new Action()));
+    assertTrue(new NextActionPredicate().test(new Action().status(ActionStatus.PENDING)));
+    assertFalse(new NextActionPredicate().test(new Action().status(ActionStatus.COMPLETE)));
+    assertFalse(new NextActionPredicate().test(new Action().status(ActionStatus.SKIPPED)));
+    assertTrue(new NextActionPredicate().test(new Action().status(ActionStatus.FAILED)));
+  }
 }

@@ -1112,6 +1112,59 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
+   * Test add tags to existing Document with .fkb64 file and NO content.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension12() throws IOException {
+    final String userId = "joesmith";
+    String documentId = UUID.randomUUID().toString();
+    Map<String, Object> data = new HashMap<>();
+    data.put("documentId", documentId);
+    data.put("userId", userId);
+    data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document")));
+
+    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      service.saveDocument(siteId, ditem,
+          Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
+              new DocumentTag(documentId, "category", "person", new Date(), userId)));
+
+      String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
+
+      Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
+
+      try (S3Client c = s3.buildClient()) {
+
+        byte[] content = gson.toJson(ditem).getBytes(UTF_8);
+        s3.putObject(c, STAGING_BUCKET, key, content, null, null);
+
+        // when
+        handleRequest(map);
+
+        // then
+        int i = 0;
+        final int count = 3;
+        List<DocumentTag> tags =
+            service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
+        assertEquals(count, tags.size());
+
+        assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
+            "document", "type", "USERDEFINED", "userId", userId));
+
+        assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "playerId", "value",
+            "1234", "type", "USERDEFINED", "userId", userId));
+
+        assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "userId", "value",
+            userId, "type", "SYSTEMDEFINED", "userId", userId));
+      }
+    }
+  }
+
+  /**
    * Handle Error.
    */
   @Test
