@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.actions;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -53,7 +52,7 @@ public class Action {
    * @return {@link Map}
    */
   public Map<String, String> parameters() {
-    return this.parameters != null ? new HashMap<>(this.parameters) : null;
+    return this.parameters;
   }
 
   /**
@@ -63,7 +62,7 @@ public class Action {
    * @return {@link Action}
    */
   public Action parameters(final Map<String, String> map) {
-    this.parameters = new HashMap<>(map);
+    this.parameters = map;
     return this;
   }
 
