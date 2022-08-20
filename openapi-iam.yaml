@@ -58,9 +58,8 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /tagSchemas:
             get:
-              description: Returns the list of tagSchemas
+              description: Returns the list of tagSchemas; ONLY available in FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -97,9 +96,8 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
-              description: Creates a new TagSchema
+              description: Creates a new TagSchema; ONLY available in FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -142,9 +140,8 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /tagSchemas/{tagSchemaId}:
             get:
-              description: Retrieves a TagSchema's details, i.e., metadata
+              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available in FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
@@ -168,9 +165,8 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
-              description: Delete a TagSchema
+              description: Delete a TagSchema; ONLY available in FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise TagSchema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
@@ -250,8 +246,12 @@
                           contentType: text/plain
                           content: This is sample data file
                           tags:
-                          - key: type
-                          - value: sample
+                          - key: category
+                            value: sample
+                          - key: players
+                            values:
+                            - "111"
+                            - "222"
                       Nested_Document:
                         value:
                           path: doc1.txt
@@ -259,13 +259,13 @@
                           content: This is document1 content
                           tags:
                           - key: type
-                          - value: document1
+                            value: document1
                           documents:
                           - contentType: text/plain
                             content: This is sub document1 content
                             tags:
                             - key: type
-                            - value: subdocument1
+                              value: subdocument1
               responses:
                 "201":
                   description: 201 CREATED
@@ -780,8 +780,6 @@
               description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch) ONLY available with FormKiQ Enterprise
               tags:
               - Document Search
-              - Enterprise API
-              - Enterprise Fulltext
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -839,11 +837,12 @@
             get:
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/contentUrlParam'
+              - $ref: '#/components/parameters/textParam'
               responses:
                 "200":
                   description: 200 OK
@@ -865,7 +864,6 @@
             post:
               description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -897,7 +895,6 @@
             put:
               description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -929,7 +926,6 @@
             delete:
               description: Delete a Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -945,7 +941,6 @@
             delete:
               description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise Fulltext
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -960,7 +955,6 @@
             put:
               description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise Fulltext
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -992,7 +986,6 @@
             patch:
               description: Updates Opensearch document; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise Fulltext
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -1025,7 +1018,6 @@
             delete:
               description: Removes document tags from full text search; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise Fulltext
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -1042,7 +1034,6 @@
             delete:
               description: Removes document tag/value from full text search; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise API
               - Enterprise Fulltext
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -1427,6 +1418,20 @@
               description: Indicates the number of hours request is valid for
               schema:
                 type: integer
+            contentUrlParam:
+              name: contentUrl
+              in: query
+              description: Whether to return a "contentUrl", set value to 'true'
+              required: false
+              schema:
+                type: string
+            textParam:
+              name: text
+              in: query
+              description: Returns raw 'text' of OCR content. e.g. AWS Textract returns JSON, setting parameter to 'true' converts JSON to Text
+              required: false
+              schema:
+                type: string
           schemas:
             DocumentItemTagValueBody:
               type: object
@@ -1804,6 +1809,12 @@
                       value:
                         type: string
                         description: Tag value
+                      values:
+                        type: array
+                        description: Tag values
+                        items:
+                          type: string
+                          description: Tag value
                 actions:
                   type: array
                   description: List of document actions
