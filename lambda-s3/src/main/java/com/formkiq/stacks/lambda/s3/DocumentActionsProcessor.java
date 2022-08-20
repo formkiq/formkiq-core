@@ -159,6 +159,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     try (S3Client client = this.s3Service.buildClient()) {
 
       if (MimeType.isPlainText(item.getContentType())) {
+
         String bucket =
             MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
         url = this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
@@ -169,6 +170,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
             new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
 
         req.addQueryParameter("contentUrl", "true");
+        req.addQueryParameter("text", "true");
+
         HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
         Map<String, String> map = this.gson.fromJson(response.body(), Map.class);
 

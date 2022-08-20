@@ -932,7 +932,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.PENDING, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
-      
+
       DocumentEvent e0 = null;
       DocumentEvent e1 = null;
 
