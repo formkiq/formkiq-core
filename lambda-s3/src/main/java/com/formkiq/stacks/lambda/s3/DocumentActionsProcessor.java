@@ -60,6 +60,7 @@ import com.formkiq.stacks.client.models.SetDocumentFulltext;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
+import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
 import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -78,20 +79,22 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
   /** {@link ActionsService}. */
   private ActionsService actionsService;
-  /** {@link S3Service}. */
-  private S3Service s3Service;
   /** S3 Documents Bucket. */
   private String documentsBucket;
-  /** Ocr Bucket. */
-  private String ocrBucket;
   /** {@link DocumentService}. */
   private DocumentService documentService;
   /** IAM Documents Url. */
   private String documentsIamUrl;
+  /** {@link FormKiqClientConnection}. */
+  private FormKiqClientConnection fkqConnection;
   /** {@link FormKiqClientV1}. */
   private FormKiqClientV1 formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+  /** Ocr Bucket. */
+  private String ocrBucket;
+  /** {@link S3Service}. */
+  private S3Service s3Service;
 
   /** constructor. */
   public DocumentActionsProcessor() {
@@ -129,14 +132,13 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
     this.ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
 
-    FormKiqClientConnection fkqConnection =
-        new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
+    this.fkqConnection = new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
 
     if (awsCredentials != null) {
-      fkqConnection = fkqConnection.credentials(awsCredentials);
+      this.fkqConnection = this.fkqConnection.credentials(awsCredentials);
     }
 
-    this.formkiqClient = new FormKiqClientV1(fkqConnection);
+    this.formkiqClient = new FormKiqClientV1(this.fkqConnection);
   }
 
   /**
@@ -276,7 +278,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
                 .documentId(documentId).document(fulltext);
 
             this.formkiqClient.setDocumentFulltext(req);
+
+          } else if (ActionType.ANTIVIRUS.equals(action.type())) {
+
+            SetDocumentAntivirusRequest req =
+                new SetDocumentAntivirusRequest().siteId(siteId).documentId(documentId);
+            this.formkiqClient.setDocumentAntivirus(req);
           }
+
         } catch (Exception e) {
           e.printStackTrace();
           action.status(ActionStatus.FAILED);
