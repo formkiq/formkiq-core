@@ -263,6 +263,7 @@ Resources:
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
               - dynamodb:Get*
               - dynamodb:Query
               - dynamodb:Scan
