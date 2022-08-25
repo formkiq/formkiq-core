@@ -29,8 +29,10 @@ package com.formkiq.module.actions;
  *
  */
 public enum ActionType {
-  /** OCR. */
-  OCR,
+  /** AntiVirus. */
+  ANTIVIRUS,
   /** Full Text. */
-  FULLTEXT;
+  FULLTEXT,
+  /** OCR. */
+  OCR;
 }
