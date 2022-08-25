@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.5"
+          version: "1.8.3"
         paths:
           /version:
             get:

@@ -2,7 +2,7 @@
         info:
           title: FormKiQ HTTP API
           description: FormKiQ HTTP API
-          version: 1.8.2
+          version: 1.8.3
         paths:
           /version:
             get:
@@ -937,6 +937,38 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+          /documents/{documentId}/antivirus:
+            put:
+              description: Performs Antivirus scan on a document. ONLY available with FormKiQ Enterprise
+              tags:
+              - Enterprise Antivirus
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetAntivirusBody'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AntivirusResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
           /documents/{documentId}/fulltext:
             delete:
               description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
@@ -2247,6 +2279,14 @@
                         type: array
                         items:
                           type: string
+            SetAntivirusBody:
+              type: object
+            AntivirusResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Antivirus processing message
             OcrBody:
               type: object
               example:
@@ -2485,6 +2525,20 @@
               type: aws_proxy
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
+              uri:
+                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            antivirusLambdaApi200:
               uri:
                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:

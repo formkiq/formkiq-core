@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.8.5"
+          version: "1.8.3"
         paths:
           /version:
             get:
