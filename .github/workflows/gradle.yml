@@ -43,10 +43,10 @@ jobs:
         npm install openapi-generator -g
         alias openapi-generator=openapi-generator-cli
         openapi-generator --version
-    - name: Build with Gradle
-      uses: gradle/gradle-build-action@0d13054264b0bb894ded474f08ebb30921341cee
-      with:
-        arguments: build --info
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+    - name: Execute Gradle build
+      run: ./gradlew build --info
     - name: Set AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
