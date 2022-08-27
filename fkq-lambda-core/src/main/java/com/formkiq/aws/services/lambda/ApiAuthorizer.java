@@ -58,10 +58,10 @@ public class ApiAuthorizer {
   /** Request SiteId. */
   private String siteId = null;
 
-  /** Calling User Arn. */
-  private String userArn = null;
   /** {@link List} SiteIds. */
   private List<String> siteIds = Collections.emptyList();
+  /** Calling User Arn. */
+  private String userArn = null;
 
   /**
    * constructor.
@@ -81,6 +81,16 @@ public class ApiAuthorizer {
     this.isUserReadAccess =
         this.siteId != null ? cognitoGroups.contains(this.siteId + COGNITO_READ_SUFFIX) : false;
     this.isUserWriteAccess = this.siteId != null ? cognitoGroups.contains(this.siteId) : false;
+  }
+
+  /**
+   * Return Access Summary.
+   * 
+   * @return {@link String}
+   */
+  public String accessSummary() {
+    List<String> groups = getCognitoGroups();
+    return !groups.isEmpty() ? "groups: " + String.join(",", getCognitoGroups()) : "no groups";
   }
 
   /**
@@ -153,38 +163,12 @@ public class ApiAuthorizer {
   }
 
   /**
-   * Get Read SiteIds.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getWriteSiteIds() {
-
-    List<String> cognitoGroups = getCognitoGroups();
-    cognitoGroups.remove(COGNITO_ADMIN_GROUP);
-
-    List<String> sites = cognitoGroups.stream().filter(s -> !s.endsWith(COGNITO_READ_SUFFIX))
-        .collect(Collectors.toList());
-    Collections.sort(sites);
-
-    return sites;
-  }
-
-  /**
    * Get Site Id.
    * 
    * @return {@link String}
    */
   public String getSiteId() {
     return this.siteId != null && !this.siteId.equals(DEFAULT_SITE_ID) ? this.siteId : null;
-  }
-
-  /**
-   * Get Site Id, including DEFAULT.
-   * 
-   * @return {@link String}
-   */
-  public String getSiteIdIncludeDefault() {
-    return this.siteId;
   }
 
   /**
@@ -211,8 +195,13 @@ public class ApiAuthorizer {
     return site;
   }
 
-  private boolean isIamCaller() {
-    return this.isCallerAssumeRole() || this.isCallerIamUser();
+  /**
+   * Get Site Id, including DEFAULT.
+   * 
+   * @return {@link String}
+   */
+  public String getSiteIdIncludeDefault() {
+    return this.siteId;
   }
 
   /**
@@ -250,6 +239,23 @@ public class ApiAuthorizer {
   }
 
   /**
+   * Get Read SiteIds.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getWriteSiteIds() {
+
+    List<String> cognitoGroups = getCognitoGroups();
+    cognitoGroups.remove(COGNITO_ADMIN_GROUP);
+
+    List<String> sites = cognitoGroups.stream().filter(s -> !s.endsWith(COGNITO_READ_SUFFIX))
+        .collect(Collectors.toList());
+    Collections.sort(sites);
+
+    return sites;
+  }
+
+  /**
    * Is {@link ApiGatewayRequestEvent} is an assumed role.
    * 
    * @return boolean
@@ -265,6 +271,10 @@ public class ApiAuthorizer {
    */
   public boolean isCallerIamUser() {
     return this.userArn != null && this.userArn.contains(":user/");
+  }
+
+  private boolean isIamCaller() {
+    return this.isCallerAssumeRole() || this.isCallerIamUser();
   }
 
   /**

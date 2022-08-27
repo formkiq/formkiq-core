@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
@@ -440,7 +441,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
     if (isCheckAccess(method) && !hasAccess(method, event.getPath(), handler, authorizer)) {
-      throw new ForbiddenException("Access Denied");
+      String s = String.format("fkq access denied (%s)", authorizer.accessSummary());
+      throw new ForbiddenException(s);
     }
 
     return callHandlerMethod(logger, method, event, authorizer, handler);
