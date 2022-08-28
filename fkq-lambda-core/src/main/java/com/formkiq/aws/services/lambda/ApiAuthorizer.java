@@ -81,7 +81,8 @@ public class ApiAuthorizer {
     this.siteIds = getPossibleSiteId();
 
     this.userArn = getUserRoleArn();
-    this.isUserAdmin = cognitoGroups.contains(COGNITO_ADMIN_GROUP);
+    this.isUserAdmin = cognitoGroups.contains(COGNITO_ADMIN_GROUP)
+        || cognitoGroups.contains(COGNITO_ADMIN_GROUP.toLowerCase());
     this.siteId = getSiteIdFromQuery();
     this.isUserReadAccess =
         this.siteId != null ? cognitoGroups.contains(this.siteId + COGNITO_READ_SUFFIX) : false;
@@ -130,11 +131,11 @@ public class ApiAuthorizer {
       }
     }
 
-    if (groups.isEmpty()) {
-      groups = Arrays.asList("default");
+    if (ApiAuthorizerType.SAML.equals(userAuthentication)) {
+      groups = groups.stream().map(g -> g.replaceAll("^formkiq_", "")).collect(Collectors.toList());
     }
 
-    if (ApiAuthorizerType.SAML.equals(userAuthentication)) {
+    if (groups.isEmpty()) {
       groups = Arrays.asList("default");
     }
 
