@@ -86,6 +86,12 @@ Parameters:
     Type: String
     Description: "SQS URL for processing Websocket Messages"
     AllowedPattern: ".+"
+   
+  UserAuthentication:
+    Description: How are the users authenticating
+    AllowedPattern: ".+"
+    Type: String
+    Default: "cognito"
     
 Resources:        
         
@@ -122,6 +128,8 @@ Resources:
             Ref: FormKiQType
           WEBSOCKET_SQS_URL: 
             Ref: WebsocketSqsQueueUrl
+          USER_AUTHENTICATION:
+            Ref: UserAuthentication
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole

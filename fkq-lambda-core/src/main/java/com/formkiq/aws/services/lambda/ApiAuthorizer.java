@@ -43,6 +43,9 @@ public class ApiAuthorizer {
   /** The suffix for the 'readonly' Cognito group. */
   private static final String COGNITO_READ_SUFFIX = "_read";
 
+  /** {@link ApiAuthorizerType}. */
+  private ApiAuthorizerType authentication;
+
   /** {@link ApiGatewayRequestEvent}. */
   private ApiGatewayRequestEvent event;
 
@@ -57,7 +60,6 @@ public class ApiAuthorizer {
 
   /** Request SiteId. */
   private String siteId = null;
-
   /** {@link List} SiteIds. */
   private List<String> siteIds = Collections.emptyList();
   /** Calling User Arn. */
@@ -67,12 +69,15 @@ public class ApiAuthorizer {
    * constructor.
    * 
    * @param requestEvent {@link ApiGatewayRequestEvent}
+   * @param userAuthentication {@link ApiAuthorizerType}
    */
-  public ApiAuthorizer(final ApiGatewayRequestEvent requestEvent) {
+  public ApiAuthorizer(final ApiGatewayRequestEvent requestEvent,
+      final ApiAuthorizerType userAuthentication) {
 
     this.event = requestEvent;
+    this.authentication = userAuthentication;
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     this.siteIds = getPossibleSiteId();
 
     this.userArn = getUserRoleArn();
@@ -89,17 +94,18 @@ public class ApiAuthorizer {
    * @return {@link String}
    */
   public String accessSummary() {
-    List<String> groups = getCognitoGroups();
-    return !groups.isEmpty() ? "groups: " + String.join(",", getCognitoGroups()) : "no groups";
+    List<String> groups = getCognitoGroups(this.authentication);
+    return !groups.isEmpty() ? "groups: " + String.join(",", groups) : "no groups";
   }
 
   /**
    * Get the Cognito Groups of the calling Cognito Username.
-   *
+   * 
+   * @param userAuthentication {@link ApiAuthorizerType}
    * @return {@link List} {@link String}
    */
   @SuppressWarnings("unchecked")
-  private List<String> getCognitoGroups() {
+  private List<String> getCognitoGroups(final ApiAuthorizerType userAuthentication) {
 
     List<String> groups = Collections.emptyList();
 
@@ -124,6 +130,14 @@ public class ApiAuthorizer {
       }
     }
 
+    if (groups.isEmpty()) {
+      groups = Arrays.asList("default");
+    }
+
+    if (ApiAuthorizerType.SAML.equals(userAuthentication)) {
+      groups = Arrays.asList("default");
+    }
+
     return groups;
   }
 
@@ -134,7 +148,7 @@ public class ApiAuthorizer {
    */
   private List<String> getPossibleSiteId() {
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     cognitoGroups.remove(COGNITO_ADMIN_GROUP);
 
     List<String> sites = new ArrayList<>(cognitoGroups.stream().map(
@@ -152,7 +166,7 @@ public class ApiAuthorizer {
    */
   public List<String> getReadSiteIds() {
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     cognitoGroups.remove(COGNITO_ADMIN_GROUP);
 
     List<String> sites = cognitoGroups.stream().filter(s -> s.endsWith(COGNITO_READ_SUFFIX))
@@ -245,7 +259,7 @@ public class ApiAuthorizer {
    */
   public List<String> getWriteSiteIds() {
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     cognitoGroups.remove(COGNITO_ADMIN_GROUP);
 
     List<String> sites = cognitoGroups.stream().filter(s -> !s.endsWith(COGNITO_READ_SUFFIX))
