@@ -43,6 +43,9 @@ public class ApiAuthorizer {
   /** The suffix for the 'readonly' Cognito group. */
   private static final String COGNITO_READ_SUFFIX = "_read";
 
+  /** {@link ApiAuthorizerType}. */
+  private ApiAuthorizerType authentication;
+
   /** {@link ApiGatewayRequestEvent}. */
   private ApiGatewayRequestEvent event;
 
@@ -57,26 +60,29 @@ public class ApiAuthorizer {
 
   /** Request SiteId. */
   private String siteId = null;
-
-  /** Calling User Arn. */
-  private String userArn = null;
   /** {@link List} SiteIds. */
   private List<String> siteIds = Collections.emptyList();
+  /** Calling User Arn. */
+  private String userArn = null;
 
   /**
    * constructor.
    * 
    * @param requestEvent {@link ApiGatewayRequestEvent}
+   * @param userAuthentication {@link ApiAuthorizerType}
    */
-  public ApiAuthorizer(final ApiGatewayRequestEvent requestEvent) {
+  public ApiAuthorizer(final ApiGatewayRequestEvent requestEvent,
+      final ApiAuthorizerType userAuthentication) {
 
     this.event = requestEvent;
+    this.authentication = userAuthentication;
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     this.siteIds = getPossibleSiteId();
 
     this.userArn = getUserRoleArn();
-    this.isUserAdmin = cognitoGroups.contains(COGNITO_ADMIN_GROUP);
+    this.isUserAdmin = cognitoGroups.contains(COGNITO_ADMIN_GROUP)
+        || cognitoGroups.contains(COGNITO_ADMIN_GROUP.toLowerCase());
     this.siteId = getSiteIdFromQuery();
     this.isUserReadAccess =
         this.siteId != null ? cognitoGroups.contains(this.siteId + COGNITO_READ_SUFFIX) : false;
@@ -84,12 +90,23 @@ public class ApiAuthorizer {
   }
 
   /**
+   * Return Access Summary.
+   * 
+   * @return {@link String}
+   */
+  public String accessSummary() {
+    List<String> groups = getCognitoGroups(this.authentication);
+    return !groups.isEmpty() ? "groups: " + String.join(",", groups) : "no groups";
+  }
+
+  /**
    * Get the Cognito Groups of the calling Cognito Username.
-   *
+   * 
+   * @param userAuthentication {@link ApiAuthorizerType}
    * @return {@link List} {@link String}
    */
   @SuppressWarnings("unchecked")
-  private List<String> getCognitoGroups() {
+  private List<String> getCognitoGroups(final ApiAuthorizerType userAuthentication) {
 
     List<String> groups = Collections.emptyList();
 
@@ -114,6 +131,14 @@ public class ApiAuthorizer {
       }
     }
 
+    if (ApiAuthorizerType.SAML.equals(userAuthentication)) {
+      groups = groups.stream().map(g -> g.replaceAll("^formkiq_", "")).collect(Collectors.toList());
+    }
+
+    if (groups.isEmpty()) {
+      groups = Arrays.asList("default");
+    }
+
     return groups;
   }
 
@@ -124,7 +149,7 @@ public class ApiAuthorizer {
    */
   private List<String> getPossibleSiteId() {
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     cognitoGroups.remove(COGNITO_ADMIN_GROUP);
 
     List<String> sites = new ArrayList<>(cognitoGroups.stream().map(
@@ -142,28 +167,11 @@ public class ApiAuthorizer {
    */
   public List<String> getReadSiteIds() {
 
-    List<String> cognitoGroups = getCognitoGroups();
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
     cognitoGroups.remove(COGNITO_ADMIN_GROUP);
 
     List<String> sites = cognitoGroups.stream().filter(s -> s.endsWith(COGNITO_READ_SUFFIX))
         .map(s -> s.substring(0, s.indexOf(COGNITO_READ_SUFFIX))).collect(Collectors.toList());
-    Collections.sort(sites);
-
-    return sites;
-  }
-
-  /**
-   * Get Read SiteIds.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getWriteSiteIds() {
-
-    List<String> cognitoGroups = getCognitoGroups();
-    cognitoGroups.remove(COGNITO_ADMIN_GROUP);
-
-    List<String> sites = cognitoGroups.stream().filter(s -> !s.endsWith(COGNITO_READ_SUFFIX))
-        .collect(Collectors.toList());
     Collections.sort(sites);
 
     return sites;
@@ -176,15 +184,6 @@ public class ApiAuthorizer {
    */
   public String getSiteId() {
     return this.siteId != null && !this.siteId.equals(DEFAULT_SITE_ID) ? this.siteId : null;
-  }
-
-  /**
-   * Get Site Id, including DEFAULT.
-   * 
-   * @return {@link String}
-   */
-  public String getSiteIdIncludeDefault() {
-    return this.siteId;
   }
 
   /**
@@ -211,8 +210,13 @@ public class ApiAuthorizer {
     return site;
   }
 
-  private boolean isIamCaller() {
-    return this.isCallerAssumeRole() || this.isCallerIamUser();
+  /**
+   * Get Site Id, including DEFAULT.
+   * 
+   * @return {@link String}
+   */
+  public String getSiteIdIncludeDefault() {
+    return this.siteId;
   }
 
   /**
@@ -250,6 +254,23 @@ public class ApiAuthorizer {
   }
 
   /**
+   * Get Read SiteIds.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getWriteSiteIds() {
+
+    List<String> cognitoGroups = getCognitoGroups(this.authentication);
+    cognitoGroups.remove(COGNITO_ADMIN_GROUP);
+
+    List<String> sites = cognitoGroups.stream().filter(s -> !s.endsWith(COGNITO_READ_SUFFIX))
+        .collect(Collectors.toList());
+    Collections.sort(sites);
+
+    return sites;
+  }
+
+  /**
    * Is {@link ApiGatewayRequestEvent} is an assumed role.
    * 
    * @return boolean
@@ -265,6 +286,10 @@ public class ApiAuthorizer {
    */
   public boolean isCallerIamUser() {
     return this.userArn != null && this.userArn.contains(":user/");
+  }
+
+  private boolean isIamCaller() {
+    return this.isCallerAssumeRole() || this.isCallerIamUser();
   }
 
   /**

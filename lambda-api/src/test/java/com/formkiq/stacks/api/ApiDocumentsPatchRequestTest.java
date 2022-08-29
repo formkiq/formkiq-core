@@ -152,6 +152,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid03.json");
       addParameter(event, "siteId", siteId);
+      setCognitoGroup(event, "default_read");
 
       // when
       String response = handleRequest(event);
@@ -161,15 +162,15 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       assertEquals("403.0", String.valueOf(m.get("statusCode")));
 
-      assertEquals("{\"message\":\"Access Denied\"}", m.get("body"));
+      assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}", m.get("body"));
 
       assertTrue(getLogger()
           .containsString("response: {\"headers\":{\"Access-Control-Allow-Origin\":\"*\","
               + "\"Access-Control-Allow-Methods\":\"*\","
               + "\"Access-Control-Allow-Headers\":\"Content-Type,X-Amz-Date,Authorization,"
               + "X-Api-Key\",\"Content-Type\":\"application/json\"},"
-              + "\"body\":\"{\\\"message\\\":\\\"" + "Access Denied\\\"}\","
-              + "\"statusCode\":403}"));
+              + "\"body\":\"{\\\"message\\\":\\\""
+              + "fkq access denied (groups: default_read)\\\"}\"," + "\"statusCode\":403}"));
     }
   }
 

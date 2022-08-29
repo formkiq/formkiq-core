@@ -190,6 +190,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl(null));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
+    this.map.put("USER_AUTHENTICATION", "cognito");
     this.map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl(null));
 
     createApiRequestHandler(this.map);

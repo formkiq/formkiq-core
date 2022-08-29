@@ -66,6 +66,18 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public abstract class AbstractRestApiRequestHandler implements RequestStreamHandler {
 
+  /** {@link ApiAuthorizerType}. */
+  private static ApiAuthorizerType authorizerType = ApiAuthorizerType.COGNITO;
+
+  /**
+   * Set AuthorizerType.
+   * 
+   * @param type {@link ApiAuthorizerType}
+   */
+  protected static void setAuthorizerType(final ApiAuthorizerType type) {
+    authorizerType = type;
+  }
+
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
 
@@ -378,7 +390,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
       final OutputStream output) throws IOException {
 
-    ApiAuthorizer authorizer = new ApiAuthorizer(event);
+    ApiAuthorizer authorizer = new ApiAuthorizer(event, authorizerType);
 
     try {
 
@@ -440,7 +452,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
     if (isCheckAccess(method) && !hasAccess(method, event.getPath(), handler, authorizer)) {
-      throw new ForbiddenException("Access Denied");
+      String s = String.format("fkq access denied (%s)", authorizer.accessSummary());
+      throw new ForbiddenException(s);
     }
 
     return callHandlerMethod(logger, method, event, authorizer, handler);

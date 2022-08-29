@@ -557,7 +557,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("Access Denied", resp.getMessage());
+    assertEquals("fkq access denied (groups: default)", resp.getMessage());
   }
 
   /**
@@ -585,7 +585,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("Access Denied", resp.getMessage());
+    assertEquals("fkq access denied (groups: default)", resp.getMessage());
   }
 
   /**
@@ -953,7 +953,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     // then
     String expected = "{" + getHeaders() + ",\"body\":\""
-        + "{\\\"message\\\":\\\"Access Denied\\\"}\",\"statusCode\":403}";
+        + "{\\\"message\\\":\\\"fkq access denied (groups: default)\\\"}\",\"statusCode\":403}";
 
     assertEquals(expected, response);
   }
