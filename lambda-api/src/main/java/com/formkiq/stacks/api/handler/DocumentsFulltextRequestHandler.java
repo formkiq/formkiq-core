@@ -53,6 +53,14 @@ public class DocumentsFulltextRequestHandler
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
   }
+  
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+    ApiMapResponse resp = new ApiMapResponse();
+    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
+  }
 
   @Override
   public String getRequestUrl() {

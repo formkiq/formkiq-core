@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.3"
+          version: "1.8.5"
         paths:
           /version:
             get:
@@ -979,6 +979,31 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"                
           /documents/{documentId}/fulltext:
+            get:
+              description: Retrieves an OpenSearch document's details, i.e., metadata
+              tags:
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextDocument'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
               description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
               tags:
@@ -2240,26 +2265,6 @@ Resources:
                 contentUrl:
                   type: "string"
                   description: "Url which contains Document content"                
-            DeleteFulltextTags:
-              type: object
-              properties:
-                tags:
-                  type: "array"
-                  description: "List of tags"
-                  items:
-                    type: "object"
-                    properties:
-                      key:
-                        type: "string"
-                        description: "Tag key"
-                      value:
-                        type: "string"
-                        description: "Tag value"
-                      values:
-                        description: "Tag values"
-                        type: "array"
-                        items:
-                          type: "string"
             FulltextUpdateBody:
               type: object
               properties:
