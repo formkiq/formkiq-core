@@ -138,7 +138,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
 
     processor = new DocumentActionsProcessor(env, Region.US_EAST_1, null, dbBuilder,
-        TestServices.getS3Connection(null), TestServices.getSsmConnection(null));
+        TestServices.getS3Connection(null), TestServices.getSsmConnection(null),
+        TestServices.getSnsConnection(null));
   }
 
   /**
@@ -306,6 +307,50 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Handle WEBHOOK Action.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandle05() throws IOException, URISyntaxException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+
+      HttpRequest lastRequest = callback.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
+      assertEquals(1, documents.size());
+
+      if (siteId != null) {
+        assertEquals(siteId, documents.get(0).get("siteId"));
+      } else {
+        assertEquals("default", documents.get(0).get("siteId"));
+      }
+
+      assertEquals(documentId, documents.get(0).get("documentId"));
     }
   }
 }

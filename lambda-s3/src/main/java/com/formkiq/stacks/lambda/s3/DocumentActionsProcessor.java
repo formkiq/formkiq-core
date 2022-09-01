@@ -26,9 +26,17 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,8 +48,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -50,6 +60,8 @@ import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsNotificationService;
+import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
@@ -91,6 +103,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private FormKiqClientV1 formkiqClient = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+  /** {@link ActionsNotificationService}. */
+  private ActionsNotificationService notificationService;
   /** Ocr Bucket. */
   private String ocrBucket;
   /** {@link S3Service}. */
@@ -102,7 +116,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
+        new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new SnsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
 
   /**
@@ -114,14 +129,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param db {@link DynamoDbConnectionBuilder}
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
+   * @param sns {@link SnsConnectionBuilder}
    */
   protected DocumentActionsProcessor(final Map<String, String> map, final Region awsRegion,
       final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder db,
-      final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm) {
+      final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
+      final SnsConnectionBuilder sns) {
 
     this.s3Service = new S3Service(s3);
     this.documentService = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
     this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
+    String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
+    this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;
@@ -139,6 +158,54 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     }
 
     this.formkiqClient = new FormKiqClientV1(this.fkqConnection);
+  }
+
+  /**
+   * Build Webhook Body.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
+   * @return {@link String}
+   */
+  private String buildWebhookBody(final String siteId, final String documentId,
+      final List<Action> actions) {
+
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+
+    List<Map<String, String>> documents = new ArrayList<>();
+    Map<String, String> map = new HashMap<>();
+    map.put("siteId", site);
+    map.put("documentId", documentId);
+    documents.add(map);
+
+    Optional<Action> antiVirus = actions.stream()
+        .filter(
+            a -> ActionType.ANTIVIRUS.equals(a.type()) && ActionStatus.COMPLETE.equals(a.status()))
+        .findFirst();
+
+    if (antiVirus.isPresent()) {
+
+      DocumentItem item = this.documentService.findDocument(siteId, documentId);
+      map.put("filename", item.getPath());
+
+      Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
+          Arrays.asList(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
+
+      Map<String, String> values = new HashMap<>();
+      Collection<DocumentTag> tags = tagMap.get(documentId);
+      for (DocumentTag tag : tags) {
+        values.put(tag.getKey(), tag.getValue());
+      }
+
+      String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
+      map.put("status", status);
+
+      String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
+      map.put("timestamp", timestamp);
+    }
+
+    return this.gson.toJson(Map.of("documents", documents));
   }
 
   /**
@@ -237,6 +304,47 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   }
 
   /**
+   * Process Action.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void processAction(final String siteId, final String documentId, final Action action)
+      throws IOException, InterruptedException {
+
+    if (ActionType.OCR.equals(action.type())) {
+
+      List<OcrParseType> parseTypes = getOcrParseTypes(action);
+
+      this.formkiqClient.addDocumentOcr(
+          new AddDocumentOcrRequest().siteId(siteId).documentId(documentId).parseTypes(parseTypes));
+
+    } else if (ActionType.FULLTEXT.equals(action.type())) {
+
+      String contentUrl = findContentUrl(siteId, documentId);
+
+      SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrl(contentUrl);
+      SetDocumentFulltextRequest req =
+          new SetDocumentFulltextRequest().siteId(siteId).documentId(documentId).document(fulltext);
+
+      this.formkiqClient.setDocumentFulltext(req);
+
+    } else if (ActionType.ANTIVIRUS.equals(action.type())) {
+
+      SetDocumentAntivirusRequest req =
+          new SetDocumentAntivirusRequest().siteId(siteId).documentId(documentId);
+      this.formkiqClient.setDocumentAntivirus(req);
+
+    } else if (ActionType.WEBHOOK.equals(action.type())) {
+
+      sendWebhook(siteId, documentId, action);
+    }
+  }
+
+  /**
    * Process {@link DocumentEvent}.
    * 
    * @param logger {@link LambdaLogger}
@@ -262,29 +370,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
             documentId, action.type()));
 
         try {
-          if (ActionType.OCR.equals(action.type())) {
-
-            List<OcrParseType> parseTypes = getOcrParseTypes(action);
-
-            this.formkiqClient.addDocumentOcr(new AddDocumentOcrRequest().siteId(siteId)
-                .documentId(documentId).parseTypes(parseTypes));
-
-          } else if (ActionType.FULLTEXT.equals(action.type())) {
-
-            String contentUrl = findContentUrl(siteId, documentId);
-
-            SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrl(contentUrl);
-            SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().siteId(siteId)
-                .documentId(documentId).document(fulltext);
-
-            this.formkiqClient.setDocumentFulltext(req);
-
-          } else if (ActionType.ANTIVIRUS.equals(action.type())) {
-
-            SetDocumentAntivirusRequest req =
-                new SetDocumentAntivirusRequest().siteId(siteId).documentId(documentId);
-            this.formkiqClient.setDocumentAntivirus(req);
-          }
+          processAction(siteId, documentId, action);
 
         } catch (Exception e) {
           e.printStackTrace();
@@ -326,6 +412,53 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           processEvent(logger, event);
         }
       }
+    }
+  }
+
+  /**
+   * Sends Webhook.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void sendWebhook(final String siteId, final String documentId, final Action action)
+      throws IOException, InterruptedException {
+
+    String url = action.parameters().get("url");
+
+    List<Action> actions = this.actionsService.getActions(siteId, documentId);
+
+    String body = buildWebhookBody(siteId, documentId, actions);
+
+    try {
+
+      HttpRequest request = HttpRequest.newBuilder().uri(new URI(url))
+          .timeout(Duration.ofMinutes(1)).POST(HttpRequest.BodyPublishers.ofString(body)).build();
+
+      HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS)
+          .connectTimeout(Duration.ofMinutes(1)).build();
+      HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+
+      int statusCode = response.statusCode();
+      final int statusOk = 200;
+      final int statusRedirect = 300;
+
+      if (statusCode >= statusOk && statusCode < statusRedirect) {
+
+        List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
+            ActionType.WEBHOOK, ActionStatus.COMPLETE);
+
+        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+
+      } else {
+        throw new IOException(url + " response status code " + statusCode);
+      }
+
+    } catch (URISyntaxException e) {
+      throw new IOException(e);
     }
   }
 }

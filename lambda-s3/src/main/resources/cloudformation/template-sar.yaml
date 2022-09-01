@@ -222,6 +222,8 @@ Resources:
           DEBUG: false  
           FormKiQType:
             Ref: FormKiQType
+          SNS_DOCUMENT_EVENT: 
+            Ref: SnsDocumentEvent
       Role: 
         Fn::GetAtt:
         - S3LambdaRole

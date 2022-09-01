@@ -40,6 +40,34 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ApiDocumentsFulltextRequestTest extends AbstractRequestHandler {
 
   /**
+   * GET /documents/{documentId}/fulltext request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocumentFulltext01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-put-documents-fulltext.json");
+      event.setHttpMethod("get");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", "1");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
+  }
+  
+  /**
    * PUT /documents/{documentId}/fulltext request.
    *
    * @throws Exception an error has occurred

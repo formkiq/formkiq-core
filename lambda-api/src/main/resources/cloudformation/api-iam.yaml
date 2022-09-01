@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.8.3"
+          version: "1.8.5"
         paths:
           /version:
             get:
@@ -979,6 +979,31 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"                
           /documents/{documentId}/fulltext:
+            get:
+              description: Retrieves an OpenSearch document's details, i.e., metadata
+              tags:
+              - Enterprise Fulltext
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FulltextDocument'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
               description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
               tags:
@@ -1955,8 +1980,8 @@ Resources:
               type: "array"
               description: "List of search result documents"
               items:
-                $ref: "#/components/schemas/FulltextDocument"
-            FulltextDocument:
+                $ref: "#/components/schemas/FulltextSearchItem"
+            FulltextSearchItem:
               type: "object"
               properties:
                 siteId:
@@ -1977,7 +2002,32 @@ Resources:
                   type: "string"
                   description: "User who added document"
                 tags:
-                  type: "object"                  
+                  type: "object"
+            FulltextDocument:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                content:
+                  type: "string"
+                  description: "Content of document"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                createdBy:
+                  type: "string"
+                  description: "User who added document"
+                tags:
+                  type: "object"
             DocumentSearchResults:
               type: "object"
               properties:
@@ -2240,26 +2290,6 @@ Resources:
                 contentUrl:
                   type: "string"
                   description: "Url which contains Document content"                
-            DeleteFulltextTags:
-              type: object
-              properties:
-                tags:
-                  type: "array"
-                  description: "List of tags"
-                  items:
-                    type: "object"
-                    properties:
-                      key:
-                        type: "string"
-                        description: "Tag key"
-                      value:
-                        type: "string"
-                        description: "Tag value"
-                      values:
-                        description: "Tag values"
-                        type: "array"
-                        items:
-                          type: "string"
             FulltextUpdateBody:
               type: object
               properties:

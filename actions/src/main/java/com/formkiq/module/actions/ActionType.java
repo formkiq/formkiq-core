@@ -34,5 +34,7 @@ public enum ActionType {
   /** Full Text. */
   FULLTEXT,
   /** OCR. */
-  OCR;
+  OCR,
+  /** WebHook. */
+  WEBHOOK;
 }
