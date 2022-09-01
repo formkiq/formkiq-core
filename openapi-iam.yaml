@@ -992,7 +992,7 @@
                       schema:
                         $ref: '#/components/schemas/FulltextDocument'
               security:
-              - AuthorizationCognito: []
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             delete:
@@ -1973,13 +1973,38 @@
               type: array
               description: List of search result documents
               items:
-                $ref: '#/components/schemas/FulltextDocument'
+                $ref: '#/components/schemas/FulltextSearchItem'
+            FulltextSearchItem:
+              type: object
+              properties:
+                siteId:
+                  type: string
+                  description: Site Identifier
+                path:
+                  type: string
+                  description: Path or Name of document
+                insertedDate:
+                  type: string
+                  format: date-time
+                  description: Inserted Timestamp
+                documentId:
+                  type: string
+                  format: uuid
+                  description: Document Identifier
+                createdBy:
+                  type: string
+                  description: User who added document
+                tags:
+                  type: object
             FulltextDocument:
               type: object
               properties:
                 siteId:
                   type: string
                   description: Site Identifier
+                content:
+                  type: string
+                  description: Content of document
                 path:
                   type: string
                   description: Path or Name of document
