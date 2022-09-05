@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.5"
+          version: "1.8.6"
         paths:
           /version:
             get:
@@ -2287,8 +2287,10 @@ Resources:
                 content:
                   type: "string"
                   description: "Document content"
-                contentUrl:
-                  type: "string"
+                contentUrls:
+                  type: "array"
+                  items:
+                    type: "string"
                   description: "Url which contains Document content"                
             FulltextUpdateBody:
               type: object

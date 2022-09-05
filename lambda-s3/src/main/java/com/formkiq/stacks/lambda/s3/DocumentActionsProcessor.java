@@ -213,15 +213,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @return {@link String}
+   * @return {@link List} {@link String}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  private String findContentUrl(final String siteId, final String documentId)
+  private List<String> findContentUrls(final String siteId, final String documentId)
       throws IOException, InterruptedException {
 
-    String url = null;
+    List<String> urls = null;
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
@@ -231,7 +231,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         String bucket =
             MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
-        url = this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+        String url =
+            this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+        urls = Arrays.asList(url);
 
       } else {
 
@@ -242,16 +244,16 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         req.addQueryParameter("text", "true");
 
         HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
-        Map<String, String> map = this.gson.fromJson(response.body(), Map.class);
+        Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
 
-        if (map.containsKey("contentUrl")) {
-          url = map.get("contentUrl");
+        if (map.containsKey("contentUrls")) {
+          urls = (List<String>) map.get("contentUrls");
         } else {
-          throw new IOException("Cannot find 'contentUrl' from OCR request");
+          throw new IOException("Cannot find 'contentUrls' from OCR request");
         }
       }
 
-      return url;
+      return urls;
     }
   }
 
@@ -324,9 +326,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      String contentUrl = findContentUrl(siteId, documentId);
+      List<String> contentUrls = findContentUrls(siteId, documentId);
 
-      SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrl(contentUrl);
+      SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrls(contentUrls);
       SetDocumentFulltextRequest req =
           new SetDocumentFulltextRequest().siteId(siteId).documentId(documentId).document(fulltext);
 

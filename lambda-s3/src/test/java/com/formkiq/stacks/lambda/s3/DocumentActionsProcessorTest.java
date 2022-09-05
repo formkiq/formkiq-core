@@ -242,7 +242,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = callback.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertNotNull(resultmap.get("contentUrl").toString());
+      assertNotNull(resultmap.get("contentUrls").toString());
     }
   }
 
@@ -278,7 +278,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       HttpRequest lastRequest = callback.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertNotNull(resultmap.get("contentUrl").toString());
+      assertNotNull(resultmap.get("contentUrls").toString());
     }
   }
 

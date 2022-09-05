@@ -66,7 +66,7 @@ public class ApiDocumentsFulltextRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
-  
+
   /**
    * PUT /documents/{documentId}/fulltext request.
    *
