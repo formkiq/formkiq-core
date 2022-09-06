@@ -2355,6 +2355,11 @@
                 type:
                   type: string
                   description: FormKiQ type
+                modules:
+                  type: array
+                  description: List of installed modules
+                  items:
+                    type: string
             Sites:
               type: object
               properties:

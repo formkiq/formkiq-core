@@ -281,8 +281,9 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    Map<String, String> resp = fromJson(m.get("body"), Map.class);
+    Map<String, Object> resp = fromJson(m.get("body"), Map.class);
     assertEquals("1.1", resp.get("version"));
     assertEquals("core", resp.get("type"));
+    assertEquals("[ocr, fulltext]", resp.get("modules").toString());
   }
 }
