@@ -293,5 +293,7 @@ task buildSamZip(type: Zip) {
 	from("${projectDir}") {
    		include 'INSTALL.md'
    		include 'LICENSE'
+   		include 'openapi-jwt.yaml'
+   		include 'openapi-iam.yaml'
     } 
 }
