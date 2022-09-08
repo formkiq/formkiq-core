@@ -183,8 +183,6 @@ public abstract class AbstractRequestHandler {
     this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
     this.map.put("CACHE_TABLE", cacheTable);
-    this.map.put("MODULE_ocr", "true");
-    this.map.put("MODULE_fulltext", "true");
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     this.map.put("AWS_REGION", AWS_REGION.toString());
