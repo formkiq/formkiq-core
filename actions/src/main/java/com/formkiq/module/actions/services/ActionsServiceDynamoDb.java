@@ -25,13 +25,16 @@ package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -41,6 +44,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
@@ -75,6 +79,17 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
+  public Map<String, String> getActionParameters(final String siteId, final String documentId,
+      final ActionType type) {
+
+    List<Action> actions = Objects
+        .notNull(queryActions(siteId, documentId, Arrays.asList("type", "parameters"), null));
+
+    Optional<Action> op = actions.stream().filter(a -> a.type().equals(type)).findFirst();
+    return op.isPresent() ? op.get().parameters() : null;
+  }
+
+  @Override
   public List<Action> getActions(final String siteId, final String documentId) {
     return queryActions(siteId, documentId, null, null);
   }
@@ -103,7 +118,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   @Override
   public boolean hasActions(final String siteId, final String documentId) {
-    List<Action> actions = queryActions(siteId, documentId, PK, null);
+    List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK), null);
     return !actions.isEmpty();
   }
 
@@ -112,12 +127,12 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param projectionExpression {@link String}
+   * @param projectionExpression {@link List} {@link String}
    * @param limit {@link Integer}
    * @return {@link List} {@link Action}
    */
   private List<Action> queryActions(final String siteId, final String documentId,
-      final String projectionExpression, final Integer limit) {
+      final List<String> projectionExpression, final Integer limit) {
 
     String pk = getPk(siteId, documentId);
     String sk = "action" + TAG_DELIMINATOR;
@@ -126,11 +141,22 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(pk).build(),
         ":sk", AttributeValue.builder().s(sk).build());
 
-    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-        .keyConditionExpression(expression).expressionAttributeValues(values)
-        .projectionExpression(projectionExpression).limit(limit).build();
+    Builder q = QueryRequest.builder().tableName(this.documentTableName)
+        .keyConditionExpression(expression).expressionAttributeValues(values).limit(limit);
 
-    QueryResponse result = this.dynamoDB.query(q);
+    if (!Objects.notNull(projectionExpression).isEmpty()) {
+
+      Map<String, String> names = new HashMap<>();
+      int i = 1;
+      for (String p : projectionExpression) {
+        names.put("#" + i, p);
+        i++;
+      }
+
+      q = q.projectionExpression(String.join(",", names.keySet())).expressionAttributeNames(names);
+    }
+
+    QueryResponse result = this.dynamoDB.query(q.build());
 
     AttributeValueToAction transform = new AttributeValueToAction();
     return result.items().stream().map(r -> transform.apply(r)).collect(Collectors.toList());

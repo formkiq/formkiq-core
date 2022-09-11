@@ -111,11 +111,15 @@ public class ActionsServiceDynamoDbTest {
           new Action().type(ActionType.OCR).userId(userId1).status(ActionStatus.COMPLETE);
 
       // when
-      List<Map<String, AttributeValue>> list =
+      final List<Map<String, AttributeValue>> list =
           service.saveActions(siteId, documentId0, Arrays.asList(action0));
       service.saveActions(siteId, documentId1, Arrays.asList(action1));
 
       // then
+      assertEquals("{test=1234}",
+          service.getActionParameters(siteId, documentId0, ActionType.OCR).toString());
+      assertNull(service.getActionParameters(siteId, documentId1, ActionType.OCR));
+
       assertEquals(1, list.size());
       if (siteId != null) {
         assertEquals(siteId + "/docs#" + documentId0, list.get(0).get("PK").s());

@@ -38,6 +38,16 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public interface ActionsService {
 
   /**
+   * Get Action Parameters.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param type {@link ActionType}
+   * @return {@link Map}
+   */
+  Map<String, String> getActionParameters(String siteId, String documentId, ActionType type);
+
+  /**
    * Get {@link List} {@link Action} for a document.
    * 
    * @param siteId {@link String}
