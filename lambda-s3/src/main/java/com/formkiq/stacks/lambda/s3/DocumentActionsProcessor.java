@@ -320,9 +320,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (ActionType.OCR.equals(action.type())) {
 
       List<OcrParseType> parseTypes = getOcrParseTypes(action);
+      String addPdfDetectedCharactersAsText =
+          action.parameters().getOrDefault("addPdfDetectedCharactersAsText", "false");
 
       this.formkiqClient.addDocumentOcr(
-          new AddDocumentOcrRequest().siteId(siteId).documentId(documentId).parseTypes(parseTypes));
+          new AddDocumentOcrRequest().siteId(siteId).documentId(documentId).parseTypes(parseTypes)
+              .addPdfDetectedCharactersAsText("true".equals(addPdfDetectedCharactersAsText)));
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 

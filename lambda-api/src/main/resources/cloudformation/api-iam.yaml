@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} IAM API - ${AppEnvironment}"
           description: "FormKiQ IAM API"
-          version: "1.8.6"
+          version: "1.8.7"
         paths:
           /version:
             get:
@@ -2339,6 +2339,9 @@ Resources:
                   description: "OCR Parse types - TEXT, FORMS, TABLES"
                   items:
                     type: "string"
+                addPdfDetectedCharactersAsText:
+                  type: "boolean"
+                  description: "Rewrite PDF document, converting any Image text to searchable text"
             SetOcrBody:
               required:
               - "content"
