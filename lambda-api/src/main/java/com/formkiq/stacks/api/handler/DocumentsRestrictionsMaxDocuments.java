@@ -23,9 +23,11 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * {@link DocumentsRestrictions} for Max Number of Documents.
@@ -46,11 +48,14 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
 
     if (value != null) {
       try {
-        long max = Long.parseLong(value);
-        long doccount =
-            (CoreAwsServiceCache.cast(awsservice)).documentCountService().getDocumentCount(siteId);
-        enforced = (doccount + 1) > max;
+        DynamoDbConnectionBuilder db = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+        try (DynamoDbClient dbClient = db.build()) {
 
+          long max = Long.parseLong(value);
+          long doccount = (CoreAwsServiceCache.cast(awsservice)).documentCountService()
+              .getDocumentCount(dbClient, siteId);
+          enforced = (doccount + 1) > max;
+        }
       } catch (NumberFormatException e) {
         enforced = false;
       }

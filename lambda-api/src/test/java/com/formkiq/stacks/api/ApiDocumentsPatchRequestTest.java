@@ -48,6 +48,7 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request PATCH /documents/{documentId}. */
@@ -62,28 +63,31 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    try (DynamoDbClient dbClient = getDbClient()) {
 
-      // given
-      String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+        // given
+        String userId = "jsmith";
+        String documentId = UUID.randomUUID().toString();
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
+        getDocumentService().saveDocument(dbClient, siteId,
+            new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      // when
-      String response = handleRequest(event);
+        ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "documentId", documentId);
 
-      // then
-      assert200Response(siteId, response);
+        // when
+        String response = handleRequest(event);
 
-      assertTrue(getLogger()
-          .containsString("setting userId: 8a73dfef-26d3-43d8-87aa-b3ec358e43ba@formkiq.com "
-              + "contentType: application/pdf"));
+        // then
+        assert200Response(siteId, response);
+
+        assertTrue(getLogger()
+            .containsString("setting userId: 8a73dfef-26d3-43d8-87aa-b3ec358e43ba@formkiq.com "
+                + "contentType: application/pdf"));
+      }
     }
   }
 
@@ -114,24 +118,26 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePatchDocuments03() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    try (DynamoDbClient dbClient = getDbClient()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      // given
-      String documentId = UUID.randomUUID().toString();
-      String userId = "jsmith";
+        // given
+        String documentId = UUID.randomUUID().toString();
+        String userId = "jsmith";
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+        getDocumentService().saveDocument(dbClient, siteId,
+            new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid02.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
+        ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid02.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "documentId", documentId);
 
-      // when
-      String response = handleRequest(event);
+        // when
+        String response = handleRequest(event);
 
-      // then
-      assert200Response(siteId, response);
+        // then
+        assert200Response(siteId, response);
+      }
     }
   }
 
@@ -182,41 +188,43 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments05() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    try (DynamoDbClient dbClient = getDbClient()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      // given
-      String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
+        // given
+        String userId = "jsmith";
+        String documentId = UUID.randomUUID().toString();
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+        getDocumentService().saveDocument(dbClient, siteId,
+            new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      event.setBody("{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}");
-      event.setIsBase64Encoded(Boolean.FALSE);
+        ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "documentId", documentId);
+        event.setBody("{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}");
+        event.setIsBase64Encoded(Boolean.FALSE);
 
-      // when
-      String response = handleRequest(event);
+        // when
+        String response = handleRequest(event);
 
-      // then
-      assert200Response(siteId, response);
+        // then
+        assert200Response(siteId, response);
 
-      S3Service s3 = getS3();
-      String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        S3Service s3 = getS3();
+        String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
 
-      try (S3Client client = s3.buildClient()) {
-        String json = s3.getContentAsString(client, STAGE_BUCKET_NAME, s3key, null);
-        Map<String, Object> map = fromJson(json, Map.class);
-        assertEquals(documentId, map.get("documentId"));
+        try (S3Client client = s3.buildClient()) {
+          String json = s3.getContentAsString(client, STAGE_BUCKET_NAME, s3key, null);
+          Map<String, Object> map = fromJson(json, Map.class);
+          assertEquals(documentId, map.get("documentId"));
 
-        List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
-        assertEquals(1, tags.size());
+          List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
+          assertEquals(1, tags.size());
 
-        assertEquals("USERDEFINED", tags.get(0).get("type"));
-        assertEquals("author", tags.get(0).get("key"));
-        assertEquals("Bacon", tags.get(0).get("value"));
+          assertEquals("USERDEFINED", tags.get(0).get("type"));
+          assertEquals("author", tags.get(0).get("key"));
+          assertEquals("Bacon", tags.get(0).get("value"));
+        }
       }
     }
   }

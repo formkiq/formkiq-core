@@ -23,6 +23,7 @@
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.google.gson" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		
 		<subpackage name="services">

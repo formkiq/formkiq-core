@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * 
@@ -38,12 +39,13 @@ public interface DocumentSearchService {
   /**
    * Search for Documents.
    *
+   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param search {@link SearchQuery}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    */
-  PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
-      PaginationMapToken token, int maxresults);
+  PaginationResults<DynamicDocumentItem> search(DynamoDbClient client, String siteId,
+      SearchQuery search, PaginationMapToken token, int maxresults);
 }

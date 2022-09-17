@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -36,6 +35,7 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * 
@@ -70,11 +70,12 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   /**
    * Get SiteId Config.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @return {@link DynamicObject}
    */
-  public DynamicObject config(final String siteId) {
-    return configService().get(siteId);
+  public DynamicObject config(final DynamoDbClient client, final String siteId) {
+    return configService().get(client, siteId);
   }
 
   /**
@@ -84,8 +85,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public ConfigService configService() {
     if (this.configService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
-      this.configService = new ConfigServiceImpl(db, environment("DOCUMENTS_TABLE"));
+      this.configService = new ConfigServiceImpl(environment("DOCUMENTS_TABLE"));
     }
     return this.configService;
   }
@@ -97,9 +97,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public DocumentCountService documentCountService() {
     if (this.documentCountService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
-      this.documentCountService =
-          new DocumentCountServiceDynamoDb(db, environment("DOCUMENTS_TABLE"));
+      this.documentCountService = new DocumentCountServiceDynamoDb(environment("DOCUMENTS_TABLE"));
     }
     return this.documentCountService;
   }
@@ -111,9 +109,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public DocumentSearchService documentSearchService() {
     if (this.documentSearchService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
       DocumentTagSchemaPlugin documentTagSchemaPlugin = getExtension(DocumentTagSchemaPlugin.class);
-      this.documentSearchService = new DocumentSearchServiceImpl(documentService(), db,
+      this.documentSearchService = new DocumentSearchServiceImpl(documentService(),
           environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin);
     }
     return this.documentSearchService;
@@ -135,8 +132,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public WebhooksService webhookService() {
     if (this.webhookService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
-      this.webhookService = new WebhooksServiceImpl(db, environment("DOCUMENTS_TABLE"));
+      this.webhookService = new WebhooksServiceImpl(environment("DOCUMENTS_TABLE"));
     }
     return this.webhookService;
   }

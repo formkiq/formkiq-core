@@ -38,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for request /webhooks/{webhookId}. */
 @ExtendWith(LocalStackExtension.class)
@@ -292,63 +293,68 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String id =
-          getAwsServices().webhookService().saveWebhook(siteId, "test", "joe", date, "true");
+    try (DynamoDbClient dbClient = getDbClient()) {
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
-      setPathParameter(event, "webhookId", id);
-      addParameter(event, "siteId", siteId);
-      event.setBody("{\"name\":\"john smith2\",\"enabled\":false}");
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String id = getAwsServices().webhookService().saveWebhook(dbClient, siteId, "test", "joe",
+            date, "true");
 
-      // when
-      String response = handleRequest(event);
+        ApiGatewayRequestEvent event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
+        setPathParameter(event, "webhookId", id);
+        addParameter(event, "siteId", siteId);
+        event.setBody("{\"name\":\"john smith2\",\"enabled\":false}");
 
-      // then
-      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+        // when
+        String response = handleRequest(event);
 
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        // then
+        Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-      assertEquals("{\"message\":\"'" + id + "' object updated\"}", m.get("body"));
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        assertEquals(getHeaders(),
+            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-      // given
-      event = toRequestEvent("/request-get-webhooks-webhookid01.json");
-      setPathParameter(event, "webhookId", id);
-      addParameter(event, "siteId", siteId);
+        assertEquals("{\"message\":\"'" + id + "' object updated\"}", m.get("body"));
 
-      // when
-      response = handleRequest(event);
+        // given
+        event = toRequestEvent("/request-get-webhooks-webhookid01.json");
+        setPathParameter(event, "webhookId", id);
+        addParameter(event, "siteId", siteId);
 
-      // then
-      m = GsonUtil.getInstance().fromJson(response, Map.class);
+        // when
+        response = handleRequest(event);
 
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        // then
+        m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-      Map<String, Object> result =
-          GsonUtil.getInstance().fromJson(m.get("body").toString(), Map.class);
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        assertEquals(getHeaders(),
+            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-      if (siteId == null) {
-        assertEquals("default", result.get("siteId"));
-      } else {
-        assertNotNull(result.get("siteId"));
-        assertNotEquals("default", result.get("siteId"));
+        Map<String, Object> result =
+            GsonUtil.getInstance().fromJson(m.get("body").toString(), Map.class);
+
+        if (siteId == null) {
+          assertEquals("default", result.get("siteId"));
+        } else {
+          assertNotNull(result.get("siteId"));
+          assertNotEquals("default", result.get("siteId"));
+        }
+
+        assertNotNull(result.get("id"));
+        id = result.get("id").toString();
+
+        assertNotNull(result.get("insertedDate"));
+        assertEquals("john smith2", result.get("name"));
+        assertEquals("joe", result.get("userId"));
+        assertEquals("false", result.get("enabled"));
+
+        verifyUrl(siteId, id, result, true);
       }
-
-      assertNotNull(result.get("id"));
-      id = result.get("id").toString();
-
-      assertNotNull(result.get("insertedDate"));
-      assertEquals("john smith2", result.get("name"));
-      assertEquals("joe", result.get("userId"));
-      assertEquals("false", result.get("enabled"));
-
-      verifyUrl(siteId, id, result, true);
     }
   }
 }

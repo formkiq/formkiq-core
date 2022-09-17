@@ -36,20 +36,23 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test CloudFormation.
  */
 public class AwsResourceTest {
 
-  /** AWS Region. */
-  private static Region awsregion;
   /** App Environment Name. */
   private static String appenvironment;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
+  /** AWS Region. */
+  private static Region awsregion;
   /** {@link DynamoDbClient}. */
   private static DynamoDbClient dynamoDB;
+  /** {@link SsmClient}. */
+  private static SsmClient ssmClient;
+  /** {@link SsmService}. */
+  private static SsmService ssmService;
 
   /**
    * beforeclass.
@@ -65,7 +68,8 @@ public class AwsResourceTest {
 
     final SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    ssmService = new SsmServiceImpl(ssmBuilder);
+    ssmClient = ssmBuilder.build();
+    ssmService = new SsmServiceImpl();
 
     dynamoDB =
         new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion).build();
@@ -76,10 +80,10 @@ public class AwsResourceTest {
    */
   @Test
   public void testDynamoDbTables() {
-    final String documentTable =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
-    final String cacheTable =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/CacheTableName");
+    final String documentTable = ssmService.getParameterValue(ssmClient,
+        "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+    final String cacheTable = ssmService.getParameterValue(ssmClient,
+        "/formkiq/" + appenvironment + "/dynamodb/CacheTableName");
 
     DescribeTableRequest req = DescribeTableRequest.builder().tableName(documentTable).build();
     DescribeTableResponse resp = dynamoDB.describeTable(req);
@@ -94,11 +98,11 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertTrue(
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName")
-            .contains("-documents"));
-    assertTrue(
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/CacheTableName")
-            .contains("-cache"));
+    assertTrue(ssmService
+        .getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName")
+        .contains("-documents"));
+    assertTrue(ssmService
+        .getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/dynamodb/CacheTableName")
+        .contains("-cache"));
   }
 }

@@ -27,6 +27,7 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -37,6 +38,8 @@ public class FkqSsmService implements SsmService {
 
   /** {@link SsmService}. */
   private SsmService service;
+  /** {@link SsmConnectionBuilder}. */
+  private SsmConnectionBuilder ssmBuilder;
 
   /**
    * constructor.
@@ -45,23 +48,31 @@ public class FkqSsmService implements SsmService {
    * @param awsRegion {@link Region}
    */
   public FkqSsmService(final String awsProfile, final Region awsRegion) {
-    SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsProfile).setRegion(awsRegion);
-    this.service = new SsmServiceImpl(ssmBuilder);
+    this.ssmBuilder = new SsmConnectionBuilder().setCredentials(awsProfile).setRegion(awsRegion);
+    this.service = new SsmServiceImpl();
+  }
+
+  /**
+   * Build {@link SsmClient}.
+   * 
+   * @return {@link SsmClient}
+   */
+  public SsmClient build() {
+    return this.ssmBuilder.build();
   }
 
   @Override
-  public String getParameterValue(final String key) {
-    return this.service.getParameterValue(key);
+  public String getParameterValue(final SsmClient ssm, final String key) {
+    return this.service.getParameterValue(ssm, key);
   }
 
   @Override
-  public void putParameter(final String key, final String value) {
-    this.service.putParameter(key, value);
+  public void putParameter(final SsmClient ssm, final String key, final String value) {
+    this.service.putParameter(ssm, key, value);
   }
 
   @Override
-  public void removeParameter(final String key) {
-    this.service.removeParameter(key);
+  public void removeParameter(final SsmClient ssm, final String key) {
+    this.service.removeParameter(ssm, key);
   }
 }

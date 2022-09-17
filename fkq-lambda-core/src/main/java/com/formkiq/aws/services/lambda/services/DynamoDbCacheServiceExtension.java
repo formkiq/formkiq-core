@@ -23,7 +23,6 @@
  */
 package com.formkiq.aws.services.lambda.services;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
@@ -45,8 +44,7 @@ public class DynamoDbCacheServiceExtension implements AwsServiceExtension<CacheS
   @Override
   public CacheService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      DynamoDbConnectionBuilder db = awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service = new DynamoDbCacheService(db, awsServiceCache.environment("CACHE_TABLE"));
+      this.service = new DynamoDbCacheService(awsServiceCache.environment("CACHE_TABLE"));
     }
 
     return this.service;

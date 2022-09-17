@@ -34,6 +34,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for request /webhooks/{webhookId}/tags. */
 @ExtendWith(LocalStackExtension.class)
@@ -73,49 +74,52 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testGetWebhooks02() throws Exception {
     // given
-    String webhookId =
-        getAwsServices().webhookService().saveWebhook(null, "testwebhook", "joe", null, "true");
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks-webhookid-tags01.json");
-    setPathParameter(event, "webhookId", webhookId);
+    try (DynamoDbClient dbClient = getDbClient()) {
 
-    // when
-    String response = handleRequest(event);
+      String webhookId = getAwsServices().webhookService().saveWebhook(dbClient, null,
+          "testwebhook", "joe", null, "true");
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks-webhookid-tags01.json");
+      setPathParameter(event, "webhookId", webhookId);
 
-    // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      // when
+      String response = handleRequest(event);
 
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("201.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    assertEquals("{\"message\":\"Created Tag 'category'.\"}", m.get("body"));
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-    // given
-    event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
-    setPathParameter(event, "webhookId", webhookId);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("201.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"Created Tag 'category'.\"}", m.get("body"));
 
-    // when
-    response = handleRequest(event);
+      // given
+      event = toRequestEvent("/request-get-webhooks-webhookid-tags01.json");
+      setPathParameter(event, "webhookId", webhookId);
 
-    // then
-    m = GsonUtil.getInstance().fromJson(response, Map.class);
+      // when
+      response = handleRequest(event);
 
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
-    DynamicObject obj = new DynamicObject(body);
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-    List<DynamicObject> list = obj.getList("tags");
-    assertEquals(1, list.size());
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      DynamicObject obj = new DynamicObject(body);
 
-    assertEquals(webhookId, list.get(0).getString("webhookId"));
-    assertEquals("USERDEFINED", list.get(0).getString("type"));
-    assertEquals("8a73dfef-26d3-43d8-87aa-b3ec358e43ba@formkiq.com",
-        list.get(0).getString("userId"));
-    assertEquals("category", list.get(0).getString("key"));
-    assertEquals("job", list.get(0).getString("value"));
-    assertNotNull(list.get(0).getString("insertedDate"));
+      List<DynamicObject> list = obj.getList("tags");
+      assertEquals(1, list.size());
+
+      assertEquals(webhookId, list.get(0).getString("webhookId"));
+      assertEquals("USERDEFINED", list.get(0).getString("type"));
+      assertEquals("8a73dfef-26d3-43d8-87aa-b3ec358e43ba@formkiq.com",
+          list.get(0).getString("userId"));
+      assertEquals("category", list.get(0).getString("key"));
+      assertEquals("job", list.get(0).getString("value"));
+      assertNotNull(list.get(0).getString("insertedDate"));
+    }
   }
 }

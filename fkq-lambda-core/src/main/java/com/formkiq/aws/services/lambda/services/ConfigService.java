@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda.services;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Config Service. */
 public interface ConfigService {
@@ -42,23 +43,26 @@ public interface ConfigService {
   /**
    * Delete Config.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    */
-  void delete(String siteId);
+  void delete(DynamoDbClient client, String siteId);
 
   /**
    * Get Config.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @return {@link DynamicObject}
    */
-  DynamicObject get(String siteId);
+  DynamicObject get(DynamoDbClient client, String siteId);
 
   /**
    * Save Config.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param obj {@link DynamicObject}
    */
-  void save(String siteId, DynamicObject obj);
+  void save(DynamoDbClient client, String siteId, DynamicObject obj);
 }

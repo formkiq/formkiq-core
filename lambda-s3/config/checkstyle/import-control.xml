@@ -13,7 +13,9 @@
 			<allow pkg="org.mockserver.model" />
 		
 			<allow pkg="software.amazon.awssdk.auth.credentials" />	
-			<allow pkg="software.amazon.awssdk.services.sns.model" />			
+			<allow pkg="software.amazon.awssdk.services.dynamodb" />
+			<allow pkg="software.amazon.awssdk.services.sns.model" />	
+			<allow pkg="software.amazon.awssdk.services.ssm" />		
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			
 			<allow pkg="com.formkiq.aws.dynamodb" />

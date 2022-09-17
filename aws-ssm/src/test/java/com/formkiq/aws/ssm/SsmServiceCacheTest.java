@@ -40,6 +40,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 
 /**
@@ -58,8 +59,8 @@ public class SsmServiceCacheTest {
 
   /** {@link SsmServiceCache}. */
   private static SsmServiceCache cache;
-  /** {@link SsmConnectionBuilder}. */
-  private static SsmConnectionBuilder ssmConnection;
+  /** {@link ssmConnection}. */
+  private static SsmClient ssmClient;
 
   /**
    * Before Class.
@@ -76,10 +77,10 @@ public class SsmServiceCacheTest {
 
     localstack.start();
 
-    ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString());
+    ssmClient = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+        .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString()).build();
 
-    cache = new SsmServiceCache(ssmConnection, 1, TimeUnit.SECONDS);
+    cache = new SsmServiceCache(1, TimeUnit.SECONDS);
   }
 
   /**
@@ -88,6 +89,7 @@ public class SsmServiceCacheTest {
   @AfterClass
   public static void afterClass() {
     localstack.stop();
+    ssmClient.close();
   }
 
   /**
@@ -99,10 +101,10 @@ public class SsmServiceCacheTest {
     String key = UUID.randomUUID().toString();
     String value = UUID.randomUUID().toString();
 
-    cache.putParameter(key, value);
+    cache.putParameter(ssmClient, key, value);
 
     // when
-    String result = cache.getParameterValue(key);
+    String result = cache.getParameterValue(ssmClient, key);
 
     // then
     assertEquals(value, result);
@@ -119,10 +121,10 @@ public class SsmServiceCacheTest {
     String key = UUID.randomUUID().toString();
     String value = UUID.randomUUID().toString();
 
-    cache.putParameter(key, value);
+    cache.putParameter(ssmClient, key, value);
 
     // when
-    String result = cache.getParameterValue(key);
+    String result = cache.getParameterValue(ssmClient, key);
 
     // then
     assertEquals(value, result);
@@ -143,7 +145,7 @@ public class SsmServiceCacheTest {
     String value = UUID.randomUUID().toString();
 
     // when
-    cache.putParameter(key, value);
+    cache.putParameter(ssmClient, key, value);
 
     // then
     assertTrue(cache.isCached(key));
@@ -166,13 +168,13 @@ public class SsmServiceCacheTest {
     String key = UUID.randomUUID().toString();
     String value = UUID.randomUUID().toString();
 
-    cache.putParameter(key, value);
+    cache.putParameter(ssmClient, key, value);
 
     assertTrue(cache.isCached(key));
     assertFalse(cache.isExpired(key));
 
     // when
-    cache.removeParameter(key);
+    cache.removeParameter(ssmClient, key);
 
     // then
     assertFalse(cache.isCached(key));
@@ -180,7 +182,7 @@ public class SsmServiceCacheTest {
 
     // when
     try {
-      cache.getParameterValue(key);
+      cache.getParameterValue(ssmClient, key);
     } catch (ParameterNotFoundException e) {
       assertTrue(true);
     }

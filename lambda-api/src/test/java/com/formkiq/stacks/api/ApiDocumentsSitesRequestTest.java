@@ -41,6 +41,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for request /sites. */
 @ExtendWith(LocalStackExtension.class)
@@ -204,27 +205,30 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetSites04() throws Exception {
     // given
-    String siteId = "finance";
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
-    setCognitoGroup(event, siteId);
-    getAwsServices().configService().save(siteId,
-        new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+    try (DynamoDbClient dbClient = getDbClient()) {
 
-    // when
-    String response = handleRequest(event);
+      String siteId = "finance";
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
+      setCognitoGroup(event, siteId);
+      getAwsServices().configService().save(dbClient, siteId,
+          new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
-    // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      // when
+      String response = handleRequest(event);
 
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-    assertEquals(1, resp.getList("sites").size());
-    assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
-    assertEquals("5", resp.getList("sites").get(0).getString(MAX_DOCUMENTS));
-    assertEquals("10", resp.getList("sites").get(0).getString(MAX_WEBHOOKS));
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertEquals(1, resp.getList("sites").size());
+      assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
+      assertEquals("5", resp.getList("sites").get(0).getString(MAX_DOCUMENTS));
+      assertEquals("10", resp.getList("sites").get(0).getString(MAX_WEBHOOKS));
+    }
   }
 }

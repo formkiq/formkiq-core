@@ -26,6 +26,7 @@ package com.formkiq.aws.ssm;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -46,13 +47,11 @@ public class SsmServiceCache implements SsmService {
   /**
    * constructor.
    * 
-   * @param builder {@link SsmConnectionBuilder}.
    * @param ttl Cache Time to Live
    * @param ttlUnit Cache Time to Live {@link TimeUnit}
    */
-  public SsmServiceCache(final SsmConnectionBuilder builder, final long ttl,
-      final TimeUnit ttlUnit) {
-    this.ssm = new SsmServiceImpl(builder);
+  public SsmServiceCache(final long ttl, final TimeUnit ttlUnit) {
+    this.ssm = new SsmServiceImpl();
     this.ttlMillis = ttlUnit.toMillis(ttl);
   }
 
@@ -70,12 +69,12 @@ public class SsmServiceCache implements SsmService {
   }
 
   @Override
-  public String getParameterValue(final String key) {
+  public String getParameterValue(final SsmClient client, final String key) {
 
     String value = null;
 
     if (!isCached(key) || isExpired(key)) {
-      value = this.ssm.getParameterValue(key);
+      value = this.ssm.getParameterValue(client, key);
       addToCache(key, value);
     } else {
       value = this.cache.get(key);
@@ -107,14 +106,14 @@ public class SsmServiceCache implements SsmService {
   }
 
   @Override
-  public void putParameter(final String key, final String value) {
-    this.ssm.putParameter(key, value);
+  public void putParameter(final SsmClient client, final String key, final String value) {
+    this.ssm.putParameter(client, key, value);
     addToCache(key, value);
   }
 
   @Override
-  public void removeParameter(final String key) {
-    this.ssm.removeParameter(key);
+  public void removeParameter(final SsmClient client, final String key) {
+    this.ssm.removeParameter(client, key);
     this.cache.remove(key);
     this.timestamps.remove(key);
   }

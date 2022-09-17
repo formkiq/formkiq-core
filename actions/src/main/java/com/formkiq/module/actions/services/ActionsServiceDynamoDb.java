@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -58,40 +57,36 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   /** Document Table Name. */
   private String documentTableName;
-  /** {@link DynamoDbClient}. */
-  private DynamoDbClient dynamoDB;
 
   /**
    * constructor.
    *
-   * @param builder {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public ActionsServiceDynamoDb(final DynamoDbConnectionBuilder builder,
-      final String documentsTable) {
+  public ActionsServiceDynamoDb(final String documentsTable) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
     this.documentTableName = documentsTable;
   }
 
   @Override
-  public Map<String, String> getActionParameters(final String siteId, final String documentId,
-      final ActionType type) {
+  public Map<String, String> getActionParameters(final DynamoDbClient client, final String siteId,
+      final String documentId, final ActionType type) {
 
-    List<Action> actions = Objects
-        .notNull(queryActions(siteId, documentId, Arrays.asList("type", "parameters"), null));
+    List<Action> actions = Objects.notNull(
+        queryActions(client, siteId, documentId, Arrays.asList("type", "parameters"), null));
 
     Optional<Action> op = actions.stream().filter(a -> a.type().equals(type)).findFirst();
     return op.isPresent() ? op.get().parameters() : null;
   }
 
   @Override
-  public List<Action> getActions(final String siteId, final String documentId) {
-    return queryActions(siteId, documentId, null, null);
+  public List<Action> getActions(final DynamoDbClient client, final String siteId,
+      final String documentId) {
+    return queryActions(client, siteId, documentId, null, null);
   }
 
   /**
@@ -117,22 +112,24 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public boolean hasActions(final String siteId, final String documentId) {
-    List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK), null);
+  public boolean hasActions(final DynamoDbClient client, final String siteId,
+      final String documentId) {
+    List<Action> actions = queryActions(client, siteId, documentId, Arrays.asList(PK), null);
     return !actions.isEmpty();
   }
 
   /**
    * Query Document Actions.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param projectionExpression {@link List} {@link String}
    * @param limit {@link Integer}
    * @return {@link List} {@link Action}
    */
-  private List<Action> queryActions(final String siteId, final String documentId,
-      final List<String> projectionExpression, final Integer limit) {
+  private List<Action> queryActions(final DynamoDbClient client, final String siteId,
+      final String documentId, final List<String> projectionExpression, final Integer limit) {
 
     String pk = getPk(siteId, documentId);
     String sk = "action" + TAG_DELIMINATOR;
@@ -156,15 +153,15 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       q = q.projectionExpression(String.join(",", names.keySet())).expressionAttributeNames(names);
     }
 
-    QueryResponse result = this.dynamoDB.query(q.build());
+    QueryResponse result = client.query(q.build());
 
     AttributeValueToAction transform = new AttributeValueToAction();
     return result.items().stream().map(r -> transform.apply(r)).collect(Collectors.toList());
   }
 
   @Override
-  public List<Map<String, AttributeValue>> saveActions(final String siteId, final String documentId,
-      final List<Action> actions) {
+  public List<Map<String, AttributeValue>> saveActions(final DynamoDbClient client,
+      final String siteId, final String documentId, final List<Action> actions) {
 
     int idx = 0;
 
@@ -199,14 +196,14 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, Collection<WriteRequest>> items = Map.of(this.documentTableName, list);
 
     BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
-    this.dynamoDB.batchWriteItem(batch);
+    client.batchWriteItem(batch);
 
     return values;
   }
 
   @Override
-  public void updateActionStatus(final String siteId, final String documentId, final Action action,
-      final int index) {
+  public void updateActionStatus(final DynamoDbClient client, final String siteId,
+      final String documentId, final Action action, final int index) {
 
     String pk = getPk(siteId, documentId);
     String sk = getSk(action, index);
@@ -218,21 +215,21 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     values.put("status", AttributeValueUpdate.builder()
         .value(AttributeValue.builder().s(action.status().name()).build()).build());
 
-    this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
+    client.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
         .attributeUpdates(values).build());
   }
 
   @Override
-  public List<Action> updateActionStatus(final String siteId, final String documentId,
-      final ActionType type, final ActionStatus status) {
+  public List<Action> updateActionStatus(final DynamoDbClient client, final String siteId,
+      final String documentId, final ActionType type, final ActionStatus status) {
 
     int idx = 0;
     NextActionPredicate pred = new NextActionPredicate();
-    List<Action> actionlist = getActions(siteId, documentId);
+    List<Action> actionlist = getActions(client, siteId, documentId);
     for (Action action : actionlist) {
       if (pred.test(action) && action.type().equals(type)) {
         action.status(status);
-        updateActionStatus(siteId, documentId, action, idx);
+        updateActionStatus(client, siteId, documentId, action, idx);
         break;
       }
       idx++;

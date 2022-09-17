@@ -70,6 +70,7 @@ import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * GET, OPTIONS, POST /documents. Tests.
@@ -103,7 +104,9 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @AfterClass
   public static void afterClass() {
-    getConfigService().delete(SITEID1);
+    try (DynamoDbClient dbClient = getDynamoDbClient()) {
+      getConfigService().delete(dbClient, SITEID1);
+    }
   }
 
   /**
@@ -570,7 +573,9 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testPost06() throws Exception {
     // given
-    getConfigService().save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    try (DynamoDbClient dbClient = getDynamoDbClient()) {
+      getConfigService().save(dbClient, SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    }
 
     AddDocument post = new AddDocument();
     post.content("dummy data", StandardCharsets.UTF_8);

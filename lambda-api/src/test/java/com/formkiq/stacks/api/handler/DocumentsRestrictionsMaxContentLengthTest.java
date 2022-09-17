@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * Unit Tests for {@link DocumentsRestrictionsMaxContentLength}.
@@ -55,6 +57,18 @@ public class DocumentsRestrictionsMaxContentLengthTest {
       new DocumentsRestrictionsMaxContentLength();
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsservice;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder db;
+
+  /**
+   * BeforeAll.
+   * 
+   * @throws Exception Exception
+   */
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    db = DynamoDbTestServices.getDynamoDbConnection(null);
+  }
 
   /**
    * Before Tests.
@@ -97,20 +111,22 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced02() {
     // given
-    Long contentLength = null;
-    String siteId = UUID.randomUUID().toString();
+    try (DynamoDbClient client = db.build()) {
+      Long contentLength = null;
+      String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+      CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+      DynamicObject ob = serviceCache.configService().get(client, siteId);
+      ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+      serviceCache.configService().save(client, siteId, ob);
 
-    // when
-    String value = service.getValue(this.awsservice, siteId);
-    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
+      // when
+      String value = service.getValue(this.awsservice, siteId);
+      boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
-    // then
-    assertTrue(result);
+      // then
+      assertTrue(result);
+    }
   }
 
   /**
@@ -119,20 +135,22 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced03() {
     // given
-    Long contentLength = Long.valueOf("10");
-    String siteId = UUID.randomUUID().toString();
+    try (DynamoDbClient client = db.build()) {
+      Long contentLength = Long.valueOf("10");
+      String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+      CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+      DynamicObject ob = serviceCache.configService().get(client, siteId);
+      ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+      serviceCache.configService().save(client, siteId, ob);
 
-    // when
-    String value = service.getValue(this.awsservice, siteId);
-    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
+      // when
+      String value = service.getValue(this.awsservice, siteId);
+      boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
-    // then
-    assertFalse(result);
+      // then
+      assertFalse(result);
+    }
   }
 
 
@@ -142,20 +160,22 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced04() {
     // given
-    Long contentLength = Long.valueOf("15");
-    String siteId = UUID.randomUUID().toString();
+    try (DynamoDbClient client = db.build()) {
+      Long contentLength = Long.valueOf("15");
+      String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+      CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+      DynamicObject ob = serviceCache.configService().get(client, siteId);
+      ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+      serviceCache.configService().save(client, siteId, ob);
 
-    // when
-    String value = service.getValue(this.awsservice, siteId);
-    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
+      // when
+      String value = service.getValue(this.awsservice, siteId);
+      boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
-    // then
-    assertTrue(result);
+      // then
+      assertTrue(result);
+    }
   }
 
   /**
@@ -164,19 +184,21 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced05() {
     // given
-    Long contentLength = Long.valueOf(0);
-    String siteId = UUID.randomUUID().toString();
+    try (DynamoDbClient client = db.build()) {
+      Long contentLength = Long.valueOf(0);
+      String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
-    ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+      CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
+      DynamicObject ob = serviceCache.configService().get(client, siteId);
+      ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
+      serviceCache.configService().save(client, siteId, ob);
 
-    // when
-    String value = service.getValue(this.awsservice, siteId);
-    boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
+      // when
+      String value = service.getValue(this.awsservice, siteId);
+      boolean result = service.enforced(this.awsservice, siteId, value, contentLength);
 
-    // then
-    assertTrue(result);
+      // then
+      assertTrue(result);
+    }
   }
 }

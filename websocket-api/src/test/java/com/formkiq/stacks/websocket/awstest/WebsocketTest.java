@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.websocket.awstest;
 
@@ -60,6 +57,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -147,40 +145,47 @@ public class WebsocketTest {
     SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    SsmService ssmService = new SsmServiceImpl(ssmBuilder);
+    SsmService ssmService = new SsmServiceImpl();
 
-    websocketSqsUrl = ssmService.getParameterValue("/formkiq/" + app + "/sqs/WebsocketUrl");
+    try (SsmClient ssmClient = ssmBuilder.build()) {
 
-    websocketUrl = ssmService.getParameterValue("/formkiq/" + app + "/api/WebsocketUrl");
+      websocketSqsUrl =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/sqs/WebsocketUrl");
 
-    String cognitoUserPoolId =
-        ssmService.getParameterValue("/formkiq/" + app + "/cognito/UserPoolId");
+      websocketUrl =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/api/WebsocketUrl");
 
-    String cognitoClientId =
-        ssmService.getParameterValue("/formkiq/" + app + "/cognito/UserPoolClientId");
+      String cognitoUserPoolId =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/cognito/UserPoolId");
 
-    String cognitoIdentitypool =
-        ssmService.getParameterValue("/formkiq/" + app + "/cognito/IdentityPoolId");
+      String cognitoClientId =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/cognito/UserPoolClientId");
 
-    CognitoConnectionBuilder adminBuilder =
-        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
-            .setCredentials(awsprofile).setRegion(awsregion);
-    adminCognitoService = new CognitoService(adminBuilder);
+      String cognitoIdentitypool =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/cognito/IdentityPoolId");
 
-    addAndLoginCognito(USER_EMAIL, GROUP);
-    token = adminCognitoService.login(USER_EMAIL, USER_PASSWORD);
+      CognitoConnectionBuilder adminBuilder =
+          new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+              .setCredentials(awsprofile).setRegion(awsregion);
+      adminCognitoService = new CognitoService(adminBuilder);
 
-    String rootHttpUrl = ssmService.getParameterValue("/formkiq/" + app + "/api/DocumentsHttpUrl");
+      addAndLoginCognito(USER_EMAIL, GROUP);
+      token = adminCognitoService.login(USER_EMAIL, USER_PASSWORD);
 
-    FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)
-        .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
-        .header("Access-Control-Request-Method", Arrays.asList("GET"));
+      String rootHttpUrl =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/api/DocumentsHttpUrl");
 
-    httpClient = new FormKiqClientV1(connection);
+      FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)
+          .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
+          .header("Access-Control-Request-Method", Arrays.asList("GET"));
 
-    webconnectionsTable =
-        ssmService.getParameterValue("/formkiq/" + app + "/dynamodb/WebConnectionsTableName");
-    dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+      httpClient = new FormKiqClientV1(connection);
+
+      webconnectionsTable = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + app + "/dynamodb/WebConnectionsTableName");
+      dbConnection =
+          new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    }
   }
 
   /** {@link HttpClient}. */

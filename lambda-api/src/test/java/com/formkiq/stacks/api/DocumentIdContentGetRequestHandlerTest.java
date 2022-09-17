@@ -43,6 +43,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/content. */
@@ -64,43 +65,46 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @Test
   public void testHandleGetDocumentContent01() throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      String userId = "jsmith";
+    try (DynamoDbClient dbClient = getDbClient()) {
 
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-documentid-content01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+        String userId = "jsmith";
 
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+        ApiGatewayRequestEvent event =
+            toRequestEvent("/request-get-documents-documentid-content01.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "documentId", documentId);
 
-      // when
-      String response = handleRequest(event);
+        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
 
-      // then
-      Map<String, Object> m = fromJson(response, Map.class);
+        // when
+        String response = handleRequest(event);
 
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        // then
+        Map<String, Object> m = fromJson(response, Map.class);
 
-      Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
-      String url = body.get("contentUrl").toString();
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
 
-      assertTrue(url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
-      assertTrue(url.contains("X-Amz-Expires="));
-      assertTrue(url.contains(AWS_REGION.toString()));
-      assertEquals("application/octet-stream", body.get("contentType"));
+        Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
+        String url = body.get("contentUrl").toString();
 
-      if (siteId != null) {
-        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-            + "/testbucket/" + siteId + "/" + documentId));
-      } else {
-        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-            + "/testbucket/" + documentId));
+        assertTrue(url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+        assertTrue(url.contains("X-Amz-Expires="));
+        assertTrue(url.contains(AWS_REGION.toString()));
+        assertEquals("application/octet-stream", body.get("contentType"));
+
+        if (siteId != null) {
+          assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+              + "/testbucket/" + siteId + "/" + documentId));
+        } else {
+          assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+              + "/testbucket/" + documentId));
+        }
       }
     }
   }
@@ -170,40 +174,42 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @SuppressWarnings("unchecked")
   private void testReturnContent(final String contentType) throws Exception {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
+    try (DynamoDbClient dbClient = getDbClient()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
 
-      String content = "this is a test";
-      String s3key = createS3Key(siteId, documentId);
-      try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
+        String content = "this is a test";
+        String s3key = createS3Key(siteId, documentId);
+        try (S3Client s3 = getS3().buildClient()) {
+          getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
+        }
+
+        ApiGatewayRequestEvent event =
+            toRequestEvent("/request-get-documents-documentid-content01.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "documentId", documentId);
+
+        String userId = "jsmith";
+        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+        item.setContentType(contentType);
+        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+
+        // when
+        String response = handleRequest(event);
+
+        // then
+        Map<String, Object> m = fromJson(response, Map.class);
+
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+
+        Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
+        assertEquals(content, body.get("content"));
+        assertEquals(contentType, body.get("contentType"));
+        assertEquals("false", body.get("isBase64").toString());
       }
-
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-documentid-content01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-
-      String userId = "jsmith";
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      item.setContentType(contentType);
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, Object> m = fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-
-      Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
-      assertEquals(content, body.get("content"));
-      assertEquals(contentType, body.get("contentType"));
-      assertEquals("false", body.get("isBase64").toString());
     }
   }
 }

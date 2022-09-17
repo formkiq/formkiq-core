@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+
 /**
  * Service for keeping track of number of documents.
  *
@@ -32,22 +34,28 @@ public interface DocumentCountService {
   /**
    * Get Document Count.
    * 
+   * @param client {@link DynamoDbClient}
+   * 
    * @param siteId {@link String}
    * @return long
    */
-  long getDocumentCount(String siteId);
+  long getDocumentCount(DynamoDbClient client, String siteId);
 
   /**
    * Increment Document Count.
    * 
+   * @param client {@link DynamoDbClient}
+   * 
    * @param siteId {@link String}
    */
-  void incrementDocumentCount(String siteId);
+  void incrementDocumentCount(DynamoDbClient client, String siteId);
 
   /**
    * Remove Document Count for SiteId.
    * 
+   * @param client {@link DynamoDbClient}
+   * 
    * @param siteId {@link String}
    */
-  void removeDocumentCount(String siteId);
+  void removeDocumentCount(DynamoDbClient client, String siteId);
 }

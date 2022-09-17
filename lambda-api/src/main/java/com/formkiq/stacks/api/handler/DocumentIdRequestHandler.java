@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -70,6 +71,7 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -260,27 +262,40 @@ public class DocumentIdRequestHandler
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
-    ApiPagination token = getPagination(cacheService, event);
-    String documentId = event.getPathParameters().get("documentId");
-    ApiPagination pagination = getPagination(cacheService, event);
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+      ApiPagination token = getPagination(cacheService, dbClient, event);
+      String documentId = event.getPathParameters().get("documentId");
+      ApiPagination pagination = getPagination(cacheService, dbClient, event);
 
-    PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
-        documentId, true, token != null ? token.getStartkey() : null, limit);
-    DocumentItem result = presult.getResult();
+      PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(dbClient,
+          siteId, documentId, true, token != null ? token.getStartkey() : null, limit);
+      DocumentItem result = presult.getResult();
 
-    if (result == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
+      if (result == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
+      }
+
+      ApiPagination current =
+          createPagination(cacheService, dbClient, event, pagination, presult.getToken(), limit);
+
+      DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
+      item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+      item.put("previous", current.getPrevious());
+      item.put("next", current.hasNext() ? current.getNext() : null);
+
+      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
     }
+  }
 
-    ApiPagination current =
-        createPagination(cacheService, event, pagination, presult.getToken(), limit);
-
-    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
-    item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    item.put("previous", current.getPrevious());
-    item.put("next", current.hasNext() ? current.getNext() : null);
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
   }
 
   @Override
@@ -301,9 +316,11 @@ public class DocumentIdRequestHandler
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     if (isUpdate) {
-      documentId = event.getPathParameters().get("documentId");
-      if (cacheService.documentService().findDocument(siteId, documentId) == null) {
-        throw new NotFoundException("Document " + documentId + " not found.");
+      try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+        documentId = event.getPathParameters().get("documentId");
+        if (cacheService.documentService().findDocument(dbClient, siteId, documentId) == null) {
+          throw new NotFoundException("Document " + documentId + " not found.");
+        }
       }
     }
 
@@ -373,7 +390,9 @@ public class DocumentIdRequestHandler
       s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
 
       if (maxDocumentCount != null) {
-        awsservice.documentCountService().incrementDocumentCount(siteId);
+        try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+          awsservice.documentCountService().incrementDocumentCount(dbClient, siteId);
+        }
       }
     }
   }

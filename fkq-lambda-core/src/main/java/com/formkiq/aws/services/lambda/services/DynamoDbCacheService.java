@@ -30,7 +30,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -56,9 +55,6 @@ public class DynamoDbCacheService implements CacheService {
   /** {@link SimpleDateFormat} format. */
   private SimpleDateFormat df;
 
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /** Cache Table Name. */
   private String cacheTableName;
   /** UTC {@link TimeZone}. */
@@ -67,16 +63,14 @@ public class DynamoDbCacheService implements CacheService {
   /**
    * constructor.
    *
-   * @param adb {@link DynamoDbConnectionBuilder}
    * @param table {@link String}
    */
-  public DynamoDbCacheService(final DynamoDbConnectionBuilder adb, final String table) {
+  public DynamoDbCacheService(final String table) {
 
     if (table == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = adb.build();
     this.cacheTableName = table;
 
     this.df = new SimpleDateFormat(DATE_FORMAT);
@@ -84,10 +78,10 @@ public class DynamoDbCacheService implements CacheService {
   }
 
   @Override
-  public Date getExpiryDate(final String key) {
+  public Date getExpiryDate(final DynamoDbClient client, final String key) {
 
     Date date = null;
-    Map<String, AttributeValue> map = getFromCache(key);
+    Map<String, AttributeValue> map = getFromCache(client, key);
 
     if (map.containsKey("TimeToLive")) {
       Long ttl = Long.valueOf(map.get("TimeToLive").n());
@@ -113,27 +107,29 @@ public class DynamoDbCacheService implements CacheService {
    * Get Cache Value.
    * 
    * @param key {@link String}
+   * @param client {@link DynamoDbClient}
    * @return {@link Map}
    */
-  private Map<String, AttributeValue> getFromCache(final String key) {
+  private Map<String, AttributeValue> getFromCache(final DynamoDbClient client, final String key) {
     Map<String, AttributeValue> keyMap = new HashMap<>();
     keyMap.put(PK, AttributeValue.builder().s(key).build());
     keyMap.put(SK, AttributeValue.builder().s("cache").build());
 
     GetItemRequest r = GetItemRequest.builder().tableName(this.cacheTableName).key(keyMap).build();
 
-    Map<String, AttributeValue> result = this.dynamoDB.getItem(r).item();
+    Map<String, AttributeValue> result = client.getItem(r).item();
     return result;
   }
 
   @Override
-  public String read(final String key) {
-    Map<String, AttributeValue> result = getFromCache(key);
+  public String read(final DynamoDbClient client, final String key) {
+    Map<String, AttributeValue> result = getFromCache(client, key);
     return !result.isEmpty() ? result.get("Data").s() : null;
   }
 
   @Override
-  public void write(final String key, final String data, final int cacheInDays) {
+  public void write(final DynamoDbClient client, final String key, final String data,
+      final int cacheInDays) {
 
     Date now = new Date();
     long timeout = getExpiryTime(cacheInDays).getTime() / MILLISECONDS;
@@ -150,6 +146,6 @@ public class DynamoDbCacheService implements CacheService {
     PutItemRequest putItemRequest =
         PutItemRequest.builder().tableName(this.cacheTableName).item(pkvalues).build();
 
-    this.dynamoDB.putItem(putItemRequest);
+    client.putItem(putItemRequest);
   }
 }

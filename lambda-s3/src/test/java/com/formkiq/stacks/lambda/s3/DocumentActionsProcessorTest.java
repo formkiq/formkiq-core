@@ -72,6 +72,8 @@ import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -126,15 +128,21 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
 
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+    documentService = new DocumentServiceImpl(DOCUMENTS_TABLE);
+    actionsService = new ActionsServiceDynamoDb(DOCUMENTS_TABLE);
     createMockServer();
 
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
-    ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/DocumentsS3Bucket", BUCKET_NAME);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/OcrBucket", BUCKET_NAME);
+    ssmService = new SsmServiceCache(1, TimeUnit.DAYS);
+
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+      ssmService.putParameter(ssmClient, "/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl",
+          URL);
+      ssmService.putParameter(ssmClient, "/formkiq/" + APP_ENVIRONMENT + "/s3/DocumentsS3Bucket",
+          BUCKET_NAME);
+      ssmService.putParameter(ssmClient, "/formkiq/" + APP_ENVIRONMENT + "/s3/OcrBucket",
+          BUCKET_NAME);
+    }
 
     Map<String, String> env = new HashMap<>();
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
@@ -193,26 +201,28 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandle01() throws IOException, URISyntaxException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR)
-          .parameters(Map.of("addPdfDetectedCharactersAsText", "true")));
-      actionsService.saveActions(siteId, documentId, actions);
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+        List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR)
+            .parameters(Map.of("addPdfDetectedCharactersAsText", "true")));
+        actionsService.saveActions(db, siteId, documentId, actions);
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
 
-      // when
-      processor.handleRequest(map, this.context);
+        // when
+        processor.handleRequest(map, this.context);
 
-      // then
-      HttpRequest lastRequest = callback.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
-      assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
+        // then
+        HttpRequest lastRequest = callback.getLastRequest();
+        assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
+        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+        assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
+        assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
+      }
     }
   }
 
@@ -225,29 +235,31 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandle02() throws IOException, URISyntaxException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("text/plain");
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        item.setContentType("text/plain");
 
-      documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+        documentService.saveDocument(db, siteId, item, null);
+        List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+        actionsService.saveActions(db, siteId, documentId, actions);
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
 
-      // when
-      processor.handleRequest(map, this.context);
+        // when
+        processor.handleRequest(map, this.context);
 
-      // then
-      HttpRequest lastRequest = callback.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertNotNull(resultmap.get("contentUrls").toString());
+        // then
+        HttpRequest lastRequest = callback.getLastRequest();
+        assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
+        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+        assertNotNull(resultmap.get("contentUrls").toString());
+      }
     }
   }
 
@@ -261,29 +273,31 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testHandle03() throws IOException, URISyntaxException {
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setContentType("application/pdf");
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        item.setContentType("application/pdf");
 
-      documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+        documentService.saveDocument(db, siteId, item, null);
+        List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+        actionsService.saveActions(db, siteId, documentId, actions);
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
 
-      // when
-      processor.handleRequest(map, this.context);
+        // when
+        processor.handleRequest(map, this.context);
 
-      // then
-      HttpRequest lastRequest = callback.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertNotNull(resultmap.get("contentUrls").toString());
+        // then
+        HttpRequest lastRequest = callback.getLastRequest();
+        assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
+        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+        assertNotNull(resultmap.get("contentUrls").toString());
+      }
     }
   }
 
@@ -295,23 +309,25 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @Test
   public void testHandle04() throws IOException, URISyntaxException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
-      actionsService.saveActions(siteId, documentId, actions);
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+        List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+        actionsService.saveActions(db, siteId, documentId, actions);
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
 
-      // when
-      processor.handleRequest(map, this.context);
+        // when
+        processor.handleRequest(map, this.context);
 
-      // then
-      actions = actionsService.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
-      assertEquals(ActionStatus.FAILED, actions.get(0).status());
+        // then
+        actions = actionsService.getActions(db, siteId, documentId);
+        assertEquals(1, actions.size());
+        assertEquals(ActionStatus.FAILED, actions.get(0).status());
+      }
     }
   }
 
@@ -324,38 +340,41 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandle05() throws IOException, URISyntaxException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(
-          new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
-      actionsService.saveActions(siteId, documentId, actions);
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+        List<Action> actions = Arrays.asList(
+            new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
+        actionsService.saveActions(db, siteId, documentId, actions);
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
 
-      // when
-      processor.handleRequest(map, this.context);
+        // when
+        processor.handleRequest(map, this.context);
 
-      // then
-      actions = actionsService.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+        // then
+        actions = actionsService.getActions(db, siteId, documentId);
+        assertEquals(1, actions.size());
+        assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
 
-      HttpRequest lastRequest = callback.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
-      assertEquals(1, documents.size());
+        HttpRequest lastRequest = callback.getLastRequest();
+        assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+        List<Map<String, String>> documents =
+            (List<Map<String, String>>) resultmap.get("documents");
+        assertEquals(1, documents.size());
 
-      if (siteId != null) {
-        assertEquals(siteId, documents.get(0).get("siteId"));
-      } else {
-        assertEquals("default", documents.get(0).get("siteId"));
+        if (siteId != null) {
+          assertEquals(siteId, documents.get(0).get("siteId"));
+        } else {
+          assertEquals("default", documents.get(0).get("siteId"));
+        }
+
+        assertEquals(documentId, documents.get(0).get("documentId"));
       }
-
-      assertEquals(documentId, documents.get(0).get("documentId"));
     }
   }
 
@@ -368,51 +387,54 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandle06() throws IOException, URISyntaxException {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      Collection<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, "CLAMAV_SCAN_STATUS", "CLEAN", new Date(), "joe",
-              DocumentTagType.SYSTEMDEFINED),
-          new DocumentTag(documentId, "CLAMAV_SCAN_TIMESTAMP", "2022-01-01", new Date(), "joe",
-              DocumentTagType.SYSTEMDEFINED));
-      documentService.saveDocument(siteId, item, tags);
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        Collection<DocumentTag> tags = Arrays.asList(
+            new DocumentTag(documentId, "CLAMAV_SCAN_STATUS", "CLEAN", new Date(), "joe",
+                DocumentTagType.SYSTEMDEFINED),
+            new DocumentTag(documentId, "CLAMAV_SCAN_TIMESTAMP", "2022-01-01", new Date(), "joe",
+                DocumentTagType.SYSTEMDEFINED));
+        documentService.saveDocument(db, siteId, item, tags);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE),
-              new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
-      actionsService.saveActions(siteId, documentId, actions);
+        List<Action> actions =
+            Arrays.asList(new Action().type(ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE),
+                new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
+        actionsService.saveActions(db, siteId, documentId, actions);
 
-      Map<String, Object> map =
-          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
-              documentId, "default", siteId != null ? siteId : "default");
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
 
-      // when
-      processor.handleRequest(map, this.context);
+        // when
+        processor.handleRequest(map, this.context);
 
-      // then
-      actions = actionsService.getActions(siteId, documentId);
-      assertEquals(2, actions.size());
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
-      assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
+        // then
+        actions = actionsService.getActions(db, siteId, documentId);
+        assertEquals(2, actions.size());
+        assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+        assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
 
-      HttpRequest lastRequest = callback.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
-      Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
-      List<Map<String, String>> documents = (List<Map<String, String>>) resultmap.get("documents");
-      assertEquals(1, documents.size());
+        HttpRequest lastRequest = callback.getLastRequest();
+        assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+        Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
+        List<Map<String, String>> documents =
+            (List<Map<String, String>>) resultmap.get("documents");
+        assertEquals(1, documents.size());
 
-      if (siteId != null) {
-        assertEquals(siteId, documents.get(0).get("siteId"));
-      } else {
-        assertEquals("default", documents.get(0).get("siteId"));
+        if (siteId != null) {
+          assertEquals(siteId, documents.get(0).get("siteId"));
+        } else {
+          assertEquals("default", documents.get(0).get("siteId"));
+        }
+
+        assertEquals(documentId, documents.get(0).get("documentId"));
+        assertEquals("CLEAN", documents.get(0).get("status"));
+        assertEquals("2022-01-01", documents.get(0).get("timestamp"));
       }
-
-      assertEquals(documentId, documents.get(0).get("documentId"));
-      assertEquals("CLEAN", documents.get(0).get("status"));
-      assertEquals("2022-01-01", documents.get(0).get("timestamp"));
     }
   }
 }

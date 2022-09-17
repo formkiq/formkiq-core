@@ -32,6 +32,7 @@ import org.testcontainers.containers.localstack.LocalStackContainer;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ssm.SsmServiceImpl;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -67,8 +68,10 @@ public class LocalStackExtension
       }
     }
 
-    new SsmServiceImpl(TestServices.getSsmConnection(null))
-        .putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
+    try (SsmClient ssmClient = TestServices.getSsmConnection(null).build()) {
+      new SsmServiceImpl().putParameter(ssmClient,
+          "/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
+    }
   }
 
   @Override

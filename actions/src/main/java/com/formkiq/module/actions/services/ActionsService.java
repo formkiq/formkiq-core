@@ -28,6 +28,7 @@ import java.util.Map;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -40,61 +41,70 @@ public interface ActionsService {
   /**
    * Get Action Parameters.
    * 
+   * @param client {@link DynamoDbClient}
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param type {@link ActionType}
    * @return {@link Map}
    */
-  Map<String, String> getActionParameters(String siteId, String documentId, ActionType type);
+  Map<String, String> getActionParameters(DynamoDbClient client, String siteId, String documentId,
+      ActionType type);
 
   /**
    * Get {@link List} {@link Action} for a document.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link List} {@link Action}
    */
-  List<Action> getActions(String siteId, String documentId);
+  List<Action> getActions(DynamoDbClient client, String siteId, String documentId);
 
   /**
    * Whether SiteId / DocumentId combination has any actions.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
    */
-  boolean hasActions(String siteId, String documentId);
+  boolean hasActions(DynamoDbClient client, String siteId, String documentId);
 
   /**
    * Save {@link List} {@link Action}.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @return {@link List} {@link Map}
    */
-  List<Map<String, AttributeValue>> saveActions(String siteId, String documentId,
-      List<Action> actions);
+  List<Map<String, AttributeValue>> saveActions(DynamoDbClient client, String siteId,
+      String documentId, List<Action> actions);
 
   /**
    * Update {@link Action} {@link ActionStatus}.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @param index int
    */
-  void updateActionStatus(String siteId, String documentId, Action action, int index);
+  void updateActionStatus(DynamoDbClient client, String siteId, String documentId, Action action,
+      int index);
 
   /**
    * Updates {@link ActionStatus}.
    * 
+   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param type {@link ActionType}
    * @param status {@link ActionStatus}
    * @return {@link List} {@link Action}
    */
-  List<Action> updateActionStatus(String siteId, String documentId, ActionType type,
-      ActionStatus status);
+  List<Action> updateActionStatus(DynamoDbClient client, String siteId, String documentId,
+      ActionType type, ActionStatus status);
 }

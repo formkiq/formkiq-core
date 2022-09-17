@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -38,6 +39,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
@@ -57,24 +59,27 @@ public class DocumentsActionsRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    List<Map<String, Object>> list = new ArrayList<>();
+    DynamoDbConnectionBuilder db = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+    try (DynamoDbClient dbClient = db.build()) {
 
-    ActionsService service = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = service.getActions(siteId, documentId);
+      List<Map<String, Object>> list = new ArrayList<>();
 
-    for (Action action : actions) {
-      Map<String, Object> map = new HashMap<>();
-      map.put("userId", action.userId());
-      map.put("status", action.status().name().toLowerCase());
-      map.put("type", action.type().name().toLowerCase());
-      map.put("parameters", action.parameters());
-      list.add(map);
+      ActionsService service = awsservice.getExtension(ActionsService.class);
+      List<Action> actions = service.getActions(dbClient, siteId, documentId);
+
+      for (Action action : actions) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("userId", action.userId());
+        map.put("status", action.status().name().toLowerCase());
+        map.put("type", action.type().name().toLowerCase());
+        map.put("parameters", action.parameters());
+        list.add(map);
+      }
+
+      ApiMapResponse resp = new ApiMapResponse();
+      resp.setMap(Map.of("actions", list));
+      return new ApiRequestHandlerResponse(SC_OK, resp);
     }
-
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("actions", list));
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   @Override

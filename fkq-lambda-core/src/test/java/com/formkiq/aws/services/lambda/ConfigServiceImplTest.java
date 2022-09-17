@@ -42,6 +42,7 @@ import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * Unit Tests for {@link ConfigServiceImpl}.
@@ -59,132 +60,115 @@ public class ConfigServiceImplTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service =
-        new ConfigServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
+    this.service = new ConfigServiceImpl("Documents");
   }
 
   /**
    * Test Finding Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig01() {
+  public void testConfig01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
 
-      Map<String, Object> map = new HashMap<>();
-      map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-      map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-      map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      DynamicObject obj = new DynamicObject(map);
-      this.service.save(siteId, obj);
+        Map<String, Object> map = new HashMap<>();
+        map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
+        map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
+        map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
 
-      // when
-      DynamicObject config = this.service.get(siteId);
+        DynamicObject obj = new DynamicObject(map);
+        this.service.save(client, siteId, obj);
 
-      // then
-      final int count = 5;
-      assertEquals(count, config.keySet().size());
+        // when
+        DynamicObject config = this.service.get(client, siteId);
 
-      assertEquals("configs#", config.getString("PK"));
-      if (siteId != null) {
-        assertEquals(siteId, config.getString("SK"));
-      } else {
-        assertEquals("default", config.getString("SK"));
+        // then
+        final int count = 5;
+        assertEquals(count, config.keySet().size());
+
+        assertEquals("configs#", config.getString("PK"));
+        if (siteId != null) {
+          assertEquals(siteId, config.getString("SK"));
+        } else {
+          assertEquals("default", config.getString("SK"));
+        }
+
+        assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
+        assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
+        assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
       }
-
-      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
     }
   }
 
   /**
    * Test Finding missing Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig02() {
+  public void testConfig02() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      // when
-      DynamicObject config = this.service.get(siteId);
+        // when
+        DynamicObject config = this.service.get(client, siteId);
 
-      // then
-      assertEquals(0, config.size());
+        // then
+        assertEquals(0, config.size());
+      }
     }
   }
 
   /**
    * Test Finding Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig03() {
+  public void testConfig03() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
 
-      DynamicObject obj = new DynamicObject(Map.of());
-      this.service.save(siteId, obj);
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      // when
-      DynamicObject config = this.service.get(siteId);
+        DynamicObject obj = new DynamicObject(Map.of());
+        this.service.save(client, siteId, obj);
 
-      // then
-      final int count = 2;
-      assertEquals(count, config.keySet().size());
+        // when
+        DynamicObject config = this.service.get(client, siteId);
 
-      assertEquals("configs#", config.getString("PK"));
-      if (siteId != null) {
-        assertEquals(siteId, config.getString("SK"));
-      } else {
-        assertEquals("default", config.getString("SK"));
+        // then
+        final int count = 2;
+        assertEquals(count, config.keySet().size());
+
+        assertEquals("configs#", config.getString("PK"));
+        if (siteId != null) {
+          assertEquals(siteId, config.getString("SK"));
+        } else {
+          assertEquals("default", config.getString("SK"));
+        }
+
+        assertNull(config.getString(DOCUMENT_TIME_TO_LIVE));
+        assertNull(config.getString(MAX_WEBHOOKS));
+        assertNull(config.getString(MAX_DOCUMENTS));
       }
-
-      assertNull(config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertNull(config.getString(MAX_WEBHOOKS));
-      assertNull(config.getString(MAX_DOCUMENTS));
     }
   }
 
   /**
    * Test Finding Default Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig04() {
+  public void testConfig04() throws Exception {
     // given
-    Map<String, Object> map = new HashMap<>();
-    map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-    map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-    map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
-
-    DynamicObject obj = new DynamicObject(map);
-    this.service.save(null, obj);
-
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
-
-      // when
-      DynamicObject config = this.service.get(siteId);
-
-      // then
-      final int count = 5;
-      assertEquals(count, config.keySet().size());
-
-      assertEquals("configs#", config.getString("PK"));
-      assertEquals("default", config.getString("SK"));
-
-      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
-    }
-  }
-
-  /**
-   * Test Delete Config.
-   */
-  @Test
-  public void testDelete01() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
 
       Map<String, Object> map = new HashMap<>();
       map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
@@ -192,29 +176,68 @@ public class ConfigServiceImplTest {
       map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
 
       DynamicObject obj = new DynamicObject(map);
-      this.service.save(siteId, obj);
+      this.service.save(client, null, obj);
 
-      // when
-      DynamicObject config = this.service.get(siteId);
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      // then
-      final int count = 5;
-      assertEquals(count, config.keySet().size());
+        // when
+        DynamicObject config = this.service.get(client, siteId);
 
-      assertEquals("configs#", config.getString("PK"));
+        // then
+        final int count = 5;
+        assertEquals(count, config.keySet().size());
 
-      if (isDefaultSiteId(siteId)) {
+        assertEquals("configs#", config.getString("PK"));
         assertEquals("default", config.getString("SK"));
-      } else {
-        assertEquals(siteId, config.getString("SK"));
+
+        assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
+        assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
+        assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
       }
+    }
+  }
 
-      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+  /**
+   * Test Delete Config.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDelete01() throws Exception {
+    // given
+    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      this.service.delete(siteId);
-      assertEquals(0, this.service.get(siteId).size());
+        Map<String, Object> map = new HashMap<>();
+        map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
+        map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
+        map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+
+        DynamicObject obj = new DynamicObject(map);
+        this.service.save(client, siteId, obj);
+
+        // when
+        DynamicObject config = this.service.get(client, siteId);
+
+        // then
+        final int count = 5;
+        assertEquals(count, config.keySet().size());
+
+        assertEquals("configs#", config.getString("PK"));
+
+        if (isDefaultSiteId(siteId)) {
+          assertEquals("default", config.getString("SK"));
+        } else {
+          assertEquals(siteId, config.getString("SK"));
+        }
+
+        assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
+        assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
+        assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+
+        this.service.delete(client, siteId);
+        assertEquals(0, this.service.get(client, siteId).size());
+      }
     }
   }
 }

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -48,6 +49,7 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler
@@ -64,23 +66,26 @@ public class WebhooksTagsRequestHandler
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
-    PaginationResults<DynamicObject> list =
-        serviceCache.webhookService().findTags(siteId, id, null);
 
-    List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
-      Map<String, Object> map = new HashMap<>();
+    try (DynamoDbClient client = getDynamoDbClient(awsServices)) {
+      PaginationResults<DynamicObject> list =
+          serviceCache.webhookService().findTags(client, siteId, id, null);
 
-      map.put("insertedDate", m.getString("inserteddate"));
-      map.put("webhookId", id);
-      map.put("type", m.getString("type"));
-      map.put("userId", m.getString("userId"));
-      map.put("value", m.getString("tagValue"));
-      map.put("key", m.getString("tagKey"));
+      List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
+        Map<String, Object> map = new HashMap<>();
 
-      return map;
-    }).collect(Collectors.toList());
+        map.put("insertedDate", m.getString("inserteddate"));
+        map.put("webhookId", id);
+        map.put("type", m.getString("type"));
+        map.put("userId", m.getString("userId"));
+        map.put("value", m.getString("tagValue"));
+        map.put("key", m.getString("tagKey"));
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("tags", tags)));
+        return map;
+      }).collect(Collectors.toList());
+
+      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("tags", tags)));
+    }
   }
 
   @Override
@@ -107,21 +112,36 @@ public class WebhooksTagsRequestHandler
     tag.setUserId(getCallingCognitoUsername(event));
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
-    DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
-    if (webhook == null) {
-      throw new NotFoundException("Webhook 'id' not found");
+
+    try (DynamoDbClient client = getDynamoDbClient(awsServices)) {
+
+      DynamicObject webhook = serviceCache.webhookService().findWebhook(client, siteId, id);
+      if (webhook == null) {
+        throw new NotFoundException("Webhook 'id' not found");
+      }
+
+      Date ttl = null;
+      String ttlString = webhook.getString("TimeToLive");
+      if (ttlString != null) {
+        long epoch = Long.parseLong(ttlString);
+        ttl = new Date(epoch * TO_MILLIS);
+      }
+
+      serviceCache.webhookService().addTags(client, siteId, id, Arrays.asList(tag), ttl);
+
+      ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
+      return new ApiRequestHandlerResponse(SC_CREATED, resp);
     }
+  }
 
-    Date ttl = null;
-    String ttlString = webhook.getString("TimeToLive");
-    if (ttlString != null) {
-      long epoch = Long.parseLong(ttlString);
-      ttl = new Date(epoch * TO_MILLIS);
-    }
-
-    serviceCache.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
-
-    ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
   }
 }

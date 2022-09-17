@@ -34,7 +34,6 @@ import java.util.Optional;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -53,34 +52,29 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
   /** Documents Table Name. */
   private String documentTableName;
 
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /**
    * constructor.
    *
-   * @param builder {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public ConfigServiceImpl(final DynamoDbConnectionBuilder builder, final String documentsTable) {
+  public ConfigServiceImpl(final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
     this.documentTableName = documentsTable;
   }
 
   @Override
-  public void delete(final String siteId) {
+  public void delete(final DynamoDbClient client, final String siteId) {
     String s = siteId != null ? siteId : DEFAULT_SITE_ID;
     Map<String, AttributeValue> keys = keysGeneric(null, PREFIX_CONFIG, s);
-    this.dynamoDB.deleteItem(
+    client.deleteItem(
         DeleteItemRequest.builder().tableName(this.documentTableName).key(keys).build());
   }
 
   @Override
-  public DynamicObject get(final String siteId) {
+  public DynamicObject get(final DynamoDbClient client, final String siteId) {
 
     Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
 
@@ -95,7 +89,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
         Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
 
     BatchGetItemResponse response =
-        this.dynamoDB.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+        client.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
 
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
@@ -113,7 +107,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
   }
 
   @Override
-  public void save(final String siteId, final DynamicObject obj) {
+  public void save(final DynamoDbClient client, final String siteId, final DynamicObject obj) {
     Map<String, AttributeValue> item =
         keysGeneric(null, PREFIX_CONFIG, siteId != null ? siteId : DEFAULT_SITE_ID);
 
@@ -123,7 +117,6 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       }
     });
 
-    this.dynamoDB
-        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
+    client.putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
   }
 }

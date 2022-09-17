@@ -32,6 +32,7 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -66,25 +67,28 @@ public class FkqCognitoService {
     this.awsregion = awsRegion;
     this.ssm = new FkqSsmService(awsProfile, awsRegion);
 
-    this.rootHttpUrl =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsHttpUrl");
+    try (SsmClient ssmClient = this.ssm.build()) {
 
-    this.rootRestUrl =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+      this.rootHttpUrl = this.ssm.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/api/DocumentsHttpUrl");
 
-    String cognitoUserPoolId =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolId");
+      this.rootRestUrl = this.ssm.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
-    String cognitoClientId =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
+      String cognitoUserPoolId = this.ssm.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/cognito/UserPoolId");
 
-    String cognitoIdentitypool =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/IdentityPoolId");
+      String cognitoClientId = this.ssm.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
 
-    CognitoConnectionBuilder adminBuilder =
-        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
-            .setCredentials(awsProfile).setRegion(awsRegion);
-    this.service = new CognitoService(adminBuilder);
+      String cognitoIdentitypool = this.ssm.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/cognito/IdentityPoolId");
+
+      CognitoConnectionBuilder adminBuilder =
+          new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+              .setCredentials(awsProfile).setRegion(awsRegion);
+      this.service = new CognitoService(adminBuilder);
+    }
   }
 
   /**

@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.module.emailnotify.awstest;
 
@@ -52,6 +49,7 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -122,14 +120,17 @@ public class EmailSendingTest {
 
     s3Service = new S3Service(s3Builder);
     sqsService = new SqsService(sqsConnection);
-    SsmService ssmService = new SsmServiceImpl(ssmBuilder);
+    SsmService ssmService = new SsmServiceImpl();
     snsService = new SnsService(snsBuilder);
 
-    String app = System.getProperty("testappenvironment");
-    snsDocumentEmailArn =
-        ssmService.getParameterValue("/formkiq/" + app + "/sns/DocumentsEmailNotificationArn");
-    stagingdocumentsbucketname =
-        ssmService.getParameterValue("/formkiq/" + app + "/s3/DocumentsStageS3Bucket");
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+
+      String app = System.getProperty("testappenvironment");
+      snsDocumentEmailArn = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + app + "/sns/DocumentsEmailNotificationArn");
+      stagingdocumentsbucketname =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + app + "/s3/DocumentsStageS3Bucket");
+    }
   }
 
   /**

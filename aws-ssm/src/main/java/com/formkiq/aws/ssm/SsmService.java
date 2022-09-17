@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.ssm;
 
+import software.amazon.awssdk.services.ssm.SsmClient;
+
 /**
  * 
  * SSM Services.
@@ -33,23 +35,26 @@ public interface SsmService {
   /**
    * Get Parameter Store Value.
    *
+   * @param ssm {@link SsmClient}
    * @param key {@link String}
    * @return {@link String}
    */
-  String getParameterValue(String key);
+  String getParameterValue(SsmClient ssm, String key);
 
   /**
    * Put SSM Parameter.
    * 
+   * @param ssm {@link SsmClient}
    * @param key {@link String}
    * @param value {@link String}
    */
-  void putParameter(String key, String value);
+  void putParameter(SsmClient ssm, String key, String value);
 
   /**
    * Remove Parameter.
    * 
+   * @param ssm {@link SsmClient}
    * @param key {@link String}
    */
-  void removeParameter(String key);
+  void removeParameter(SsmClient ssm, String key);
 }

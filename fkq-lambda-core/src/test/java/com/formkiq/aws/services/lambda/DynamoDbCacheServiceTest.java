@@ -36,6 +36,7 @@ import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for {@link DynamoDbCacheService}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -53,30 +54,34 @@ public class DynamoDbCacheServiceTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service =
-        new DynamoDbCacheService(DynamoDbTestServices.getDynamoDbConnection(null), cacheTable);
+    this.service = new DynamoDbCacheService(cacheTable);
   }
 
   /**
    * Test Write to Cache.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testWrite01() {
-    // given
-    final Date before = Date.from(ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(1).toInstant());
-    final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).toInstant());
+  public void testWrite01() throws Exception {
+    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
 
-    String key = "testkey";
-    String value = UUID.randomUUID().toString();
+      // given
+      final Date before = Date.from(ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(1).toInstant());
+      final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).toInstant());
 
-    // when
-    this.service.write(key, value, 1);
+      String key = "testkey";
+      String value = UUID.randomUUID().toString();
 
-    // then
-    assertEquals(value, this.service.read(key));
-    Date date = this.service.getExpiryDate(key);
+      // when
+      this.service.write(client, key, value, 1);
 
-    assertTrue(before.before(date));
-    assertTrue(after.after(date));
+      // then
+      assertEquals(value, this.service.read(client, key));
+      Date date = this.service.getExpiryDate(client, key);
+
+      assertTrue(before.before(date));
+      assertTrue(after.after(date));
+    }
   }
 }

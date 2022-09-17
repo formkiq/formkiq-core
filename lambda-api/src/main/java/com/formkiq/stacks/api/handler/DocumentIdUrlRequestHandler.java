@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -45,6 +46,7 @@ import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -55,6 +57,33 @@ public class DocumentIdUrlRequestHandler
    *
    */
   public DocumentIdUrlRequestHandler() {}
+
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+
+    String documentId = event.getPathParameters().get("documentId");
+    String versionId = getParameter(event, "versionId");
+    String siteId = authorizer.getSiteId();
+
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+
+      DocumentItem item = cacheService.documentService().findDocument(dbClient, siteId, documentId);
+
+      if (item == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
+      }
+
+      URL url = getS3Url(logger, authorizer, dbClient, awsservice, event, item, versionId);
+
+      return url != null
+          ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
+          : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+    }
+  }
 
   /**
    * Look at {@link ApiGatewayRequestEvent} for "duration".
@@ -77,28 +106,20 @@ public class DocumentIdUrlRequestHandler
     }
   }
 
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
+  }
+
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-
-    String documentId = event.getPathParameters().get("documentId");
-    String versionId = getParameter(event, "versionId");
-    String siteId = authorizer.getSiteId();
-
-    DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
-
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
-
-    URL url = getS3Url(logger, authorizer, awsservice, event, item, documentId, versionId);
-
-    return url != null
-        ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
-        : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+  public String getRequestUrl() {
+    return "/documents/{documentId}/url";
   }
 
   /**
@@ -106,17 +127,18 @@ public class DocumentIdUrlRequestHandler
    * 
    * @param logger {@link LambdaLogger}
    * @param authorizer {@link ApiAuthorizer}
+   * @param dbClient {@link DynamoDbClient}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
-   * @param documentId {@link String}
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
    * @return {@link URL}
    */
   private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
-      final String documentId, final String versionId) {
+      final DynamoDbClient dbClient, final AwsServiceCache awsservice,
+      final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId) {
 
+    final String documentId = item.getDocumentId();
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     URL url = null;
@@ -142,8 +164,8 @@ public class DocumentIdUrlRequestHandler
 
     } else {
 
-      Optional<DocumentFormat> format =
-          cacheService.documentService().findDocumentFormat(siteId, documentId, contentType);
+      Optional<DocumentFormat> format = cacheService.documentService().findDocumentFormat(dbClient,
+          siteId, documentId, contentType);
 
       if (format.isPresent()) {
 
@@ -164,10 +186,5 @@ public class DocumentIdUrlRequestHandler
     }
 
     return url;
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/documents/{documentId}/url";
   }
 }

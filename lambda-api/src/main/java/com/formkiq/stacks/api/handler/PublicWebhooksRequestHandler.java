@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -53,6 +54,7 @@ import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.StringUtils;
 
@@ -60,10 +62,10 @@ import software.amazon.awssdk.utils.StringUtils;
 public class PublicWebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** To Milliseconds. */
-  private static final long TO_MILLIS = 1000L;
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
+  /** To Milliseconds. */
+  private static final long TO_MILLIS = 1000L;
 
   private static boolean isContentTypeJson(final String contentType) {
     return contentType != null && "application/json".equals(contentType);
@@ -80,8 +82,8 @@ public class PublicWebhooksRequestHandler
   }
 
   private DynamicObject buildDynamicObject(final CoreAwsServiceCache awsservice,
-      final String siteId, final String webhookId, final DynamicObject hook, final String body,
-      final String contentType) {
+      final DynamoDbClient dbClient, final String siteId, final String webhookId,
+      final DynamicObject hook, final String body, final String contentType) {
 
     DynamicObject item = new DynamicObject(new HashMap<>());
 
@@ -99,7 +101,8 @@ public class PublicWebhooksRequestHandler
     if (hook.containsKey("TimeToLive")) {
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
-      String ttl = awsservice.configService().get(siteId).getString(DOCUMENT_TIME_TO_LIVE);
+      String ttl =
+          awsservice.configService().get(dbClient, siteId).getString(DOCUMENT_TIME_TO_LIVE);
       if (ttl != null) {
         item.put("TimeToLive", ttl);
       }
@@ -177,10 +180,6 @@ public class PublicWebhooksRequestHandler
     }
   }
 
-  protected boolean isSupportPrivate() {
-    return false;
-  }
-
   private Map<String, String> decodeQueryString(final String query) {
     Map<String, String> params = new LinkedHashMap<>();
     for (String param : query.split("&")) {
@@ -194,6 +193,17 @@ public class PublicWebhooksRequestHandler
     }
 
     return params;
+  }
+
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
   }
 
   private String getIdempotencyKey(final ApiGatewayRequestEvent event) {
@@ -245,7 +255,8 @@ public class PublicWebhooksRequestHandler
   }
 
   private boolean isIdempotencyCached(final CoreAwsServiceCache awsservice,
-      final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
+      final DynamoDbClient dbClient, final ApiGatewayRequestEvent event, final String siteId,
+      final DynamicObject item) {
 
     boolean cached = false;
     String idempotencyKey = getIdempotencyKey(event);
@@ -255,17 +266,21 @@ public class PublicWebhooksRequestHandler
       CacheService cacheService = awsservice.getExtension(CacheService.class);
 
       String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
-      String documentId = cacheService.read(key);
+      String documentId = cacheService.read(dbClient, key);
 
       if (documentId != null) {
         item.put("documentId", documentId);
         cached = true;
       } else {
-        cacheService.write(key, item.getString("documentId"), 2);
+        cacheService.write(dbClient, key, item.getString("documentId"), 2);
       }
     }
 
     return cached;
+  }
+
+  protected boolean isSupportPrivate() {
+    return false;
   }
 
   @Override
@@ -276,27 +291,30 @@ public class PublicWebhooksRequestHandler
     String siteId = getParameter(event, "siteId");
     String webhookId = getPathParameter(event, "webhooks");
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DynamicObject hook = cacheService.webhookService().findWebhook(siteId, webhookId);
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
 
-    checkIsWebhookValid(hook);
+      CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+      DynamicObject hook = cacheService.webhookService().findWebhook(dbClient, siteId, webhookId);
 
-    String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+      checkIsWebhookValid(hook);
 
-    String contentType = getContentType(event);
+      String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
 
-    if (isContentTypeJson(contentType) && !isJsonValid(body)) {
-      throw new BadException("body isn't valid JSON");
+      String contentType = getContentType(event);
+
+      if (isContentTypeJson(contentType) && !isJsonValid(body)) {
+        throw new BadException("body isn't valid JSON");
+      }
+
+      DynamicObject item =
+          buildDynamicObject(cacheService, dbClient, siteId, webhookId, hook, body, contentType);
+
+      if (!isIdempotencyCached(cacheService, dbClient, event, siteId, item)) {
+        putObjectToStaging(logger, awsservice, item, siteId);
+      }
+
+      return buildResponse(event, item);
     }
-
-    DynamicObject item =
-        buildDynamicObject(cacheService, siteId, webhookId, hook, body, contentType);
-
-    if (!isIdempotencyCached(cacheService, event, siteId, item)) {
-      putObjectToStaging(logger, awsservice, item, siteId);
-    }
-
-    return buildResponse(event, item);
   }
 
   /**

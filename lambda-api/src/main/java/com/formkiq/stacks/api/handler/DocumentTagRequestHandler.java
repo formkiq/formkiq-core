@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -61,6 +62,7 @@ import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.DeleteFulltextTagsRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}". */
 public class DocumentTagRequestHandler
@@ -85,31 +87,34 @@ public class DocumentTagRequestHandler
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
     DocumentService documentService = cacheService.documentService();
 
-    DocumentTag docTag = documentService.findDocumentTag(siteId, documentId, tagKey);
-    if (docTag == null) {
-      throw new NotFoundException("Tag '" + tagKey + "' not found.");
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+      DocumentTag docTag = documentService.findDocumentTag(dbClient, siteId, documentId, tagKey);
+      if (docTag == null) {
+        throw new NotFoundException("Tag '" + tagKey + "' not found.");
+      }
+
+      DocumentItem document =
+          cacheService.documentService().findDocument(dbClient, siteId, documentId);
+      if (document == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
+      }
+
+      List<String> tags = Arrays.asList(tagKey);
+
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+      Collection<ValidationError> errors = plugin.validateRemoveTags(siteId, document, tags);
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      deleteFulltextTags(awsservice, siteId, documentId, tags);
+      documentService.removeTags(dbClient, siteId, documentId, tags);
+
+      ApiResponse resp =
+          new ApiMessageResponse("Removed '" + tagKey + "' from document '" + documentId + "'.");
+
+      return new ApiRequestHandlerResponse(SC_OK, resp);
     }
-
-    DocumentItem document = cacheService.documentService().findDocument(siteId, documentId);
-    if (document == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
-
-    List<String> tags = Arrays.asList(tagKey);
-
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<ValidationError> errors = plugin.validateRemoveTags(siteId, document, tags);
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    deleteFulltextTags(awsservice, siteId, documentId, tags);
-    documentService.removeTags(siteId, documentId, tags);
-
-    ApiResponse resp =
-        new ApiMessageResponse("Removed '" + tagKey + "' from document '" + documentId + "'.");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   /**
@@ -145,22 +150,38 @@ public class DocumentTagRequestHandler
     String siteId = authorizer.getSiteId();
 
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DocumentTag tag = cacheService.documentService().findDocumentTag(siteId, documentId, tagKey);
 
-    if (tag == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+
+      DocumentTag tag =
+          cacheService.documentService().findDocumentTag(dbClient, siteId, documentId, tagKey);
+
+      if (tag == null) {
+        throw new NotFoundException("Tag " + tagKey + " not found.");
+      }
+
+      ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
+      resp.setKey(tagKey);
+      resp.setValue(tag.getValue());
+      resp.setValues(tag.getValues());
+      resp.setInsertedDate(tag.getInsertedDate());
+      resp.setUserId(tag.getUserId());
+      resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
+      resp.setDocumentId(tag.getDocumentId());
+
+      return new ApiRequestHandlerResponse(SC_OK, resp);
     }
+  }
 
-    ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
-    resp.setKey(tagKey);
-    resp.setValue(tag.getValue());
-    resp.setValues(tag.getValues());
-    resp.setInsertedDate(tag.getInsertedDate());
-    resp.setUserId(tag.getUserId());
-    resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
-    resp.setDocumentId(tag.getDocumentId());
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
   }
 
   @Override
@@ -203,50 +224,53 @@ public class DocumentTagRequestHandler
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
     DocumentService documentService = cacheService.documentService();
 
-    DocumentItem document = documentService.findDocument(siteId, documentId);
-    if (document == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+
+      DocumentItem document = documentService.findDocument(dbClient, siteId, documentId);
+      if (document == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
+      }
+
+      Date now = new Date();
+      String userId = getCallingCognitoUsername(event);
+
+      DocumentTag tag = documentService.findDocumentTag(dbClient, siteId, documentId, tagKey);
+      if (tag == null) {
+        throw new NotFoundException("Tag " + tagKey + " not found.");
+      }
+
+      // if trying to change from tag VALUE to VALUES or VALUES to VALUE
+      if (isTagValueTypeChanged(tag, value, values)) {
+        documentService.removeTags(dbClient, siteId, documentId, Arrays.asList(tagKey));
+      }
+
+      tag = new DocumentTag(null, tagKey, value, now, userId);
+      if (values != null) {
+        tag.setValue(null);
+        tag.setValues(values);
+      }
+
+      List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
+      Collection<ValidationError> errors = new ArrayList<>();
+
+      DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
+      Collection<DocumentTag> newTags =
+          plugin.addCompositeKeys(siteId, document, tags, userId, false, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      tags.addAll(newTags);
+
+      updateFulltextIfInstalled(awsservice, siteId, documentId, tags);
+      documentService.addTags(dbClient, siteId, documentId, tags, null);
+
+      ApiResponse resp =
+          new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
+
+      return new ApiRequestHandlerResponse(SC_OK, resp);
     }
-
-    Date now = new Date();
-    String userId = getCallingCognitoUsername(event);
-
-    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
-    if (tag == null) {
-      throw new NotFoundException("Tag " + tagKey + " not found.");
-    }
-
-    // if trying to change from tag VALUE to VALUES or VALUES to VALUE
-    if (isTagValueTypeChanged(tag, value, values)) {
-      documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
-    }
-
-    tag = new DocumentTag(null, tagKey, value, now, userId);
-    if (values != null) {
-      tag.setValue(null);
-      tag.setValues(values);
-    }
-
-    List<DocumentTag> tags = new ArrayList<>(Arrays.asList(tag));
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, document, tags, userId, false, errors);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    tags.addAll(newTags);
-
-    updateFulltextIfInstalled(awsservice, siteId, documentId, tags);
-    documentService.addTags(siteId, documentId, tags, null);
-
-    ApiResponse resp =
-        new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   /**
@@ -284,5 +308,4 @@ public class DocumentTagRequestHandler
       }
     }
   }
-
 }

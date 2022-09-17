@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -65,6 +66,7 @@ import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentTags;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags". */
 public class DocumentTagsRequestHandler
@@ -84,43 +86,46 @@ public class DocumentTagsRequestHandler
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
-    ApiPagination pagination = getPagination(cacheService, event);
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
 
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+      ApiPagination pagination = getPagination(cacheService, dbClient, event);
+      int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
 
-    String siteId = authorizer.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+      PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    PaginationResults<DocumentTag> results =
-        coreServices.documentService().findDocumentTags(siteId, documentId, ptoken, limit);
+      String siteId = authorizer.getSiteId();
+      String documentId = event.getPathParameters().get("documentId");
 
-    results.getResults().forEach(r -> r.setDocumentId(null));
+      PaginationResults<DocumentTag> results = coreServices.documentService()
+          .findDocumentTags(dbClient, siteId, documentId, ptoken, limit);
 
-    ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
-    List<DocumentTag> tags = subList(results.getResults(), limit);
+      results.getResults().forEach(r -> r.setDocumentId(null));
 
-    List<ApiDocumentTagItemResponse> list = tags.stream().map(t -> {
-      ApiDocumentTagItemResponse r = new ApiDocumentTagItemResponse();
+      ApiPagination current =
+          createPagination(cacheService, dbClient, event, pagination, results.getToken(), limit);
+      List<DocumentTag> tags = subList(results.getResults(), limit);
 
-      r.setDocumentId(t.getDocumentId());
-      r.setInsertedDate(t.getInsertedDate());
-      r.setKey(t.getKey());
-      r.setValue(t.getValue());
-      r.setValues(t.getValues());
-      r.setUserId(t.getUserId());
-      r.setType(t.getType() != null ? t.getType().name().toLowerCase() : null);
+      List<ApiDocumentTagItemResponse> list = tags.stream().map(t -> {
+        ApiDocumentTagItemResponse r = new ApiDocumentTagItemResponse();
 
-      return r;
-    }).collect(Collectors.toList());
+        r.setDocumentId(t.getDocumentId());
+        r.setInsertedDate(t.getInsertedDate());
+        r.setKey(t.getKey());
+        r.setValue(t.getValue());
+        r.setValues(t.getValues());
+        r.setUserId(t.getUserId());
+        r.setType(t.getType() != null ? t.getType().name().toLowerCase() : null);
 
-    ApiDocumentTagsItemResponse resp = new ApiDocumentTagsItemResponse();
-    resp.setTags(list);
-    resp.setPrevious(current.getPrevious());
-    resp.setNext(current.hasNext() ? current.getNext() : null);
+        return r;
+      }).collect(Collectors.toList());
 
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+      ApiDocumentTagsItemResponse resp = new ApiDocumentTagsItemResponse();
+      resp.setTags(list);
+      resp.setPrevious(current.getPrevious());
+      resp.setNext(current.hasNext() ? current.getNext() : null);
+
+      return new ApiRequestHandlerResponse(SC_OK, resp);
+    }
   }
 
   @Override
@@ -180,48 +185,50 @@ public class DocumentTagsRequestHandler
     }
 
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
-    DocumentItem item = coreServices.documentService().findDocument(siteId, documentId);
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+      DocumentItem item = coreServices.documentService().findDocument(dbClient, siteId, documentId);
+      if (item == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
+      }
+
+      if (!tagsValid) {
+        tags = new DocumentTags();
+        tags.setTags(Arrays.asList(tag));
+      }
+
+      String userId = getCallingCognitoUsername(event);
+
+      tags.getTags().forEach(t -> {
+        t.setType(DocumentTagType.USERDEFINED);
+        t.setInsertedDate(new Date());
+        t.setUserId(userId);
+      });
+
+      coreServices.documentService().deleteDocumentTag(dbClient, siteId, documentId, "untagged");
+
+      DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
+
+      Collection<ValidationError> errors = new ArrayList<>();
+
+      Collection<DocumentTag> newTags =
+          plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, false, errors);
+
+      if (!errors.isEmpty()) {
+        throw new ValidationException(errors);
+      }
+
+      List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
+      allTags.addAll(newTags);
+
+      updateFulltextIfInstalled(awsservice, siteId, documentId, allTags);
+
+      coreServices.documentService().addTags(dbClient, siteId, documentId, allTags, null);
+
+      ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
+          : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
+
+      return new ApiRequestHandlerResponse(SC_CREATED, resp);
     }
-
-    if (!tagsValid) {
-      tags = new DocumentTags();
-      tags.setTags(Arrays.asList(tag));
-    }
-
-    String userId = getCallingCognitoUsername(event);
-
-    tags.getTags().forEach(t -> {
-      t.setType(DocumentTagType.USERDEFINED);
-      t.setInsertedDate(new Date());
-      t.setUserId(userId);
-    });
-
-    coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
-
-    DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
-
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    Collection<DocumentTag> newTags =
-        plugin.addCompositeKeys(siteId, item, tags.getTags(), userId, false, errors);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
-    allTags.addAll(newTags);
-
-    updateFulltextIfInstalled(awsservice, siteId, documentId, allTags);
-
-    coreServices.documentService().addTags(siteId, documentId, allTags, null);
-
-    ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
-        : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
   /**
@@ -258,5 +265,16 @@ public class DocumentTagsRequestHandler
         }
       }
     }
+  }
+
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
   }
 }

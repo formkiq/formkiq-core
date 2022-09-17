@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -60,6 +61,7 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for GET "/documents/upload". */
 public class DocumentsUploadRequestHandler
@@ -131,56 +133,31 @@ public class DocumentsUploadRequestHandler
 
     if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
-      DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
-      logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
-      service.saveDocument(siteId, item, tags);
+      try (DynamoDbClient client = getDynamoDbClient(awsservice)) {
 
-      if (item.containsKey("actions")) {
-        ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-        List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
-            .collect(Collectors.toList());
-        actionsService.saveActions(siteId, documentId, actions);
+        DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
+        logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+        service.saveDocument(client, siteId, item, tags);
+
+        if (item.containsKey("actions")) {
+          ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+          List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
+              .collect(Collectors.toList());
+          actionsService.saveActions(client, siteId, documentId, actions);
+        }
+
+        if (value != null) {
+
+          (CoreAwsServiceCache.cast(awsservice)).documentCountService()
+              .incrementDocumentCount(client, siteId);
+        }
       }
 
-      if (value != null) {
-        (CoreAwsServiceCache.cast(awsservice)).documentCountService()
-            .incrementDocumentCount(siteId);
-      }
     } else {
       throw new BadException("Max Number of Documents reached");
     }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
-  }
-
-  /**
-   * Validate {@link DynamicDocumentItem} against a TagSchema.
-   * 
-   * @param cacheService {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param item {@link DynamicDocumentItem}
-   * @param userId {@link String}
-   * @param tags {@link List} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   * @throws BadException BadException
-   */
-  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
-      throws ValidationException, BadException {
-
-    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
-
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    List<DocumentTag> compositeTags =
-        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
-            .collect(Collectors.toList());
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    tags.addAll(compositeTags);
   }
 
   /**
@@ -283,6 +260,17 @@ public class DocumentsUploadRequestHandler
         item);
   }
 
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
+  }
+
   @Override
   public String getRequestUrl() {
     return "/documents/upload";
@@ -301,5 +289,35 @@ public class DocumentsUploadRequestHandler
     String siteId = authorizer.getSiteId();
     return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
         item);
+  }
+
+  /**
+   * Validate {@link DynamicDocumentItem} against a TagSchema.
+   * 
+   * @param cacheService {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param item {@link DynamicDocumentItem}
+   * @param userId {@link String}
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws ValidationException ValidationException
+   * @throws BadException BadException
+   */
+  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
+      final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
+      throws ValidationException, BadException {
+
+    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    List<DocumentTag> compositeTags =
+        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
+            .collect(Collectors.toList());
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    tags.addAll(compositeTags);
   }
 }

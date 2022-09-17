@@ -62,8 +62,10 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -75,6 +77,8 @@ public abstract class AbstractRequestHandler {
   private static String cacheTable = "Cache";
   /** Documents Table. */
   private static String documentsTable = "Documents";
+  /** {@link SsmClient}. */
+  private static SsmClient ssmClient;
 
   /** Port to run Test server. */
   private static final int PORT = 8080;
@@ -90,8 +94,10 @@ public abstract class AbstractRequestHandler {
   @BeforeAll
   public static void beforeAll() throws Exception {
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
-    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
-    ssmService.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    ssmClient = ssmBuilder.build();
+    SsmService ssmService = new SsmServiceCache(1, TimeUnit.DAYS);
+    ssmService.putParameter(ssmClient,
+        "/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
   }
 
   /** {@link CoreAwsServiceCache}. */
@@ -245,6 +251,16 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @return {@link DynamoDbClient}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public DynamoDbClient getDbClient() throws URISyntaxException {
+    return DynamoDbTestServices.getDynamoDbConnection(null).build();
+  }
+
+  /**
    * Get {@link DocumentService}.
    *
    * @return {@link DocumentService}
@@ -326,7 +342,7 @@ public abstract class AbstractRequestHandler {
    * @return {@link String}
    */
   public String getSsmParameter(final String key) {
-    return getSsmService().getParameterValue(key);
+    return getSsmService().getParameterValue(ssmClient, key);
   }
 
   /**
@@ -403,7 +419,7 @@ public abstract class AbstractRequestHandler {
    * @param value {@link String}
    */
   public void putSsmParameter(final String name, final String value) {
-    getSsmService().putParameter(name, value);
+    getSsmService().putParameter(ssmClient, name, value);
   }
 
   /**
@@ -413,7 +429,7 @@ public abstract class AbstractRequestHandler {
    */
   public void removeSsmParameter(final String name) {
     try {
-      getSsmService().removeParameter(name);
+      getSsmService().removeParameter(ssmClient, name);
     } catch (ParameterNotFoundException e) {
       // ignore property error
     }

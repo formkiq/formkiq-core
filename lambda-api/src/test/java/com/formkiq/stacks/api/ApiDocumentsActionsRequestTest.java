@@ -31,6 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.Action;
@@ -39,6 +40,7 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for request /documents/{documentId}/actions. */
 @ExtendWith(LocalStackExtension.class)
@@ -47,12 +49,15 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
 
   /** {@link ActionsService}. */
   private ActionsService service;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
 
   @Override
   @BeforeEach
   public void before() throws Exception {
     super.before();
     this.service = getAwsServices().getExtension(ActionsService.class);
+    this.db = getAwsServices().getExtension(DynamoDbConnectionBuilder.class);
   }
 
   /**
@@ -63,33 +68,39 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentActions01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
-          .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-actions01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
+    try (DynamoDbClient client = this.db.build()) {
 
-      // when
-      String response = handleRequest(event);
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+        this.service.saveActions(client, siteId, documentId,
+            Arrays.asList(new Action().status(ActionStatus.COMPLETE)
+                .parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-actions01.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "documentId", documentId);
 
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        // when
+        String response = handleRequest(event);
 
-      Map<String, Object> actionsMap = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-      List<Map<String, Object>> list = (List<Map<String, Object>>) actionsMap.get("actions");
-      assertEquals(1, list.size());
-      assertEquals("ocr", list.get(0).get("type"));
-      assertEquals("complete", list.get(0).get("status"));
-      assertEquals("{test=this}", list.get(0).get("parameters").toString());
+        // then
+        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        assertEquals(getHeaders(),
+            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+        Map<String, Object> actionsMap = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
+        List<Map<String, Object>> list = (List<Map<String, Object>>) actionsMap.get("actions");
+        assertEquals(1, list.size());
+        assertEquals("ocr", list.get(0).get("type"));
+        assertEquals("complete", list.get(0).get("status"));
+        assertEquals("{test=this}", list.get(0).get("parameters").toString());
+      }
     }
   }
 

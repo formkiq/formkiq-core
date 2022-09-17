@@ -83,8 +83,10 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
@@ -191,6 +193,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private Region region;
   /** {@link AwsCredentials}. */
   private AwsCredentials credentials;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder dynamoDb;
 
   /** constructor. */
   public StagingS3Create() {
@@ -208,26 +212,26 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param map {@link Map}
    * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
-   * @param dynamoDb {@link DynamoDbConnectionBuilder}
+   * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3Builder {@link S3ConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
    */
   protected StagingS3Create(final Map<String, String> map, final Region awsRegion,
-      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dynamoDb,
+      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dbBuilder,
       final S3ConnectionBuilder s3Builder, final SqsConnectionBuilder sqsBuilder,
       final SsmConnectionBuilder ssmConnectionBuilder) {
 
     this.region = awsRegion;
     this.credentials = awsCredentials;
     String documentsTable = map.get("DOCUMENTS_TABLE");
-    this.service = new DocumentServiceImpl(dynamoDb, documentsTable);
-    this.searchService =
-        new DocumentSearchServiceImpl(this.service, dynamoDb, documentsTable, null);
-    this.actionsService = new ActionsServiceDynamoDb(dynamoDb, documentsTable);
+    this.service = new DocumentServiceImpl(documentsTable);
+    this.searchService = new DocumentSearchServiceImpl(this.service, documentsTable, null);
+    this.actionsService = new ActionsServiceDynamoDb(documentsTable);
     this.s3 = new S3Service(s3Builder);
     this.sqsService = new SqsService(sqsBuilder);
     this.ssmConnection = ssmConnectionBuilder;
+    this.dynamoDb = dbBuilder;
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.sqsErrorQueue = map.get("SQS_ERROR_URL");
@@ -237,6 +241,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Determines whether {@link String} is a JSON config file.
    *
+   * @param dbClient {@link DynamoDbClient}
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
@@ -245,8 +250,9 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @return {@link DynamicDocumentItem}
    */
   @SuppressWarnings("unchecked")
-  private DynamicDocumentItem configfile(final S3Client s3Client, final LambdaLogger logger,
-      final String bucket, final String siteId, final String documentId) {
+  private DynamicDocumentItem configfile(final DynamoDbClient dbClient, final S3Client s3Client,
+      final LambdaLogger logger, final String bucket, final String siteId,
+      final String documentId) {
 
     DynamicDocumentItem obj = null;
 
@@ -275,7 +281,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       }
 
       if (obj.getPath() != null && obj.getPath().contains(VIRTUAL_FOLDER_DELIM)) {
-        String realDocumentId = getDocumentIdForPath(siteId, obj.getPath());
+        String realDocumentId = getDocumentIdForPath(dbClient, siteId, obj.getPath());
         obj.setDocumentId(realDocumentId);
       }
     }
@@ -286,20 +292,21 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Copies Documentid to a new file that is a {@link UUID}.
    *
+   * @param dbClient {@link DynamoDbClient}
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param originalkey {@link String}
    * @param date {@link Date}
    */
-  private void copyFile(final S3Client s3Client, final LambdaLogger logger, final String bucket,
-      final String originalkey, final Date date) {
+  private void copyFile(final DynamoDbClient dbClient, final S3Client s3Client,
+      final LambdaLogger logger, final String bucket, final String originalkey, final Date date) {
 
     String siteId = getSiteId(originalkey);
     String key = resetDatabaseKey(siteId, originalkey);
 
     boolean uuid = isUuid(key);
-    String documentIdForPath = !uuid ? getDocumentIdForPath(siteId, key) : null;
+    String documentIdForPath = !uuid ? getDocumentIdForPath(dbClient, siteId, key) : null;
     String documentId =
         documentIdForPath != null ? documentIdForPath : uuid ? key : UUID.randomUUID().toString();
 
@@ -325,7 +332,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         doc.setPath(key);
       }
 
-      saveDocument(siteId, doc);
+      saveDocument(dbClient, siteId, doc);
     }
 
     logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
@@ -340,9 +347,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * 
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
+   * @param client {@link DynamoDbClient}
    */
-  private void saveDocument(final String siteId, final DynamicDocumentItem doc) {
-    this.service.saveDocumentItemWithTag(siteId, doc);
+  private void saveDocument(final DynamoDbClient client, final String siteId,
+      final DynamicDocumentItem doc) {
+
+    this.service.saveDocumentItemWithTag(client, siteId, doc);
 
     if (doc.containsKey("actions")) {
 
@@ -351,7 +361,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       List<Action> actions =
           list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
 
-      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
+      this.actionsService.saveActions(client, siteId, doc.getDocumentId(), actions);
     }
   }
 
@@ -412,9 +422,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (this.documentsIamUrl == null) {
       final int cacheTime = 5;
-      SsmService ssmService = new SsmServiceCache(this.ssmConnection, cacheTime, TimeUnit.MINUTES);
-      this.documentsIamUrl =
-          ssmService.getParameterValue("/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
+      SsmService ssmService = new SsmServiceCache(cacheTime, TimeUnit.MINUTES);
+
+      try (SsmClient ssmClient = this.ssmConnection.build()) {
+        this.documentsIamUrl = ssmService.getParameterValue(ssmClient,
+            "/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
+      }
     }
 
     if (this.formkiqClient == null) {
@@ -447,13 +460,16 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Find DocumentId for File Path.
    * 
+   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param path {@link String}
    * @return {@link String}
    */
-  private String getDocumentIdForPath(final String siteId, final String path) {
+  private String getDocumentIdForPath(final DynamoDbClient dbClient, final String siteId,
+      final String path) {
     SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
-    PaginationResults<DynamicDocumentItem> result = this.searchService.search(siteId, q, null, 1);
+    PaginationResults<DynamicDocumentItem> result =
+        this.searchService.search(dbClient, siteId, q, null, 1);
     return !result.getResults().isEmpty() ? result.getResults().get(0).getDocumentId() : null;
   }
 
@@ -548,26 +564,29 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (objectCreated) {
 
-      try (S3Client s = this.s3.buildClient()) {
+      try (DynamoDbClient db = this.dynamoDb.build()) {
 
-        DynamicDocumentItem doc = configfile(s, logger, bucket, siteId, documentId);
+        try (S3Client s = this.s3.buildClient()) {
 
-        if (doc != null) {
-          write(s, logger, doc, date, siteId);
+          DynamicDocumentItem doc = configfile(db, s, logger, bucket, siteId, documentId);
 
-          String tagSchemaId = doc.getString("tagSchemaId");
-          Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
+          if (doc != null) {
+            write(db, s, logger, doc, date, siteId);
 
-          if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-            createFormKiQConnectionIfNeeded();
-            postDocumentTags(siteId, doc);
+            String tagSchemaId = doc.getString("tagSchemaId");
+            Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
+
+            if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
+              createFormKiQConnectionIfNeeded();
+              postDocumentTags(siteId, doc);
+            }
+
+          } else {
+            copyFile(db, s, logger, bucket, documentId, date);
           }
 
-        } else {
-          copyFile(s, logger, bucket, documentId, date);
+          deleteObject(s, logger, bucket, documentId);
         }
-
-        deleteObject(s, logger, bucket, documentId);
       }
     }
 
@@ -629,13 +648,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Write {@link DynamicDocumentItem} to S3 & DynamoDB.
    *
+   * @param db {@link DynamoDbClient}
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param doc {@link DynamicDocumentItem}
    * @param date {@link Date}
    * @param siteId {@link String}
    */
-  private void write(final S3Client s3Client, final LambdaLogger logger,
+  private void write(final DynamoDbClient db, final S3Client s3Client, final LambdaLogger logger,
       final DynamicDocumentItem doc, final Date date, final String siteId) {
 
     if (writeS3File(logger, s3Client, siteId, doc)) {
@@ -647,7 +667,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       logger.log(String.format("Skipping %s no content", doc.getPath()));
     }
 
-    saveDocument(siteId, doc);
+    saveDocument(db, siteId, doc);
   }
 
   /**

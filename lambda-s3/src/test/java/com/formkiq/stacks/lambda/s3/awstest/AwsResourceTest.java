@@ -59,6 +59,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Event;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
@@ -68,6 +69,7 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test CloudFormation.
@@ -236,29 +238,31 @@ public class AwsResourceTest extends AbstractAwsTest {
     String contentType = "text/plain";
     DocumentItem item = new DocumentItemDynamoDb(key, new Date(), "test");
 
-    try (S3Client s3 = getS3Service().buildClient()) {
+    try (DynamoDbClient dbClient = getDynamodbClient()) {
+      try (S3Client s3 = getS3Service().buildClient()) {
 
-      // when
-      getDocumentService().saveDocument(null, item, null);
-      key = writeToDocuments(s3, key, contentType);
+        // when
+        getDocumentService().saveDocument(dbClient, null, item, null);
+        key = writeToDocuments(s3, key, contentType);
 
-      // then
-      verifyFileExistsInDocumentsS3(s3, key, contentType);
+        // then
+        verifyFileExistsInDocumentsS3(s3, key, contentType);
 
-      item = getDocumentService().findDocument(null, key);
+        item = getDocumentService().findDocument(dbClient, null, key);
 
-      while (true) {
-        if (contentType.equals(item.getContentType())) {
-          assertEquals(contentType, item.getContentType());
-          assertEquals(contentLength, item.getContentLength());
+        while (true) {
+          if (contentType.equals(item.getContentType())) {
+            assertEquals(contentType, item.getContentType());
+            assertEquals(contentLength, item.getContentLength());
 
-          break;
+            break;
+          }
+
+          item = getDocumentService().findDocument(dbClient, null, key);
         }
 
-        item = getDocumentService().findDocument(null, key);
+        getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
       }
-
-      getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
     }
   }
 
@@ -283,30 +287,32 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     try {
 
-      try (S3Client s3 = getS3Service().buildClient()) {
+      try (DynamoDbClient dbClient = getDynamodbClient()) {
+        try (S3Client s3 = getS3Service().buildClient()) {
 
-        DynamicDocumentItem doc = new DynamicDocumentItem(
-            Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
-        getDocumentService().saveDocumentItemWithTag(null, doc);
+          DynamicDocumentItem doc = new DynamicDocumentItem(
+              Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
+          getDocumentService().saveDocumentItemWithTag(dbClient, null, doc);
 
-        // when
-        URL url = getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1));
-        HttpResponse<String> put =
-            http.send(
-                HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
-                    .method("PUT", BodyPublishers.ofString(content)).build(),
-                BodyHandlers.ofString());
+          // when
+          URL url =
+              getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1));
+          HttpResponse<String> put = http.send(
+              HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
+                  .method("PUT", BodyPublishers.ofString(content)).build(),
+              BodyHandlers.ofString());
 
-        // then
-        assertEquals(statusCode, put.statusCode());
-        verifyFileExistsInDocumentsS3(s3, key, contentType);
-        assertSnsMessage(documentQueueUrl, "create");
+          // then
+          assertEquals(statusCode, put.statusCode());
+          verifyFileExistsInDocumentsS3(s3, key, contentType);
+          assertSnsMessage(documentQueueUrl, "create");
 
-        // when
-        getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
+          // when
+          getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
-        // then
-        assertSnsMessage(documentQueueUrl, "delete");
+          // then
+          assertSnsMessage(documentQueueUrl, "delete");
+        }
       }
 
     } finally {
@@ -370,8 +376,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     final String txt1 = "this is a test";
     final String txt2 = "this is a another test";
 
-    String createQueue = "createtest-" + UUID.randomUUID();
-    String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+    String documentQueueUrl = createSqsQueue("createtest-" + UUID.randomUUID()).queueUrl();
     String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
     String contentType = "text/plain";
@@ -380,53 +385,56 @@ public class AwsResourceTest extends AbstractAwsTest {
     try {
 
       // when
-      try (S3Client s3 = getS3Service().buildClient()) {
+      try (DynamoDbClient dbClient = getDynamodbClient()) {
 
-        getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
-            txt1.getBytes(StandardCharsets.UTF_8), contentType);
+        try (S3Client s3 = getS3Service().buildClient()) {
 
-        SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
+          getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
+              txt1.getBytes(StandardCharsets.UTF_8), contentType);
 
-        // then
-        PaginationResults<DynamicDocumentItem> result =
-            new PaginationResults<>(Collections.emptyList(), null);
+          SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
 
-        while (result.getResults().size() != 1) {
-          result = getSearchService().search(siteId, q, null, DocumentService.MAX_RESULTS);
-          Thread.sleep(SLEEP);
-        }
+          // then
+          PaginationResults<DynamicDocumentItem> result =
+              new PaginationResults<>(Collections.emptyList(), null);
 
-        assertEquals(1, result.getResults().size());
-        assertSnsMessage(documentQueueUrl, "create");
-
-        // given
-        String documentId = result.getResults().get(0).getDocumentId();
-        Collection<DocumentTag> tags =
-            Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
-        getDocumentService().addTags(siteId, documentId, tags, null);
-
-        // when
-        getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
-            txt2.getBytes(StandardCharsets.UTF_8), contentType);
-
-        // then
-        while (true) {
-          String txt =
-              getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null);
-          if (txt.equals(txt2)) {
-            break;
+          while (result.getResults().size() != 1) {
+            result =
+                getSearchService().search(dbClient, siteId, q, null, DocumentService.MAX_RESULTS);
+            Thread.sleep(SLEEP);
           }
+
+          assertEquals(1, result.getResults().size());
+          assertSnsMessage(documentQueueUrl, "create");
+
+          // given
+          String documentId = result.getResults().get(0).getDocumentId();
+          Collection<DocumentTag> tags = Arrays
+              .asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
+          getDocumentService().addTags(dbClient, siteId, documentId, tags, null);
+
+          // when
+          getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
+              txt2.getBytes(StandardCharsets.UTF_8), contentType);
+
+          // then
+          while (true) {
+            String txt =
+                getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null);
+            if (txt.equals(txt2)) {
+              break;
+            }
+          }
+
+          assertEquals(txt2,
+              getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
+          assertSnsMessage(documentQueueUrl, "create");
+          PaginationResults<DocumentTag> list = getDocumentService().findDocumentTags(dbClient,
+              siteId, documentId, null, MAX_RESULTS);
+          assertEquals("[path, status, untagged, userId]", list.getResults().stream()
+              .map(m -> m.getKey()).collect(Collectors.toList()).toString());
         }
-
-        assertEquals(txt2,
-            getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
-        assertSnsMessage(documentQueueUrl, "create");
-        PaginationResults<DocumentTag> list =
-            getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-        assertEquals("[path, status, untagged, userId]", list.getResults().stream()
-            .map(m -> m.getKey()).collect(Collectors.toList()).toString());
       }
-
     } finally {
       getSnsService().unsubscribe(subDocumentArn);
       getSqsService().deleteQueue(documentQueueUrl);
@@ -473,29 +481,34 @@ public class AwsResourceTest extends AbstractAwsTest {
     String appenvironment = getAppenvironment();
     String edition = getEdition();
 
-    assertTrue(getDocumentsbucketname()
-        .startsWith("formkiq-" + edition + "-" + appenvironment + "-documents-"));
-    assertTrue(getStagingdocumentsbucketname()
-        .startsWith("formkiq-" + edition + "-" + appenvironment + "-staging-"));
-    assertTrue(
-        getSsmService().getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn")
-            .contains("SnsDocumentEvent"));
-    assertTrue(getSsmService()
-        .getParameterValue("/formkiq/" + appenvironment + "/lambda/StagingCreateObject")
-        .contains("StagingS3Create"));
-    assertTrue(getSsmService()
-        .getParameterValue("/formkiq/" + appenvironment + "/lambda/DocumentsUpdateObject")
-        .contains("DocumentsS3Update"));
+    try (SsmClient ssmClient = getSsmClient()) {
 
-    String documentsUpdateUrl =
-        getSsmService().getParameterValue("/formkiq/" + appenvironment + "/sqs/DocumentsUpdateUrl");
-    assertTrue(documentsUpdateUrl.contains("DocumentsUpdateQueue"));
-    assertTrue(documentsUpdateUrl.contains("https://"));
+      assertTrue(getDocumentsbucketname()
+          .startsWith("formkiq-" + edition + "-" + appenvironment + "-documents-"));
+      assertTrue(getStagingdocumentsbucketname()
+          .startsWith("formkiq-" + edition + "-" + appenvironment + "-staging-"));
+      assertTrue(getSsmService()
+          .getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/sns/DocumentEventArn")
+          .contains("SnsDocumentEvent"));
+      assertTrue(getSsmService()
+          .getParameterValue(ssmClient,
+              "/formkiq/" + appenvironment + "/lambda/StagingCreateObject")
+          .contains("StagingS3Create"));
+      assertTrue(getSsmService()
+          .getParameterValue(ssmClient,
+              "/formkiq/" + appenvironment + "/lambda/DocumentsUpdateObject")
+          .contains("DocumentsS3Update"));
 
-    String documentsUpdateArn =
-        getSsmService().getParameterValue("/formkiq/" + appenvironment + "/sqs/DocumentsUpdateArn");
-    assertTrue(documentsUpdateArn.contains("DocumentsUpdateQueue"));
-    assertTrue(documentsUpdateArn.contains("arn:aws:sqs"));
+      String documentsUpdateUrl = getSsmService().getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/sqs/DocumentsUpdateUrl");
+      assertTrue(documentsUpdateUrl.contains("DocumentsUpdateQueue"));
+      assertTrue(documentsUpdateUrl.contains("https://"));
+
+      String documentsUpdateArn = getSsmService().getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/sqs/DocumentsUpdateArn");
+      assertTrue(documentsUpdateArn.contains("DocumentsUpdateQueue"));
+      assertTrue(documentsUpdateArn.contains("arn:aws:sqs"));
+    }
   }
 
   /**

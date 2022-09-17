@@ -38,26 +38,19 @@ import software.amazon.awssdk.services.ssm.model.PutParameterRequest;
  */
 public class SsmServiceImpl implements SsmService {
 
-  /** {@link SsmClient}. */
-  private SsmClient ssm;
-
   /**
    * constructor.
-   * 
-   * @param builder {@link SsmConnectionBuilder}
    */
-  public SsmServiceImpl(final SsmConnectionBuilder builder) {
-    this.ssm = builder.build();
-  }
+  public SsmServiceImpl() {}
 
   @Override
-  public String getParameterValue(final String parameterKey) {
+  public String getParameterValue(final SsmClient ssm, final String parameterKey) {
 
     String value;
     GetParameterRequest parameterRequest = GetParameterRequest.builder().name(parameterKey).build();
 
     try {
-      GetParameterResponse response = this.ssm.getParameter(parameterRequest);
+      GetParameterResponse response = ssm.getParameter(parameterRequest);
       value = response.parameter().value();
 
     } catch (ParameterNotFoundException e) {
@@ -68,15 +61,15 @@ public class SsmServiceImpl implements SsmService {
   }
 
   @Override
-  public void putParameter(final String name, final String value) {
+  public void putParameter(final SsmClient ssm, final String name, final String value) {
     PutParameterRequest put = PutParameterRequest.builder().name(name).value(value)
         .type(ParameterType.STRING).overwrite(Boolean.TRUE).build();
-    this.ssm.putParameter(put);
+    ssm.putParameter(put);
   }
 
   @Override
-  public void removeParameter(final String name) {
+  public void removeParameter(final SsmClient ssm, final String name) {
     DeleteParameterRequest req = DeleteParameterRequest.builder().name(name).build();
-    this.ssm.deleteParameter(req);
+    ssm.deleteParameter(req);
   }
 }

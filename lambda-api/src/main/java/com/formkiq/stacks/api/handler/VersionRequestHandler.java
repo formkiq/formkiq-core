@@ -34,8 +34,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/version". */
 public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -52,13 +54,18 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     SsmService ssmService = awsservice.getExtension(SsmService.class);
     String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/version";
-    String version = ssmService.getParameterValue(key);
-    List<String> modules =
-        awsservice.environment().entrySet().stream().filter(e -> e.getKey().startsWith("MODULE_"))
-            .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("version", version,
-        "type", awsservice.environment("FORMKIQ_TYPE"), "modules", modules)));
+    SsmConnectionBuilder ssmBuilder = awsservice.getExtension(SsmConnectionBuilder.class);
+
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+      String version = ssmService.getParameterValue(ssmClient, key);
+      List<String> modules =
+          awsservice.environment().entrySet().stream().filter(e -> e.getKey().startsWith("MODULE_"))
+              .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
+
+      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("version", version,
+          "type", awsservice.environment("FORMKIQ_TYPE"), "modules", modules)));
+    }
   }
 
   @Override

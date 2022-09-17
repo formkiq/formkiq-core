@@ -37,6 +37,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
@@ -59,28 +60,30 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     // given
     createApiRequestHandler(getMap());
 
-    for (String enabled : Arrays.asList("private", "true")) {
+    try (DynamoDbClient dbClient = getDbClient()) {
+      for (String enabled : Arrays.asList("private", "true")) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String name = UUID.randomUUID().toString();
+        for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+          String name = UUID.randomUUID().toString();
 
-        String id =
-            getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, enabled);
+          String id = getAwsServices().webhookService().saveWebhook(dbClient, siteId, name, "joe",
+              null, enabled);
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-post-private-webhooks01.json");
-        addParameter(event, "siteId", siteId);
-        setPathParameter(event, "webhooks", id);
+          ApiGatewayRequestEvent event = toRequestEvent("/request-post-private-webhooks01.json");
+          addParameter(event, "siteId", siteId);
+          setPathParameter(event, "webhooks", id);
 
-        // when
-        String response = handleRequest(event);
+          // when
+          String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+          // then
+          Map<String, String> m = fromJson(response, Map.class);
+          verifyHeaders(m, "200.0");
 
-        String documentId = verifyDocumentId(m);
+          String documentId = verifyDocumentId(m);
 
-        verifyS3File(id, siteId, documentId, name, null, false);
+          verifyS3File(dbClient, id, siteId, documentId, name, null, false);
+        }
       }
     }
   }
@@ -101,8 +104,9 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
   }
 
   @SuppressWarnings("unchecked")
-  private void verifyS3File(final String webhookId, final String siteId, final String documentId,
-      final String name, final String contentType, final boolean hasTimeToLive) {
+  private void verifyS3File(final DynamoDbClient dbClient, final String webhookId,
+      final String siteId, final String documentId, final String name, final String contentType,
+      final boolean hasTimeToLive) {
 
     // verify s3 file
     try (S3Client s3 = getS3().buildClient()) {
@@ -121,7 +125,8 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
       }
 
       if (hasTimeToLive) {
-        DynamicObject obj = getAwsServices().webhookService().findWebhook(siteId, webhookId);
+        DynamicObject obj =
+            getAwsServices().webhookService().findWebhook(dbClient, siteId, webhookId);
         assertNotNull(obj.get("TimeToLive"));
         assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
       }

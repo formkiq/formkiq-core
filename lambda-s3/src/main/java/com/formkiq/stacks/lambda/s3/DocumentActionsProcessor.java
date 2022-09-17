@@ -82,7 +82,9 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -109,6 +111,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private String ocrBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
 
   /** constructor. */
   public DocumentActionsProcessor() {
@@ -126,30 +130,36 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param map {@link Map}
    * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
-   * @param db {@link DynamoDbConnectionBuilder}
+   * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sns {@link SnsConnectionBuilder}
    */
   protected DocumentActionsProcessor(final Map<String, String> map, final Region awsRegion,
-      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder db,
+      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dbBuilder,
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
+    this.db = dbBuilder;
     this.s3Service = new S3Service(s3);
-    this.documentService = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
-    this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
+    this.documentService = new DocumentServiceImpl(map.get("DOCUMENTS_TABLE"));
+    this.actionsService = new ActionsServiceDynamoDb(map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;
-    SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
-    this.documentsIamUrl =
-        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
-    this.documentsBucket =
-        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
-    this.ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
+    SsmService ssmService = new SsmServiceCache(cacheTime, TimeUnit.MINUTES);
+
+    try (SsmClient ssmClient = ssm.build()) {
+
+      this.documentsIamUrl = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+      this.documentsBucket = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
+      this.ocrBucket =
+          ssmService.getParameterValue(ssmClient, "/formkiq/" + appEnvironment + "/s3/OcrBucket");
+    }
 
     this.fkqConnection = new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
 
@@ -163,13 +173,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Build Webhook Body.
    * 
+   * @param dbClient {@link DynamoDbClient}
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @return {@link String}
    */
-  private String buildWebhookBody(final String siteId, final String documentId,
-      final List<Action> actions) {
+  private String buildWebhookBody(final DynamoDbClient dbClient, final String siteId,
+      final String documentId, final List<Action> actions) {
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
 
@@ -186,11 +198,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     if (antiVirus.isPresent()) {
 
-      DocumentItem item = this.documentService.findDocument(siteId, documentId);
+      DocumentItem item = this.documentService.findDocument(dbClient, siteId, documentId);
       map.put("filename", item.getPath());
 
-      Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
-          Arrays.asList(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
+      Map<String, Collection<DocumentTag>> tagMap =
+          this.documentService.findDocumentsTags(dbClient, siteId, Arrays.asList(documentId),
+              Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
 
       Map<String, String> values = new HashMap<>();
       Collection<DocumentTag> tags = tagMap.get(documentId);
@@ -211,6 +224,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Find Content Url.
    * 
+   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link List} {@link String}
@@ -218,11 +232,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  private List<String> findContentUrls(final String siteId, final String documentId)
-      throws IOException, InterruptedException {
+  private List<String> findContentUrls(final DynamoDbClient dbClient, final String siteId,
+      final String documentId) throws IOException, InterruptedException {
 
     List<String> urls = null;
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    DocumentItem item = this.documentService.findDocument(dbClient, siteId, documentId);
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
     try (S3Client client = this.s3Service.buildClient()) {
@@ -308,14 +322,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Process Action.
    * 
+   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void processAction(final String siteId, final String documentId, final Action action)
-      throws IOException, InterruptedException {
+  private void processAction(final DynamoDbClient dbClient, final String siteId,
+      final String documentId, final Action action) throws IOException, InterruptedException {
 
     if (ActionType.OCR.equals(action.type())) {
 
@@ -331,7 +346,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      List<String> contentUrls = findContentUrls(siteId, documentId);
+      List<String> contentUrls = findContentUrls(dbClient, siteId, documentId);
 
       SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrls(contentUrls);
       SetDocumentFulltextRequest req =
@@ -347,7 +362,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.WEBHOOK.equals(action.type())) {
 
-      sendWebhook(siteId, documentId, action);
+      sendWebhook(dbClient, siteId, documentId, action);
     }
   }
 
@@ -356,18 +371,19 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * 
    * @param logger {@link LambdaLogger}
    * @param event {@link DocumentEvent}
+   * @param dbClient {@link DynamoDbClient}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processEvent(final LambdaLogger logger, final DocumentEvent event)
-      throws IOException, InterruptedException {
+  private void processEvent(final LambdaLogger logger, final DocumentEvent event,
+      final DynamoDbClient dbClient) throws IOException, InterruptedException {
 
     if (ACTIONS.equals(event.type())) {
 
       String siteId = event.siteId();
       String documentId = event.documentId();
 
-      List<Action> actions = this.actionsService.getActions(siteId, documentId);
+      List<Action> actions = this.actionsService.getActions(dbClient, siteId, documentId);
       Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
 
       if (o.isPresent()) {
@@ -377,12 +393,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
             documentId, action.type()));
 
         try {
-          processAction(siteId, documentId, action);
+          processAction(dbClient, siteId, documentId, action);
 
         } catch (Exception e) {
           e.printStackTrace();
           action.status(ActionStatus.FAILED);
-          this.actionsService.updateActionStatus(siteId, documentId, o.get().type(),
+          this.actionsService.updateActionStatus(dbClient, siteId, documentId, o.get().type(),
               ActionStatus.FAILED);
         }
       } else {
@@ -406,17 +422,20 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void processRecords(final LambdaLogger logger, final List<Map<String, Object>> records)
       throws IOException, InterruptedException {
 
-    for (Map<String, Object> e : records) {
+    try (DynamoDbClient dbClient = this.db.build()) {
 
-      if (e.containsKey("body")) {
+      for (Map<String, Object> e : records) {
 
-        String body = e.get("body").toString();
+        if (e.containsKey("body")) {
 
-        Map<String, Object> map = this.gson.fromJson(body, Map.class);
-        if (map.containsKey("Message")) {
-          DocumentEvent event =
-              this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
-          processEvent(logger, event);
+          String body = e.get("body").toString();
+
+          Map<String, Object> map = this.gson.fromJson(body, Map.class);
+          if (map.containsKey("Message")) {
+            DocumentEvent event =
+                this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
+            processEvent(logger, event, dbClient);
+          }
         }
       }
     }
@@ -425,20 +444,21 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Sends Webhook.
    * 
+   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final String siteId, final String documentId, final Action action)
-      throws IOException, InterruptedException {
+  private void sendWebhook(final DynamoDbClient dbClient, final String siteId,
+      final String documentId, final Action action) throws IOException, InterruptedException {
 
     String url = action.parameters().get("url");
 
-    List<Action> actions = this.actionsService.getActions(siteId, documentId);
+    List<Action> actions = this.actionsService.getActions(dbClient, siteId, documentId);
 
-    String body = buildWebhookBody(siteId, documentId, actions);
+    String body = buildWebhookBody(dbClient, siteId, documentId, actions);
 
     try {
 
@@ -455,8 +475,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (statusCode >= statusOk && statusCode < statusRedirect) {
 
-        List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
-            ActionType.WEBHOOK, ActionStatus.COMPLETE);
+        List<Action> updatedActions = this.actionsService.updateActionStatus(dbClient, siteId,
+            documentId, ActionType.WEBHOOK, ActionStatus.COMPLETE);
 
         this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
 

@@ -21,28 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.tagschema;
-
-import java.util.Collection;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+package com.formkiq.module.lambdaservices;
 
 /**
+ * {@link AwsServiceExtension} for any class.
  * 
- * Interface for loading of {@link DocumentTag}.
- *
+ * @param <T> Type of Object
  */
-public interface DocumentTagLoader {
+public class ClassServiceExtension<T> implements AwsServiceExtension<T> {
+
+  /** Type of Object. */
+  private T tt;
 
   /**
-   * Load {@link DocumentTag} by Tag Key.
+   * constructor.
    * 
-   * @param dbClient {@link DynamoDbClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param tagKeys {@link Collection} {@link String}
-   * @return {@link Collection} {@link DocumentTag}
+   * @param t {@link Object}
    */
-  Collection<DocumentTag> findDocumentTags(DynamoDbClient dbClient, String siteId,
-      String documentId, Collection<String> tagKeys);
+  public ClassServiceExtension(final T t) {
+    this.tt = t;
+  }
+
+  @Override
+  public T loadService(final AwsServiceCache awsServiceCache) {
+    return this.tt;
+  }
+
 }

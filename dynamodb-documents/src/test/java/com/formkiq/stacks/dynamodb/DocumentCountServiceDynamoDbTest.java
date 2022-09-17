@@ -30,13 +30,17 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for {@link DocumentCountServiceDynamoDb}. */
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentCountServiceDynamoDbTest {
 
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
   /** Document Count Service. */
   private DocumentCountService service;
 
@@ -47,8 +51,8 @@ public class DocumentCountServiceDynamoDbTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service = new DocumentCountServiceDynamoDb(
-        DynamoDbTestServices.getDynamoDbConnection(null), DOCUMENTS_TABLE);
+    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentCountServiceDynamoDb(DOCUMENTS_TABLE);
   }
 
   /**
@@ -57,17 +61,20 @@ public class DocumentCountServiceDynamoDbTest {
   @Test
   public void testIncrementDocumentCount01() {
     // given
-    String siteId = UUID.randomUUID().toString();
+    try (DynamoDbClient dbClient = this.db.build()) {
 
-    try {
-      // when
-      this.service.incrementDocumentCount(siteId);
+      String siteId = UUID.randomUUID().toString();
 
-      // then
-      assertEquals(1, this.service.getDocumentCount(siteId));
+      try {
+        // when
+        this.service.incrementDocumentCount(dbClient, siteId);
 
-    } finally {
-      this.service.removeDocumentCount(siteId);
+        // then
+        assertEquals(1, this.service.getDocumentCount(dbClient, siteId));
+
+      } finally {
+        this.service.removeDocumentCount(dbClient, siteId);
+      }
     }
   }
 
@@ -77,16 +84,18 @@ public class DocumentCountServiceDynamoDbTest {
   @Test
   public void testIncrementDocumentCount02() {
     // given
-    String siteId = null;
+    try (DynamoDbClient dbClient = this.db.build()) {
+      String siteId = null;
 
-    try {
-      // when
-      this.service.incrementDocumentCount(siteId);
+      try {
+        // when
+        this.service.incrementDocumentCount(dbClient, siteId);
 
-      // then
-      assertTrue(this.service.getDocumentCount(siteId) > 0);
-    } finally {
-      this.service.removeDocumentCount(siteId);
+        // then
+        assertTrue(this.service.getDocumentCount(dbClient, siteId) > 0);
+      } finally {
+        this.service.removeDocumentCount(dbClient, siteId);
+      }
     }
   }
 }

@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -51,6 +52,7 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/upload". */
 public class DocumentsIdUploadRequestHandler
@@ -58,12 +60,12 @@ public class DocumentsIdUploadRequestHandler
 
   /** Default Duration Hours. */
   private static final int DEFAULT_DURATION_HOURS = 48;
-  /** {@link DocumentsRestrictionsMaxDocuments}. */
-  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
-      new DocumentsRestrictionsMaxDocuments();
   /** {@link DocumentsRestrictionsMaxContentLength}. */
   private DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
       new DocumentsRestrictionsMaxContentLength();
+  /** {@link DocumentsRestrictionsMaxDocuments}. */
+  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
+      new DocumentsRestrictionsMaxDocuments();
 
   /**
    * constructor.
@@ -163,51 +165,64 @@ public class DocumentsIdUploadRequestHandler
     String siteId = authorizer.getSiteId();
     DocumentService service = cacheService.documentService();
 
-    if (map != null && map.containsKey("documentId")) {
+    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+      if (map != null && map.containsKey("documentId")) {
 
-      documentId = map.get("documentId");
+        documentId = map.get("documentId");
 
-      item = service.findDocument(siteId, documentId);
+        item = service.findDocument(dbClient, siteId, documentId);
 
-      documentExists = item != null;
+        documentExists = item != null;
 
-      if (!documentExists) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
-
-    } else if (query != null && query.containsKey("path")) {
-
-      String path = query.get("path");
-      path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
-
-      item.setPath(path);
-      tags.add(
-          new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
-    }
-
-    String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);
-    logger.log("generated presign url: " + urlstring + " for document " + documentId);
-
-    if (!documentExists && item != null) {
-
-      tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
-          DocumentTagType.SYSTEMDEFINED));
-
-      String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
-      if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
-
-        logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
-        service.saveDocument(siteId, item, tags);
-
-        if (value != null) {
-          cacheService.documentCountService().incrementDocumentCount(siteId);
+        if (!documentExists) {
+          throw new NotFoundException("Document " + documentId + " not found.");
         }
-      } else {
-        throw new BadException("Max Number of Documents reached");
-      }
-    }
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
+      } else if (query != null && query.containsKey("path")) {
+
+        String path = query.get("path");
+        path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
+
+        item.setPath(path);
+        tags.add(new DocumentTag(documentId, "path", path, date, username,
+            DocumentTagType.SYSTEMDEFINED));
+      }
+
+      String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);
+      logger.log("generated presign url: " + urlstring + " for document " + documentId);
+
+      if (!documentExists && item != null) {
+
+        tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
+            DocumentTagType.SYSTEMDEFINED));
+
+        String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
+        if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
+
+          logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+          service.saveDocument(dbClient, siteId, item, tags);
+
+          if (value != null) {
+            cacheService.documentCountService().incrementDocumentCount(dbClient, siteId);
+          } else {
+            throw new BadException("Max Number of Documents reached");
+          }
+        }
+      }
+
+      return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
+    }
+  }
+
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
   }
 
   @Override

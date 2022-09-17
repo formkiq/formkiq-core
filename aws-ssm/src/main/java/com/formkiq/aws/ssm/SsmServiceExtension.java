@@ -38,22 +38,16 @@ public class SsmServiceExtension implements AwsServiceExtension<SsmService> {
   private static final int CACHE_MINUTES = 15;
   /** {@link SsmService}. */
   private SsmService service;
-  /** {@link SsmConnectionBuilder}. */
-  private SsmConnectionBuilder connection;
 
   /**
    * constructor.
-   * 
-   * @param ssmConnection {@link SsmConnectionBuilder}
    */
-  public SsmServiceExtension(final SsmConnectionBuilder ssmConnection) {
-    this.connection = ssmConnection;
-  }
+  public SsmServiceExtension() {}
 
   @Override
   public SsmService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      this.service = new SsmServiceCache(this.connection, CACHE_MINUTES, TimeUnit.MINUTES);
+      this.service = new SsmServiceCache(CACHE_MINUTES, TimeUnit.MINUTES);
     }
 
     return this.service;

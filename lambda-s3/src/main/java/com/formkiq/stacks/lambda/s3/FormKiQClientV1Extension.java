@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
@@ -31,6 +32,7 @@ import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -71,16 +73,21 @@ public class FormKiQClientV1Extension implements AwsServiceExtension<FormKiqClie
 
     String appEnvironment = awsServiceCache.environment("APP_ENVIRONMENT");
     SsmService ssm = awsServiceCache.getExtension(SsmService.class);
-    String documentsIamUrl =
-        ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
-    FormKiqClientConnection fkqConnection =
-        new FormKiqClientConnection(documentsIamUrl).region(this.region);
+    SsmConnectionBuilder ssmConnection = awsServiceCache.getExtension(SsmConnectionBuilder.class);
+    try (SsmClient ssmClient = ssmConnection.build()) {
 
-    if (this.credentials != null) {
-      fkqConnection = fkqConnection.credentials(this.credentials);
+      String documentsIamUrl =
+          ssm.getParameterValue(ssmClient, "/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+
+      FormKiqClientConnection fkqConnection =
+          new FormKiqClientConnection(documentsIamUrl).region(this.region);
+
+      if (this.credentials != null) {
+        fkqConnection = fkqConnection.credentials(this.credentials);
+      }
+
+      this.formkiqClient = new FormKiqClientV1(fkqConnection);
     }
-
-    this.formkiqClient = new FormKiqClientV1(fkqConnection);
   }
 }

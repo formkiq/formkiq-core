@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -54,6 +55,7 @@ import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
@@ -92,6 +94,17 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
   }
 
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @return {@link DynamoDbClient}
+   */
+  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
+    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
+    return db.build();
+  }
+
   @Override
   public String getRequestUrl() {
     return "/search";
@@ -100,15 +113,17 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   /**
    * Get Response Tags.
    * 
+   * @param dbClient {@link DynamoDbClient}
+   * 
    * @param awsservice {@link CoreAwsServiceCache}
    * @param siteId {@link String}
    * @param responseFields {@link SearchResponseFields}
    * @param documents {@link List} {@link DynamicDocumentItem}
    * @return {@link Map}
    */
-  private Map<String, Collection<DocumentTag>> getResponseTags(final CoreAwsServiceCache awsservice,
-      final String siteId, final SearchResponseFields responseFields,
-      final List<DynamicDocumentItem> documents) {
+  private Map<String, Collection<DocumentTag>> getResponseTags(final DynamoDbClient dbClient,
+      final CoreAwsServiceCache awsservice, final String siteId,
+      final SearchResponseFields responseFields, final List<DynamicDocumentItem> documents) {
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
@@ -119,7 +134,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       List<String> documentIds =
           documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toList());
 
-      map = service.findDocumentsTags(siteId, documentIds, responseFields.tags());
+      map = service.findDocumentsTags(dbClient, siteId, documentIds, responseFields.tags());
     }
 
     return map;
@@ -183,42 +198,45 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     } else {
 
-      CacheService cacheService = awsservice.getExtension(CacheService.class);
-      ApiPagination pagination = getPagination(cacheService, event);
-      int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-      PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+      try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
 
-      Collection<String> documentIds = q.query().documentIds();
-      if (documentIds != null) {
-        if (documentIds.size() > MAX_DOCUMENT_IDS) {
-          throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
+        CacheService cacheService = awsservice.getExtension(CacheService.class);
+        ApiPagination pagination = getPagination(cacheService, dbClient, event);
+        int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+        PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+
+        Collection<String> documentIds = q.query().documentIds();
+        if (documentIds != null) {
+          if (documentIds.size() > MAX_DOCUMENT_IDS) {
+            throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
+          }
+
+          if (!getQueryParameterMap(event).containsKey("limit")) {
+            limit = documentIds.size();
+          }
         }
 
-        if (!getQueryParameterMap(event).containsKey("limit")) {
-          limit = documentIds.size();
-        }
+        String siteId = authorizer.getSiteId();
+        PaginationResults<DynamicDocumentItem> results =
+            documentSearchService.search(dbClient, siteId, q.query(), ptoken, limit);
+
+        ApiPagination current =
+            createPagination(cacheService, dbClient, event, pagination, results.getToken(), limit);
+
+        List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+
+        Map<String, Collection<DocumentTag>> responseTags =
+            getResponseTags(dbClient, serviceCache, siteId, q.responseFields(), documents);
+        mergeResponseTags(documents, responseTags);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("documents", documents);
+        map.put("previous", current.getPrevious());
+        map.put("next", current.hasNext() ? current.getNext() : null);
+
+        ApiMapResponse resp = new ApiMapResponse(map);
+        response = new ApiRequestHandlerResponse(SC_OK, resp);
       }
-
-      String siteId = authorizer.getSiteId();
-      PaginationResults<DynamicDocumentItem> results =
-          documentSearchService.search(siteId, q.query(), ptoken, limit);
-
-      ApiPagination current =
-          createPagination(cacheService, event, pagination, results.getToken(), limit);
-
-      List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
-
-      Map<String, Collection<DocumentTag>> responseTags =
-          getResponseTags(serviceCache, siteId, q.responseFields(), documents);
-      mergeResponseTags(documents, responseTags);
-
-      Map<String, Object> map = new HashMap<>();
-      map.put("documents", documents);
-      map.put("previous", current.getPrevious());
-      map.put("next", current.hasNext() ? current.getNext() : null);
-
-      ApiMapResponse resp = new ApiMapResponse(map);
-      response = new ApiRequestHandlerResponse(SC_OK, resp);
     }
 
     return response;

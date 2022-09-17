@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
@@ -44,27 +43,21 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
   /** Documents Table Name. */
   private String documentTableName;
 
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /**
    * constructor.
    * 
-   * @param builder {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public DocumentCountServiceDynamoDb(final DynamoDbConnectionBuilder builder,
-      final String documentsTable) {
+  public DocumentCountServiceDynamoDb(final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
     this.documentTableName = documentsTable;
   }
 
   @Override
-  public long getDocumentCount(final String siteId) {
+  public long getDocumentCount(final DynamoDbClient client, final String siteId) {
 
     String pk = getPk(siteId);
     String sk = "all";
@@ -76,7 +69,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
         .keyConditionExpression("PK = :pk and SK = :sk").expressionAttributeValues(values).build();
 
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = client.query(q);
     List<Map<String, AttributeValue>> items = result.items();
 
     long documentscount = 0;
@@ -117,7 +110,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
   }
 
   @Override
-  public void incrementDocumentCount(final String siteId) {
+  public void incrementDocumentCount(final DynamoDbClient client, final String siteId) {
 
     Map<String, String> expAttrs = new HashMap<>();
     expAttrs.put("#val", "MetricValue");
@@ -134,17 +127,17 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
         .updateExpression(updateExpression).expressionAttributeNames(expAttrs)
         .expressionAttributeValues(expVals).build();
 
-    this.dynamoDB.updateItem(utr);
+    client.updateItem(utr);
   }
 
   @Override
-  public void removeDocumentCount(final String siteId) {
+  public void removeDocumentCount(final DynamoDbClient client, final String siteId) {
 
     Map<String, AttributeValue> key = getPkAttributeMap(siteId);
 
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    this.dynamoDB.deleteItem(deleteItemRequest);
+    client.deleteItem(deleteItemRequest);
   }
 }

@@ -42,40 +42,46 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test AWS Tests.
  */
 public abstract class AbstractAwsTest {
-  /** Sleep Timeout. */
-  private static final long SLEEP = 500L;
-  /** AWS Region. */
-  private static Region awsregion;
   /** App Environment Name. */
   private static String appenvironment;
-  /** App Edition Name. */
-  private static String edition;
-  /** {@link SqsService}. */
-  private static SqsService sqsService;
-  /** {@link S3Service}. */
-  private static S3Service s3Service;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
-  /** {@link SnsService}. */
-  private static SnsService snsService;
-  /** Documents Bucket Name. */
-  private static String sesbucketname;
+  /** AWS Region. */
+  private static Region awsregion;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbConnection;
   /** Documents Bucket Name. */
   private static String documentsbucketname;
-  /** Documents Bucket Name. */
-  private static String stagingdocumentsbucketname;
-  /** SNS Document Event Topic Arn. */
-  private static String snsDocumentEventArn;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
+  /** App Edition Name. */
+  private static String edition;
+  /** {@link S3Service}. */
+  private static S3Service s3Service;
   /** {@link DocumentSearchService}. */
   private static DocumentSearchService searchService;
+  /** Documents Bucket Name. */
+  private static String sesbucketname;
+  /** Sleep Timeout. */
+  private static final long SLEEP = 500L;
+  /** SNS Document Event Topic Arn. */
+  private static String snsDocumentEventArn;
+  /** {@link SnsService}. */
+  private static SnsService snsService;
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
+  /** {@link SsmConnectionBuilder}. */
+  private static SsmConnectionBuilder ssmBuilder;
+  /** {@link SsmService}. */
+  private static SsmService ssmService;
+  /** Documents Bucket Name. */
+  private static String stagingdocumentsbucketname;
 
   /**
    * beforeclass.
@@ -92,8 +98,7 @@ public abstract class AbstractAwsTest {
     final SqsConnectionBuilder sqsConnection =
         new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    final SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
@@ -103,26 +108,28 @@ public abstract class AbstractAwsTest {
 
     sqsService = new SqsService(sqsConnection);
     s3Service = new S3Service(s3Builder);
-    ssmService = new SsmServiceImpl(ssmBuilder);
+    ssmService = new SsmServiceImpl();
     snsService = new SnsService(snsBuilder);
 
-    edition = ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
-    sesbucketname =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
-    documentsbucketname =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsS3Bucket");
-    stagingdocumentsbucketname =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsStageS3Bucket");
-    snsDocumentEventArn =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn");
+    try (SsmClient ssmClient = getSsmClient()) {
 
-    String documentsTable =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
-    DynamoDbConnectionBuilder dbConnection =
-        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    documentService = new DocumentServiceImpl(dbConnection, documentsTable);
-    searchService =
-        new DocumentSearchServiceImpl(documentService, dbConnection, documentsTable, null);
+      edition = ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/edition");
+      sesbucketname = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
+      documentsbucketname = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/s3/DocumentsS3Bucket");
+      stagingdocumentsbucketname = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/s3/DocumentsStageS3Bucket");
+      snsDocumentEventArn = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/sns/DocumentEventArn");
+
+      String documentsTable = ssmService.getParameterValue(ssmClient,
+          "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+      dbConnection =
+          new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+      documentService = new DocumentServiceImpl(documentsTable);
+      searchService = new DocumentSearchServiceImpl(documentService, documentsTable, null);
+    }
   }
 
   /**
@@ -240,6 +247,24 @@ public abstract class AbstractAwsTest {
    */
   public static String getStagingdocumentsbucketname() {
     return stagingdocumentsbucketname;
+  }
+
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @return {@link DynamoDbClient}
+   */
+  public DynamoDbClient getDynamodbClient() {
+    return dbConnection.build();
+  }
+
+  /**
+   * Get {@link SsmClient}.
+   * 
+   * @return {@link SsmClient}
+   */
+  public static SsmClient getSsmClient() {
+    return ssmBuilder.build();
   }
 
   /**

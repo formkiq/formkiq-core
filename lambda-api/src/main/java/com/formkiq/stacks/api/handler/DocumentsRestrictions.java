@@ -23,8 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * Interface for providing restrictions around Document.
@@ -52,7 +54,10 @@ public interface DocumentsRestrictions {
    * @return {@link String}
    */
   default String getValue(final AwsServiceCache awsservice, final String siteId, final String key) {
-    return (CoreAwsServiceCache.cast(awsservice)).config(siteId).getString(key);
+    DynamoDbConnectionBuilder db = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+    try (DynamoDbClient dbClient = db.build()) {
+      return (CoreAwsServiceCache.cast(awsservice)).config(dbClient, siteId).getString(key);
+    }
   }
 
   /**

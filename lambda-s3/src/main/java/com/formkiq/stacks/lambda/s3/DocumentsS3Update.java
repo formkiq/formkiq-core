@@ -67,6 +67,7 @@ import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.documentevents.DocumentEventService;
 import com.formkiq.module.documentevents.DocumentEventServiceSns;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.DeleteDocumentFulltextRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentOcrRequest;
@@ -81,6 +82,7 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
@@ -152,9 +154,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private String snsDocumentEvent;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
-
   /** {@link SqsService}. */
   private SqsService sqsService;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -171,26 +174,29 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * 
    * @param map {@link Map}
    * @param creds {@link AwsCredentials}
-   * @param db {@link DynamoDbConnectionBuilder}
+   * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
    * @param ssmBuilder {@link SsmConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
    */
   protected DocumentsS3Update(final Map<String, String> map, final AwsCredentials creds,
-      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3builder,
+      final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3builder,
       final SsmConnectionBuilder ssmBuilder, final SqsConnectionBuilder sqsBuilder,
       final SnsConnectionBuilder snsBuilder) {
 
-    Region region = Region.of(map.get("AWS_REGION"));
     this.services = new AwsServiceCache().environment(map);
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssmBuilder));
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
+
+    Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
+    this.db = dbBuilder;
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
-    this.service = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
+    this.actionsService = new ActionsServiceDynamoDb(map.get("DOCUMENTS_TABLE"));
+    this.service = new DocumentServiceImpl(map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
     this.sqsService = new SqsService(sqsBuilder);
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
@@ -271,36 +277,39 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       List<Map<String, Object>> list = processRecords(logger, map);
 
-      for (Map<String, Object> e : list) {
+      try (DynamoDbClient dbClient = this.db.build()) {
 
-        Object eventName = e.getOrDefault("eventName", null);
-        Object bucket = e.getOrDefault("s3bucket", null);
-        Object key = e.getOrDefault("s3key", null);
+        for (Map<String, Object> e : list) {
 
-        if (bucket != null && key != null) {
+          Object eventName = e.getOrDefault("eventName", null);
+          Object bucket = e.getOrDefault("s3bucket", null);
+          Object key = e.getOrDefault("s3key", null);
 
-          boolean create =
-              eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
+          if (bucket != null && key != null) {
 
-          boolean remove =
-              eventName != null && eventName.toString().toLowerCase().contains("objectremove");
+            boolean create =
+                eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
 
-          if (debug) {
-            logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
-                bucket, key));
-          }
+            boolean remove =
+                eventName != null && eventName.toString().toLowerCase().contains("objectremove");
 
-          if (remove) {
+            if (debug) {
+              logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
+                  bucket, key));
+            }
 
-            processS3Delete(logger, bucket.toString(), key.toString());
+            if (remove) {
 
-          } else {
-            processS3File(logger, create, bucket.toString(), key.toString(), debug);
+              processS3Delete(logger, dbClient, bucket.toString(), key.toString());
+
+            } else {
+              processS3File(logger, dbClient, create, bucket.toString(), key.toString(), debug);
+            }
           }
         }
       }
 
-    } catch (Exception e) {
+    } catch (IOException | InterruptedException | RuntimeException e) {
 
       e.printStackTrace();
       sendToDlq(map);
@@ -400,13 +409,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * Process S3 Delete Request.
    * 
    * @param logger {@link LambdaLogger}
+   * @param dbClient {@link DynamoDbClient}
    * @param bucket {@link String}
    * @param key {@link String}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
-      throws IOException, InterruptedException {
+  private void processS3Delete(final LambdaLogger logger, final DynamoDbClient dbClient,
+      final String bucket, final String key) throws IOException, InterruptedException {
 
     String siteId = getSiteId(key.toString());
     String documentId = resetDatabaseKey(siteId, key.toString());
@@ -433,24 +443,29 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       }
     }
 
-    this.service.deleteDocument(siteId, documentId);
+    this.service.deleteDocument(dbClient, siteId, documentId);
 
     DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
-    sendSnsMessage(logger, DELETE, siteId, doc, bucket, key, null);
+
+    DocumentEvent event = buildDocumentEvent(DELETE, siteId, doc, bucket, key);
+
+    sendSnsMessage(logger, dbClient, event, doc, null);
   }
 
   /**
    * Process S3 File.
    * 
    * @param logger {@link LambdaLogger}
+   * @param dbClient {@link DynamoDbClient}
    * @param create boolean
    * @param s3bucket {@link String}
    * @param s3key {@link String}
    * @param debug boolean
    * @throws FileNotFoundException FileNotFoundException
    */
-  private void processS3File(final LambdaLogger logger, final boolean create, final String s3bucket,
-      final String s3key, final boolean debug) throws FileNotFoundException {
+  private void processS3File(final LambdaLogger logger, final DynamoDbClient dbClient,
+      final boolean create, final String s3bucket, final String s3key, final boolean debug)
+      throws FileNotFoundException {
 
     String key = urlDecode(s3key);
 
@@ -469,7 +484,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String contentType = resp.getContentType();
       Long contentLength = resp.getContentLength();
 
-      DocumentItem item = this.service.findDocument(siteId, documentId);
+      DocumentItem item = this.service.findDocument(dbClient, siteId, documentId);
 
       if (item != null) {
 
@@ -495,13 +510,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           logger.log("new " + this.gson.toJson(doc));
         }
 
-        this.service.saveDocumentItemWithTag(siteId, doc);
+        this.service.saveDocumentItemWithTag(dbClient, siteId, doc);
 
-        this.service.deleteDocumentFormats(siteId, item.getDocumentId());
+        this.service.deleteDocumentFormats(dbClient, siteId, item.getDocumentId());
 
         String content = getContent(s3bucket, key, s3, resp, doc);
 
-        sendSnsMessage(logger, create ? CREATE : UPDATE, siteId, doc, s3bucket, key, content);
+        DocumentEvent event =
+            buildDocumentEvent(create ? CREATE : UPDATE, siteId, doc, s3bucket, key);
+        sendSnsMessage(logger, dbClient, event, doc, content);
 
       } else {
         logger.log("Cannot find document " + documentId + " in site " + siteId);
@@ -510,26 +527,41 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   /**
-   * Either sends the Create Message to SNS.
+   * Builds Document Event.
    * 
-   * @param logger {@link LambdaLogger}
    * @param eventType {@link String}
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @param s3Bucket {@link String}
    * @param s3Key {@link String}
-   * @param content {@link String}
+   * @return {@link DocumentEvent}
    */
-  private void sendSnsMessage(final LambdaLogger logger, final String eventType,
-      final String siteId, final DynamicDocumentItem doc, final String s3Bucket, final String s3Key,
-      final String content) {
-
+  private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
+      final DynamicDocumentItem doc, final String s3Bucket, final String s3Key) {
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
 
     DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket)
         .s3key(s3Key).type(eventType).userId(doc.getUserId()).contentType(doc.getContentType())
         .path(doc.getPath());
+
+    return event;
+  }
+
+  /**
+   * Either sends the Create Message to SNS.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param dbClient {@link DynamoDbClient}
+   * @param event {@link DocumentEvent}
+   * @param doc {@link DynamicDocumentItem}
+   * @param content {@link String}
+   */
+  private void sendSnsMessage(final LambdaLogger logger, final DynamoDbClient dbClient,
+      final DocumentEvent event, final DynamicDocumentItem doc, final String content) {
+
+    String siteId = event.siteId();
+    String documentId = event.documentId();
 
     if ("application/json".equals(doc.getContentType())) {
       event.content(content);
@@ -542,15 +574,16 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       logger.log("event: " + eventJson);
     }
 
+    String eventType = event.type();
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
 
-      List<Action> actions = this.actionsService.getActions(siteId, documentId);
+      List<Action> actions = this.actionsService.getActions(dbClient, siteId, documentId);
       actions.forEach(a -> a.status(ActionStatus.PENDING));
-      this.actionsService.saveActions(siteId, documentId, actions);
+      this.actionsService.saveActions(dbClient, siteId, documentId, actions);
 
-      this.notificationService.publishNextActionEvent(actions, site, documentId);
+      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
   }
 
