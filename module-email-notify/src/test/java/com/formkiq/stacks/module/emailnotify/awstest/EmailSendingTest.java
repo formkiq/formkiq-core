@@ -45,7 +45,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -68,8 +67,6 @@ public class EmailSendingTest {
   private static String snsDocumentEmailArn;
   /** {@link SnsService}. */
   private static SnsService snsService;
-  /** {@link SqsClient}. */
-  private static SqsClient sqsClient;
   /** {@link SqsService}. */
   private static SqsService sqsService;
   /** S3 Staging Bucket. */
@@ -88,10 +85,10 @@ public class EmailSendingTest {
   private static void assertSnsMessage(final String queueUrl, final String type)
       throws InterruptedException {
 
-    List<Message> receiveMessages = sqsService.receiveMessages(sqsClient, queueUrl).messages();
+    List<Message> receiveMessages = sqsService.receiveMessages(queueUrl).messages();
     while (receiveMessages.size() != 1) {
       Thread.sleep(SLEEP);
-      receiveMessages = sqsService.receiveMessages(sqsClient, queueUrl).messages();
+      receiveMessages = sqsService.receiveMessages(queueUrl).messages();
     }
 
     assertEquals(1, receiveMessages.size());
@@ -116,7 +113,6 @@ public class EmailSendingTest {
 
     final SqsConnectionBuilder sqsConnection =
         new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    sqsClient = sqsConnection.build();
     final SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
@@ -124,9 +120,9 @@ public class EmailSendingTest {
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     s3Service = new S3Service(s3Builder);
-    sqsService = new SqsService();
+    sqsService = new SqsService(sqsConnection);
     SsmService ssmService = new SsmServiceImpl(ssmBuilder);
-    snsService = new SnsService();
+    snsService = new SnsService(snsBuilder);
 
     String app = System.getProperty("testappenvironment");
     snsDocumentEmailArn =
@@ -147,7 +143,7 @@ public class EmailSendingTest {
 
     CreateQueueRequest request =
         CreateQueueRequest.builder().queueName(queueName).attributes(attributes).build();
-    return sqsService.createQueue(sqsClient, request);
+    return sqsService.createQueue(request);
   }
 
   /**
@@ -158,9 +154,8 @@ public class EmailSendingTest {
    * @param queueUrl {@link String}
    * @return {@link String}
    */
-  private String subscribeToSns(final SnsClient snsClient, final String topicArn,
-      final String queueUrl) {
-    String queueArn = sqsService.getQueueArn(queueUrl);
+  private String subscribeToSns(final String topicArn, final String queueUrl) {
+    String queueArn = SqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","
@@ -169,10 +164,9 @@ public class EmailSendingTest {
 
     SetQueueAttributesRequest setAttributes =
         SetQueueAttributesRequest.builder().queueUrl(queueUrl).attributes(attributes).build();
-    sqsService.setQueueAttributes(sqsClient, setAttributes);
+    sqsService.setQueueAttributes(setAttributes);
 
-    String subscriptionArn =
-        snsService.subscribe(snsClient, topicArn, "sqs", queueArn).subscriptionArn();
+    String subscriptionArn = snsService.subscribe(topicArn, "sqs", queueArn).subscriptionArn();
     return subscriptionArn;
   }
 
@@ -191,26 +185,22 @@ public class EmailSendingTest {
     String createQueue = "createtest-" + UUID.randomUUID();
     String documentEmailQueueUrl = createSqsQueue(createQueue).queueUrl();
 
-    try (SnsClient snsClient = snsBuilder.build()) {
+    String snsDocumentEventArn = subscribeToSns(snsDocumentEmailArn, documentEmailQueueUrl);
 
-      String snsDocumentEventArn =
-          subscribeToSns(snsClient, snsDocumentEmailArn, documentEmailQueueUrl);
+    try {
 
-      try {
+      try (S3Client s3 = s3Service.buildClient()) {
 
-        try (S3Client s3 = s3Service.buildClient()) {
+        // when
+        writeToStaging(s3, key, contentType);
 
-          // when
-          writeToStaging(s3, key, contentType);
-
-          // then
-          assertSnsMessage(documentEmailQueueUrl, "create");
-        }
-
-      } finally {
-        snsService.unsubscribe(snsClient, snsDocumentEventArn);
-        sqsService.deleteQueue(sqsClient, documentEmailQueueUrl);
+        // then
+        assertSnsMessage(documentEmailQueueUrl, "create");
       }
+
+    } finally {
+      snsService.unsubscribe(snsDocumentEventArn);
+      sqsService.deleteQueue(documentEmailQueueUrl);
     }
   }
 

@@ -48,7 +48,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
@@ -60,7 +59,6 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -199,19 +197,15 @@ public abstract class AbstractRequestHandler {
     this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
-    SqsConnectionBuilder sqsConnection = this.awsServices.getExtension(SqsConnectionBuilder.class);
 
-    try (SqsClient sqsClient = sqsConnection.build()) {
-
-      for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
-        ReceiveMessageResponse response = sqsservice.receiveMessages(sqsClient, queue);
-        while (response.messages().size() > 0) {
-          for (Message msg : response.messages()) {
-            sqsservice.deleteMessage(sqsClient, queue, msg.receiptHandle());
-          }
-
-          response = sqsservice.receiveMessages(sqsClient, queue);
+    for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
+      ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
+      while (response.messages().size() > 0) {
+        for (Message msg : response.messages()) {
+          sqsservice.deleteMessage(queue, msg.receiptHandle());
         }
+
+        response = sqsservice.receiveMessages(queue);
       }
     }
   }

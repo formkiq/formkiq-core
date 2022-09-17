@@ -82,7 +82,6 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
@@ -150,8 +149,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private AwsServiceCache services;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
-  /** {@link SqsConnectionBuilder}. */
-  private SqsConnectionBuilder sqsConnection;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
   /** {@link SqsService}. */
@@ -195,11 +192,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.service = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
-    this.sqsService = new SqsService();
+    this.sqsService = new SqsService(sqsBuilder);
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
     this.notificationService =
         new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
-    this.sqsConnection = sqsBuilder;
   }
 
   /**
@@ -586,9 +582,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private void sendToDlq(final Map<String, Object> map) {
     String json = this.gson.toJson(map);
     if (this.sqsErrorUrl != null) {
-      try (SqsClient sqsClient = this.sqsConnection.build()) {
-        this.sqsService.sendMessage(sqsClient, this.sqsErrorUrl, json);
-      }
+      this.sqsService.sendMessage(this.sqsErrorUrl, json);
     }
   }
 }

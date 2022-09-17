@@ -57,7 +57,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import software.amazon.awssdk.services.sqs.SqsClient;
 
 /**
  * 
@@ -77,8 +76,6 @@ public class WebsocketTest {
   private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsConnection;
   /** {@link SqsService}. */
   private static SqsService sqsService;
   /** Temporary Cognito Password. */
@@ -138,9 +135,10 @@ public class WebsocketTest {
     String awsprofile = System.getProperty("testprofile");
     String app = System.getProperty("testappenvironment");
 
-    sqsConnection = new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    SqsConnectionBuilder sqsConnection =
+        new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    sqsService = new SqsService();
+    sqsService = new SqsService(sqsConnection);
 
     SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
@@ -303,15 +301,11 @@ public class WebsocketTest {
 
       // given
 
-      try (SqsClient sqsClient = sqsConnection.build()) {
+      // when
+      sqsService.sendMessage(websocketSqsUrl,
+          "{\"siteId\":\"" + GROUP + "\",\"message\":\"this is a test\"}");
 
-        // when
-        sqsService.sendMessage(sqsClient, websocketSqsUrl,
-            "{\"siteId\":\"" + GROUP + "\",\"message\":\"this is a test\"}");
-
-        // then
-      }
-
+      // then
       while (true) {
         if (!client.getMessages().isEmpty()) {
           assertEquals(1, client.getMessages().size());

@@ -82,7 +82,6 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
@@ -183,8 +182,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private DocumentSearchService searchService;
   /** {@link DocumentService}. */
   private DocumentService service;
-  /** {@link SqsConnectionBuilder}. */
-  private SqsConnectionBuilder sqsConnection;
   /** SQS Error Queue. */
   private String sqsErrorQueue;
   /** {@link SqsService}. */
@@ -226,9 +223,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         new DocumentSearchServiceImpl(dbBuilder, this.service, documentsTable, null);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
     this.s3 = new S3Service(s3Builder);
-    this.sqsService = new SqsService();
+    this.sqsService = new SqsService(sqsBuilder);
     this.ssmConnection = ssmConnectionBuilder;
-    this.sqsConnection = sqsBuilder;
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.sqsErrorQueue = map.get("SQS_ERROR_URL");
@@ -469,9 +465,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       if (this.sqsErrorQueue != null) {
 
-        try (SqsClient sqsClient = this.sqsConnection.build()) {
-          this.sqsService.sendMessage(sqsClient, this.sqsErrorQueue, json);
-        }
+        this.sqsService.sendMessage(this.sqsErrorQueue, json);
       }
     }
 

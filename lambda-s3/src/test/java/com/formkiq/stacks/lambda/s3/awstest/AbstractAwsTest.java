@@ -107,10 +107,10 @@ public abstract class AbstractAwsTest {
 
     snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    sqsService = new SqsService();
+    sqsService = new SqsService(sqsBuilder);
     s3Service = new S3Service(s3Builder);
     ssmService = new SsmServiceImpl(ssmBuilder);
-    snsService = new SnsService();
+    snsService = new SnsService(snsBuilder);
 
     edition = ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
     sesbucketname =

@@ -52,6 +52,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
@@ -96,20 +97,19 @@ public class AwsResourceTest extends AbstractAwsTest {
   /**
    * Assert Received Message.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueUrl {@link String}
    * @param type {@link String}
    * @return {@link String}
    * @throws InterruptedException InterruptedException
    */
   @SuppressWarnings("unchecked")
-  private static String assertSnsMessage(final SqsClient sqsClient, final String queueUrl,
-      final String type) throws InterruptedException {
+  private static String assertSnsMessage(final String queueUrl, final String type)
+      throws InterruptedException {
 
-    List<Message> receiveMessages = getSqsService().receiveMessages(sqsClient, queueUrl).messages();
+    List<Message> receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
     while (receiveMessages.size() != 1) {
       Thread.sleep(SLEEP);
-      receiveMessages = getSqsService().receiveMessages(sqsClient, queueUrl).messages();
+      receiveMessages = getSqsService().receiveMessages(queueUrl).messages();
     }
 
     assertEquals(1, receiveMessages.size());
@@ -130,7 +130,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       }
 
     } else {
-      assertSnsMessage(sqsClient, queueUrl, type);
+      assertSnsMessage(queueUrl, type);
     }
 
     return map.get("documentId");
@@ -142,31 +142,28 @@ public class AwsResourceTest extends AbstractAwsTest {
   /**
    * Create SQS Queue.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueName {@link String}
    * @return {@link CreateQueueResponse}
    */
-  private CreateQueueResponse createSqsQueue(final SqsClient sqsClient, final String queueName) {
+  private CreateQueueResponse createSqsQueue(final String queueName) {
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS, "20");
 
     CreateQueueRequest request =
         CreateQueueRequest.builder().queueName(queueName).attributes(attributes).build();
-    return getSqsService().createQueue(sqsClient, request);
+    return getSqsService().createQueue(request);
   }
 
   /**
    * Subscribe Sqs to Sns.
    * 
-   * @param sqsClient {@link SqsClient}
-   * @param snsClient {@link SnsClient}
    * @param topicArn {@link String}
    * @param queueUrl {@link String}
    * @return {@link String}
    */
-  private String subscribeToSns(final SqsClient sqsClient, final SnsClient snsClient,
-      final String topicArn, final String queueUrl) {
-    String queueArn = getSqsService().getQueueArn(queueUrl);
+  private String subscribeToSns(final String topicArn, final String queueUrl) {
+    getSqsService();
+    String queueArn = SqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","
@@ -175,10 +172,9 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     SetQueueAttributesRequest setAttributes =
         SetQueueAttributesRequest.builder().queueUrl(queueUrl).attributes(attributes).build();
-    getSqsService().setQueueAttributes(sqsClient, setAttributes);
+    getSqsService().setQueueAttributes(setAttributes);
 
-    String subscriptionArn =
-        getSnsService().subscribe(snsClient, topicArn, "sqs", queueArn).subscriptionArn();
+    String subscriptionArn = getSnsService().subscribe(topicArn, "sqs", queueArn).subscriptionArn();
     return subscriptionArn;
   }
 
@@ -196,9 +192,8 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       String contentType = "text/plain";
       String createQueue = "createtest-" + UUID.randomUUID();
-      String documentEventQueueUrl = createSqsQueue(sqsClient, createQueue).queueUrl();
-      String snsDocumentEventArn =
-          subscribeToSns(sqsClient, snsClient, getSnsDocumentEventArn(), documentEventQueueUrl);
+      String documentEventQueueUrl = createSqsQueue(createQueue).queueUrl();
+      String snsDocumentEventArn = subscribeToSns(getSnsDocumentEventArn(), documentEventQueueUrl);
 
       try {
 
@@ -210,7 +205,7 @@ public class AwsResourceTest extends AbstractAwsTest {
           // then
           verifyFileExistsInDocumentsS3(s3, key, contentType);
           verifyFileNotExistInStagingS3(s3, key);
-          assertSnsMessage(sqsClient, documentEventQueueUrl, "create");
+          assertSnsMessage(documentEventQueueUrl, "create");
 
           // when
           key = writeToStaging(s3, key, contentType);
@@ -218,18 +213,18 @@ public class AwsResourceTest extends AbstractAwsTest {
           // then
           verifyFileExistsInDocumentsS3(s3, key, contentType);
           verifyFileNotExistInStagingS3(s3, key);
-          assertSnsMessage(sqsClient, documentEventQueueUrl, "create");
+          assertSnsMessage(documentEventQueueUrl, "create");
 
           // when
           getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
           // then
-          assertSnsMessage(sqsClient, documentEventQueueUrl, "delete");
+          assertSnsMessage(documentEventQueueUrl, "delete");
         }
 
       } finally {
-        getSnsService().unsubscribe(snsClient, snsDocumentEventArn);
-        getSqsService().deleteQueue(sqsClient, documentEventQueueUrl);
+        getSnsService().unsubscribe(snsDocumentEventArn);
+        getSqsService().deleteQueue(documentEventQueueUrl);
       }
     }
   }
@@ -287,9 +282,8 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     try (SnsClient snsClient = getSnsClient(); SqsClient sqsClient = getSqsClient()) {
       String createQueue = "createtest-" + UUID.randomUUID();
-      String documentQueueUrl = createSqsQueue(sqsClient, createQueue).queueUrl();
-      String subscriptionDocumentArn =
-          subscribeToSns(sqsClient, snsClient, getSnsDocumentEventArn(), documentQueueUrl);
+      String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+      String subscriptionDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
       String contentType = "text/plain";
       String content = "test content";
@@ -314,19 +308,19 @@ public class AwsResourceTest extends AbstractAwsTest {
             // then
             assertEquals(statusCode, put.statusCode());
             verifyFileExistsInDocumentsS3(s3, key, contentType);
-            assertSnsMessage(sqsClient, documentQueueUrl, "create");
+            assertSnsMessage(documentQueueUrl, "create");
 
             // when
             getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
 
             // then
-            assertSnsMessage(sqsClient, documentQueueUrl, "delete");
+            assertSnsMessage(documentQueueUrl, "delete");
           }
         }
 
       } finally {
-        getSnsService().unsubscribe(snsClient, subscriptionDocumentArn);
-        getSqsService().deleteQueue(sqsClient, documentQueueUrl);
+        getSnsService().unsubscribe(subscriptionDocumentArn);
+        getSqsService().deleteQueue(documentQueueUrl);
       }
     }
   }
@@ -343,9 +337,8 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     try (SnsClient snsClient = getSnsClient(); SqsClient sqsClient = getSqsClient()) {
       String createQueue = "createtest-" + UUID.randomUUID();
-      String documentQueueUrl = createSqsQueue(sqsClient, createQueue).queueUrl();
-      String subscriptionDocumentArn =
-          subscribeToSns(sqsClient, snsClient, getSnsDocumentEventArn(), documentQueueUrl);
+      String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
+      String subscriptionDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
       String contentType = "text/plain";
 
@@ -365,14 +358,14 @@ public class AwsResourceTest extends AbstractAwsTest {
           getS3Service().putObject(s3, getStagingdocumentsbucketname(), key + ".fkb64", json,
               contentType);
 
-          String documentId = assertSnsMessage(sqsClient, documentQueueUrl, "create");
+          String documentId = assertSnsMessage(documentQueueUrl, "create");
           assertEquals("this is a test",
               getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
         }
 
       } finally {
-        getSnsService().unsubscribe(snsClient, subscriptionDocumentArn);
-        getSqsService().deleteQueue(sqsClient, documentQueueUrl);
+        getSnsService().unsubscribe(subscriptionDocumentArn);
+        getSqsService().deleteQueue(documentQueueUrl);
       }
     }
   }
@@ -489,10 +482,8 @@ public class AwsResourceTest extends AbstractAwsTest {
     try (SnsClient snsClient = getSnsClient();
         S3Client s3 = getS3Service().buildClient();
         SqsClient sqsClient = getSqsClient()) {
-      String documentQueueUrl =
-          createSqsQueue(sqsClient, "createtest-" + UUID.randomUUID()).queueUrl();
-      String subDocumentArn =
-          subscribeToSns(sqsClient, snsClient, getSnsDocumentEventArn(), documentQueueUrl);
+      String documentQueueUrl = createSqsQueue("createtest-" + UUID.randomUUID()).queueUrl();
+      String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
       String contentType = "text/plain";
       String path = "user/home/test.txt";
@@ -515,7 +506,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         }
 
         assertEquals(1, result.getResults().size());
-        assertSnsMessage(sqsClient, documentQueueUrl, "create");
+        assertSnsMessage(documentQueueUrl, "create");
 
         // given
         String documentId = result.getResults().get(0).getDocumentId();
@@ -532,15 +523,15 @@ public class AwsResourceTest extends AbstractAwsTest {
 
         assertEquals(txt2,
             getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
-        assertSnsMessage(sqsClient, documentQueueUrl, "create");
+        assertSnsMessage(documentQueueUrl, "create");
         PaginationResults<DocumentTag> list =
             getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
         assertEquals("[path, status, untagged, userId]", list.getResults().stream()
             .map(m -> m.getKey()).collect(Collectors.toList()).toString());
 
       } finally {
-        getSnsService().unsubscribe(snsClient, subDocumentArn);
-        getSqsService().deleteQueue(sqsClient, documentQueueUrl);
+        getSnsService().unsubscribe(subDocumentArn);
+        getSqsService().deleteQueue(documentQueueUrl);
       }
     }
   }

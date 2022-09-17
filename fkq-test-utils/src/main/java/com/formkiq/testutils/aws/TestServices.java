@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.testutils.aws;
 
@@ -36,7 +33,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsClient;
 
 /**
  * 
@@ -180,7 +176,6 @@ public final class TestServices {
    * Get Sqs Documents Formats Queue Url.
    * 
    * @param sqs {@link SqsConnectionBuilder}
-   * 
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
@@ -188,10 +183,8 @@ public final class TestServices {
       throws URISyntaxException {
     if (sqsDocumentFormatsQueueUrl == null) {
 
-      try (SqsClient sqsClient = sqs.build()) {
-        sqsDocumentFormatsQueueUrl =
-            getSqsService().createQueue(sqsClient, SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
-      }
+      sqsDocumentFormatsQueueUrl =
+          getSqsService(sqs).createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
     }
 
     return sqsDocumentFormatsQueueUrl;
@@ -200,12 +193,13 @@ public final class TestServices {
   /**
    * Get Singleton Instance of {@link SqsService}.
    * 
+   * @param sqs {@link SqsConnectionBuilder}
    * @return {@link SqsService}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SqsService getSqsService() throws URISyntaxException {
+  public static SqsService getSqsService(final SqsConnectionBuilder sqs) throws URISyntaxException {
     if (sqsservice == null) {
-      sqsservice = new SqsService();
+      sqsservice = new SqsService(sqs);
     }
 
     return sqsservice;
@@ -222,10 +216,7 @@ public final class TestServices {
   public static String getSqsWebsocketQueueUrl(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsWebsocketQueueUrl == null) {
-      try (SqsClient sqsClient = sqs.build()) {
-        sqsWebsocketQueueUrl =
-            getSqsService().createQueue(sqsClient, SQS_WEBSOCKET_QUEUE).queueUrl();
-      }
+      sqsWebsocketQueueUrl = getSqsService(sqs).createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
     }
 
     return sqsWebsocketQueueUrl;

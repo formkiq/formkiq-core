@@ -97,8 +97,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Tag;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.SsmClient;
@@ -146,8 +144,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static SnsService snsService;
   /** {@link SqsConnectionBuilder}. */
   private static SqsConnectionBuilder sqsBuilder;
-  /** {@link SqsClient}. */
-  private static SqsClient sqsClient;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentEventUrl;
   /** {@link SqsService}. */
@@ -191,18 +187,17 @@ public class DocumentsS3UpdateTest implements DbKeys {
       ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
     }
 
-    sqsClient = sqsBuilder.build();
-    sqsService = new SqsService();
+    sqsService = new SqsService(sqsBuilder);
 
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
-    if (!sqsService.exists(sqsClient, ERROR_SQS_QUEUE)) {
-      sqsService.createQueue(sqsClient, ERROR_SQS_QUEUE);
+    if (!sqsService.exists(ERROR_SQS_QUEUE)) {
+      sqsService.createQueue(ERROR_SQS_QUEUE);
     }
 
-    if (!sqsService.exists(sqsClient, SNS_SQS_CREATE_QUEUE)) {
-      sqsDocumentEventUrl = sqsService.createQueue(sqsClient, SNS_SQS_CREATE_QUEUE).queueUrl();
+    if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
+      sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
     s3service = new S3Service(s3Builder);
@@ -210,12 +205,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       s3service.createBucket(s3, "example-bucket");
     }
 
-    snsService = new SnsService();
+    snsService = new SnsService(snsBuilder);
 
-    try (SnsClient snsClient = snsBuilder.build()) {
-      snsDocumentEvent = snsService.createTopic(snsClient, "createDocument1").topicArn();
-      snsService.subscribe(snsClient, snsDocumentEvent, "sqs", sqsDocumentEventUrl);
-    }
+    snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
     if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
@@ -307,14 +300,14 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final String eventType, final boolean hasContent, final boolean childDoc)
       throws InterruptedException {
 
-    List<Message> msgs = sqsService.receiveMessages(sqsClient, sqsQueueUrl).messages();
+    List<Message> msgs = sqsService.receiveMessages(sqsQueueUrl).messages();
     while (msgs.size() != 1) {
       Thread.sleep(SLEEP);
-      msgs = sqsService.receiveMessages(sqsClient, sqsDocumentEventUrl).messages();
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
     }
     assertEquals(1, msgs.size());
 
-    sqsService.deleteMessage(sqsClient, sqsQueueUrl, msgs.get(0).receiptHandle());
+    sqsService.deleteMessage(sqsQueueUrl, msgs.get(0).receiptHandle());
     Map<String, String> map = this.gson.fromJson(msgs.get(0).body(), Map.class);
     String message = map.get("Message");
 
@@ -377,13 +370,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
         new DocumentsS3Update(map, null, dbBuilder, s3Builder, ssmBuilder, sqsBuilder, snsBuilder);
 
     for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
-      ReceiveMessageResponse response = sqsService.receiveMessages(sqsClient, queue);
+      ReceiveMessageResponse response = sqsService.receiveMessages(queue);
       while (!response.messages().isEmpty()) {
         for (Message msg : response.messages()) {
-          sqsService.deleteMessage(sqsClient, queue, msg.receiptHandle());
+          sqsService.deleteMessage(queue, msg.receiptHandle());
         }
 
-        response = sqsService.receiveMessages(sqsClient, queue);
+        response = sqsService.receiveMessages(queue);
       }
     }
   }
@@ -953,7 +946,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentEvent e0 = null;
       DocumentEvent e1 = null;
 
-      List<Message> msgs = sqsService.receiveMessages(sqsClient, sqsDocumentEventUrl).messages();
+      List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
 
       while (e0 == null || e1 == null) {
         for (Message m : msgs) {
@@ -966,7 +959,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           }
         }
         Thread.sleep(SLEEP);
-        msgs = sqsService.receiveMessages(sqsClient, sqsDocumentEventUrl).messages();
+        msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
       }
 
       assertEquals(siteId != null ? siteId : "default", e0.siteId());

@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.aws.sqs;
 
@@ -50,81 +47,79 @@ import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
  */
 public class SqsService {
 
+  /** {@link SqsClient}. */
+  private SqsClient sqsClient;
+
   /**
    * constructor.
    * 
+   * @param connection {@link SqsConnectionBuilder}
+   * 
    */
-  public SqsService() {}
+  public SqsService(final SqsConnectionBuilder connection) {
+    this.sqsClient = connection.build();
+  }
 
   /**
    * Add Permission.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param request {@link AddPermissionRequest}
    * @return {@link AddPermissionResponse}
    */
-  public AddPermissionResponse addPermission(final SqsClient sqsClient,
-      final AddPermissionRequest request) {
-    return sqsClient.addPermission(request);
+  public AddPermissionResponse addPermission(final AddPermissionRequest request) {
+    return this.sqsClient.addPermission(request);
   }
 
   /**
    * Create SQS Queue.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueName {@link String}
    * @return {@link CreateQueueResponse}
    */
-  public CreateQueueResponse createQueue(final SqsClient sqsClient, final String queueName) {
-    return createQueue(sqsClient, CreateQueueRequest.builder().queueName(queueName).build());
+  public CreateQueueResponse createQueue(final String queueName) {
+    return createQueue(CreateQueueRequest.builder().queueName(queueName).build());
   }
 
   /**
    * Create SQS Queue.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param request {@link CreateQueueRequest}
    * @return {@link CreateQueueResponse}
    */
-  public CreateQueueResponse createQueue(final SqsClient sqsClient,
-      final CreateQueueRequest request) {
-    return sqsClient.createQueue(request);
+  public CreateQueueResponse createQueue(final CreateQueueRequest request) {
+    return this.sqsClient.createQueue(request);
   }
 
   /**
    * Delete SQS Message.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueUrl {@link String}
    * @param receiptHandle {@link String}
    */
-  public void deleteMessage(final SqsClient sqsClient, final String queueUrl,
-      final String receiptHandle) {
-    sqsClient.deleteMessage(
+  public void deleteMessage(final String queueUrl, final String receiptHandle) {
+    this.sqsClient.deleteMessage(
         DeleteMessageRequest.builder().queueUrl(queueUrl).receiptHandle(receiptHandle).build());
   }
 
   /**
    * Delete SQS Queue.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueUrl {@link String}
    * @return {@link DeleteQueueResponse}
    */
-  public DeleteQueueResponse deleteQueue(final SqsClient sqsClient, final String queueUrl) {
-    return sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build());
+  public DeleteQueueResponse deleteQueue(final String queueUrl) {
+    return this.sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build());
   }
 
   /**
    * Whether SQS Queue exists.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueName {@link String}
    * @return boolean
    */
-  public boolean exists(final SqsClient sqsClient, final String queueName) {
+  public boolean exists(final String queueName) {
     ListQueuesResponse response =
-        sqsClient.listQueues(ListQueuesRequest.builder().queueNamePrefix(queueName).build());
+        this.sqsClient.listQueues(ListQueuesRequest.builder().queueNamePrefix(queueName).build());
     return response.queueUrls().stream().filter(q -> q.equals(queueName)).findFirst().isPresent();
   }
 
@@ -134,7 +129,7 @@ public class SqsService {
    * @param queueUrl {@link String}
    * @return {@link String}
    */
-  public String getQueueArn(final String queueUrl) {
+  public static String getQueueArn(final String queueUrl) {
     String queueName = "";
     String region = "";
     String account = "";
@@ -154,38 +149,34 @@ public class SqsService {
   /**
    * Get SQS Queue Attributes.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueUrl {@link String}
    * @return {@link GetQueueAttributesResponse}
    */
-  public GetQueueAttributesResponse getQueueAttributes(final SqsClient sqsClient,
-      final String queueUrl) {
-    return sqsClient
+  public GetQueueAttributesResponse getQueueAttributes(final String queueUrl) {
+    return this.sqsClient
         .getQueueAttributes(GetQueueAttributesRequest.builder().queueUrl(queueUrl).build());
   }
 
   /**
    * List SQS Queues by Prefix.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueNamePrefix {@link String}
    * @return {@link ListQueuesResponse}
    */
-  public ListQueuesResponse listQueues(final SqsClient sqsClient, final String queueNamePrefix) {
-    return sqsClient
+  public ListQueuesResponse listQueues(final String queueNamePrefix) {
+    return this.sqsClient
         .listQueues(ListQueuesRequest.builder().queueNamePrefix(queueNamePrefix).build());
   }
 
   /**
    * Receives SQS Messages from a queueUrl.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueUrl {@link String}
    * @return {@link ReceiveMessageResponse}
    */
-  public ReceiveMessageResponse receiveMessages(final SqsClient sqsClient, final String queueUrl) {
+  public ReceiveMessageResponse receiveMessages(final String queueUrl) {
     ReceiveMessageResponse response =
-        sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build());
+        this.sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build());
 
     return response;
   }
@@ -193,14 +184,12 @@ public class SqsService {
   /**
    * Send Message to SQS.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param queueUrl {@link String}
    * @param message {@link String}
    * @return {@link SendMessageResponse}
    */
-  public SendMessageResponse sendMessage(final SqsClient sqsClient, final String queueUrl,
-      final String message) {
-    SendMessageResponse response = sqsClient
+  public SendMessageResponse sendMessage(final String queueUrl, final String message) {
+    SendMessageResponse response = this.sqsClient
         .sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody(message).build());
     return response;
   }
@@ -208,12 +197,10 @@ public class SqsService {
   /**
    * Set Queue Attributes.
    * 
-   * @param sqsClient {@link SqsClient}
    * @param request {@link SetQueueAttributesRequest}
    * @return {@link SetQueueAttributesResponse}
    */
-  public SetQueueAttributesResponse setQueueAttributes(final SqsClient sqsClient,
-      final SetQueueAttributesRequest request) {
-    return sqsClient.setQueueAttributes(request);
+  public SetQueueAttributesResponse setQueueAttributes(final SetQueueAttributesRequest request) {
+    return this.sqsClient.setQueueAttributes(request);
   }
 }

@@ -43,7 +43,6 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -52,7 +51,6 @@ import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
@@ -946,28 +944,24 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       assertTrue(getLogger().containsString("response: " + expected));
 
-      SqsConnectionBuilder sqsConnection =
-          getAwsServices().getExtension(SqsConnectionBuilder.class);
       SqsService sqsService = getAwsServices().getExtension(SqsService.class);
-      try (SqsClient sqsClient = sqsConnection.build()) {
+      ReceiveMessageResponse msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
+      while (msgs.messages().isEmpty()) {
+        msgs = sqsService.receiveMessages(getSqsWebsocketQueueUrl(null));
+        Thread.sleep(sleep);
+      }
 
-        ReceiveMessageResponse msgs =
-            sqsService.receiveMessages(sqsClient, getSqsWebsocketQueueUrl(null));
-        while (msgs.messages().isEmpty()) {
-          msgs = sqsService.receiveMessages(sqsClient, getSqsWebsocketQueueUrl(null));
-          Thread.sleep(sleep);
-        }
-
-        assertEquals(1, msgs.messages().size());
-        if (siteId != null) {
-          assertEquals("{\"siteId\":\"" + siteId + "\",\"documentId\":\"" + documentId
-              + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
-              msgs.messages().get(0).body());
-        } else {
-          assertEquals("{\"documentId\":\"" + documentId
-              + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
-              msgs.messages().get(0).body());
-        }
+      assertEquals(1, msgs.messages().size());
+      if (siteId != null) {
+        assertEquals(
+            "{\"siteId\":\"" + siteId + "\",\"documentId\":\"" + documentId
+                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+            msgs.messages().get(0).body());
+      } else {
+        assertEquals(
+            "{\"documentId\":\"" + documentId
+                + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
+            msgs.messages().get(0).body());
       }
     }
   }
