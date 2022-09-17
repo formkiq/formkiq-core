@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -584,10 +585,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     if (CREATE.equals(eventType)) {
 
       List<Action> actions = this.actionsService.getActions(dbClient, siteId, documentId);
-      actions.forEach(a -> a.status(ActionStatus.PENDING));
-      this.actionsService.saveActions(dbClient, siteId, documentId, actions);
+      Optional<Action> op =
+          actions.stream().filter(a -> a.status().equals(ActionStatus.RUNNING)).findFirst();
 
-      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
+      if (op.isEmpty()) {
+        actions.forEach(a -> a.status(ActionStatus.PENDING));
+        this.actionsService.saveActions(dbClient, siteId, documentId, actions);
+
+        this.notificationService.publishNextActionEvent(actions, siteId, documentId);
+      }
     }
   }
 

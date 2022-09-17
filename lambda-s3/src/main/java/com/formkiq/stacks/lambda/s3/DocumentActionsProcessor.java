@@ -260,7 +260,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
         Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
 
-        if (map.containsKey("contentUrls")) {
+        if (map != null && map.containsKey("contentUrls")) {
           urls = (List<String>) map.get("contentUrls");
         } else {
           throw new IOException("Cannot find 'contentUrls' from OCR request");
@@ -389,6 +389,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       if (o.isPresent()) {
 
         Action action = o.get();
+        ActionStatus status = ActionStatus.RUNNING;
+
         logger.log(String.format("Processing SiteId %s Document %s on action %s", siteId,
             documentId, action.type()));
 
@@ -397,10 +399,13 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         } catch (Exception e) {
           e.printStackTrace();
-          action.status(ActionStatus.FAILED);
-          this.actionsService.updateActionStatus(dbClient, siteId, documentId, o.get().type(),
-              ActionStatus.FAILED);
+          status = ActionStatus.FAILED;
+          action.status(status);
         }
+
+        this.actionsService.updateActionStatus(dbClient, siteId, documentId, o.get().type(),
+            status);
+
       } else {
         logger
             .log(String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));

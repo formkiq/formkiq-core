@@ -1051,6 +1051,43 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
+   * Create Document Request with 'running' ACTIONS.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  public void testHandleRequest13() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String key = createDatabaseKey(siteId, BUCKET_KEY);
+      final Map<String, Object> map =
+          loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      doc.setInsertedDate(new Date());
+      doc.setDocumentId(BUCKET_KEY);
+      doc.setUserId("joe");
+      doc.setPath("test.txt");
+      service.saveDocumentItemWithTag(db, siteId, doc);
+      actionsService.saveActions(db, siteId, doc.getDocumentId(),
+          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING)));
+
+      addS3File(key, "pdf", false, "testdata");
+
+      // when
+      handleRequest(siteId, BUCKET_KEY, map);
+
+      // then
+      List<Action> actions = actionsService.getActions(db, siteId, doc.getDocumentId());
+      assertEquals(1, actions.size());
+      assertEquals(ActionStatus.RUNNING, actions.get(0).status());
+      assertEquals(ActionType.OCR, actions.get(0).type());
+    }
+  }
+
+  /**
    * Verify {@link DocumentItem}.
    * 
    * @param siteId {@link String}

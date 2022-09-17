@@ -162,6 +162,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     mockServer.when(request().withMethod("POST")).respond(callback);
     mockServer.when(request().withMethod("PUT")).respond(callback);
+    mockServer.when(request().withMethod("GET")).respond(callback);
   }
 
   /** {@link LambdaContextRecorder}. */
@@ -222,6 +223,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
         assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
         assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
+
+        assertEquals(ActionStatus.RUNNING,
+            actionsService.getActions(db, siteId, documentId).get(0).status());
       }
     }
   }
@@ -259,6 +263,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
         Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
         assertNotNull(resultmap.get("contentUrls").toString());
+
+        assertEquals(ActionStatus.RUNNING,
+            actionsService.getActions(db, siteId, documentId).get(0).status());
       }
     }
   }
@@ -297,6 +304,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
         Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
         assertNotNull(resultmap.get("contentUrls").toString());
+
+        assertEquals(ActionStatus.RUNNING,
+            actionsService.getActions(db, siteId, documentId).get(0).status());
       }
     }
   }
@@ -374,6 +384,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         }
 
         assertEquals(documentId, documents.get(0).get("documentId"));
+
+        assertEquals(ActionStatus.COMPLETE,
+            actionsService.getActions(db, siteId, documentId).get(0).status());
       }
     }
   }
@@ -434,6 +447,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals(documentId, documents.get(0).get("documentId"));
         assertEquals("CLEAN", documents.get(0).get("status"));
         assertEquals("2022-01-01", documents.get(0).get("timestamp"));
+
+        assertEquals(ActionStatus.COMPLETE,
+            actionsService.getActions(db, siteId, documentId).get(0).status());
       }
     }
   }

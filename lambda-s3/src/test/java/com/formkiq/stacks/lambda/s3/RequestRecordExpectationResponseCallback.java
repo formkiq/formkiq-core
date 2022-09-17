@@ -55,6 +55,6 @@ public class RequestRecordExpectationResponseCallback implements ExpectationResp
 
     this.lastRequest = httpRequest;
 
-    return org.mockserver.model.HttpResponse.response("{}");
+    return org.mockserver.model.HttpResponse.response("{\"contentUrls\":[]}");
   }
 }
