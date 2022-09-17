@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -83,7 +80,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -140,8 +136,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /** {@link ActionsService}. */
   private ActionsService actionsService;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private DynamoDbConnectionBuilder db;
   /** {@link DocumentEventService}. */
   private DocumentEventService documentEventService;
   /** {@link Gson}. */
@@ -196,11 +190,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
-    this.db = dbBuilder;
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.actionsService = new ActionsServiceDynamoDb(map.get("DOCUMENTS_TABLE"));
-    this.service = new DocumentServiceImpl(map.get("DOCUMENTS_TABLE"));
+    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.service = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
     this.sqsService = new SqsService();
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
@@ -304,34 +297,31 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       List<Map<String, Object>> list = processRecords(logger, map);
 
-      try (DynamoDbClient dbClient = this.db.build()) {
+      for (Map<String, Object> e : list) {
 
-        for (Map<String, Object> e : list) {
+        Object eventName = e.getOrDefault("eventName", null);
+        Object bucket = e.getOrDefault("s3bucket", null);
+        Object key = e.getOrDefault("s3key", null);
 
-          Object eventName = e.getOrDefault("eventName", null);
-          Object bucket = e.getOrDefault("s3bucket", null);
-          Object key = e.getOrDefault("s3key", null);
+        if (bucket != null && key != null) {
 
-          if (bucket != null && key != null) {
+          boolean create =
+              eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
 
-            boolean create =
-                eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
+          boolean remove =
+              eventName != null && eventName.toString().toLowerCase().contains("objectremove");
 
-            boolean remove =
-                eventName != null && eventName.toString().toLowerCase().contains("objectremove");
+          if (debug) {
+            logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
+                bucket, key));
+          }
 
-            if (debug) {
-              logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
-                  bucket, key));
-            }
+          if (remove) {
 
-            if (remove) {
+            processS3Delete(logger, bucket.toString(), key.toString());
 
-              processS3Delete(logger, dbClient, bucket.toString(), key.toString());
-
-            } else {
-              processS3File(logger, dbClient, create, bucket.toString(), key.toString(), debug);
-            }
+          } else {
+            processS3File(logger, create, bucket.toString(), key.toString(), debug);
           }
         }
       }
@@ -436,14 +426,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * Process S3 Delete Request.
    * 
    * @param logger {@link LambdaLogger}
-   * @param dbClient {@link DynamoDbClient}
    * @param bucket {@link String}
    * @param key {@link String}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processS3Delete(final LambdaLogger logger, final DynamoDbClient dbClient,
-      final String bucket, final String key) throws IOException, InterruptedException {
+  private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
+      throws IOException, InterruptedException {
 
     String siteId = getSiteId(key.toString());
     String documentId = resetDatabaseKey(siteId, key.toString());
@@ -470,29 +459,27 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       }
     }
 
-    this.service.deleteDocument(dbClient, siteId, documentId);
+    this.service.deleteDocument(siteId, documentId);
 
     DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
 
     DocumentEvent event = buildDocumentEvent(DELETE, siteId, doc, bucket, key);
 
-    sendSnsMessage(logger, dbClient, event, doc, null);
+    sendSnsMessage(logger, event, doc, null);
   }
 
   /**
    * Process S3 File.
    * 
    * @param logger {@link LambdaLogger}
-   * @param dbClient {@link DynamoDbClient}
    * @param create boolean
    * @param s3bucket {@link String}
    * @param s3key {@link String}
    * @param debug boolean
    * @throws FileNotFoundException FileNotFoundException
    */
-  private void processS3File(final LambdaLogger logger, final DynamoDbClient dbClient,
-      final boolean create, final String s3bucket, final String s3key, final boolean debug)
-      throws FileNotFoundException {
+  private void processS3File(final LambdaLogger logger, final boolean create, final String s3bucket,
+      final String s3key, final boolean debug) throws FileNotFoundException {
 
     String key = urlDecode(s3key);
 
@@ -511,7 +498,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String contentType = resp.getContentType();
       Long contentLength = resp.getContentLength();
 
-      DocumentItem item = this.service.findDocument(dbClient, siteId, documentId);
+      DocumentItem item = this.service.findDocument(siteId, documentId);
 
       if (item != null) {
 
@@ -537,15 +524,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           logger.log("new " + this.gson.toJson(doc));
         }
 
-        this.service.saveDocumentItemWithTag(dbClient, siteId, doc);
+        this.service.saveDocumentItemWithTag(siteId, doc);
 
-        this.service.deleteDocumentFormats(dbClient, siteId, item.getDocumentId());
+        this.service.deleteDocumentFormats(siteId, item.getDocumentId());
 
         String content = getContent(s3bucket, key, s3, resp, doc);
 
         DocumentEvent event =
             buildDocumentEvent(create ? CREATE : UPDATE, siteId, doc, s3bucket, key);
-        sendSnsMessage(logger, dbClient, event, doc, content);
+        sendSnsMessage(logger, event, doc, content);
 
       } else {
         logger.log("Cannot find document " + documentId + " in site " + siteId);
@@ -557,13 +544,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * Either sends the Create Message to SNS.
    * 
    * @param logger {@link LambdaLogger}
-   * @param dbClient {@link DynamoDbClient}
    * @param event {@link DocumentEvent}
    * @param doc {@link DynamicDocumentItem}
    * @param content {@link String}
    */
-  private void sendSnsMessage(final LambdaLogger logger, final DynamoDbClient dbClient,
-      final DocumentEvent event, final DynamicDocumentItem doc, final String content) {
+  private void sendSnsMessage(final LambdaLogger logger, final DocumentEvent event,
+      final DynamicDocumentItem doc, final String content) {
 
     String siteId = event.siteId();
     String documentId = event.documentId();
@@ -584,13 +570,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (CREATE.equals(eventType)) {
 
-      List<Action> actions = this.actionsService.getActions(dbClient, siteId, documentId);
+      List<Action> actions = this.actionsService.getActions(siteId, documentId);
       Optional<Action> op =
           actions.stream().filter(a -> a.status().equals(ActionStatus.RUNNING)).findFirst();
 
       if (op.isEmpty()) {
         actions.forEach(a -> a.status(ActionStatus.PENDING));
-        this.actionsService.saveActions(dbClient, siteId, documentId, actions);
+        this.actionsService.saveActions(siteId, documentId, actions);
 
         this.notificationService.publishNextActionEvent(actions, siteId, documentId);
       }

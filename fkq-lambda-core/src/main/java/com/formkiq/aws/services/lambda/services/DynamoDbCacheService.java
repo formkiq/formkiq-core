@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.aws.services.lambda.services;
 
@@ -30,6 +27,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -59,18 +57,22 @@ public class DynamoDbCacheService implements CacheService {
   private String cacheTableName;
   /** UTC {@link TimeZone}. */
   private TimeZone tz = TimeZone.getTimeZone("UTC");
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
 
   /**
    * constructor.
    *
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param table {@link String}
    */
-  public DynamoDbCacheService(final String table) {
+  public DynamoDbCacheService(final DynamoDbConnectionBuilder connection, final String table) {
 
     if (table == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
+    this.dbClient = connection.build();
     this.cacheTableName = table;
 
     this.df = new SimpleDateFormat(DATE_FORMAT);
@@ -78,10 +80,10 @@ public class DynamoDbCacheService implements CacheService {
   }
 
   @Override
-  public Date getExpiryDate(final DynamoDbClient client, final String key) {
+  public Date getExpiryDate(final String key) {
 
     Date date = null;
-    Map<String, AttributeValue> map = getFromCache(client, key);
+    Map<String, AttributeValue> map = getFromCache(key);
 
     if (map.containsKey("TimeToLive")) {
       Long ttl = Long.valueOf(map.get("TimeToLive").n());
@@ -107,29 +109,27 @@ public class DynamoDbCacheService implements CacheService {
    * Get Cache Value.
    * 
    * @param key {@link String}
-   * @param client {@link DynamoDbClient}
    * @return {@link Map}
    */
-  private Map<String, AttributeValue> getFromCache(final DynamoDbClient client, final String key) {
+  private Map<String, AttributeValue> getFromCache(final String key) {
     Map<String, AttributeValue> keyMap = new HashMap<>();
     keyMap.put(PK, AttributeValue.builder().s(key).build());
     keyMap.put(SK, AttributeValue.builder().s("cache").build());
 
     GetItemRequest r = GetItemRequest.builder().tableName(this.cacheTableName).key(keyMap).build();
 
-    Map<String, AttributeValue> result = client.getItem(r).item();
+    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
     return result;
   }
 
   @Override
-  public String read(final DynamoDbClient client, final String key) {
-    Map<String, AttributeValue> result = getFromCache(client, key);
+  public String read(final String key) {
+    Map<String, AttributeValue> result = getFromCache(key);
     return !result.isEmpty() ? result.get("Data").s() : null;
   }
 
   @Override
-  public void write(final DynamoDbClient client, final String key, final String data,
-      final int cacheInDays) {
+  public void write(final String key, final String data, final int cacheInDays) {
 
     Date now = new Date();
     long timeout = getExpiryTime(cacheInDays).getTime() / MILLISECONDS;
@@ -146,6 +146,6 @@ public class DynamoDbCacheService implements CacheService {
     PutItemRequest putItemRequest =
         PutItemRequest.builder().tableName(this.cacheTableName).item(pkvalues).build();
 
-    client.putItem(putItemRequest);
+    this.dbClient.putItem(putItemRequest);
   }
 }

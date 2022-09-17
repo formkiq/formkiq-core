@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
@@ -112,28 +109,25 @@ public abstract class AbstractAwsTest {
 
     sqsService = new SqsService();
     s3Service = new S3Service(s3Builder);
-    ssmService = new SsmServiceImpl();
+    ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService();
 
-    try (SsmClient ssmClient = getSsmClient()) {
+    edition = ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
+    sesbucketname =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
+    documentsbucketname =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsS3Bucket");
+    stagingdocumentsbucketname =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/DocumentsStageS3Bucket");
+    snsDocumentEventArn =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn");
 
-      edition = ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/edition");
-      sesbucketname = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/s3/DocumentsSesS3Bucket");
-      documentsbucketname = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/s3/DocumentsS3Bucket");
-      stagingdocumentsbucketname = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/s3/DocumentsStageS3Bucket");
-      snsDocumentEventArn = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/sns/DocumentEventArn");
-
-      String documentsTable = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
-      dbConnection =
-          new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-      documentService = new DocumentServiceImpl(documentsTable);
-      searchService = new DocumentSearchServiceImpl(documentService, documentsTable, null);
-    }
+    String documentsTable =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+    dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    documentService = new DocumentServiceImpl(dbConnection, documentsTable);
+    searchService =
+        new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable, null);
   }
 
   /**

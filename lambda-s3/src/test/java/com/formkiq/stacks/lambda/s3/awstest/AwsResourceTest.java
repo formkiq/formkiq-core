@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
@@ -71,7 +68,6 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test CloudFormation.
@@ -251,31 +247,29 @@ public class AwsResourceTest extends AbstractAwsTest {
     String contentType = "text/plain";
     DocumentItem item = new DocumentItemDynamoDb(key, new Date(), "test");
 
-    try (DynamoDbClient dbClient = getDynamodbClient()) {
-      try (S3Client s3 = getS3Service().buildClient()) {
+    try (S3Client s3 = getS3Service().buildClient()) {
 
-        // when
-        getDocumentService().saveDocument(dbClient, null, item, null);
-        key = writeToDocuments(s3, key, contentType);
+      // when
+      getDocumentService().saveDocument(null, item, null);
+      key = writeToDocuments(s3, key, contentType);
 
-        // then
-        verifyFileExistsInDocumentsS3(s3, key, contentType);
+      // then
+      verifyFileExistsInDocumentsS3(s3, key, contentType);
 
-        item = getDocumentService().findDocument(dbClient, null, key);
+      item = getDocumentService().findDocument(null, key);
 
-        while (true) {
-          if (contentType.equals(item.getContentType())) {
-            assertEquals(contentType, item.getContentType());
-            assertEquals(contentLength, item.getContentLength());
+      while (true) {
+        if (contentType.equals(item.getContentType())) {
+          assertEquals(contentType, item.getContentType());
+          assertEquals(contentLength, item.getContentLength());
 
-            break;
-          }
-
-          item = getDocumentService().findDocument(dbClient, null, key);
+          break;
         }
 
-        getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
+        item = getDocumentService().findDocument(null, key);
       }
+
+      getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
     }
   }
 
@@ -307,7 +301,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
             DynamicDocumentItem doc = new DynamicDocumentItem(
                 Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
-            getDocumentService().saveDocumentItemWithTag(dbClient, null, doc);
+            getDocumentService().saveDocumentItemWithTag(null, doc);
 
             // when
             URL url =
@@ -423,34 +417,29 @@ public class AwsResourceTest extends AbstractAwsTest {
     String appenvironment = getAppenvironment();
     String edition = getEdition();
 
-    try (SsmClient ssmClient = getSsmClient()) {
+    assertTrue(getDocumentsbucketname()
+        .startsWith("formkiq-" + edition + "-" + appenvironment + "-documents-"));
+    assertTrue(getStagingdocumentsbucketname()
+        .startsWith("formkiq-" + edition + "-" + appenvironment + "-staging-"));
+    assertTrue(
+        getSsmService().getParameterValue("/formkiq/" + appenvironment + "/sns/DocumentEventArn")
+            .contains("SnsDocumentEvent"));
+    assertTrue(getSsmService()
+        .getParameterValue("/formkiq/" + appenvironment + "/lambda/StagingCreateObject")
+        .contains("StagingS3Create"));
+    assertTrue(getSsmService()
+        .getParameterValue("/formkiq/" + appenvironment + "/lambda/DocumentsUpdateObject")
+        .contains("DocumentsS3Update"));
 
-      assertTrue(getDocumentsbucketname()
-          .startsWith("formkiq-" + edition + "-" + appenvironment + "-documents-"));
-      assertTrue(getStagingdocumentsbucketname()
-          .startsWith("formkiq-" + edition + "-" + appenvironment + "-staging-"));
-      assertTrue(getSsmService()
-          .getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/sns/DocumentEventArn")
-          .contains("SnsDocumentEvent"));
-      assertTrue(getSsmService()
-          .getParameterValue(ssmClient,
-              "/formkiq/" + appenvironment + "/lambda/StagingCreateObject")
-          .contains("StagingS3Create"));
-      assertTrue(getSsmService()
-          .getParameterValue(ssmClient,
-              "/formkiq/" + appenvironment + "/lambda/DocumentsUpdateObject")
-          .contains("DocumentsS3Update"));
+    String documentsUpdateUrl =
+        getSsmService().getParameterValue("/formkiq/" + appenvironment + "/sqs/DocumentsUpdateUrl");
+    assertTrue(documentsUpdateUrl.contains("DocumentsUpdateQueue"));
+    assertTrue(documentsUpdateUrl.contains("https://"));
 
-      String documentsUpdateUrl = getSsmService().getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/sqs/DocumentsUpdateUrl");
-      assertTrue(documentsUpdateUrl.contains("DocumentsUpdateQueue"));
-      assertTrue(documentsUpdateUrl.contains("https://"));
-
-      String documentsUpdateArn = getSsmService().getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/sqs/DocumentsUpdateArn");
-      assertTrue(documentsUpdateArn.contains("DocumentsUpdateQueue"));
-      assertTrue(documentsUpdateArn.contains("arn:aws:sqs"));
-    }
+    String documentsUpdateArn =
+        getSsmService().getParameterValue("/formkiq/" + appenvironment + "/sqs/DocumentsUpdateArn");
+    assertTrue(documentsUpdateArn.contains("DocumentsUpdateQueue"));
+    assertTrue(documentsUpdateArn.contains("arn:aws:sqs"));
   }
 
   /**
@@ -498,7 +487,6 @@ public class AwsResourceTest extends AbstractAwsTest {
     final String txt2 = "this is a another test";
 
     try (SnsClient snsClient = getSnsClient();
-        DynamoDbClient dbClient = getDynamodbClient();
         S3Client s3 = getS3Service().buildClient();
         SqsClient sqsClient = getSqsClient()) {
       String documentQueueUrl =
@@ -522,8 +510,7 @@ public class AwsResourceTest extends AbstractAwsTest {
             new PaginationResults<>(Collections.emptyList(), null);
 
         while (result.getResults().size() != 1) {
-          result =
-              getSearchService().search(dbClient, siteId, q, null, DocumentService.MAX_RESULTS);
+          result = getSearchService().search(siteId, q, null, DocumentService.MAX_RESULTS);
           Thread.sleep(SLEEP);
         }
 
@@ -534,7 +521,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         String documentId = result.getResults().get(0).getDocumentId();
         Collection<DocumentTag> tags =
             Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
-        getDocumentService().addTags(dbClient, siteId, documentId, tags, null);
+        getDocumentService().addTags(siteId, documentId, tags, null);
 
         // when
         getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
@@ -547,7 +534,7 @@ public class AwsResourceTest extends AbstractAwsTest {
             getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
         assertSnsMessage(sqsClient, documentQueueUrl, "create");
         PaginationResults<DocumentTag> list =
-            getDocumentService().findDocumentTags(dbClient, siteId, documentId, null, MAX_RESULTS);
+            getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
         assertEquals("[path, status, untagged, userId]", list.getResults().stream()
             .map(m -> m.getKey()).collect(Collectors.toList()).toString());
 

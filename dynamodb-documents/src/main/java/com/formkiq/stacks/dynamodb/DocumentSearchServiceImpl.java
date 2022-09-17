@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -44,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -71,25 +69,30 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  */
 public class DocumentSearchServiceImpl implements DocumentSearchService {
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
+
   /** {@link DocumentService}. */
   private DocumentService docService;
 
   /** Documents Table Name. */
   private String documentTableName;
-
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin tagSchemaPlugin;
 
   /**
    * constructor.
    * 
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentService {@link DocumentService}
    * @param documentsTable {@link String}
    * @param plugin {@link DocumentTagSchemaPlugin}
    */
-  public DocumentSearchServiceImpl(final DocumentService documentService,
-      final String documentsTable, final DocumentTagSchemaPlugin plugin) {
+  public DocumentSearchServiceImpl(final DynamoDbConnectionBuilder connection,
+      final DocumentService documentService, final String documentsTable,
+      final DocumentTagSchemaPlugin plugin) {
 
+    this.dbClient = connection.build();
     this.docService = documentService;
     this.tagSchemaPlugin = plugin;
 
@@ -98,6 +101,18 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     this.documentTableName = documentsTable;
+  }
+
+  private QueryRequest createQueryRequest(final String index, final String expression,
+      final Map<String, AttributeValue> values, final PaginationMapToken token,
+      final int maxresults) {
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
+        .keyConditionExpression(expression).expressionAttributeValues(values)
+        .exclusiveStartKey(startkey).scanIndexForward(Boolean.FALSE)
+        .limit(Integer.valueOf(maxresults)).build();
+    return q;
   }
 
   /**
@@ -167,14 +182,13 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   /**
    * Find Document Tag records.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId DynamoDB siteId.
    * @param documentIds {@link Collection} {@link String}
    * @param tagKey {@link String}
    * @return {@link Map}
    */
-  private Map<String, Map<String, AttributeValue>> findDocumentsTags(final DynamoDbClient client,
-      final String siteId, final Collection<String> documentIds, final String tagKey) {
+  private Map<String, Map<String, AttributeValue>> findDocumentsTags(final String siteId,
+      final Collection<String> documentIds, final String tagKey) {
 
     Map<String, Map<String, AttributeValue>> map = new HashMap<>();
 
@@ -187,7 +201,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     Map<String, KeysAndAttributes> items =
         Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
     BatchGetItemRequest batchReq = BatchGetItemRequest.builder().requestItems(items).build();
-    BatchGetItemResponse batchResponse = client.batchGetItem(batchReq);
+    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
     Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
 
@@ -219,7 +233,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   /**
    * Find Document that match tagKey & tagValue.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId DynamoDB siteId.
    * @param query {@link SearchQuery}
    * @param key {@link String}
@@ -228,9 +241,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param maxresults int
    * @return {@link PaginationResults}
    */
-  private PaginationResults<DynamicDocumentItem> findDocumentsTagStartWith(
-      final DynamoDbClient client, final String siteId, final SearchQuery query, final String key,
-      final String value, final PaginationMapToken token, final int maxresults) {
+  private PaginationResults<DynamicDocumentItem> findDocumentsTagStartWith(final String siteId,
+      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final int maxresults) {
 
     String expression = GSI2_PK + " = :pk and begins_with(" + GSI2_SK + ", :sk)";
 
@@ -241,13 +254,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults);
 
-    return searchForDocuments(client, q, siteId, query);
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
    * Find Document that match tagKey.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId DynamoDB siteId Key
    * @param query {@link SearchQuery}
    * @param key {@link String}
@@ -256,9 +268,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param maxresults int
    * @return {@link PaginationResults}
    */
-  private PaginationResults<DynamicDocumentItem> findDocumentsWithTag(final DynamoDbClient client,
-      final String siteId, final SearchQuery query, final String key, final String value,
-      final PaginationMapToken token, final int maxresults) {
+  private PaginationResults<DynamicDocumentItem> findDocumentsWithTag(final String siteId,
+      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final int maxresults) {
 
     String expression = GSI2_PK + " = :pk";
 
@@ -267,13 +279,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
 
     QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults);
-    return searchForDocuments(client, q, siteId, query);
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
    * Find Document that match tagKey & tagValue.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId DynamoDB PK siteId
    * @param query {@link SearchQuery}
    * @param key {@link String}
@@ -282,9 +293,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param maxresults int
    * @return {@link PaginationResults}
    */
-  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValue(
-      final DynamoDbClient client, final String siteId, final SearchQuery query, final String key,
-      final String value, final PaginationMapToken token, final int maxresults) {
+  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValue(final String siteId,
+      final SearchQuery query, final String key, final String value, final PaginationMapToken token,
+      final int maxresults) {
 
     String expression = GSI1_PK + " = :pk";
 
@@ -292,13 +303,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     values.put(":pk", AttributeValue.builder()
         .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
     QueryRequest q = createQueryRequest(GSI1, expression, values, token, maxresults);
-    return searchForDocuments(client, q, siteId, query);
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
    * Find Document that match tagKey & tagValues.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId DynamoDB PK siteId
    * @param query {@link SearchQuery}
    * @param key {@link String}
@@ -306,14 +316,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param maxresults int
    * @return {@link PaginationResults}
    */
-  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(
-      final DynamoDbClient client, final String siteId, final SearchQuery query, final String key,
-      final Collection<String> eqOr, final int maxresults) {
+  private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(final String siteId,
+      final SearchQuery query, final String key, final Collection<String> eqOr,
+      final int maxresults) {
 
     List<DynamicDocumentItem> list = new ArrayList<>();
     for (String eq : eqOr) {
       PaginationResults<DynamicDocumentItem> result =
-          findDocumentsWithTagAndValue(client, siteId, query, key, eq, null, maxresults);
+          findDocumentsWithTagAndValue(siteId, query, key, eq, null, maxresults);
       list.addAll(result.getResults());
     }
 
@@ -343,9 +353,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   @Override
-  public PaginationResults<DynamicDocumentItem> search(final DynamoDbClient client,
-      final String siteId, final SearchQuery query, final PaginationMapToken token,
-      final int maxresults) {
+  public PaginationResults<DynamicDocumentItem> search(final String siteId, final SearchQuery query,
+      final PaginationMapToken token, final int maxresults) {
 
     SearchTagCriteria search = query.tag();
 
@@ -361,14 +370,13 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     if (!Objects.notNull(documentIds).isEmpty()) {
 
-      Map<String, Map<String, AttributeValue>> docs =
-          findDocumentsTags(client, siteId, documentIds, key);
+      Map<String, Map<String, AttributeValue>> docs = findDocumentsTags(siteId, documentIds, key);
 
       Map<String, Map<String, AttributeValue>> filteredDocs = filterDocumentTags(docs, search);
 
       List<String> fetchDocumentIds = new ArrayList<>(filteredDocs.keySet());
 
-      List<DocumentItem> list = this.docService.findDocuments(client, siteId, fetchDocumentIds);
+      List<DocumentItem> list = this.docService.findDocuments(siteId, fetchDocumentIds);
 
       List<DynamicDocumentItem> results =
           list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
@@ -385,16 +393,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     } else {
 
       if (!Objects.notNull(search.eqOr()).isEmpty()) {
-        result =
-            findDocumentsWithTagAndValues(client, siteId, query, key, search.eqOr(), maxresults);
+        result = findDocumentsWithTagAndValues(siteId, query, key, search.eqOr(), maxresults);
       } else if (search.eq() != null) {
-        result = findDocumentsWithTagAndValue(client, siteId, query, key, search.eq(), token,
-            maxresults);
+        result = findDocumentsWithTagAndValue(siteId, query, key, search.eq(), token, maxresults);
       } else if (search.beginsWith() != null) {
-        result = findDocumentsTagStartWith(client, siteId, query, key, search.beginsWith(), token,
-            maxresults);
+        result =
+            findDocumentsTagStartWith(siteId, query, key, search.beginsWith(), token, maxresults);
       } else {
-        result = findDocumentsWithTag(client, siteId, query, key, null, token, maxresults);
+        result = findDocumentsWithTag(siteId, query, key, null, token, maxresults);
       }
     }
 
@@ -404,16 +410,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   /**
    * Search for Documents.
    *
-   * @param client {@link DynamoDbClient}
    * @param q {@link QueryRequest}
    * @param siteId DynamoDB PK siteId
    * @param query {@link SearchQuery}
    * @return {@link PaginationResults} {@link DocumentItemSearchResult}
    */
-  private PaginationResults<DynamicDocumentItem> searchForDocuments(final DynamoDbClient client,
-      final QueryRequest q, final String siteId, final SearchQuery query) {
+  private PaginationResults<DynamicDocumentItem> searchForDocuments(final QueryRequest q,
+      final String siteId, final SearchQuery query) {
 
-    QueryResponse result = client.query(q);
+    QueryResponse result = this.dbClient.query(q);
 
     Map<String, DocumentTag> tags = new HashMap<>();
     result.items().forEach(s -> {
@@ -443,7 +448,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     List<String> documentIds = new ArrayList<>(tags.keySet());
 
-    List<DocumentItem> list = this.docService.findDocuments(client, siteId, documentIds);
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
 
     List<DynamicDocumentItem> results =
         list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
@@ -460,18 +465,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     });
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
-  }
-
-  private QueryRequest createQueryRequest(final String index, final String expression,
-      final Map<String, AttributeValue> values, final PaginationMapToken token,
-      final int maxresults) {
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
-
-    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
-        .keyConditionExpression(expression).expressionAttributeValues(values)
-        .exclusiveStartKey(startkey).scanIndexForward(Boolean.FALSE)
-        .limit(Integer.valueOf(maxresults)).build();
-    return q;
   }
 
   /**

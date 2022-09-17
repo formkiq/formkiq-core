@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -61,7 +58,6 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -76,12 +72,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   /**
    * Create MAX_RESULTS + 2 Documents test data.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param prefix {@link String}
    * @param testdatacount int
    */
-  private void createTestData(final DynamoDbClient dbClient, final String prefix,
-      final int testdatacount) {
+  private void createTestData(final String prefix, final int testdatacount) {
     String userId = "jsmith";
     final int min10 = 10;
     LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
@@ -91,8 +85,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       nowLocalDate = nowLocalDate.plus(1, ChronoUnit.MINUTES);
       Date d = Date.from(nowLocalDate.atZone(ZoneOffset.UTC).toInstant());
-      getDocumentService().saveDocument(dbClient, prefix,
-          new DocumentItemDynamoDb("doc_" + i, d, userId), new ArrayList<>());
+      getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
+          new ArrayList<>());
     }
   }
 
@@ -247,41 +241,38 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments01() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date = new Date();
-        final long contentLength = 1000L;
-        String username = UUID.randomUUID() + "@formkiq.com";
-        String documentId = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-        item.setContentLength(Long.valueOf(contentLength));
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(Long.valueOf(contentLength));
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
-        addParameter(event, "siteId", siteId);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
+      addParameter(event, "siteId", siteId);
 
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-        List<DynamicObject> documents = resp.getList("documents");
-        assertEquals(1, documents.size());
-        assertNotNull(documents.get(0).get("documentId"));
-        assertNotNull(documents.get(0).get("insertedDate"));
-        assertNotNull(documents.get(0).get("userId"));
-        assertEquals("1000.0", documents.get(0).get("contentLength").toString());
-      }
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).get("documentId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("userId"));
+      assertEquals("1000.0", documents.get(0).get("contentLength").toString());
     }
   }
 
@@ -293,39 +284,37 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments02() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-        createTestData(dbClient, siteId, DocumentService.MAX_RESULTS + 2);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+      createTestData(siteId, DocumentService.MAX_RESULTS + 2);
 
-        try (InputStream in = toStream("/request-get-documents-next.json")) {
-          String input = IoUtils.toUtf8String(in);
+      try (InputStream in = toStream("/request-get-documents-next.json")) {
+        String input = IoUtils.toUtf8String(in);
 
-          final InputStream instream =
-              new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
+        final InputStream instream =
+            new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
-          // when
-          getHandler().handleRequest(instream, outstream, getMockContext());
+        // when
+        getHandler().handleRequest(instream, outstream, getMockContext());
 
-          // then
-          String response = new String(outstream.toByteArray(), "UTF-8");
-          Map<String, String> m = fromJson(response, Map.class);
+        // then
+        String response = new String(outstream.toByteArray(), "UTF-8");
+        Map<String, String> m = fromJson(response, Map.class);
 
-          final int mapsize = 3;
-          assertEquals(mapsize, m.size());
-          assertEquals("200.0", String.valueOf(m.get("statusCode")));
-          assertEquals(getHeaders(),
-              "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-          DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        assertEquals(getHeaders(),
+            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-          List<DynamicObject> documents = resp.getList("documents");
-          assertEquals(DocumentService.MAX_RESULTS, documents.size());
-          assertNull(resp.get("previous"));
-          assertNotNull(resp.get("next"));
+        List<DynamicObject> documents = resp.getList("documents");
+        assertEquals(DocumentService.MAX_RESULTS, documents.size());
+        assertNull(resp.get("previous"));
+        assertNotNull(resp.get("next"));
 
-          expectNextPage(resp.getString("next"));
-        }
+        expectNextPage(resp.getString("next"));
       }
     }
   }
@@ -338,37 +327,35 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments03() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-        createTestData(dbClient, siteId, DocumentService.MAX_RESULTS);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+      createTestData(siteId, DocumentService.MAX_RESULTS);
 
-        try (InputStream in = toStream("/request-get-documents-next.json")) {
-          String input = IoUtils.toUtf8String(in);
+      try (InputStream in = toStream("/request-get-documents-next.json")) {
+        String input = IoUtils.toUtf8String(in);
 
-          final InputStream instream =
-              new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
+        final InputStream instream =
+            new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
-          // when
-          getHandler().handleRequest(instream, outstream, getMockContext());
+        // when
+        getHandler().handleRequest(instream, outstream, getMockContext());
 
-          // then
-          String response = new String(outstream.toByteArray(), "UTF-8");
-          Map<String, String> m = fromJson(response, Map.class);
+        // then
+        String response = new String(outstream.toByteArray(), "UTF-8");
+        Map<String, String> m = fromJson(response, Map.class);
 
-          final int mapsize = 3;
-          assertEquals(mapsize, m.size());
-          assertEquals("200.0", String.valueOf(m.get("statusCode")));
-          assertEquals(getHeaders(),
-              "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-          DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        assertEquals(getHeaders(),
+            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-          List<DynamicObject> documents = resp.getList("documents");
-          assertEquals(DocumentService.MAX_RESULTS, documents.size());
-          assertNull(resp.get("previous"));
-          assertNull(resp.get("next"));
-        }
+        List<DynamicObject> documents = resp.getList("documents");
+        assertEquals(DocumentService.MAX_RESULTS, documents.size());
+        assertNull(resp.get("previous"));
+        assertNull(resp.get("next"));
       }
     }
   }
@@ -381,35 +368,32 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments04() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date = new Date();
-        String username = UUID.randomUUID() + "@formkiq.com";
-        String documentId = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz.json");
-        addParameter(event, "siteId", siteId);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz.json");
+      addParameter(event, "siteId", siteId);
 
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-        List<DynamicObject> documents = resp.getList("documents");
-        assertEquals(0, documents.size());
-      }
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(0, documents.size());
     }
   }
 
@@ -421,35 +405,32 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments05() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date = DateUtil.toDateFromString("2019-08-15", "0500");
-        String username = UUID.randomUUID() + "@formkiq.com";
-        String documentId = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = DateUtil.toDateFromString("2019-08-15", "0500");
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz.json");
-        addParameter(event, "siteId", siteId);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz.json");
+      addParameter(event, "siteId", siteId);
 
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-        List<DynamicObject> documents = resp.getList("documents");
-        assertEquals(1, documents.size());
-      }
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
     }
   }
 
@@ -461,39 +442,36 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments06() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        ZoneOffset zone = ZoneOffset.of("-05:00");
-        ZonedDateTime zdate = ZonedDateTime.now(zone);
-        Date date = Date.from(zdate.toInstant());
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ZoneOffset zone = ZoneOffset.of("-05:00");
+      ZonedDateTime zdate = ZonedDateTime.now(zone);
+      Date date = Date.from(zdate.toInstant());
 
-        String username = UUID.randomUUID() + "@formkiq.com";
-        String documentId = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz02.json");
-        addParameter(event, "siteId", siteId);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-tz02.json");
+      addParameter(event, "siteId", siteId);
 
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
-        Thread.sleep(ONE_SECOND);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      Thread.sleep(ONE_SECOND);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-        List<DynamicObject> documents = resp.getList("documents");
-        assertEquals(1, documents.size());
-      }
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
     }
   }
 
@@ -505,51 +483,48 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments07() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date0 = new Date();
-        final int year = 2015;
-        final int dayOfMonth = 21;
-        final long contentLength = 1111L;
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date0 = new Date();
+      final int year = 2015;
+      final int dayOfMonth = 21;
+      final long contentLength = 1111L;
 
-        LocalDate localDate = LocalDate.of(year, Month.MARCH, dayOfMonth);
-        Date date1 = Date.from(localDate.atStartOfDay(ZoneOffset.UTC).toInstant());
+      LocalDate localDate = LocalDate.of(year, Month.MARCH, dayOfMonth);
+      Date date1 = Date.from(localDate.atStartOfDay(ZoneOffset.UTC).toInstant());
 
-        String username = UUID.randomUUID() + "@formkiq.com";
-        String documentId0 = UUID.randomUUID().toString();
-        String documentId1 = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item0 = new DocumentItemDynamoDb(documentId0, date0, username);
-        item0.setContentLength(Long.valueOf(contentLength));
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId0 = UUID.randomUUID().toString();
+      String documentId1 = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item0 = new DocumentItemDynamoDb(documentId0, date0, username);
+      item0.setContentLength(Long.valueOf(contentLength));
 
-        DocumentItemDynamoDb item1 = new DocumentItemDynamoDb(documentId1, date1, username);
-        item1.setContentLength(Long.valueOf(contentLength));
+      DocumentItemDynamoDb item1 = new DocumentItemDynamoDb(documentId1, date1, username);
+      item1.setContentLength(Long.valueOf(contentLength));
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-yesterday.json");
-        addParameter(event, "siteId", siteId);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-yesterday.json");
+      addParameter(event, "siteId", siteId);
 
-        getDocumentService().saveDocument(dbClient, siteId, item0, new ArrayList<>());
-        getDocumentService().saveDocument(dbClient, siteId, item1, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item0, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item1, new ArrayList<>());
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        final int mapsize = 3;
-        Map<String, String> m = fromJson(response, Map.class);
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      // then
+      final int mapsize = 3;
+      Map<String, String> m = fromJson(response, Map.class);
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-        List<DynamicObject> documents = resp.getList("documents");
-        assertEquals(1, documents.size());
-        assertNotNull(documents.get(0).get("documentId"));
-        assertNotNull(documents.get(0).get("insertedDate"));
-        assertNotNull(documents.get(0).get("userId"));
-        assertEquals("1111.0", documents.get(0).get("contentLength").toString());
-      }
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).get("documentId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("userId"));
+      assertEquals("1111.0", documents.get(0).get("contentLength").toString());
     }
   }
 
@@ -741,31 +716,28 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleOptionsDocuments01() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date = new Date();
-        String username = UUID.randomUUID() + "@formkiq.com";
-        String documentId = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-options-documents.json");
-        addParameter(event, "siteId", siteId);
+      ApiGatewayRequestEvent event = toRequestEvent("/request-options-documents.json");
+      addParameter(event, "siteId", siteId);
 
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      }
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
 

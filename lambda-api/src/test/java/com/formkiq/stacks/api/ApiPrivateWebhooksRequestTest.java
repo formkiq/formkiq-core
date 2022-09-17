@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -37,7 +34,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
@@ -60,30 +56,28 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     // given
     createApiRequestHandler(getMap());
 
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String enabled : Arrays.asList("private", "true")) {
+    for (String enabled : Arrays.asList("private", "true")) {
 
-        for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-          String name = UUID.randomUUID().toString();
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        String name = UUID.randomUUID().toString();
 
-          String id = getAwsServices().webhookService().saveWebhook(dbClient, siteId, name, "joe",
-              null, enabled);
+        String id =
+            getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, enabled);
 
-          ApiGatewayRequestEvent event = toRequestEvent("/request-post-private-webhooks01.json");
-          addParameter(event, "siteId", siteId);
-          setPathParameter(event, "webhooks", id);
+        ApiGatewayRequestEvent event = toRequestEvent("/request-post-private-webhooks01.json");
+        addParameter(event, "siteId", siteId);
+        setPathParameter(event, "webhooks", id);
 
-          // when
-          String response = handleRequest(event);
+        // when
+        String response = handleRequest(event);
 
-          // then
-          Map<String, String> m = fromJson(response, Map.class);
-          verifyHeaders(m, "200.0");
+        // then
+        Map<String, String> m = fromJson(response, Map.class);
+        verifyHeaders(m, "200.0");
 
-          String documentId = verifyDocumentId(m);
+        String documentId = verifyDocumentId(m);
 
-          verifyS3File(dbClient, id, siteId, documentId, name, null, false);
-        }
+        verifyS3File(id, siteId, documentId, name, null, false);
       }
     }
   }
@@ -104,9 +98,8 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
   }
 
   @SuppressWarnings("unchecked")
-  private void verifyS3File(final DynamoDbClient dbClient, final String webhookId,
-      final String siteId, final String documentId, final String name, final String contentType,
-      final boolean hasTimeToLive) {
+  private void verifyS3File(final String webhookId, final String siteId, final String documentId,
+      final String name, final String contentType, final boolean hasTimeToLive) {
 
     // verify s3 file
     try (S3Client s3 = getS3().buildClient()) {
@@ -125,8 +118,7 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
       }
 
       if (hasTimeToLive) {
-        DynamicObject obj =
-            getAwsServices().webhookService().findWebhook(dbClient, siteId, webhookId);
+        DynamicObject obj = getAwsServices().webhookService().findWebhook(siteId, webhookId);
         assertNotNull(obj.get("TimeToLive"));
         assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
       }

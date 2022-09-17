@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -49,7 +46,6 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for {@link CoreRequestHandler} class. */
 @ExtendWith(LocalStackExtension.class)
@@ -89,40 +85,36 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetRequest02() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String userId = "jsmith";
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date = new Date();
-        String documentId = UUID.randomUUID().toString();
-        String userId = "jsmith";
+      DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
-        addParameter(event, "siteId", siteId);
-        setPathParameter(event, "documentId", documentId);
+      // when
+      String response = handleRequest(event);
 
-        // when
-        String response = handleRequest(event);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-        assertEquals(documentId, resp.getString("documentId"));
-        assertEquals(userId, resp.getString("userId"));
-        assertNotNull(resp.get("insertedDate"));
-        assertNull(resp.get("next"));
-        assertNull(resp.get("previous"));
-      }
+      assertEquals(documentId, resp.getString("documentId"));
+      assertEquals(userId, resp.getString("userId"));
+      assertNotNull(resp.get("insertedDate"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
     }
   }
 
@@ -185,32 +177,30 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String documentId = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
     String userId = "jsmith";
 
-    try (DynamoDbClient dbClient = getDbClient()) {
-      DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
-      getDocumentService().saveDocument(dbClient, null, item, new ArrayList<>());
+    DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+    getDocumentService().saveDocument(null, item, new ArrayList<>());
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
+    ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
 
-      // when
-      String response = handleRequest(event);
+    // when
+    String response = handleRequest(event);
 
-      // then
-      Map<String, String> m = fromJson(response, Map.class);
+    // then
+    Map<String, String> m = fromJson(response, Map.class);
 
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
-      assertEquals(documentId, resp.get("documentId"));
-      assertEquals(userId, resp.get("userId"));
-      assertNotNull(documentId, resp.get("insertedDate"));
-      assertEquals(DEFAULT_SITE_ID, resp.get("siteId"));
-      assertNull(resp.get("next"));
-      assertNull(resp.get("previous"));
-    }
+    assertEquals(documentId, resp.get("documentId"));
+    assertEquals(userId, resp.get("userId"));
+    assertNotNull(documentId, resp.get("insertedDate"));
+    assertEquals(DEFAULT_SITE_ID, resp.get("siteId"));
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
   }
 
   /**
@@ -233,9 +223,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
     doc.put("documents", Arrays.asList(new DocumentItemToDynamicDocumentItem().apply(citem)));
 
-    try (DynamoDbClient dbClient = getDbClient()) {
-      getDocumentService().saveDocumentItemWithTag(dbClient, null, doc);
-    }
+    getDocumentService().saveDocumentItemWithTag(null, doc);
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
 

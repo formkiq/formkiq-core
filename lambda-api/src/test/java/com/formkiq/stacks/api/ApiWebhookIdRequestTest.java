@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -38,7 +35,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for request /webhooks/{webhookId}. */
 @ExtendWith(LocalStackExtension.class)
@@ -293,68 +289,63 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
-    try (DynamoDbClient dbClient = getDbClient()) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String id = getAwsServices().webhookService().saveWebhook(siteId, "test", "joe",
+          date, "true");
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        String id = getAwsServices().webhookService().saveWebhook(dbClient, siteId, "test", "joe",
-            date, "true");
+      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
+      setPathParameter(event, "webhookId", id);
+      addParameter(event, "siteId", siteId);
+      event.setBody("{\"name\":\"john smith2\",\"enabled\":false}");
 
-        ApiGatewayRequestEvent event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
-        setPathParameter(event, "webhookId", id);
-        addParameter(event, "siteId", siteId);
-        event.setBody("{\"name\":\"john smith2\",\"enabled\":false}");
+      // when
+      String response = handleRequest(event);
 
-        // when
-        String response = handleRequest(event);
+      // then
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-        // then
-        Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"'" + id + "' object updated\"}", m.get("body"));
 
-        assertEquals("{\"message\":\"'" + id + "' object updated\"}", m.get("body"));
+      // given
+      event = toRequestEvent("/request-get-webhooks-webhookid01.json");
+      setPathParameter(event, "webhookId", id);
+      addParameter(event, "siteId", siteId);
 
-        // given
-        event = toRequestEvent("/request-get-webhooks-webhookid01.json");
-        setPathParameter(event, "webhookId", id);
-        addParameter(event, "siteId", siteId);
+      // when
+      response = handleRequest(event);
 
-        // when
-        response = handleRequest(event);
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
 
-        // then
-        m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      Map<String, Object> result =
+          GsonUtil.getInstance().fromJson(m.get("body").toString(), Map.class);
 
-        Map<String, Object> result =
-            GsonUtil.getInstance().fromJson(m.get("body").toString(), Map.class);
-
-        if (siteId == null) {
-          assertEquals("default", result.get("siteId"));
-        } else {
-          assertNotNull(result.get("siteId"));
-          assertNotEquals("default", result.get("siteId"));
-        }
-
-        assertNotNull(result.get("id"));
-        id = result.get("id").toString();
-
-        assertNotNull(result.get("insertedDate"));
-        assertEquals("john smith2", result.get("name"));
-        assertEquals("joe", result.get("userId"));
-        assertEquals("false", result.get("enabled"));
-
-        verifyUrl(siteId, id, result, true);
+      if (siteId == null) {
+        assertEquals("default", result.get("siteId"));
+      } else {
+        assertNotNull(result.get("siteId"));
+        assertNotEquals("default", result.get("siteId"));
       }
+
+      assertNotNull(result.get("id"));
+      id = result.get("id").toString();
+
+      assertNotNull(result.get("insertedDate"));
+      assertEquals("john smith2", result.get("name"));
+      assertEquals("joe", result.get("userId"));
+      assertEquals("false", result.get("enabled"));
+
+      verifyUrl(siteId, id, result, true);
     }
   }
 }

@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.aws.ssm;
 
@@ -40,7 +37,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 
 /**
@@ -59,8 +55,6 @@ public class SsmServiceCacheTest {
 
   /** {@link SsmServiceCache}. */
   private static SsmServiceCache cache;
-  /** {@link ssmConnection}. */
-  private static SsmClient ssmClient;
 
   /**
    * Before Class.
@@ -77,10 +71,11 @@ public class SsmServiceCacheTest {
 
     localstack.start();
 
-    ssmClient = new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString()).build();
+    SsmConnectionBuilder connection =
+        new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+            .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString());
 
-    cache = new SsmServiceCache(1, TimeUnit.SECONDS);
+    cache = new SsmServiceCache(connection, 1, TimeUnit.SECONDS);
   }
 
   /**
@@ -89,7 +84,6 @@ public class SsmServiceCacheTest {
   @AfterClass
   public static void afterClass() {
     localstack.stop();
-    ssmClient.close();
   }
 
   /**
@@ -101,10 +95,10 @@ public class SsmServiceCacheTest {
     String key = UUID.randomUUID().toString();
     String value = UUID.randomUUID().toString();
 
-    cache.putParameter(ssmClient, key, value);
+    cache.putParameter(key, value);
 
     // when
-    String result = cache.getParameterValue(ssmClient, key);
+    String result = cache.getParameterValue(key);
 
     // then
     assertEquals(value, result);
@@ -121,10 +115,10 @@ public class SsmServiceCacheTest {
     String key = UUID.randomUUID().toString();
     String value = UUID.randomUUID().toString();
 
-    cache.putParameter(ssmClient, key, value);
+    cache.putParameter(key, value);
 
     // when
-    String result = cache.getParameterValue(ssmClient, key);
+    String result = cache.getParameterValue(key);
 
     // then
     assertEquals(value, result);
@@ -145,7 +139,7 @@ public class SsmServiceCacheTest {
     String value = UUID.randomUUID().toString();
 
     // when
-    cache.putParameter(ssmClient, key, value);
+    cache.putParameter(key, value);
 
     // then
     assertTrue(cache.isCached(key));
@@ -168,13 +162,13 @@ public class SsmServiceCacheTest {
     String key = UUID.randomUUID().toString();
     String value = UUID.randomUUID().toString();
 
-    cache.putParameter(ssmClient, key, value);
+    cache.putParameter(key, value);
 
     assertTrue(cache.isCached(key));
     assertFalse(cache.isExpired(key));
 
     // when
-    cache.removeParameter(ssmClient, key);
+    cache.removeParameter(key);
 
     // then
     assertFalse(cache.isCached(key));
@@ -182,7 +176,7 @@ public class SsmServiceCacheTest {
 
     // when
     try {
-      cache.getParameterValue(ssmClient, key);
+      cache.getParameterValue(key);
     } catch (ParameterNotFoundException e) {
       assertTrue(true);
     }

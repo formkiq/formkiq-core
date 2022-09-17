@@ -3,27 +3,25 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -35,7 +33,6 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * 
@@ -70,12 +67,11 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   /**
    * Get SiteId Config.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @return {@link DynamicObject}
    */
-  public DynamicObject config(final DynamoDbClient client, final String siteId) {
-    return configService().get(client, siteId);
+  public DynamicObject config(final String siteId) {
+    return configService().get(siteId);
   }
 
   /**
@@ -85,7 +81,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public ConfigService configService() {
     if (this.configService == null) {
-      this.configService = new ConfigServiceImpl(environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.configService = new ConfigServiceImpl(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.configService;
   }
@@ -97,7 +94,9 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public DocumentCountService documentCountService() {
     if (this.documentCountService == null) {
-      this.documentCountService = new DocumentCountServiceDynamoDb(environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.documentCountService =
+          new DocumentCountServiceDynamoDb(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.documentCountService;
   }
@@ -110,7 +109,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   public DocumentSearchService documentSearchService() {
     if (this.documentSearchService == null) {
       DocumentTagSchemaPlugin documentTagSchemaPlugin = getExtension(DocumentTagSchemaPlugin.class);
-      this.documentSearchService = new DocumentSearchServiceImpl(documentService(),
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.documentSearchService = new DocumentSearchServiceImpl(connection, documentService(),
           environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin);
     }
     return this.documentSearchService;
@@ -132,7 +132,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public WebhooksService webhookService() {
     if (this.webhookService == null) {
-      this.webhookService = new WebhooksServiceImpl(environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.webhookService = new WebhooksServiceImpl(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.webhookService;
   }

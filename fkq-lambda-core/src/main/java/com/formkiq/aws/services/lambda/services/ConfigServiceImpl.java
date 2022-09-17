@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.aws.services.lambda.services;
 
@@ -34,6 +31,7 @@ import java.util.Optional;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -49,32 +47,37 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
   private static final List<String> KEYS = Arrays.asList(DOCUMENT_TIME_TO_LIVE, MAX_WEBHOOKS,
       MAX_DOCUMENTS, MAX_DOCUMENT_SIZE_BYTES, WEBHOOK_TIME_TO_LIVE);
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
   /** Documents Table Name. */
   private String documentTableName;
 
   /**
    * constructor.
    *
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public ConfigServiceImpl(final String documentsTable) {
+  public ConfigServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
   }
 
   @Override
-  public void delete(final DynamoDbClient client, final String siteId) {
+  public void delete(final String siteId) {
     String s = siteId != null ? siteId : DEFAULT_SITE_ID;
     Map<String, AttributeValue> keys = keysGeneric(null, PREFIX_CONFIG, s);
-    client.deleteItem(
+    this.dbClient.deleteItem(
         DeleteItemRequest.builder().tableName(this.documentTableName).key(keys).build());
   }
 
   @Override
-  public DynamicObject get(final DynamoDbClient client, final String siteId) {
+  public DynamicObject get(final String siteId) {
 
     Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
 
@@ -89,7 +92,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
         Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
 
     BatchGetItemResponse response =
-        client.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+        this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
 
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
@@ -107,7 +110,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
   }
 
   @Override
-  public void save(final DynamoDbClient client, final String siteId, final DynamicObject obj) {
+  public void save(final String siteId, final DynamicObject obj) {
     Map<String, AttributeValue> item =
         keysGeneric(null, PREFIX_CONFIG, siteId != null ? siteId : DEFAULT_SITE_ID);
 
@@ -117,6 +120,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       }
     });
 
-    client.putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
+    this.dbClient
+        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
   }
 }

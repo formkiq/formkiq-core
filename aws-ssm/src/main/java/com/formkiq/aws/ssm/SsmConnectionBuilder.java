@@ -43,7 +43,7 @@ public class SsmConnectionBuilder {
   /** {@link SsmClientBuilder}. */
   private SsmClientBuilder builder;
   /** {@link SsmClient}. */
-  private SsmClient ssmClient;
+  private SsmClient ssmClient = null;
 
   /**
    * constructor.

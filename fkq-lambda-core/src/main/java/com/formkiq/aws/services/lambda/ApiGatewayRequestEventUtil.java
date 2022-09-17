@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.aws.services.lambda;
 
@@ -40,7 +37,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.utils.StringUtils;
 
 /**
@@ -60,7 +56,6 @@ public interface ApiGatewayRequestEventUtil {
    * Create Pagination.
    * 
    * @param cacheService {@link CacheService}
-   * @param dbClient {@link DynamoDbClient}
    * @param event {@link ApiGatewayRequestEvent}
    * @param lastPagination {@link ApiPagination}
    * @param token {@link PaginationMapToken}
@@ -69,8 +64,8 @@ public interface ApiGatewayRequestEventUtil {
    * @return {@link ApiPagination}
    */
   default ApiPagination createPagination(final CacheService cacheService,
-      final DynamoDbClient dbClient, final ApiGatewayRequestEvent event,
-      final ApiPagination lastPagination, final PaginationMapToken token, final int limit) {
+      final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
+      final PaginationMapToken token, final int limit) {
 
     ApiPagination current = null;
     final Map<String, String> q = getQueryParameterMap(event);
@@ -79,7 +74,7 @@ public interface ApiGatewayRequestEventUtil {
 
     if (isPaginationPrevious(q)) {
 
-      String json = cacheService.read(dbClient, q.get("previous"));
+      String json = cacheService.read(q.get("previous"));
       current = gson.fromJson(json, ApiPagination.class);
 
     } else {
@@ -91,7 +86,7 @@ public interface ApiGatewayRequestEventUtil {
       current.setStartkey(token);
       current.setHasNext(token != null);
 
-      cacheService.write(dbClient, current.getNext(), gson.toJson(current), 1);
+      cacheService.write(current.getNext(), gson.toJson(current), 1);
     }
 
     return current;
@@ -297,27 +292,26 @@ public interface ApiGatewayRequestEventUtil {
    * Find Query Parameter 'next' or 'prev' and convert to {@link ApiPagination}.
    *
    * @param cacheService {@link CacheService}
-   * @param dbClient {@link DynamoDbClient}
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link ApiPagination}
    */
   default ApiPagination getPagination(final CacheService cacheService,
-      final DynamoDbClient dbClient, final ApiGatewayRequestEvent event) {
+      final ApiGatewayRequestEvent event) {
 
     ApiPagination pagination = null;
     Map<String, String> q = getQueryParameterMap(event);
 
     if (isPaginationNext(q)) {
 
-      pagination = toPaginationToken(cacheService, dbClient, q.get("next"));
+      pagination = toPaginationToken(cacheService, q.get("next"));
 
     } else if (isPaginationPrevious(q)) {
 
-      pagination = toPaginationToken(cacheService, dbClient, q.get("previous"));
+      pagination = toPaginationToken(cacheService, q.get("previous"));
 
       if (pagination.getPrevious() != null) {
 
-        pagination = toPaginationToken(cacheService, dbClient, pagination.getPrevious());
+        pagination = toPaginationToken(cacheService, pagination.getPrevious());
 
       } else {
         // if @ start of list, preserve the limit
@@ -440,19 +434,17 @@ public interface ApiGatewayRequestEventUtil {
    * Convert {@link String} to {@link ApiPagination}.
    *
    * @param cacheService {@link CacheService}
-   * @param dbClient {@link DynamoDbClient}
    * @param key {@link String}
    * 
    * @return {@link ApiPagination}
    */
-  default ApiPagination toPaginationToken(final CacheService cacheService,
-      final DynamoDbClient dbClient, final String key) {
+  default ApiPagination toPaginationToken(final CacheService cacheService, final String key) {
 
     ApiPagination pagination = null;
 
     if (isNotBlank(key)) {
 
-      String json = cacheService.read(dbClient, key);
+      String json = cacheService.read(key);
 
       if (isNotBlank(json)) {
         Gson gson = GsonUtil.getInstance();

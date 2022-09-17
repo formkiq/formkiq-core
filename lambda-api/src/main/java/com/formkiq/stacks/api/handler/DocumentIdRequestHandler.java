@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -41,7 +38,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -71,7 +67,6 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -262,40 +257,27 @@ public class DocumentIdRequestHandler
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
-    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
-      ApiPagination token = getPagination(cacheService, dbClient, event);
-      String documentId = event.getPathParameters().get("documentId");
-      ApiPagination pagination = getPagination(cacheService, dbClient, event);
+    ApiPagination token = getPagination(cacheService, event);
+    String documentId = event.getPathParameters().get("documentId");
+    ApiPagination pagination = getPagination(cacheService, event);
 
-      PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(dbClient,
-          siteId, documentId, true, token != null ? token.getStartkey() : null, limit);
-      DocumentItem result = presult.getResult();
+    PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
+        documentId, true, token != null ? token.getStartkey() : null, limit);
+    DocumentItem result = presult.getResult();
 
-      if (result == null) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
-
-      ApiPagination current =
-          createPagination(cacheService, dbClient, event, pagination, presult.getToken(), limit);
-
-      DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
-      item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-      item.put("previous", current.getPrevious());
-      item.put("next", current.hasNext() ? current.getNext() : null);
-
-      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
+    if (result == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
     }
-  }
 
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, presult.getToken(), limit);
+
+    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
+    item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    item.put("previous", current.getPrevious());
+    item.put("next", current.hasNext() ? current.getNext() : null);
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
   }
 
   @Override
@@ -316,11 +298,9 @@ public class DocumentIdRequestHandler
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     if (isUpdate) {
-      try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
-        documentId = event.getPathParameters().get("documentId");
-        if (cacheService.documentService().findDocument(dbClient, siteId, documentId) == null) {
-          throw new NotFoundException("Document " + documentId + " not found.");
-        }
+      documentId = event.getPathParameters().get("documentId");
+      if (cacheService.documentService().findDocument(siteId, documentId) == null) {
+        throw new NotFoundException("Document " + documentId + " not found.");
       }
     }
 
@@ -390,9 +370,7 @@ public class DocumentIdRequestHandler
       s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
 
       if (maxDocumentCount != null) {
-        try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
-          awsservice.documentCountService().incrementDocumentCount(dbClient, siteId);
-        }
+        awsservice.documentCountService().incrementDocumentCount(siteId);
       }
     }
   }

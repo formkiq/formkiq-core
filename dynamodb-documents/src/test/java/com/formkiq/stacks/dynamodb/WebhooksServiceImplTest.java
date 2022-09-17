@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -67,7 +64,7 @@ public class WebhooksServiceImplTest {
   @BeforeEach
   public void before() throws Exception {
     this.db = DynamoDbTestServices.getDynamoDbConnection(null);
-    this.service = new WebhooksServiceImpl("Documents");
+    this.service = new WebhooksServiceImpl(this.db, "Documents");
   }
 
   /**
@@ -77,22 +74,22 @@ public class WebhooksServiceImplTest {
   public void testAddTags01() {
     // given
     try (DynamoDbClient client = this.db.build()) {
-      String hook0 = this.service.saveWebhook(client, null, "test", "joe", null, "true");
-      String hook1 = this.service.saveWebhook(client, null, "test2", "joe2", null, "true");
+      String hook0 = this.service.saveWebhook(null, "test", "joe", null, "true");
+      String hook1 = this.service.saveWebhook(null, "test2", "joe2", null, "true");
       DocumentTag tag0 = new DocumentTag(hook0, "category", "person", new Date(), "joe");
       DocumentTag tag1 = new DocumentTag(hook0, "type", "person2", new Date(), "joe");
 
       // when
-      this.service.addTags(client, null, hook0, Arrays.asList(tag0, tag1), null);
+      this.service.addTags(null, hook0, Arrays.asList(tag0, tag1), null);
 
       // then
-      assertNull(this.service.findTag(client, null, hook1, "category"));
-      DynamicObject tag = this.service.findTag(client, null, hook0, "category");
+      assertNull(this.service.findTag(null, hook1, "category"));
+      DynamicObject tag = this.service.findTag(null, hook0, "category");
       assertEquals("category", tag.getString("tagKey"));
       assertEquals("person", tag.getString("tagValue"));
 
-      assertEquals(2, this.service.findTags(client, null, hook0, null).getResults().size());
-      assertEquals(0, this.service.findTags(client, null, hook1, null).getResults().size());
+      assertEquals(2, this.service.findTags(null, hook0, null).getResults().size());
+      assertEquals(0, this.service.findTags(null, hook1, null).getResults().size());
     }
   }
 
@@ -105,19 +102,19 @@ public class WebhooksServiceImplTest {
     try (DynamoDbClient client = this.db.build()) {
       final int numberOfTags = 100;
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String id0 = this.service.saveWebhook(client, siteId, "test", "joe", null, "true");
+        String id0 = this.service.saveWebhook(siteId, "test", "joe", null, "true");
 
         for (int i = 0; i < numberOfTags; i++) {
           DocumentTag tag =
               new DocumentTag(id0, UUID.randomUUID().toString(), null, new Date(), "joe");
-          this.service.addTags(client, siteId, id0, Arrays.asList(tag), null);
+          this.service.addTags(siteId, id0, Arrays.asList(tag), null);
         }
 
         // when
-        this.service.deleteWebhook(client, siteId, id0);
+        this.service.deleteWebhook(siteId, id0);
 
         // then
-        PaginationResults<DynamicObject> tags = this.service.findTags(client, siteId, id0, null);
+        PaginationResults<DynamicObject> tags = this.service.findTags(siteId, id0, null);
         assertEquals(0, tags.getResults().size());
       }
     }
@@ -132,11 +129,11 @@ public class WebhooksServiceImplTest {
     try (DynamoDbClient client = this.db.build()) {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-        String id = this.service.saveWebhook(client, siteId, "test", "joe",
-            Date.from(now.toInstant()), "true");
+        String id =
+            this.service.saveWebhook(siteId, "test", "joe", Date.from(now.toInstant()), "true");
 
         // when
-        DynamicObject o = this.service.findWebhook(client, siteId, id);
+        DynamicObject o = this.service.findWebhook(siteId, id);
 
         // then
         assertNotNull(o.getString("documentId"));
@@ -155,10 +152,10 @@ public class WebhooksServiceImplTest {
         assertEquals(now.getSecond(), time.getSecond());
 
         // when
-        this.service.deleteWebhook(client, siteId, id);
+        this.service.deleteWebhook(siteId, id);
 
         // then
-        assertEquals(0, this.service.findWebhooks(client, siteId).size());
+        assertEquals(0, this.service.findWebhooks(siteId).size());
       }
     }
   }
@@ -174,7 +171,7 @@ public class WebhooksServiceImplTest {
         String id = UUID.randomUUID().toString();
 
         // when
-        DynamicObject o = this.service.findWebhook(client, siteId, id);
+        DynamicObject o = this.service.findWebhook(siteId, id);
 
         // then
         assertNull(o);
@@ -190,11 +187,11 @@ public class WebhooksServiceImplTest {
     // given
     try (DynamoDbClient client = this.db.build()) {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        this.service.saveWebhook(client, siteId, "test", "joe", null, "true");
-        this.service.saveWebhook(client, siteId, "abc", "joe", null, "true");
+        this.service.saveWebhook(siteId, "test", "joe", null, "true");
+        this.service.saveWebhook(siteId, "abc", "joe", null, "true");
 
         // when
-        List<DynamicObject> list = this.service.findWebhooks(client, siteId);
+        List<DynamicObject> list = this.service.findWebhooks(siteId);
 
         // then
         assertEquals(2, list.size());
@@ -208,10 +205,10 @@ public class WebhooksServiceImplTest {
         });
 
         // when
-        this.service.deleteWebhook(client, siteId, list.get(0).getString("documentId"));
+        this.service.deleteWebhook(siteId, list.get(0).getString("documentId"));
 
         // then
-        assertEquals(1, this.service.findWebhooks(client, siteId).size());
+        assertEquals(1, this.service.findWebhooks(siteId).size());
       }
     }
   }
@@ -226,7 +223,7 @@ public class WebhooksServiceImplTest {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
         // when
-        List<DynamicObject> list = this.service.findWebhooks(client, siteId);
+        List<DynamicObject> list = this.service.findWebhooks(siteId);
 
         // then
         assertEquals(0, list.size());
@@ -249,19 +246,19 @@ public class WebhooksServiceImplTest {
 
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String webhookId = this.service.saveWebhook(client, siteId, "test", "joe", ttl, "true");
+        String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, "true");
         DocumentTag tag0 = new DocumentTag(webhookId, "category", "person", new Date(), "joe");
 
-        this.service.addTags(client, siteId, webhookId, Arrays.asList(tag0), null);
+        this.service.addTags(siteId, webhookId, Arrays.asList(tag0), null);
 
-        DynamicObject tag = this.service.findTag(client, siteId, webhookId, "category");
+        DynamicObject tag = this.service.findTag(siteId, webhookId, "category");
         assertNull(tag.getString("TimeToLive"));
 
         // when
-        this.service.updateTimeToLive(client, siteId, webhookId, tomorrowttl);
+        this.service.updateTimeToLive(siteId, webhookId, tomorrowttl);
 
         // then
-        DynamicObject result = this.service.findWebhook(client, siteId, webhookId);
+        DynamicObject result = this.service.findWebhook(siteId, webhookId);
 
         assertEquals("test", result.getString("path"));
         assertNotNull(result.getString("documentId"));
@@ -271,7 +268,7 @@ public class WebhooksServiceImplTest {
         assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
             result.getString("TimeToLive"));
 
-        tag = this.service.findTag(client, siteId, webhookId, "category");
+        tag = this.service.findTag(siteId, webhookId, "category");
         assertNotNull(tag.getString("TimeToLive"));
         assertEquals(String.valueOf(tomorrowttl.getTime() / MILLISECONDS),
             tag.getString("TimeToLive"));
@@ -294,14 +291,14 @@ public class WebhooksServiceImplTest {
 
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String webhookId = this.service.saveWebhook(client, siteId, "test", "joe", ttl, "true");
+        String webhookId = this.service.saveWebhook(siteId, "test", "joe", ttl, "true");
         DynamicObject obj = new DynamicObject(Map.of("name", "test2", "TimeToLive", tomorrowttl));
 
         // when
-        this.service.updateWebhook(client, siteId, webhookId, obj);
+        this.service.updateWebhook(siteId, webhookId, obj);
 
         // then
-        DynamicObject result = this.service.findWebhook(client, siteId, webhookId);
+        DynamicObject result = this.service.findWebhook(siteId, webhookId);
         assertEquals("test2", result.getString("path"));
         assertNotNull(result.getString("documentId"));
         assertNotNull(result.getString("path"));

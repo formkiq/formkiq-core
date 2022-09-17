@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -39,7 +36,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -61,7 +57,6 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for GET "/documents/upload". */
 public class DocumentsUploadRequestHandler
@@ -133,24 +128,21 @@ public class DocumentsUploadRequestHandler
 
     if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
-      try (DynamoDbClient client = getDynamoDbClient(awsservice)) {
+      DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
+      logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+      service.saveDocument(siteId, item, tags);
 
-        DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
-        logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
-        service.saveDocument(client, siteId, item, tags);
+      if (item.containsKey("actions")) {
+        ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+        List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
+            .collect(Collectors.toList());
+        actionsService.saveActions(siteId, documentId, actions);
+      }
 
-        if (item.containsKey("actions")) {
-          ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-          List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
-              .collect(Collectors.toList());
-          actionsService.saveActions(client, siteId, documentId, actions);
-        }
+      if (value != null) {
 
-        if (value != null) {
-
-          (CoreAwsServiceCache.cast(awsservice)).documentCountService()
-              .incrementDocumentCount(client, siteId);
-        }
+        (CoreAwsServiceCache.cast(awsservice)).documentCountService()
+            .incrementDocumentCount(siteId);
       }
 
     } else {
@@ -258,17 +250,6 @@ public class DocumentsUploadRequestHandler
 
     return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
         item);
-  }
-
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
   }
 
   @Override

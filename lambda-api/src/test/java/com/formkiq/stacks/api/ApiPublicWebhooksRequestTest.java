@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -47,7 +44,6 @@ import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
@@ -68,31 +64,28 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
+    createApiRequestHandler(getMap());
 
-      createApiRequestHandler(getMap());
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String name = UUID.randomUUID().toString();
 
-        String name = UUID.randomUUID().toString();
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      // when
+      String response = handleRequest(event);
 
-        // when
-        String response = handleRequest(event);
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "200.0");
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+      String documentId = verifyDocumentId(m);
 
-        String documentId = verifyDocumentId(m);
-
-        verifyS3File(client, id, siteId, documentId, name, null, false);
-      }
+      verifyS3File(id, siteId, documentId, name, null, false);
     }
   }
 
@@ -105,30 +98,28 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String name = UUID.randomUUID().toString();
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks02.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks02.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "200.0");
 
-        String documentId = verifyDocumentId(m);
+      String documentId = verifyDocumentId(m);
 
-        // verify s3 file
-        verifyS3File(client, id, siteId, documentId, name, "application/json", false);
-      }
+      // verify s3 file
+      verifyS3File(id, siteId, documentId, name, "application/json", false);
     }
   }
 
@@ -162,27 +153,25 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks04() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String name = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String name = UUID.randomUUID().toString();
 
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
-        Date ttl = Date.from(now.toInstant());
-        String id =
-            getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", ttl, "true");
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
+      Date ttl = Date.from(now.toInstant());
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "400.0");
-      }
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "400.0");
     }
   }
 
@@ -195,34 +184,32 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
-        Date ttl = Date.from(now.toInstant());
-        String id =
-            getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", ttl, "true");
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
+      Date ttl = Date.from(now.toInstant());
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "200.0");
 
-        Map<String, Object> body = fromJson(m.get("body"), Map.class);
-        String documentId = body.get("documentId").toString();
-        assertNotNull(documentId);
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      String documentId = body.get("documentId").toString();
+      assertNotNull(documentId);
 
-        verifyS3File(client, id, siteId, documentId, name, null, true);
-      }
+      verifyS3File(id, siteId, documentId, name, null, true);
     }
   }
 
@@ -235,32 +222,30 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks06() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks04.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks04.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, Object> m = fromJson(response, Map.class);
-        final int mapsize = 2;
-        assertEquals(mapsize, m.size());
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
 
-        assertEquals("301.0", String.valueOf(m.get("statusCode")));
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
-        Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-        assertEquals("https://www.google.ca", headers.get("Location"));
-      }
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca", headers.get("Location"));
     }
   }
 
@@ -273,33 +258,31 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks07() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks05.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks05.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, Object> m = fromJson(response, Map.class);
-        final int mapsize = 2;
-        assertEquals(mapsize, m.size());
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
 
-        assertEquals("301.0", String.valueOf(m.get("statusCode")));
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
-        Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-        assertEquals("https://www.google.ca?client=safari&fname=John&lname=Doe&kdhfsd=null",
-            headers.get("Location"));
-      }
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca?client=safari&fname=John&lname=Doe&kdhfsd=null",
+          headers.get("Location"));
     }
   }
 
@@ -312,33 +295,31 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks08() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, Object> m = fromJson(response, Map.class);
-        final int mapsize = 2;
-        assertEquals(mapsize, m.size());
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
 
-        assertEquals("301.0", String.valueOf(m.get("statusCode")));
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
-        Map<String, Object> headers = (Map<String, Object>) m.get("headers");
-        assertEquals("https://www.google.ca?fname=John&lname=Doe&kdhfsd=null",
-            headers.get("Location"));
-      }
+      Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+      assertEquals("https://www.google.ca?fname=John&lname=Doe&kdhfsd=null",
+          headers.get("Location"));
     }
   }
 
@@ -352,38 +333,36 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks09() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
 
-        HashMap<String, String> headers = new HashMap<>(event.getHeaders());
-        headers.put("Content-Type", "application/json");
-        event.setHeaders(headers);
-        event.setBody("{\"name\":\"john smith\"}");
-        event.setIsBase64Encoded(Boolean.FALSE);
+      HashMap<String, String> headers = new HashMap<>(event.getHeaders());
+      headers.put("Content-Type", "application/json");
+      event.setHeaders(headers);
+      event.setBody("{\"name\":\"john smith\"}");
+      event.setIsBase64Encoded(Boolean.FALSE);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, Object> m = fromJson(response, Map.class);
-        final int mapsize = 2;
-        assertEquals(mapsize, m.size());
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
 
-        assertEquals("301.0", String.valueOf(m.get("statusCode")));
+      assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
-        assertEquals("https://www.google.ca",
-            ((Map<String, Object>) m.get("headers")).get("Location"));
-      }
+      assertEquals("https://www.google.ca",
+          ((Map<String, Object>) m.get("headers")).get("Location"));
     }
   }
 
@@ -396,26 +375,24 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks10() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "false");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "false");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "429.0");
-      }
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "429.0");
     }
   }
 
@@ -428,30 +405,28 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks11() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
-        Map<String, String> headers = new HashMap<>(event.getHeaders());
-        headers.put("Content-Type", "application/json");
-        event.setHeaders(headers);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
+      Map<String, String> headers = new HashMap<>(event.getHeaders());
+      headers.put("Content-Type", "application/json");
+      event.setHeaders(headers);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "400.0");
-        assertEquals("{\"message\":\"body isn't valid JSON\"}", m.get("body"));
-      }
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "400.0");
+      assertEquals("{\"message\":\"body isn't valid JSON\"}", m.get("body"));
     }
   }
 
@@ -464,44 +439,42 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks12() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        getAwsServices().configService().save(client, siteId,
-            new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
+      getAwsServices().configService().save(siteId,
+          new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "200.0");
 
-        Map<String, Object> body = fromJson(m.get("body"), Map.class);
-        String documentId = body.get("documentId").toString();
-        assertNotNull(documentId);
+      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      String documentId = body.get("documentId").toString();
+      assertNotNull(documentId);
 
-        // verify s3 file
-        try (S3Client s3 = getS3().buildClient()) {
-          String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-          String json = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
-          Map<String, Object> map = fromJson(json, Map.class);
-          assertEquals(documentId, map.get("documentId"));
-          assertEquals("webhook/" + name, map.get("userId"));
-          assertEquals("webhooks/" + id, map.get("path"));
-          assertEquals("{\"name\":\"john smith\"}", map.get("content"));
-          assertEquals("1000", map.get("TimeToLive"));
-        }
+      // verify s3 file
+      try (S3Client s3 = getS3().buildClient()) {
+        String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        String json = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
+        Map<String, Object> map = fromJson(json, Map.class);
+        assertEquals(documentId, map.get("documentId"));
+        assertEquals("webhook/" + name, map.get("userId"));
+        assertEquals("webhooks/" + id, map.get("path"));
+        assertEquals("{\"name\":\"john smith\"}", map.get("content"));
+        assertEquals("1000", map.get("TimeToLive"));
       }
     }
   }
@@ -515,52 +488,50 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks13() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String idempotencyKey = UUID.randomUUID().toString();
+      String idempotencyKey = UUID.randomUUID().toString();
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "true");
+      String id =
+          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
-        event.addHeader("Idempotency-Key", idempotencyKey);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      event.addHeader("Idempotency-Key", idempotencyKey);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "200.0");
 
-        String documentId = verifyDocumentId(m);
+      String documentId = verifyDocumentId(m);
 
-        verifyS3File(client, id, siteId, documentId, name, null, false);
+      verifyS3File(id, siteId, documentId, name, null, false);
 
-        String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
+      String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
 
-        CacheService cacheService = getAwsServices().getExtension(CacheService.class);
-        assertEquals(documentId, cacheService.read(client, key));
+      CacheService cacheService = getAwsServices().getExtension(CacheService.class);
+      assertEquals(documentId, cacheService.read(key));
 
-        // given
-        // when
-        response = handleRequest(event);
+      // given
+      // when
+      response = handleRequest(event);
 
-        // then
-        m = fromJson(response, Map.class);
-        verifyHeaders(m, "200.0");
+      // then
+      m = fromJson(response, Map.class);
+      verifyHeaders(m, "200.0");
 
-        try (S3Client s3 = getS3().buildClient()) {
+      try (S3Client s3 = getS3().buildClient()) {
 
-          String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-          S3ObjectMetadata om = getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, s3key);
-          assertFalse(om.isObjectExists());
-        }
+        String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+        S3ObjectMetadata om = getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, s3key);
+        assertFalse(om.isObjectExists());
       }
     }
   }
@@ -574,26 +545,24 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks14() throws Exception {
     // given
-    try (DynamoDbClient client = getDbClient()) {
-      createApiRequestHandler(getMap());
+    createApiRequestHandler(getMap());
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        String name = UUID.randomUUID().toString();
+      String name = UUID.randomUUID().toString();
 
-        String id = getAwsServices().webhookService().saveWebhook(client, siteId, name, "joe", null,
-            "private");
+      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null,
+          "private");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = fromJson(response, Map.class);
-        verifyHeaders(m, "401.0");
-      }
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      verifyHeaders(m, "401.0");
     }
   }
 
@@ -632,9 +601,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   }
 
   @SuppressWarnings("unchecked")
-  private void verifyS3File(final DynamoDbClient client, final String webhookId,
-      final String siteId, final String documentId, final String name, final String contentType,
-      final boolean hasTimeToLive) {
+  private void verifyS3File(final String webhookId, final String siteId, final String documentId,
+      final String name, final String contentType, final boolean hasTimeToLive) {
 
     // verify s3 file
     try (S3Client s3 = getS3().buildClient()) {
@@ -654,7 +622,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       if (hasTimeToLive) {
         DynamicObject obj =
-            getAwsServices().webhookService().findWebhook(client, siteId, webhookId);
+            getAwsServices().webhookService().findWebhook(siteId, webhookId);
         assertNotNull(obj.get("TimeToLive"));
         assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
       }

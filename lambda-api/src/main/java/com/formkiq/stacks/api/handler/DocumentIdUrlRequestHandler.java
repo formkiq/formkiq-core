@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -32,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -46,7 +42,6 @@ import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -69,20 +64,17 @@ public class DocumentIdUrlRequestHandler
     String versionId = getParameter(event, "versionId");
     String siteId = authorizer.getSiteId();
 
-    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+    DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
 
-      DocumentItem item = cacheService.documentService().findDocument(dbClient, siteId, documentId);
-
-      if (item == null) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
-
-      URL url = getS3Url(logger, authorizer, dbClient, awsservice, event, item, versionId);
-
-      return url != null
-          ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
-          : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
     }
+
+    URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId);
+
+    return url != null
+        ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
+        : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
   }
 
   /**
@@ -106,17 +98,6 @@ public class DocumentIdUrlRequestHandler
     }
   }
 
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
-  }
-
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/url";
@@ -127,7 +108,6 @@ public class DocumentIdUrlRequestHandler
    * 
    * @param logger {@link LambdaLogger}
    * @param authorizer {@link ApiAuthorizer}
-   * @param dbClient {@link DynamoDbClient}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
    * @param item {@link DocumentItem}
@@ -135,8 +115,8 @@ public class DocumentIdUrlRequestHandler
    * @return {@link URL}
    */
   private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
-      final DynamoDbClient dbClient, final AwsServiceCache awsservice,
-      final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId) {
+      final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
+      final String versionId) {
 
     final String documentId = item.getDocumentId();
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
@@ -164,8 +144,8 @@ public class DocumentIdUrlRequestHandler
 
     } else {
 
-      Optional<DocumentFormat> format = cacheService.documentService().findDocumentFormat(dbClient,
-          siteId, documentId, contentType);
+      Optional<DocumentFormat> format =
+          cacheService.documentService().findDocumentFormat(siteId, documentId, contentType);
 
       if (format.isPresent()) {
 

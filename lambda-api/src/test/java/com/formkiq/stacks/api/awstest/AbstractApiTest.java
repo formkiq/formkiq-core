@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.awstest;
 
@@ -68,7 +65,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -251,15 +247,6 @@ public abstract class AbstractApiTest {
   }
 
   /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @return {@link DynamoDbClient}
-   */
-  protected static DynamoDbClient getDynamoDbClient() {
-    return dbConnection.build();
-  }
-
-  /**
    * Get FormKiq Clients.
    * 
    * @return {@link List} {@link FormKiqClient}
@@ -314,28 +301,25 @@ public abstract class AbstractApiTest {
   private static void loadSsmParameterVariables(final String awsprofile) {
 
     ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    ssmService = new SsmServiceImpl();
+    ssmService = new SsmServiceImpl(ssmBuilder);
 
-    try (SsmClient ssmClient = ssmBuilder.build()) {
+    rootHttpUrl =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsHttpUrl");
 
-      rootHttpUrl = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/api/DocumentsHttpUrl");
+    rootRestUrl =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsIamUrl");
 
-      rootRestUrl = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/api/DocumentsIamUrl");
+    cognitoUserPoolId =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/cognito/UserPoolId");
 
-      cognitoUserPoolId = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/cognito/UserPoolId");
+    cognitoClientId =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/cognito/UserPoolClientId");
 
-      cognitoClientId = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/cognito/UserPoolClientId");
+    apiGatewayInvokeGroup =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/iam/ApiGatewayInvokeGroup");
 
-      apiGatewayInvokeGroup = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/iam/ApiGatewayInvokeGroup");
-
-      cognitoIdentitypool = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/cognito/IdentityPoolId");
-    }
+    cognitoIdentitypool =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/cognito/IdentityPoolId");
   }
 
   /**
@@ -357,7 +341,7 @@ public abstract class AbstractApiTest {
   public static void removeParameterStoreValue(final String key) {
     try (SsmClient ssmClient = ssmBuilder.build()) {
       try {
-        ssmService.removeParameter(ssmClient, key);
+        ssmService.removeParameter(key);
       } catch (ParameterNotFoundException e) {
         // ignore error
       }
@@ -398,12 +382,12 @@ public abstract class AbstractApiTest {
   private static void setupConfigService(final String awsprofile) {
 
     try (SsmClient ssmClient = ssmBuilder.build()) {
-      String documentsTable = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+      String documentsTable = ssmService
+          .getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
 
       dbConnection =
           new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-      configService = new ConfigServiceImpl(documentsTable);
+      configService = new ConfigServiceImpl(dbConnection, documentsTable);
     }
   }
 
@@ -580,7 +564,7 @@ public abstract class AbstractApiTest {
    */
   public String getParameterStoreValue(final String key) {
     try (SsmClient ssmClient = ssmBuilder.build()) {
-      return ssmService.getParameterValue(ssmClient, key);
+      return ssmService.getParameterValue(key);
     }
   }
 
@@ -592,7 +576,7 @@ public abstract class AbstractApiTest {
    */
   public void putParameter(final String key, final String value) {
     try (SsmClient ssmClient = ssmBuilder.build()) {
-      ssmService.putParameter(ssmClient, key, value);
+      ssmService.putParameter(key, value);
     }
   }
 

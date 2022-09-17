@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -56,10 +53,8 @@ import com.formkiq.stacks.client.models.AddLargeDocument;
 import com.formkiq.stacks.client.models.DocumentActionType;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for uploading /documents/uploads. */
 @ExtendWith(LocalStackExtension.class)
@@ -75,9 +70,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
     super.before();
-    try (DynamoDbClient dbClient = getDbClient()) {
-      getAwsServices().configService().delete(dbClient, null);
-    }
+    getAwsServices().configService().delete(null);
   }
 
   /**
@@ -134,59 +127,56 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandlePostDocumentsUpload01() throws Exception {
     // given
-    try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String path = "/bleh/test.txt";
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      com.formkiq.stacks.client.models.AddDocumentAction action0 =
+          new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
+      AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
+          .actions(Arrays.asList(action0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String path = "/bleh/test.txt";
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-upload-documentid.json");
-        event.setHttpMethod("POST");
-        addParameter(event, "siteId", siteId);
-        com.formkiq.stacks.client.models.DocumentTag tag0 =
-            new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-        com.formkiq.stacks.client.models.AddDocumentAction action0 =
-            new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
-        AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
-            .actions(Arrays.asList(action0));
-        event.setBody(GsonUtil.getInstance().toJson(document));
-        event.setIsBase64Encoded(Boolean.FALSE);
+      // when
+      String response = handleRequest(event);
 
-        // when
-        String response = handleRequest(event);
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      ApiUrlResponse resp = expectResponse(response);
+      assertFalse(resp.getUrl().contains("content-length"));
 
-        // then
-        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        ApiUrlResponse resp = expectResponse(response);
-        assertFalse(resp.getUrl().contains("content-length"));
-
-        if (siteId != null) {
-          assertTrue(getLogger().containsString(
-              "generated presign url: " + this.localstack.getEndpointOverride(Service.S3).toString()
-                  + "/testbucket/" + siteId));
-        } else {
-          assertTrue(getLogger().containsString("generated presign url: "
-              + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
-        }
-
-        String documentId = resp.getDocumentId();
-        assertNotNull(document);
-
-        ActionsService actionsService = getAwsServices().getExtension(ActionsService.class);
-        List<Action> actions = actionsService.getActions(db, siteId, documentId);
-        assertEquals(1, actions.size());
-        assertEquals(ActionType.OCR, actions.get(0).type());
-        assertEquals(ActionStatus.PENDING, actions.get(0).status());
-
-        int i = 0;
-        final int expectedCount = 2;
-        List<DocumentTag> tags =
-            getDocumentService().findDocumentTags(db, siteId, documentId, null, LIMIT).getResults();
-        assertEquals(expectedCount, tags.size());
-        assertEquals("path", tags.get(i++).getKey());
-        assertEquals("test", tags.get(i).getKey());
-        assertEquals("this", tags.get(i++).getValue());
+      if (siteId != null) {
+        assertTrue(getLogger().containsString(
+            "generated presign url: " + this.localstack.getEndpointOverride(Service.S3).toString()
+                + "/testbucket/" + siteId));
+      } else {
+        assertTrue(getLogger().containsString("generated presign url: "
+            + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
       }
+
+      String documentId = resp.getDocumentId();
+      assertNotNull(document);
+
+      ActionsService actionsService = getAwsServices().getExtension(ActionsService.class);
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionType.OCR, actions.get(0).type());
+      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+
+      int i = 0;
+      final int expectedCount = 2;
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(expectedCount, tags.size());
+      assertEquals("path", tags.get(i++).getKey());
+      assertEquals("test", tags.get(i).getKey());
+      assertEquals("this", tags.get(i++).getValue());
     }
   }
 
@@ -238,41 +228,39 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     AwsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
 
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        String tagSchemaId = UUID.randomUUID().toString();
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-upload-documentid.json");
-        event.setHttpMethod("POST");
-        addParameter(event, "siteId", siteId);
-        com.formkiq.stacks.client.models.DocumentTag tag0 =
-            new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-        AddLargeDocument document =
-            new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
-        event.setBody(GsonUtil.getInstance().toJson(document));
-        event.setIsBase64Encoded(Boolean.FALSE);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String tagSchemaId = UUID.randomUUID().toString();
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      AddLargeDocument document =
+          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        ApiUrlResponse resp = expectResponse(response);
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      ApiUrlResponse resp = expectResponse(response);
 
-        String documentId = resp.getDocumentId();
-        assertNotNull(document);
+      String documentId = resp.getDocumentId();
+      assertNotNull(document);
 
-        int i = 0;
-        final int expectedCount = 2;
-        List<DocumentTag> tags = getDocumentService()
-            .findDocumentTags(dbClient, siteId, documentId, null, LIMIT).getResults();
-        assertEquals(expectedCount, tags.size());
-        assertEquals("test", tags.get(i).getKey());
-        assertEquals("this", tags.get(i++).getValue());
-        assertEquals("testtag", tags.get(i).getKey());
-        assertEquals("testvalue", tags.get(i++).getValue());
-      }
+      int i = 0;
+      final int expectedCount = 2;
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(expectedCount, tags.size());
+      assertEquals("test", tags.get(i).getKey());
+      assertEquals("this", tags.get(i++).getValue());
+      assertEquals("testtag", tags.get(i).getKey());
+      assertEquals("testvalue", tags.get(i++).getValue());
     }
   }
 
@@ -309,32 +297,30 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetDocumentsUpload03() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        Date date = new Date();
-        String documentId = UUID.randomUUID().toString();
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, "jsmith");
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, "jsmith");
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-upload-documentid01.json");
-        addParameter(event, "siteId", siteId);
-        setPathParameter(event, "documentId", documentId);
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
 
-        // when
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      // when
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        String response = handleRequest(event);
+      String response = handleRequest(event);
 
-        // then
-        ApiUrlResponse resp = expectResponse(response);
+      // then
+      ApiUrlResponse resp = expectResponse(response);
 
-        assertTrue(getLogger().containsString("generated presign url: "
-            + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
-        assertTrue(getLogger().containsString("for document " + resp.getDocumentId()));
+      assertTrue(getLogger().containsString("generated presign url: "
+          + this.localstack.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
+      assertTrue(getLogger().containsString("for document " + resp.getDocumentId()));
 
-        assertEquals(documentId, resp.getDocumentId());
-      }
+      assertEquals(documentId, resp.getDocumentId());
     }
   }
 
@@ -345,25 +331,22 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandleGetDocumentsUpload04() throws Exception {
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-upload-documentid02.json");
-        addParameter(event, "siteId", siteId);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid02.json");
+      addParameter(event, "siteId", siteId);
 
-        // when
-        String response = handleRequest(event);
+      // when
+      String response = handleRequest(event);
 
-        // then
-        ApiUrlResponse resp = expectResponse(response);
+      // then
+      ApiUrlResponse resp = expectResponse(response);
 
-        DocumentItem item =
-            getDocumentService().findDocument(dbClient, siteId, resp.getDocumentId());
-        assertEquals(
-            "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
-            item.getUserId());
-      }
+      DocumentItem item = getDocumentService().findDocument(siteId, resp.getDocumentId());
+      assertEquals(
+          "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+          item.getUserId());
     }
   }
 
@@ -403,36 +386,33 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentsUpload06() throws Exception {
 
-    try (DynamoDbClient dbClient = getDbClient()) {
-      String maxContentLengthBytes = "2783034";
-      getAwsServices().configService().save(dbClient, null,
-          new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+    String maxContentLengthBytes = "2783034";
+    getAwsServices().configService().save(null,
+        new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-        if (siteId != null) {
-          getAwsServices().configService().save(dbClient, siteId, new DynamicObject(
-              Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
-        }
-
-        // given
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-upload-documentid.json");
-        addParameter(event, "siteId", siteId);
-        addParameter(event, "contentLength", "2783035");
-
-        // when
-        String response = handleRequest(event);
-
-        // then
-        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("400.0", String.valueOf(m.get("statusCode")));
-        assertEquals("{\"message\":\"'contentLength' cannot exceed 2783034 bytes\"}",
-            m.get("body"));
+      if (siteId != null) {
+        getAwsServices().configService().save(siteId, new DynamicObject(
+            Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
       }
+
+      // given
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      addParameter(event, "siteId", siteId);
+      addParameter(event, "contentLength", "2783035");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"'contentLength' cannot exceed 2783034 bytes\"}", m.get("body"));
     }
   }
 
@@ -445,35 +425,32 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocumentsUpload07() throws Exception {
 
-    try (DynamoDbClient dbClient = getDbClient()) {
+    String maxContentLengthBytes = "2783034";
+    getAwsServices().configService().save(null,
+        new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
-      String maxContentLengthBytes = "2783034";
-      getAwsServices().configService().save(dbClient, null,
-          new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-        if (siteId != null) {
-          getAwsServices().configService().save(dbClient, siteId, new DynamicObject(
-              Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
-        }
-
-        // given
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-upload-documentid.json");
-        addParameter(event, "siteId", siteId);
-
-        // when
-        String response = handleRequest(event);
-
-        // then
-        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("400.0", String.valueOf(m.get("statusCode")));
-        assertEquals("{\"message\":\"'contentLength' is required\"}", m.get("body"));
+      if (siteId != null) {
+        getAwsServices().configService().save(siteId, new DynamicObject(
+            Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
       }
+
+      // given
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"'contentLength' is required\"}", m.get("body"));
     }
   }
 

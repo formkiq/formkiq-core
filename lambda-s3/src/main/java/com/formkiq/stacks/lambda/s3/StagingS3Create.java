@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -83,7 +80,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -174,9 +170,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /** IAM Documents Url. */
   private String documentsIamUrl = null;
 
-  /** {@link DynamoDbConnectionBuilder}. */
-  private DynamoDbConnectionBuilder dynamoDb;
-
   /** {@link FormKiqClient}. */
   private FormKiqClientV1 formkiqClient = null;
 
@@ -228,14 +221,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.region = awsRegion;
     this.credentials = awsCredentials;
     String documentsTable = map.get("DOCUMENTS_TABLE");
-    this.service = new DocumentServiceImpl(documentsTable);
-    this.searchService = new DocumentSearchServiceImpl(this.service, documentsTable, null);
-    this.actionsService = new ActionsServiceDynamoDb(documentsTable);
+    this.service = new DocumentServiceImpl(dbBuilder, documentsTable);
+    this.searchService =
+        new DocumentSearchServiceImpl(dbBuilder, this.service, documentsTable, null);
+    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
     this.s3 = new S3Service(s3Builder);
     this.sqsService = new SqsService();
     this.ssmConnection = ssmConnectionBuilder;
     this.sqsConnection = sqsBuilder;
-    this.dynamoDb = dbBuilder;
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.sqsErrorQueue = map.get("SQS_ERROR_URL");
@@ -245,7 +238,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Determines whether {@link String} is a JSON config file.
    *
-   * @param dbClient {@link DynamoDbClient}
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
@@ -254,9 +246,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @return {@link DynamicDocumentItem}
    */
   @SuppressWarnings("unchecked")
-  private DynamicDocumentItem configfile(final DynamoDbClient dbClient, final S3Client s3Client,
-      final LambdaLogger logger, final String bucket, final String siteId,
-      final String documentId) {
+  private DynamicDocumentItem configfile(final S3Client s3Client, final LambdaLogger logger,
+      final String bucket, final String siteId, final String documentId) {
 
     DynamicDocumentItem obj = null;
 
@@ -285,7 +276,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       }
 
       if (obj.getPath() != null && obj.getPath().contains(VIRTUAL_FOLDER_DELIM)) {
-        String realDocumentId = getDocumentIdForPath(dbClient, siteId, obj.getPath());
+        String realDocumentId = getDocumentIdForPath(siteId, obj.getPath());
         obj.setDocumentId(realDocumentId);
       }
     }
@@ -296,21 +287,20 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Copies Documentid to a new file that is a {@link UUID}.
    *
-   * @param dbClient {@link DynamoDbClient}
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param originalkey {@link String}
    * @param date {@link Date}
    */
-  private void copyFile(final DynamoDbClient dbClient, final S3Client s3Client,
-      final LambdaLogger logger, final String bucket, final String originalkey, final Date date) {
+  private void copyFile(final S3Client s3Client, final LambdaLogger logger, final String bucket,
+      final String originalkey, final Date date) {
 
     String siteId = getSiteId(originalkey);
     String key = resetDatabaseKey(siteId, originalkey);
 
     boolean uuid = isUuid(key);
-    String documentIdForPath = !uuid ? getDocumentIdForPath(dbClient, siteId, key) : null;
+    String documentIdForPath = !uuid ? getDocumentIdForPath(siteId, key) : null;
     String documentId =
         documentIdForPath != null ? documentIdForPath : uuid ? key : UUID.randomUUID().toString();
 
@@ -336,7 +326,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         doc.setPath(key);
       }
 
-      saveDocument(dbClient, siteId, doc);
+      saveDocument(siteId, doc);
     }
 
     logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
@@ -403,11 +393,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (this.documentsIamUrl == null) {
       final int cacheTime = 5;
-      SsmService ssmService = new SsmServiceCache(cacheTime, TimeUnit.MINUTES);
+      SsmService ssmService = new SsmServiceCache(this.ssmConnection, cacheTime, TimeUnit.MINUTES);
 
       try (SsmClient ssmClient = this.ssmConnection.build()) {
-        this.documentsIamUrl = ssmService.getParameterValue(ssmClient,
-            "/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
+        this.documentsIamUrl = ssmService
+            .getParameterValue("/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
       }
     }
 
@@ -441,16 +431,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Find DocumentId for File Path.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param path {@link String}
    * @return {@link String}
    */
-  private String getDocumentIdForPath(final DynamoDbClient dbClient, final String siteId,
-      final String path) {
+  private String getDocumentIdForPath(final String siteId, final String path) {
     SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
-    PaginationResults<DynamicDocumentItem> result =
-        this.searchService.search(dbClient, siteId, q, null, 1);
+    PaginationResults<DynamicDocumentItem> result = this.searchService.search(siteId, q, null, 1);
     return !result.getResults().isEmpty() ? result.getResults().get(0).getDocumentId() : null;
   }
 
@@ -548,29 +535,26 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (objectCreated) {
 
-      try (DynamoDbClient db = this.dynamoDb.build()) {
+      try (S3Client s = this.s3.buildClient()) {
 
-        try (S3Client s = this.s3.buildClient()) {
+        DynamicDocumentItem doc = configfile(s, logger, bucket, siteId, documentId);
 
-          DynamicDocumentItem doc = configfile(db, s, logger, bucket, siteId, documentId);
+        if (doc != null) {
+          write(s, logger, doc, date, siteId);
 
-          if (doc != null) {
-            write(db, s, logger, doc, date, siteId);
+          String tagSchemaId = doc.getString("tagSchemaId");
+          Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
 
-            String tagSchemaId = doc.getString("tagSchemaId");
-            Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
-
-            if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-              createFormKiQConnectionIfNeeded();
-              postDocumentTags(siteId, doc);
-            }
-
-          } else {
-            copyFile(db, s, logger, bucket, documentId, date);
+          if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
+            createFormKiQConnectionIfNeeded();
+            postDocumentTags(siteId, doc);
           }
 
-          deleteObject(s, logger, bucket, documentId);
+        } else {
+          copyFile(s, logger, bucket, documentId, date);
         }
+
+        deleteObject(s, logger, bucket, documentId);
       }
     }
 
@@ -616,12 +600,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * 
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
-   * @param client {@link DynamoDbClient}
    */
-  private void saveDocument(final DynamoDbClient client, final String siteId,
-      final DynamicDocumentItem doc) {
+  private void saveDocument(final String siteId, final DynamicDocumentItem doc) {
 
-    this.service.saveDocumentItemWithTag(client, siteId, doc);
+    this.service.saveDocumentItemWithTag(siteId, doc);
 
     if (doc.containsKey("actions")) {
 
@@ -630,7 +612,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       List<Action> actions =
           list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
 
-      this.actionsService.saveActions(client, siteId, doc.getDocumentId(), actions);
+      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
     }
   }
 
@@ -655,14 +637,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Write {@link DynamicDocumentItem} to S3 & DynamoDB.
    *
-   * @param db {@link DynamoDbClient}
    * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param doc {@link DynamicDocumentItem}
    * @param date {@link Date}
    * @param siteId {@link String}
    */
-  private void write(final DynamoDbClient db, final S3Client s3Client, final LambdaLogger logger,
+  private void write(final S3Client s3Client, final LambdaLogger logger,
       final DynamicDocumentItem doc, final Date date, final String siteId) {
 
     if (writeS3File(logger, s3Client, siteId, doc)) {
@@ -674,7 +655,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       logger.log(String.format("Skipping %s no content", doc.getPath()));
     }
 
-    saveDocument(db, siteId, doc);
+    saveDocument(siteId, doc);
   }
 
   /**

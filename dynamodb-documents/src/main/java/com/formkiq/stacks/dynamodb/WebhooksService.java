@@ -30,7 +30,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {
@@ -38,73 +37,66 @@ public interface WebhooksService {
   /**
    * Add Tags to Webhook.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
    * @param tags {@link Collection} {@link DocumentTag}
    * @param ttl {@link Date}
    */
-  void addTags(DynamoDbClient client, String siteId, String webhookId, Collection<DocumentTag> tags,
+  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags,
       Date ttl);
 
   /**
    * Delete Webhook.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param id {@link String}
    */
-  void deleteWebhook(DynamoDbClient client, String siteId, String id);
+  void deleteWebhook(String siteId, String id);
 
   /**
    * Find Webhook Tag.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
    * @param tagKey {@link String}
    * 
    * @return {@link DynamicObject}
    */
-  DynamicObject findTag(DynamoDbClient client, String siteId, String webhookId, String tagKey);
+  DynamicObject findTag(String siteId, String webhookId, String tagKey);
 
   /**
    * Find Webhook Tags.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
    * @param token {@link PaginationMapToken}
    * 
    * @return {@link DynamicObject} {@link PaginationResults}
    */
-  PaginationResults<DynamicObject> findTags(DynamoDbClient client, String siteId, String webhookId,
+  PaginationResults<DynamicObject> findTags(String siteId, String webhookId,
       PaginationMapToken token);
 
   /**
    * Find Webhook.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @return {@link DynamicObject}
    */
-  DynamicObject findWebhook(DynamoDbClient client, String siteId, String webhookId);
+  DynamicObject findWebhook(String siteId, String webhookId);
 
   /**
    * Find Webhooks.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * 
    * @return {@link List} {@link DynamicObject}
    */
-  List<DynamicObject> findWebhooks(DynamoDbClient client, String siteId);
+  List<DynamicObject> findWebhooks(String siteId);
 
   /**
    * Save Document and Tags.
    *
-   * @param client {@link DynamoDbClient}
    * @param siteId Optional Grouping siteId
    * @param name {@link String}
    * @param userId {@link String}
@@ -113,26 +105,24 @@ public interface WebhooksService {
    * 
    * @return {@link String}
    */
-  String saveWebhook(DynamoDbClient client, String siteId, String name, String userId, Date ttl,
+  String saveWebhook(String siteId, String name, String userId, Date ttl,
       String enabled);
 
   /**
    * Update Webhook TimeToLive.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @param ttl {@link Date}
    */
-  void updateTimeToLive(DynamoDbClient client, String siteId, String webhookId, Date ttl);
+  void updateTimeToLive(String siteId, String webhookId, Date ttl);
 
   /**
    * Update Webhook.
    * 
-   * @param client {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param webhookId {@link String}
    * @param obj {@link DynamicObject}
    */
-  void updateWebhook(DynamoDbClient client, String siteId, String webhookId, DynamicObject obj);
+  void updateWebhook(String siteId, String webhookId, DynamicObject obj);
 }

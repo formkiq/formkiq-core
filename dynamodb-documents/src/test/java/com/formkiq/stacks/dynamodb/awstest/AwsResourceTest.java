@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb.awstest;
 
@@ -36,7 +33,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test CloudFormation.
@@ -49,8 +45,6 @@ public class AwsResourceTest {
   private static Region awsregion;
   /** {@link DynamoDbClient}. */
   private static DynamoDbClient dynamoDB;
-  /** {@link SsmClient}. */
-  private static SsmClient ssmClient;
   /** {@link SsmService}. */
   private static SsmService ssmService;
 
@@ -68,8 +62,7 @@ public class AwsResourceTest {
 
     final SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    ssmClient = ssmBuilder.build();
-    ssmService = new SsmServiceImpl();
+    ssmService = new SsmServiceImpl(ssmBuilder);
 
     dynamoDB =
         new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion).build();
@@ -80,10 +73,10 @@ public class AwsResourceTest {
    */
   @Test
   public void testDynamoDbTables() {
-    final String documentTable = ssmService.getParameterValue(ssmClient,
-        "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
-    final String cacheTable = ssmService.getParameterValue(ssmClient,
-        "/formkiq/" + appenvironment + "/dynamodb/CacheTableName");
+    final String documentTable =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+    final String cacheTable =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/CacheTableName");
 
     DescribeTableRequest req = DescribeTableRequest.builder().tableName(documentTable).build();
     DescribeTableResponse resp = dynamoDB.describeTable(req);
@@ -98,11 +91,11 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertTrue(ssmService
-        .getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName")
-        .contains("-documents"));
-    assertTrue(ssmService
-        .getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/dynamodb/CacheTableName")
-        .contains("-cache"));
+    assertTrue(
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName")
+            .contains("-documents"));
+    assertTrue(
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/CacheTableName")
+            .contains("-cache"));
   }
 }

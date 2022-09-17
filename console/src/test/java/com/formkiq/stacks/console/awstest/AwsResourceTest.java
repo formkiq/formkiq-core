@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.console.awstest;
 
@@ -33,7 +30,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Map;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -50,7 +46,6 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test CloudFormation.
@@ -63,22 +58,10 @@ public class AwsResourceTest {
   private static final String PASSWORD = "uae82nj23njd!@";
   /** {@link S3Service}. */
   private static S3Service s3;
-  /** {@link SsmClient}. */
-  private static SsmClient ssmClient;
   /** {@link SsmService}. */
   private static SsmService ssmService;
   /** Cognito User. */
   private static final String USER = "test12384@formkiq.com";
-
-  /**
-   * beforeclass.
-   * 
-   * @throws IOException IOException
-   */
-  @AfterClass
-  public static void afterClass() throws IOException {
-    ssmClient.close();
-  }
 
   /**
    * beforeclass.
@@ -95,8 +78,7 @@ public class AwsResourceTest {
 
     SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(region);
-    ssmClient = ssmBuilder.build();
-    ssmService = new SsmServiceImpl();
+    ssmService = new SsmServiceImpl(ssmBuilder);
 
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(region);
@@ -118,8 +100,7 @@ public class AwsResourceTest {
   public void testConsoleAvailable() throws IOException, InterruptedException, URISyntaxException {
     // given
     HttpClient service = HttpClient.newHttpClient();
-    String url =
-        ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/console/Url");
+    String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
 
     // when
     HttpResponse<String> response =
@@ -143,8 +124,7 @@ public class AwsResourceTest {
   @SuppressWarnings("unchecked")
   @Test
   public void testLogin() throws URISyntaxException, IOException, InterruptedException {
-    String url =
-        ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/console/Url");
+    String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
     String configUrl = url + "/assets/config.json";
 
     HttpRequest request = HttpRequest.newBuilder().uri(new URI(configUrl)).GET().build();
@@ -190,9 +170,9 @@ public class AwsResourceTest {
   @Test
   public void testS3Buckets() {
     final String version =
-        ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/console/version");
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version");
     final String consoleBucket =
-        ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/s3/Console");
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console");
 
     try (S3Client s = s3.buildClient()) {
       S3ObjectMetadata resp = s3.getObjectMetadata(s, consoleBucket, version + "/index.html");
@@ -208,8 +188,8 @@ public class AwsResourceTest {
   @Test
   public void testSsmParameters() {
     assertEquals("v2.0.3",
-        ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/console/version"));
-    assertTrue(ssmService.getParameterValue(ssmClient, "/formkiq/" + appenvironment + "/s3/Console")
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
+    assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));
   }
 }

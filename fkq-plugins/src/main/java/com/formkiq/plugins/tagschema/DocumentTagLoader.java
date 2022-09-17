@@ -25,7 +25,6 @@ package com.formkiq.plugins.tagschema;
 
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * 
@@ -37,12 +36,11 @@ public interface DocumentTagLoader {
   /**
    * Load {@link DocumentTag} by Tag Key.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param tagKeys {@link Collection} {@link String}
    * @return {@link Collection} {@link DocumentTag}
    */
-  Collection<DocumentTag> findDocumentTags(DynamoDbClient dbClient, String siteId,
+  Collection<DocumentTag> findDocumentTags(String siteId,
       String documentId, Collection<String> tagKeys);
 }

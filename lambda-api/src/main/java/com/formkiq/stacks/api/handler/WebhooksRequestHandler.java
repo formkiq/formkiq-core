@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -37,7 +34,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -47,12 +43,9 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks". */
 public class WebhooksRequestHandler
@@ -65,45 +58,37 @@ public class WebhooksRequestHandler
 
     String siteId = authorizer.getSiteId();
     SsmService ssmService = awsServices.getExtension(SsmService.class);
-    SsmConnectionBuilder ssmBuilder = awsServices.getExtension(SsmConnectionBuilder.class);
 
-    try (SsmClient ssmClient = ssmBuilder.build()) {
+    String url = ssmService.getParameterValue(
+        "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
-      String url = ssmService.getParameterValue(ssmClient,
-          "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
-      CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    List<DynamicObject> list = serviceCache.webhookService().findWebhooks(siteId);
 
-      try (DynamoDbClient client = getDynamoDbClient(awsServices)) {
+    List<Map<String, Object>> webhooks = list.stream().map(m -> {
 
-        List<DynamicObject> list = serviceCache.webhookService().findWebhooks(client, siteId);
+      String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
 
-        List<Map<String, Object>> webhooks = list.stream().map(m -> {
-
-          String path = "private".equals(m.getString("enabled")) ? "/private" : "/public";
-
-          Map<String, Object> map = new HashMap<>();
-          String u = url + path + "/webhooks/" + m.getString("documentId");
-          if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
-            u += "?siteId=" + siteId;
-          }
-
-          map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-          map.put("id", m.getString("documentId"));
-          map.put("name", m.getString("path"));
-          map.put("url", u);
-          map.put("insertedDate", m.getString("inserteddate"));
-          map.put("userId", m.getString("userId"));
-          map.put("enabled", m.getString("enabled"));
-          map.put("ttl", m.getString("ttl"));
-
-          return map;
-        }).collect(Collectors.toList());
-
-        return new ApiRequestHandlerResponse(SC_OK,
-            new ApiMapResponse(Map.of("webhooks", webhooks)));
+      Map<String, Object> map = new HashMap<>();
+      String u = url + path + "/webhooks/" + m.getString("documentId");
+      if (siteId != null && !DEFAULT_SITE_ID.equals(siteId)) {
+        u += "?siteId=" + siteId;
       }
-    }
+
+      map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+      map.put("id", m.getString("documentId"));
+      map.put("name", m.getString("path"));
+      map.put("url", u);
+      map.put("insertedDate", m.getString("inserteddate"));
+      map.put("userId", m.getString("userId"));
+      map.put("enabled", m.getString("enabled"));
+      map.put("ttl", m.getString("ttl"));
+
+      return map;
+    }).collect(Collectors.toList());
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("webhooks", webhooks)));
   }
 
   @Override
@@ -111,13 +96,13 @@ public class WebhooksRequestHandler
     return "/webhooks";
   }
 
-  private Date getTtlDate(final CoreAwsServiceCache awsservice, final DynamoDbClient dbClient,
-      final String siteId, final DynamicObject o) {
+  private Date getTtlDate(final CoreAwsServiceCache awsservice, final String siteId,
+      final DynamicObject o) {
     Date ttlDate = null;
     String ttl = o.getString("ttl");
 
     if (ttl == null) {
-      DynamicObject config = awsservice.config(dbClient, siteId);
+      DynamicObject config = awsservice.config(siteId);
       ttl = config.getString(WEBHOOK_TIME_TO_LIVE);
     }
 
@@ -130,11 +115,11 @@ public class WebhooksRequestHandler
   }
 
   private boolean isOverMaxWebhooks(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final DynamoDbClient dbClient, final String siteId) {
+      final String siteId) {
 
     boolean over = false;
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
-    DynamicObject config = serviceCache.config(dbClient, siteId);
+    DynamicObject config = serviceCache.config(siteId);
 
     String maxString = config.getString(MAX_WEBHOOKS);
 
@@ -143,7 +128,7 @@ public class WebhooksRequestHandler
       try {
 
         int max = Integer.parseInt(maxString);
-        int numberOfWebhooks = serviceCache.webhookService().findWebhooks(dbClient, siteId).size();
+        int numberOfWebhooks = serviceCache.webhookService().findWebhooks(siteId).size();
 
         if (awsservice.debug()) {
           logger.log("found config for maximum webhooks " + maxString);
@@ -171,14 +156,11 @@ public class WebhooksRequestHandler
     String siteId = authorizer.getSiteId();
     DynamicObject o = fromBodyToDynamicObject(logger, event);
 
-    try (DynamoDbClient client = getDynamoDbClient(awsservice)) {
+    validatePost(logger, awsservice, siteId, o);
 
-      validatePost(logger, awsservice, client, siteId, o);
+    String id = saveWebhook(event, awsservice, siteId, o);
 
-      String id = saveWebhook(event, awsservice, client, siteId, o);
-
-      return response(logger, event, authorizer, awsservice, id);
-    }
+    return response(logger, event, authorizer, awsservice, id);
   }
 
   private ApiRequestHandlerResponse response(final LambdaLogger logger,
@@ -194,17 +176,16 @@ public class WebhooksRequestHandler
   }
 
   private String saveWebhook(final ApiGatewayRequestEvent event, final AwsServiceCache awsservice,
-      final DynamoDbClient dbClient, final String siteId, final DynamicObject o) {
+      final String siteId, final DynamicObject o) {
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
-    Date ttlDate = getTtlDate(serviceCache, dbClient, siteId, o);
+    Date ttlDate = getTtlDate(serviceCache, siteId, o);
 
     String name = o.getString("name");
     String userId = getCallingCognitoUsername(event);
     String enabled = o.containsKey("enabled") ? o.getString("enabled") : "true";
-    String id =
-        serviceCache.webhookService().saveWebhook(dbClient, siteId, name, userId, ttlDate, enabled);
+    String id = serviceCache.webhookService().saveWebhook(siteId, name, userId, ttlDate, enabled);
 
     if (o.containsKey("tags")) {
       List<DynamicObject> dtags = o.getList("tags");
@@ -213,33 +194,21 @@ public class WebhooksRequestHandler
       Collection<DocumentTag> tags = dtags.stream()
           .map(d -> new DocumentTag(null, d.getString("key"), d.getString("value"), date, userId))
           .collect(Collectors.toList());
-      serviceCache.webhookService().addTags(dbClient, siteId, id, tags, ttlDate);
+      serviceCache.webhookService().addTags(siteId, id, tags, ttlDate);
     }
 
     return id;
   }
 
   private void validatePost(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final DynamoDbClient dbClient, final String siteId, final DynamicObject o)
-      throws BadException, TooManyRequestsException {
+      final String siteId, final DynamicObject o) throws BadException, TooManyRequestsException {
 
     if (o == null || o.get("name") == null) {
       throw new BadException("Invalid JSON body.");
     }
 
-    if (isOverMaxWebhooks(logger, awsservice, dbClient, siteId)) {
+    if (isOverMaxWebhooks(logger, awsservice, siteId)) {
       throw new TooManyRequestsException("Reached max number of webhooks");
     }
-  }
-
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
   }
 }

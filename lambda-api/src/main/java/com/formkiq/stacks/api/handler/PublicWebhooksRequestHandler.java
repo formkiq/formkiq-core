@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -38,7 +35,6 @@ import java.util.Map;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -54,7 +50,6 @@ import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.StringUtils;
 
@@ -82,8 +77,8 @@ public class PublicWebhooksRequestHandler
   }
 
   private DynamicObject buildDynamicObject(final CoreAwsServiceCache awsservice,
-      final DynamoDbClient dbClient, final String siteId, final String webhookId,
-      final DynamicObject hook, final String body, final String contentType) {
+      final String siteId, final String webhookId, final DynamicObject hook, final String body,
+      final String contentType) {
 
     DynamicObject item = new DynamicObject(new HashMap<>());
 
@@ -101,8 +96,7 @@ public class PublicWebhooksRequestHandler
     if (hook.containsKey("TimeToLive")) {
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
-      String ttl =
-          awsservice.configService().get(dbClient, siteId).getString(DOCUMENT_TIME_TO_LIVE);
+      String ttl = awsservice.configService().get(siteId).getString(DOCUMENT_TIME_TO_LIVE);
       if (ttl != null) {
         item.put("TimeToLive", ttl);
       }
@@ -195,17 +189,6 @@ public class PublicWebhooksRequestHandler
     return params;
   }
 
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
-  }
-
   private String getIdempotencyKey(final ApiGatewayRequestEvent event) {
     return event.getHeaders().get("Idempotency-Key");
   }
@@ -255,8 +238,7 @@ public class PublicWebhooksRequestHandler
   }
 
   private boolean isIdempotencyCached(final CoreAwsServiceCache awsservice,
-      final DynamoDbClient dbClient, final ApiGatewayRequestEvent event, final String siteId,
-      final DynamicObject item) {
+      final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
 
     boolean cached = false;
     String idempotencyKey = getIdempotencyKey(event);
@@ -266,13 +248,13 @@ public class PublicWebhooksRequestHandler
       CacheService cacheService = awsservice.getExtension(CacheService.class);
 
       String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
-      String documentId = cacheService.read(dbClient, key);
+      String documentId = cacheService.read(key);
 
       if (documentId != null) {
         item.put("documentId", documentId);
         cached = true;
       } else {
-        cacheService.write(dbClient, key, item.getString("documentId"), 2);
+        cacheService.write(key, item.getString("documentId"), 2);
       }
     }
 
@@ -291,30 +273,27 @@ public class PublicWebhooksRequestHandler
     String siteId = getParameter(event, "siteId");
     String webhookId = getPathParameter(event, "webhooks");
 
-    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DynamicObject hook = cacheService.webhookService().findWebhook(siteId, webhookId);
 
-      CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-      DynamicObject hook = cacheService.webhookService().findWebhook(dbClient, siteId, webhookId);
+    checkIsWebhookValid(hook);
 
-      checkIsWebhookValid(hook);
+    String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
 
-      String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
+    String contentType = getContentType(event);
 
-      String contentType = getContentType(event);
-
-      if (isContentTypeJson(contentType) && !isJsonValid(body)) {
-        throw new BadException("body isn't valid JSON");
-      }
-
-      DynamicObject item =
-          buildDynamicObject(cacheService, dbClient, siteId, webhookId, hook, body, contentType);
-
-      if (!isIdempotencyCached(cacheService, dbClient, event, siteId, item)) {
-        putObjectToStaging(logger, awsservice, item, siteId);
-      }
-
-      return buildResponse(event, item);
+    if (isContentTypeJson(contentType) && !isJsonValid(body)) {
+      throw new BadException("body isn't valid JSON");
     }
+
+    DynamicObject item =
+        buildDynamicObject(cacheService, siteId, webhookId, hook, body, contentType);
+
+    if (!isIdempotencyCached(cacheService, event, siteId, item)) {
+      putObjectToStaging(logger, awsservice, item, siteId);
+    }
+
+    return buildResponse(event, item);
   }
 
   /**

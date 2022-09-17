@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -46,6 +43,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
@@ -74,26 +72,30 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 /** Implementation of the {@link DocumentService}. */
 public class DocumentServiceImpl implements DocumentService, DbKeys {
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Documents Table Name. */
   private String documentTableName;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
   private SimpleDateFormat yyyymmddFormat;
-
   /** {@link DateTimeFormatter}. */
   private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   /**
    * constructor.
-   *
+   * 
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public DocumentServiceImpl(final String documentsTable) {
+  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
 
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -103,7 +105,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void addTags(final DynamoDbClient dbClient, final String siteId, final String documentId,
+  public void addTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
 
     if (tags != null) {
@@ -128,7 +130,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           .map(i -> TransactWriteItem.builder().put(i).build()).collect(Collectors.toList());
 
       if (!writes.isEmpty()) {
-        dbClient
+        this.dbClient
             .transactWriteItems(TransactWriteItemsRequest.builder().transactItems(writes).build());
       }
     }
@@ -156,21 +158,18 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Delete Record.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param key {@link Map}
    * @return {@link DeleteItemResponse}
    */
-  private DeleteItemResponse delete(final DynamoDbClient dbClient,
-      final Map<String, AttributeValue> key) {
+  private DeleteItemResponse delete(final Map<String, AttributeValue> key) {
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    return dbClient.deleteItem(deleteItemRequest);
+    return this.dbClient.deleteItem(deleteItemRequest);
   }
 
   @Override
-  public void deleteDocument(final DynamoDbClient dbClient, final String siteId,
-      final String documentId) {
+  public void deleteDocument(final String siteId, final String documentId) {
 
     Map<String, AttributeValue> startkey = null;
 
@@ -182,38 +181,37 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           .keyConditionExpression(PK + " = :pk").expressionAttributeValues(values)
           .limit(Integer.valueOf(MAX_RESULTS)).build();
 
-      QueryResponse response = dbClient.query(q);
+      QueryResponse response = this.dbClient.query(q);
       List<Map<String, AttributeValue>> results = response.items();
 
       for (Map<String, AttributeValue> map : results) {
-        deleteItem(dbClient, Map.of("PK", map.get("PK"), "SK", map.get("SK")));
+        deleteItem(Map.of("PK", map.get("PK"), "SK", map.get("SK")));
       }
 
       startkey = response.lastEvaluatedKey();
 
     } while (startkey != null && !startkey.isEmpty());
 
-    deleteItem(dbClient, keysDocument(siteId, documentId, Optional.empty()));
+    deleteItem(keysDocument(siteId, documentId, Optional.empty()));
   }
 
   @Override
-  public void deleteDocumentFormat(final DynamoDbClient dbClient, final String siteId,
-      final String documentId, final String contentType) {
-    delete(dbClient, keysDocumentFormats(siteId, documentId, contentType));
+  public void deleteDocumentFormat(final String siteId, final String documentId,
+      final String contentType) {
+    delete(keysDocumentFormats(siteId, documentId, contentType));
   }
 
   @Override
-  public void deleteDocumentFormats(final DynamoDbClient dbClient, final String siteId,
-      final String documentId) {
+  public void deleteDocumentFormats(final String siteId, final String documentId) {
 
     PaginationMapToken startkey = null;
 
     do {
       PaginationResults<DocumentFormat> pr =
-          findDocumentFormats(dbClient, siteId, documentId, startkey, MAX_RESULTS);
+          findDocumentFormats(siteId, documentId, startkey, MAX_RESULTS);
 
       for (DocumentFormat format : pr.getResults()) {
-        deleteDocumentFormat(dbClient, siteId, documentId, format.getContentType());
+        deleteDocumentFormat(siteId, documentId, format.getContentType());
       }
 
       startkey = pr.getToken();
@@ -222,23 +220,21 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void deleteDocumentTag(final DynamoDbClient dbClient, final String siteId,
-      final String documentId, final String tagKey) {
-    deleteItem(dbClient, keysDocumentTag(siteId, documentId, tagKey));
+  public void deleteDocumentTag(final String siteId, final String documentId, final String tagKey) {
+    deleteItem(keysDocumentTag(siteId, documentId, tagKey));
   }
 
   @Override
-  public void deleteDocumentTags(final DynamoDbClient dbClient, final String siteId,
-      final String documentId) {
+  public void deleteDocumentTags(final String siteId, final String documentId) {
 
     PaginationMapToken startkey = null;
 
     do {
       PaginationResults<DocumentTag> pr =
-          findDocumentTags(dbClient, siteId, documentId, startkey, MAX_RESULTS);
+          findDocumentTags(siteId, documentId, startkey, MAX_RESULTS);
 
       for (DocumentTag tag : pr.getResults()) {
-        deleteDocumentTag(dbClient, siteId, documentId, tag.getKey());
+        deleteDocumentTag(siteId, documentId, tag.getKey());
       }
 
       startkey = pr.getToken();
@@ -248,34 +244,33 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * Delete Document Row by Parition / Sort Key.
-   * 
-   * @param dbClient {@link DynamoDbClient}
+   * param dbClient {@link DynamoDbClient}
    * @param key DocumentDb Key {@link Map}
    */
-  private void deleteItem(final DynamoDbClient dbClient, final Map<String, AttributeValue> key) {
+  private void deleteItem(final Map<String, AttributeValue> key) {
 
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    dbClient.deleteItem(deleteItemRequest);
+    this.dbClient.deleteItem(deleteItemRequest);
   }
 
   @Override
-  public void deletePreset(final DynamoDbClient dbClient, final String siteId, final String id) {
-    deletePresetTags(dbClient, siteId, id);
-    delete(dbClient, keysPreset(siteId, id));
+  public void deletePreset(final String siteId, final String id) {
+    deletePresetTags(siteId, id);
+    delete(keysPreset(siteId, id));
   }
 
   @Override
-  public void deletePresets(final DynamoDbClient dbClient, final String siteId, final String type) {
+  public void deletePresets(final String siteId, final String type) {
     PaginationMapToken startkey = null;
 
     do {
       PaginationResults<Preset> pr =
-          findPresets(dbClient, siteId, null, type, null, startkey, MAX_RESULTS);
+          findPresets(siteId, null, type, null, startkey, MAX_RESULTS);
 
       for (Preset p : pr.getResults()) {
-        deletePreset(dbClient, siteId, p.getId());
+        deletePreset(siteId, p.getId());
       }
 
       startkey = pr.getToken();
@@ -285,21 +280,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void deletePresetTag(final DynamoDbClient dbClient, final String siteId, final String id,
-      final String tag) {
-    delete(dbClient, keysPresetTag(siteId, id, tag));
+  public void deletePresetTag(final String siteId, final String id, final String tag) {
+    delete(keysPresetTag(siteId, id, tag));
   }
 
   @Override
-  public void deletePresetTags(final DynamoDbClient dbClient, final String siteId,
-      final String id) {
+  public void deletePresetTags(final String siteId, final String id) {
     PaginationMapToken startkey = null;
 
     do {
-      PaginationResults<PresetTag> pr = findPresetTags(dbClient, siteId, id, startkey, MAX_RESULTS);
+      PaginationResults<PresetTag> pr = findPresetTags(siteId, id, startkey, MAX_RESULTS);
 
       for (PresetTag tag : pr.getResults()) {
-        deletePresetTag(dbClient, siteId, id, tag.getKey());
+        deletePresetTag(siteId, id, tag.getKey());
       }
 
       startkey = pr.getToken();
@@ -309,36 +302,32 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public boolean exists(final DynamoDbClient dbClient, final String siteId,
-      final String documentId) {
+  public boolean exists(final String siteId, final String documentId) {
     GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
         .tableName(this.documentTableName).projectionExpression("PK").build();
-    return dbClient.getItem(r).hasItem();
+    return this.dbClient.getItem(r).hasItem();
   }
 
   /**
    * Get Record.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param pk {@link String}
    * @param sk {@link String}
    * @return {@link Optional} {@link Map} {@link AttributeValue}
    */
-  private Optional<Map<String, AttributeValue>> find(final DynamoDbClient dbClient, final String pk,
-      final String sk) {
+  private Optional<Map<String, AttributeValue>> find(final String pk, final String sk) {
 
     Map<String, AttributeValue> keyMap = keysGeneric(pk, sk);
     GetItemRequest r =
         GetItemRequest.builder().key(keyMap).tableName(this.documentTableName).build();
 
-    Map<String, AttributeValue> result = dbClient.getItem(r).item();
+    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
     return result != null && !result.isEmpty() ? Optional.of(result) : Optional.empty();
   }
 
   /**
    * Get Records.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param pk {@link String}
    * @param sk {@link String}
    * @param indexName {@link String}
@@ -347,9 +336,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param maxresults int
    * @return {@link PaginationResults} {@link DocumentFormat}
    */
-  private PaginationResults<Map<String, AttributeValue>> find(final DynamoDbClient dbClient,
-      final String pk, final String sk, final String indexName, final PaginationMapToken token,
-      final Boolean scanIndexForward, final int maxresults) {
+  private PaginationResults<Map<String, AttributeValue>> find(final String pk, final String sk,
+      final String indexName, final PaginationMapToken token, final Boolean scanIndexForward,
+      final int maxresults) {
 
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
     Map<String, AttributeValue> values = queryKeys(keysGeneric(pk, sk));
@@ -364,14 +353,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .scanIndexForward(scanIndexForward).limit(Integer.valueOf(maxresults))
         .exclusiveStartKey(startkey).build();
 
-    QueryResponse result = dbClient.query(q);
+    QueryResponse result = this.dbClient.query(q);
     return new PaginationResults<>(result.items(), new QueryResponseToPagination().apply(result));
   }
 
   /**
    * Get Record and transform to object.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param <T> Type of object
    * @param keys {@link Map} {@link AttributeValue}
    * @param token {@link PaginationMapToken}
@@ -379,16 +367,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param func {@link Function}
    * @return {@link Optional} {@link Map} {@link AttributeValue}
    */
-  private <T> PaginationResults<T> findAndTransform(final DynamoDbClient dbClient,
-      final Map<String, AttributeValue> keys, final PaginationMapToken token, final int maxresults,
+  private <T> PaginationResults<T> findAndTransform(final Map<String, AttributeValue> keys,
+      final PaginationMapToken token, final int maxresults,
       final Function<Map<String, AttributeValue>, T> func) {
-    return findAndTransform(dbClient, PK, SK, keys, token, maxresults, func);
+    return findAndTransform(PK, SK, keys, token, maxresults, func);
   }
 
   /**
    * Get Record and transform to object.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param <T> Type of object
    * @param pkKey {@link String}
    * @param skKey {@link String}
@@ -398,16 +385,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param func {@link Function}
    * @return {@link Optional} {@link Map} {@link AttributeValue}
    */
-  private <T> PaginationResults<T> findAndTransform(final DynamoDbClient dbClient,
-      final String pkKey, final String skKey, final Map<String, AttributeValue> keys,
-      final PaginationMapToken token, final int maxresults,
+  private <T> PaginationResults<T> findAndTransform(final String pkKey, final String skKey,
+      final Map<String, AttributeValue> keys, final PaginationMapToken token, final int maxresults,
       final Function<Map<String, AttributeValue>, T> func) {
     String pk = keys.get(pkKey).s();
     String sk = keys.containsKey(skKey) ? keys.get(skKey).s() : null;
     String indexName = getIndexName(pkKey);
 
     PaginationResults<Map<String, AttributeValue>> results =
-        find(dbClient, pk, sk, indexName, token, null, maxresults);
+        find(pk, sk, indexName, token, null, maxresults);
 
     List<T> list =
         results.getResults().stream().map(s -> func.apply(s)).collect(Collectors.toList());
@@ -416,15 +402,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public DocumentItem findDocument(final DynamoDbClient dbClient, final String siteId,
-      final String documentId) {
-    return findDocument(dbClient, siteId, documentId, false, null, 0).getResult();
+  public DocumentItem findDocument(final String siteId, final String documentId) {
+    return findDocument(siteId, documentId, false, null, 0).getResult();
   }
 
   @Override
-  public PaginationResult<DocumentItem> findDocument(final DynamoDbClient dbClient,
-      final String siteId, final String documentId, final boolean includeChildDocuments,
-      final PaginationMapToken token, final int limit) {
+  public PaginationResult<DocumentItem> findDocument(final String siteId, final String documentId,
+      final boolean includeChildDocuments, final PaginationMapToken token, final int limit) {
 
     DocumentItem item = null;
     PaginationMapToken pagination = null;
@@ -432,7 +416,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
         .tableName(this.documentTableName).build();
 
-    Map<String, AttributeValue> result = dbClient.getItem(r).item();
+    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
 
     if (result != null && !result.isEmpty()) {
 
@@ -450,12 +434,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
             .expressionAttributeValues(values).exclusiveStartKey(startkey)
             .limit(Integer.valueOf(limit)).build();
 
-        QueryResponse response = dbClient.query(q);
+        QueryResponse response = this.dbClient.query(q);
         List<Map<String, AttributeValue>> results = response.items();
         List<String> ids =
             results.stream().map(s -> s.get("documentId").s()).collect(Collectors.toList());
 
-        List<DocumentItem> childDocs = findDocuments(dbClient, siteId, ids);
+        List<DocumentItem> childDocs = findDocuments(siteId, ids);
         item.setDocuments(childDocs);
 
         pagination = new QueryResponseToPagination().apply(response);
@@ -466,29 +450,27 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Optional<DocumentFormat> findDocumentFormat(final DynamoDbClient dbClient,
-      final String siteId, final String documentId, final String contentType) {
+  public Optional<DocumentFormat> findDocumentFormat(final String siteId, final String documentId,
+      final String contentType) {
 
     Map<String, AttributeValue> keyMap = keysDocumentFormats(siteId, documentId, contentType);
     Optional<Map<String, AttributeValue>> result =
-        find(dbClient, keyMap.get("PK").s(), keyMap.get("SK").s());
+        find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToDocumentFormat format = new AttributeValueToDocumentFormat();
     return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();
   }
 
   @Override
-  public PaginationResults<DocumentFormat> findDocumentFormats(final DynamoDbClient dbClient,
-      final String siteId, final String documentId, final PaginationMapToken token,
-      final int maxresults) {
+  public PaginationResults<DocumentFormat> findDocumentFormats(final String siteId,
+      final String documentId, final PaginationMapToken token, final int maxresults) {
     Map<String, AttributeValue> keys = keysDocumentFormats(siteId, documentId, null);
-    return findAndTransform(dbClient, keys, token, maxresults,
+    return findAndTransform(keys, token, maxresults,
         new AttributeValueToDocumentFormat());
   }
 
   @Override
-  public List<DocumentItem> findDocuments(final DynamoDbClient dbClient, final String siteId,
-      final List<String> ids) {
+  public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
     List<DocumentItem> results = null;
 
@@ -502,7 +484,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       BatchGetItemRequest batchReq =
           BatchGetItemRequest.builder().requestItems(requestedItems).build();
-      BatchGetItemResponse batchResponse = dbClient.batchGetItem(batchReq);
+      BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
       Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
       List<Map<String, AttributeValue>> result =
@@ -520,21 +502,20 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentItem> findDocumentsByDate(final DynamoDbClient dbClient,
-      final String siteId, final ZonedDateTime date, final PaginationMapToken token,
-      final int maxresults) {
+  public PaginationResults<DocumentItem> findDocumentsByDate(final String siteId,
+      final ZonedDateTime date, final PaginationMapToken token, final int maxresults) {
 
     List<Map<String, String>> searchMap = generateSearchCriteria(siteId, date, token);
 
     PaginationResults<DocumentItem> results =
-        findDocumentsBySearchMap(dbClient, siteId, searchMap, token, maxresults);
+        findDocumentsBySearchMap(siteId, searchMap, token, maxresults);
 
     // if number of results == maxresult, check to see if next page has at least 1 record.
     if (results.getResults().size() == maxresults) {
       PaginationMapToken nextToken = results.getToken();
       searchMap = generateSearchCriteria(siteId, date, nextToken);
       PaginationResults<DocumentItem> next =
-          findDocumentsBySearchMap(dbClient, siteId, searchMap, nextToken, 1);
+          findDocumentsBySearchMap(siteId, searchMap, nextToken, 1);
 
       if (next.getResults().isEmpty()) {
         results = new PaginationResults<DocumentItem>(results.getResults(), null);
@@ -547,16 +528,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Find Documents using the Search Map.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId DynamoDB PK siteId
    * @param searchMap {@link List}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
    * @return {@link PaginationResults}
    */
-  private PaginationResults<DocumentItem> findDocumentsBySearchMap(final DynamoDbClient dbClient,
-      final String siteId, final List<Map<String, String>> searchMap,
-      final PaginationMapToken token, final int maxresults) {
+  private PaginationResults<DocumentItem> findDocumentsBySearchMap(final String siteId,
+      final List<Map<String, String>> searchMap, final PaginationMapToken token,
+      final int maxresults) {
 
     int max = maxresults;
     PaginationMapToken itemsToken = null;
@@ -568,7 +548,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       String skMin = map.get("skMin");
       String skMax = map.get("skMax");
       PaginationResults<DocumentItem> results =
-          queryDocuments(dbClient, siteId, pk, skMin, skMax, qtoken, max);
+          queryDocuments(siteId, pk, skMin, skMax, qtoken, max);
 
       items.addAll(results.getResults());
       itemsToken = results.getToken();
@@ -585,12 +565,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public DocumentTag findDocumentTag(final DynamoDbClient dbClient, final String siteId,
-      final String documentId, final String tagKey) {
+  public DocumentTag findDocumentTag(final String siteId, final String documentId,
+      final String tagKey) {
 
     DocumentTag item = null;
     QueryResponse response =
-        findDocumentTagAttributes(dbClient, siteId, documentId, tagKey, Integer.valueOf(1));
+        findDocumentTagAttributes(siteId, documentId, tagKey, Integer.valueOf(1));
     List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
@@ -603,7 +583,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Find Document Tag {@link AttributeValue}.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId DynamoDB PK siteId
    * @param documentId {@link String}
    * @param tagKey {@link String}
@@ -611,8 +590,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * 
    * @return {@link QueryResponse}
    */
-  private QueryResponse findDocumentTagAttributes(final DynamoDbClient dbClient,
-      final String siteId, final String documentId, final String tagKey, final Integer maxresults) {
+  private QueryResponse findDocumentTagAttributes(final String siteId, final String documentId,
+      final String tagKey, final Integer maxresults) {
 
     Map<String, AttributeValue> values = queryKeys(keysDocumentTag(siteId, documentId, tagKey));
 
@@ -625,13 +604,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     QueryRequest q = req.build();
-    QueryResponse result = dbClient.query(q);
+    QueryResponse result = this.dbClient.query(q);
     return result;
   }
 
   @Override
-  public Map<String, Collection<DocumentTag>> findDocumentsTags(final DynamoDbClient dbClient,
-      final String siteId, final List<String> documentIds, final List<String> tags) {
+  public Map<String, Collection<DocumentTag>> findDocumentsTags(final String siteId,
+      final List<String> documentIds, final List<String> tags) {
 
     final Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
     Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
@@ -649,7 +628,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     BatchGetItemRequest batchReq =
         BatchGetItemRequest.builder().requestItems(requestedItems).build();
-    BatchGetItemResponse batchResponse = dbClient.batchGetItem(batchReq);
+    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
     Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
     List<Map<String, AttributeValue>> result =
@@ -667,12 +646,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Collection<DocumentTag> findDocumentTags(final DynamoDbClient dbClient,
-      final String siteId, final String documentId, final Collection<String> tagKeys) {
+  public Collection<DocumentTag> findDocumentTags(final String siteId, final String documentId,
+      final Collection<String> tagKeys) {
 
     Collection<DocumentTag> tags = new ArrayList<>();
     tagKeys.forEach(tagKey -> {
-      DocumentTag tag = findDocumentTag(dbClient, siteId, documentId, tagKey);
+      DocumentTag tag = findDocumentTag(siteId, documentId, tagKey);
       if (tag != null) {
         tags.add(tag);
       }
@@ -682,13 +661,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentTag> findDocumentTags(final DynamoDbClient dbClient,
-      final String siteId, final String documentId, final PaginationMapToken token,
-      final int maxresults) {
+  public PaginationResults<DocumentTag> findDocumentTags(final String siteId,
+      final String documentId, final PaginationMapToken token, final int maxresults) {
 
     Map<String, AttributeValue> keys = keysDocumentTag(siteId, documentId, null);
 
-    PaginationResults<DocumentTag> tags = findAndTransform(dbClient, keys, token, maxresults,
+    PaginationResults<DocumentTag> tags = findAndTransform(keys, token, maxresults,
         new AttributeValueToDocumentTag(siteId));
 
     // filter duplicates
@@ -706,10 +684,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public ZonedDateTime findMostDocumentDate(final DynamoDbClient dbClient) {
+  public ZonedDateTime findMostDocumentDate() {
     ZonedDateTime date = null;
     PaginationResults<Map<String, AttributeValue>> result =
-        find(dbClient, PREFIX_DOCUMENT_DATE, null, null, null, Boolean.FALSE, 1);
+        find(PREFIX_DOCUMENT_DATE, null, null, null, Boolean.FALSE, 1);
 
     if (!result.getResults().isEmpty()) {
       String dateString = result.getResults().get(0).get(SK).s();
@@ -720,41 +698,39 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Optional<Preset> findPreset(final DynamoDbClient dbClient, final String siteId,
-      final String id) {
+  public Optional<Preset> findPreset(final String siteId, final String id) {
     Map<String, AttributeValue> keyMap = keysPreset(siteId, id);
     Optional<Map<String, AttributeValue>> result =
-        find(dbClient, keyMap.get("PK").s(), keyMap.get("SK").s());
+        find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToPreset format = new AttributeValueToPreset();
     return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();
   }
 
   @Override
-  public PaginationResults<Preset> findPresets(final DynamoDbClient dbClient, final String siteId,
-      final String id, final String type, final String name, final PaginationMapToken token,
-      final int maxresults) {
+  public PaginationResults<Preset> findPresets(final String siteId, final String id,
+      final String type, final String name, final PaginationMapToken token, final int maxresults) {
     Map<String, AttributeValue> keys = keysPresetGsi2(siteId, id, type, name);
-    return findAndTransform(dbClient, GSI2_PK, GSI2_SK, keys, token, maxresults,
+    return findAndTransform(GSI2_PK, GSI2_SK, keys, token, maxresults,
         new AttributeValueToPreset());
   }
 
   @Override
-  public Optional<PresetTag> findPresetTag(final DynamoDbClient dbClient, final String siteId,
-      final String id, final String tagKey) {
+  public Optional<PresetTag> findPresetTag(final String siteId, final String id,
+      final String tagKey) {
     Map<String, AttributeValue> keyMap = keysPresetTag(siteId, id, tagKey);
     Optional<Map<String, AttributeValue>> result =
-        find(dbClient, keyMap.get("PK").s(), keyMap.get("SK").s());
+        find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToPresetTag format = new AttributeValueToPresetTag();
     return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();
   }
 
   @Override
-  public PaginationResults<PresetTag> findPresetTags(final DynamoDbClient dbClient,
-      final String siteId, final String id, final PaginationMapToken token, final int maxresults) {
+  public PaginationResults<PresetTag> findPresetTags(final String siteId, final String id,
+      final PaginationMapToken token, final int maxresults) {
     Map<String, AttributeValue> keys = keysPresetTag(siteId, id, null);
-    return findAndTransform(dbClient, keys, token, maxresults, new AttributeValueToPresetTag());
+    return findAndTransform(keys, token, maxresults, new AttributeValueToPresetTag());
   }
 
   /**
@@ -834,7 +810,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Query Documents by Primary Key.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId DynamoDB PK siteId
    * @param pk {@link String}
    * @param skMin {@link String}
@@ -843,9 +818,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param maxresults int
    * @return {@link PaginationResults}
    */
-  private PaginationResults<DocumentItem> queryDocuments(final DynamoDbClient dbClient,
-      final String siteId, final String pk, final String skMin, final String skMax,
-      final PaginationMapToken token, final int maxresults) {
+  private PaginationResults<DocumentItem> queryDocuments(final String siteId, final String pk,
+      final String skMin, final String skMax, final PaginationMapToken token,
+      final int maxresults) {
 
     String expr = GSI1_PK + " = :pk";
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
@@ -866,7 +841,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .keyConditionExpression(expr).expressionAttributeValues(values)
         .limit(Integer.valueOf(maxresults)).exclusiveStartKey(startkey).build();
 
-    QueryResponse result = dbClient.query(q);
+    QueryResponse result = this.dbClient.query(q);
 
     List<DocumentItem> list = result.items().stream().map(s -> {
       String documentId = s.get("documentId").s();
@@ -877,17 +852,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       List<String> documentIds =
           list.stream().map(s -> s.getDocumentId()).collect(Collectors.toList());
 
-      list = findDocuments(dbClient, siteId, documentIds);
+      list = findDocuments(siteId, documentIds);
     }
 
     return new PaginationResults<>(list, new QueryResponseToPagination().apply(result));
   }
 
   @Override
-  public boolean removeTag(final DynamoDbClient dbClient, final String siteId,
-      final String documentId, final String tagKey, final String tagValue) {
+  public boolean removeTag(final String siteId, final String documentId, final String tagKey,
+      final String tagValue) {
 
-    QueryResponse response = findDocumentTagAttributes(dbClient, siteId, documentId, tagKey, null);
+    QueryResponse response = findDocumentTagAttributes(siteId, documentId, tagKey, null);
     List<Map<String, AttributeValue>> items = response.items();
 
     List<DeleteItemRequest> deletes = new ArrayList<>();
@@ -922,25 +897,25 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     });
 
-    deletes.forEach(i -> dbClient.deleteItem(i));
-    puts.forEach(i -> dbClient.putItem(i));
+    deletes.forEach(i -> this.dbClient.deleteItem(i));
+    puts.forEach(i -> this.dbClient.putItem(i));
 
     return !deletes.isEmpty();
   }
 
   @Override
-  public void removeTags(final DynamoDbClient dbClient, final String siteId,
-      final String documentId, final Collection<String> tags) {
+  public void removeTags(final String siteId, final String documentId,
+      final Collection<String> tags) {
 
     for (String tag : tags) {
-      QueryResponse response = findDocumentTagAttributes(dbClient, siteId, documentId, tag, null);
+      QueryResponse response = findDocumentTagAttributes(siteId, documentId, tag, null);
       List<Map<String, AttributeValue>> items = response.items();
       items.forEach(i -> {
         Map<String, AttributeValue> key = keysGeneric(i.get("PK").s(), i.get("SK").s());
         DeleteItemRequest deleteItemRequest =
             DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-        dbClient.deleteItem(deleteItemRequest);
+        this.dbClient.deleteItem(deleteItemRequest);
       });
     }
   }
@@ -948,31 +923,27 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Save Record.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param values {@link Map} {@link AttributeValue}
    * @return {@link Map} {@link AttributeValue}
    */
-  private Map<String, AttributeValue> save(final DynamoDbClient dbClient,
-      final Map<String, AttributeValue> values) {
+  private Map<String, AttributeValue> save(final Map<String, AttributeValue> values) {
     PutItemRequest put =
         PutItemRequest.builder().tableName(this.documentTableName).item(values).build();
 
-    return dbClient.putItem(put).attributes();
+    return this.dbClient.putItem(put).attributes();
   }
 
   /**
    * Save {@link DocumentItemDynamoDb}.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param keys {@link Map}
    * @param siteId DynamoDB PK siteId
    * @param document {@link DocumentItem}
    * @param saveGsi1 boolean
    * @param timeToLive {@link String}
    */
-  private void saveDocument(final DynamoDbClient dbClient, final Map<String, AttributeValue> keys,
-      final String siteId, final DocumentItem document, final boolean saveGsi1,
-      final String timeToLive) {
+  private void saveDocument(final Map<String, AttributeValue> keys, final String siteId,
+      final DocumentItem document, final boolean saveGsi1, final String timeToLive) {
 
     Date insertedDate = document.getInsertedDate();
     String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
@@ -1013,13 +984,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       addN(pkvalues, "TimeToLive", timeToLive);
     }
 
-    save(dbClient, pkvalues);
+    save(pkvalues);
   }
 
   /**
    * Save Document.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param keys {@link Map}
    * @param siteId {@link String}
    * @param document {@link DocumentItem}
@@ -1027,32 +997,31 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param saveGsi1 boolean
    * @param timeToLive {@link String}
    */
-  private void saveDocument(final DynamoDbClient dbClient, final Map<String, AttributeValue> keys,
-      final String siteId, final DocumentItem document, final Collection<DocumentTag> tags,
-      final boolean saveGsi1, final String timeToLive) {
+  private void saveDocument(final Map<String, AttributeValue> keys, final String siteId,
+      final DocumentItem document, final Collection<DocumentTag> tags, final boolean saveGsi1,
+      final String timeToLive) {
     // TODO save Document/Tags inside transaction.
-    saveDocument(dbClient, keys, siteId, document, saveGsi1, timeToLive);
-    addTags(dbClient, siteId, document.getDocumentId(), tags, timeToLive);
+    saveDocument(keys, siteId, document, saveGsi1, timeToLive);
+    addTags(siteId, document.getDocumentId(), tags, timeToLive);
 
     if (saveGsi1) {
-      saveDocumentDate(dbClient, document);
+      saveDocumentDate(document);
     }
   }
 
   @Override
-  public void saveDocument(final DynamoDbClient dbClient, final String siteId,
-      final DocumentItem document, final Collection<DocumentTag> tags) {
+  public void saveDocument(final String siteId, final DocumentItem document,
+      final Collection<DocumentTag> tags) {
     Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(dbClient, keys, siteId, document, tags, true, null);
+    saveDocument(keys, siteId, document, tags, true, null);
   }
 
   /**
    * Save Document Date record, if it already doesn't exist.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param document {@link DocumentItem}
    */
-  private void saveDocumentDate(final DynamoDbClient dbClient, final DocumentItem document) {
+  private void saveDocumentDate(final DocumentItem document) {
     Date insertedDate =
         document.getInsertedDate() != null ? document.getInsertedDate() : new Date();
     String shortdate = this.yyyymmddFormat.format(insertedDate);
@@ -1065,15 +1034,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .conditionExpression(conditionExpression).item(values).build();
 
     try {
-      dbClient.putItem(put).attributes();
+      this.dbClient.putItem(put).attributes();
     } catch (ConditionalCheckFailedException e) {
       // Conditional Check Fails on second insert attempt
     }
   }
 
   @Override
-  public DocumentFormat saveDocumentFormat(final DynamoDbClient dbClient, final String siteId,
-      final DocumentFormat format) {
+  public DocumentFormat saveDocumentFormat(final String siteId, final DocumentFormat format) {
 
     Date insertedDate = format.getInsertedDate();
     String fulldate = this.df.format(insertedDate);
@@ -1086,7 +1054,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addS(pkvalues, "contentType", format.getContentType());
     addS(pkvalues, "userId", format.getUserId());
 
-    save(dbClient, pkvalues);
+    save(pkvalues);
 
     return format;
   }
@@ -1094,17 +1062,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Generate Tags for {@link DocumentItemWithTags}.
    * 
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @param date {@link Date}
    * @param username {@link String}
    * @return {@link List} {@link DocumentTag}
    */
-  private List<DocumentTag> saveDocumentItemGenerateTags(final DynamoDbClient dbClient,
-      final String siteId, final DynamicDocumentItem doc, final Date date, final String username) {
+  private List<DocumentTag> saveDocumentItemGenerateTags(final String siteId,
+      final DynamicDocumentItem doc, final Date date, final String username) {
 
-    boolean docexists = exists(dbClient, siteId, doc.getDocumentId());
+    boolean docexists = exists(siteId, doc.getDocumentId());
     List<DynamicObject> doctags = doc.getList("tags");
     List<DocumentTag> tags = doctags.stream().map(t -> {
       DynamicObjectToDocumentTag transform = new DynamicObjectToDocumentTag(this.df);
@@ -1133,15 +1100,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public DocumentItem saveDocumentItemWithTag(final DynamoDbClient dbClient, final String siteId,
-      final DynamicDocumentItem doc) {
+  public DocumentItem saveDocumentItemWithTag(final String siteId, final DynamicDocumentItem doc) {
 
     Date date = new Date();
     String username = doc.getUserId();
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
 
     if (isDocumentUserTagged(doc.getList("tags"))) {
-      deleteDocumentTag(dbClient, siteId, documentId, "untagged");
+      deleteDocumentTag(siteId, documentId, "untagged");
     }
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, date, username);
@@ -1158,11 +1124,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
 
-    List<DocumentTag> tags = saveDocumentItemGenerateTags(dbClient, siteId, doc, date, username);
+    List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
 
     boolean saveGsi1 = doc.getBelongsToDocumentId() == null;
     Map<String, AttributeValue> keys = keysDocument(siteId, item.getDocumentId());
-    saveDocument(dbClient, keys, siteId, item, tags, saveGsi1, doc.getString("TimeToLive"));
+    saveDocument(keys, siteId, item, tags, saveGsi1, doc.getString("TimeToLive"));
 
     List<DynamicObject> documents = doc.getList("documents");
     for (DynamicObject subdoc : documents) {
@@ -1181,7 +1147,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       // save child document
       keys =
           keysDocument(siteId, item.getDocumentId(), Optional.of(subdoc.getString("documentId")));
-      saveDocument(dbClient, keys, siteId, dockey, null, false, doc.getString("TimeToLive"));
+      saveDocument(keys, siteId, dockey, null, false, doc.getString("TimeToLive"));
 
       List<DynamicObject> doctags = subdoc.getList("tags");
       tags = doctags.stream().map(t -> {
@@ -1190,15 +1156,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }).collect(Collectors.toList());
 
       keys = keysDocument(siteId, subdoc.getString("documentId"));
-      saveDocument(dbClient, keys, siteId, document, tags, false, doc.getString("TimeToLive"));
+      saveDocument(keys, siteId, document, tags, false, doc.getString("TimeToLive"));
     }
 
     return item;
   }
 
   @Override
-  public Preset savePreset(final DynamoDbClient dbClient, final String siteId, final String id,
-      final String type, final Preset preset, final List<PresetTag> tags) {
+  public Preset savePreset(final String siteId, final String id, final String type,
+      final Preset preset, final List<PresetTag> tags) {
 
     if (preset != null) {
       Date insertedDate = preset.getInsertedDate();
@@ -1212,7 +1178,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       addS(pkvalues, "documentId", preset.getId());
       pkvalues.putAll(keysPresetGsi2(siteId, id, type, preset.getName()));
 
-      save(dbClient, pkvalues);
+      save(pkvalues);
     }
 
     if (tags != null) {
@@ -1227,7 +1193,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         addS(pkvalues, "userId", tag.getUserId());
         addS(pkvalues, "tagKey", tag.getKey());
 
-        save(dbClient, pkvalues);
+        save(pkvalues);
       }
     }
 

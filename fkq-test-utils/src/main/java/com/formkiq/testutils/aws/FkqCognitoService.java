@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.testutils.aws;
 
@@ -32,7 +29,6 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * 
@@ -67,28 +63,25 @@ public class FkqCognitoService {
     this.awsregion = awsRegion;
     this.ssm = new FkqSsmService(awsProfile, awsRegion);
 
-    try (SsmClient ssmClient = this.ssm.build()) {
+    this.rootHttpUrl =
+        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsHttpUrl");
 
-      this.rootHttpUrl = this.ssm.getParameterValue(ssmClient,
-          "/formkiq/" + appEnvironment + "/api/DocumentsHttpUrl");
+    this.rootRestUrl =
+        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
-      this.rootRestUrl = this.ssm.getParameterValue(ssmClient,
-          "/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+    String cognitoUserPoolId =
+        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolId");
 
-      String cognitoUserPoolId = this.ssm.getParameterValue(ssmClient,
-          "/formkiq/" + appEnvironment + "/cognito/UserPoolId");
+    String cognitoClientId =
+        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
 
-      String cognitoClientId = this.ssm.getParameterValue(ssmClient,
-          "/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
+    String cognitoIdentitypool =
+        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/IdentityPoolId");
 
-      String cognitoIdentitypool = this.ssm.getParameterValue(ssmClient,
-          "/formkiq/" + appEnvironment + "/cognito/IdentityPoolId");
-
-      CognitoConnectionBuilder adminBuilder =
-          new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
-              .setCredentials(awsProfile).setRegion(awsRegion);
-      this.service = new CognitoService(adminBuilder);
-    }
+    CognitoConnectionBuilder adminBuilder =
+        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+            .setCredentials(awsProfile).setRegion(awsRegion);
+    this.service = new CognitoService(adminBuilder);
   }
 
   /**

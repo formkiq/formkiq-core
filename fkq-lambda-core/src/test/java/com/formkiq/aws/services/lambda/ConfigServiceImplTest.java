@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.aws.services.lambda;
 
@@ -42,7 +39,6 @@ import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * Unit Tests for {@link ConfigServiceImpl}.
@@ -60,7 +56,8 @@ public class ConfigServiceImplTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service = new ConfigServiceImpl("Documents");
+    this.service =
+        new ConfigServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
   }
 
   /**
@@ -71,36 +68,33 @@ public class ConfigServiceImplTest {
   @Test
   public void testConfig01() throws Exception {
     // given
-    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+      Map<String, Object> map = new HashMap<>();
+      map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
+      map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
+      map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
 
-        Map<String, Object> map = new HashMap<>();
-        map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-        map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-        map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+      DynamicObject obj = new DynamicObject(map);
+      this.service.save(siteId, obj);
 
-        DynamicObject obj = new DynamicObject(map);
-        this.service.save(client, siteId, obj);
+      // when
+      DynamicObject config = this.service.get(siteId);
 
-        // when
-        DynamicObject config = this.service.get(client, siteId);
+      // then
+      final int count = 5;
+      assertEquals(count, config.keySet().size());
 
-        // then
-        final int count = 5;
-        assertEquals(count, config.keySet().size());
-
-        assertEquals("configs#", config.getString("PK"));
-        if (siteId != null) {
-          assertEquals(siteId, config.getString("SK"));
-        } else {
-          assertEquals("default", config.getString("SK"));
-        }
-
-        assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-        assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-        assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+      assertEquals("configs#", config.getString("PK"));
+      if (siteId != null) {
+        assertEquals(siteId, config.getString("SK"));
+      } else {
+        assertEquals("default", config.getString("SK"));
       }
+
+      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
+      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
+      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
     }
   }
 
@@ -112,15 +106,13 @@ public class ConfigServiceImplTest {
   @Test
   public void testConfig02() throws Exception {
     // given
-    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-        // when
-        DynamicObject config = this.service.get(client, siteId);
+      // when
+      DynamicObject config = this.service.get(siteId);
 
-        // then
-        assertEquals(0, config.size());
-      }
+      // then
+      assertEquals(0, config.size());
     }
   }
 
@@ -132,31 +124,28 @@ public class ConfigServiceImplTest {
   @Test
   public void testConfig03() throws Exception {
     // given
-    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+      DynamicObject obj = new DynamicObject(Map.of());
+      this.service.save(siteId, obj);
 
-        DynamicObject obj = new DynamicObject(Map.of());
-        this.service.save(client, siteId, obj);
+      // when
+      DynamicObject config = this.service.get(siteId);
 
-        // when
-        DynamicObject config = this.service.get(client, siteId);
+      // then
+      final int count = 2;
+      assertEquals(count, config.keySet().size());
 
-        // then
-        final int count = 2;
-        assertEquals(count, config.keySet().size());
-
-        assertEquals("configs#", config.getString("PK"));
-        if (siteId != null) {
-          assertEquals(siteId, config.getString("SK"));
-        } else {
-          assertEquals("default", config.getString("SK"));
-        }
-
-        assertNull(config.getString(DOCUMENT_TIME_TO_LIVE));
-        assertNull(config.getString(MAX_WEBHOOKS));
-        assertNull(config.getString(MAX_DOCUMENTS));
+      assertEquals("configs#", config.getString("PK"));
+      if (siteId != null) {
+        assertEquals(siteId, config.getString("SK"));
+      } else {
+        assertEquals("default", config.getString("SK"));
       }
+
+      assertNull(config.getString(DOCUMENT_TIME_TO_LIVE));
+      assertNull(config.getString(MAX_WEBHOOKS));
+      assertNull(config.getString(MAX_DOCUMENTS));
     }
   }
 
@@ -168,32 +157,29 @@ public class ConfigServiceImplTest {
   @Test
   public void testConfig04() throws Exception {
     // given
-    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+    Map<String, Object> map = new HashMap<>();
+    map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
+    map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
+    map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
 
-      Map<String, Object> map = new HashMap<>();
-      map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-      map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-      map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+    DynamicObject obj = new DynamicObject(map);
+    this.service.save(null, obj);
 
-      DynamicObject obj = new DynamicObject(map);
-      this.service.save(client, null, obj);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+      // when
+      DynamicObject config = this.service.get(siteId);
 
-        // when
-        DynamicObject config = this.service.get(client, siteId);
+      // then
+      final int count = 5;
+      assertEquals(count, config.keySet().size());
 
-        // then
-        final int count = 5;
-        assertEquals(count, config.keySet().size());
+      assertEquals("configs#", config.getString("PK"));
+      assertEquals("default", config.getString("SK"));
 
-        assertEquals("configs#", config.getString("PK"));
-        assertEquals("default", config.getString("SK"));
-
-        assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-        assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-        assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
-      }
+      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
+      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
+      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
     }
   }
 
@@ -205,39 +191,37 @@ public class ConfigServiceImplTest {
   @Test
   public void testDelete01() throws Exception {
     // given
-    try (DynamoDbClient client = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
-        Map<String, Object> map = new HashMap<>();
-        map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
-        map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
-        map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
+      Map<String, Object> map = new HashMap<>();
+      map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
+      map.put(MAX_WEBHOOKS, "" + UUID.randomUUID().toString());
+      map.put(MAX_DOCUMENTS, "" + UUID.randomUUID().toString());
 
-        DynamicObject obj = new DynamicObject(map);
-        this.service.save(client, siteId, obj);
+      DynamicObject obj = new DynamicObject(map);
+      this.service.save(siteId, obj);
 
-        // when
-        DynamicObject config = this.service.get(client, siteId);
+      // when
+      DynamicObject config = this.service.get(siteId);
 
-        // then
-        final int count = 5;
-        assertEquals(count, config.keySet().size());
+      // then
+      final int count = 5;
+      assertEquals(count, config.keySet().size());
 
-        assertEquals("configs#", config.getString("PK"));
+      assertEquals("configs#", config.getString("PK"));
 
-        if (isDefaultSiteId(siteId)) {
-          assertEquals("default", config.getString("SK"));
-        } else {
-          assertEquals(siteId, config.getString("SK"));
-        }
-
-        assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
-        assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
-        assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
-
-        this.service.delete(client, siteId);
-        assertEquals(0, this.service.get(client, siteId).size());
+      if (isDefaultSiteId(siteId)) {
+        assertEquals("default", config.getString("SK"));
+      } else {
+        assertEquals(siteId, config.getString("SK"));
       }
+
+      assertEquals(map.get(DOCUMENT_TIME_TO_LIVE), config.getString(DOCUMENT_TIME_TO_LIVE));
+      assertEquals(map.get(MAX_WEBHOOKS), config.getString(MAX_WEBHOOKS));
+      assertEquals(map.get(MAX_DOCUMENTS), config.getString(MAX_DOCUMENTS));
+
+      this.service.delete(siteId);
+      assertEquals(0, this.service.get(siteId).size());
     }
   }
 }

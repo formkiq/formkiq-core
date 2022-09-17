@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -35,7 +32,6 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.google.gson.Gson;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * Cognito Helper Utils.
@@ -51,13 +47,12 @@ public final class ApiGatewayRequestEventUtil {
    * @param lastPagination {@link ApiPagination}
    * @param results {@link PaginationResults}
    * @param limit int
-   * @param dbClient
    * 
    * @return {@link ApiPagination}
    */
   public static ApiPagination createPagination(final CacheService cacheService,
-      final DynamoDbClient dbClient, final ApiGatewayRequestEvent event,
-      final ApiPagination lastPagination, final PaginationResults<?> results, final int limit) {
+      final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
+      final PaginationResults<?> results, final int limit) {
 
     ApiPagination current = null;
     final Map<String, String> q = getQueryParameterMap(event);
@@ -67,7 +62,7 @@ public final class ApiGatewayRequestEventUtil {
 
     if (isPaginationPrevious(q)) {
 
-      String json = cacheService.read(dbClient, q.get("previous"));
+      String json = cacheService.read(q.get("previous"));
       current = gson.fromJson(json, ApiPagination.class);
 
     } else {
@@ -79,7 +74,7 @@ public final class ApiGatewayRequestEventUtil {
       current.setStartkey(token);
       current.setHasNext(token != null);
 
-      cacheService.write(dbClient, current.getNext(), gson.toJson(current), 1);
+      cacheService.write(current.getNext(), gson.toJson(current), 1);
     }
 
     return current;
@@ -231,20 +226,19 @@ public final class ApiGatewayRequestEventUtil {
   /**
    * Convert {@link String} to {@link ApiPagination}.
    *
-   * @param dbClient {@link DynamoDbClient}
    * @param cacheService {@link CacheService}
    * @param key {@link String}
    * 
    * @return {@link ApiPagination}
    */
   public static ApiPagination toPaginationToken(final CacheService cacheService,
-      final DynamoDbClient dbClient, final String key) {
+      final String key) {
 
     ApiPagination pagination = null;
 
     if (isNotBlank(key)) {
 
-      String json = cacheService.read(dbClient, key);
+      String json = cacheService.read(key);
 
       if (isNotBlank(json)) {
         Gson gson = GsonUtil.getInstance();
@@ -259,27 +253,26 @@ public final class ApiGatewayRequestEventUtil {
    * Find Query Parameter 'next' or 'prev' and convert to {@link ApiPagination}.
    *
    * @param cacheService {@link CacheService}
-   * @param dbClient {@link DynamoDbClient}
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link ApiPagination}
    */
   public static ApiPagination getPagination(final CacheService cacheService,
-      final DynamoDbClient dbClient, final ApiGatewayRequestEvent event) {
+      final ApiGatewayRequestEvent event) {
 
     ApiPagination pagination = null;
     Map<String, String> q = getQueryParameterMap(event);
 
     if (isPaginationNext(q)) {
 
-      pagination = toPaginationToken(cacheService, dbClient, q.get("next"));
+      pagination = toPaginationToken(cacheService, q.get("next"));
 
     } else if (isPaginationPrevious(q)) {
 
-      pagination = toPaginationToken(cacheService, dbClient, q.get("previous"));
+      pagination = toPaginationToken(cacheService, q.get("previous"));
 
       if (pagination.getPrevious() != null) {
 
-        pagination = toPaginationToken(cacheService, dbClient, pagination.getPrevious());
+        pagination = toPaginationToken(cacheService, pagination.getPrevious());
 
       } else {
         // if @ start of list, preserve the limit

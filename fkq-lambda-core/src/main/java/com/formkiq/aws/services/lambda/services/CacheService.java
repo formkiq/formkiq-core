@@ -24,7 +24,6 @@
 package com.formkiq.aws.services.lambda.services;
 
 import java.util.Date;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * Cache Service.
@@ -35,29 +34,25 @@ public interface CacheService {
   /**
    * Get Cache Key Expiry Date.
    * 
-   * @param client {@link DynamoDbClient}
    * @param key {@link String}
    * @return {@link Date}
    */
-  Date getExpiryDate(DynamoDbClient client, String key);
+  Date getExpiryDate(String key);
 
   /**
    * Read Value from Cache.
    * 
-   * @param client {@link DynamoDbClient}
    * @param key {@link String}
    * @return {@link String}
    */
-  String read(DynamoDbClient client, String key);
+  String read(String key);
 
   /**
    * Write to Cache.
-   * 
-   * @param client {@link DynamoDbClient}
    * 
    * @param key {@link String}
    * @param value {@link String}
    * @param cacheInDays int
    */
-  void write(DynamoDbClient client, String key, String value, int cacheInDays);
+  void write(String key, String value, int cacheInDays);
 }

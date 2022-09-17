@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -63,11 +60,9 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
-import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -79,8 +74,6 @@ public abstract class AbstractRequestHandler {
   private static String cacheTable = "Cache";
   /** Documents Table. */
   private static String documentsTable = "Documents";
-  /** {@link SsmClient}. */
-  private static SsmClient ssmClient;
 
   /** Port to run Test server. */
   private static final int PORT = 8080;
@@ -96,10 +89,8 @@ public abstract class AbstractRequestHandler {
   @BeforeAll
   public static void beforeAll() throws Exception {
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
-    ssmClient = ssmBuilder.build();
-    SsmService ssmService = new SsmServiceCache(1, TimeUnit.DAYS);
-    ssmService.putParameter(ssmClient,
-        "/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
+    ssmService.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
   }
 
   /** {@link CoreAwsServiceCache}. */
@@ -260,16 +251,6 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @return {@link DynamoDbClient}
-   * @throws URISyntaxException URISyntaxException
-   */
-  public DynamoDbClient getDbClient() throws URISyntaxException {
-    return DynamoDbTestServices.getDynamoDbConnection(null).build();
-  }
-
-  /**
    * Get {@link DocumentService}.
    *
    * @return {@link DocumentService}
@@ -351,7 +332,7 @@ public abstract class AbstractRequestHandler {
    * @return {@link String}
    */
   public String getSsmParameter(final String key) {
-    return getSsmService().getParameterValue(ssmClient, key);
+    return getSsmService().getParameterValue(key);
   }
 
   /**
@@ -428,7 +409,7 @@ public abstract class AbstractRequestHandler {
    * @param value {@link String}
    */
   public void putSsmParameter(final String name, final String value) {
-    getSsmService().putParameter(ssmClient, name, value);
+    getSsmService().putParameter(name, value);
   }
 
   /**
@@ -438,7 +419,7 @@ public abstract class AbstractRequestHandler {
    */
   public void removeSsmParameter(final String name) {
     try {
-      getSsmService().removeParameter(ssmClient, name);
+      getSsmService().removeParameter(name);
     } catch (ParameterNotFoundException e) {
       // ignore property error
     }

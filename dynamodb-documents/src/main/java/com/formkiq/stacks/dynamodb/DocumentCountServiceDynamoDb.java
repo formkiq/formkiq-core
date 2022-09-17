@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -27,6 +24,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
@@ -43,21 +41,27 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
   /** Documents Table Name. */
   private String documentTableName;
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
+
   /**
    * constructor.
    * 
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public DocumentCountServiceDynamoDb(final String documentsTable) {
+  public DocumentCountServiceDynamoDb(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
   }
 
   @Override
-  public long getDocumentCount(final DynamoDbClient client, final String siteId) {
+  public long getDocumentCount(final String siteId) {
 
     String pk = getPk(siteId);
     String sk = "all";
@@ -69,7 +73,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
         .keyConditionExpression("PK = :pk and SK = :sk").expressionAttributeValues(values).build();
 
-    QueryResponse result = client.query(q);
+    QueryResponse result = this.dbClient.query(q);
     List<Map<String, AttributeValue>> items = result.items();
 
     long documentscount = 0;
@@ -110,7 +114,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
   }
 
   @Override
-  public void incrementDocumentCount(final DynamoDbClient client, final String siteId) {
+  public void incrementDocumentCount(final String siteId) {
 
     Map<String, String> expAttrs = new HashMap<>();
     expAttrs.put("#val", "MetricValue");
@@ -127,17 +131,17 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
         .updateExpression(updateExpression).expressionAttributeNames(expAttrs)
         .expressionAttributeValues(expVals).build();
 
-    client.updateItem(utr);
+    this.dbClient.updateItem(utr);
   }
 
   @Override
-  public void removeDocumentCount(final DynamoDbClient client, final String siteId) {
+  public void removeDocumentCount(final String siteId) {
 
     Map<String, AttributeValue> key = getPkAttributeMap(siteId);
 
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    client.deleteItem(deleteItemRequest);
+    this.dbClient.deleteItem(deleteItemRequest);
   }
 }

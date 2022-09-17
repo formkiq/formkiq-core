@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -35,7 +32,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -52,7 +48,6 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/upload". */
 public class DocumentsIdUploadRequestHandler
@@ -165,64 +160,51 @@ public class DocumentsIdUploadRequestHandler
     String siteId = authorizer.getSiteId();
     DocumentService service = cacheService.documentService();
 
-    try (DynamoDbClient dbClient = getDynamoDbClient(awsservice)) {
-      if (map != null && map.containsKey("documentId")) {
+    if (map != null && map.containsKey("documentId")) {
 
-        documentId = map.get("documentId");
+      documentId = map.get("documentId");
 
-        item = service.findDocument(dbClient, siteId, documentId);
+      item = service.findDocument(siteId, documentId);
 
-        documentExists = item != null;
+      documentExists = item != null;
 
-        if (!documentExists) {
-          throw new NotFoundException("Document " + documentId + " not found.");
-        }
-
-      } else if (query != null && query.containsKey("path")) {
-
-        String path = query.get("path");
-        path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
-
-        item.setPath(path);
-        tags.add(new DocumentTag(documentId, "path", path, date, username,
-            DocumentTagType.SYSTEMDEFINED));
+      if (!documentExists) {
+        throw new NotFoundException("Document " + documentId + " not found.");
       }
 
-      String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);
-      logger.log("generated presign url: " + urlstring + " for document " + documentId);
+    } else if (query != null && query.containsKey("path")) {
 
-      if (!documentExists && item != null) {
+      String path = query.get("path");
+      path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
 
-        tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
-            DocumentTagType.SYSTEMDEFINED));
-
-        String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
-        if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
-
-          logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
-          service.saveDocument(dbClient, siteId, item, tags);
-
-          if (value != null) {
-            cacheService.documentCountService().incrementDocumentCount(dbClient, siteId);
-          } else {
-            throw new BadException("Max Number of Documents reached");
-          }
-        }
-      }
-
-      return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
+      item.setPath(path);
+      tags.add(
+          new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
     }
-  }
 
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
+    String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);
+    logger.log("generated presign url: " + urlstring + " for document " + documentId);
+
+    if (!documentExists && item != null) {
+
+      tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
+          DocumentTagType.SYSTEMDEFINED));
+
+      String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
+      if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
+
+        logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+        service.saveDocument(siteId, item, tags);
+
+        if (value != null) {
+          cacheService.documentCountService().incrementDocumentCount(siteId);
+        } else {
+          throw new BadException("Max Number of Documents reached");
+        }
+      }
+    }
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
   }
 
   @Override

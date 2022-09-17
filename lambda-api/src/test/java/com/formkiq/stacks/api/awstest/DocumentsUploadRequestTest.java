@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.awstest;
 
@@ -49,7 +46,6 @@ import com.formkiq.stacks.client.requests.AddLargeDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.formkiq.stacks.common.formats.MimeType;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * GET, OPTIONS /documents/upload tests.
@@ -78,10 +74,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    */
   @AfterClass
   public static void afterClass() {
-    try (DynamoDbClient dbClient = getDynamoDbClient()) {
-      getConfigService().delete(dbClient, SITEID0);
-      getConfigService().delete(dbClient, SITEID1);
-    }
+    getConfigService().delete(SITEID0);
+    getConfigService().delete(SITEID1);
   }
 
   /** {@link HttpClient}. */
@@ -114,10 +108,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    */
   @Before
   public void before() {
-    try (DynamoDbClient dbClient = getDynamoDbClient()) {
-      getConfigService().delete(dbClient, SITEID0);
-      getConfigService().delete(dbClient, SITEID1);
-    }
+    getConfigService().delete(SITEID0);
+    getConfigService().delete(SITEID1);
   }
 
   /**
@@ -168,22 +160,19 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
-    try (DynamoDbClient dbClient = getDynamoDbClient()) {
-      getConfigService().save(dbClient, SITEID0,
-          new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    getConfigService().save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
 
-      for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients()) {
 
-        GetDocumentUploadRequest request = new GetDocumentUploadRequest().siteId(SITEID0);
+      GetDocumentUploadRequest request = new GetDocumentUploadRequest().siteId(SITEID0);
 
-        // when
-        HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+      // when
+      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
 
-        // then
-        assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-        assertRequestCorsHeaders(response.headers());
-        assertEquals("{\"message\":\"'contentLength' is required\"}", response.body());
-      }
+      // then
+      assertEquals(STATUS_BAD_REQUEST, response.statusCode());
+      assertRequestCorsHeaders(response.headers());
+      assertEquals("{\"message\":\"'contentLength' is required\"}", response.body());
     }
   }
 
@@ -195,24 +184,21 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testGet03() throws Exception {
     // given
-    try (DynamoDbClient dbClient = getDynamoDbClient()) {
-      final int contentLength = 100;
-      getConfigService().save(dbClient, SITEID0,
-          new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
+    final int contentLength = 100;
+    getConfigService().save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
 
-      GetDocumentUploadRequest request =
-          new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
+    GetDocumentUploadRequest request =
+        new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
 
-      for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients()) {
 
-        // when
-        HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+      // when
+      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
 
-        // then
-        assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-        assertRequestCorsHeaders(response.headers());
-        assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}", response.body());
-      }
+      // then
+      assertEquals(STATUS_BAD_REQUEST, response.statusCode());
+      assertRequestCorsHeaders(response.headers());
+      assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}", response.body());
     }
   }
 
@@ -224,23 +210,21 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testGet04() throws Exception {
     // given
-    try (DynamoDbClient dbClient = getDynamoDbClient()) {
-      final int contentLength = 5;
-      getConfigService().save(dbClient, SITEID0,
-          new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "" + contentLength)));
+    final int contentLength = 5;
+    getConfigService().save(SITEID0,
+        new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "" + contentLength)));
 
-      GetDocumentUploadRequest request =
-          new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
+    GetDocumentUploadRequest request =
+        new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
 
-      for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients()) {
 
-        // when
-        HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
+      // when
+      HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
 
-        // then
-        assertEquals(STATUS_OK, response.statusCode());
-        assertRequestCorsHeaders(response.headers());
-      }
+      // then
+      assertEquals(STATUS_OK, response.statusCode());
+      assertRequestCorsHeaders(response.headers());
     }
   }
 
@@ -252,26 +236,24 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testGet05() throws Exception {
     // given
-    try (DynamoDbClient dbClient = getDynamoDbClient()) {
-      getConfigService().save(dbClient, SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
+    getConfigService().save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
 
-      GetDocumentUploadRequest request =
-          new GetDocumentUploadRequest().siteId(SITEID1).contentLength(1);
+    GetDocumentUploadRequest request =
+        new GetDocumentUploadRequest().siteId(SITEID1).contentLength(1);
 
-      HttpResponse<String> response =
-          getFormKiqClients().get(0).getDocumentUploadAsHttpResponse(request);
-      assertEquals(STATUS_OK, response.statusCode());
+    HttpResponse<String> response =
+        getFormKiqClients().get(0).getDocumentUploadAsHttpResponse(request);
+    assertEquals(STATUS_OK, response.statusCode());
 
-      for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients()) {
 
-        // when
-        response = client.getDocumentUploadAsHttpResponse(request);
+      // when
+      response = client.getDocumentUploadAsHttpResponse(request);
 
-        // then
-        assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-        assertEquals("{\"message\":\"Max Number of Documents reached\"}", response.body());
-        assertRequestCorsHeaders(response.headers());
-      }
+      // then
+      assertEquals(STATUS_BAD_REQUEST, response.statusCode());
+      assertEquals("{\"message\":\"Max Number of Documents reached\"}", response.body());
+      assertRequestCorsHeaders(response.headers());
     }
   }
 

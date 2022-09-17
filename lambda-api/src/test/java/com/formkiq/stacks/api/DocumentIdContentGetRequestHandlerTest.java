@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -43,7 +40,6 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/content. */
@@ -65,46 +61,43 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @Test
   public void testHandleGetDocumentContent01() throws Exception {
 
-    try (DynamoDbClient dbClient = getDbClient()) {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      String userId = "jsmith";
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        String documentId = UUID.randomUUID().toString();
-        String userId = "jsmith";
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-documentid-content01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
 
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-documentid-content01.json");
-        addParameter(event, "siteId", siteId);
-        setPathParameter(event, "documentId", documentId);
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
+      // when
+      String response = handleRequest(event);
 
-        // when
-        String response = handleRequest(event);
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
 
-        // then
-        Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
 
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
+      String url = body.get("contentUrl").toString();
 
-        Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
-        String url = body.get("contentUrl").toString();
+      assertTrue(url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+      assertTrue(url.contains("X-Amz-Expires="));
+      assertTrue(url.contains(AWS_REGION.toString()));
+      assertEquals("application/octet-stream", body.get("contentType"));
 
-        assertTrue(url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
-        assertTrue(url.contains("X-Amz-Expires="));
-        assertTrue(url.contains(AWS_REGION.toString()));
-        assertEquals("application/octet-stream", body.get("contentType"));
-
-        if (siteId != null) {
-          assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-              + "/testbucket/" + siteId + "/" + documentId));
-        } else {
-          assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-              + "/testbucket/" + documentId));
-        }
+      if (siteId != null) {
+        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+            + "/testbucket/" + siteId + "/" + documentId));
+      } else {
+        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+            + "/testbucket/" + documentId));
       }
     }
   }
@@ -174,42 +167,40 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
   @SuppressWarnings("unchecked")
   private void testReturnContent(final String contentType) throws Exception {
 
-    try (DynamoDbClient dbClient = getDbClient()) {
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-        // given
-        String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
 
-        String content = "this is a test";
-        String s3key = createS3Key(siteId, documentId);
-        try (S3Client s3 = getS3().buildClient()) {
-          getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
-        }
-
-        ApiGatewayRequestEvent event =
-            toRequestEvent("/request-get-documents-documentid-content01.json");
-        addParameter(event, "siteId", siteId);
-        setPathParameter(event, "documentId", documentId);
-
-        String userId = "jsmith";
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-        item.setContentType(contentType);
-        getDocumentService().saveDocument(dbClient, siteId, item, new ArrayList<>());
-
-        // when
-        String response = handleRequest(event);
-
-        // then
-        Map<String, Object> m = fromJson(response, Map.class);
-
-        final int mapsize = 3;
-        assertEquals(mapsize, m.size());
-        assertEquals("200.0", String.valueOf(m.get("statusCode")));
-
-        Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
-        assertEquals(content, body.get("content"));
-        assertEquals(contentType, body.get("contentType"));
-        assertEquals("false", body.get("isBase64").toString());
+      String content = "this is a test";
+      String s3key = createS3Key(siteId, documentId);
+      try (S3Client s3 = getS3().buildClient()) {
+        getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
       }
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-documentid-content01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+
+      String userId = "jsmith";
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setContentType(contentType);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+
+      Map<String, Object> body = fromJson(m.get("body").toString(), Map.class);
+      assertEquals(content, body.get("content"));
+      assertEquals(contentType, body.get("contentType"));
+      assertEquals("false", body.get("isBase64").toString());
     }
   }
 }

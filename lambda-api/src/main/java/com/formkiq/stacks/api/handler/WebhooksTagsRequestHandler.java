@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -33,7 +30,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -49,7 +45,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler
@@ -67,25 +62,23 @@ public class WebhooksTagsRequestHandler
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
-    try (DynamoDbClient client = getDynamoDbClient(awsServices)) {
-      PaginationResults<DynamicObject> list =
-          serviceCache.webhookService().findTags(client, siteId, id, null);
+    PaginationResults<DynamicObject> list =
+        serviceCache.webhookService().findTags(siteId, id, null);
 
-      List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
-        Map<String, Object> map = new HashMap<>();
+    List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
+      Map<String, Object> map = new HashMap<>();
 
-        map.put("insertedDate", m.getString("inserteddate"));
-        map.put("webhookId", id);
-        map.put("type", m.getString("type"));
-        map.put("userId", m.getString("userId"));
-        map.put("value", m.getString("tagValue"));
-        map.put("key", m.getString("tagKey"));
+      map.put("insertedDate", m.getString("inserteddate"));
+      map.put("webhookId", id);
+      map.put("type", m.getString("type"));
+      map.put("userId", m.getString("userId"));
+      map.put("value", m.getString("tagValue"));
+      map.put("key", m.getString("tagKey"));
 
-        return map;
-      }).collect(Collectors.toList());
+      return map;
+    }).collect(Collectors.toList());
 
-      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("tags", tags)));
-    }
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("tags", tags)));
   }
 
   @Override
@@ -113,35 +106,21 @@ public class WebhooksTagsRequestHandler
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
-    try (DynamoDbClient client = getDynamoDbClient(awsServices)) {
-
-      DynamicObject webhook = serviceCache.webhookService().findWebhook(client, siteId, id);
-      if (webhook == null) {
-        throw new NotFoundException("Webhook 'id' not found");
-      }
-
-      Date ttl = null;
-      String ttlString = webhook.getString("TimeToLive");
-      if (ttlString != null) {
-        long epoch = Long.parseLong(ttlString);
-        ttl = new Date(epoch * TO_MILLIS);
-      }
-
-      serviceCache.webhookService().addTags(client, siteId, id, Arrays.asList(tag), ttl);
-
-      ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-      return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
+    if (webhook == null) {
+      throw new NotFoundException("Webhook 'id' not found");
     }
-  }
 
-  /**
-   * Get {@link DynamoDbClient}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
-   * @return {@link DynamoDbClient}
-   */
-  private DynamoDbClient getDynamoDbClient(final AwsServiceCache awsServices) {
-    DynamoDbConnectionBuilder db = awsServices.getExtension(DynamoDbConnectionBuilder.class);
-    return db.build();
+    Date ttl = null;
+    String ttlString = webhook.getString("TimeToLive");
+    if (ttlString != null) {
+      long epoch = Long.parseLong(ttlString);
+      ttl = new Date(epoch * TO_MILLIS);
+    }
+
+    serviceCache.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
+
+    ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
+    return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 }
