@@ -45,87 +45,87 @@ import software.amazon.awssdk.services.sns.model.UnsubscribeResponse;
  */
 public class SnsService {
 
-  /** SnsClient. */
-  private SnsClient snsClient;
-
   /**
    * constructor.
    * 
-   * @param builder {@link SnsConnectionBuilder}
    */
-  public SnsService(final SnsConnectionBuilder builder) {
-    this.snsClient = builder.build();
-  }
+  public SnsService() {}
 
   /**
    * Confirm SNS Subscription.
    * 
+   * @param snsClient {@link SnsClient}
    * @param topicArn {@link String}
    * @param token {@link String}
    * @return {@link ConfirmSubscriptionResponse}
    */
-  public ConfirmSubscriptionResponse confirmSubscription(final String topicArn,
-      final String token) {
-    return this.snsClient.confirmSubscription(
+  public ConfirmSubscriptionResponse confirmSubscription(final SnsClient snsClient,
+      final String topicArn, final String token) {
+    return snsClient.confirmSubscription(
         ConfirmSubscriptionRequest.builder().topicArn(topicArn).token(token).build());
   }
 
   /**
    * Create SNS Topic.
    * 
+   * @param snsClient {@link SnsClient}
    * @param topicName {@link String}
    * @return {@link CreateTopicResponse}
    */
-  public CreateTopicResponse createTopic(final String topicName) {
-    return this.snsClient.createTopic(CreateTopicRequest.builder().name(topicName).build());
+  public CreateTopicResponse createTopic(final SnsClient snsClient, final String topicName) {
+    return snsClient.createTopic(CreateTopicRequest.builder().name(topicName).build());
   }
 
   /**
    * Get a List of SNS Topics.
    * 
+   * @param snsClient {@link SnsClient}
    * @param nextToken {@link String}
    * @return {@link ListTopicsResponse}
    */
-  public ListTopicsResponse listTopics(final String nextToken) {
-    return this.snsClient.listTopics(ListTopicsRequest.builder().nextToken(nextToken).build());
+  public ListTopicsResponse listTopics(final SnsClient snsClient, final String nextToken) {
+    return snsClient.listTopics(ListTopicsRequest.builder().nextToken(nextToken).build());
   }
 
   /**
    * Publish Message to SNS Topic.
    * 
+   * @param snsClient {@link SnsClient}
    * @param topicArn {@link String}
    * @param message {@link String}
    * @param messageAttributes {@link Map}
    * @return {@link PublishResponse}
    */
-  public PublishResponse publish(final String topicArn, final String message,
-      final Map<String, MessageAttributeValue> messageAttributes) {
-    return this.snsClient.publish(PublishRequest.builder().topicArn(topicArn).message(message)
+  public PublishResponse publish(final SnsClient snsClient, final String topicArn,
+      final String message, final Map<String, MessageAttributeValue> messageAttributes) {
+    return snsClient.publish(PublishRequest.builder().topicArn(topicArn).message(message)
         .messageAttributes(messageAttributes).build());
   }
 
   /**
    * Subscribe to SNS Topic.
    * 
+   * @param snsClient {@link SnsClient}
    * @param topicArn {@link String}
    * @param protocol {@link String}
    * @param endpoint {@link String}
    * @return {@link SubscribeResponse}
    */
-  public SubscribeResponse subscribe(final String topicArn, final String protocol,
-      final String endpoint) {
-    return this.snsClient.subscribe(SubscribeRequest.builder().protocol(protocol).topicArn(topicArn)
+  public SubscribeResponse subscribe(final SnsClient snsClient, final String topicArn,
+      final String protocol, final String endpoint) {
+    return snsClient.subscribe(SubscribeRequest.builder().protocol(protocol).topicArn(topicArn)
         .endpoint(endpoint).build());
   }
 
   /**
    * Deletes a subscription.
    * 
+   * @param snsClient {@link SnsClient}
    * @param subscriptionArn {@link String}
    * @return {@link UnsubscribeResponse}
    */
-  public UnsubscribeResponse unsubscribe(final String subscriptionArn) {
-    return this.snsClient
+  public UnsubscribeResponse unsubscribe(final SnsClient snsClient, final String subscriptionArn) {
+    return snsClient
         .unsubscribe(UnsubscribeRequest.builder().subscriptionArn(subscriptionArn).build());
   }
 }

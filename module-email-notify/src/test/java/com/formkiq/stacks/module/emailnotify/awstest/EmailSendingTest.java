@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.module.emailnotify.awstest;
 
@@ -44,6 +47,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -57,20 +62,24 @@ import software.amazon.awssdk.services.ssm.SsmClient;
  *
  */
 public class EmailSendingTest {
-  /** Test Timeout. */
-  private static final long TIMEOUT = 60000L;
-  /** Sleep Timeout. */
-  private static final long SLEEP = 500L;
-  /** SNS Document Email Topic Arn. */
-  private static String snsDocumentEmailArn;
-  /** {@link SqsService}. */
-  private static SqsService sqsService;
-  /** {@link SnsService}. */
-  private static SnsService snsService;
   /** S3 Service. */
   private static S3Service s3Service;
+  /** Sleep Timeout. */
+  private static final long SLEEP = 500L;
+  /** {@link SnsConnectionBuilder}. */
+  private static SnsConnectionBuilder snsBuilder;
+  /** SNS Document Email Topic Arn. */
+  private static String snsDocumentEmailArn;
+  /** {@link SnsService}. */
+  private static SnsService snsService;
+  /** {@link SqsClient}. */
+  private static SqsClient sqsClient;
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
   /** S3 Staging Bucket. */
   private static String stagingdocumentsbucketname;
+  /** Test Timeout. */
+  private static final long TIMEOUT = 60000L;
 
   /**
    * Assert Received Message.
@@ -83,10 +92,10 @@ public class EmailSendingTest {
   private static void assertSnsMessage(final String queueUrl, final String type)
       throws InterruptedException {
 
-    List<Message> receiveMessages = sqsService.receiveMessages(queueUrl).messages();
+    List<Message> receiveMessages = sqsService.receiveMessages(sqsClient, queueUrl).messages();
     while (receiveMessages.size() != 1) {
       Thread.sleep(SLEEP);
-      receiveMessages = sqsService.receiveMessages(queueUrl).messages();
+      receiveMessages = sqsService.receiveMessages(sqsClient, queueUrl).messages();
     }
 
     assertEquals(1, receiveMessages.size());
@@ -111,17 +120,17 @@ public class EmailSendingTest {
 
     final SqsConnectionBuilder sqsConnection =
         new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    sqsClient = sqsConnection.build();
     final SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    final SnsConnectionBuilder snsBuilder =
-        new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     s3Service = new S3Service(s3Builder);
-    sqsService = new SqsService(sqsConnection);
+    sqsService = new SqsService();
     SsmService ssmService = new SsmServiceImpl();
-    snsService = new SnsService(snsBuilder);
+    snsService = new SnsService();
 
     try (SsmClient ssmClient = ssmBuilder.build()) {
 
@@ -145,17 +154,19 @@ public class EmailSendingTest {
 
     CreateQueueRequest request =
         CreateQueueRequest.builder().queueName(queueName).attributes(attributes).build();
-    return sqsService.createQueue(request);
+    return sqsService.createQueue(sqsClient, request);
   }
 
   /**
    * Subscribe Sqs to Sns.
    * 
+   * @param snsClient {@link SnsClient}
    * @param topicArn {@link String}
    * @param queueUrl {@link String}
    * @return {@link String}
    */
-  private String subscribeToSns(final String topicArn, final String queueUrl) {
+  private String subscribeToSns(final SnsClient snsClient, final String topicArn,
+      final String queueUrl) {
     String queueArn = sqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
@@ -165,9 +176,10 @@ public class EmailSendingTest {
 
     SetQueueAttributesRequest setAttributes =
         SetQueueAttributesRequest.builder().queueUrl(queueUrl).attributes(attributes).build();
-    sqsService.setQueueAttributes(setAttributes);
+    sqsService.setQueueAttributes(sqsClient, setAttributes);
 
-    String subscriptionArn = snsService.subscribe(topicArn, "sqs", queueArn).subscriptionArn();
+    String subscriptionArn =
+        snsService.subscribe(snsClient, topicArn, "sqs", queueArn).subscriptionArn();
     return subscriptionArn;
   }
 
@@ -185,22 +197,27 @@ public class EmailSendingTest {
     String contentType = "text/plain";
     String createQueue = "createtest-" + UUID.randomUUID();
     String documentEmailQueueUrl = createSqsQueue(createQueue).queueUrl();
-    String snsDocumentEventArn = subscribeToSns(snsDocumentEmailArn, documentEmailQueueUrl);
 
-    try {
+    try (SnsClient snsClient = snsBuilder.build()) {
 
-      try (S3Client s3 = s3Service.buildClient()) {
+      String snsDocumentEventArn =
+          subscribeToSns(snsClient, snsDocumentEmailArn, documentEmailQueueUrl);
 
-        // when
-        writeToStaging(s3, key, contentType);
+      try {
 
-        // then
-        assertSnsMessage(documentEmailQueueUrl, "create");
+        try (S3Client s3 = s3Service.buildClient()) {
+
+          // when
+          writeToStaging(s3, key, contentType);
+
+          // then
+          assertSnsMessage(documentEmailQueueUrl, "create");
+        }
+
+      } finally {
+        snsService.unsubscribe(snsClient, snsDocumentEventArn);
+        sqsService.deleteQueue(sqsClient, documentEmailQueueUrl);
       }
-
-    } finally {
-      snsService.unsubscribe(snsDocumentEventArn);
-      sqsService.deleteQueue(documentEmailQueueUrl);
     }
   }
 

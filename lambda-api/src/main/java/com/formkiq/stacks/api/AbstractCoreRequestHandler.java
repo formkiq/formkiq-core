@@ -163,7 +163,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
-    AwsServiceCache.register(SqsService.class, new SqsServiceExtension(sqs));
+    AwsServiceCache.register(SqsService.class, new SqsServiceExtension());
     AwsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(schemaEvents));
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());

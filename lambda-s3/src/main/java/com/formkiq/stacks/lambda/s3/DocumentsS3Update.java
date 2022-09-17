@@ -85,6 +85,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
@@ -138,6 +139,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /** {@link ActionsService}. */
   private ActionsService actionsService;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
   /** {@link DocumentEventService}. */
   private DocumentEventService documentEventService;
   /** {@link Gson}. */
@@ -152,12 +155,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private AwsServiceCache services;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
+  /** {@link SqsConnectionBuilder}. */
+  private SqsConnectionBuilder sqsConnection;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
   /** {@link SqsService}. */
   private SqsService sqsService;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private DynamoDbConnectionBuilder db;
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -198,10 +201,33 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     this.actionsService = new ActionsServiceDynamoDb(map.get("DOCUMENTS_TABLE"));
     this.service = new DocumentServiceImpl(map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
-    this.sqsService = new SqsService(sqsBuilder);
+    this.sqsService = new SqsService();
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
     this.notificationService =
         new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
+    this.sqsConnection = sqsBuilder;
+  }
+
+  /**
+   * Builds Document Event.
+   * 
+   * @param eventType {@link String}
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   * @param s3Bucket {@link String}
+   * @param s3Key {@link String}
+   * @return {@link DocumentEvent}
+   */
+  private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
+      final DynamicDocumentItem doc, final String s3Bucket, final String s3Key) {
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
+
+    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket)
+        .s3key(s3Key).type(eventType).userId(doc.getUserId()).contentType(doc.getContentType())
+        .path(doc.getPath());
+
+    return event;
   }
 
   /**
@@ -527,28 +553,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   /**
-   * Builds Document Event.
-   * 
-   * @param eventType {@link String}
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @param s3Bucket {@link String}
-   * @param s3Key {@link String}
-   * @return {@link DocumentEvent}
-   */
-  private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
-      final DynamicDocumentItem doc, final String s3Bucket, final String s3Key) {
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
-
-    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket)
-        .s3key(s3Key).type(eventType).userId(doc.getUserId()).contentType(doc.getContentType())
-        .path(doc.getPath());
-
-    return event;
-  }
-
-  /**
    * Either sends the Create Message to SNS.
    * 
    * @param logger {@link LambdaLogger}
@@ -590,7 +594,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private void sendToDlq(final Map<String, Object> map) {
     String json = this.gson.toJson(map);
     if (this.sqsErrorUrl != null) {
-      this.sqsService.sendMessage(this.sqsErrorUrl, json);
+      try (SqsClient sqsClient = this.sqsConnection.build()) {
+        this.sqsService.sendMessage(sqsClient, this.sqsErrorUrl, json);
+      }
     }
   }
 }

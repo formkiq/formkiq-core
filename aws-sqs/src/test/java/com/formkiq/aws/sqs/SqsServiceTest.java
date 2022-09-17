@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -39,8 +38,6 @@ public class SqsServiceTest {
 
   /** {@link SqsService}. */
   private static SqsService sqs;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsConnection;
 
   /**
    * Before Class.
@@ -51,8 +48,7 @@ public class SqsServiceTest {
    */
   @BeforeClass
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
-    sqsConnection = new SqsConnectionBuilder().setRegion(Region.US_EAST_1);
-    sqs = new SqsService(sqsConnection);
+    sqs = new SqsService();
   }
 
   /**

@@ -28,6 +28,7 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 
 /**
@@ -43,6 +44,8 @@ public class DocumentEventServiceSns implements DocumentEventService {
   private Gson gson = new GsonBuilder().create();
   /** {@link SnsService}. */
   private SnsService snsService;
+  /** {@link SnsConnectionBuilder}. */
+  private SnsConnectionBuilder sns;
 
   /**
    * constructor.
@@ -50,7 +53,8 @@ public class DocumentEventServiceSns implements DocumentEventService {
    * @param snsBuilder {@link SnsConnectionBuilder}
    */
   public DocumentEventServiceSns(final SnsConnectionBuilder snsBuilder) {
-    this.snsService = new SnsService(snsBuilder);
+    this.sns = snsBuilder;
+    this.snsService = new SnsService();
   }
 
   @Override
@@ -75,7 +79,9 @@ public class DocumentEventServiceSns implements DocumentEventService {
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
 
-    this.snsService.publish(topicArn, eventJson, tags);
+    try (SnsClient snsClient = this.sns.build()) {
+      this.snsService.publish(snsClient, topicArn, eventJson, tags);
+    }
 
     return eventJson;
   }

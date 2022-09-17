@@ -11,6 +11,7 @@
 		<allow pkg="com.formkiq.aws.sns" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.google.gson" />
+		<allow pkg="software.amazon.awssdk.services.sns" />
 		<allow pkg="software.amazon.awssdk.services.sns.model" />
 
 	</subpackage>

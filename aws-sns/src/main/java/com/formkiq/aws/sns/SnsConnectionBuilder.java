@@ -42,8 +42,6 @@ public class SnsConnectionBuilder {
 
   /** {@link SnsClientBuilder}. */
   private SnsClientBuilder builder;
-  /** {@link SnsClient}. */
-  private SnsClient snsClient;
 
   /**
    * constructor.
@@ -109,19 +107,6 @@ public class SnsConnectionBuilder {
    * @return {@link SnsClient}
    */
   public SnsClient build() {
-    if (this.snsClient == null) {
-      this.snsClient = this.builder.build();
-    }
-
-    return this.snsClient;
-  }
-
-  /**
-   * Close {@link SnsClient} if one exists.
-   */
-  public void close() {
-    if (this.snsClient != null) {
-      this.snsClient.close();
-    }
+    return this.builder.build();
   }
 }

@@ -44,6 +44,8 @@ import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
@@ -70,10 +72,14 @@ public abstract class AbstractAwsTest {
   private static String sesbucketname;
   /** Sleep Timeout. */
   private static final long SLEEP = 500L;
+  /** {@link SnsConnectionBuilder}. */
+  private static SnsConnectionBuilder snsBuilder;
   /** SNS Document Event Topic Arn. */
   private static String snsDocumentEventArn;
   /** {@link SnsService}. */
   private static SnsService snsService;
+  /** {@link SqsConnectionBuilder}. */
+  private static SqsConnectionBuilder sqsBuilder;
   /** {@link SqsService}. */
   private static SqsService sqsService;
   /** {@link SsmConnectionBuilder}. */
@@ -95,21 +101,19 @@ public abstract class AbstractAwsTest {
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
 
-    final SqsConnectionBuilder sqsConnection =
-        new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    sqsBuilder = new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    final SnsConnectionBuilder snsBuilder =
-        new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    sqsService = new SqsService(sqsConnection);
+    sqsService = new SqsService();
     s3Service = new S3Service(s3Builder);
     ssmService = new SsmServiceImpl();
-    snsService = new SnsService(snsBuilder);
+    snsService = new SnsService();
 
     try (SsmClient ssmClient = getSsmClient()) {
 
@@ -205,6 +209,15 @@ public abstract class AbstractAwsTest {
   }
 
   /**
+   * Get {@link SnsClient}.
+   * 
+   * @return {@link SnsClient}
+   */
+  public static SnsClient getSnsClient() {
+    return snsBuilder.build();
+  }
+
+  /**
    * Get Documents Create Topic Arn.
    * 
    * @return {@link String}
@@ -223,12 +236,30 @@ public abstract class AbstractAwsTest {
   }
 
   /**
+   * Get {@link SqsClient}.
+   * 
+   * @return {@link SqsClient}
+   */
+  public static SqsClient getSqsClient() {
+    return sqsBuilder.build();
+  }
+
+  /**
    * Get SQS Service.
    * 
    * @return {@link SqsService}
    */
   protected static SqsService getSqsService() {
     return sqsService;
+  }
+
+  /**
+   * Get {@link SsmClient}.
+   * 
+   * @return {@link SsmClient}
+   */
+  public static SsmClient getSsmClient() {
+    return ssmBuilder.build();
   }
 
   /**
@@ -256,15 +287,6 @@ public abstract class AbstractAwsTest {
    */
   public DynamoDbClient getDynamodbClient() {
     return dbConnection.build();
-  }
-
-  /**
-   * Get {@link SsmClient}.
-   * 
-   * @return {@link SsmClient}
-   */
-  public static SsmClient getSsmClient() {
-    return ssmBuilder.build();
   }
 
   /**

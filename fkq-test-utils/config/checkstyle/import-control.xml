@@ -30,6 +30,7 @@
 		<allow pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
 		<allow pkg="software.amazon.awssdk.services.s3" />
 		<allow pkg="software.amazon.awssdk.services.ssm" />
+		<allow pkg="software.amazon.awssdk.services.sqs" />
 		<allow pkg="software.amazon.awssdk.utils" />
 
 	</subpackage>

@@ -36,6 +36,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 /**
  * 
@@ -178,16 +179,19 @@ public final class TestServices {
   /**
    * Get Sqs Documents Formats Queue Url.
    * 
-   * @param endpointOverride {@link String}
+   * @param sqs {@link SqsConnectionBuilder}
    * 
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
-  public static String getSqsDocumentFormatsQueueUrl(final String endpointOverride)
+  public static String getSqsDocumentFormatsQueueUrl(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsDocumentFormatsQueueUrl == null) {
-      sqsDocumentFormatsQueueUrl =
-          getSqsService(endpointOverride).createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
+
+      try (SqsClient sqsClient = sqs.build()) {
+        sqsDocumentFormatsQueueUrl =
+            getSqsService().createQueue(sqsClient, SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
+      }
     }
 
     return sqsDocumentFormatsQueueUrl;
@@ -196,14 +200,12 @@ public final class TestServices {
   /**
    * Get Singleton Instance of {@link SqsService}.
    * 
-   * @param endpointOverride {@link String}
-   * 
    * @return {@link SqsService}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SqsService getSqsService(final String endpointOverride) throws URISyntaxException {
+  public static SqsService getSqsService() throws URISyntaxException {
     if (sqsservice == null) {
-      sqsservice = new SqsService(getSqsConnection(endpointOverride));
+      sqsservice = new SqsService();
     }
 
     return sqsservice;
@@ -212,16 +214,18 @@ public final class TestServices {
   /**
    * Get Sqs Documents Formats Queue Url.
    * 
-   * @param endpointOverride {@link String}
+   * @param sqs {@link SqsConnectionBuilder}
    * 
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
-  public static String getSqsWebsocketQueueUrl(final String endpointOverride)
+  public static String getSqsWebsocketQueueUrl(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsWebsocketQueueUrl == null) {
-      sqsWebsocketQueueUrl =
-          getSqsService(endpointOverride).createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
+      try (SqsClient sqsClient = sqs.build()) {
+        sqsWebsocketQueueUrl =
+            getSqsService().createQueue(sqsClient, SQS_WEBSOCKET_QUEUE).queueUrl();
+      }
     }
 
     return sqsWebsocketQueueUrl;

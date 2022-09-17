@@ -111,6 +111,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.SsmClient;
@@ -221,7 +223,7 @@ public class StagingS3CreateTest implements DbKeys {
     service = new DocumentServiceImpl(DOCUMENTS_TABLE);
 
     s3 = new S3Service(s3Builder);
-    sqsService = new SqsService(sqsBuilder);
+    sqsService = new SqsService();
 
     actionsService = new ActionsServiceDynamoDb(DOCUMENTS_TABLE);
 
@@ -279,31 +281,34 @@ public class StagingS3CreateTest implements DbKeys {
    */
   private static void createResources() throws URISyntaxException {
 
-    try (S3Client c = s3.buildClient()) {
+    try (S3Client c = s3.buildClient(); SqsClient sqsClient = sqsBuilder.build()) {
       s3.createBucket(c, DOCUMENTS_BUCKET);
       s3.createBucket(c, STAGING_BUCKET);
+
+
+      if (!sqsService.exists(sqsClient, SNS_SQS_DELETE_QUEUE)) {
+        snsSqsDeleteQueueUrl = sqsService.createQueue(sqsClient, SNS_SQS_DELETE_QUEUE).queueUrl();
+      }
+
+      if (!sqsService.exists(sqsClient, SNS_SQS_CREATE_QUEUE)) {
+        snsSqsCreateQueueUrl = sqsService.createQueue(sqsClient, SNS_SQS_CREATE_QUEUE).queueUrl();
+      }
+
+      if (!sqsService.exists(sqsClient, ERROR_SQS_QUEUE)) {
+        sqsErrorUrl = sqsService.createQueue(sqsClient, ERROR_SQS_QUEUE).queueUrl();
+      }
     }
 
-    if (!sqsService.exists(SNS_SQS_DELETE_QUEUE)) {
-      snsSqsDeleteQueueUrl = sqsService.createQueue(SNS_SQS_DELETE_QUEUE).queueUrl();
+    snsService = new SnsService();
+    try (SnsClient snsClient = TestServices.getSnsConnection(null).build()) {
+      snsDeleteTopic = snsService.createTopic(snsClient, "deleteDocument").topicArn();
+      snsService.subscribe(snsClient, snsDeleteTopic, "sqs",
+          "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_DELETE_QUEUE);
+
+      snsCreateTopic = snsService.createTopic(snsClient, "createDocument").topicArn();
+      snsService.subscribe(snsClient, snsCreateTopic, "sqs",
+          "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_CREATE_QUEUE);
     }
-
-    if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
-      snsSqsCreateQueueUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
-    }
-
-    if (!sqsService.exists(ERROR_SQS_QUEUE)) {
-      sqsErrorUrl = sqsService.createQueue(ERROR_SQS_QUEUE).queueUrl();
-    }
-
-    snsService = new SnsService(TestServices.getSnsConnection(null));
-    snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
-    snsService.subscribe(snsDeleteTopic, "sqs",
-        "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_DELETE_QUEUE);
-
-    snsCreateTopic = snsService.createTopic("createDocument").topicArn();
-    snsService.subscribe(snsCreateTopic, "sqs",
-        "arn:aws:sqs:us-east-1:000000000000:" + SNS_SQS_CREATE_QUEUE);
 
     if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
@@ -374,19 +379,19 @@ public class StagingS3CreateTest implements DbKeys {
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
 
-    try (S3Client c = s3.buildClient()) {
+    try (S3Client c = s3.buildClient(); SqsClient sqsClient = sqsBuilder.build()) {
       s3.deleteAllFiles(c, STAGING_BUCKET);
       s3.deleteAllFiles(c, DOCUMENTS_BUCKET);
-    }
 
-    for (String queue : Arrays.asList(sqsErrorUrl, snsSqsCreateQueueUrl, snsSqsDeleteQueueUrl)) {
-      ReceiveMessageResponse response = sqsService.receiveMessages(queue);
-      while (response.messages().size() > 0) {
-        for (Message msg : response.messages()) {
-          sqsService.deleteMessage(queue, msg.receiptHandle());
+      for (String queue : Arrays.asList(sqsErrorUrl, snsSqsCreateQueueUrl, snsSqsDeleteQueueUrl)) {
+        ReceiveMessageResponse response = sqsService.receiveMessages(sqsClient, queue);
+        while (response.messages().size() > 0) {
+          for (Message msg : response.messages()) {
+            sqsService.deleteMessage(sqsClient, queue, msg.receiptHandle());
+          }
+
+          response = sqsService.receiveMessages(sqsClient, queue);
         }
-
-        response = sqsService.receiveMessages(queue);
       }
     }
   }
@@ -1204,8 +1209,10 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   public void testHandleError() {
     handleRequest(null);
-    ReceiveMessageResponse response = sqsService.receiveMessages(sqsErrorUrl);
-    assertEquals(1, response.messages().size());
+    try (SqsClient sqsClient = sqsBuilder.build()) {
+      ReceiveMessageResponse response = sqsService.receiveMessages(sqsClient, sqsErrorUrl);
+      assertEquals(1, response.messages().size());
+    }
   }
 
   /**
@@ -1255,24 +1262,28 @@ public class StagingS3CreateTest implements DbKeys {
   private List<DocumentEvent> verifySqsMessages(final int createCount, final int deleteCount,
       final int errorCount) {
 
-    final List<Message> create = sqsService.receiveMessages(snsSqsCreateQueueUrl).messages();
-    final List<Message> delete = sqsService.receiveMessages(snsSqsDeleteQueueUrl).messages();
-    final List<Message> error = sqsService.receiveMessages(sqsErrorUrl).messages();
+    try (SqsClient sqsClient = sqsBuilder.build()) {
+      final List<Message> create =
+          sqsService.receiveMessages(sqsClient, snsSqsCreateQueueUrl).messages();
+      final List<Message> delete =
+          sqsService.receiveMessages(sqsClient, snsSqsDeleteQueueUrl).messages();
+      final List<Message> error = sqsService.receiveMessages(sqsClient, sqsErrorUrl).messages();
 
-    assertEquals(createCount, create.size());
-    assertEquals(deleteCount, delete.size());
-    assertEquals(errorCount, error.size());
+      assertEquals(createCount, create.size());
+      assertEquals(deleteCount, delete.size());
+      assertEquals(errorCount, error.size());
 
-    List<Message> list = new ArrayList<>(create);
-    list.addAll(delete);
-    list.addAll(error);
+      List<Message> list = new ArrayList<>(create);
+      list.addAll(delete);
+      list.addAll(error);
 
-    @SuppressWarnings("unchecked")
-    List<Map<String, Object>> maps =
-        list.stream().map(m -> (Map<String, Object>) gson.fromJson(m.body(), Map.class))
-            .collect(Collectors.toList());
+      @SuppressWarnings("unchecked")
+      List<Map<String, Object>> maps =
+          list.stream().map(m -> (Map<String, Object>) gson.fromJson(m.body(), Map.class))
+              .collect(Collectors.toList());
 
-    return maps.stream().map(m -> gson.fromJson(m.get("Message").toString(), DocumentEvent.class))
-        .collect(Collectors.toList());
+      return maps.stream().map(m -> gson.fromJson(m.get("Message").toString(), DocumentEvent.class))
+          .collect(Collectors.toList());
+    }
   }
 }

@@ -86,6 +86,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
@@ -162,39 +163,41 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     return SdkHttpUtils.urlDecode(value);
   }
 
+  /** {@link ActionsService}. */
+  private ActionsService actionsService;
   /** App Environment. */
   private String appEnvironment;
+  /** {@link AwsCredentials}. */
+  private AwsCredentials credentials;
   /** {@link String}. */
   private String documentsBucket;
   /** IAM Documents Url. */
   private String documentsIamUrl = null;
+
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder dynamoDb;
+
   /** {@link FormKiqClient}. */
   private FormKiqClientV1 formkiqClient = null;
+
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-
+  /** {@link Region}. */
+  private Region region;
   /** {@link S3Service}. */
   private S3Service s3;
-
   /** {@link DocumentSearchService}. */
   private DocumentSearchService searchService;
-
   /** {@link DocumentService}. */
   private DocumentService service;
-  /** {@link ActionsService}. */
-  private ActionsService actionsService;
+  /** {@link SqsConnectionBuilder}. */
+  private SqsConnectionBuilder sqsConnection;
   /** SQS Error Queue. */
   private String sqsErrorQueue;
   /** {@link SqsService}. */
   private SqsService sqsService;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
-  /** {@link Region}. */
-  private Region region;
-  /** {@link AwsCredentials}. */
-  private AwsCredentials credentials;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private DynamoDbConnectionBuilder dynamoDb;
 
   /** constructor. */
   public StagingS3Create() {
@@ -229,8 +232,9 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.searchService = new DocumentSearchServiceImpl(this.service, documentsTable, null);
     this.actionsService = new ActionsServiceDynamoDb(documentsTable);
     this.s3 = new S3Service(s3Builder);
-    this.sqsService = new SqsService(sqsBuilder);
+    this.sqsService = new SqsService();
     this.ssmConnection = ssmConnectionBuilder;
+    this.sqsConnection = sqsBuilder;
     this.dynamoDb = dbBuilder;
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
@@ -340,29 +344,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     this.s3.copyObject(s3Client, bucket, originalkey, this.documentsBucket, destKey,
         metadata.getContentType());
-  }
-
-  /**
-   * Save {@link DynamicDocumentItem}.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @param client {@link DynamoDbClient}
-   */
-  private void saveDocument(final DynamoDbClient client, final String siteId,
-      final DynamicDocumentItem doc) {
-
-    this.service.saveDocumentItemWithTag(client, siteId, doc);
-
-    if (doc.containsKey("actions")) {
-
-      DynamicObjectToAction transform = new DynamicObjectToAction();
-      List<DynamicObject> list = doc.getList("actions");
-      List<Action> actions =
-          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
-
-      this.actionsService.saveActions(client, siteId, doc.getDocumentId(), actions);
-    }
   }
 
   /**
@@ -500,7 +481,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       }
 
       if (this.sqsErrorQueue != null) {
-        this.sqsService.sendMessage(this.sqsErrorQueue, json);
+
+        try (SqsClient sqsClient = this.sqsConnection.build()) {
+          this.sqsService.sendMessage(sqsClient, this.sqsErrorQueue, json);
+        }
       }
     }
 
@@ -624,6 +608,29 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
           e.printStackTrace();
         }
       }
+    }
+  }
+
+  /**
+   * Save {@link DynamicDocumentItem}.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   * @param client {@link DynamoDbClient}
+   */
+  private void saveDocument(final DynamoDbClient client, final String siteId,
+      final DynamicDocumentItem doc) {
+
+    this.service.saveDocumentItemWithTag(client, siteId, doc);
+
+    if (doc.containsKey("actions")) {
+
+      DynamicObjectToAction transform = new DynamicObjectToAction();
+      List<DynamicObject> list = doc.getList("actions");
+      List<Action> actions =
+          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
+
+      this.actionsService.saveActions(client, siteId, doc.getDocumentId(), actions);
     }
   }
 

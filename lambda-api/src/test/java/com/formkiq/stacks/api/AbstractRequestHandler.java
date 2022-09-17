@@ -51,6 +51,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
@@ -63,6 +64,7 @@ import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.SsmClient;
@@ -193,25 +195,32 @@ public abstract class AbstractRequestHandler {
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     this.map.put("AWS_REGION", AWS_REGION.toString());
     this.map.put("DEBUG", "true");
-    this.map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl(null));
+    this.map.put("SQS_DOCUMENT_FORMATS",
+        TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
     this.map.put("USER_AUTHENTICATION", "cognito");
-    this.map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl(null));
+    this.map.put("WEBSOCKET_SQS_URL",
+        TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
 
     createApiRequestHandler(this.map);
 
     this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
-    for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
-      ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
-      while (response.messages().size() > 0) {
-        for (Message msg : response.messages()) {
-          sqsservice.deleteMessage(queue, msg.receiptHandle());
-        }
+    SqsConnectionBuilder sqsConnection = this.awsServices.getExtension(SqsConnectionBuilder.class);
 
-        response = sqsservice.receiveMessages(queue);
+    try (SqsClient sqsClient = sqsConnection.build()) {
+
+      for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
+        ReceiveMessageResponse response = sqsservice.receiveMessages(sqsClient, queue);
+        while (response.messages().size() > 0) {
+          for (Message msg : response.messages()) {
+            sqsservice.deleteMessage(sqsClient, queue, msg.receiptHandle());
+          }
+
+          response = sqsservice.receiveMessages(sqsClient, queue);
+        }
       }
     }
   }

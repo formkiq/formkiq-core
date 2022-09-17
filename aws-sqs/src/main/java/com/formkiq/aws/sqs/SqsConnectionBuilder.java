@@ -42,8 +42,6 @@ public class SqsConnectionBuilder {
 
   /** {@link SqsClientBuilder}. */
   private SqsClientBuilder builder;
-  /** {@link SqsClient}. */
-  private SqsClient sqsClient;
 
   /**
    * constructor.
@@ -109,19 +107,6 @@ public class SqsConnectionBuilder {
    * @return {@link SqsClient}
    */
   public SqsClient build() {
-    if (this.sqsClient == null) {
-      this.sqsClient = this.builder.build();
-    }
-
-    return this.sqsClient;
-  }
-
-  /**
-   * Close {@link SqsClient} if one exists.
-   */
-  public void close() {
-    if (this.sqsClient != null) {
-      this.sqsClient.close();
-    }
+    return this.builder.build();
   }
 }
