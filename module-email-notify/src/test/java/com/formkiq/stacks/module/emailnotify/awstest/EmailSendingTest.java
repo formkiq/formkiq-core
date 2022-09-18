@@ -46,8 +46,6 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -152,7 +150,6 @@ public class EmailSendingTest {
   /**
    * Subscribe Sqs to Sns.
    * 
-   * @param snsClient {@link SnsClient}
    * @param topicArn {@link String}
    * @param queueUrl {@link String}
    * @return {@link String}
@@ -207,7 +204,6 @@ public class EmailSendingTest {
   /**
    * Write File to Staging S3.
    * 
-   * @param s3 {@link S3Client}
    * @param key {@link String}
    * @param contentType {@link String}
    * @return {@link String}
