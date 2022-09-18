@@ -51,10 +51,10 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @ExtendWith(DynamoDbExtension.class)
 public class ActionsServiceDynamoDbTest {
 
-  /** {@link ActionsService}. */
-  private static ActionsService service;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
+  /** {@link ActionsService}. */
+  private static ActionsService service;
 
   /**
    * BeforeAll.
@@ -88,6 +88,54 @@ public class ActionsServiceDynamoDbTest {
       // then
       assertTrue(service.hasActions(siteId, documentId0));
       assertFalse(service.hasActions(siteId, documentId1));
+    }
+  }
+
+  /**
+   * Test Delete Document & Document Actions.
+   */
+  @Test
+  public void testDeleteDocument() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      documentService.saveDocument(siteId, item, null);
+
+      Action action0 =
+          new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
+      service.saveActions(siteId, documentId, Arrays.asList(action0));
+
+      // when
+      documentService.deleteDocument(siteId, documentId);
+
+      // then
+      List<Action> actions = service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+    }
+  }
+
+  /**
+   * Test Document Actions.
+   */
+  @Test
+  public void testDeleteDocumentActions() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      documentService.saveDocument(siteId, item, null);
+
+      Action action0 =
+          new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
+      service.saveActions(siteId, documentId, Arrays.asList(action0));
+
+      // when
+      service.deleteActions(siteId, documentId);
+
+      // then
+      List<Action> actions = service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
     }
   }
 
@@ -173,30 +221,6 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
-    }
-  }
-
-  /**
-   * Test Delete Document & Document Actions.
-   */
-  @Test
-  public void testDeleteDocument() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      documentService.saveDocument(siteId, item, null);
-
-      Action action0 =
-          new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
-
-      // when
-      documentService.deleteDocument(siteId, documentId);
-
-      // then
-      List<Action> actions = service.getActions(siteId, documentId);
-      assertEquals(0, actions.size());
     }
   }
 }

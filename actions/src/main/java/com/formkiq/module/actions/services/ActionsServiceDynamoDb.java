@@ -42,6 +42,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
@@ -76,6 +77,27 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
+  }
+
+  @Override
+  public void deleteActions(final String siteId, final String documentId) {
+
+    List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK, SK, "type"), null);
+
+    int index = 0;
+    for (Action action : actions) {
+
+      String pk = getPk(siteId, documentId);
+      String sk = getSk(action, index);
+
+      Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
+          AttributeValue.builder().s(sk).build());
+
+      this.dbClient.deleteItem(
+          DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+
+      index++;
+    }
   }
 
   @Override

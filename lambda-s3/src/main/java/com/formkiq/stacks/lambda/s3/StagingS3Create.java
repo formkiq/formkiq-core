@@ -593,6 +593,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private void saveDocument(final String siteId, final DynamicDocumentItem doc) {
 
     this.service.saveDocumentItemWithTag(siteId, doc);
+    this.actionsService.deleteActions(siteId, doc.getDocumentId());
 
     if (doc.containsKey("actions")) {
 

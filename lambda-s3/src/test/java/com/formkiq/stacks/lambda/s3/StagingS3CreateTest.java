@@ -993,13 +993,16 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("tagSchemaId", UUID.randomUUID().toString());
     data.put("isBase64", Boolean.TRUE);
     data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
-    data.put("actions", Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId",
-        "joesmith", "parameters", Map.of("test", "1234"))));
-
-    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       this.logger.reset();
+
+      data.put("actions",
+          Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId", "joesmith",
+              "parameters", Map.of("test", "1234")),
+              Map.of("type", "webhook", "userId", "joesmith")));
+
+      DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
 
@@ -1015,15 +1018,24 @@ public class StagingS3CreateTest implements DbKeys {
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
+      assertEquals(2, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
       assertEquals("joesmith", actions.get(0).userId());
+
+      assertEquals("WEBHOOK", actions.get(1).type().name());
+      assertEquals("PENDING", actions.get(1).status().name());
+      assertEquals("joesmith", actions.get(1).userId());
 
       actions.get(0).status(ActionStatus.COMPLETE);
       actionsService.saveActions(siteId, documentId, actions);
 
       // given
+      data.put("actions", Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId",
+          "joesmith", "parameters", Map.of("test", "1234"))));
+      ditem = new DynamicDocumentItem(data);
+      content = gson.toJson(ditem).getBytes(UTF_8);
+
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
       // when - run a 2nd time

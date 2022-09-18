@@ -38,6 +38,14 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public interface ActionsService {
 
   /**
+   * Delete Document Actions.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void deleteActions(String siteId, String documentId);
+
+  /**
    * Get Action Parameters.
    * 
    * @param siteId {@link String}
