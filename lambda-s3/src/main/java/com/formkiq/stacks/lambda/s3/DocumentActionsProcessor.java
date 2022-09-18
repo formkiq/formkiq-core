@@ -374,6 +374,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         logger.log(String.format("Processing SiteId %s Document %s on action %s", siteId,
             documentId, action.type()));
 
+        this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
+
         try {
           processAction(siteId, documentId, action);
 
@@ -381,9 +383,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           e.printStackTrace();
           status = ActionStatus.FAILED;
           action.status(status);
+
+          this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
         }
 
-        this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
 
       } else {
         logger
