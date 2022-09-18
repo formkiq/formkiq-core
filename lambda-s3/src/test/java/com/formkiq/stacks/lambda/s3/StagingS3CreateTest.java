@@ -1019,16 +1019,16 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
       assertEquals("joesmith", actions.get(0).userId());
-      
+
       actions.get(0).status(ActionStatus.COMPLETE);
       actionsService.saveActions(siteId, documentId, actions);
-      
+
       // given
       s3.putObject(STAGING_BUCKET, key, content, null, null);
-      
+
       // when - run a 2nd time
       handleRequest(map);
-      
+
       // then
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(1, actions.size());
