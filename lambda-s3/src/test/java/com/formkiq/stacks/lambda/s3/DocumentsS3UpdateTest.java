@@ -24,7 +24,6 @@
 package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
 import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
 import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
@@ -81,7 +80,6 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
-import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -904,11 +902,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Create Document Request with ACTIONS.
+   * Create Document Request with COMPLETED ACTIONS.
    *
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest10() throws Exception {
@@ -936,34 +933,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       // then
       List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
       assertEquals(1, actions.size());
-      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
-
-      DocumentEvent e0 = null;
-      DocumentEvent e1 = null;
-
-      List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-
-      while (e0 == null || e1 == null) {
-        for (Message m : msgs) {
-          Map<String, String> bodyMap = this.gson.fromJson(m.body(), Map.class);
-          DocumentEvent de = this.gson.fromJson(bodyMap.get("Message"), DocumentEvent.class);
-          if (de.type().equals(CREATE)) {
-            e0 = de;
-          } else if (de.type().equals(ACTIONS)) {
-            e1 = de;
-          }
-        }
-        Thread.sleep(SLEEP);
-        msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-      }
-
-      assertEquals(siteId != null ? siteId : "default", e0.siteId());
-      assertEquals(doc.getDocumentId(), e0.documentId());
-      assertEquals("test.txt", e0.path());
-
-      assertEquals(siteId != null ? siteId : "default", e1.siteId());
-      assertEquals(doc.getDocumentId(), e1.documentId());
     }
   }
 

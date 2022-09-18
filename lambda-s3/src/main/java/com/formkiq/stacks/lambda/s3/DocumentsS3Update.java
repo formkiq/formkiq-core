@@ -37,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -59,7 +58,6 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
@@ -562,17 +560,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
-
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
-      Optional<Action> op =
-          actions.stream().filter(a -> a.status().equals(ActionStatus.RUNNING)).findFirst();
-
-      if (op.isEmpty()) {
-        actions.forEach(a -> a.status(ActionStatus.PENDING));
-        this.actionsService.saveActions(siteId, documentId, actions);
-
-        this.notificationService.publishNextActionEvent(actions, siteId, documentId);
-      }
+      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
   }
 
