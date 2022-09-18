@@ -69,6 +69,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeTy
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 import software.amazon.awssdk.services.iam.IamClient;
+import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
@@ -79,55 +80,58 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
  */
 public abstract class AbstractApiTest {
 
-  /** 1 Second. */
-  private static final int ONE_SECOND = 1000;
-  /** Cognito FINANCE User Email. */
-  protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
   /** Cognito User Email. */
   private static final String ADMIN_EMAIL = "testadminuser@formkiq.com";
-  /** Cognito User Email. */
-  protected static final String USER_EMAIL = "testuser@formkiq.com";
-  /** Cognito User Email. */
-  protected static final String READONLY_EMAIL = "readonly@formkiq.com";
-  /** Temporary Cognito Password. */
-  private static final String USER_TEMP_PASSWORD = "TEMPORARY_PASSWORd1!";
-  /** Cognito User Password. */
-  protected static final String USER_PASSWORD = USER_TEMP_PASSWORD + "!";
-  /** Api Gateway Invoke Group. */
-  private static String apiGatewayInvokeGroup;
-  /** AWS Region. */
-  private static Region awsregion;
-  /** App Environment Name. */
-  private static String appenvironment;
-  /** {@link StsConnectionBuilder}. */
-  private static StsConnectionBuilder stsBuilder;
-  /** {@link StsService}. */
-  private static StsService stsService;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
-  /** {@link ConfigService}. */
-  private static ConfigService configService;
-  /** API Root Http Url. */
-  private static String rootHttpUrl;
-  /** FormKiQ Http API Client. */
-  private static FormKiqClientV1 httpClient;
-  /** API Root Rest Url. */
-  private static String rootRestUrl;
-  /** FormKiQ Rest API Client. */
-  private static FormKiqClientV1 restClient;
   /** {@link CognitoService}. */
   private static CognitoService adminCognitoService;
   /** {@link AuthenticationResultTypes}. */
   private static AuthenticationResultType adminToken;
-  /** Cognito User Pool ID. */
-  private static String cognitoUserPoolId;
+  /** Api Gateway Invoke Group. */
+  private static String apiGatewayInvokeGroup;
+  /** App Environment Name. */
+  private static String appenvironment;
+  /** AWS Region. */
+  private static Region awsregion;
   /** Cognito Cognito Client ID. */
   private static String cognitoClientId;
   /** Cognito AWS Identity Pool. */
   private static String cognitoIdentitypool;
-
+  /** Cognito User Pool ID. */
+  private static String cognitoUserPoolId;
+  /** {@link ConfigService}. */
+  private static ConfigService configService;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbConnection;
   /** {@link Aws4SignerParams}. */
   private static Aws4SignerParams executeApiSigner;
+  /** Cognito FINANCE User Email. */
+  protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
+  /** FormKiQ Http API Client. */
+  private static FormKiqClientV1 httpClient;
+  /** 1 Second. */
+  private static final int ONE_SECOND = 1000;
+  /** Cognito User Email. */
+  protected static final String READONLY_EMAIL = "readonly@formkiq.com";
+  /** FormKiQ Rest API Client. */
+  private static FormKiqClientV1 restClient;
+  /** API Root Http Url. */
+  private static String rootHttpUrl;
+  /** API Root Rest Url. */
+  private static String rootRestUrl;
+  /** {@link SsmConnectionBuilder}. */
+  private static SsmConnectionBuilder ssmBuilder;
+  /** {@link SsmService}. */
+  private static SsmService ssmService;
+  /** {@link StsConnectionBuilder}. */
+  private static StsConnectionBuilder stsBuilder;
+  /** {@link StsService}. */
+  private static StsService stsService;
+  /** Temporary Cognito Password. */
+  private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
+  /** Cognito User Email. */
+  protected static final String USER_EMAIL = "testuser@formkiq.com";
+  /** Cognito User Password. */
+  protected static final String USER_PASSWORD = TEMP_USER_PASSWORD + "!";
 
   /**
    * Add User and/or Login Cognito.
@@ -138,8 +142,8 @@ public abstract class AbstractApiTest {
   private static void addAndLoginCognito(final String username, final String groupName) {
     if (!adminCognitoService.isUserExists(username)) {
 
-      adminCognitoService.addUser(username, USER_TEMP_PASSWORD);
-      adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
+      adminCognitoService.addUser(username, TEMP_USER_PASSWORD);
+      adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
       if (groupName != null) {
         if (!groupName.startsWith(DEFAULT_SITE_ID)) {
@@ -152,7 +156,7 @@ public abstract class AbstractApiTest {
 
       AdminGetUserResponse user = adminCognitoService.getUser(username);
       if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
-        adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
+        adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
       }
     }
   }
@@ -237,6 +241,15 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Get {@link ConfigService}.
+   * 
+   * @return {@link ConfigService}
+   */
+  protected static ConfigService getConfigService() {
+    return configService;
+  }
+
+  /**
    * Get FormKiq Clients.
    * 
    * @return {@link List} {@link FormKiqClient}
@@ -290,8 +303,7 @@ public abstract class AbstractApiTest {
    */
   private static void loadSsmParameterVariables(final String awsprofile) {
 
-    final SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     ssmService = new SsmServiceImpl(ssmBuilder);
 
     rootHttpUrl =
@@ -330,10 +342,12 @@ public abstract class AbstractApiTest {
    * @param key {@link String}
    */
   public static void removeParameterStoreValue(final String key) {
-    try {
-      ssmService.removeParameter(key);
-    } catch (ParameterNotFoundException e) {
-      // ignore error
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+      try {
+        ssmService.removeParameter(key);
+      } catch (ParameterNotFoundException e) {
+        // ignore error
+      }
     }
   }
 
@@ -344,17 +358,17 @@ public abstract class AbstractApiTest {
 
     if (!adminCognitoService.isUserExists(ADMIN_EMAIL)) {
 
-      adminCognitoService.addUser(ADMIN_EMAIL, USER_TEMP_PASSWORD);
+      adminCognitoService.addUser(ADMIN_EMAIL, TEMP_USER_PASSWORD);
       adminCognitoService.addUserToGroup(ADMIN_EMAIL, "Admins");
 
-      adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, USER_TEMP_PASSWORD, USER_PASSWORD);
+      adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
 
     } else {
 
       adminCognitoService.updateUserAttributes(ADMIN_EMAIL,
           Arrays.asList(AttributeType.builder().name("email_verified").value("true").build()));
-      adminCognitoService.setUserPassword(ADMIN_EMAIL, USER_TEMP_PASSWORD, false);
-      adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, USER_TEMP_PASSWORD, USER_PASSWORD);
+      adminCognitoService.setUserPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, false);
+      adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
     }
 
     addAndLoginCognito(USER_EMAIL, DEFAULT_SITE_ID);
@@ -370,12 +384,14 @@ public abstract class AbstractApiTest {
 
   private static void setupConfigService(final String awsprofile) {
 
-    String documentsTable =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+      String documentsTable = ssmService
+          .getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
 
-    DynamoDbConnectionBuilder dbConnection =
-        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    configService = new ConfigServiceImpl(dbConnection, documentsTable);
+      dbConnection =
+          new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+      configService = new ConfigServiceImpl(dbConnection, documentsTable);
+    }
   }
 
   /** {@link HttpClient}. */
@@ -506,15 +522,6 @@ public abstract class AbstractApiTest {
   }
 
   /**
-   * Get {@link ConfigService}.
-   * 
-   * @return {@link ConfigService}
-   */
-  protected static ConfigService getConfigService() {
-    return configService;
-  }
-
-  /**
    * Get Document.
    * 
    * @param client {@link FormKiqClientV1}
@@ -559,7 +566,9 @@ public abstract class AbstractApiTest {
    * @return {@link String}
    */
   public String getParameterStoreValue(final String key) {
-    return ssmService.getParameterValue(key);
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+      return ssmService.getParameterValue(key);
+    }
   }
 
   /**
@@ -569,7 +578,9 @@ public abstract class AbstractApiTest {
    * @param value {@link String}
    */
   public void putParameter(final String key, final String value) {
-    ssmService.putParameter(key, value);
+    try (SsmClient ssmClient = ssmBuilder.build()) {
+      ssmService.putParameter(key, value);
+    }
   }
 
   /**

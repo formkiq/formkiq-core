@@ -65,9 +65,11 @@ public class ConfigServiceImplTest {
 
   /**
    * Test Finding Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig01() {
+  public void testConfig01() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
@@ -101,9 +103,11 @@ public class ConfigServiceImplTest {
 
   /**
    * Test Finding missing Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig02() {
+  public void testConfig02() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
@@ -117,9 +121,11 @@ public class ConfigServiceImplTest {
 
   /**
    * Test Finding Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig03() {
+  public void testConfig03() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 
@@ -148,9 +154,11 @@ public class ConfigServiceImplTest {
 
   /**
    * Test Finding Default Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testConfig04() {
+  public void testConfig04() throws Exception {
     // given
     Map<String, Object> map = new HashMap<>();
     map.put(DOCUMENT_TIME_TO_LIVE, "" + UUID.randomUUID().toString());
@@ -180,9 +188,11 @@ public class ConfigServiceImplTest {
 
   /**
    * Test Delete Config.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testDelete01() {
+  public void testDelete01() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString(), DEFAULT_SITE_ID)) {
 

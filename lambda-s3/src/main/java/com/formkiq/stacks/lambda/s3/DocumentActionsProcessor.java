@@ -82,7 +82,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -126,25 +125,26 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param map {@link Map}
    * @param awsRegion {@link Region}
    * @param awsCredentials {@link AwsCredentials}
-   * @param db {@link DynamoDbConnectionBuilder}
+   * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3 {@link S3ConnectionBuilder}
    * @param ssm {@link SsmConnectionBuilder}
    * @param sns {@link SnsConnectionBuilder}
    */
   protected DocumentActionsProcessor(final Map<String, String> map, final Region awsRegion,
-      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder db,
+      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dbBuilder,
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
     this.s3Service = new S3Service(s3);
-    this.documentService = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
-    this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
+    this.documentService = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;
     SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
+
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
     this.documentsBucket =
@@ -225,36 +225,32 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
-    try (S3Client client = this.s3Service.buildClient()) {
+    if (MimeType.isPlainText(item.getContentType())) {
 
-      if (MimeType.isPlainText(item.getContentType())) {
+      String bucket =
+          MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
+      String url =
+          this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+      urls = Arrays.asList(url);
 
-        String bucket =
-            MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
-        String url =
-            this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
-        urls = Arrays.asList(url);
+    } else {
 
+      GetDocumentOcrRequest req = new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
+
+      req.addQueryParameter("contentUrl", "true");
+      req.addQueryParameter("text", "true");
+
+      HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
+      Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
+
+      if (map != null && map.containsKey("contentUrls")) {
+        urls = (List<String>) map.get("contentUrls");
       } else {
-
-        GetDocumentOcrRequest req =
-            new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
-
-        req.addQueryParameter("contentUrl", "true");
-        req.addQueryParameter("text", "true");
-
-        HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
-        Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
-
-        if (map.containsKey("contentUrls")) {
-          urls = (List<String>) map.get("contentUrls");
-        } else {
-          throw new IOException("Cannot find 'contentUrls' from OCR request");
-        }
+        throw new IOException("Cannot find 'contentUrls' from OCR request");
       }
-
-      return urls;
     }
+
+    return urls;
   }
 
   /**
@@ -320,9 +316,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (ActionType.OCR.equals(action.type())) {
 
       List<OcrParseType> parseTypes = getOcrParseTypes(action);
+      Map<String, String> parameters =
+          action.parameters() != null ? action.parameters() : new HashMap<>();
+      String addPdfDetectedCharactersAsText =
+          parameters.getOrDefault("addPdfDetectedCharactersAsText", "false");
 
       this.formkiqClient.addDocumentOcr(
-          new AddDocumentOcrRequest().siteId(siteId).documentId(documentId).parseTypes(parseTypes));
+          new AddDocumentOcrRequest().siteId(siteId).documentId(documentId).parseTypes(parseTypes)
+              .addPdfDetectedCharactersAsText("true".equals(addPdfDetectedCharactersAsText)));
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
@@ -368,6 +369,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       if (o.isPresent()) {
 
         Action action = o.get();
+        ActionStatus status = ActionStatus.RUNNING;
+
         logger.log(String.format("Processing SiteId %s Document %s on action %s", siteId,
             documentId, action.type()));
 
@@ -376,10 +379,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         } catch (Exception e) {
           e.printStackTrace();
-          action.status(ActionStatus.FAILED);
-          this.actionsService.updateActionStatus(siteId, documentId, o.get().type(),
-              ActionStatus.FAILED);
+          status = ActionStatus.FAILED;
+          action.status(status);
         }
+
+        this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
+
       } else {
         logger
             .log(String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));

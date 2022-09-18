@@ -48,8 +48,10 @@ public class ActionsServiceExtension implements AwsServiceExtension<ActionsServi
   public ActionsService loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
-      DynamoDbConnectionBuilder db = awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service = new ActionsServiceDynamoDb(db, awsServiceCache.environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new ActionsServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
 
     return this.service;

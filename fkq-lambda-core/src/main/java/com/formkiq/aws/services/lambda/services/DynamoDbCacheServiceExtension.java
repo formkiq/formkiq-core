@@ -45,8 +45,10 @@ public class DynamoDbCacheServiceExtension implements AwsServiceExtension<CacheS
   @Override
   public CacheService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      DynamoDbConnectionBuilder db = awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service = new DynamoDbCacheService(db, awsServiceCache.environment("CACHE_TABLE"));
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new DynamoDbCacheService(connection, awsServiceCache.environment("CACHE_TABLE"));
     }
 
     return this.service;

@@ -58,7 +58,6 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
@@ -67,6 +66,7 @@ import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.documentevents.DocumentEventService;
 import com.formkiq.module.documentevents.DocumentEventServiceSns;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.DeleteDocumentFulltextRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentOcrRequest;
@@ -81,7 +81,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
@@ -152,7 +151,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private String snsDocumentEvent;
   /** SQS Url to send errors to. */
   private String sqsErrorUrl;
-
   /** {@link SqsService}. */
   private SqsService sqsService;
 
@@ -171,31 +169,55 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * 
    * @param map {@link Map}
    * @param creds {@link AwsCredentials}
-   * @param db {@link DynamoDbConnectionBuilder}
+   * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
    * @param ssmBuilder {@link SsmConnectionBuilder}
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
    */
   protected DocumentsS3Update(final Map<String, String> map, final AwsCredentials creds,
-      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3builder,
+      final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3builder,
       final SsmConnectionBuilder ssmBuilder, final SqsConnectionBuilder sqsBuilder,
       final SnsConnectionBuilder snsBuilder) {
 
-    Region region = Region.of(map.get("AWS_REGION"));
     this.services = new AwsServiceCache().environment(map);
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssmBuilder));
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
+
+    Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
     this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.actionsService = new ActionsServiceDynamoDb(db, map.get("DOCUMENTS_TABLE"));
-    this.service = new DocumentServiceImpl(db, map.get("DOCUMENTS_TABLE"));
+    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.service = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
     this.sqsService = new SqsService(sqsBuilder);
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
     this.notificationService =
         new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
+  }
+
+  /**
+   * Builds Document Event.
+   * 
+   * @param eventType {@link String}
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   * @param s3Bucket {@link String}
+   * @param s3Key {@link String}
+   * @return {@link DocumentEvent}
+   */
+  private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
+      final DynamicDocumentItem doc, final String s3Bucket, final String s3Key) {
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
+
+    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket)
+        .s3key(s3Key).type(eventType).userId(doc.getUserId()).contentType(doc.getContentType())
+        .path(doc.getPath());
+
+    return event;
   }
 
   /**
@@ -216,14 +238,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
   }
 
-  private String getContent(final String s3bucket, final String key, final S3Client s3,
-      final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
+  private String getContent(final String s3bucket, final String key, final S3ObjectMetadata resp,
+      final DynamicDocumentItem doc) {
 
     String content = null;
 
     if (MimeType.isPlainText(doc.getContentType()) && resp.getContentLength() != null
         && resp.getContentLength().longValue() < DocumentEventServiceSns.MAX_SNS_MESSAGE_SIZE) {
-      content = this.s3service.getContentAsString(s3, s3bucket, key, null);
+      content = this.s3service.getContentAsString(s3bucket, key, null);
     }
 
     return content;
@@ -232,16 +254,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /**
    * Get Object Tags from S3.
    * 
-   * @param s3 {@link S3Client}
    * @param item {@link DocumentItem}
    * @param bucket {@link String}
    * @param documentId {@link String}
    * @return {@link List} {@link DynamicDocumentTag}
    */
-  private List<DynamicDocumentTag> getObjectTags(final S3Client s3, final DocumentItem item,
-      final String bucket, final String documentId) {
+  private List<DynamicDocumentTag> getObjectTags(final DocumentItem item, final String bucket,
+      final String documentId) {
 
-    GetObjectTaggingResponse objectTags = this.s3service.getObjectTags(s3, bucket, documentId);
+    GetObjectTaggingResponse objectTags = this.s3service.getObjectTags(bucket, documentId);
 
     List<DocumentTag> tags = objectTags.tagSet().stream().map(t -> new DocumentTag(documentId,
         t.key(), t.value(), item.getInsertedDate(), item.getUserId())).collect(Collectors.toList());
@@ -300,7 +321,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         }
       }
 
-    } catch (Exception e) {
+    } catch (IOException | InterruptedException | RuntimeException e) {
 
       e.printStackTrace();
       sendToDlq(map);
@@ -436,7 +457,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     this.service.deleteDocument(siteId, documentId);
 
     DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
-    sendSnsMessage(logger, DELETE, siteId, doc, bucket, key, null);
+
+    DocumentEvent event = buildDocumentEvent(DELETE, siteId, doc, bucket, key);
+
+    sendSnsMessage(logger, event, doc, null);
   }
 
   /**
@@ -457,55 +481,53 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String siteId = getSiteId(key);
     String documentId = resetDatabaseKey(siteId, key);
 
-    try (S3Client s3 = this.s3service.buildClient()) {
+    S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3bucket, key);
 
-      S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3, s3bucket, key);
+    if (!resp.isObjectExists()) {
+      throw new FileNotFoundException("Object " + documentId + " not found in bucket " + s3bucket);
+    }
 
-      if (!resp.isObjectExists()) {
-        throw new FileNotFoundException(
-            "Object " + documentId + " not found in bucket " + s3bucket);
+    String contentType = resp.getContentType();
+    Long contentLength = resp.getContentLength();
+
+    DocumentItem item = this.service.findDocument(siteId, documentId);
+
+    if (item != null) {
+
+      DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
+
+      if (contentType != null && contentType.length() > 0) {
+        doc.setContentType(contentType);
       }
 
-      String contentType = resp.getContentType();
-      Long contentLength = resp.getContentLength();
+      doc.setChecksum(resp.getEtag());
 
-      DocumentItem item = this.service.findDocument(siteId, documentId);
-
-      if (item != null) {
-
-        DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
-
-        if (contentType != null && contentType.length() > 0) {
-          doc.setContentType(contentType);
-        }
-
-        doc.setChecksum(resp.getEtag());
-
-        if (contentLength != null) {
-          doc.setContentLength(contentLength);
-        }
-
-        logger.log("saving document " + createDatabaseKey(siteId, item.getDocumentId()));
-
-        List<DynamicDocumentTag> tags = getObjectTags(s3, item, s3bucket, key);
-        doc.put("tags", tags);
-
-        if (debug) {
-          logger.log("original " + this.gson.toJson(item));
-          logger.log("new " + this.gson.toJson(doc));
-        }
-
-        this.service.saveDocumentItemWithTag(siteId, doc);
-
-        this.service.deleteDocumentFormats(siteId, item.getDocumentId());
-
-        String content = getContent(s3bucket, key, s3, resp, doc);
-
-        sendSnsMessage(logger, create ? CREATE : UPDATE, siteId, doc, s3bucket, key, content);
-
-      } else {
-        logger.log("Cannot find document " + documentId + " in site " + siteId);
+      if (contentLength != null) {
+        doc.setContentLength(contentLength);
       }
+
+      logger.log("saving document " + createDatabaseKey(siteId, item.getDocumentId()));
+
+      List<DynamicDocumentTag> tags = getObjectTags(item, s3bucket, key);
+      doc.put("tags", tags);
+
+      if (debug) {
+        logger.log("original " + this.gson.toJson(item));
+        logger.log("new " + this.gson.toJson(doc));
+      }
+
+      this.service.saveDocumentItemWithTag(siteId, doc);
+
+      this.service.deleteDocumentFormats(siteId, item.getDocumentId());
+
+      String content = getContent(s3bucket, key, resp, doc);
+
+      DocumentEvent event =
+          buildDocumentEvent(create ? CREATE : UPDATE, siteId, doc, s3bucket, key);
+      sendSnsMessage(logger, event, doc, content);
+
+    } else {
+      logger.log("Cannot find document " + documentId + " in site " + siteId);
     }
   }
 
@@ -513,23 +535,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * Either sends the Create Message to SNS.
    * 
    * @param logger {@link LambdaLogger}
-   * @param eventType {@link String}
-   * @param siteId {@link String}
+   * @param event {@link DocumentEvent}
    * @param doc {@link DynamicDocumentItem}
-   * @param s3Bucket {@link String}
-   * @param s3Key {@link String}
    * @param content {@link String}
    */
-  private void sendSnsMessage(final LambdaLogger logger, final String eventType,
-      final String siteId, final DynamicDocumentItem doc, final String s3Bucket, final String s3Key,
-      final String content) {
+  private void sendSnsMessage(final LambdaLogger logger, final DocumentEvent event,
+      final DynamicDocumentItem doc, final String content) {
 
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
-
-    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket)
-        .s3key(s3Key).type(eventType).userId(doc.getUserId()).contentType(doc.getContentType())
-        .path(doc.getPath());
+    String siteId = event.siteId();
+    String documentId = event.documentId();
 
     if ("application/json".equals(doc.getContentType())) {
       event.content(content);
@@ -542,15 +556,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       logger.log("event: " + eventJson);
     }
 
+    String eventType = event.type();
     logger.log("publishing " + event.type() + " document message to " + this.snsDocumentEvent);
 
     if (CREATE.equals(eventType)) {
-
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
-      actions.forEach(a -> a.status(ActionStatus.PENDING));
-      this.actionsService.saveActions(siteId, documentId, actions);
-
-      this.notificationService.publishNextActionEvent(actions, site, documentId);
+      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
   }
 

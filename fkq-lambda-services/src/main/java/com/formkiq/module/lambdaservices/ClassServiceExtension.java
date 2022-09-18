@@ -21,40 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
-
-import org.mockserver.mock.action.ExpectationResponseCallback;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
+package com.formkiq.module.lambdaservices;
 
 /**
+ * {@link AwsServiceExtension} for any class.
  * 
- * Record.
- *
+ * @param <T> Type of Object
  */
-public class RequestRecordExpectationResponseCallback implements ExpectationResponseCallback {
-  /** {@link HttpRequest}. */
-  private HttpRequest lastRequest;
+public class ClassServiceExtension<T> implements AwsServiceExtension<T> {
+
+  /** Type of Object. */
+  private T tt;
 
   /**
    * constructor.
-   */
-  public RequestRecordExpectationResponseCallback() {}
-
-  /**
-   * Get Last {@link HttpRequest}.
    * 
-   * @return {@link HttpRequest}
+   * @param t {@link Object}
    */
-  public HttpRequest getLastRequest() {
-    return this.lastRequest;
+  public ClassServiceExtension(final T t) {
+    this.tt = t;
   }
 
   @Override
-  public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
-
-    this.lastRequest = httpRequest;
-
-    return org.mockserver.model.HttpResponse.response("{\"contentUrls\":[]}");
+  public T loadService(final AwsServiceCache awsServiceCache) {
+    return this.tt;
   }
+
 }

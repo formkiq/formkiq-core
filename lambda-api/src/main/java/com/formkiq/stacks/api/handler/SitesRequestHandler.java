@@ -37,9 +37,11 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -73,6 +75,33 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     return email;
   }
 
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+
+    SsmConnectionBuilder ssm = awsservice.getExtension(SsmConnectionBuilder.class);
+    try (SsmClient ssmClient = ssm.build()) {
+
+      List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
+        DynamicObject config = serviceCache.config(siteId);
+        config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+        return config;
+      }).collect(Collectors.toList());
+
+      sites.forEach(ob -> {
+        ob.remove("PK");
+        ob.remove("SK");
+      });
+
+      updateUploadEmail(logger, awsservice, authorizer, sites);
+
+      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("sites", sites)));
+    }
+  }
+
   /**
    * Get Mail Domain.
    * 
@@ -84,14 +113,9 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     return getSsmService(awsservice).getParameterValue(key);
   }
 
-  /**
-   * Get {@link SsmService}.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @return {@link SsmService}
-   */
-  private SsmService getSsmService(final AwsServiceCache awsservice) {
-    return awsservice.getExtension(SsmService.class);
+  @Override
+  public String getRequestUrl() {
+    return "/sites";
   }
 
   /**
@@ -112,6 +136,16 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   }
 
   /**
+   * Get {@link SsmService}.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @return {@link SsmService}
+   */
+  private SsmService getSsmService(final AwsServiceCache awsservice) {
+    return awsservice.getExtension(SsmService.class);
+  }
+
+  /**
    * Does Email address already exist.
    * 
    * @param logger {@link LambdaLogger}
@@ -124,28 +158,6 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     String[] strs = email.split("@");
     String key = String.format("/formkiq/ses/%s/%s", strs[1], strs[0]);
     return getSsmService(awsservice).getParameterValue(key) != null;
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
-    List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
-      DynamicObject config = serviceCache.config(siteId);
-      config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-      return config;
-    }).collect(Collectors.toList());
-
-    sites.forEach(ob -> {
-      ob.remove("PK");
-      ob.remove("SK");
-    });
-
-    updateUploadEmail(logger, awsservice, authorizer, sites);
-
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("sites", sites)));
   }
 
   /**
@@ -199,10 +211,5 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
       });
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/sites";
   }
 }

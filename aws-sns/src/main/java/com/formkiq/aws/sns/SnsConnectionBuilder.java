@@ -43,7 +43,7 @@ public class SnsConnectionBuilder {
   /** {@link SnsClientBuilder}. */
   private SnsClientBuilder builder;
   /** {@link SnsClient}. */
-  private SnsClient snsClient;
+  private SnsClient snsClient = null;
 
   /**
    * constructor.
@@ -57,14 +57,16 @@ public class SnsConnectionBuilder {
   }
 
   /**
-   * Set Region.
+   * Build {@link SnsClient}.
    * 
-   * @param region {@link Region}
-   * @return {@link SnsConnectionBuilder}
+   * @return {@link SnsClient}
    */
-  public SnsConnectionBuilder setRegion(final Region region) {
-    this.builder = this.builder.region(region);
-    return this;
+  public SnsClient build() {
+    if (this.snsClient == null) {
+      this.snsClient = this.builder.build();
+    }
+
+    return this.snsClient;
   }
 
   /**
@@ -104,24 +106,13 @@ public class SnsConnectionBuilder {
   }
 
   /**
-   * Build {@link SnsClient}.
+   * Set Region.
    * 
-   * @return {@link SnsClient}
+   * @param region {@link Region}
+   * @return {@link SnsConnectionBuilder}
    */
-  public SnsClient build() {
-    if (this.snsClient == null) {
-      this.snsClient = this.builder.build();
-    }
-
-    return this.snsClient;
-  }
-
-  /**
-   * Close {@link SnsClient} if one exists.
-   */
-  public void close() {
-    if (this.snsClient != null) {
-      this.snsClient.close();
-    }
+  public SnsConnectionBuilder setRegion(final Region region) {
+    this.builder = this.builder.region(region);
+    return this;
   }
 }

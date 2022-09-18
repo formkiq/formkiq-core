@@ -62,12 +62,10 @@ public class DocumentSearchServiceImplTest {
 
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-
-  /** {@link DocumentService}. */
-  private DocumentService service;
-
   /** {@link DocumentService}. */
   private DocumentSearchService searchService;
+  /** {@link DocumentService}. */
+  private DocumentService service;
 
   /**
    * Before Test.
@@ -78,9 +76,10 @@ public class DocumentSearchServiceImplTest {
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
-    this.service = new DocumentServiceImpl(db, DOCUMENTS_TABLE);
-    this.searchService = new DocumentSearchServiceImpl(this.service, db, DOCUMENTS_TABLE, null);
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    this.searchService =
+        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE, null);
   }
 
   /**
@@ -596,9 +595,8 @@ public class DocumentSearchServiceImplTest {
           this.searchService.search(siteId, q, startkey, MAX_RESULTS);
 
       // then
-      final int count = 2;
       List<DynamicDocumentItem> list = results.getResults();
-      assertEquals(count, list.size());
+      assertEquals(2, list.size());
       assertNull(results.getToken());
 
       assertEquals("category", list.get(0).getMap("matchedTag").get("key"));

@@ -145,6 +145,7 @@ public class DocumentTagRequestHandler
     String siteId = authorizer.getSiteId();
 
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+
     DocumentTag tag = cacheService.documentService().findDocumentTag(siteId, documentId, tagKey);
 
     if (tag == null) {
@@ -284,5 +285,4 @@ public class DocumentTagRequestHandler
       }
     }
   }
-
 }

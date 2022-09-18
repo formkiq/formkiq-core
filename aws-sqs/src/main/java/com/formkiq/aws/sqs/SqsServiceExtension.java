@@ -35,22 +35,12 @@ public class SqsServiceExtension implements AwsServiceExtension<SqsService> {
 
   /** {@link SqsService}. */
   private SqsService service;
-  /** {@link SqsConnectionBuilder}. */
-  private SqsConnectionBuilder connection;
-
-  /**
-   * constructor.
-   * 
-   * @param sqsConnection {@link SqsConnectionBuilder}
-   */
-  public SqsServiceExtension(final SqsConnectionBuilder sqsConnection) {
-    this.connection = sqsConnection;
-  }
 
   @Override
   public SqsService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      this.service = new SqsService(this.connection);
+      SqsConnectionBuilder connection = awsServiceCache.getExtension(SqsConnectionBuilder.class);
+      this.service = new SqsService(connection);
     }
 
     return this.service;

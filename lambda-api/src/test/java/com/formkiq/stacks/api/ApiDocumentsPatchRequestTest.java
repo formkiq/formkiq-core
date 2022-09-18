@@ -48,7 +48,6 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request PATCH /documents/{documentId}. */
 @ExtendWith(LocalStackExtension.class)
@@ -206,18 +205,16 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       S3Service s3 = getS3();
       String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
 
-      try (S3Client client = s3.buildClient()) {
-        String json = s3.getContentAsString(client, STAGE_BUCKET_NAME, s3key, null);
-        Map<String, Object> map = fromJson(json, Map.class);
-        assertEquals(documentId, map.get("documentId"));
+      String json = s3.getContentAsString(STAGE_BUCKET_NAME, s3key, null);
+      Map<String, Object> map = fromJson(json, Map.class);
+      assertEquals(documentId, map.get("documentId"));
 
-        List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
-        assertEquals(1, tags.size());
+      List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
+      assertEquals(1, tags.size());
 
-        assertEquals("USERDEFINED", tags.get(0).get("type"));
-        assertEquals("author", tags.get(0).get("key"));
-        assertEquals("Bacon", tags.get(0).get("value"));
-      }
+      assertEquals("USERDEFINED", tags.get(0).get("type"));
+      assertEquals("author", tags.get(0).get("key"));
+      assertEquals("Bacon", tags.get(0).get("value"));
     }
   }
 

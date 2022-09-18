@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 
@@ -37,6 +38,8 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentCountServiceDynamoDbTest {
 
+  /** {@link DynamoDbConnectionBuilder}. */
+  private DynamoDbConnectionBuilder db;
   /** Document Count Service. */
   private DocumentCountService service;
 
@@ -47,8 +50,8 @@ public class DocumentCountServiceDynamoDbTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service = new DocumentCountServiceDynamoDb(
-        DynamoDbTestServices.getDynamoDbConnection(null), DOCUMENTS_TABLE);
+    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentCountServiceDynamoDb(this.db, DOCUMENTS_TABLE);
   }
 
   /**

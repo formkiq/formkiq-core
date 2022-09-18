@@ -56,6 +56,30 @@ public class DocumentIdUrlRequestHandler
    */
   public DocumentIdUrlRequestHandler() {}
 
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+
+    String documentId = event.getPathParameters().get("documentId");
+    String versionId = getParameter(event, "versionId");
+    String siteId = authorizer.getSiteId();
+
+    DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
+
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
+
+    URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId);
+
+    return url != null
+        ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
+        : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+  }
+
   /**
    * Look at {@link ApiGatewayRequestEvent} for "duration".
    * 
@@ -78,27 +102,8 @@ public class DocumentIdUrlRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-
-    String documentId = event.getPathParameters().get("documentId");
-    String versionId = getParameter(event, "versionId");
-    String siteId = authorizer.getSiteId();
-
-    DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
-
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
-
-    URL url = getS3Url(logger, authorizer, awsservice, event, item, documentId, versionId);
-
-    return url != null
-        ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
-        : new ApiRequestHandlerResponse(SC_NOT_FOUND, new ApiEmptyResponse());
+  public String getRequestUrl() {
+    return "/documents/{documentId}/url";
   }
 
   /**
@@ -108,15 +113,15 @@ public class DocumentIdUrlRequestHandler
    * @param authorizer {@link ApiAuthorizer}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
-   * @param documentId {@link String}
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
    * @return {@link URL}
    */
   private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
-      final String documentId, final String versionId) {
+      final String versionId) {
 
+    final String documentId = item.getDocumentId();
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     URL url = null;
@@ -164,10 +169,5 @@ public class DocumentIdUrlRequestHandler
     }
 
     return url;
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/documents/{documentId}/url";
   }
 }

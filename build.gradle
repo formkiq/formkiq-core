@@ -14,8 +14,8 @@ def moduleName = "formkiq-core"
 repositories { mavenCentral() }
 
 allprojects {
-  version = '1.8.6'
-  ext.awsCognitoVersion = '1.4.1'
+  version = '1.8.7'
+  ext.awsCognitoVersion = '1.4.2'
   group = 'com.formkiq.stacks'
   
 	apply plugin: 'com.diffplug.spotless'
@@ -293,5 +293,7 @@ task buildSamZip(type: Zip) {
 	from("${projectDir}") {
    		include 'INSTALL.md'
    		include 'LICENSE'
+   		include 'openapi-jwt.yaml'
+   		include 'openapi-iam.yaml'
     } 
 }

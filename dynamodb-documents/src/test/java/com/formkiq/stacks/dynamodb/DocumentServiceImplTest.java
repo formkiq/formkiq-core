@@ -32,6 +32,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Month;
@@ -85,8 +86,6 @@ public class DocumentServiceImplTest implements DbKeys {
 
   /** {@link DocumentSearchService}. */
   private DocumentSearchService searchService;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private DynamoDbConnectionBuilder db;
 
   /**
    * Before Test.
@@ -97,10 +96,10 @@ public class DocumentServiceImplTest implements DbKeys {
   public void before() throws Exception {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
-    this.service = new DocumentServiceImpl(this.db, DOCUMENTS_TABLE);
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     this.searchService =
-        new DocumentSearchServiceImpl(this.service, this.db, DOCUMENTS_TABLE, null);
+        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE, null);
   }
 
   /**
@@ -1498,9 +1497,11 @@ public class DocumentServiceImplTest implements DbKeys {
 
   /**
    * Test Save {@link DocumentItem} with {@link DocumentTag} and TTL.
+   * 
+   * @throws URISyntaxException URISyntaxException
    */
   @Test
-  public void testSaveDocumentItemWithTag06() {
+  public void testSaveDocumentItemWithTag06() throws URISyntaxException {
     // given
     String ttl = "1612058378";
 
@@ -1520,15 +1521,16 @@ public class DocumentServiceImplTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(DOCUMENTS_TABLE).build();
 
-      try (DynamoDbClient client = this.db.build()) {
-        Map<String, AttributeValue> result = client.getItem(r).item();
+      try (DynamoDbClient dbClient = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+
+        Map<String, AttributeValue> result = dbClient.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
 
         for (String tagKey : Arrays.asList("untagged", "userId")) {
           r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
               .tableName(DOCUMENTS_TABLE).build();
 
-          result = client.getItem(r).item();
+          result = dbClient.getItem(r).item();
           assertEquals(ttl, result.get("TimeToLive").n());
         }
       }

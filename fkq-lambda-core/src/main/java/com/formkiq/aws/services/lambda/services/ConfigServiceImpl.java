@@ -50,24 +50,24 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
   private static final List<String> KEYS = Arrays.asList(DOCUMENT_TIME_TO_LIVE, MAX_WEBHOOKS,
       MAX_DOCUMENTS, MAX_DOCUMENT_SIZE_BYTES, WEBHOOK_TIME_TO_LIVE);
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
   /** Documents Table Name. */
   private String documentTableName;
-
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
 
   /**
    * constructor.
    *
-   * @param builder {@link DynamoDbConnectionBuilder}
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public ConfigServiceImpl(final DynamoDbConnectionBuilder builder, final String documentsTable) {
+  public ConfigServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
   }
 
@@ -75,7 +75,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
   public void delete(final String siteId) {
     String s = siteId != null ? siteId : DEFAULT_SITE_ID;
     Map<String, AttributeValue> keys = keysGeneric(null, PREFIX_CONFIG, s);
-    this.dynamoDB.deleteItem(
+    this.dbClient.deleteItem(
         DeleteItemRequest.builder().tableName(this.documentTableName).key(keys).build());
   }
 
@@ -95,7 +95,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
         Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
 
     BatchGetItemResponse response =
-        this.dynamoDB.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+        this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
 
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
@@ -123,7 +123,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       }
     });
 
-    this.dynamoDB
+    this.dbClient
         .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
   }
 }

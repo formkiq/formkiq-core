@@ -135,7 +135,6 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     assertFalse(result);
   }
 
-
   /**
    * Max Content Length, Content Length greater.
    */

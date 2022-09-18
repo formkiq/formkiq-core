@@ -56,27 +56,26 @@ public class DynamoDbCacheService implements CacheService {
   /** {@link SimpleDateFormat} format. */
   private SimpleDateFormat df;
 
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /** Cache Table Name. */
   private String cacheTableName;
   /** UTC {@link TimeZone}. */
   private TimeZone tz = TimeZone.getTimeZone("UTC");
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
 
   /**
    * constructor.
    *
-   * @param adb {@link DynamoDbConnectionBuilder}
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param table {@link String}
    */
-  public DynamoDbCacheService(final DynamoDbConnectionBuilder adb, final String table) {
+  public DynamoDbCacheService(final DynamoDbConnectionBuilder connection, final String table) {
 
     if (table == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = adb.build();
+    this.dbClient = connection.build();
     this.cacheTableName = table;
 
     this.df = new SimpleDateFormat(DATE_FORMAT);
@@ -122,7 +121,7 @@ public class DynamoDbCacheService implements CacheService {
 
     GetItemRequest r = GetItemRequest.builder().tableName(this.cacheTableName).key(keyMap).build();
 
-    Map<String, AttributeValue> result = this.dynamoDB.getItem(r).item();
+    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
     return result;
   }
 
@@ -150,6 +149,6 @@ public class DynamoDbCacheService implements CacheService {
     PutItemRequest putItemRequest =
         PutItemRequest.builder().tableName(this.cacheTableName).item(pkvalues).build();
 
-    this.dynamoDB.putItem(putItemRequest);
+    this.dbClient.putItem(putItemRequest);
   }
 }

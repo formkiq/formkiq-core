@@ -75,32 +75,30 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 /** Implementation of the {@link DocumentService}. */
 public class DocumentServiceImpl implements DocumentService, DbKeys {
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Documents Table Name. */
   private String documentTableName;
-
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
   private SimpleDateFormat yyyymmddFormat;
-
   /** {@link DateTimeFormatter}. */
   private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   /**
    * constructor.
-   *
-   * @param builder {@link DynamoDbConnectionBuilder}
+   * 
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public DocumentServiceImpl(final DynamoDbConnectionBuilder builder, final String documentsTable) {
+  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
 
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -135,7 +133,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           .map(i -> TransactWriteItem.builder().put(i).build()).collect(Collectors.toList());
 
       if (!writes.isEmpty()) {
-        this.dynamoDB
+        this.dbClient
             .transactWriteItems(TransactWriteItemsRequest.builder().transactItems(writes).build());
       }
     }
@@ -170,7 +168,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    return this.dynamoDB.deleteItem(deleteItemRequest);
+    return this.dbClient.deleteItem(deleteItemRequest);
   }
 
   @Override
@@ -186,7 +184,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           .keyConditionExpression(PK + " = :pk").expressionAttributeValues(values)
           .limit(Integer.valueOf(MAX_RESULTS)).build();
 
-      QueryResponse response = this.dynamoDB.query(q);
+      QueryResponse response = this.dbClient.query(q);
       List<Map<String, AttributeValue>> results = response.items();
 
       for (Map<String, AttributeValue> map : results) {
@@ -248,7 +246,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Delete Document Row by Parition / Sort Key.
+   * Delete Document Row by Parition / Sort Key. param dbClient {@link DynamoDbClient}
    * 
    * @param key DocumentDb Key {@link Map}
    */
@@ -257,7 +255,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    this.dynamoDB.deleteItem(deleteItemRequest);
+    this.dbClient.deleteItem(deleteItemRequest);
   }
 
   @Override
@@ -309,7 +307,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean exists(final String siteId, final String documentId) {
     GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
         .tableName(this.documentTableName).projectionExpression("PK").build();
-    return this.dynamoDB.getItem(r).hasItem();
+    return this.dbClient.getItem(r).hasItem();
   }
 
   /**
@@ -325,7 +323,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     GetItemRequest r =
         GetItemRequest.builder().key(keyMap).tableName(this.documentTableName).build();
 
-    Map<String, AttributeValue> result = this.dynamoDB.getItem(r).item();
+    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
     return result != null && !result.isEmpty() ? Optional.of(result) : Optional.empty();
   }
 
@@ -357,7 +355,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .scanIndexForward(scanIndexForward).limit(Integer.valueOf(maxresults))
         .exclusiveStartKey(startkey).build();
 
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
     return new PaginationResults<>(result.items(), new QueryResponseToPagination().apply(result));
   }
 
@@ -420,7 +418,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
         .tableName(this.documentTableName).build();
 
-    Map<String, AttributeValue> result = this.dynamoDB.getItem(r).item();
+    Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
 
     if (result != null && !result.isEmpty()) {
 
@@ -438,7 +436,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
             .expressionAttributeValues(values).exclusiveStartKey(startkey)
             .limit(Integer.valueOf(limit)).build();
 
-        QueryResponse response = this.dynamoDB.query(q);
+        QueryResponse response = this.dbClient.query(q);
         List<Map<String, AttributeValue>> results = response.items();
         List<String> ids =
             results.stream().map(s -> s.get("documentId").s()).collect(Collectors.toList());
@@ -486,7 +484,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       BatchGetItemRequest batchReq =
           BatchGetItemRequest.builder().requestItems(requestedItems).build();
-      BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+      BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
       Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
       List<Map<String, AttributeValue>> result =
@@ -606,7 +604,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     QueryRequest q = req.build();
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
     return result;
   }
 
@@ -630,7 +628,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     BatchGetItemRequest batchReq =
         BatchGetItemRequest.builder().requestItems(requestedItems).build();
-    BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
     Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
     List<Map<String, AttributeValue>> result =
@@ -782,15 +780,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Get {@link DynamoDbClient}.
-   *
-   * @return {@link DynamoDbClient}
-   */
-  public DynamoDbClient getDynamoDB() {
-    return this.dynamoDB;
-  }
-
-  /**
    * Is {@link List} {@link DynamicObject} contain a non generated tag.
    * 
    * @param tags {@link List} {@link DynamicObject}
@@ -850,7 +839,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .keyConditionExpression(expr).expressionAttributeValues(values)
         .limit(Integer.valueOf(maxresults)).exclusiveStartKey(startkey).build();
 
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
 
     List<DocumentItem> list = result.items().stream().map(s -> {
       String documentId = s.get("documentId").s();
@@ -906,8 +895,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     });
 
-    deletes.forEach(i -> this.dynamoDB.deleteItem(i));
-    puts.forEach(i -> this.dynamoDB.putItem(i));
+    deletes.forEach(i -> this.dbClient.deleteItem(i));
+    puts.forEach(i -> this.dbClient.putItem(i));
 
     return !deletes.isEmpty();
   }
@@ -924,7 +913,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         DeleteItemRequest deleteItemRequest =
             DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-        this.dynamoDB.deleteItem(deleteItemRequest);
+        this.dbClient.deleteItem(deleteItemRequest);
       });
     }
   }
@@ -939,7 +928,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     PutItemRequest put =
         PutItemRequest.builder().tableName(this.documentTableName).item(values).build();
 
-    return this.dynamoDB.putItem(put).attributes();
+    return this.dbClient.putItem(put).attributes();
   }
 
   /**
@@ -1043,7 +1032,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .conditionExpression(conditionExpression).item(values).build();
 
     try {
-      this.dynamoDB.putItem(put).attributes();
+      this.dbClient.putItem(put).attributes();
     } catch (ConditionalCheckFailedException e) {
       // Conditional Check Fails on second insert attempt
     }

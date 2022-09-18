@@ -46,13 +46,13 @@ public class SsmServiceCache implements SsmService {
   /**
    * constructor.
    * 
-   * @param builder {@link SsmConnectionBuilder}.
+   * @param connection {@link SsmConnectionBuilder}
    * @param ttl Cache Time to Live
    * @param ttlUnit Cache Time to Live {@link TimeUnit}
    */
-  public SsmServiceCache(final SsmConnectionBuilder builder, final long ttl,
+  public SsmServiceCache(final SsmConnectionBuilder connection, final long ttl,
       final TimeUnit ttlUnit) {
-    this.ssm = new SsmServiceImpl(builder);
+    this.ssm = new SsmServiceImpl(connection);
     this.ttlMillis = ttlUnit.toMillis(ttl);
   }
 

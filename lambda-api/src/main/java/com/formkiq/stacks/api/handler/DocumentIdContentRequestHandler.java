@@ -42,7 +42,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.common.formats.MimeType;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */
 public class DocumentIdContentRequestHandler
@@ -63,6 +62,7 @@ public class DocumentIdContentRequestHandler
     String versionId = getParameter(event, "versionId");
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+
     DocumentItem item = serviceCache.documentService().findDocument(siteId, documentId);
 
     if (item == null) {
@@ -76,14 +76,11 @@ public class DocumentIdContentRequestHandler
 
     if (MimeType.isPlainText(item.getContentType())) {
 
-      try (S3Client s3 = s3Service.buildClient()) {
+      String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          s3key, versionId);
 
-        String content = s3Service.getContentAsString(s3,
-            awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, versionId);
-
-        response = new ApiMapResponse(Map.of("content", content, "contentType",
-            item.getContentType(), "isBase64", Boolean.FALSE));
-      }
+      response = new ApiMapResponse(Map.of("content", content, "contentType", item.getContentType(),
+          "isBase64", Boolean.FALSE));
 
     } else {
 

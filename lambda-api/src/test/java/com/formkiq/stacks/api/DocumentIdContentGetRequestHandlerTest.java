@@ -43,7 +43,6 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/content. */
 @ExtendWith(LocalStackExtension.class)
@@ -176,9 +175,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
 
       String content = "this is a test";
       String s3key = createS3Key(siteId, documentId);
-      try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
-      }
+      getS3().putObject(BUCKET_NAME, s3key, content.getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-content01.json");

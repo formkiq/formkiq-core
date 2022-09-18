@@ -82,6 +82,7 @@ public class DocumentsRequestHandler
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
+
     ApiPagination pagination = getPagination(cacheService, event);
 
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);

@@ -45,21 +45,21 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
   private String documentTableName;
 
   /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
+  private DynamoDbClient dbClient;
 
   /**
    * constructor.
    * 
-   * @param builder {@link DynamoDbConnectionBuilder}
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public DocumentCountServiceDynamoDb(final DynamoDbConnectionBuilder builder,
+  public DocumentCountServiceDynamoDb(final DynamoDbConnectionBuilder connection,
       final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
   }
 
@@ -76,7 +76,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
         .keyConditionExpression("PK = :pk and SK = :sk").expressionAttributeValues(values).build();
 
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
     List<Map<String, AttributeValue>> items = result.items();
 
     long documentscount = 0;
@@ -134,7 +134,7 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
         .updateExpression(updateExpression).expressionAttributeNames(expAttrs)
         .expressionAttributeValues(expVals).build();
 
-    this.dynamoDB.updateItem(utr);
+    this.dbClient.updateItem(utr);
   }
 
   @Override
@@ -145,6 +145,6 @@ public class DocumentCountServiceDynamoDb implements DocumentCountService {
     DeleteItemRequest deleteItemRequest =
         DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
 
-    this.dynamoDB.deleteItem(deleteItemRequest);
+    this.dbClient.deleteItem(deleteItemRequest);
   }
 }

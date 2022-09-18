@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ssm.SsmServiceImpl;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * 
@@ -56,15 +55,12 @@ public class LocalStackExtension
     }
 
     S3Service s3service = new S3Service(TestServices.getS3Connection(null));
-    try (S3Client s3 = s3service.buildClient()) {
+    if (!s3service.exists(BUCKET_NAME)) {
+      s3service.createBucket(BUCKET_NAME);
+    }
 
-      if (!s3service.exists(s3, BUCKET_NAME)) {
-        s3service.createBucket(s3, BUCKET_NAME);
-      }
-
-      if (!s3service.exists(s3, STAGE_BUCKET_NAME)) {
-        s3service.createBucket(s3, STAGE_BUCKET_NAME);
-      }
+    if (!s3service.exists(STAGE_BUCKET_NAME)) {
+      s3service.createBucket(STAGE_BUCKET_NAME);
     }
 
     new SsmServiceImpl(TestServices.getSsmConnection(null))

@@ -24,7 +24,9 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -50,9 +52,14 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     SsmService ssmService = awsservice.getExtension(SsmService.class);
     String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/version";
+
     String version = ssmService.getParameterValue(key);
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(
-        Map.of("version", version, "type", awsservice.environment("FORMKIQ_TYPE"))));
+    List<String> modules =
+        awsservice.environment().entrySet().stream().filter(e -> e.getKey().startsWith("MODULE_"))
+            .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("version", version,
+        "type", awsservice.environment("FORMKIQ_TYPE"), "modules", modules)));
   }
 
   @Override

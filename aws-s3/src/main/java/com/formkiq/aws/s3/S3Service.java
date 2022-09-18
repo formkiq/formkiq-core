@@ -85,20 +85,6 @@ import software.amazon.awssdk.utils.IoUtils;
 public class S3Service {
 
   /**
-   * URL Encode {@link String}.
-   *
-   * @param string {@link String}
-   * @return {@link String}
-   */
-  public static String encode(final String string) {
-    try {
-      return URLEncoder.encode(string, StandardCharsets.UTF_8.toString());
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
    * URL Decode {@link String}.
    *
    * @param string {@link String}
@@ -107,6 +93,20 @@ public class S3Service {
   public static String decode(final String string) {
     try {
       return URLDecoder.decode(string, StandardCharsets.UTF_8.toString());
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * URL Encode {@link String}.
+   *
+   * @param string {@link String}
+   * @return {@link String}
+   */
+  public static String encode(final String string) {
+    try {
+      return URLEncoder.encode(string, StandardCharsets.UTF_8.toString());
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException(e);
     }
@@ -126,6 +126,8 @@ public class S3Service {
 
   /** {@link S3ConnectionBuilder}. */
   private S3ConnectionBuilder builder;
+  /** {@link S3Client}. */
+  private S3Client s3Client;
 
   /**
    * Constructor.
@@ -133,29 +135,21 @@ public class S3Service {
    * @param s3connectionBuilder {@link S3ConnectionBuilder}
    */
   public S3Service(final S3ConnectionBuilder s3connectionBuilder) {
+    this.s3Client = s3connectionBuilder.build();
     this.builder = s3connectionBuilder;
   }
 
-  /**
-   * Build {@link S3Client}.
-   * 
-   * @return {@link S3Client}
-   */
-  public S3Client buildClient() {
-    return this.builder.build();
-  }
 
   /**
    * Copy S3 Object.
    * 
-   * @param s3 {@link S3Client}
    * @param sourcebucket {@link String}
    * @param sourcekey {@link String}
    * @param destinationBucket {@link String}
    * @param destinationKey {@link String}
    * @param contentType {@link String}
    */
-  public void copyObject(final S3Client s3, final String sourcebucket, final String sourcekey,
+  public void copyObject(final String sourcebucket, final String sourcekey,
       final String destinationBucket, final String destinationKey, final String contentType) {
     CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
         .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
@@ -164,18 +158,17 @@ public class S3Service {
       req = req.contentType(contentType);
     }
 
-    s3.copyObject(req.build());
+    this.s3Client.copyObject(req.build());
   }
 
   /**
    * Create S3 Bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    */
-  public void createBucket(final S3Client s3, final String bucket) {
-    s3.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
-    s3.putBucketVersioning(PutBucketVersioningRequest.builder().bucket(bucket)
+  public void createBucket(final String bucket) {
+    this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+    this.s3Client.putBucketVersioning(PutBucketVersioningRequest.builder().bucket(bucket)
         .versioningConfiguration(
             VersioningConfiguration.builder().status(BucketVersioningStatus.ENABLED).build())
         .build());
@@ -184,19 +177,18 @@ public class S3Service {
   /**
    * Delete All Files in bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    */
-  public void deleteAllFiles(final S3Client s3, final String bucket) {
+  public void deleteAllFiles(final String bucket) {
     boolean isDone = false;
 
     while (!isDone) {
 
       ListObjectsRequest req = ListObjectsRequest.builder().bucket(bucket).build();
-      ListObjectsResponse resp = s3.listObjects(req);
+      ListObjectsResponse resp = this.s3Client.listObjects(req);
 
       for (S3Object s3Object : resp.contents()) {
-        deleteObject(s3, bucket, s3Object.key());
+        deleteObject(bucket, s3Object.key());
       }
 
       isDone = !resp.isTruncated().booleanValue();
@@ -206,37 +198,34 @@ public class S3Service {
   /**
    * Delete All S3 Object Tags.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    */
-  public void deleteAllObjectTags(final S3Client s3, final String bucket, final String key) {
+  public void deleteAllObjectTags(final String bucket, final String key) {
     DeleteObjectTaggingRequest req =
         DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
-    s3.deleteObjectTagging(req);
+    this.s3Client.deleteObjectTagging(req);
   }
 
   /**
    * Delete Object.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    */
-  public void deleteObject(final S3Client s3, final String bucket, final String key) {
-    s3.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+  public void deleteObject(final String bucket, final String key) {
+    this.s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
   }
 
   /**
    * Whether Bucket exists.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @return boolean
    */
-  public boolean exists(final S3Client s3, final String bucket) {
+  public boolean exists(final String bucket) {
     try {
-      s3.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+      this.s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
       return true;
     } catch (NoSuchBucketException e) {
       return false;
@@ -246,15 +235,13 @@ public class S3Service {
   /**
    * Get File Content as {@link InputStream}.
    * 
-   * @param s3 {@link S3Client}
    * @param distributionBucket {@link String}
    * @param key {@link String}
    * @return {@link InputStream}
    */
-  public InputStream getContentAsInputStream(final S3Client s3, final String distributionBucket,
-      final String key) {
+  public InputStream getContentAsInputStream(final String distributionBucket, final String key) {
     GetObjectRequest get = GetObjectRequest.builder().bucket(distributionBucket).key(key).build();
-    ResponseBytes<GetObjectResponse> response = s3.getObjectAsBytes(get);
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
 
     return response.asInputStream();
   }
@@ -262,18 +249,16 @@ public class S3Service {
   /**
    * Get File String Content.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @param versionId {@link String}
    * @return {@link String}
    */
-  public String getContentAsString(final S3Client s3, final String bucket, final String key,
-      final String versionId) {
+  public String getContentAsString(final String bucket, final String key, final String versionId) {
 
     GetObjectRequest gr =
         GetObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
-    ResponseBytes<GetObjectResponse> response = s3.getObjectAsBytes(gr);
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(gr);
 
     String s = response.asUtf8String();
     return s;
@@ -282,33 +267,29 @@ public class S3Service {
   /**
    * Get Bucket's Notifications.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @return {@link GetBucketNotificationConfigurationResponse}
    */
-  public GetBucketNotificationConfigurationResponse getNotifications(final S3Client s3,
-      final String bucket) {
+  public GetBucketNotificationConfigurationResponse getNotifications(final String bucket) {
     GetBucketNotificationConfigurationRequest req =
         GetBucketNotificationConfigurationRequest.builder().bucket(bucket).build();
-    return s3.getBucketNotificationConfiguration(req);
+    return this.s3Client.getBucketNotificationConfiguration(req);
   }
 
   /**
    * Get the S3 Object Meta Data.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * 
    * @return {@link S3ObjectMetadata}
    */
-  public S3ObjectMetadata getObjectMetadata(final S3Client s3, final String bucket,
-      final String key) {
+  public S3ObjectMetadata getObjectMetadata(final String bucket, final String key) {
     HeadObjectRequest hr = HeadObjectRequest.builder().bucket(bucket).key(key).build();
     S3ObjectMetadata md = new S3ObjectMetadata();
 
     try {
-      HeadObjectResponse resp = s3.headObject(hr);
+      HeadObjectResponse resp = this.s3Client.headObject(hr);
 
       Map<String, String> metadata = resp.metadata();
       md.setObjectExists(true);
@@ -327,52 +308,47 @@ public class S3Service {
   /**
    * Get Object Tags.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @return {@link GetObjectTaggingResponse}
    */
-  public GetObjectTaggingResponse getObjectTags(final S3Client s3, final String bucket,
-      final String key) {
+  public GetObjectTaggingResponse getObjectTags(final String bucket, final String key) {
     GetObjectTaggingRequest req = GetObjectTaggingRequest.builder().bucket(bucket).key(key).build();
-    GetObjectTaggingResponse response = s3.getObjectTagging(req);
+    GetObjectTaggingResponse response = this.s3Client.getObjectTagging(req);
     return response;
   }
 
   /**
    * Get Object Versions.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param prefix {@link String}
    * @param keyMarker {@link String}
    * @return {@link ListObjectVersionsResponse}
    */
-  public ListObjectVersionsResponse getObjectVersions(final S3Client s3, final String bucket,
-      final String prefix, final String keyMarker) {
+  public ListObjectVersionsResponse getObjectVersions(final String bucket, final String prefix,
+      final String keyMarker) {
     ListObjectVersionsRequest req = ListObjectVersionsRequest.builder().bucket(bucket)
         .prefix(prefix).keyMarker(keyMarker).build();
-    ListObjectVersionsResponse response = s3.listObjectVersions(req);
+    ListObjectVersionsResponse response = this.s3Client.listObjectVersions(req);
     return response;
   }
 
   /**
    * List S3 Objects.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param prefix {@link String}
    * @return {@link ListObjectsResponse}
    */
-  public ListObjectsResponse listObjects(final S3Client s3, final String bucket,
-      final String prefix) {
+  public ListObjectsResponse listObjects(final String bucket, final String prefix) {
     Builder listbuilder = ListObjectsRequest.builder().bucket(bucket);
 
     if (prefix != null) {
       listbuilder = listbuilder.prefix(prefix);
     }
 
-    ListObjectsResponse listObjects = s3.listObjects(listbuilder.build());
+    ListObjectsResponse listObjects = this.s3Client.listObjects(listbuilder.build());
     return listObjects;
   }
 
@@ -459,22 +435,20 @@ public class S3Service {
   /**
    * Put Object in Bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @param data byte[]
    * @param contentType {@link String}
    * @return {@link PutObjectResponse}
    */
-  public PutObjectResponse putObject(final S3Client s3, final String bucket, final String key,
-      final byte[] data, final String contentType) {
-    return putObject(s3, bucket, key, data, contentType, null);
+  public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
+      final String contentType) {
+    return putObject(bucket, key, data, contentType, null);
   }
 
   /**
    * Put Object in Bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @param data byte[]
@@ -482,8 +456,8 @@ public class S3Service {
    * @param metadata {@link Map}
    * @return {@link PutObjectResponse}
    */
-  public PutObjectResponse putObject(final S3Client s3, final String bucket, final String key,
-      final byte[] data, final String contentType, final Map<String, String> metadata) {
+  public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
+      final String contentType, final Map<String, String> metadata) {
     int contentLength = data.length;
     PutObjectRequest.Builder build = PutObjectRequest.builder().bucket(bucket).key(key)
         .contentLength(Long.valueOf(contentLength));
@@ -496,14 +470,14 @@ public class S3Service {
       build.metadata(metadata);
     }
 
-    PutObjectResponse response = s3.putObject(build.build(), RequestBody.fromBytes(data));
+    PutObjectResponse response =
+        this.s3Client.putObject(build.build(), RequestBody.fromBytes(data));
     return response;
   }
 
   /**
    * Put Object in Bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @param is {@link InputStream}
@@ -511,41 +485,38 @@ public class S3Service {
    * @return {@link PutObjectResponse}
    * @throws IOException IOException
    */
-  public PutObjectResponse putObject(final S3Client s3, final String bucket, final String key,
-      final InputStream is, final String contentType) throws IOException {
+  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
+      final String contentType) throws IOException {
     byte[] data = toByteArray(is);
-    return putObject(s3, bucket, key, data, contentType, null);
+    return putObject(bucket, key, data, contentType, null);
   }
 
   /**
    * Set S3 Object Tag.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @param tagKey {@link String}
    * @param tagValue {@link String}
    */
-  public void setObjectTag(final S3Client s3, final String bucket, final String key,
-      final String tagKey, final String tagValue) {
+  public void setObjectTag(final String bucket, final String key, final String tagKey,
+      final String tagValue) {
     Collection<Tag> tagSet = Arrays.asList(Tag.builder().key(tagKey).value(tagValue).build());
-    setObjectTags(s3, bucket, key, tagSet);
+    setObjectTags(bucket, key, tagSet);
   }
 
   /**
    * Set S3 Object Tag.
    * 
-   * @param s3 {@link S3Client}
    * @param bucket {@link String}
    * @param key {@link String}
    * @param tags {@link Collection} {@link Tag}
    */
-  public void setObjectTags(final S3Client s3, final String bucket, final String key,
-      final Collection<Tag> tags) {
+  public void setObjectTags(final String bucket, final String key, final Collection<Tag> tags) {
 
     Tagging tagging = Tagging.builder().tagSet(tags).build();
     PutObjectTaggingRequest req =
         PutObjectTaggingRequest.builder().bucket(bucket).key(key).tagging(tagging).build();
-    s3.putObjectTagging(req);
+    this.s3Client.putObjectTagging(req);
   }
 }

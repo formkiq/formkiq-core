@@ -2,7 +2,7 @@
         info:
           title: FormKiQ IAM API
           description: FormKiQ IAM API
-          version: 1.8.6
+          version: 1.8.7
         paths:
           /version:
             get:
@@ -2332,6 +2332,9 @@
                   description: OCR Parse types - TEXT, FORMS, TABLES
                   items:
                     type: string
+                addPdfDetectedCharactersAsText:
+                  type: boolean
+                  description: Rewrite PDF document, converting any Image text to searchable text
             SetOcrBody:
               required:
               - content
@@ -2355,6 +2358,11 @@
                 type:
                   type: string
                   description: FormKiQ type
+                modules:
+                  type: array
+                  description: List of installed modules
+                  items:
+                    type: string
             Sites:
               type: object
               properties:

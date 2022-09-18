@@ -46,7 +46,6 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -59,20 +58,22 @@ import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
  *
  */
 public class EmailSendingTest {
-  /** Test Timeout. */
-  private static final long TIMEOUT = 60000L;
-  /** Sleep Timeout. */
-  private static final long SLEEP = 500L;
-  /** SNS Document Email Topic Arn. */
-  private static String snsDocumentEmailArn;
-  /** {@link SqsService}. */
-  private static SqsService sqsService;
-  /** {@link SnsService}. */
-  private static SnsService snsService;
   /** S3 Service. */
   private static S3Service s3Service;
+  /** Sleep Timeout. */
+  private static final long SLEEP = 500L;
+  /** {@link SnsConnectionBuilder}. */
+  private static SnsConnectionBuilder snsBuilder;
+  /** SNS Document Email Topic Arn. */
+  private static String snsDocumentEmailArn;
+  /** {@link SnsService}. */
+  private static SnsService snsService;
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
   /** S3 Staging Bucket. */
   private static String stagingdocumentsbucketname;
+  /** Test Timeout. */
+  private static final long TIMEOUT = 60000L;
 
   /**
    * Assert Received Message.
@@ -115,8 +116,7 @@ public class EmailSendingTest {
         new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     final SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    final SnsConnectionBuilder snsBuilder =
-        new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
@@ -155,7 +155,7 @@ public class EmailSendingTest {
    * @return {@link String}
    */
   private String subscribeToSns(final String topicArn, final String queueUrl) {
-    String queueArn = sqsService.getQueueArn(queueUrl);
+    String queueArn = SqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","
@@ -184,18 +184,16 @@ public class EmailSendingTest {
     String contentType = "text/plain";
     String createQueue = "createtest-" + UUID.randomUUID();
     String documentEmailQueueUrl = createSqsQueue(createQueue).queueUrl();
+
     String snsDocumentEventArn = subscribeToSns(snsDocumentEmailArn, documentEmailQueueUrl);
 
     try {
 
-      try (S3Client s3 = s3Service.buildClient()) {
+      // when
+      writeToStaging(key, contentType);
 
-        // when
-        writeToStaging(s3, key, contentType);
-
-        // then
-        assertSnsMessage(documentEmailQueueUrl, "create");
-      }
+      // then
+      assertSnsMessage(documentEmailQueueUrl, "create");
 
     } finally {
       snsService.unsubscribe(snsDocumentEventArn);
@@ -206,15 +204,14 @@ public class EmailSendingTest {
   /**
    * Write File to Staging S3.
    * 
-   * @param s3 {@link S3Client}
    * @param key {@link String}
    * @param contentType {@link String}
    * @return {@link String}
    */
-  private String writeToStaging(final S3Client s3, final String key, final String contentType) {
+  private String writeToStaging(final String key, final String contentType) {
     String data = UUID.randomUUID().toString();
 
-    s3Service.putObject(s3, stagingdocumentsbucketname, key, data.getBytes(StandardCharsets.UTF_8),
+    s3Service.putObject(stagingdocumentsbucketname, key, data.getBytes(StandardCharsets.UTF_8),
         contentType);
 
     return key;

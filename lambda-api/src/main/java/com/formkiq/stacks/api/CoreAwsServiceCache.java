@@ -84,8 +84,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public ConfigService configService() {
     if (this.configService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
-      this.configService = new ConfigServiceImpl(db, environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.configService = new ConfigServiceImpl(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.configService;
   }
@@ -97,9 +97,9 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public DocumentCountService documentCountService() {
     if (this.documentCountService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
       this.documentCountService =
-          new DocumentCountServiceDynamoDb(db, environment("DOCUMENTS_TABLE"));
+          new DocumentCountServiceDynamoDb(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.documentCountService;
   }
@@ -111,9 +111,9 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public DocumentSearchService documentSearchService() {
     if (this.documentSearchService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
       DocumentTagSchemaPlugin documentTagSchemaPlugin = getExtension(DocumentTagSchemaPlugin.class);
-      this.documentSearchService = new DocumentSearchServiceImpl(documentService(), db,
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.documentSearchService = new DocumentSearchServiceImpl(connection, documentService(),
           environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin);
     }
     return this.documentSearchService;
@@ -135,8 +135,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    */
   public WebhooksService webhookService() {
     if (this.webhookService == null) {
-      DynamoDbConnectionBuilder db = getExtension(DynamoDbConnectionBuilder.class);
-      this.webhookService = new WebhooksServiceImpl(db, environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
+      this.webhookService = new WebhooksServiceImpl(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.webhookService;
   }

@@ -42,40 +42,51 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 /**
  * Test AWS Tests.
  */
 public abstract class AbstractAwsTest {
-  /** Sleep Timeout. */
-  private static final long SLEEP = 500L;
-  /** AWS Region. */
-  private static Region awsregion;
   /** App Environment Name. */
   private static String appenvironment;
-  /** App Edition Name. */
-  private static String edition;
-  /** {@link SqsService}. */
-  private static SqsService sqsService;
-  /** {@link S3Service}. */
-  private static S3Service s3Service;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
-  /** {@link SnsService}. */
-  private static SnsService snsService;
-  /** Documents Bucket Name. */
-  private static String sesbucketname;
+  /** AWS Region. */
+  private static Region awsregion;
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbConnection;
   /** Documents Bucket Name. */
   private static String documentsbucketname;
-  /** Documents Bucket Name. */
-  private static String stagingdocumentsbucketname;
-  /** SNS Document Event Topic Arn. */
-  private static String snsDocumentEventArn;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
+  /** App Edition Name. */
+  private static String edition;
+  /** {@link S3Service}. */
+  private static S3Service s3Service;
   /** {@link DocumentSearchService}. */
   private static DocumentSearchService searchService;
+  /** Documents Bucket Name. */
+  private static String sesbucketname;
+  /** Sleep Timeout. */
+  private static final long SLEEP = 500L;
+  /** {@link SnsConnectionBuilder}. */
+  private static SnsConnectionBuilder snsBuilder;
+  /** SNS Document Event Topic Arn. */
+  private static String snsDocumentEventArn;
+  /** {@link SnsService}. */
+  private static SnsService snsService;
+  /** {@link SqsConnectionBuilder}. */
+  private static SqsConnectionBuilder sqsBuilder;
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
+  /** {@link SsmConnectionBuilder}. */
+  private static SsmConnectionBuilder ssmBuilder;
+  /** {@link SsmService}. */
+  private static SsmService ssmService;
+  /** Documents Bucket Name. */
+  private static String stagingdocumentsbucketname;
 
   /**
    * beforeclass.
@@ -89,19 +100,16 @@ public abstract class AbstractAwsTest {
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
 
-    final SqsConnectionBuilder sqsConnection =
-        new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    sqsBuilder = new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    final SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
     final S3ConnectionBuilder s3Builder =
         new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    final SnsConnectionBuilder snsBuilder =
-        new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
-    sqsService = new SqsService(sqsConnection);
+    sqsService = new SqsService(sqsBuilder);
     s3Service = new S3Service(s3Builder);
     ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
@@ -118,11 +126,10 @@ public abstract class AbstractAwsTest {
 
     String documentsTable =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
-    DynamoDbConnectionBuilder dbConnection =
-        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
     documentService = new DocumentServiceImpl(dbConnection, documentsTable);
     searchService =
-        new DocumentSearchServiceImpl(documentService, dbConnection, documentsTable, null);
+        new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable, null);
   }
 
   /**
@@ -198,6 +205,15 @@ public abstract class AbstractAwsTest {
   }
 
   /**
+   * Get {@link SnsClient}.
+   * 
+   * @return {@link SnsClient}
+   */
+  public static SnsClient getSnsClient() {
+    return snsBuilder.build();
+  }
+
+  /**
    * Get Documents Create Topic Arn.
    * 
    * @return {@link String}
@@ -216,12 +232,30 @@ public abstract class AbstractAwsTest {
   }
 
   /**
+   * Get {@link SqsClient}.
+   * 
+   * @return {@link SqsClient}
+   */
+  public static SqsClient getSqsClient() {
+    return sqsBuilder.build();
+  }
+
+  /**
    * Get SQS Service.
    * 
    * @return {@link SqsService}
    */
   protected static SqsService getSqsService() {
     return sqsService;
+  }
+
+  /**
+   * Get {@link SsmClient}.
+   * 
+   * @return {@link SsmClient}
+   */
+  public static SsmClient getSsmClient() {
+    return ssmBuilder.build();
   }
 
   /**
@@ -243,18 +277,26 @@ public abstract class AbstractAwsTest {
   }
 
   /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @return {@link DynamoDbClient}
+   */
+  public DynamoDbClient getDynamodbClient() {
+    return dbConnection.build();
+  }
+
+  /**
    * Verify File exists in Documents S3 Bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param key {@link String}
    * @param contentType {@link String}
    * @throws InterruptedException InterruptedException
    */
-  protected void verifyFileExistsInDocumentsS3(final S3Client s3, final String key,
-      final String contentType) throws InterruptedException {
+  protected void verifyFileExistsInDocumentsS3(final String key, final String contentType)
+      throws InterruptedException {
 
     while (true) {
-      S3ObjectMetadata meta = getS3Service().getObjectMetadata(s3, getDocumentsbucketname(), key);
+      S3ObjectMetadata meta = getS3Service().getObjectMetadata(getDocumentsbucketname(), key);
       if (meta.isObjectExists()) {
         assertEquals(contentType, meta.getContentType());
         break;

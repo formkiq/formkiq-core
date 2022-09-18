@@ -183,6 +183,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     } else {
 
+
       CacheService cacheService = awsservice.getExtension(CacheService.class);
       ApiPagination pagination = getPagination(cacheService, event);
       int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);

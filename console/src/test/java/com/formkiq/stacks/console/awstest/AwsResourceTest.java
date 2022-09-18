@@ -48,23 +48,22 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * Test CloudFormation.
  */
 public class AwsResourceTest {
 
-  /** Cognito User. */
-  private static final String USER = "test12384@formkiq.com";
-  /** Cognito Password. */
-  private static final String PASSWORD = "uae82nj23njd!@";
   /** App Environment Name. */
   private static String appenvironment;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
+  /** Cognito Password. */
+  private static final String PASSWORD = "uae82nj23njd!@";
   /** {@link S3Service}. */
   private static S3Service s3;
+  /** {@link SsmService}. */
+  private static SsmService ssmService;
+  /** Cognito User. */
+  private static final String USER = "test12384@formkiq.com";
 
   /**
    * beforeclass.
@@ -79,7 +78,7 @@ public class AwsResourceTest {
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
 
-    final SsmConnectionBuilder ssmBuilder =
+    SsmConnectionBuilder ssmBuilder =
         new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(region);
     ssmService = new SsmServiceImpl(ssmBuilder);
 
@@ -90,35 +89,6 @@ public class AwsResourceTest {
     FkqCognitoService cognito = new FkqCognitoService(awsprofile, region, appenvironment);
     cognito.addUser(USER, PASSWORD);
     cognito.addUserToGroup(USER, "default");
-  }
-
-  /**
-   * Test S3 Buckets.
-   */
-  @Test
-  public void testS3Buckets() {
-    final String version =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version");
-    final String consoleBucket =
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console");
-
-    try (S3Client s = s3.buildClient()) {
-      S3ObjectMetadata resp = s3.getObjectMetadata(s, consoleBucket, version + "/index.html");
-      assertTrue(resp.isObjectExists());
-
-      assertTrue(s3.exists(s, consoleBucket));
-    }
-  }
-
-  /**
-   * Test SSM Parameter Store.
-   */
-  @Test
-  public void testSsmParameters() {
-    assertEquals("v2.0.3",
-        ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
-    assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
-        .contains(appenvironment + "-console-"));
   }
 
   /**
@@ -194,5 +164,32 @@ public class AwsResourceTest {
         }
       }
     }
+  }
+
+  /**
+   * Test S3 Buckets.
+   */
+  @Test
+  public void testS3Buckets() {
+    final String version =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version");
+    final String consoleBucket =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console");
+
+    S3ObjectMetadata resp = s3.getObjectMetadata(consoleBucket, version + "/index.html");
+    assertTrue(resp.isObjectExists());
+
+    assertTrue(s3.exists(consoleBucket));
+  }
+
+  /**
+   * Test SSM Parameter Store.
+   */
+  @Test
+  public void testSsmParameters() {
+    assertEquals("v2.0.3",
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
+    assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
+        .contains(appenvironment + "-console-"));
   }
 }

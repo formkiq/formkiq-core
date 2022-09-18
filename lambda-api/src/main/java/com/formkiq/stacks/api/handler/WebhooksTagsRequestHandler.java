@@ -64,6 +64,7 @@ public class WebhooksTagsRequestHandler
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+
     PaginationResults<DynamicObject> list =
         serviceCache.webhookService().findTags(siteId, id, null);
 
@@ -107,6 +108,7 @@ public class WebhooksTagsRequestHandler
     tag.setUserId(getCallingCognitoUsername(event));
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+
     DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
     if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");

@@ -35,6 +35,8 @@ public enum ActionStatus {
   FAILED,
   /** Pending. */
   PENDING,
+  /** Running. */
+  RUNNING,
   /** Skipped. */
   SKIPPED;
 }

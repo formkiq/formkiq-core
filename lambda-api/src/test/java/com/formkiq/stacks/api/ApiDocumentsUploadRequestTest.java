@@ -73,7 +73,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
     super.before();
-
     getAwsServices().configService().delete(null);
   }
 

@@ -72,30 +72,30 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  */
 public class DocumentSearchServiceImpl implements DocumentSearchService {
 
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
+
   /** {@link DocumentService}. */
   private DocumentService docService;
 
   /** Documents Table Name. */
   private String documentTableName;
-
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin tagSchemaPlugin;
 
   /**
    * constructor.
    * 
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentService {@link DocumentService}
-   * @param builder {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param plugin {@link DocumentTagSchemaPlugin}
    */
-  public DocumentSearchServiceImpl(final DocumentService documentService,
-      final DynamoDbConnectionBuilder builder, final String documentsTable,
+  public DocumentSearchServiceImpl(final DynamoDbConnectionBuilder connection,
+      final DocumentService documentService, final String documentsTable,
       final DocumentTagSchemaPlugin plugin) {
 
+    this.dbClient = connection.build();
     this.docService = documentService;
     this.tagSchemaPlugin = plugin;
 
@@ -103,8 +103,19 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
     this.documentTableName = documentsTable;
+  }
+
+  private QueryRequest createQueryRequest(final String index, final String expression,
+      final Map<String, AttributeValue> values, final PaginationMapToken token,
+      final int maxresults) {
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
+        .keyConditionExpression(expression).expressionAttributeValues(values)
+        .exclusiveStartKey(startkey).scanIndexForward(Boolean.FALSE)
+        .limit(Integer.valueOf(maxresults)).build();
+    return q;
   }
 
   /**
@@ -193,7 +204,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     Map<String, KeysAndAttributes> items =
         Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
     BatchGetItemRequest batchReq = BatchGetItemRequest.builder().requestItems(items).build();
-    BatchGetItemResponse batchResponse = this.dynamoDB.batchGetItem(batchReq);
+    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
     Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
 
@@ -244,7 +255,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
     values.put(":sk", AttributeValue.builder().s(value).build());
 
-    return searchForDocuments(siteId, query, GSI2, expression, values, token, maxresults);
+    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults);
+
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
@@ -268,7 +281,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     values.put(":pk",
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
 
-    return searchForDocuments(siteId, query, GSI2, expression, values, token, maxresults);
+    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults);
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
@@ -291,7 +305,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
     values.put(":pk", AttributeValue.builder()
         .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
-    return searchForDocuments(siteId, query, GSI1, expression, values, token, maxresults);
+    QueryRequest q = createQueryRequest(GSI1, expression, values, token, maxresults);
+    return searchForDocuments(q, siteId, query);
   }
 
   /**
@@ -398,28 +413,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   /**
    * Search for Documents.
    *
+   * @param q {@link QueryRequest}
    * @param siteId DynamoDB PK siteId
    * @param query {@link SearchQuery}
-   * @param index {@link String}
-   * @param expression {@link String}
-   * @param values {@link Map} {@link String} {@link AttributeValue}
-   * @param token {@link PaginationMapToken}
-   * @param maxresults int
    * @return {@link PaginationResults} {@link DocumentItemSearchResult}
    */
-  private PaginationResults<DynamicDocumentItem> searchForDocuments(final String siteId,
-      final SearchQuery query, final String index, final String expression,
-      final Map<String, AttributeValue> values, final PaginationMapToken token,
-      final int maxresults) {
+  private PaginationResults<DynamicDocumentItem> searchForDocuments(final QueryRequest q,
+      final String siteId, final SearchQuery query) {
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
-
-    QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
-        .keyConditionExpression(expression).expressionAttributeValues(values)
-        .exclusiveStartKey(startkey).scanIndexForward(Boolean.FALSE)
-        .limit(Integer.valueOf(maxresults)).build();
-
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
 
     Map<String, DocumentTag> tags = new HashMap<>();
     result.items().forEach(s -> {

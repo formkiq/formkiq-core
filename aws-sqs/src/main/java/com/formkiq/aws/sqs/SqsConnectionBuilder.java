@@ -43,7 +43,7 @@ public class SqsConnectionBuilder {
   /** {@link SqsClientBuilder}. */
   private SqsClientBuilder builder;
   /** {@link SqsClient}. */
-  private SqsClient sqsClient;
+  private SqsClient sqsClient = null;
 
   /**
    * constructor.
@@ -57,14 +57,16 @@ public class SqsConnectionBuilder {
   }
 
   /**
-   * Set Region.
+   * Build {@link SqsClient}.
    * 
-   * @param region {@link Region}
-   * @return {@link SqsConnectionBuilder}
+   * @return {@link SqsClient}
    */
-  public SqsConnectionBuilder setRegion(final Region region) {
-    this.builder = this.builder.region(region);
-    return this;
+  public SqsClient build() {
+    if (this.sqsClient == null) {
+      this.sqsClient = this.builder.build();
+    }
+
+    return this.sqsClient;
   }
 
   /**
@@ -104,24 +106,13 @@ public class SqsConnectionBuilder {
   }
 
   /**
-   * Build {@link SqsClient}.
+   * Set Region.
    * 
-   * @return {@link SqsClient}
+   * @param region {@link Region}
+   * @return {@link SqsConnectionBuilder}
    */
-  public SqsClient build() {
-    if (this.sqsClient == null) {
-      this.sqsClient = this.builder.build();
-    }
-
-    return this.sqsClient;
-  }
-
-  /**
-   * Close {@link SqsClient} if one exists.
-   */
-  public void close() {
-    if (this.sqsClient != null) {
-      this.sqsClient.close();
-    }
+  public SqsConnectionBuilder setRegion(final Region region) {
+    this.builder = this.builder.region(region);
+    return this;
   }
 }

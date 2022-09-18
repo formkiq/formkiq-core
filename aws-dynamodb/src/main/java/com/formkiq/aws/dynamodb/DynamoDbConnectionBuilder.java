@@ -42,7 +42,7 @@ public class DynamoDbConnectionBuilder {
   /** {@link DynamoDbClientBuilder}. */
   private DynamoDbClientBuilder builder;
   /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
+  private DynamoDbClient dbClient = null;
 
   /**
    * constructor.
@@ -55,31 +55,21 @@ public class DynamoDbConnectionBuilder {
   }
 
   /**
-   * Initializes the {@link DynamoDbClient}.
-   */
-  public void initDbClient() {
-    build().close();
-  }
-
-  /**
    * Build {@link DynamoDbClient}.
    * 
    * @return {@link DynamoDbClient}
    */
   public DynamoDbClient build() {
-    if (this.dbClient == null) {
-      this.dbClient = this.builder.build();
-    }
-
+    initDbClient();
     return this.dbClient;
   }
 
   /**
-   * Close {@link DynamoDbClient} if one exists.
+   * Initializes the {@link DynamoDbClient}.
    */
-  public void close() {
-    if (this.dbClient != null) {
-      this.dbClient.close();
+  public void initDbClient() {
+    if (this.dbClient == null) {
+      this.dbClient = this.builder.build();
     }
   }
 

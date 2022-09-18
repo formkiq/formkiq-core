@@ -338,8 +338,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         assertEquals("category", matchedTag.get("key"));
         assertEquals("person", matchedTag.get("value"));
         assertEquals("USERDEFINED", matchedTag.get("type"));
-        assertNull(resp.get("next"));
-        assertNull(resp.get("previous"));
 
         // given - invalid document id
         dsq.documentIds(Arrays.asList("123"));

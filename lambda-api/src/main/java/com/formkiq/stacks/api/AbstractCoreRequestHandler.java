@@ -47,6 +47,7 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
@@ -155,10 +156,14 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(db));
+    AwsServiceCache.register(SsmConnectionBuilder.class,
+        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
+    AwsServiceCache.register(SqsConnectionBuilder.class,
+        new ClassServiceExtension<SqsConnectionBuilder>(sqs));
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension(ssm));
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
-    AwsServiceCache.register(SqsService.class, new SqsServiceExtension(sqs));
+    AwsServiceCache.register(SqsService.class, new SqsServiceExtension());
     AwsServiceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(schemaEvents));
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());

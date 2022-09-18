@@ -76,12 +76,14 @@ public class WebhooksIdRequestHandler
     String siteId = authorizer.getSiteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+
     DynamicObject m = serviceCache.webhookService().findWebhook(siteId, id);
     if (m == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
 
     SsmService ssmService = awsServices.getExtension(SsmService.class);
+
     String url = ssmService.getParameterValue(
         "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 

@@ -53,17 +53,16 @@ import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/public/webhooks". */
 public class PublicWebhooksRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** To Milliseconds. */
-  private static final long TO_MILLIS = 1000L;
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
+  /** To Milliseconds. */
+  private static final long TO_MILLIS = 1000L;
 
   private static boolean isContentTypeJson(final String contentType) {
     return contentType != null && "application/json".equals(contentType);
@@ -177,10 +176,6 @@ public class PublicWebhooksRequestHandler
     }
   }
 
-  protected boolean isSupportPrivate() {
-    return false;
-  }
-
   private Map<String, String> decodeQueryString(final String query) {
     Map<String, String> params = new LinkedHashMap<>();
     for (String param : query.split("&")) {
@@ -268,6 +263,10 @@ public class PublicWebhooksRequestHandler
     return cached;
   }
 
+  protected boolean isSupportPrivate() {
+    return false;
+  }
+
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -319,8 +318,6 @@ public class PublicWebhooksRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-    try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, stages3bucket, key, bytes, item.getString("contentType"));
-    }
+    s3.putObject(stages3bucket, key, bytes, item.getString("contentType"));
   }
 }

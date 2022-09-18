@@ -61,7 +61,6 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** Unit Tests for request GET / POST / DELETE /documents. */
@@ -176,10 +175,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String filename = "test.pdf";
-      try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8),
-            null);
-      }
+      getS3().putObject(BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -199,10 +195,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       // given
       String filename = "test.txt";
 
-      try (S3Client s3 = getS3().buildClient()) {
-        getS3().putObject(s3, BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8),
-            null);
-      }
+      getS3().putObject(BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
@@ -818,14 +811,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       assertNotNull(UUID.fromString(resp.getString("documentId")));
 
-      try (S3Client s3 = getS3().buildClient()) {
-        assertTrue(getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).isObjectExists());
-        String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
-        DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
-        assertTrue(obj.hasString("documentId"));
-        assertTrue(obj.hasString("content"));
-        assertEquals("7b87c0e2-5f20-403b-bcc6-d35cb491d3b7@formkiq.com", obj.getString("userId"));
-      }
+      assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
+      String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
+      DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
+      assertTrue(obj.hasString("documentId"));
+      assertTrue(obj.hasString("content"));
+      assertEquals("7b87c0e2-5f20-403b-bcc6-d35cb491d3b7@formkiq.com", obj.getString("userId"));
     }
   }
 
@@ -992,9 +983,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     assertNotNull(UUID.fromString(resp.getString("documentId")));
 
-    try (S3Client s3 = getS3().buildClient()) {
-      assertTrue(getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).isObjectExists());
-    }
+    assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
   }
 
   /**
@@ -1158,10 +1147,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNull(verifyS3.getString("uploadUrl"));
       assertEquals("text/html", verifyS3.getString("contentType"));
 
-      try (S3Client s3 = getS3().buildClient()) {
-        assertEquals("text/html",
-            getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).getContentType());
-      }
+      assertEquals("text/html", getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).getContentType());
     }
   }
 
@@ -1226,11 +1212,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       verifyS3(key, true, "a0dac80d-18b3-472b-88da-79e75082b662@formkiq.com");
 
-      try (S3Client s3 = getS3().buildClient()) {
-        String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
-        Map<String, Object> map = fromJson(content, Map.class);
-        assertEquals("true", map.get("newCompositeTags").toString());
-      }
+      String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
+      Map<String, Object> map = fromJson(content, Map.class);
+      assertEquals("true", map.get("newCompositeTags").toString());
     }
   }
 
@@ -1244,24 +1228,22 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId) {
-    try (S3Client s3 = getS3().buildClient()) {
-      assertTrue(getS3().getObjectMetadata(s3, STAGE_BUCKET_NAME, key).isObjectExists());
-      String content = getS3().getContentAsString(s3, STAGE_BUCKET_NAME, key, null);
-      DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
+    assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
+    String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
+    DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
 
-      assertTrue(obj.hasString("documentId"));
+    assertTrue(obj.hasString("documentId"));
 
-      if (userId != null) {
-        assertEquals(userId, obj.getString("userId"));
-      } else {
-        assertNotNull(obj.getString("userId"));
-      }
-
-      if (hasContent) {
-        assertTrue(obj.hasString("content"));
-      }
-
-      return obj;
+    if (userId != null) {
+      assertEquals(userId, obj.getString("userId"));
+    } else {
+      assertNotNull(obj.getString("userId"));
     }
+
+    if (hasContent) {
+      assertTrue(obj.hasString("content"));
+    }
+
+    return obj;
   }
 }

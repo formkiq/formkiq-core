@@ -71,6 +71,7 @@ public class FormKiQClientV1Extension implements AwsServiceExtension<FormKiqClie
 
     String appEnvironment = awsServiceCache.environment("APP_ENVIRONMENT");
     SsmService ssm = awsServiceCache.getExtension(SsmService.class);
+
     String documentsIamUrl =
         ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 

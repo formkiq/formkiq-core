@@ -59,9 +59,11 @@ public class DynamoDbCacheServiceTest {
 
   /**
    * Test Write to Cache.
+   * 
+   * @throws Exception Exception
    */
   @Test
-  public void testWrite01() {
+  public void testWrite01() throws Exception {
     // given
     final Date before = Date.from(ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(1).toInstant());
     final Date after = Date.from(ZonedDateTime.now(ZoneOffset.UTC).plusDays(1).toInstant());

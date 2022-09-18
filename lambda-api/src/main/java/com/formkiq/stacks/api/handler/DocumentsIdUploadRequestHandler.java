@@ -58,12 +58,12 @@ public class DocumentsIdUploadRequestHandler
 
   /** Default Duration Hours. */
   private static final int DEFAULT_DURATION_HOURS = 48;
-  /** {@link DocumentsRestrictionsMaxDocuments}. */
-  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
-      new DocumentsRestrictionsMaxDocuments();
   /** {@link DocumentsRestrictionsMaxContentLength}. */
   private DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
       new DocumentsRestrictionsMaxContentLength();
+  /** {@link DocumentsRestrictionsMaxDocuments}. */
+  private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
+      new DocumentsRestrictionsMaxDocuments();
 
   /**
    * constructor.
@@ -201,9 +201,9 @@ public class DocumentsIdUploadRequestHandler
 
         if (value != null) {
           cacheService.documentCountService().incrementDocumentCount(siteId);
+        } else {
+          throw new BadException("Max Number of Documents reached");
         }
-      } else {
-        throw new BadException("Max Number of Documents reached");
       }
     }
 

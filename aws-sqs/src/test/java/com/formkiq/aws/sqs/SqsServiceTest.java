@@ -24,11 +24,7 @@
 package com.formkiq.aws.sqs;
 
 import static org.junit.Assert.assertEquals;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -37,24 +33,6 @@ import software.amazon.awssdk.regions.Region;
  */
 public class SqsServiceTest {
 
-  /** {@link SqsService}. */
-  private static SqsService sqs;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsConnection;
-
-  /**
-   * Before Class.
-   * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
-   */
-  @BeforeClass
-  public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
-    sqsConnection = new SqsConnectionBuilder().setRegion(Region.US_EAST_1);
-    sqs = new SqsService(sqsConnection);
-  }
-
   /**
    * Test converting QueueUrl to QueueArn.
    */
@@ -62,7 +40,7 @@ public class SqsServiceTest {
   public void testGetQueueArn01() {
     assertEquals(
         "arn:aws:sqs:us-east-1:123456789000:updatetest-3df09234-1987-4f24-84d0-d77934ff8a80",
-        sqs.getQueueArn(
+        SqsService.getQueueArn(
             "https://sqs.us-east-1.amazonaws.com/123456789000/updatetest-3df09234-1987-4f24-84d0-d77934ff8a80"));
   }
 }

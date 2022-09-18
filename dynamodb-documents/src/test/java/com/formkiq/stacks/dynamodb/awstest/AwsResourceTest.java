@@ -42,14 +42,14 @@ import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
  */
 public class AwsResourceTest {
 
-  /** AWS Region. */
-  private static Region awsregion;
   /** App Environment Name. */
   private static String appenvironment;
-  /** {@link SsmService}. */
-  private static SsmService ssmService;
+  /** AWS Region. */
+  private static Region awsregion;
   /** {@link DynamoDbClient}. */
   private static DynamoDbClient dynamoDB;
+  /** {@link SsmService}. */
+  private static SsmService ssmService;
 
   /**
    * beforeclass.

@@ -70,7 +70,6 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}". */
@@ -173,15 +172,14 @@ public class DocumentIdRequestHandler
     try {
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
-      try (S3Client s3 = s3Service.buildClient()) {
-        S3ObjectMetadata md = s3Service.getObjectMetadata(s3, documentBucket, documentId);
 
-        if (md.isObjectExists()) {
-          s3Service.deleteObject(s3, documentBucket, documentId);
+      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, documentId);
 
-          ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
-          return new ApiRequestHandlerResponse(SC_OK, resp);
-        }
+      if (md.isObjectExists()) {
+        s3Service.deleteObject(documentBucket, documentId);
+
+        ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
+        return new ApiRequestHandlerResponse(SC_OK, resp);
       }
 
       throw new NotFoundException("Document " + documentId + " not found.");
@@ -369,12 +367,11 @@ public class DocumentIdRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-    try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
 
-      if (maxDocumentCount != null) {
-        awsservice.documentCountService().incrementDocumentCount(siteId);
-      }
+    s3.putObject(stageS3Bucket, key, bytes, item.getString("contentType"));
+
+    if (maxDocumentCount != null) {
+      awsservice.documentCountService().incrementDocumentCount(siteId);
     }
   }
 

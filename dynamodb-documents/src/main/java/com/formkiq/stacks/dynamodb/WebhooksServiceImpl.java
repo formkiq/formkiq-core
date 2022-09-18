@@ -67,24 +67,24 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   /** Documents Table Name. */
   private String documentTableName;
 
-  /** {@link DynamoDbClient}. */
-  private final DynamoDbClient dynamoDB;
-
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df;
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
 
   /**
    * constructor.
    *
-   * @param builder {@link DynamoDbConnectionBuilder}
+   * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public WebhooksServiceImpl(final DynamoDbConnectionBuilder builder, final String documentsTable) {
+  public WebhooksServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dynamoDB = builder.build();
+    this.dbClient = connection.build();
     this.documentTableName = documentsTable;
     this.df = DateUtil.getIsoDateFormatter();
   }
@@ -113,7 +113,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
           .map(i -> TransactWriteItem.builder().put(i).build()).collect(Collectors.toList());
 
       if (!writes.isEmpty()) {
-        this.dynamoDB
+        this.dbClient
             .transactWriteItems(TransactWriteItemsRequest.builder().transactItems(writes).build());
       }
     }
@@ -137,7 +137,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     deleteWebhookTags(siteId, id, null);
 
     Map<String, AttributeValue> key = keysGeneric(siteId, PREFIX_WEBHOOK + id, "webhook");
-    this.dynamoDB
+    this.dbClient
         .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
   }
 
@@ -153,7 +153,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
       Map<String, AttributeValue> key = Map.of("PK", AttributeValue.builder().s(pk).build(), "SK",
           AttributeValue.builder().s(sk).build());
 
-      this.dynamoDB.deleteItem(
+      this.dbClient.deleteItem(
           DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
     }
 
@@ -166,7 +166,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   public DynamicObject findTag(final String siteId, final String webhookId, final String tagKey) {
     Map<String, AttributeValue> pkvalues =
         keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, PREFIX_TAGS + tagKey);
-    GetItemResponse response = this.dynamoDB
+    GetItemResponse response = this.dbClient
         .getItem(GetItemRequest.builder().tableName(this.documentTableName).key(pkvalues).build());
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
     return !response.item().isEmpty() ? transform.apply(response.item()) : null;
@@ -187,7 +187,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
         QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
             .expressionAttributeValues(values).exclusiveStartKey(startkey).build();
 
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
     List<DynamicObject> objs =
@@ -200,7 +200,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
   public DynamicObject findWebhook(final String siteId, final String id) {
 
     Map<String, AttributeValue> pkvalues = keysGeneric(siteId, PREFIX_WEBHOOK + id, "webhook");
-    GetItemResponse response = this.dynamoDB
+    GetItemResponse response = this.dbClient
         .getItem(GetItemRequest.builder().tableName(this.documentTableName).key(pkvalues).build());
     AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
 
@@ -223,7 +223,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(GSI1)
         .keyConditionExpression(expr).expressionAttributeValues(key).build();
 
-    QueryResponse result = this.dynamoDB.query(q);
+    QueryResponse result = this.dbClient.query(q);
 
     Collection<? extends Map<String, AttributeValue>> keys = result.items().stream()
         .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
@@ -236,7 +236,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
           Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
 
       BatchGetItemResponse batch =
-          this.dynamoDB.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+          this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
 
       Map<String, List<Map<String, AttributeValue>>> responses = batch.responses();
 
@@ -277,7 +277,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     PutItemRequest put =
         PutItemRequest.builder().tableName(this.documentTableName).item(pkvalues).build();
 
-    this.dynamoDB.putItem(put);
+    this.dbClient.putItem(put);
 
     return id;
   }
@@ -291,7 +291,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     Map<String, AttributeValueUpdate> values = new HashMap<>();
     addTimeToLiveUpdate(values, ttl);
 
-    this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
+    this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
         .attributeUpdates(values).build());
 
     PaginationResults<DynamicObject> result = findTags(siteId, webhookId, null);
@@ -302,7 +302,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
       key.put(PK, AttributeValue.builder().s(ob.getString(PK)).build());
       key.put(SK, AttributeValue.builder().s(ob.getString(SK)).build());
 
-      this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
+      this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
           .key(key).attributeUpdates(values).build());
     }
   }
@@ -329,7 +329,7 @@ public class WebhooksServiceImpl implements WebhooksService, DbKeys {
     }
 
     if (!values.isEmpty()) {
-      this.dynamoDB.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
+      this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName)
           .key(key).attributeUpdates(values).build());
     }
   }

@@ -39,7 +39,7 @@ import software.amazon.awssdk.services.ssm.model.PutParameterRequest;
 public class SsmServiceImpl implements SsmService {
 
   /** {@link SsmClient}. */
-  private SsmClient ssm;
+  private SsmClient ssm = null;
 
   /**
    * constructor.

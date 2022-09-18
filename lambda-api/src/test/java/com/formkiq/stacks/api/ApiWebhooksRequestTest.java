@@ -181,7 +181,6 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     Map<String, Object> result = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
     assertEquals("default", result.get("siteId"));
-    assertNotNull(result.get("id"));
     final String id = result.get("id").toString();
 
     assertNotNull(result.get("insertedDate"));
@@ -255,8 +254,9 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
       addParameter(event, "siteId", siteId);
 
-      event.setBody("{\"name\":\"joe smith\",\"tags\":"
-          + "[{\"key\":\"category\",\"value\":\"person\"},{\"key\":\"day\",\"value\":\"today\"}]}");
+      event.setBody(
+          "{\"name\":\"joe smith\",\"tags\":" + "[{\"key\":\"category\",\"value\":\"person\"},"
+              + "{\"key\":\"day\",\"value\":\"today\"}]}");
 
       // when
       String response = handleRequest(event);

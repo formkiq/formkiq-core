@@ -50,16 +50,17 @@ import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
  */
 public class SqsService {
 
-  /** SqsClient. */
+  /** {@link SqsClient}. */
   private SqsClient sqsClient;
 
   /**
    * constructor.
    * 
-   * @param builder {@link SqsConnectionBuilder}
+   * @param connection {@link SqsConnectionBuilder}
+   * 
    */
-  public SqsService(final SqsConnectionBuilder builder) {
-    this.sqsClient = builder.build();
+  public SqsService(final SqsConnectionBuilder connection) {
+    this.sqsClient = connection.build();
   }
 
   /**
@@ -131,7 +132,7 @@ public class SqsService {
    * @param queueUrl {@link String}
    * @return {@link String}
    */
-  public String getQueueArn(final String queueUrl) {
+  public static String getQueueArn(final String queueUrl) {
     String queueName = "";
     String region = "";
     String account = "";

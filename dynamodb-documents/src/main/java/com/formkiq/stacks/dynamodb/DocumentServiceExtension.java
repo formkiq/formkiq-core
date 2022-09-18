@@ -45,8 +45,10 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
   @Override
   public DocumentService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-      DynamoDbConnectionBuilder db = awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service = new DocumentServiceImpl(db, awsServiceCache.environment("DOCUMENTS_TABLE"));
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new DocumentServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
 
     return this.service;

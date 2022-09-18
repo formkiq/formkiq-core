@@ -61,10 +61,12 @@ public class WebhooksRequestHandler
 
     String siteId = authorizer.getSiteId();
     SsmService ssmService = awsServices.getExtension(SsmService.class);
+
     String url = ssmService.getParameterValue(
         "/formkiq/" + awsServices.environment("APP_ENVIRONMENT") + "/api/DocumentsPublicHttpUrl");
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+
     List<DynamicObject> list = serviceCache.webhookService().findWebhooks(siteId);
 
     List<Map<String, Object>> webhooks = list.stream().map(m -> {

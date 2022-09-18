@@ -43,21 +43,20 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 
 /** {@link RequestHandler} for installing the console. */
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
 
+  /** Environment Variable {@link Map}. */
+  private Map<String, String> environmentMap;
   /** Extra Mime Types. */
   private Map<String, String> mimeTypes = new HashMap<>();
   /** {@link S3Service}. */
   private S3Service s3;
+
   /** {@link S3Service}. */
   private S3Service s3UsEast1;
-
-  /** Environment Variable {@link Map}. */
-  private Map<String, String> environmentMap;
 
   /** constructor. */
   public ConsoleInstallHandler() {
@@ -91,55 +90,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   }
 
   /**
-   * Handle Console Installation.
-   *
-   * @param input {@link Map}
-   * @param context {@link Context}
-   * @return {@link Object}
-   */
-  @Override
-  public Object handleRequest(final Map<String, Object> input, final Context context) {
-
-    LambdaLogger logger = context.getLogger();
-    logger.log("received input: " + input);
-
-    try {
-      final String requestType = (String) input.get("RequestType");
-      boolean unzip = requestType != null
-          && ("Create".equalsIgnoreCase(requestType) || "Update".equalsIgnoreCase(requestType));
-      boolean delete = requestType != null && "Delete".equalsIgnoreCase(requestType);
-
-      if (unzip) {
-
-        unzipConsole(input, requestType, context, logger);
-        createCognitoConfig(logger);
-        sendResponse(input, logger, context, "SUCCESS",
-            "Request " + requestType + " was successful!");
-
-      } else if (delete) {
-
-        sendResponse(input, logger, context, "SUCCESS",
-            "Request " + requestType + " was successful!");
-
-      } else {
-
-        sendResponse(input, logger, context, "FAILURE",
-            "received RequestType " + requestType + " skipping unpacking");
-      }
-
-    } catch (Exception e) {
-
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw);
-      e.printStackTrace(pw);
-
-      sendResponse(input, logger, context, "FAILURE", sw.toString());
-    }
-
-    return null;
-  }
-
-  /**
    * Write Console Config including Cognito.
    *
    * @param logger {@link LambdaLogger}
@@ -170,58 +120,85 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String fileName = consoleversion + "/assets/config.json";
 
-    try (S3Client s = this.s3.buildClient()) {
-      this.s3.putObject(s, destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8),
-          null);
-    }
+    this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null);
 
     logger.log("writing Cognito config: " + json);
   }
 
   /**
-   * Unzip Console file.
-   *
-   * @param input {@link Map}
-   * @param requestType {@link String}
-   * @param context {@link Context}
+   * Empty Console Bucket.
+   * 
    * @param logger {@link LambdaLogger}
    */
-  private void unzipConsole(final Map<String, Object> input, final String requestType,
-      final Context context, final LambdaLogger logger) {
-
-    String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
-
-    String distributionBucket = this.environmentMap.get("DISTRIBUTION_BUCKET");
+  private void deleteConsole(final LambdaLogger logger) {
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
+    logger.log("deleting console from: " + destinationBucket);
 
-    String consoleZipKey = "formkiq-console/" + consoleversion + "/formkiq-console.zip";
+    this.s3.deleteAllFiles(destinationBucket);
+  }
 
-    logger.log("unpacking " + consoleZipKey + " from bucket " + distributionBucket + " to bucket "
-        + destinationBucket);
+  /**
+   * Get {@link HttpURLConnection}.
+   *
+   * @param responseUrl {@link String}
+   * @return {@link HttpURLConnection}
+   * @throws IOException IOException
+   */
+  protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
+    URL url = new URL(responseUrl);
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    return connection;
+  }
 
-    try (S3Client s = this.s3UsEast1.buildClient()) {
+  /**
+   * Handle Console Installation.
+   *
+   * @param input {@link Map}
+   * @param context {@link Context}
+   * @return {@link Object}
+   */
+  @Override
+  public Object handleRequest(final Map<String, Object> input, final Context context) {
 
-      InputStream stream =
-          this.s3UsEast1.getContentAsInputStream(s, distributionBucket, consoleZipKey);
+    LambdaLogger logger = context.getLogger();
+    logger.log("received input: " + input);
 
-      try {
+    try {
+      final String requestType = (String) input.get("RequestType");
+      boolean unzip = requestType != null
+          && ("Create".equalsIgnoreCase(requestType) || "Update".equalsIgnoreCase(requestType));
+      boolean delete = requestType != null && "Delete".equalsIgnoreCase(requestType);
 
-        writeToBucket(stream, destinationBucket, consoleversion);
+      if (unzip) {
 
-      } catch (IOException e) {
+        unzipConsole(input, requestType, context, logger);
+        createCognitoConfig(logger);
+        sendResponse(input, logger, context, "SUCCESS",
+            "Request " + requestType + " was successful!");
 
-        logStacktrace(context, e);
-        sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
+      } else if (delete) {
 
-      } finally {
+        deleteConsole(logger);
 
-        try {
-          stream.close();
-        } catch (IOException e) {
-          logger.log("cannot close stream " + e.toString());
-        }
+        sendResponse(input, logger, context, "SUCCESS",
+            "Request " + requestType + " was successful!");
+
+      } else {
+
+        sendResponse(input, logger, context, "FAILURE",
+            "received RequestType " + requestType + " skipping unpacking");
       }
+
+    } catch (Exception e) {
+
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      e.printStackTrace(pw);
+
+      sendResponse(input, logger, context, "FAILURE", sw.toString());
     }
+
+    return null;
   }
 
   /**
@@ -235,47 +212,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     PrintWriter pw = new PrintWriter(sw);
     ex.printStackTrace(pw);
     context.getLogger().log(sw.toString());
-  }
-
-  /**
-   * Write {@link InputStream} to Bucket.
-   *
-   * @param stream {@link InputStream}
-   * @param destinationBucket {@link String}
-   * @param consoleversion {@link String}
-   * 
-   * @throws IOException IOException
-   */
-  private void writeToBucket(final InputStream stream, final String destinationBucket,
-      final String consoleversion) throws IOException {
-
-    try (ZipInputStream zis = new ZipInputStream(stream)) {
-
-      ZipEntry entry = zis.getNextEntry();
-
-      try (S3Client s = this.s3.buildClient()) {
-        while (entry != null) {
-
-          String fileName = consoleversion + "/" + entry.getName();
-          String mimeType = URLConnection.guessContentTypeFromName(fileName);
-
-          if (mimeType == null) {
-            for (Map.Entry<String, String> e : this.mimeTypes.entrySet()) {
-              if (fileName.endsWith(e.getKey())) {
-                mimeType = e.getValue();
-                break;
-              }
-            }
-          }
-
-          byte[] byteArray = S3Service.toByteArray(zis);
-
-          this.s3.putObject(s, destinationBucket, fileName, byteArray, mimeType);
-
-          entry = zis.getNextEntry();
-        }
-      }
-    }
   }
 
   /**
@@ -332,15 +268,83 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   }
 
   /**
-   * Get {@link HttpURLConnection}.
+   * Unzip Console file.
    *
-   * @param responseUrl {@link String}
-   * @return {@link HttpURLConnection}
+   * @param input {@link Map}
+   * @param requestType {@link String}
+   * @param context {@link Context}
+   * @param logger {@link LambdaLogger}
+   */
+  private void unzipConsole(final Map<String, Object> input, final String requestType,
+      final Context context, final LambdaLogger logger) {
+
+    String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
+
+    String distributionBucket = this.environmentMap.get("DISTRIBUTION_BUCKET");
+    String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
+
+    String consoleZipKey = "formkiq-console/" + consoleversion + "/formkiq-console.zip";
+
+    logger.log("unpacking " + consoleZipKey + " from bucket " + distributionBucket + " to bucket "
+        + destinationBucket);
+
+    InputStream stream = this.s3UsEast1.getContentAsInputStream(distributionBucket, consoleZipKey);
+
+    try {
+
+      writeToBucket(stream, destinationBucket, consoleversion);
+
+    } catch (IOException e) {
+
+      logStacktrace(context, e);
+      sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
+
+    } finally {
+
+      try {
+        stream.close();
+      } catch (IOException e) {
+        logger.log("cannot close stream " + e.toString());
+      }
+    }
+  }
+
+  /**
+   * Write {@link InputStream} to Bucket.
+   *
+   * @param stream {@link InputStream}
+   * @param destinationBucket {@link String}
+   * @param consoleversion {@link String}
+   * 
    * @throws IOException IOException
    */
-  protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
-    URL url = new URL(responseUrl);
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    return connection;
+  private void writeToBucket(final InputStream stream, final String destinationBucket,
+      final String consoleversion) throws IOException {
+
+    try (ZipInputStream zis = new ZipInputStream(stream)) {
+
+      ZipEntry entry = zis.getNextEntry();
+
+      while (entry != null) {
+
+        String fileName = consoleversion + "/" + entry.getName();
+        String mimeType = URLConnection.guessContentTypeFromName(fileName);
+
+        if (mimeType == null) {
+          for (Map.Entry<String, String> e : this.mimeTypes.entrySet()) {
+            if (fileName.endsWith(e.getKey())) {
+              mimeType = e.getValue();
+              break;
+            }
+          }
+        }
+
+        byte[] byteArray = S3Service.toByteArray(zis);
+
+        this.s3.putObject(destinationBucket, fileName, byteArray, mimeType);
+
+        entry = zis.getNextEntry();
+      }
+    }
   }
 }

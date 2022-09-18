@@ -73,7 +73,6 @@ public class DocumentsActionsRequestHandler
 
     ApiMapResponse resp = new ApiMapResponse();
     resp.setMap(Map.of("actions", list));
-
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 

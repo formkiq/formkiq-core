@@ -46,11 +46,11 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
 
     if (value != null) {
       try {
+
         long max = Long.parseLong(value);
         long doccount =
             (CoreAwsServiceCache.cast(awsservice)).documentCountService().getDocumentCount(siteId);
         enforced = (doccount + 1) > max;
-
       } catch (NumberFormatException e) {
         enforced = false;
       }

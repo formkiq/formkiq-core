@@ -12,8 +12,7 @@
 			<allow pkg="org.mockserver.mock.action" />
 			<allow pkg="org.mockserver.model" />
 		
-			<allow pkg="software.amazon.awssdk.auth.credentials" />	
-			<allow pkg="software.amazon.awssdk.services.sns.model" />			
+			<allow pkg="software.amazon.awssdk.auth.credentials" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			
 			<allow pkg="com.formkiq.aws.dynamodb" />
@@ -48,6 +47,7 @@
 			<allow pkg="software.amazon.awssdk.core" />
 			<allow pkg="software.amazon.awssdk.regions" />
 			<allow pkg="software.amazon.awssdk.services.s3" />
+			<allow pkg="software.amazon.awssdk.services.ssm" />
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="software.amazon.awssdk.utils.http" />
 		

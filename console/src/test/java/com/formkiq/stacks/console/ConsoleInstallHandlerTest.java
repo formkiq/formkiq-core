@@ -45,30 +45,26 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for {@link ConsoleInstallHandler}. */
 public class ConsoleInstallHandlerTest {
 
-  /** {@link ConsoleInstallHandler}. */
-  private ConsoleInstallHandler handler;
-
-  /** {@link LambdaContextRecorder}. */
-  private LambdaContextRecorder context = new LambdaContextRecorder();
-  /** {@link LambdaLogger}. */
-  private LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
   /** {@link HttpURLConnection}. */
   private static HttpUrlConnectionRecorder connection;
-  /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Connection;
-  /** {@link S3Service}. */
-  private static S3Service s3;
+
+  /** Console Bucket. */
+  private static final String CONSOLE_BUCKET = "destbucket";
+
   /** LocalStack {@link DockerImageName}. */
   private static DockerImageName localStackImage =
       DockerImageName.parse("localstack/localstack:0.12.2");
   /** {@link LocalStackContainer}. */
-  private static LocalStackContainer localstack =
+  private static LocalStackContainer localStackInstance =
       new LocalStackContainer(localStackImage).withServices(Service.S3);
+  /** {@link S3Service}. */
+  private static S3Service s3;
+  /** {@link S3ConnectionBuilder}. */
+  private static S3ConnectionBuilder s3Connection;
 
   /**
    * Before Class.
@@ -83,26 +79,31 @@ public class ConsoleInstallHandlerTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    localstack.start();
+    localStackInstance.start();
 
     s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride(localstack.getEndpointOverride(Service.S3).toString());
+        .setEndpointOverride(localStackInstance.getEndpointOverride(Service.S3).toString());
 
     s3 = new S3Service(s3Connection);
 
-    try (S3Client s = s3.buildClient()) {
+    s3.createBucket("distrobucket");
+    s3.createBucket(CONSOLE_BUCKET);
 
-      s3.createBucket(s, "distrobucket");
-      s3.createBucket(s, "destbucket");
-
-      try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/test.zip")) {
-        s3.putObject(s, "distrobucket", "formkiq-console/0.1/formkiq-console.zip", is, null);
-      }
+    try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/test.zip")) {
+      s3.putObject("distrobucket", "formkiq-console/0.1/formkiq-console.zip", is, null);
     }
 
     connection = new HttpUrlConnectionRecorder(new URL("http://localhost"));
 
   }
+
+  /** {@link LambdaContextRecorder}. */
+  private LambdaContextRecorder context = new LambdaContextRecorder();
+  /** {@link ConsoleInstallHandler}. */
+  private ConsoleInstallHandler handler;
+
+  /** {@link LambdaLogger}. */
+  private LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
 
   /** before. */
   @Before
@@ -112,7 +113,7 @@ public class ConsoleInstallHandlerTest {
     map.put("CONSOLE_VERSION", "0.1");
     map.put("REGION", "us-east-1");
     map.put("DISTRIBUTION_BUCKET", "distrobucket");
-    map.put("CONSOLE_BUCKET", "destbucket");
+    map.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
     map.put("API_URL",
         "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("API_AUTH_URL", "https://auth.execute-api.us-east-1.amazonaws.com/prod/");
@@ -157,39 +158,6 @@ public class ConsoleInstallHandlerTest {
   }
 
   /**
-   * expect Send Response.
-   *
-   * @param contentLength int
-   * @throws IOException IOException
-   */
-  private void verifySendResponse(final int contentLength) throws IOException {
-
-    assertTrue(this.logger.containsString("Response Code: 200"));
-    assertTrue(connection.getDoOutput());
-    assertEquals("", connection.getRequestProperty("Content-Type"));
-    assertEquals("" + contentLength, connection.getRequestProperty("Content-Length"));
-    assertEquals("PUT", connection.getRequestMethod());
-  }
-
-  /**
-   * Verify Config File is written.
-   */
-  private void verifyConfigWritten() {
-    String config = String.format(
-        "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
-            + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"}"
-            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\","
-            + "\"userAuthentication\":\"cognito\"}",
-        "https://test2622653865277.auth.us-east-2.amazoncognito.com",
-        "https://auth.execute-api.us-east-1.amazonaws.com/prod/",
-        "https://chartapi.24hourcharts.com", "wss://me.execute-api.us-east-1.amazonaws.com/prod/",
-        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1",
-        "24hourcharts", "false");
-
-    assertTrue(this.logger.containsString("writing Cognito config: " + config));
-  }
-
-  /**
    * Get Connection.
    *
    * @return {@link HttpURLConnection}
@@ -207,7 +175,8 @@ public class ConsoleInstallHandlerTest {
   public void testHandleRequest01() throws Exception {
     // given
     final int contentlength = 105;
-    final Map<String, Object> input = createInput("Create");
+    Map<String, Object> input = createInput("Create");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
 
     // when
     this.logger.log(
@@ -217,7 +186,6 @@ public class ConsoleInstallHandlerTest {
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
-    input.put("CONSOLE_BUCKET", "destbucket");
 
     // replayAll();
     this.handler.handleRequest(input, this.context);
@@ -229,34 +197,40 @@ public class ConsoleInstallHandlerTest {
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
 
-    try (S3Client s = s3.buildClient()) {
-      assertEquals("font/woff2",
-          s3.getObjectMetadata(s, "destbucket", "0.1/font.woff2").getContentType());
+    assertEquals("font/woff2",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
 
-      assertEquals("text/css",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.css").getContentType());
+    assertEquals("text/css", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css").getContentType());
 
-      assertEquals("application/vnd.ms-fontobject",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.eot").getContentType());
+    assertEquals("application/vnd.ms-fontobject",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot").getContentType());
 
-      assertEquals("image/x-icon",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.ico").getContentType());
+    assertEquals("image/x-icon",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico").getContentType());
 
-      assertTrue(s3.getObjectMetadata(s, "destbucket", "0.1/test.js").getContentType()
-          .endsWith("/javascript"));
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js").getContentType()
+        .endsWith("/javascript"));
 
-      assertEquals("image/svg+xml",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.svg").getContentType());
+    assertEquals("image/svg+xml",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg").getContentType());
 
-      assertEquals("font/ttf",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.ttf").getContentType());
+    assertEquals("font/ttf", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
 
-      assertEquals("text/plain",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.txt").getContentType());
+    assertEquals("text/plain",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt").getContentType());
 
-      assertEquals("font/woff",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.woff").getContentType());
-    }
+    assertEquals("font/woff",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
+
+    // given
+    input = createInput("Delete");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
   }
 
   /**
@@ -289,34 +263,30 @@ public class ConsoleInstallHandlerTest {
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Update was successful!\""));
 
-    try (S3Client s = s3.buildClient()) {
-      assertEquals("font/woff2",
-          s3.getObjectMetadata(s, "destbucket", "0.1/font.woff2").getContentType());
+    assertEquals("font/woff2",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
 
-      assertEquals("text/css",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.css").getContentType());
+    assertEquals("text/css", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css").getContentType());
 
-      assertEquals("application/vnd.ms-fontobject",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.eot").getContentType());
+    assertEquals("application/vnd.ms-fontobject",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot").getContentType());
 
-      assertEquals("image/x-icon",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.ico").getContentType());
+    assertEquals("image/x-icon",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico").getContentType());
 
-      assertTrue(s3.getObjectMetadata(s, "destbucket", "0.1/test.js").getContentType()
-          .endsWith("/javascript"));
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js").getContentType()
+        .endsWith("/javascript"));
 
-      assertEquals("image/svg+xml",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.svg").getContentType());
+    assertEquals("image/svg+xml",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg").getContentType());
 
-      assertEquals("font/ttf",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.ttf").getContentType());
+    assertEquals("font/ttf", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
 
-      assertEquals("text/plain",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.txt").getContentType());
+    assertEquals("text/plain",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt").getContentType());
 
-      assertEquals("font/woff",
-          s3.getObjectMetadata(s, "destbucket", "0.1/test.woff").getContentType());
-    }
+    assertEquals("font/woff",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
   }
 
   /**
@@ -372,5 +342,38 @@ public class ConsoleInstallHandlerTest {
         this.logger.containsString("sending FAILURE to https://cloudformation-custom-resource"));
 
     assertTrue(connection.contains("\"Status\":\"FAILURE\""));
+  }
+
+  /**
+   * Verify Config File is written.
+   */
+  private void verifyConfigWritten() {
+    String config = String.format(
+        "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
+            + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"}"
+            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\","
+            + "\"userAuthentication\":\"cognito\"}",
+        "https://test2622653865277.auth.us-east-2.amazoncognito.com",
+        "https://auth.execute-api.us-east-1.amazonaws.com/prod/",
+        "https://chartapi.24hourcharts.com", "wss://me.execute-api.us-east-1.amazonaws.com/prod/",
+        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1",
+        "24hourcharts", "false");
+
+    assertTrue(this.logger.containsString("writing Cognito config: " + config));
+  }
+
+  /**
+   * expect Send Response.
+   *
+   * @param contentLength int
+   * @throws IOException IOException
+   */
+  private void verifySendResponse(final int contentLength) throws IOException {
+
+    assertTrue(this.logger.containsString("Response Code: 200"));
+    assertTrue(connection.getDoOutput());
+    assertEquals("", connection.getRequestProperty("Content-Type"));
+    assertEquals("" + contentLength, connection.getRequestProperty("Content-Length"));
+    assertEquals("PUT", connection.getRequestMethod());
   }
 }

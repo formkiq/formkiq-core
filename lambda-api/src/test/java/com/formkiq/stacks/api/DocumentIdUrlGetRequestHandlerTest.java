@@ -217,7 +217,6 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentContent04() throws Exception {
-
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();

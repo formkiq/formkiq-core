@@ -178,16 +178,16 @@ public final class TestServices {
   /**
    * Get Sqs Documents Formats Queue Url.
    * 
-   * @param endpointOverride {@link String}
-   * 
+   * @param sqs {@link SqsConnectionBuilder}
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
-  public static String getSqsDocumentFormatsQueueUrl(final String endpointOverride)
+  public static String getSqsDocumentFormatsQueueUrl(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsDocumentFormatsQueueUrl == null) {
+
       sqsDocumentFormatsQueueUrl =
-          getSqsService(endpointOverride).createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
+          getSqsService(sqs).createQueue(SQS_DOCUMENT_FORMATS_QUEUE).queueUrl();
     }
 
     return sqsDocumentFormatsQueueUrl;
@@ -196,14 +196,13 @@ public final class TestServices {
   /**
    * Get Singleton Instance of {@link SqsService}.
    * 
-   * @param endpointOverride {@link String}
-   * 
+   * @param sqs {@link SqsConnectionBuilder}
    * @return {@link SqsService}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SqsService getSqsService(final String endpointOverride) throws URISyntaxException {
+  public static SqsService getSqsService(final SqsConnectionBuilder sqs) throws URISyntaxException {
     if (sqsservice == null) {
-      sqsservice = new SqsService(getSqsConnection(endpointOverride));
+      sqsservice = new SqsService(sqs);
     }
 
     return sqsservice;
@@ -212,16 +211,15 @@ public final class TestServices {
   /**
    * Get Sqs Documents Formats Queue Url.
    * 
-   * @param endpointOverride {@link String}
+   * @param sqs {@link SqsConnectionBuilder}
    * 
    * @return {@link String}
    * @throws URISyntaxException URISyntaxException
    */
-  public static String getSqsWebsocketQueueUrl(final String endpointOverride)
+  public static String getSqsWebsocketQueueUrl(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsWebsocketQueueUrl == null) {
-      sqsWebsocketQueueUrl =
-          getSqsService(endpointOverride).createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
+      sqsWebsocketQueueUrl = getSqsService(sqs).createQueue(SQS_WEBSOCKET_QUEUE).queueUrl();
     }
 
     return sqsWebsocketQueueUrl;

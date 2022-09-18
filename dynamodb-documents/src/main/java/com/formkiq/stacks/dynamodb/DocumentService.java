@@ -57,7 +57,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Delete Document.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    */
@@ -65,7 +65,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Delete Document Format.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param contentType {@link String}
@@ -76,7 +76,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Delete All Document Formats.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    */
@@ -93,7 +93,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Delete Document Tags.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    */
@@ -101,7 +101,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Delete Preset by id and type.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param id {@link String}
    * @deprecated method needs to be updated
@@ -111,7 +111,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Delete Presets by type.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param type {@link String}
    * @deprecated method needs to be updated
@@ -151,7 +151,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Find {@link DocumentItem}.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * 
@@ -161,7 +161,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Find {@link DocumentItem}.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param includeChildDocuments boolean
@@ -196,7 +196,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Find {@link DocumentItem}.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentIds {@link List} {@link String}
    * @return {@link List} {@link DocumentItem}
@@ -205,7 +205,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Find {@link DocumentItem} by Inserted Date. Order in descending order.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param date {@link ZonedDateTime}
    * @param token {@link PaginationMapToken}
@@ -214,17 +214,6 @@ public interface DocumentService extends DocumentTagLoader {
    */
   PaginationResults<DocumentItem> findDocumentsByDate(String siteId, ZonedDateTime date,
       PaginationMapToken token, int maxresults);
-
-  /**
-   * Find Document Tag Value.
-   *
-   * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
-   * @param tagKey {@link String}
-   * 
-   * @return {@link DocumentTag}
-   */
-  DocumentTag findDocumentTag(String siteId, String documentId, String tagKey);
 
   /**
    * Find Document Tags for number of DocumentIds.
@@ -238,8 +227,19 @@ public interface DocumentService extends DocumentTagLoader {
       List<String> tags);
 
   /**
+   * Find Document Tag Value.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param documentId {@link String}
+   * @param tagKey {@link String}
+   * 
+   * @return {@link DocumentTag}
+   */
+  DocumentTag findDocumentTag(String siteId, String documentId, String tagKey);
+
+  /**
    * Find Tags for {@link DocumentItem}.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param pagination {@link PaginationMapToken}
@@ -311,7 +311,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Remove Tag from Document.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param tagKey {@link String}
@@ -322,7 +322,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Remove Tags from Document.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param tags Tag Names.
@@ -331,7 +331,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /**
    * Save Document and Tags.
-   *
+   * 
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}

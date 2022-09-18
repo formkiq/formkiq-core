@@ -187,17 +187,20 @@ public abstract class AbstractRequestHandler {
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     this.map.put("AWS_REGION", AWS_REGION.toString());
     this.map.put("DEBUG", "true");
-    this.map.put("SQS_DOCUMENT_FORMATS", TestServices.getSqsDocumentFormatsQueueUrl(null));
+    this.map.put("SQS_DOCUMENT_FORMATS",
+        TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
     this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
     this.map.put("FORMKIQ_TYPE", "core");
     this.map.put("USER_AUTHENTICATION", "cognito");
-    this.map.put("WEBSOCKET_SQS_URL", TestServices.getSqsWebsocketQueueUrl(null));
+    this.map.put("WEBSOCKET_SQS_URL",
+        TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
 
     createApiRequestHandler(this.map);
 
     this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
+
     for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
       ReceiveMessageResponse response = sqsservice.receiveMessages(queue);
       while (response.messages().size() > 0) {

@@ -180,6 +180,7 @@ public class DocumentTagsRequestHandler
     }
 
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
+
     DocumentItem item = coreServices.documentService().findDocument(siteId, documentId);
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");

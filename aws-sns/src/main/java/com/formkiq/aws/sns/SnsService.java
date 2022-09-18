@@ -45,16 +45,17 @@ import software.amazon.awssdk.services.sns.model.UnsubscribeResponse;
  */
 public class SnsService {
 
-  /** SnsClient. */
+  /** {@link SnsClient}. */
   private SnsClient snsClient;
 
   /**
    * constructor.
    * 
-   * @param builder {@link SnsConnectionBuilder}
+   * @param connection {@link SnsConnectionBuilder}
+   * 
    */
-  public SnsService(final SnsConnectionBuilder builder) {
-    this.snsClient = builder.build();
+  public SnsService(final SnsConnectionBuilder connection) {
+    this.snsClient = connection.build();
   }
 
   /**

@@ -84,9 +84,5 @@ public class DynamoDbExtension
     if (this.dynamoDbLocal != null) {
       this.dynamoDbLocal.stop();
     }
-
-    if (this.dbConnection != null) {
-      this.dbConnection.close();
-    }
   }
 }

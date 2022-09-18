@@ -143,44 +143,16 @@ public class DocumentsUploadRequestHandler
       }
 
       if (value != null) {
+
         (CoreAwsServiceCache.cast(awsservice)).documentCountService()
             .incrementDocumentCount(siteId);
       }
+
     } else {
       throw new BadException("Max Number of Documents reached");
     }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(urlstring, documentId));
-  }
-
-  /**
-   * Validate {@link DynamicDocumentItem} against a TagSchema.
-   * 
-   * @param cacheService {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param item {@link DynamicDocumentItem}
-   * @param userId {@link String}
-   * @param tags {@link List} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   * @throws BadException BadException
-   */
-  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
-      final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
-      throws ValidationException, BadException {
-
-    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
-
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    List<DocumentTag> compositeTags =
-        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
-            .collect(Collectors.toList());
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    tags.addAll(compositeTags);
   }
 
   /**
@@ -301,5 +273,35 @@ public class DocumentsUploadRequestHandler
     String siteId = authorizer.getSiteId();
     return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
         item);
+  }
+
+  /**
+   * Validate {@link DynamicDocumentItem} against a TagSchema.
+   * 
+   * @param cacheService {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param item {@link DynamicDocumentItem}
+   * @param userId {@link String}
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws ValidationException ValidationException
+   * @throws BadException BadException
+   */
+  private void validateTagSchema(final AwsServiceCache cacheService, final String siteId,
+      final DynamicDocumentItem item, final String userId, final List<DocumentTag> tags)
+      throws ValidationException, BadException {
+
+    DocumentTagSchemaPlugin plugin = cacheService.getExtension(DocumentTagSchemaPlugin.class);
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    List<DocumentTag> compositeTags =
+        plugin.addCompositeKeys(siteId, item, tags, userId, true, errors).stream().map(t -> t)
+            .collect(Collectors.toList());
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    tags.addAll(compositeTags);
   }
 }

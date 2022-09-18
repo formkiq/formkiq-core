@@ -68,36 +68,35 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
  */
 public class WebsocketTest {
 
-  /** {@link Gson}. */
-  private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
+  /** {@link CognitoService}. */
+  private static CognitoService adminCognitoService;
 
-  /** Test Timeout. */
-  private static final int TIMEOUT = 15000;
-  /** Cognito User Email. */
-  private static final String USER_EMAIL = "testuser14@formkiq.com";
+  /** {@link DynamoDbConnectionBuilder}. */
+  private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito Group. */
   private static final String GROUP = "test9843";
-  /** Temporary Cognito Password. */
-  private static final String USER_TEMP_PASSWORD = "TEMPORARY_PASSWORd1!";
-  /** Cognito User Password. */
-  private static final String USER_PASSWORD = USER_TEMP_PASSWORD + "!";
+  /** {@link Gson}. */
+  private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
-
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
+  /** Temporary Cognito Password. */
+  private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
+  /** Test Timeout. */
+  private static final int TIMEOUT = 15000;
+  /** {@link AuthenticationResultType}. */
+  private static AuthenticationResultType token;
+  /** Cognito User Email. */
+  private static final String USER_EMAIL = "testuser14@formkiq.com";
+  /** Cognito User Password. */
+  private static final String USER_PASSWORD = TEMP_USER_PASSWORD + "!";
   /** Web Connections Table. */
   private static String webconnectionsTable;
   /** WebSocket SQS Url. */
   private static String websocketSqsUrl;
   /** WebSocket URL. */
   private static String websocketUrl;
-  /** {@link CognitoService}. */
-  private static CognitoService adminCognitoService;
-  /** {@link AuthenticationResultType}. */
-  private static AuthenticationResultType token;
-  /** {@link SqsService}. */
-  private static SqsService sqsService;
-  /** {@link DynamoDbConnectionBuilder}. */
-  private static DynamoDbConnectionBuilder dbConnection;
 
   /**
    * Add User and/or Login Cognito.
@@ -109,8 +108,8 @@ public class WebsocketTest {
 
     if (!adminCognitoService.isUserExists(username)) {
 
-      adminCognitoService.addUser(username, USER_TEMP_PASSWORD);
-      adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
+      adminCognitoService.addUser(username, TEMP_USER_PASSWORD);
+      adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
       if (groupName != null) {
         adminCognitoService.addGroup(groupName);
@@ -121,7 +120,7 @@ public class WebsocketTest {
 
       AdminGetUserResponse user = adminCognitoService.getUser(username);
       if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
-        adminCognitoService.loginWithNewPassword(username, USER_TEMP_PASSWORD, USER_PASSWORD);
+        adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
       }
     }
   }
@@ -339,14 +338,6 @@ public class WebsocketTest {
     }
   }
 
-  private void verifyDbConnections() {
-    try (DynamoDbClient client = dbConnection.build()) {
-      ScanResponse response =
-          client.scan(ScanRequest.builder().tableName(webconnectionsTable).build());
-      assertEquals(0, response.count().intValue());
-    }
-  }
-
   /**
    * Test Receiving Web Notify.
    * 
@@ -379,5 +370,13 @@ public class WebsocketTest {
     }
 
     assertEquals(0, client.getErrors().size());
+  }
+
+  private void verifyDbConnections() {
+    try (DynamoDbClient client = dbConnection.build()) {
+      ScanResponse response =
+          client.scan(ScanRequest.builder().tableName(webconnectionsTable).build());
+      assertEquals(0, response.count().intValue());
+    }
   }
 }

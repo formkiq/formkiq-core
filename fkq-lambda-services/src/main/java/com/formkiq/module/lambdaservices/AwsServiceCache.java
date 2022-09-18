@@ -79,6 +79,15 @@ public class AwsServiceCache {
   }
 
   /**
+   * Get Environment parameters.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, String> environment() {
+    return this.environment;
+  }
+
+  /**
    * Set Environment {@link Map} parameters.
    * 
    * @param map {@link Map}
