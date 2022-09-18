@@ -88,6 +88,7 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
@@ -1014,6 +1015,22 @@ public class StagingS3CreateTest implements DbKeys {
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals("OCR", actions.get(0).type().name());
+      assertEquals("PENDING", actions.get(0).status().name());
+      assertEquals("joesmith", actions.get(0).userId());
+      
+      actions.get(0).status(ActionStatus.COMPLETE);
+      actionsService.saveActions(siteId, documentId, actions);
+      
+      // given
+      s3.putObject(STAGING_BUCKET, key, content, null, null);
+      
+      // when - run a 2nd time
+      handleRequest(map);
+      
+      // then
+      actions = actionsService.getActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
