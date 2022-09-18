@@ -11,7 +11,6 @@
 		<allow pkg="com.formkiq.plugins.validation" />
 		<allow pkg="java.util" />
 		
-		<allow pkg="software.amazon.awssdk.services.dynamodb" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 	</subpackage>
 	
