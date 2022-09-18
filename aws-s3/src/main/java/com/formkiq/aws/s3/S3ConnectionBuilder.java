@@ -51,6 +51,8 @@ public class S3ConnectionBuilder {
   private S3ClientBuilder builder;
   /** Builder. */
   private Builder presignerBuilder;
+  /** {@link S3Client}. */
+  private S3Client s3Client;
 
   /**
    * constructor.
@@ -71,7 +73,8 @@ public class S3ConnectionBuilder {
    * @return {@link S3Client}
    */
   public S3Client build() {
-    return this.builder.build();
+    initS3Client();
+    return this.s3Client;
   }
 
   /**
@@ -105,8 +108,9 @@ public class S3ConnectionBuilder {
    * Init S3 Client.
    */
   public void initS3Client() {
-    build().close();
-    buildPresigner().close();
+    if (this.s3Client == null) {
+      this.s3Client = this.builder.build();
+    }
   }
 
   /**

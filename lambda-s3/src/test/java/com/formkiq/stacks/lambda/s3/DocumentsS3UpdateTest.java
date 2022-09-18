@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -95,7 +98,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -201,9 +203,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     }
 
     s3service = new S3Service(s3Builder);
-    try (S3Client s3 = s3service.buildClient()) {
-      s3service.createBucket(s3, "example-bucket");
-    }
+    s3service.createBucket("example-bucket");
 
     snsService = new SnsService(snsBuilder);
 
@@ -240,15 +240,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("Content-Type", contentType);
 
-    try (S3Client s3 = s3service.buildClient()) {
-      s3service.putObject(s3, "example-bucket", key, content.getBytes(StandardCharsets.UTF_8),
-          contentType, metadata);
+    s3service.putObject("example-bucket", key, content.getBytes(StandardCharsets.UTF_8),
+        contentType, metadata);
 
-      if (addTags) {
-        s3service.setObjectTags(s3, "example-bucket", key,
-            Arrays.asList(Tag.builder().key("sample").value("12345").build(),
-                Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
-      }
+    if (addTags) {
+      s3service.setObjectTags("example-bucket", key,
+          Arrays.asList(Tag.builder().key("sample").value("12345").build(),
+              Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
     }
   }
 
@@ -346,10 +344,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @BeforeEach
   public void before() throws URISyntaxException {
 
-    try (S3Client s3 = s3service.buildClient()) {
-      s3service.deleteAllFiles(s3, "example-bucket");
-      s3service.deleteAllFiles(s3, "example-bucket");
-    }
+    s3service.deleteAllFiles("example-bucket");
+    s3service.deleteAllFiles("example-bucket");
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
 
@@ -1094,10 +1090,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertEquals(contentType, item.getContentType());
     assertEquals(contentLength, item.getContentLength().toString());
 
-    try (S3Client s3 = s3service.buildClient()) {
-      s3service.deleteAllObjectTags(s3, "example-bucket", item.getDocumentId());
-      service.deleteDocumentTags(siteId, item.getDocumentId());
-    }
+    s3service.deleteAllObjectTags("example-bucket", item.getDocumentId());
+    service.deleteDocumentTags(siteId, item.getDocumentId());
 
     return item;
   }

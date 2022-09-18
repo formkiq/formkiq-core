@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -79,7 +82,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -223,36 +225,32 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
-    try (S3Client client = this.s3Service.buildClient()) {
+    if (MimeType.isPlainText(item.getContentType())) {
 
-      if (MimeType.isPlainText(item.getContentType())) {
+      String bucket =
+          MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
+      String url =
+          this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+      urls = Arrays.asList(url);
 
-        String bucket =
-            MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
-        String url =
-            this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
-        urls = Arrays.asList(url);
+    } else {
 
+      GetDocumentOcrRequest req = new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
+
+      req.addQueryParameter("contentUrl", "true");
+      req.addQueryParameter("text", "true");
+
+      HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
+      Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
+
+      if (map != null && map.containsKey("contentUrls")) {
+        urls = (List<String>) map.get("contentUrls");
       } else {
-
-        GetDocumentOcrRequest req =
-            new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
-
-        req.addQueryParameter("contentUrl", "true");
-        req.addQueryParameter("text", "true");
-
-        HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
-        Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
-
-        if (map != null && map.containsKey("contentUrls")) {
-          urls = (List<String>) map.get("contentUrls");
-        } else {
-          throw new IOException("Cannot find 'contentUrls' from OCR request");
-        }
+        throw new IOException("Cannot find 'contentUrls' from OCR request");
       }
-
-      return urls;
     }
+
+    return urls;
   }
 
   /**

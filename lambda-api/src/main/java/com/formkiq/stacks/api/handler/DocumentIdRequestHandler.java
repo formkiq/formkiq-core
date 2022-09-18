@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api.handler;
 
@@ -67,7 +70,6 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}". */
@@ -170,15 +172,14 @@ public class DocumentIdRequestHandler
     try {
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
-      try (S3Client s3 = s3Service.buildClient()) {
-        S3ObjectMetadata md = s3Service.getObjectMetadata(s3, documentBucket, documentId);
 
-        if (md.isObjectExists()) {
-          s3Service.deleteObject(s3, documentBucket, documentId);
+      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, documentId);
 
-          ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
-          return new ApiRequestHandlerResponse(SC_OK, resp);
-        }
+      if (md.isObjectExists()) {
+        s3Service.deleteObject(documentBucket, documentId);
+
+        ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
+        return new ApiRequestHandlerResponse(SC_OK, resp);
       }
 
       throw new NotFoundException("Document " + documentId + " not found.");
@@ -366,12 +367,11 @@ public class DocumentIdRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stageS3Bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-    try (S3Client client = s3.buildClient()) {
-      s3.putObject(client, stageS3Bucket, key, bytes, item.getString("contentType"));
 
-      if (maxDocumentCount != null) {
-        awsservice.documentCountService().incrementDocumentCount(siteId);
-      }
+    s3.putObject(stageS3Bucket, key, bytes, item.getString("contentType"));
+
+    if (maxDocumentCount != null) {
+      awsservice.documentCountService().incrementDocumentCount(siteId);
     }
   }
 

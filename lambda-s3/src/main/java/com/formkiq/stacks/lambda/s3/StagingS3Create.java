@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -80,7 +83,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
@@ -234,7 +236,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Determines whether {@link String} is a JSON config file.
    *
-   * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param siteId {@link String}
@@ -242,13 +243,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @return {@link DynamicDocumentItem}
    */
   @SuppressWarnings("unchecked")
-  private DynamicDocumentItem configfile(final S3Client s3Client, final LambdaLogger logger,
-      final String bucket, final String siteId, final String documentId) {
+  private DynamicDocumentItem configfile(final LambdaLogger logger, final String bucket,
+      final String siteId, final String documentId) {
 
     DynamicDocumentItem obj = null;
 
     if (documentId.endsWith(FORMKIQ_B64_EXT)) {
-      String s = this.s3.getContentAsString(s3Client, bucket, documentId, null);
+      String s = this.s3.getContentAsString(bucket, documentId, null);
 
       if ("true".equals(System.getenv("DEBUG"))) {
         logger.log(s);
@@ -283,14 +284,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Copies Documentid to a new file that is a {@link UUID}.
    *
-   * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param originalkey {@link String}
    * @param date {@link Date}
    */
-  private void copyFile(final S3Client s3Client, final LambdaLogger logger, final String bucket,
-      final String originalkey, final Date date) {
+  private void copyFile(final LambdaLogger logger, final String bucket, final String originalkey,
+      final Date date) {
 
     String siteId = getSiteId(originalkey);
     String key = resetDatabaseKey(siteId, originalkey);
@@ -302,7 +302,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     String destKey = createDatabaseKey(siteId, documentId);
 
-    S3ObjectMetadata metadata = this.s3.getObjectMetadata(s3Client, bucket, originalkey);
+    S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, originalkey);
 
     // if file path isn't in the database it's already saved
     if (documentIdForPath == null) {
@@ -328,7 +328,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
         destKey, this.documentsBucket));
 
-    this.s3.copyObject(s3Client, bucket, originalkey, this.documentsBucket, destKey,
+    this.s3.copyObject(bucket, originalkey, this.documentsBucket, destKey,
         metadata.getContentType());
   }
 
@@ -412,16 +412,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Delete S3 Object.
    *
-   * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param key {@link String}
    */
-  private void deleteObject(final S3Client s3Client, final LambdaLogger logger, final String bucket,
-      final String key) {
+  private void deleteObject(final LambdaLogger logger, final String bucket, final String key) {
     String msg = String.format("Removing %s from bucket %s.", key, bucket);
     logger.log(msg);
-    this.s3.deleteObject(s3Client, bucket, key);
+    this.s3.deleteObject(bucket, key);
   }
 
   /**
@@ -529,27 +527,24 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (objectCreated) {
 
-      try (S3Client s = this.s3.buildClient()) {
+      DynamicDocumentItem doc = configfile(logger, bucket, siteId, documentId);
 
-        DynamicDocumentItem doc = configfile(s, logger, bucket, siteId, documentId);
+      if (doc != null) {
+        write(logger, doc, date, siteId);
 
-        if (doc != null) {
-          write(s, logger, doc, date, siteId);
+        String tagSchemaId = doc.getString("tagSchemaId");
+        Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
 
-          String tagSchemaId = doc.getString("tagSchemaId");
-          Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
-
-          if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-            createFormKiQConnectionIfNeeded();
-            postDocumentTags(siteId, doc);
-          }
-
-        } else {
-          copyFile(s, logger, bucket, documentId, date);
+        if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
+          createFormKiQConnectionIfNeeded();
+          postDocumentTags(siteId, doc);
         }
 
-        deleteObject(s, logger, bucket, documentId);
+      } else {
+        copyFile(logger, bucket, documentId, date);
       }
+
+      deleteObject(logger, bucket, documentId);
     }
 
     if (!objectCreated) {
@@ -631,16 +626,15 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /**
    * Write {@link DynamicDocumentItem} to S3 & DynamoDB.
    *
-   * @param s3Client {@link S3Client}
    * @param logger {@link LambdaLogger}
    * @param doc {@link DynamicDocumentItem}
    * @param date {@link Date}
    * @param siteId {@link String}
    */
-  private void write(final S3Client s3Client, final LambdaLogger logger,
-      final DynamicDocumentItem doc, final Date date, final String siteId) {
+  private void write(final LambdaLogger logger, final DynamicDocumentItem doc, final Date date,
+      final String siteId) {
 
-    if (writeS3File(logger, s3Client, siteId, doc)) {
+    if (writeS3File(logger, siteId, doc)) {
 
       logger.log(String.format("Inserted %s into bucket %s as %s", doc.getPath(),
           this.documentsBucket, createDatabaseKey(siteId, doc.getDocumentId())));
@@ -656,13 +650,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * Writes File to S3.
    * 
    * @param logger {@link LambdaLogger}
-   * @param s3Client {@link S3Client}
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @return boolean
    */
-  private boolean writeS3File(final LambdaLogger logger, final S3Client s3Client,
-      final String siteId, final DynamicDocumentItem doc) {
+  private boolean writeS3File(final LambdaLogger logger, final String siteId,
+      final DynamicDocumentItem doc) {
 
     boolean wrote = false;
 
@@ -681,8 +674,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       String key = createDatabaseKey(siteId, e.getKey());
       String contentType = contentTypeMap.get(e.getKey());
 
-      PutObjectResponse response =
-          this.s3.putObject(s3Client, this.documentsBucket, key, bytes, contentType);
+      PutObjectResponse response = this.s3.putObject(this.documentsBucket, key, bytes, contentType);
       doc.setChecksum(response.eTag());
       doc.setContentLength(Long.valueOf(bytes.length));
       wrote = true;

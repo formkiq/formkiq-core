@@ -43,7 +43,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 
 /** {@link RequestHandler} for installing the console. */
@@ -121,10 +120,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String fileName = consoleversion + "/assets/config.json";
 
-    try (S3Client s = this.s3.buildClient()) {
-      this.s3.putObject(s, destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8),
-          null);
-    }
+    this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null);
 
     logger.log("writing Cognito config: " + json);
   }
@@ -138,9 +134,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
     logger.log("deleting console from: " + destinationBucket);
 
-    try (S3Client client = this.s3.buildClient()) {
-      this.s3.deleteAllFiles(client, destinationBucket);
-    }
+    this.s3.deleteAllFiles(destinationBucket);
   }
 
   /**
@@ -294,27 +288,23 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     logger.log("unpacking " + consoleZipKey + " from bucket " + distributionBucket + " to bucket "
         + destinationBucket);
 
-    try (S3Client s = this.s3UsEast1.buildClient()) {
+    InputStream stream = this.s3UsEast1.getContentAsInputStream(distributionBucket, consoleZipKey);
 
-      InputStream stream =
-          this.s3UsEast1.getContentAsInputStream(s, distributionBucket, consoleZipKey);
+    try {
+
+      writeToBucket(stream, destinationBucket, consoleversion);
+
+    } catch (IOException e) {
+
+      logStacktrace(context, e);
+      sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
+
+    } finally {
 
       try {
-
-        writeToBucket(stream, destinationBucket, consoleversion);
-
+        stream.close();
       } catch (IOException e) {
-
-        logStacktrace(context, e);
-        sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
-
-      } finally {
-
-        try {
-          stream.close();
-        } catch (IOException e) {
-          logger.log("cannot close stream " + e.toString());
-        }
+        logger.log("cannot close stream " + e.toString());
       }
     }
   }
@@ -335,27 +325,25 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
       ZipEntry entry = zis.getNextEntry();
 
-      try (S3Client s = this.s3.buildClient()) {
-        while (entry != null) {
+      while (entry != null) {
 
-          String fileName = consoleversion + "/" + entry.getName();
-          String mimeType = URLConnection.guessContentTypeFromName(fileName);
+        String fileName = consoleversion + "/" + entry.getName();
+        String mimeType = URLConnection.guessContentTypeFromName(fileName);
 
-          if (mimeType == null) {
-            for (Map.Entry<String, String> e : this.mimeTypes.entrySet()) {
-              if (fileName.endsWith(e.getKey())) {
-                mimeType = e.getValue();
-                break;
-              }
+        if (mimeType == null) {
+          for (Map.Entry<String, String> e : this.mimeTypes.entrySet()) {
+            if (fileName.endsWith(e.getKey())) {
+              mimeType = e.getValue();
+              break;
             }
           }
-
-          byte[] byteArray = S3Service.toByteArray(zis);
-
-          this.s3.putObject(s, destinationBucket, fileName, byteArray, mimeType);
-
-          entry = zis.getNextEntry();
         }
+
+        byte[] byteArray = S3Service.toByteArray(zis);
+
+        this.s3.putObject(destinationBucket, fileName, byteArray, mimeType);
+
+        entry = zis.getNextEntry();
       }
     }
   }

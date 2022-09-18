@@ -41,6 +41,6 @@ public interface DocumentTagLoader {
    * @param tagKeys {@link Collection} {@link String}
    * @return {@link Collection} {@link DocumentTag}
    */
-  Collection<DocumentTag> findDocumentTags(String siteId,
-      String documentId, Collection<String> tagKeys);
+  Collection<DocumentTag> findDocumentTags(String siteId, String documentId,
+      Collection<String> tagKeys);
 }

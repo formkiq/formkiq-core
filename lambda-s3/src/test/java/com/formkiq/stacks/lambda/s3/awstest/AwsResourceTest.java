@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
@@ -57,8 +60,6 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Event;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
@@ -162,7 +163,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    * @return {@link String}
    */
   private String subscribeToSns(final String topicArn, final String queueUrl) {
-    getSqsService();
+
     String queueArn = SqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
@@ -197,30 +198,27 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       try {
 
-        try (S3Client s3 = getS3Service().buildClient()) {
+        // when
+        key = writeToStaging(key, contentType);
 
-          // when
-          key = writeToStaging(s3, key, contentType);
+        // then
+        verifyFileExistsInDocumentsS3(key, contentType);
+        verifyFileNotExistInStagingS3(key);
+        assertSnsMessage(documentEventQueueUrl, "create");
 
-          // then
-          verifyFileExistsInDocumentsS3(s3, key, contentType);
-          verifyFileNotExistInStagingS3(s3, key);
-          assertSnsMessage(documentEventQueueUrl, "create");
+        // when
+        key = writeToStaging(key, contentType);
 
-          // when
-          key = writeToStaging(s3, key, contentType);
+        // then
+        verifyFileExistsInDocumentsS3(key, contentType);
+        verifyFileNotExistInStagingS3(key);
+        assertSnsMessage(documentEventQueueUrl, "create");
 
-          // then
-          verifyFileExistsInDocumentsS3(s3, key, contentType);
-          verifyFileNotExistInStagingS3(s3, key);
-          assertSnsMessage(documentEventQueueUrl, "create");
+        // when
+        getS3Service().deleteObject(getDocumentsbucketname(), key);
 
-          // when
-          getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
-
-          // then
-          assertSnsMessage(documentEventQueueUrl, "delete");
-        }
+        // then
+        assertSnsMessage(documentEventQueueUrl, "delete");
 
       } finally {
         getSnsService().unsubscribe(snsDocumentEventArn);
@@ -242,30 +240,27 @@ public class AwsResourceTest extends AbstractAwsTest {
     String contentType = "text/plain";
     DocumentItem item = new DocumentItemDynamoDb(key, new Date(), "test");
 
-    try (S3Client s3 = getS3Service().buildClient()) {
+    // when
+    getDocumentService().saveDocument(null, item, null);
+    key = writeToDocuments(key, contentType);
 
-      // when
-      getDocumentService().saveDocument(null, item, null);
-      key = writeToDocuments(s3, key, contentType);
+    // then
+    verifyFileExistsInDocumentsS3(key, contentType);
 
-      // then
-      verifyFileExistsInDocumentsS3(s3, key, contentType);
+    item = getDocumentService().findDocument(null, key);
 
-      item = getDocumentService().findDocument(null, key);
+    while (true) {
+      if (contentType.equals(item.getContentType())) {
+        assertEquals(contentType, item.getContentType());
+        assertEquals(contentLength, item.getContentLength());
 
-      while (true) {
-        if (contentType.equals(item.getContentType())) {
-          assertEquals(contentType, item.getContentType());
-          assertEquals(contentLength, item.getContentLength());
-
-          break;
-        }
-
-        item = getDocumentService().findDocument(null, key);
+        break;
       }
 
-      getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
+      item = getDocumentService().findDocument(null, key);
     }
+
+    getS3Service().deleteObject(getDocumentsbucketname(), key);
   }
 
   /**
@@ -290,33 +285,28 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       try {
 
-        try (DynamoDbClient dbClient = getDynamodbClient()) {
-          try (S3Client s3 = getS3Service().buildClient()) {
+        DynamicDocumentItem doc = new DynamicDocumentItem(
+            Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
+        getDocumentService().saveDocumentItemWithTag(null, doc);
 
-            DynamicDocumentItem doc = new DynamicDocumentItem(
-                Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
-            getDocumentService().saveDocumentItemWithTag(null, doc);
-
-            // when
-            URL url =
-                getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1));
-            HttpResponse<String> put = http.send(
+        // when
+        URL url = getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1));
+        HttpResponse<String> put =
+            http.send(
                 HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
                     .method("PUT", BodyPublishers.ofString(content)).build(),
                 BodyHandlers.ofString());
 
-            // then
-            assertEquals(statusCode, put.statusCode());
-            verifyFileExistsInDocumentsS3(s3, key, contentType);
-            assertSnsMessage(documentQueueUrl, "create");
+        // then
+        assertEquals(statusCode, put.statusCode());
+        verifyFileExistsInDocumentsS3(key, contentType);
+        assertSnsMessage(documentQueueUrl, "create");
 
-            // when
-            getS3Service().deleteObject(s3, getDocumentsbucketname(), key);
+        // when
+        getS3Service().deleteObject(getDocumentsbucketname(), key);
 
-            // then
-            assertSnsMessage(documentQueueUrl, "delete");
-          }
-        }
+        // then
+        assertSnsMessage(documentQueueUrl, "delete");
 
       } finally {
         getSnsService().unsubscribe(subscriptionDocumentArn);
@@ -353,15 +343,13 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       try {
 
-        try (S3Client s3 = getS3Service().buildClient()) {
-          // when
-          getS3Service().putObject(s3, getStagingdocumentsbucketname(), key + ".fkb64", json,
-              contentType);
+        // when
+        getS3Service().putObject(getStagingdocumentsbucketname(), key + ".fkb64", json,
+            contentType);
 
-          String documentId = assertSnsMessage(documentQueueUrl, "create");
-          assertEquals("this is a test",
-              getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
-        }
+        String documentId = assertSnsMessage(documentQueueUrl, "create");
+        assertEquals("this is a test",
+            getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
 
       } finally {
         getSnsService().unsubscribe(subscriptionDocumentArn);
@@ -377,29 +365,27 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testDocumentUpdateLambdaSns() {
     // given
     // when
-    try (S3Client s3 = getS3Service().buildClient()) {
-      final GetBucketNotificationConfigurationResponse response0 =
-          getS3Service().getNotifications(s3, getDocumentsbucketname());
-      final GetBucketNotificationConfigurationResponse response1 =
-          getS3Service().getNotifications(s3, getStagingdocumentsbucketname());
+    final GetBucketNotificationConfigurationResponse response0 =
+        getS3Service().getNotifications(getDocumentsbucketname());
+    final GetBucketNotificationConfigurationResponse response1 =
+        getS3Service().getNotifications(getStagingdocumentsbucketname());
 
-      // then
-      List<LambdaFunctionConfiguration> list =
-          new ArrayList<>(response0.lambdaFunctionConfigurations());
-      Collections.sort(list, new LambdaFunctionConfigurationComparator());
+    // then
+    List<LambdaFunctionConfiguration> list =
+        new ArrayList<>(response0.lambdaFunctionConfigurations());
+    Collections.sort(list, new LambdaFunctionConfigurationComparator());
 
-      assertEquals(0, response0.queueConfigurations().size());
-      assertEquals(2, list.size());
+    assertEquals(0, response0.queueConfigurations().size());
+    assertEquals(2, list.size());
 
-      assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
-      assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
+    assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
+    assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
 
-      assertEquals(0, response1.queueConfigurations().size());
-      assertEquals(1, response1.lambdaFunctionConfigurations().size());
+    assertEquals(0, response1.queueConfigurations().size());
+    assertEquals(1, response1.lambdaFunctionConfigurations().size());
 
-      assertLambdaFunctionConfigurations(response1.lambdaFunctionConfigurations().get(0),
-          "StagingS3Create", "s3:ObjectCreated:*");
-    }
+    assertLambdaFunctionConfigurations(response1.lambdaFunctionConfigurations().get(0),
+        "StagingS3Create", "s3:ObjectCreated:*");
   }
 
   /**
@@ -442,29 +428,27 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testStageDocumentNotifications() {
     // given
     // when
-    try (S3Client s3 = getS3Service().buildClient()) {
-      final GetBucketNotificationConfigurationResponse response0 =
-          getS3Service().getNotifications(s3, getDocumentsbucketname());
-      final GetBucketNotificationConfigurationResponse response1 =
-          getS3Service().getNotifications(s3, getStagingdocumentsbucketname());
+    final GetBucketNotificationConfigurationResponse response0 =
+        getS3Service().getNotifications(getDocumentsbucketname());
+    final GetBucketNotificationConfigurationResponse response1 =
+        getS3Service().getNotifications(getStagingdocumentsbucketname());
 
-      // then
-      List<LambdaFunctionConfiguration> list =
-          new ArrayList<>(response0.lambdaFunctionConfigurations());
-      Collections.sort(list, new LambdaFunctionConfigurationComparator());
+    // then
+    List<LambdaFunctionConfiguration> list =
+        new ArrayList<>(response0.lambdaFunctionConfigurations());
+    Collections.sort(list, new LambdaFunctionConfigurationComparator());
 
-      assertEquals(0, response0.queueConfigurations().size());
-      assertEquals(2, list.size());
+    assertEquals(0, response0.queueConfigurations().size());
+    assertEquals(2, list.size());
 
-      assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
-      assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
+    assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
+    assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
 
-      assertEquals(0, response1.queueConfigurations().size());
-      assertEquals(1, response1.lambdaFunctionConfigurations().size());
+    assertEquals(0, response1.queueConfigurations().size());
+    assertEquals(1, response1.lambdaFunctionConfigurations().size());
 
-      assertLambdaFunctionConfigurations(response1.lambdaFunctionConfigurations().get(0),
-          "StagingS3Create", "s3:ObjectCreated:*");
-    }
+    assertLambdaFunctionConfigurations(response1.lambdaFunctionConfigurations().get(0),
+        "StagingS3Create", "s3:ObjectCreated:*");
   }
 
   /**
@@ -479,75 +463,69 @@ public class AwsResourceTest extends AbstractAwsTest {
     final String txt1 = "this is a test";
     final String txt2 = "this is a another test";
 
-    try (SnsClient snsClient = getSnsClient();
-        S3Client s3 = getS3Service().buildClient();
-        SqsClient sqsClient = getSqsClient()) {
-      String documentQueueUrl = createSqsQueue("createtest-" + UUID.randomUUID()).queueUrl();
-      String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
+    String documentQueueUrl = createSqsQueue("createtest-" + UUID.randomUUID()).queueUrl();
+    String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
-      String contentType = "text/plain";
-      String path = "user/home/test.txt";
+    String contentType = "text/plain";
+    String path = "user/home/test.txt";
 
-      try {
+    try {
 
-        // when
-        getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
-            txt1.getBytes(StandardCharsets.UTF_8), contentType);
+      // when
+      getS3Service().putObject(getStagingdocumentsbucketname(), siteId + "/" + path,
+          txt1.getBytes(StandardCharsets.UTF_8), contentType);
 
-        SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
+      SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
 
-        // then
-        PaginationResults<DynamicDocumentItem> result =
-            new PaginationResults<>(Collections.emptyList(), null);
+      // then
+      PaginationResults<DynamicDocumentItem> result =
+          new PaginationResults<>(Collections.emptyList(), null);
 
-        while (result.getResults().size() != 1) {
-          result = getSearchService().search(siteId, q, null, DocumentService.MAX_RESULTS);
-          Thread.sleep(SLEEP);
-        }
-
-        assertEquals(1, result.getResults().size());
-        assertSnsMessage(documentQueueUrl, "create");
-
-        // given
-        String documentId = result.getResults().get(0).getDocumentId();
-        Collection<DocumentTag> tags =
-            Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
-        getDocumentService().addTags(siteId, documentId, tags, null);
-
-        // when
-        getS3Service().putObject(s3, getStagingdocumentsbucketname(), siteId + "/" + path,
-            txt2.getBytes(StandardCharsets.UTF_8), contentType);
-
-        // then
-        waitForText(s3, documentId, txt2);
-
-        assertEquals(txt2,
-            getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null));
-        assertSnsMessage(documentQueueUrl, "create");
-        PaginationResults<DocumentTag> list =
-            getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-        assertEquals("[path, status, untagged, userId]", list.getResults().stream()
-            .map(m -> m.getKey()).collect(Collectors.toList()).toString());
-
-      } finally {
-        getSnsService().unsubscribe(subDocumentArn);
-        getSqsService().deleteQueue(documentQueueUrl);
+      while (result.getResults().size() != 1) {
+        result = getSearchService().search(siteId, q, null, DocumentService.MAX_RESULTS);
+        Thread.sleep(SLEEP);
       }
+
+      assertEquals(1, result.getResults().size());
+      assertSnsMessage(documentQueueUrl, "create");
+
+      // given
+      String documentId = result.getResults().get(0).getDocumentId();
+      Collection<DocumentTag> tags =
+          Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
+      getDocumentService().addTags(siteId, documentId, tags, null);
+
+      // when
+      getS3Service().putObject(getStagingdocumentsbucketname(), siteId + "/" + path,
+          txt2.getBytes(StandardCharsets.UTF_8), contentType);
+
+      // then
+      waitForText(documentId, txt2);
+
+      assertEquals(txt2,
+          getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
+      assertSnsMessage(documentQueueUrl, "create");
+      PaginationResults<DocumentTag> list =
+          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals("[path, status, untagged, userId]",
+          list.getResults().stream().map(m -> m.getKey()).collect(Collectors.toList()).toString());
+
+    } finally {
+      getSnsService().unsubscribe(subDocumentArn);
+      getSqsService().deleteQueue(documentQueueUrl);
     }
   }
 
   /**
    * Verify File does NOT exist in Staging S3 Bucket.
    * 
-   * @param s3 {@link S3Client}
    * @param key {@link String}
    * @throws InterruptedException InterruptedException
    */
-  private void verifyFileNotExistInStagingS3(final S3Client s3, final String key)
-      throws InterruptedException {
+  private void verifyFileNotExistInStagingS3(final String key) throws InterruptedException {
     while (true) {
       S3ObjectMetadata meta =
-          getS3Service().getObjectMetadata(s3, getStagingdocumentsbucketname(), key);
+          getS3Service().getObjectMetadata(getStagingdocumentsbucketname(), key);
 
       if (!meta.isObjectExists()) {
         assertFalse(meta.isObjectExists());
@@ -557,10 +535,9 @@ public class AwsResourceTest extends AbstractAwsTest {
     }
   }
 
-  private void waitForText(final S3Client s3, final String documentId, final String text) {
+  private void waitForText(final String documentId, final String text) {
     while (true) {
-      String txt =
-          getS3Service().getContentAsString(s3, getDocumentsbucketname(), documentId, null);
+      String txt = getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null);
       if (txt.equals(text)) {
         break;
       }
@@ -570,16 +547,15 @@ public class AwsResourceTest extends AbstractAwsTest {
   /**
    * Write File to Documents S3.
    * 
-   * @param s3 {@link S3Client}
    * @param key {@link String}
    * @param contentType {@link String}
    * @return {@link String}
    */
-  private String writeToDocuments(final S3Client s3, final String key, final String contentType) {
+  private String writeToDocuments(final String key, final String contentType) {
     String data = UUID.randomUUID().toString();
 
-    getS3Service().putObject(s3, getDocumentsbucketname(), key,
-        data.getBytes(StandardCharsets.UTF_8), contentType);
+    getS3Service().putObject(getDocumentsbucketname(), key, data.getBytes(StandardCharsets.UTF_8),
+        contentType);
 
     return key;
   }
@@ -587,15 +563,14 @@ public class AwsResourceTest extends AbstractAwsTest {
   /**
    * Write File to Staging S3.
    * 
-   * @param s3 {@link S3Client}
    * @param key {@link String}
    * @param contentType {@link String}
    * @return {@link String}
    */
-  private String writeToStaging(final S3Client s3, final String key, final String contentType) {
+  private String writeToStaging(final String key, final String contentType) {
     String data = UUID.randomUUID().toString();
 
-    getS3Service().putObject(s3, getStagingdocumentsbucketname(), key,
+    getS3Service().putObject(getStagingdocumentsbucketname(), key,
         data.getBytes(StandardCharsets.UTF_8), contentType);
 
     return key;

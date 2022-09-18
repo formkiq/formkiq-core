@@ -44,6 +44,7 @@ public class SnsConnectionBuilder {
   private SnsClientBuilder builder;
   /** {@link SnsClient}. */
   private SnsClient snsClient = null;
+
   /**
    * constructor.
    */
@@ -67,7 +68,7 @@ public class SnsConnectionBuilder {
 
     return this.snsClient;
   }
-  
+
   /**
    * Set Credentials.
    * 

@@ -44,7 +44,7 @@ public class SqsConnectionBuilder {
   private SqsClientBuilder builder;
   /** {@link SqsClient}. */
   private SqsClient sqsClient = null;
-  
+
   /**
    * constructor.
    */
@@ -68,6 +68,7 @@ public class SqsConnectionBuilder {
 
     return this.sqsClient;
   }
+
   /**
    * Set Credentials.
    * 

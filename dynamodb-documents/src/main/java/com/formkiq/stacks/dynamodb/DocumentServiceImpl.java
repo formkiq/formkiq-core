@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -243,8 +246,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Delete Document Row by Parition / Sort Key.
-   * param dbClient {@link DynamoDbClient}
+   * Delete Document Row by Parition / Sort Key. param dbClient {@link DynamoDbClient}
+   * 
    * @param key DocumentDb Key {@link Map}
    */
   private void deleteItem(final Map<String, AttributeValue> key) {
@@ -266,8 +269,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     PaginationMapToken startkey = null;
 
     do {
-      PaginationResults<Preset> pr =
-          findPresets(siteId, null, type, null, startkey, MAX_RESULTS);
+      PaginationResults<Preset> pr = findPresets(siteId, null, type, null, startkey, MAX_RESULTS);
 
       for (Preset p : pr.getResults()) {
         deletePreset(siteId, p.getId());
@@ -454,8 +456,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final String contentType) {
 
     Map<String, AttributeValue> keyMap = keysDocumentFormats(siteId, documentId, contentType);
-    Optional<Map<String, AttributeValue>> result =
-        find(keyMap.get("PK").s(), keyMap.get("SK").s());
+    Optional<Map<String, AttributeValue>> result = find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToDocumentFormat format = new AttributeValueToDocumentFormat();
     return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();
@@ -465,8 +466,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public PaginationResults<DocumentFormat> findDocumentFormats(final String siteId,
       final String documentId, final PaginationMapToken token, final int maxresults) {
     Map<String, AttributeValue> keys = keysDocumentFormats(siteId, documentId, null);
-    return findAndTransform(keys, token, maxresults,
-        new AttributeValueToDocumentFormat());
+    return findAndTransform(keys, token, maxresults, new AttributeValueToDocumentFormat());
   }
 
   @Override
@@ -666,8 +666,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysDocumentTag(siteId, documentId, null);
 
-    PaginationResults<DocumentTag> tags = findAndTransform(keys, token, maxresults,
-        new AttributeValueToDocumentTag(siteId));
+    PaginationResults<DocumentTag> tags =
+        findAndTransform(keys, token, maxresults, new AttributeValueToDocumentTag(siteId));
 
     // filter duplicates
     DocumentTag prev = null;
@@ -700,8 +700,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public Optional<Preset> findPreset(final String siteId, final String id) {
     Map<String, AttributeValue> keyMap = keysPreset(siteId, id);
-    Optional<Map<String, AttributeValue>> result =
-        find(keyMap.get("PK").s(), keyMap.get("SK").s());
+    Optional<Map<String, AttributeValue>> result = find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToPreset format = new AttributeValueToPreset();
     return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();
@@ -719,8 +718,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public Optional<PresetTag> findPresetTag(final String siteId, final String id,
       final String tagKey) {
     Map<String, AttributeValue> keyMap = keysPresetTag(siteId, id, tagKey);
-    Optional<Map<String, AttributeValue>> result =
-        find(keyMap.get("PK").s(), keyMap.get("SK").s());
+    Optional<Map<String, AttributeValue>> result = find(keyMap.get("PK").s(), keyMap.get("SK").s());
 
     AttributeValueToPresetTag format = new AttributeValueToPresetTag();
     return result.isPresent() ? Optional.of(format.apply(result.get())) : Optional.empty();

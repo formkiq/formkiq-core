@@ -45,7 +45,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for {@link ConsoleInstallHandler}. */
 public class ConsoleInstallHandlerTest {
@@ -87,14 +86,11 @@ public class ConsoleInstallHandlerTest {
 
     s3 = new S3Service(s3Connection);
 
-    try (S3Client s = s3.buildClient()) {
+    s3.createBucket("distrobucket");
+    s3.createBucket(CONSOLE_BUCKET);
 
-      s3.createBucket(s, "distrobucket");
-      s3.createBucket(s, CONSOLE_BUCKET);
-
-      try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/test.zip")) {
-        s3.putObject(s, "distrobucket", "formkiq-console/0.1/formkiq-console.zip", is, null);
-      }
+    try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/test.zip")) {
+      s3.putObject("distrobucket", "formkiq-console/0.1/formkiq-console.zip", is, null);
     }
 
     connection = new HttpUrlConnectionRecorder(new URL("http://localhost"));
@@ -201,44 +197,40 @@ public class ConsoleInstallHandlerTest {
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
 
-    try (S3Client s = s3.buildClient()) {
-      assertEquals("font/woff2",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
+    assertEquals("font/woff2",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
 
-      assertEquals("text/css",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.css").getContentType());
+    assertEquals("text/css", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css").getContentType());
 
-      assertEquals("application/vnd.ms-fontobject",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.eot").getContentType());
+    assertEquals("application/vnd.ms-fontobject",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot").getContentType());
 
-      assertEquals("image/x-icon",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.ico").getContentType());
+    assertEquals("image/x-icon",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico").getContentType());
 
-      assertTrue(s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.js").getContentType()
-          .endsWith("/javascript"));
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js").getContentType()
+        .endsWith("/javascript"));
 
-      assertEquals("image/svg+xml",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.svg").getContentType());
+    assertEquals("image/svg+xml",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg").getContentType());
 
-      assertEquals("font/ttf",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
+    assertEquals("font/ttf", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
 
-      assertEquals("text/plain",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.txt").getContentType());
+    assertEquals("text/plain",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt").getContentType());
 
-      assertEquals("font/woff",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.woff").getContentType());
+    assertEquals("font/woff",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
 
-      // given
-      input = createInput("Delete");
-      input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+    // given
+    input = createInput("Delete");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
 
-      // when
-      this.handler.handleRequest(input, this.context);
+    // when
+    this.handler.handleRequest(input, this.context);
 
-      // then
-      assertTrue(s3.listObjects(s, CONSOLE_BUCKET, null).contents().isEmpty());
-    }
+    // then
+    assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
   }
 
   /**
@@ -271,34 +263,30 @@ public class ConsoleInstallHandlerTest {
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Update was successful!\""));
 
-    try (S3Client s = s3.buildClient()) {
-      assertEquals("font/woff2",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
+    assertEquals("font/woff2",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
 
-      assertEquals("text/css",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.css").getContentType());
+    assertEquals("text/css", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css").getContentType());
 
-      assertEquals("application/vnd.ms-fontobject",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.eot").getContentType());
+    assertEquals("application/vnd.ms-fontobject",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot").getContentType());
 
-      assertEquals("image/x-icon",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.ico").getContentType());
+    assertEquals("image/x-icon",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico").getContentType());
 
-      assertTrue(s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.js").getContentType()
-          .endsWith("/javascript"));
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js").getContentType()
+        .endsWith("/javascript"));
 
-      assertEquals("image/svg+xml",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.svg").getContentType());
+    assertEquals("image/svg+xml",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg").getContentType());
 
-      assertEquals("font/ttf",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
+    assertEquals("font/ttf", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
 
-      assertEquals("text/plain",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.txt").getContentType());
+    assertEquals("text/plain",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt").getContentType());
 
-      assertEquals("font/woff",
-          s3.getObjectMetadata(s, CONSOLE_BUCKET, "0.1/test.woff").getContentType());
-    }
+    assertEquals("font/woff",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
   }
 
   /**

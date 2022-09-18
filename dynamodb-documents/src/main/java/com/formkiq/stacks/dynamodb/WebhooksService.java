@@ -42,8 +42,7 @@ public interface WebhooksService {
    * @param tags {@link Collection} {@link DocumentTag}
    * @param ttl {@link Date}
    */
-  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags,
-      Date ttl);
+  void addTags(String siteId, String webhookId, Collection<DocumentTag> tags, Date ttl);
 
   /**
    * Delete Webhook.
@@ -105,8 +104,7 @@ public interface WebhooksService {
    * 
    * @return {@link String}
    */
-  String saveWebhook(String siteId, String name, String userId, Date ttl,
-      String enabled);
+  String saveWebhook(String siteId, String name, String userId, Date ttl, String enabled);
 
   /**
    * Update Webhook TimeToLive.

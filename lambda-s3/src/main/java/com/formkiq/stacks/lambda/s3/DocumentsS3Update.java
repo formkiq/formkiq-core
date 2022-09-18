@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -80,7 +83,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
@@ -238,14 +240,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
   }
 
-  private String getContent(final String s3bucket, final String key, final S3Client s3,
-      final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
+  private String getContent(final String s3bucket, final String key, final S3ObjectMetadata resp,
+      final DynamicDocumentItem doc) {
 
     String content = null;
 
     if (MimeType.isPlainText(doc.getContentType()) && resp.getContentLength() != null
         && resp.getContentLength().longValue() < DocumentEventServiceSns.MAX_SNS_MESSAGE_SIZE) {
-      content = this.s3service.getContentAsString(s3, s3bucket, key, null);
+      content = this.s3service.getContentAsString(s3bucket, key, null);
     }
 
     return content;
@@ -254,16 +256,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /**
    * Get Object Tags from S3.
    * 
-   * @param s3 {@link S3Client}
    * @param item {@link DocumentItem}
    * @param bucket {@link String}
    * @param documentId {@link String}
    * @return {@link List} {@link DynamicDocumentTag}
    */
-  private List<DynamicDocumentTag> getObjectTags(final S3Client s3, final DocumentItem item,
-      final String bucket, final String documentId) {
+  private List<DynamicDocumentTag> getObjectTags(final DocumentItem item, final String bucket,
+      final String documentId) {
 
-    GetObjectTaggingResponse objectTags = this.s3service.getObjectTags(s3, bucket, documentId);
+    GetObjectTaggingResponse objectTags = this.s3service.getObjectTags(bucket, documentId);
 
     List<DocumentTag> tags = objectTags.tagSet().stream().map(t -> new DocumentTag(documentId,
         t.key(), t.value(), item.getInsertedDate(), item.getUserId())).collect(Collectors.toList());
@@ -482,57 +483,53 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String siteId = getSiteId(key);
     String documentId = resetDatabaseKey(siteId, key);
 
-    try (S3Client s3 = this.s3service.buildClient()) {
+    S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3bucket, key);
 
-      S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3, s3bucket, key);
+    if (!resp.isObjectExists()) {
+      throw new FileNotFoundException("Object " + documentId + " not found in bucket " + s3bucket);
+    }
 
-      if (!resp.isObjectExists()) {
-        throw new FileNotFoundException(
-            "Object " + documentId + " not found in bucket " + s3bucket);
+    String contentType = resp.getContentType();
+    Long contentLength = resp.getContentLength();
+
+    DocumentItem item = this.service.findDocument(siteId, documentId);
+
+    if (item != null) {
+
+      DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
+
+      if (contentType != null && contentType.length() > 0) {
+        doc.setContentType(contentType);
       }
 
-      String contentType = resp.getContentType();
-      Long contentLength = resp.getContentLength();
+      doc.setChecksum(resp.getEtag());
 
-      DocumentItem item = this.service.findDocument(siteId, documentId);
-
-      if (item != null) {
-
-        DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
-
-        if (contentType != null && contentType.length() > 0) {
-          doc.setContentType(contentType);
-        }
-
-        doc.setChecksum(resp.getEtag());
-
-        if (contentLength != null) {
-          doc.setContentLength(contentLength);
-        }
-
-        logger.log("saving document " + createDatabaseKey(siteId, item.getDocumentId()));
-
-        List<DynamicDocumentTag> tags = getObjectTags(s3, item, s3bucket, key);
-        doc.put("tags", tags);
-
-        if (debug) {
-          logger.log("original " + this.gson.toJson(item));
-          logger.log("new " + this.gson.toJson(doc));
-        }
-
-        this.service.saveDocumentItemWithTag(siteId, doc);
-
-        this.service.deleteDocumentFormats(siteId, item.getDocumentId());
-
-        String content = getContent(s3bucket, key, s3, resp, doc);
-
-        DocumentEvent event =
-            buildDocumentEvent(create ? CREATE : UPDATE, siteId, doc, s3bucket, key);
-        sendSnsMessage(logger, event, doc, content);
-
-      } else {
-        logger.log("Cannot find document " + documentId + " in site " + siteId);
+      if (contentLength != null) {
+        doc.setContentLength(contentLength);
       }
+
+      logger.log("saving document " + createDatabaseKey(siteId, item.getDocumentId()));
+
+      List<DynamicDocumentTag> tags = getObjectTags(item, s3bucket, key);
+      doc.put("tags", tags);
+
+      if (debug) {
+        logger.log("original " + this.gson.toJson(item));
+        logger.log("new " + this.gson.toJson(doc));
+      }
+
+      this.service.saveDocumentItemWithTag(siteId, doc);
+
+      this.service.deleteDocumentFormats(siteId, item.getDocumentId());
+
+      String content = getContent(s3bucket, key, resp, doc);
+
+      DocumentEvent event =
+          buildDocumentEvent(create ? CREATE : UPDATE, siteId, doc, s3bucket, key);
+      sendSnsMessage(logger, event, doc, content);
+
+    } else {
+      logger.log("Cannot find document " + documentId + " in site " + siteId);
     }
   }
 

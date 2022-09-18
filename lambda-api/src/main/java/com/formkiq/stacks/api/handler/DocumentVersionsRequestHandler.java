@@ -43,7 +43,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiDocumentVersion;
 import com.formkiq.stacks.api.ApiDocumentVersionsResponse;
 import com.formkiq.stacks.dynamodb.DateUtil;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/versions". */
@@ -74,28 +73,26 @@ public class DocumentVersionsRequestHandler
     String s3key = createDatabaseKey(siteId, documentId);
 
     S3Service s3service = awsservice.getExtension(S3Service.class);
-    try (S3Client s3 = s3service.buildClient()) {
 
-      ListObjectVersionsResponse response = s3service.getObjectVersions(s3,
-          awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, next);
+    ListObjectVersionsResponse response =
+        s3service.getObjectVersions(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, next);
 
-      List<ApiDocumentVersion> list = response.versions().stream().map(v -> {
+    List<ApiDocumentVersion> list = response.versions().stream().map(v -> {
 
-        ApiDocumentVersion dv = new ApiDocumentVersion();
-        dv.setVersionId(v.versionId());
+      ApiDocumentVersion dv = new ApiDocumentVersion();
+      dv.setVersionId(v.versionId());
 
-        Date date = Date.from(v.lastModified());
-        dv.setLastModifiedDate(df.format(date));
-        return dv;
+      Date date = Date.from(v.lastModified());
+      dv.setLastModifiedDate(df.format(date));
+      return dv;
 
-      }).collect(Collectors.toList());
+    }).collect(Collectors.toList());
 
-      ApiDocumentVersionsResponse resp = new ApiDocumentVersionsResponse();
-      resp.setNext(response.nextKeyMarker());
-      resp.setVersions(list);
+    ApiDocumentVersionsResponse resp = new ApiDocumentVersionsResponse();
+    resp.setNext(response.nextKeyMarker());
+    resp.setVersions(list);
 
-      return new ApiRequestHandlerResponse(SC_OK, resp);
-    }
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   @Override

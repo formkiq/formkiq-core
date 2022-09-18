@@ -38,7 +38,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** Unit Tests for request /documents/{documentId}/versions. */
 @ExtendWith(LocalStackExtension.class)
@@ -60,16 +59,10 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
       String s3key1 = createDatabaseKey(siteId, documentId1);
       String s3key2 = createDatabaseKey(siteId, documentId2);
 
-      try (S3Client s3 = getS3().buildClient()) {
+      getS3().putObject(BUCKET_NAME, s3key1, "testdata1".getBytes(StandardCharsets.UTF_8), null);
+      getS3().putObject(BUCKET_NAME, s3key2, "testdata2".getBytes(StandardCharsets.UTF_8), null);
 
-        getS3().putObject(s3, BUCKET_NAME, s3key1, "testdata1".getBytes(StandardCharsets.UTF_8),
-            null);
-        getS3().putObject(s3, BUCKET_NAME, s3key2, "testdata2".getBytes(StandardCharsets.UTF_8),
-            null);
-
-        getS3().putObject(s3, BUCKET_NAME, s3key1, "testdata3".getBytes(StandardCharsets.UTF_8),
-            null);
-      }
+      getS3().putObject(BUCKET_NAME, s3key1, "testdata3".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-versions.json");
@@ -117,13 +110,8 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
       String s3key1 = createDatabaseKey(siteId, documentId1);
       String s3key2 = createDatabaseKey(siteId, documentId2);
 
-      try (S3Client s3 = getS3().buildClient()) {
-
-        getS3().putObject(s3, BUCKET_NAME, s3key1, "testdata1".getBytes(StandardCharsets.UTF_8),
-            null);
-        getS3().putObject(s3, BUCKET_NAME, s3key2, "testdata2".getBytes(StandardCharsets.UTF_8),
-            null);
-      }
+      getS3().putObject(BUCKET_NAME, s3key1, "testdata1".getBytes(StandardCharsets.UTF_8), null);
+      getS3().putObject(BUCKET_NAME, s3key2, "testdata2".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-versions.json");
