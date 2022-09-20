@@ -55,8 +55,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.validation.ValidationError;
-import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
@@ -65,6 +63,8 @@ import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentTags;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags". */
 public class DocumentTagsRequestHandler

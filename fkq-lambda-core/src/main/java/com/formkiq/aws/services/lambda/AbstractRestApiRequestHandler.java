@@ -54,7 +54,7 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.validation.ValidationException;
+import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 import software.amazon.awssdk.utils.StringUtils;

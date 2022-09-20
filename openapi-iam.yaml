@@ -2,7 +2,7 @@
         info:
           title: FormKiQ IAM API
           description: FormKiQ IAM API
-          version: 1.8.7
+          version: 1.8.8
         paths:
           /version:
             get:

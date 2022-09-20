@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.7"
+          version: "1.8.8"
         paths:
           /version:
             get:
@@ -841,7 +841,38 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Add action to a document
+              tags:
+              - Document Actions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/ActionBody'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentOcrResult'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/ocr:
             get:
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
@@ -1815,6 +1846,12 @@ Resources:
                     ocrParseTypes:
                       type: "string"
                       description: "OCR Parse types - TEXT, FORMS, TABLES"
+                    addPdfDetectedCharactersAsText:
+                      type: "boolean"
+                      description: "OCR action for rewrite PDF document, converting any Image text to searchable text"
+                    url:
+                      type: "string"
+                      description: "Webhook action for the callback URL"
             DocumentUploadBody:
               required:
               - "content"
@@ -2240,7 +2277,13 @@ Resources:
                   properties:
                     ocrParseTypes:
                       type: "string"
-                      description: "OCR Parse types - TEXT, FORMS, TABLES"                  
+                      description: "OCR Parse types - TEXT, FORMS, TABLES"
+                    addPdfDetectedCharactersAsText:
+                      type: "boolean"
+                      description: "OCR action for rewrite PDF document, converting any Image text to searchable text"
+                    url:
+                      type: "string"
+                      description: "Webhook action for the callback URL"                      
             DocumentOcr:
               type: object
               properties:
@@ -2326,6 +2369,28 @@ Resources:
                 message:
                   type: string
                   description: Antivirus processing message
+            ActionBody:
+              type: object
+              properties:
+                actions:
+                  type: "array"
+                  items:
+                    properties:
+                      type:
+                        type: string
+                        description: Type of Document Action
+                      parameters:
+                        type: "object"
+                        properties:
+                          ocrParseTypes:
+                            type: "string"
+                            description: "OCR Parse types - TEXT, FORMS, TABLES"
+                          addPdfDetectedCharactersAsText:
+                            type: "boolean"
+                            description: "OCR action for rewrite PDF document, converting any Image text to searchable text"
+                          url:
+                            type: "string"
+                            description: "Webhook action for the callback URL"
             OcrBody:
               type: object
               example:

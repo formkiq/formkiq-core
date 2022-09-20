@@ -61,8 +61,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.validation.ValidationError;
-import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -70,6 +68,8 @@ import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}". */
