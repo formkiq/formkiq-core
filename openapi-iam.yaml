@@ -1706,6 +1706,9 @@
               type: object
               description: Document full text search criteria
               properties:
+                page:
+                  type: integer
+                  description: Result page to return (starting at 1)
                 text:
                   type: string
                   description: Full text search
