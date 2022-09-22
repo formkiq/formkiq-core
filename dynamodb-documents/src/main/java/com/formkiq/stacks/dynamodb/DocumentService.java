@@ -60,8 +60,9 @@ public interface DocumentService extends DocumentTagLoader {
    * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
+   * @return boolean whether a document was deleted
    */
-  void deleteDocument(String siteId, String documentId);
+  boolean deleteDocument(String siteId, String documentId);
 
   /**
    * Delete Document Format.

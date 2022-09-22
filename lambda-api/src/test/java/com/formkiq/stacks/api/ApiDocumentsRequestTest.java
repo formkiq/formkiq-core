@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -50,6 +51,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -90,27 +93,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
           new ArrayList<>());
     }
-  }
-
-  /**
-   * Expect Document exists and is Deleted.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param filename {@link String}
-   * @throws IOException IOException
-   */
-  private void expectDeleteDocument(final ApiGatewayRequestEvent event, final String filename)
-      throws IOException {
-    // given
-    final String expected = "{" + getHeaders() + "," + "\"body\":\"{\\\"message\\\":\\\"'"
-        + filename + "' object deleted\\\"}\"" + ",\"statusCode\":200}";
-
-    // when
-    String response = handleRequest(event);
-
-    // then
-    assertTrue(getLogger().containsString("response: " + expected));
-    assertEquals(expected, response);
   }
 
   /**
@@ -170,22 +152,36 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
+  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String filename = "test.pdf";
-      getS3().putObject(BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8), null);
+      String documentId = UUID.randomUUID().toString();
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      getS3().putObject(BUCKET_NAME, s3Key, "testdata".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
 
-      expectDeleteDocument(event, filename);
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+
+      assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key).isObjectExists());
     }
   }
 
   /**
-   * DELETE /documents request.
+   * DELETE /documents request that S3 file doesn't exist.
    *
    * @throws Exception an error has occurred
    */
@@ -193,14 +189,21 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   public void testHandleDeleteDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String filename = "test.txt";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
-      getS3().putObject(BUCKET_NAME, filename, "testdata".getBytes(StandardCharsets.UTF_8), null);
+      getDocumentService().saveDocument(siteId, item, null);
+      assertNotNull(getDocumentService().findDocument(siteId, documentId));
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
 
-      expectDeleteDocument(event, filename);
+      // when
+      handleRequest(event);
+
+      // then
+      assertNull(getDocumentService().findDocument(siteId, documentId));
     }
   }
 
@@ -209,23 +212,27 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
+  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      final String expected = "{" + getHeaders() + ","
-          + "\"body\":\"{\\\"message\\\":\\\"Document test.pdf not found.\\\"}\""
-          + ",\"statusCode\":404}";
+      String documentId = UUID.randomUUID().toString();
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
 
       // when
       String response = handleRequest(event);
 
       // then
-      assertTrue(getLogger().containsString("response: " + expected));
-      assertEquals(expected, response);
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("404.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
 

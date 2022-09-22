@@ -69,6 +69,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 
@@ -172,7 +173,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void deleteDocument(final String siteId, final String documentId) {
+  public boolean deleteDocument(final String siteId, final String documentId) {
 
     Map<String, AttributeValue> startkey = null;
 
@@ -195,7 +196,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     } while (startkey != null && !startkey.isEmpty());
 
-    deleteItem(keysDocument(siteId, documentId, Optional.empty()));
+    return deleteItem(keysDocument(siteId, documentId, Optional.empty()));
   }
 
   @Override
@@ -249,13 +250,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * Delete Document Row by Parition / Sort Key. param dbClient {@link DynamoDbClient}
    * 
    * @param key DocumentDb Key {@link Map}
+   * @return boolean
    */
-  private void deleteItem(final Map<String, AttributeValue> key) {
+  private boolean deleteItem(final Map<String, AttributeValue> key) {
 
-    DeleteItemRequest deleteItemRequest =
-        DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build();
+    DeleteItemRequest deleteItemRequest = DeleteItemRequest.builder()
+        .tableName(this.documentTableName).key(key).returnValues(ReturnValue.ALL_OLD).build();
 
-    this.dbClient.deleteItem(deleteItemRequest);
+    DeleteItemResponse response = this.dbClient.deleteItem(deleteItemRequest);
+    return !response.attributes().isEmpty();
   }
 
   @Override
