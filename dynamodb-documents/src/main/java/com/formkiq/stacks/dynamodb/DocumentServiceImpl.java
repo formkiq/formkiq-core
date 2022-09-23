@@ -55,6 +55,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -86,6 +87,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
   private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  /** Maximum number of Records DynamoDb can be queries for at a time. */
+  private static final int MAX_QUERY_RECORDS = 100;
 
   /**
    * constructor.
@@ -572,7 +575,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final List<String> documentIds, final List<String> tags) {
 
     final Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
-    Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
+    List<Map<String, AttributeValue>> keys = new ArrayList<>();
 
     documentIds.forEach(id -> {
       tagMap.put(id, new ArrayList<>());
@@ -582,23 +585,28 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       });
     });
 
-    Map<String, KeysAndAttributes> requestedItems =
-        Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
+    List<List<Map<String, AttributeValue>>> paritions = Objects.parition(keys, MAX_QUERY_RECORDS);
 
-    BatchGetItemRequest batchReq =
-        BatchGetItemRequest.builder().requestItems(requestedItems).build();
-    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
+    for (List<Map<String, AttributeValue>> partition : paritions) {
 
-    Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
-    List<Map<String, AttributeValue>> result =
-        !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
+      Map<String, KeysAndAttributes> requestedItems =
+          Map.of(this.documentTableName, KeysAndAttributes.builder().keys(partition).build());
 
-    AttributeValueToDocumentTag toDocumentTag = new AttributeValueToDocumentTag(siteId);
-    List<DocumentTag> list =
-        result.stream().map(a -> toDocumentTag.apply(a)).collect(Collectors.toList());
+      BatchGetItemRequest batchReq =
+          BatchGetItemRequest.builder().requestItems(requestedItems).build();
+      BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
 
-    for (DocumentTag tag : list) {
-      tagMap.get(tag.getDocumentId()).add(tag);
+      Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
+      List<Map<String, AttributeValue>> result =
+          !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
+
+      AttributeValueToDocumentTag toDocumentTag = new AttributeValueToDocumentTag(siteId);
+      List<DocumentTag> list =
+          result.stream().map(a -> toDocumentTag.apply(a)).collect(Collectors.toList());
+
+      for (DocumentTag tag : list) {
+        tagMap.get(tag.getDocumentId()).add(tag);
+      }
     }
 
     return tagMap;

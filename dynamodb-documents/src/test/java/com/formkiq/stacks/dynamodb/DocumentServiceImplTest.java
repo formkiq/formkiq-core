@@ -1605,4 +1605,46 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("[111, 222]", next.getValues().toString());
     }
   }
+
+  /**
+   * Find Documents more than 100 combination of Tags.
+   */
+  @Test
+  public void testFindDocumentsTags02() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 1000;
+      Date now = new Date();
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+
+      String tagKey0 = "category";
+      String tagValue0 = "person";
+      String tagKey1 = "playerId";
+
+      List<String> tagValue1 = Arrays.asList("111", "222");
+      List<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
+              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+
+      this.service.saveDocument(siteId, document, tags);
+
+      List<String> documentIds = new ArrayList<>();
+      documentIds.add(documentId);
+      for (int i = 0; i < count; i++) {
+        documentIds.add(UUID.randomUUID().toString());
+      }
+
+      // when
+      Map<String, Collection<DocumentTag>> tagMap =
+          this.service.findDocumentsTags(siteId, documentIds, Arrays.asList(tagKey0, tagKey1));
+
+      // then
+      assertEquals(count + 1, tagMap.size());
+      Collection<DocumentTag> tags0 = tagMap.get(documentId);
+      assertEquals(2, tags0.size());
+    }
+  }
 }
