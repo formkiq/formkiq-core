@@ -513,6 +513,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, CREATE, false, false);
+
+      assertNotNull(service.findMostDocumentDate());
     }
   }
 
@@ -586,6 +588,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       verifyDocumentSaved(siteId, item, "pdf", "8");
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, UPDATE, false, false);
+      assertNotNull(service.findMostDocumentDate());
     }
   }
 
@@ -700,6 +703,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       tags = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
+
+      assertNotNull(service.findMostDocumentDate());
     }
   }
 

@@ -180,6 +180,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertEquals("path", tags.get(i++).getKey());
       assertEquals("test", tags.get(i).getKey());
       assertEquals("this", tags.get(i++).getValue());
+
+      assertNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -216,6 +218,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
       assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}", m.get("body"));
+
+      assertNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -264,6 +268,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertEquals("this", tags.get(i++).getValue());
       assertEquals("testtag", tags.get(i).getKey());
       assertEquals("testvalue", tags.get(i++).getValue());
+
+      assertNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -324,6 +330,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertTrue(getLogger().containsString("for document " + resp.getDocumentId()));
 
       assertEquals(documentId, resp.getDocumentId());
+
+      assertNotNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -350,6 +358,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertEquals(
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
           item.getUserId());
+
+      assertNull(getDocumentService().findMostDocumentDate());
     }
   }
 

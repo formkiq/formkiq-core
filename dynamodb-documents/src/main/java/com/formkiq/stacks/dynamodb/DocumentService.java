@@ -340,6 +340,17 @@ public interface DocumentService extends DocumentTagLoader {
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags);
 
   /**
+   * Save Document and Tags.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param document {@link DocumentItem}
+   * @param tags {@link Collection} {@link DocumentTag}
+   * @param options {@link SaveDocumentOptions}
+   */
+  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
+      SaveDocumentOptions options);
+
+  /**
    * Save Document Format.
    * 
    * @param siteId {@link String}

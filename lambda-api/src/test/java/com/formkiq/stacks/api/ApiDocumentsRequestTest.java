@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -710,6 +711,50 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request for documents created in previous days.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocuments14() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int year = 2020;
+      Date date =
+          Date.from(LocalDate.of(year, 2, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(Long.valueOf(contentLength));
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
+      addParameter(event, "siteId", siteId);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertTrue(documents.get(0).getString("insertedDate").startsWith("" + year));
+      assertTrue(documents.get(0).getString("lastModifiedDate").startsWith("" + year));
     }
   }
 
