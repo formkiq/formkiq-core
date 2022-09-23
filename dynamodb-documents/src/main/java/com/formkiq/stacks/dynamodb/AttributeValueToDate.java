@@ -35,30 +35,35 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Convert {@link Map} {@link AttributeValue} to {@link Date}.
  *
  */
-public class AttributeValueToInsertedDate implements Function<Map<String, AttributeValue>, Date> {
+public class AttributeValueToDate implements Function<Map<String, AttributeValue>, Date> {
 
   /** Date Format. */
   private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df;
+  /** Map Key. */
+  private String key = null;
 
   /**
    * constructor.
+   * 
+   * @param dateField {@link String}
    */
-  public AttributeValueToInsertedDate() {
+  public AttributeValueToDate(final String dateField) {
     this.df = new SimpleDateFormat(DATE_FORMAT);
 
     TimeZone tz = TimeZone.getTimeZone("UTC");
     this.df.setTimeZone(tz);
+    this.key = dateField;
   }
 
   @Override
   public Date apply(final Map<String, AttributeValue> map) {
 
     Date date;
-    if (map.containsKey("inserteddate")) {
-      String dateString = map.get("inserteddate").s();
+    if (map.containsKey(this.key)) {
+      String dateString = map.get(this.key).s();
 
       try {
         date = this.df.parse(dateString);

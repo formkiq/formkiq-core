@@ -40,8 +40,10 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class AttributeValueToDocumentItem
     implements Function<List<Map<String, AttributeValue>>, DocumentItem> {
 
-  /** {@link AttributeValueToInsertedDate}. */
-  private AttributeValueToInsertedDate toDate = new AttributeValueToInsertedDate();
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toInsertedDate = new AttributeValueToDate("inserteddate");
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toModifiedDate = new AttributeValueToDate("lastModifiedDate");
 
   @Override
   public DocumentItem apply(final List<Map<String, AttributeValue>> items) {
@@ -82,8 +84,12 @@ public class AttributeValueToDocumentItem
     String id = map.get("documentId").s();
     String userId = map.containsKey("userId") ? map.get("userId").s() : null;
 
-    Date date = this.toDate.apply(map);
-    DocumentItemDynamoDb item = new DocumentItemDynamoDb(id, date, userId);
+    Date insertedDate = this.toInsertedDate.apply(map);
+
+    Date lastModifiedDate = this.toModifiedDate.apply(map);
+
+    DocumentItemDynamoDb item = new DocumentItemDynamoDb(id, insertedDate, userId);
+    item.setLastModifiedDate(lastModifiedDate != null ? lastModifiedDate : insertedDate);
 
     if (map.containsKey("path")) {
       item.setPath(map.get("path").s());

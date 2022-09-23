@@ -274,6 +274,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals(1, documents.size());
       assertNotNull(documents.get(0).get("documentId"));
       assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+      assertEquals(documents.get(0).get("insertedDate"), documents.get(0).get("lastModifiedDate"));
       assertNotNull(documents.get(0).get("userId"));
       assertEquals("1000.0", documents.get(0).get("contentLength").toString());
     }

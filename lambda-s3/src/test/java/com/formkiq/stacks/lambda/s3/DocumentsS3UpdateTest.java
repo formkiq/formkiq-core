@@ -34,6 +34,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -42,6 +43,8 @@ import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -375,6 +378,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
     }
   }
 
+  private Date createDate2DaysAgo() {
+    ZoneId defaultZoneId = ZoneId.systemDefault();
+    LocalDate localDate = LocalDate.now().minusDays(2);
+    Date date = Date.from(localDate.atStartOfDay(defaultZoneId).toInstant());
+    return date;
+  }
+
   /**
    * Create Mock Server.
    * 
@@ -515,6 +525,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest02() throws Exception {
 
+    Date date = createDate2DaysAgo();
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       this.logger.reset();
@@ -524,10 +536,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
           loadFileAsMap(this, "/objectupdate-event1.json", BUCKET_KEY, key);
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
+      doc.setInsertedDate(date);
       doc.setDocumentId(BUCKET_KEY);
       doc.setUserId("asd");
       doc.setPath("test.txt");
+      doc.setChecksum("ASD");
 
       DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
           "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
@@ -547,6 +560,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());
+
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 

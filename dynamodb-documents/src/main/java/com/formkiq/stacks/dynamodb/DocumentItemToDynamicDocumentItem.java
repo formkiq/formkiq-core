@@ -63,6 +63,7 @@ public class DocumentItemToDynamicDocumentItem
     map.put("contentType", item.getContentType());
     map.put("documentId", item.getDocumentId());
     map.put("insertedDate", item.getInsertedDate());
+    map.put("lastModifiedDate", item.getLastModifiedDate());
     map.put("path", item.getPath());
     map.put("userId", item.getUserId());
     map.put("belongsToDocumentId", item.getBelongsToDocumentId());

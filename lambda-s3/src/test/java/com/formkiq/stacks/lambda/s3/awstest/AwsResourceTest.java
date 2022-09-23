@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import java.net.URL;
@@ -467,7 +468,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     String subDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
 
     String contentType = "text/plain";
-    String path = "user/home/test.txt";
+    String path = "user/home/test_" + UUID.randomUUID().toString() + ".txt";
 
     try {
 
@@ -488,9 +489,11 @@ public class AwsResourceTest extends AbstractAwsTest {
 
       assertEquals(1, result.getResults().size());
       assertSnsMessage(documentQueueUrl, "create");
+      String documentId = result.getResults().get(0).getDocumentId();
+      DocumentItem item = getDocumentService().findDocument(siteId, documentId);
+      assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
 
       // given
-      String documentId = result.getResults().get(0).getDocumentId();
       Collection<DocumentTag> tags =
           Arrays.asList(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
       getDocumentService().addTags(siteId, documentId, tags, null);
@@ -509,6 +512,9 @@ public class AwsResourceTest extends AbstractAwsTest {
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals("[path, status, untagged, userId]",
           list.getResults().stream().map(m -> m.getKey()).collect(Collectors.toList()).toString());
+
+      item = getDocumentService().findDocument(siteId, documentId);
+      assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());
 
     } finally {
       getSnsService().unsubscribe(subDocumentArn);

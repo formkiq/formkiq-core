@@ -35,8 +35,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class AttributeValueToDocumentFormat
     implements Function<Map<String, AttributeValue>, DocumentFormat> {
 
-  /** {@link AttributeValueToInsertedDate}. */
-  private AttributeValueToInsertedDate toDate = new AttributeValueToInsertedDate();
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toDate = new AttributeValueToDate("inserteddate");
 
   @Override
   public DocumentFormat apply(final Map<String, AttributeValue> map) {

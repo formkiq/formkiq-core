@@ -948,19 +948,24 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Date insertedDate = document.getInsertedDate();
     String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
-    String fulldate = insertedDate != null ? this.df.format(insertedDate) : null;
+    String fullInsertedDate = insertedDate != null ? this.df.format(insertedDate) : null;
+
+    Date lastModifiedDate = document.getLastModifiedDate();
+    String fullLastModifiedDate =
+        lastModifiedDate != null ? this.df.format(lastModifiedDate) : fullInsertedDate;
 
     Map<String, AttributeValue> pkvalues = new HashMap<>(keys);
 
     if (saveGsi1) {
       addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_DOCUMENT_DATE_TS + shortdate));
-      addS(pkvalues, GSI1_SK, fulldate + TAG_DELIMINATOR + document.getDocumentId());
+      addS(pkvalues, GSI1_SK, fullInsertedDate + TAG_DELIMINATOR + document.getDocumentId());
     }
 
     addS(pkvalues, "documentId", document.getDocumentId());
 
-    if (fulldate != null) {
-      addS(pkvalues, "inserteddate", fulldate);
+    if (fullInsertedDate != null) {
+      addS(pkvalues, "inserteddate", fullInsertedDate);
+      addS(pkvalues, "lastModifiedDate", fullLastModifiedDate);
     }
 
     addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
@@ -1122,6 +1127,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setContentLength(doc.getContentLength());
     item.setUserId(doc.getUserId());
     item.setInsertedDate(doc.getInsertedDate() != null ? doc.getInsertedDate() : date);
+    item.setLastModifiedDate(doc.getLastModifiedDate() != null ? doc.getLastModifiedDate() : date);
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
 

@@ -79,6 +79,13 @@ public interface DocumentItem {
   Date getInsertedDate();
 
   /**
+   * Get Last Modified Date.
+   * 
+   * @return {@link Date}
+   */
+  Date getLastModifiedDate();
+
+  /**
    * Get Path.
    *
    * @return {@link String}
@@ -154,6 +161,13 @@ public interface DocumentItem {
    * @param date {@link Date}
    */
   void setInsertedDate(Date date);
+
+  /**
+   * Set Last Modified Date.
+   *
+   * @param date {@link Date}
+   */
+  void setLastModifiedDate(Date date);
 
   /**
    * Set Path.

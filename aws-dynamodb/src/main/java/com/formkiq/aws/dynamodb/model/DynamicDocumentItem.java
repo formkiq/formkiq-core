@@ -86,6 +86,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public Date getLastModifiedDate() {
+    return getDate("lastModifiedDate");
+  }
+
+  @Override
   public String getPath() {
     return getString("path");
   }
@@ -139,6 +144,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setInsertedDate(final Date date) {
     put("insertedDate", date);
+  }
+
+  @Override
+  public void setLastModifiedDate(final Date date) {
+    put("lastModifiedDate", date);
   }
 
   @Override

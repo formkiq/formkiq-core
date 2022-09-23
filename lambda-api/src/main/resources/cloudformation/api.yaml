@@ -1675,6 +1675,10 @@ Resources:
                   type: "string"
                   format: "date-time"
                   description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
@@ -1710,6 +1714,10 @@ Resources:
                         type: "string"
                         format: "date-time"
                         description: "Inserted Timestamp"
+                      lastModifiedDate:
+                        type: "string"
+                        format: "date-time"
+                        description: "Last Modified Timestamp"
                       checksum:
                         type: "string"
                         description: "Document checksum, changes when document file changes"
@@ -2161,6 +2169,10 @@ Resources:
                   type: "string"
                   format: "date-time"
                   description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"

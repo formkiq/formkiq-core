@@ -38,8 +38,8 @@ public class AttributeValueToPreset
 
   /** Number of splits. */
   private static final int GSI2_SK_LENGTH = 3;
-  /** {@link AttributeValueToInsertedDate}. */
-  private AttributeValueToInsertedDate toDate = new AttributeValueToInsertedDate();
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toDate = new AttributeValueToDate("inserteddate");
 
   @Override
   public Preset apply(final Map<String, AttributeValue> map) {
