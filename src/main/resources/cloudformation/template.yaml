@@ -175,6 +175,14 @@ Resources:
           Fn::GetAtt:
           - Cognito
           - Outputs.CognitoHostedUi
+        CognitoConfigBucket:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoConfig
+        Domain:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.Domain
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
