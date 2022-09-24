@@ -136,14 +136,14 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String domain = this.environmentMap.get("DOMAIN");
 
     String key1 =
-        String.format("/formkiq/cognito/%s/CustomMessage_AdminCreateUser/Message", domain);
+        String.format("formkiq/cognito/%s/CustomMessage_AdminCreateUser/Message", domain);
 
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_AdminCreateUser/Message")) {
       this.s3.putObject(cognitoConfigBucket, key1, is, null);
     }
 
-    String key2 = String.format("/formkiq/cognito/%s/CustomMessage_SignUp/Message", domain);
+    String key2 = String.format("formkiq/cognito/%s/CustomMessage_SignUp/Message", domain);
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_SignUp/Message")) {
       this.s3.putObject(cognitoConfigBucket, key2, is, null);

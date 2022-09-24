@@ -296,9 +296,9 @@ public class ConsoleInstallHandlerTest {
 
   private void verifyCognitoConfig() {
     assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
-        "/formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message").isObjectExists());
+        "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message").isObjectExists());
     assertTrue(
-        s3.getObjectMetadata(CONSOLE_BUCKET, "/formkiq/cognito/dev/CustomMessage_SignUp/Message")
+        s3.getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message")
             .isObjectExists());
   }
 
