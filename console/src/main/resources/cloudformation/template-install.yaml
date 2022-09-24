@@ -197,7 +197,16 @@ Resources:
                 - ''
                 - - 'arn:aws:s3:::'
                   - Ref: ConsoleBucket
-                  - '/*'              
+                  - '/*'
+            - Effect: Allow
+              Action:
+              - s3:PutObject
+              Resource: 
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: CognitoConfigBucket
+                  - '/*'
             - Effect: Allow
               Action:
               - s3:GetObject
