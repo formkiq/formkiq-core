@@ -49,6 +49,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
@@ -227,10 +228,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     if (MimeType.isPlainText(item.getContentType())) {
 
+      PresignGetUrlConfig config = new PresignGetUrlConfig()
+          .contentDispositionByPath(item.getPath()).contentType(item.getContentType());
+
       String bucket =
           MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
+
       String url =
-          this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null).toString();
+          this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null, config).toString();
       urls = Arrays.asList(url);
 
     } else {
