@@ -14,7 +14,7 @@ Parameters:
     Description: Version of FormKiQ console to deploy
     AllowedPattern: ".+"
  
-   Domain:
+  Domain:
     Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
     AllowedPattern: ".+"
     Type: String
