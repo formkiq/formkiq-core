@@ -178,7 +178,7 @@ Resources:
         CognitoConfigBucket:
           Fn::GetAtt:
           - Cognito
-          - Outputs.CognitoConfig
+          - Outputs.CognitoConfigBucket
         Domain:
           Fn::GetAtt:
           - Cognito
