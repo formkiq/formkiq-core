@@ -25,9 +25,11 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -35,9 +37,14 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsValidator;
+import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.validation.ValidationError;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
@@ -79,5 +86,69 @@ public class DocumentsActionsRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/actions";
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorizer.getSiteId();
+    String documentId = event.getPathParameters().get("documentId");
+    String userId = getCallingCognitoUsername(event);
+
+    Map<String, Object> body = fromBodyToMap(logger, event);
+
+    List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
+    List<Action> actions = toActions(list, userId);
+
+    ActionsValidator validator = new ActionsValidatorImpl();
+
+    List<Collection<ValidationError>> errors = validator.validation(actions);
+
+    Optional<Collection<ValidationError>> firstError =
+        errors.stream().filter(e -> !e.isEmpty()).findFirst();
+
+    if (firstError.isEmpty()) {
+
+      ActionsService service = awsservice.getExtension(ActionsService.class);
+      int idx = service.getActions(siteId, documentId).size();
+
+      for (Action a : actions) {
+        service.saveAction(siteId, documentId, a, idx);
+        idx++;
+      }
+
+      ApiMapResponse resp = new ApiMapResponse();
+      resp.setMap(Map.of("message", "Actions saved"));
+      return new ApiRequestHandlerResponse(SC_OK, resp);
+    }
+
+    throw new BadException("missing/invalid 'type' in body");
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Action> toActions(final List<Map<String, Object>> list, final String userId) {
+    List<Action> actions = new ArrayList<>(list.size());
+
+    list.forEach(a -> {
+
+      ActionType type = null;
+      Object stype = a.get("type");
+
+      try {
+        type = stype != null ? ActionType.valueOf(stype.toString().toUpperCase()) : null;
+      } catch (IllegalArgumentException e) {
+        type = null;
+      }
+
+      Map<String, String> parameters = (Map<String, String>) a.get("parameters");
+      Action action = new Action().type(type).parameters(parameters).userId(userId);
+
+      actions.add(action);
+    });
+
+    return actions;
   }
 }

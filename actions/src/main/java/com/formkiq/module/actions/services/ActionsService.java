@@ -85,6 +85,16 @@ public interface ActionsService {
       List<Action> actions);
 
   /**
+   * Save {@link Action}.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @param index int
+   */
+  void saveAction(String siteId, String documentId, Action action, int index);
+
+  /**
    * Update {@link Action} {@link ActionStatus}.
    * 
    * @param siteId {@link String}

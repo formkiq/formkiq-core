@@ -317,6 +317,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       doc.setUserId(username);
       doc.setChecksum(metadata.getEtag());
       doc.setInsertedDate(date);
+      doc.setLastModifiedDate(date);
 
       if (!uuid) {
         doc.setPath(key);

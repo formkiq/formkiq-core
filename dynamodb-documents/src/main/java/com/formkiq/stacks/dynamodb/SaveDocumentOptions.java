@@ -23,53 +23,61 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.function.Function;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
 /**
- * Convert {@link Map} {@link AttributeValue} to {@link Date}.
+ * Options to use when saving a document.
  *
  */
-public class AttributeValueToInsertedDate implements Function<Map<String, AttributeValue>, Date> {
+public class SaveDocumentOptions {
 
-  /** Date Format. */
-  private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
-
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df;
+  /** Whether to Save the Document Date. */
+  private boolean saveDocumentDate = false;
+  /** Time to Live. */
+  private String timeToLive;
 
   /**
    * constructor.
    */
-  public AttributeValueToInsertedDate() {
-    this.df = new SimpleDateFormat(DATE_FORMAT);
+  public SaveDocumentOptions() {
 
-    TimeZone tz = TimeZone.getTimeZone("UTC");
-    this.df.setTimeZone(tz);
   }
 
-  @Override
-  public Date apply(final Map<String, AttributeValue> map) {
+  /**
+   * Whether to Save Document Date.
+   * 
+   * @return boolean
+   */
+  public boolean saveDocumentDate() {
+    return this.saveDocumentDate;
+  }
 
-    Date date;
-    if (map.containsKey("inserteddate")) {
-      String dateString = map.get("inserteddate").s();
+  /**
+   * Set Save Document Date.
+   * 
+   * @param save boolean
+   * @return {@link SaveDocumentOptions}
+   */
+  public SaveDocumentOptions saveDocumentDate(final boolean save) {
+    this.saveDocumentDate = save;
+    return this;
+  }
 
-      try {
-        date = this.df.parse(dateString);
-      } catch (ParseException e) {
-        date = null;
-      }
+  /**
+   * Get Time to Live.
+   * 
+   * @return {@link String}
+   */
+  public String timeToLive() {
+    return this.timeToLive;
+  }
 
-    } else {
-      date = null;
-    }
-
-    return date;
+  /**
+   * Set Time to Live.
+   * 
+   * @param ttl {@link String}
+   * @return {@link SaveDocumentOptions}
+   */
+  public SaveDocumentOptions timeToLive(final String ttl) {
+    this.timeToLive = ttl;
+    return this;
   }
 }

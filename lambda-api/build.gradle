@@ -7,6 +7,7 @@ dependencies {
 	
 	implementation project(':fkq-lambda-services')
 	implementation project(':fkq-lambda-core')
+	implementation project(':fkq-validation')
 	implementation project(':fkq-plugins')
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
@@ -20,9 +21,9 @@ dependencies {
     
     implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
-    implementation group: 'com.formkiq.stacks', name: 'client', version:'1.8.7'
+    implementation group: 'com.formkiq.stacks', name: 'client', version:'1.8.8'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.2'
 
 	testImplementation project(':aws-cognito')
 	testImplementation project(':aws-iam')
@@ -32,13 +33,13 @@ dependencies {
 	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.17.252'
 	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.17.252'
 	
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.0'
-    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.1'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.3'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.3'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.281'
-	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.13.2'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.307'
+	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.14.0'
 }
 
 compileJava {
@@ -48,7 +49,7 @@ compileJava {
 nativeImage {
 	outputFileName = "server"
 	javaVersion = "java11"
-	imageVersion = "21.0.0"
+	imageVersion = "21.3.0"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
     enableHttp = true
     enableHttps = true

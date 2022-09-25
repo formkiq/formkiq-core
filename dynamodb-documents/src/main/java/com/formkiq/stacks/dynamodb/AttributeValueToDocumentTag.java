@@ -38,8 +38,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class AttributeValueToDocumentTag
     implements Function<Map<String, AttributeValue>, DocumentTag> {
 
-  /** {@link AttributeValueToInsertedDate}. */
-  private AttributeValueToInsertedDate toDate = new AttributeValueToInsertedDate();
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toDate = new AttributeValueToDate("inserteddate");
 
   // /** Site Id. */
   // private String site;

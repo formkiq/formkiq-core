@@ -11,10 +11,10 @@ dependencies {
    		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
 	}
 	
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.2'
 	testImplementation group: 'junit', name: 'junit', version:'4.+'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.281'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.307'
 }
 
 test {

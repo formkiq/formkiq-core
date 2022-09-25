@@ -359,15 +359,17 @@ public class S3Service {
    * @param key {@link String}
    * @param duration {@link Duration}
    * @param versionId {@link String}
+   * @param config {@link PresignGetUrlConfig}
    * @return {@link URL}
    */
   public URL presignGetUrl(final String bucket, final String key, final Duration duration,
-      final String versionId) {
+      final String versionId, final PresignGetUrlConfig config) {
 
     try (S3Presigner signer = this.builder.buildPresigner()) {
 
-      GetObjectRequest getObjectRequest =
-          GetObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
+      GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key)
+          .versionId(versionId).responseContentType(config.contentType())
+          .responseContentDisposition(config.contentDisposition()).build();
 
       GetObjectPresignRequest getRequest = GetObjectPresignRequest.builder()
           .signatureDuration(duration).getObjectRequest(getObjectRequest).build();

@@ -175,6 +175,14 @@ Resources:
           Fn::GetAtt:
           - Cognito
           - Outputs.CognitoHostedUi
+        CognitoConfigBucket:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoConfigBucket
+        Domain:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.Domain
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -292,6 +300,7 @@ Resources:
     DependsOn:
       - CoreApi
       - SsmProperties
+      - CoreConsoleInstall
     Properties:
       Location: console/template-users.yaml
       Parameters:

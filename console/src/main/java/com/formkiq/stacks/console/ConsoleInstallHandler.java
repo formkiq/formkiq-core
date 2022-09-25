@@ -126,6 +126,36 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   }
 
   /**
+   * Customize Cognito Email Templates.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @throws IOException IOException
+   */
+  private void createCognitoEmail(final LambdaLogger logger) throws IOException {
+    String cognitoConfigBucket = this.environmentMap.get("COGNITO_CONFIG_BUCKET");
+    String domain = this.environmentMap.get("DOMAIN");
+
+    String key1 = String.format("formkiq/cognito/%s/CustomMessage_AdminCreateUser/Message", domain);
+
+    try (InputStream is =
+        getClass().getResourceAsStream("/emailtemplates/CustomMessage_AdminCreateUser/Message")) {
+      this.s3.putObject(cognitoConfigBucket, key1, is, null);
+    }
+
+    String key2 = String.format("formkiq/cognito/%s/CustomMessage_SignUp/Message", domain);
+    try (InputStream is =
+        getClass().getResourceAsStream("/emailtemplates/CustomMessage_SignUp/Message")) {
+      this.s3.putObject(cognitoConfigBucket, key2, is, null);
+    }
+
+    String key3 = String.format("formkiq/cognito/%s/CustomMessage_ForgotPassword/Message", domain);
+    try (InputStream is =
+        getClass().getResourceAsStream("/emailtemplates/CustomMessage_ForgotPassword/Message")) {
+      this.s3.putObject(cognitoConfigBucket, key3, is, null);
+    }
+  }
+
+  /**
    * Empty Console Bucket.
    * 
    * @param logger {@link LambdaLogger}
@@ -173,6 +203,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
         unzipConsole(input, requestType, context, logger);
         createCognitoConfig(logger);
+        createCognitoEmail(logger);
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
 

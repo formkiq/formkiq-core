@@ -19,9 +19,10 @@
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.plugins.tagschema" />
-		<allow pkg="com.formkiq.plugins.validation" />
+		<allow pkg="com.formkiq.validation" />
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
+		<allow pkg="com.formkiq.validation" />
 		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		

@@ -92,6 +92,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       Document doc = documents.documents().get(0);
       assertNotNull(doc.documentId());
       assertNotNull(doc.insertedDate());
+      assertEquals(doc.insertedDate(), doc.lastModifiedDate());
       assertNotNull(doc.userId());
     }
   }
@@ -143,6 +144,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       Document doc = documents.documents().get(0);
       assertEquals(documentId, doc.documentId());
       assertNotNull(doc.insertedDate());
+      assertEquals(doc.insertedDate(), doc.lastModifiedDate());
       assertNotNull(doc.userId());
     }
   }

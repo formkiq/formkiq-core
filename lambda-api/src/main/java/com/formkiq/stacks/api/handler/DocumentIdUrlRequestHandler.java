@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -136,16 +137,21 @@ public class DocumentIdUrlRequestHandler
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 
+    PresignGetUrlConfig config = new PresignGetUrlConfig().contentDispositionByPath(item.getPath());
+
     if (contentType == null || contentType.equals(item.getContentType())) {
 
       logger.log("Found default format " + contentType + " for siteId: " + siteId + " documentId: "
           + documentId);
 
+      config.contentType(item.getContentType());
       String s3key = createS3Key(siteId, documentId);
       url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, duration,
-          versionId);
+          versionId, config);
 
     } else {
+
+      config.contentType(item.getContentType());
 
       Optional<DocumentFormat> format =
           cacheService.documentService().findDocumentFormat(siteId, documentId, contentType);
@@ -159,7 +165,7 @@ public class DocumentIdUrlRequestHandler
 
         String s3key = createS3Key(siteId, documentId, contentType);
         url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
-            duration, versionId);
+            duration, versionId, config);
 
       } else if (awsservice.debug()) {
 

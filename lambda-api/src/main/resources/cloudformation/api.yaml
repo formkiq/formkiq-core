@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.7"
+          version: "1.8.8"
         paths:
           /version:
             get:
@@ -37,7 +37,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/Version"
+                        "$ref": "#/components/schemas/GetVersionRequest"
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -63,7 +63,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/Sites"
+                        "$ref": "#/components/schemas/GetSitesRequest"
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -102,7 +102,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/TagSchemas"
+                        "$ref": "#/components/schemas/GetTagSchemasRequest"
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -118,7 +118,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/TagSchemaBody'
+                      $ref: '#/components/schemas/AddTagSchemaRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -171,7 +171,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/TagSchema'
+                        $ref: '#/components/schemas/GetTagSchemaRequest'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -234,7 +234,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/DocumentItemsResults"
+                        "$ref": "#/components/schemas/GetDocumentsResponse"
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -250,35 +250,32 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentBody'
+                      $ref: '#/components/schemas/AddDocumentRequest'
                     examples:
                       Simple_File:
                         value:
                           path: test.txt
                           contentType: text/plain
                           content: This is sample data file
-                          tags: [{
-                            key: category, 
-                            value: sample
-                          },{
-                            key: players, 
-                            values: ["111", "222"]
-                          }]
+                          tags:
+                            - key: category, 
+                              value: sample
+                            - key: players, 
+                              values: ["111", "222"]
                       Nested_Document:
                         value:
                           path: doc1.txt
                           contentType: text/plain
                           content: This is document1 content
-                          tags: [{
-                            key: type, value: document1
-                          }]
-                          documents: [{
+                          tags:
+                            - key: type
+                              value: document1
+                          documents:
                             contentType: text/plain,
                             content: This is sub document1 content,
-                            tags: [{
-                              key: type, value: subdocument1
-                            }]
-                          }]
+                            tags:
+                              - key: type
+                                value: subdocument1
               responses:
                 '201':
                   description: 201 CREATED
@@ -292,7 +289,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentPostResponse'
+                        $ref: '#/components/schemas/AddDocumentResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -318,7 +315,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentItem'
+                        $ref: '#/components/schemas/GetDocumentResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -335,7 +332,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentBody'
+                      $ref: '#/components/schemas/AddDocumentRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -349,7 +346,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentPostResponse'
+                        $ref: '#/components/schemas/AddDocumentResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -394,14 +391,14 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentItemsVersions'
+                        $ref: '#/components/schemas/GetDocumentVersionsResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/content:
             get:
-              description: Get a document's contents
+              description: Get a document's contents. text/*, application/json, application/x-www-form-urlencoded returns "content" field, all other content-types returns a 'contentUrl' for the content. 
               tags:
               - Documents
               parameters:
@@ -423,7 +420,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentContent'
+                        $ref: '#/components/schemas/GetDocumentContentResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -460,7 +457,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentItemsTags'
+                        $ref: '#/components/schemas/GetDocumentTagsResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -477,7 +474,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentItemTag'
+                      $ref: '#/components/schemas/AddDocumentTagRequest'
                     examples:
                       Add_Key_Only_Tag:
                         value:
@@ -510,7 +507,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentTagsPost'
+                      $ref: '#/components/schemas/AddDocumentTagsRequest'
               responses:
                 '201':
                   $ref: '#/components/responses/200Cors'
@@ -540,7 +537,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentItemTag'
+                        $ref: '#/components/schemas/GetDocumentTagResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -558,7 +555,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentItemTagValueBody'
+                      $ref: '#/components/schemas/SetDocumentTagKeyRequest'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -621,7 +618,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentUrl'
+                        $ref: '#/components/schemas/GetDocumentUrlRequest'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -653,7 +650,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentUrl'
+                        $ref: '#/components/schemas/GetDocumentUrlRequest'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -670,7 +667,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentUploadBody'
+                      $ref: '#/components/schemas/AddDocumentUploadRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -684,7 +681,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentPostResponse'
+                        $ref: '#/components/schemas/AddDocumentResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -712,7 +709,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentUrl'
+                        $ref: '#/components/schemas/GetDocumentUrlRequest'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -740,7 +737,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentSearchBody'
+                      $ref: '#/components/schemas/DocumentSearchRequest'
                     examples:
                       Search_By_Key:
                         value:
@@ -779,7 +776,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentSearchResults'
+                        $ref: '#/components/schemas/DocumentSearchResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -797,7 +794,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentFulltextSearchBody'
+                      $ref: '#/components/schemas/DocumentFulltextRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -811,7 +808,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/FulltextSearchResults'
+                        $ref: '#/components/schemas/DocumentFulltextResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -837,11 +834,42 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentActions'
+                        $ref: '#/components/schemas/GetDocumentActionsResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              description: Add action to a document
+              tags:
+              - Document Actions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: false
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentActionsRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentActionsResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/ocr:
             get:
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
@@ -865,7 +893,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentOcr'
+                        $ref: '#/components/schemas/GetDocumentOcrResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -882,7 +910,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/OcrBody'
+                      $ref: '#/components/schemas/AddDocumentOcrRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -896,7 +924,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentOcrResult'
+                        $ref: '#/components/schemas/AddDocumentOcrResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -913,7 +941,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/SetOcrBody'
+                      $ref: '#/components/schemas/SetDocumentOcrRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -927,7 +955,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentOcrResult'
+                        $ref: '#/components/schemas/AddDocumentOcrResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -959,7 +987,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/SetAntivirusBody'
+                      $ref: '#/components/schemas/SetAntivirusRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -973,7 +1001,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AntivirusResponse'
+                        $ref: '#/components/schemas/SetAntivirusResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -999,7 +1027,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/FulltextDocument'
+                        $ref: '#/components/schemas/GetDocumentFulltextResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1030,7 +1058,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/FulltextBody'
+                      $ref: '#/components/schemas/SetDocumentFulltextRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -1044,7 +1072,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/FulltextResult'
+                        $ref: '#/components/schemas/SetDocumentFulltextResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1061,7 +1089,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/FulltextUpdateBody'
+                      $ref: '#/components/schemas/UpdateDocumentFulltextRequest'
               responses:
                 '200':
                   description: 200 OK
@@ -1075,7 +1103,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/FulltextResult'
+                        $ref: '#/components/schemas/SetDocumentFulltextResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1125,7 +1153,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentBody'
+                      $ref: '#/components/schemas/AddDocumentRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1227,7 +1255,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/WebhookResults"
+                        "$ref": "#/components/schemas/GetWebhooksResponse"
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1243,7 +1271,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/WebhookBody'
+                      $ref: '#/components/schemas/AddWebhookRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1257,7 +1285,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/WebhookPostResponse'
+                        $ref: '#/components/schemas/AddWebhookResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1286,7 +1314,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/Webhook"
+                        "$ref": "#/components/schemas/GetWebhookResponse"
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1317,7 +1345,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/WebhookBody'
+                      $ref: '#/components/schemas/AddWebhookRequest'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1346,7 +1374,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/WebhookTags'
+                        $ref: '#/components/schemas/GetWebhookTagsResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1363,7 +1391,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/DocumentItemTag'
+                      $ref: '#/components/schemas/GetDocumentTagResponse'
                     examples:
                       Add_Key_Only_Tag:
                         value:
@@ -1443,6 +1471,7 @@ Resources:
               required: false
               schema:
                 type: string
+                default: "10"
             documentIdParam:
               name: documentId
               in: path
@@ -1499,7 +1528,7 @@ Resources:
               schema:
                 type: string
           schemas:
-            DocumentItemTagValueBody:
+            SetDocumentTagKeyRequest:
               type: "object"
               properties:
                 value:
@@ -1510,7 +1539,7 @@ Resources:
                   description: "Tag values"
                   items:
                     type: "string"
-            DocumentContent:
+            GetDocumentContentResponse:
               type: "object"
               properties:
                 content:
@@ -1525,7 +1554,7 @@ Resources:
                 isBase64:
                   type: "boolean"
                   description: "Is Content Base64 encoded"
-            DocumentItemsVersions:
+            GetDocumentVersionsResponse:
               type: "object"
               properties:
                 next:
@@ -1533,7 +1562,7 @@ Resources:
                   description: "Next page of results token"
                 versions:
                   $ref: "#/components/schemas/DocumentItemVersions"
-            DocumentItemsTags:
+            GetDocumentTagsResponse:
               type: "object"
               properties:
                 next:
@@ -1548,7 +1577,7 @@ Resources:
               type: "array"
               description: "List of tags"
               items:
-                $ref: "#/components/schemas/DocumentItemTag"
+                $ref: "#/components/schemas/GetDocumentTagResponse"
             DocumentItemVersions:
               type: "array"
               description: "List of document versions"
@@ -1579,7 +1608,7 @@ Resources:
                 siteId:
                   type: "string"
                   description: "Site Identifier"
-            WebhookPostResponse:
+            AddWebhookResponse:
               type: "object"
               properties:
                 id:
@@ -1588,7 +1617,7 @@ Resources:
                 siteId:
                   type: "string"
                   description: "Site Identifier"
-            DocumentPostResponse:
+            AddDocumentResponse:
               type: "object"
               properties:
                 documentId:
@@ -1602,18 +1631,22 @@ Resources:
                   type: "string"
                   description: "Url to upload document to"
                 documents:
-                  type: "array"
-                  description: "List of related documents"
-                  items:
-                    type: "object"
-                    properties:
-                      documentId:
-                        type: "string"
-                        description: "Document Identifier"
-                      uploadUrl:
-                        type: "string"
-                        description: "Url to upload document to"
-            DocumentUrl:
+                  $ref: "#/components/schemas/AddChildDocumentsResponse"
+            AddChildDocumentsResponse:
+              type: "array"
+              description: "List of child documents"
+              items:
+                $ref: "#/components/schemas/AddChildDocumentResponse"
+            AddChildDocumentResponse:
+              type: "object"
+              properties:
+                documentId:
+                  type: "string"
+                  description: "Document Identifier"
+                uploadUrl:
+                  type: "string"
+                  description: "Url to upload document to"
+            GetDocumentUrlRequest:
               type: "object"
               properties:
                 documentId:
@@ -1622,7 +1655,7 @@ Resources:
                 url:
                   type: "string"
                   description: "Document content url"
-            DocumentItem:
+            GetDocumentResponse:
               required:
               - "documentId"
               - "path"
@@ -1644,6 +1677,10 @@ Resources:
                   type: "string"
                   format: "date-time"
                   description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
@@ -1679,6 +1716,10 @@ Resources:
                         type: "string"
                         format: "date-time"
                         description: "Inserted Timestamp"
+                      lastModifiedDate:
+                        type: "string"
+                        format: "date-time"
+                        description: "Last Modified Timestamp"
                       checksum:
                         type: "string"
                         description: "Document checksum, changes when document file changes"
@@ -1701,7 +1742,7 @@ Resources:
                       belongsToDocumentId:
                         type: "string"
                         description: "Parent Document Identifier"
-            DocumentFulltextSearchBody:
+            DocumentFulltextRequest:
               required:
               - "query"
               type: "object"
@@ -1715,6 +1756,9 @@ Resources:
               type: "object"
               description: "Document full text search criteria"
               properties:
+                page:
+                  type: "integer"
+                  description: "Result page to return (starting at 1)"
                 text:
                   type: "string"
                   description: "Full text search"
@@ -1741,7 +1785,7 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key to search"
-            DocumentSearchBody:
+            DocumentSearchRequest:
               required:
               - "query"
               type: "object"
@@ -1776,7 +1820,7 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key to search"
-            WebhookBody:
+            AddWebhookRequest:
               required:
               - "name"
               type: "object"
@@ -1791,31 +1835,8 @@ Resources:
                   type: "string"
                   description: "Is webhook enabled"
                 tags:
-                  type: "array"
-                  description: "List of tags"
-                  items:
-                    type: "object"
-                    properties:
-                      key:
-                        type: "string"
-                        description: "Tag key"
-                      value:
-                        type: "string"
-                        description: "Tag value"
-            DocumentBodyAction:
-              type: "object"
-              description: "Document action"
-              properties:
-                type:
-                  type: "string"
-                  description: "Type of action (supported values: ocr, fulltext)"
-                parameters:
-                  type: "object"
-                  properties:
-                    ocrParseTypes:
-                      type: "string"
-                      description: "OCR Parse types - TEXT, FORMS, TABLES"
-            DocumentUploadBody:
+                  $ref: "#/components/schemas/AddDocumentTags"
+            AddDocumentUploadRequest:
               required:
               - "content"
               type: "object"
@@ -1827,23 +1848,10 @@ Resources:
                   type: "string"
                   description: "Path or Name of document"
                 tags:
-                  type: "array"
-                  description: "List of tags"
-                  items:
-                    type: "object"
-                    properties:
-                      key:
-                        type: "string"
-                        description: "Tag key"
-                      value:
-                        type: "string"
-                        description: "Tag value"
+                  $ref: "#/components/schemas/AddDocumentTags"
                 actions:
-                  type: "array"
-                  description: "List of document actions"
-                  items:
-                    $ref: "#/components/schemas/DocumentBodyAction"
-            DocumentBody:
+                  $ref: "#/components/schemas/AddActions"
+            AddDocumentRequest:
               required:
               - "content"
               type: "object"
@@ -1864,58 +1872,63 @@ Resources:
                   type: "string"
                   description: "Document content"
                 tags:
-                  type: "array"
-                  description: "List of tags"
-                  items:
-                    type: "object"
-                    properties:
-                      key:
-                        type: "string"
-                        description: "Tag key"
-                      value:
-                        type: "string"
-                        description: "Tag value"
-                      values:
-                        type: "array"
-                        description: "Tag values"
-                        items:
-                          type: "string"
-                          description: "Tag value"
+                  $ref: "#/components/schemas/AddDocumentTags"
                 actions:
-                  type: "array"
-                  description: "List of document actions"
-                  items:
-                    $ref: "#/components/schemas/DocumentBodyAction"
+                  $ref: "#/components/schemas/AddActions"
                 documents:
+                  $ref: "#/components/schemas/AddChildDocumentRequest"
+            AddDocumentTagsRequest:
+              type: "object"
+              description: "Add List of document tags"
+              properties:
+                tags:
+                  $ref: "#/components/schemas/AddDocumentTags"
+            AddDocumentTags:
+              type: "array"
+              description: "List of document tags"
+              items:
+                $ref: "#/components/schemas/AddDocumentTagRequest"
+            AddDocumentTagRequest:
+              required:
+              - "key"
+              type: "object"
+              description: "List of Document Tags (use either 'value' or 'values' not both)"
+              properties:
+                key:
+                  type: "string"
+                  description: "Tag key"
+                value:
+                  type: "string"
+                  description: "Tag value"
+                values:
                   type: "array"
-                  description: "List of related documents"
+                  description: "Tag values"
                   items:
-                    type: "object"
-                    properties:
-                      path:
-                        type: "string"
-                        description: "Path or Name of document"
-                      contentType:
-                        type: "string"
-                        description: "Document Content-Type"
-                      isBase64:
-                        type: "boolean"
-                        description: "Is Content Base64 encoded"
-                      content:
-                        type: "string"
-                        description: "Document content"
-                      tags:
-                        type: "array"
-                        description: "List of tags"
-                        items:
-                          type: "object"
-                          properties:
-                            key:
-                              type: "string"
-                              description: "Tag key"
-                            value:
-                              type: "string"
-                              description: "Tag value"
+                    type: "string"
+                    description: "Tag value"
+            AddChildDocumentRequest:
+              type: "array"
+              description: "List of child documents"
+              items:
+                $ref: "#/components/schemas/AddChildDocument"
+            AddChildDocument:
+              required:
+              - "content"
+              type: "object"
+              description: "List of related documents"
+              properties:
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                isBase64:
+                  type: "boolean"
+                  description: "Is Content Base64 encoded"
+                content:
+                  type: "string"
+                  description: "Document content"
             DocumentItemVersion:
               required:
               - "versionId"
@@ -1927,21 +1940,7 @@ Resources:
                 lastModifiedDate:
                   type: "string"
                   description: "Last modified date"
-            DocumentTagsPost:
-              required:
-              - "tags"
-              type: "object"
-              properties:
-                tags:
-                  $ref: "#/components/schemas/DocumentItemTags"
-              example:
-                tags:
-                  - key: category
-                  - key: category
-                    value: person
-                  - key: category
-                    values: [person,car]
-            DocumentItemTag:
+            GetDocumentTagResponse:
               required:
               - "key"
               - "value"
@@ -1971,7 +1970,7 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
-            FulltextSearchResults:
+            DocumentFulltextResponse:
               type: "object"
               properties:
                 documents:
@@ -2003,7 +2002,7 @@ Resources:
                   description: "User who added document"
                 tags:
                   type: "object"
-            FulltextDocument:
+            GetDocumentFulltextResponse:
               type: "object"
               properties:
                 siteId:
@@ -2028,7 +2027,7 @@ Resources:
                   description: "User who added document"
                 tags:
                   type: "object"
-            DocumentSearchResults:
+            DocumentSearchResponse:
               type: "object"
               properties:
                 next:
@@ -2092,7 +2091,7 @@ Resources:
                 type:
                   type: "string"
                   description: "Tag type"
-            DocumentItemsResults:
+            GetDocumentsResponse:
               type: "object"
               properties:
                 next:
@@ -2121,6 +2120,10 @@ Resources:
                   type: "string"
                   format: "date-time"
                   description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
@@ -2140,7 +2143,7 @@ Resources:
                 versionId:
                   type: "string"
                   description: "Document version"
-            WebhookResults:
+            GetWebhooksResponse:
               type: "object"
               properties:
                 webhooks:
@@ -2149,8 +2152,8 @@ Resources:
               type: "array"
               description: "List of webhooks"
               items:
-                $ref: "#/components/schemas/Webhook"
-            Webhook:
+                $ref: "#/components/schemas/GetWebhookResponse"
+            GetWebhookResponse:
               type: "object"
               properties:
                 siteId:
@@ -2173,7 +2176,7 @@ Resources:
                 userId:
                   type: "string"
                   description: "User who added document"
-            WebhookTags:
+            GetWebhookTagsResponse:
               type: "object"
               properties:
                 next:
@@ -2213,7 +2216,7 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
-            DocumentActions:
+            GetDocumentActionsResponse:
               type: "object"
               properties:
                 actions:
@@ -2228,7 +2231,7 @@ Resources:
               properties:
                 status:
                   type: string
-                  description: Status of the Document Action (PENDING, COMPLETE, FAILED)
+                  description: Status of the Document Action
                 type:
                   type: string
                   description: Type of Document Action
@@ -2237,11 +2240,8 @@ Resources:
                   description: "User who requested the Action"
                 parameters:
                   type: "object"
-                  properties:
-                    ocrParseTypes:
-                      type: "string"
-                      description: "OCR Parse types - TEXT, FORMS, TABLES"                  
-            DocumentOcr:
+                  description: Action parameters                      
+            GetDocumentOcrResponse:
               type: object
               properties:
                 data:
@@ -2266,19 +2266,25 @@ Resources:
                   type: "string"
                   format: "uuid"
                   description: "Document Identifier"
-            DocumentOcrResult:
+            AddDocumentActionsResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document Action message
+            AddDocumentOcrResponse:
               type: object
               properties:
                 message:
                   type: string
                   description: OCR processing message
-            FulltextResult:
+            SetDocumentFulltextResponse:
               type: object
               properties:
                 message:
                   type: string
                   description: Full text processing message
-            FulltextBody:
+            SetDocumentFulltextRequest:
               type: object
               properties:
                 contentType:
@@ -2292,7 +2298,7 @@ Resources:
                   items:
                     type: "string"
                   description: "Url which contains Document content"                
-            FulltextUpdateBody:
+            UpdateDocumentFulltextRequest:
               type: object
               properties:
                 path:
@@ -2302,31 +2308,53 @@ Resources:
                   type: "string"
                   description: "Document content"
                 tags:
-                  type: "array"
-                  description: "List of tags"
-                  items:
-                    type: "object"
-                    properties:
-                      key:
-                        type: "string"
-                        description: "Tag key"
-                      value:
-                        type: "string"
-                        description: "Tag value"
-                      values:
-                        description: "Tag values"
-                        type: "array"
-                        items:
-                          type: "string"
-            SetAntivirusBody:
+                  $ref: "#/components/schemas/AddDocumentTags"
+            SetAntivirusRequest:
               type: object
-            AntivirusResponse:
+            SetAntivirusResponse:
               type: object
               properties:
                 message:
                   type: string
                   description: Antivirus processing message
-            OcrBody:
+            AddDocumentActionsRequest:
+              type: object
+              properties:
+                actions:
+                  $ref: "#/components/schemas/AddActions"
+            AddActions:
+              type: array
+              description: "List of Actions"
+              items:
+                $ref: "#/components/schemas/AddAction"
+            AddAction:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: "string"
+                  description: Type of Document Action
+                  enum:
+                    - OCR
+                    - FULLTEXT
+                    - ANTIVIRUS
+                    - WEBHOOK
+                parameters:
+                  $ref: "#/components/schemas/AddActionParameters"
+            AddActionParameters:
+              type: "object"
+              properties:
+                ocrParseTypes:
+                  type: "string"
+                  description: "OCR Parse types - TEXT, FORMS, TABLES"
+                addPdfDetectedCharactersAsText:
+                  type: "boolean"
+                  description: "OCR action for rewrite PDF document, converting any Image text to searchable text"
+                url:
+                  type: "string"
+                  description: "Webhook action for the callback URL"
+            AddDocumentOcrRequest:
               type: object
               example:
                 parseTypes:
@@ -2342,7 +2370,7 @@ Resources:
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
                   description: "Rewrite PDF document, converting any Image text to searchable text"
-            SetOcrBody:
+            SetDocumentOcrRequest:
               required:
               - "content"
               type: "object"
@@ -2356,7 +2384,7 @@ Resources:
                 content:
                   type: "string"
                   description: "Document content"
-            Version:
+            GetVersionRequest:
               type: object
               properties:
                 version:
@@ -2370,12 +2398,12 @@ Resources:
                   description: "List of installed modules"
                   items:
                     type: "string"
-            Sites:
+            GetSitesRequest:
               type: object
               properties:
                 sites:
-                  $ref: "#/components/schemas/SitesList"
-            SitesList:
+                  $ref: "#/components/schemas/Sites"
+            Sites:
               type: "array"
               description: "List of sites"
               items:
@@ -2415,46 +2443,48 @@ Resources:
                 error:
                   type: "string"
                   description: "Error Message"
-            TagSchemas:
+            GetTagSchemasRequest:
               type: "object"
               properties:
                 schemas:
-                  $ref: "#/components/schemas/TagSchemaSummaryList"
+                  $ref: "#/components/schemas/TagSchemas"
                 next:
                   type: "string"
                 previous:
                   type: "string"
-            TagSchemaSummaryList:
+            TagSchemas:
               type: "array"
               description: "List of Tag Schemas"
               items:
                 $ref: "#/components/schemas/TagSchemaSummary"
-            TagSchemaBody:
+            AddTagSchemaRequest:
               type: "object"
               properties:
                 name:
                   type: "string"
                 tags:
-                  type: "object"
-                  properties:
-                    compositeKeys:
-                      type: "array"
-                      description: "List of Composite Keys"
-                      items:
-                        $ref: "#/components/schemas/TagSchemaCompositeKey"
-                    required:
-                      type: "array"
-                      description: "List of Required Tags"
-                      items:
-                        $ref: "#/components/schemas/TagSchemaRequired"
-                    optional:
-                      type: "array"
-                      description: "List of Optional Tags"
-                      items:
-                        $ref: "#/components/schemas/TagSchemaOptional"
-                    allowAdditionalTags:
-                      type: "boolean"
-                      default: true
+                  $ref: "#/components/schemas/AddTagSchemaTags"
+            AddTagSchemaTags:
+              type: "object"
+              properties:
+                compositeKeys:
+                  type: "array"
+                  description: "List of Composite Keys"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaCompositeKey"
+                required:
+                  type: "array"
+                  description: "List of Required Tags"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaRequired"
+                optional:
+                  type: "array"
+                  description: "List of Optional Tags"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaOptional"
+                allowAdditionalTags:
+                  type: "boolean"
+                  default: true
             TagSchemaSummary:
               type: "object"
               properties:
@@ -2468,7 +2498,7 @@ Resources:
                   type: "string"
                   format: "date-time"
                   description: "Inserted Timestamp"
-            TagSchema:
+            GetTagSchemaRequest:
               type: "object"
               properties:
                 tagSchemaId:

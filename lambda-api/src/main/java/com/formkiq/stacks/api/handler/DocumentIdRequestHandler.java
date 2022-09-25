@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -61,15 +62,16 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.validation.ValidationError;
-import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}". */
@@ -165,6 +167,7 @@ public class DocumentIdRequestHandler
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
+    String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
@@ -173,16 +176,22 @@ public class DocumentIdRequestHandler
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
 
-      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key);
 
       if (md.isObjectExists()) {
-        s3Service.deleteObject(documentBucket, documentId);
+        s3Service.deleteObject(documentBucket, s3Key);
 
-        ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
-        return new ApiRequestHandlerResponse(SC_OK, resp);
+      } else {
+
+        DocumentService service = awsservice.getExtension(DocumentService.class);
+        if (!service.deleteDocument(siteId, documentId)) {
+          throw new NotFoundException("Document " + documentId + " not found.");
+        }
       }
 
-      throw new NotFoundException("Document " + documentId + " not found.");
+      ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");
+      return new ApiRequestHandlerResponse(SC_OK, resp);
 
     } catch (S3Exception e) {
 

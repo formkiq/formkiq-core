@@ -60,8 +60,9 @@ public interface DocumentService extends DocumentTagLoader {
    * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
+   * @return boolean whether a document was deleted
    */
-  void deleteDocument(String siteId, String documentId);
+  boolean deleteDocument(String siteId, String documentId);
 
   /**
    * Delete Document Format.
@@ -337,6 +338,17 @@ public interface DocumentService extends DocumentTagLoader {
    * @param tags {@link Collection} {@link DocumentTag}
    */
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags);
+
+  /**
+   * Save Document and Tags.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param document {@link DocumentItem}
+   * @param tags {@link Collection} {@link DocumentTag}
+   * @param options {@link SaveDocumentOptions}
+   */
+  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
+      SaveDocumentOptions options);
 
   /**
    * Save Document Format.

@@ -122,6 +122,8 @@ public class ConsoleInstallHandlerTest {
     map.put("ALLOW_ADMIN_CREATE_USER_ONLY", "false");
     map.put("COGNITO_HOSTED_UI", "https://test2622653865277.auth.us-east-2.amazoncognito.com");
     map.put("USER_AUTHENTICATION", "cognito");
+    map.put("COGNITO_CONFIG_BUCKET", CONSOLE_BUCKET);
+    map.put("DOMAIN", "dev");
 
     this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
@@ -193,9 +195,11 @@ public class ConsoleInstallHandlerTest {
     // then
     verifySendResponse(contentlength);
     verifyConfigWritten();
+    verifyCognitoConfig();
 
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
+
 
     assertEquals("font/woff2",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
@@ -250,6 +254,7 @@ public class ConsoleInstallHandlerTest {
     // then
     verifySendResponse(contentlength);
     verifyConfigWritten();
+    verifyCognitoConfig();
 
     assertTrue(this.logger.containsString(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Update}"));
@@ -287,6 +292,16 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
+  }
+
+  private void verifyCognitoConfig() {
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
+        "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message").isObjectExists());
+    assertTrue(
+        s3.getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message")
+            .isObjectExists());
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
+        "formkiq/cognito/dev/CustomMessage_ForgotPassword/Message").isObjectExists());
   }
 
   /**

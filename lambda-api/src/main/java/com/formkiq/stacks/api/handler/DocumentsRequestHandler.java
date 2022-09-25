@@ -26,7 +26,6 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.text.SimpleDateFormat;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
@@ -53,7 +52,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
-import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/documents". */
 public class DocumentsRequestHandler
@@ -91,19 +89,11 @@ public class DocumentsRequestHandler
     String tz = getParameter(event, "tz");
     String dateString = getParameter(event, "date");
 
-    if (StringUtils.isBlank(dateString)) {
-
-      if (StringUtils.isNotBlank(tz)) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        ZoneOffset offset = DateUtil.getZoneOffset(tz);
-        sdf.setTimeZone(TimeZone.getTimeZone(offset));
-        dateString = sdf.format(new Date());
-      } else {
-        dateString = this.df.format(new Date());
-      }
-    }
-
     ZonedDateTime date = transformToDate(logger, serviceCache, dateString, tz);
+
+    if (serviceCache.debug()) {
+      logger.log("search for document using date: " + date);
+    }
 
     String siteId = authorizer.getSiteId();
     final PaginationResults<DocumentItem> results =
@@ -157,14 +147,29 @@ public class DocumentsRequestHandler
     if (dateString != null) {
       try {
         date = DateUtil.toDateTimeFromString(dateString, tz);
+
+        if (awsservice.debug()) {
+          logger.log("searching using date parameter: " + dateString + " and tz " + tz);
+        }
+
       } catch (ZoneRulesException e) {
         throw new BadException("Invalid date string: " + dateString);
       }
     } else {
 
       date = awsservice.documentService().findMostDocumentDate();
+
       if (date == null) {
         date = ZonedDateTime.now();
+
+        if (awsservice.debug()) {
+          logger.log("searching using default date: " + date);
+        }
+
+      } else {
+        if (awsservice.debug()) {
+          logger.log("searching using Most Recent Document Date: " + date);
+        }
       }
     }
 

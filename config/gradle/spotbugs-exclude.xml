@@ -34,4 +34,27 @@ For a detailed description of spotbugs bug categories, see https://spotbugs.read
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
     </Match>
 
+	<Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <OR>
+            <Class name="com.formkiq.module.actions.Action"/>
+            <Class name="com.formkiq.module.actions.services.ActionsServiceExtension"/>
+        </OR>
+    </Match>
+
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <OR>
+            <Class name="com.formkiq.module.actions.Action"/>
+        </OR>
+    </Match>
+
+    <Match>
+        <Bug pattern="MS_EXPOSE_REP"/>
+        <OR>
+            <Class name="com.formkiq.testutils.aws.DynamoDbTestServices"/>
+            <Class name="com.formkiq.testutils.aws.TestServices"/>
+        </OR>
+    </Match>    
+    
 </FindBugsFilter>

@@ -32,7 +32,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.validation.ValidationError;
+import com.formkiq.validation.ValidationError;
 
 /**
  * 

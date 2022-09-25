@@ -43,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
@@ -77,6 +78,32 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
+  }
+
+  /**
+   * Build {@link Map} {@link AttributeValue}.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @param idx int
+   * @return {@link Map}
+   */
+  private Map<String, AttributeValue> buildValueMap(final String siteId, final String documentId,
+      final Action action, final int idx) {
+
+    Map<String, AttributeValue> valueMap = new HashMap<>();
+
+    String pk = getPk(siteId, documentId);
+    String sk = getSk(action, idx);
+    addS(valueMap, PK, pk);
+    addS(valueMap, SK, sk);
+    addS(valueMap, "type", action.type().name());
+    addS(valueMap, "status", action.status().name());
+    addS(valueMap, "documentId", documentId);
+    addS(valueMap, "userId", action.userId());
+    addM(valueMap, "parameters", action.parameters());
+    return valueMap;
   }
 
   @Override
@@ -185,6 +212,15 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
+  public void saveAction(final String siteId, final String documentId, final Action action,
+      final int index) {
+
+    Map<String, AttributeValue> valueMap = buildValueMap(siteId, documentId, action, index);
+    this.dbClient
+        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(valueMap).build());
+  }
+
+  @Override
   public List<Map<String, AttributeValue>> saveActions(final String siteId, final String documentId,
       final List<Action> actions) {
 
@@ -194,17 +230,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     for (Action action : actions) {
 
-      Map<String, AttributeValue> valueMap = new HashMap<>();
-
-      String pk = getPk(siteId, documentId);
-      String sk = getSk(action, idx);
-      addS(valueMap, PK, pk);
-      addS(valueMap, SK, sk);
-      addS(valueMap, "type", action.type().name());
-      addS(valueMap, "status", action.status().name());
-      addS(valueMap, "documentId", documentId);
-      addS(valueMap, "userId", action.userId());
-      addM(valueMap, "parameters", action.parameters());
+      Map<String, AttributeValue> valueMap = buildValueMap(siteId, documentId, action, idx);
 
       values.add(valueMap);
       idx++;

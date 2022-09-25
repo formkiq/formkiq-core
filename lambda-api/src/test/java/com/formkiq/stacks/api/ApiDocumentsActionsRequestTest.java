@@ -56,7 +56,7 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Get /documents/{documentId}/actio s request.
+   * Get /documents/{documentId}/actions request.
    *
    * @throws Exception an error has occurred
    */
@@ -94,4 +94,92 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     }
   }
 
+  /**
+   * POST /documents/{documentId}/actions request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentActions01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      this.service.saveActions(siteId, documentId,
+          Arrays.asList(new Action().status(ActionStatus.COMPLETE)
+              .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
+
+      Map<String, Object> body = Map.of("actions",
+          Arrays.asList(Map.of("type", "ocr", "parameters", Map.of("ocrParseTypes", "text")),
+              Map.of("type", "webhook", "parameters", Map.of("url", "https://localhost"))));
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"Actions saved\"}", m.get("body"));
+
+      int i = 0;
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(mapsize, actions.size());
+      assertEquals(ActionType.FULLTEXT, actions.get(i).type());
+      assertEquals(ActionStatus.COMPLETE, actions.get(i++).status());
+
+      assertEquals(ActionType.OCR, actions.get(i).type());
+      assertEquals(ActionStatus.PENDING, actions.get(i).status());
+      assertEquals("{ocrParseTypes=text}", actions.get(i++).parameters().toString());
+
+      assertEquals(ActionType.WEBHOOK, actions.get(i).type());
+      assertEquals(ActionStatus.PENDING, actions.get(i).status());
+      assertEquals("{url=https://localhost}", actions.get(i++).parameters().toString());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions missing 'type'.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentActions02() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      Map<String, Object> body =
+          Map.of("actions", Arrays.asList(Map.of("parameters", Map.of("ocrParseTypes", "text"))));
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+    }
+  }
 }

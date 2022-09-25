@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -330,6 +331,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
+  private boolean isChecksumChanged(final S3ObjectMetadata resp, final DynamicDocumentItem doc) {
+    return doc.getChecksum() != null && resp.getEtag() != null
+        && !resp.getEtag().contains(doc.getChecksum());
+  }
+
   /**
    * Process S3 Event.
    * 
@@ -498,6 +504,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       if (contentType != null && contentType.length() > 0) {
         doc.setContentType(contentType);
+      }
+
+      if (isChecksumChanged(resp, doc)) {
+        doc.setLastModifiedDate(new Date());
       }
 
       doc.setChecksum(resp.getEtag());

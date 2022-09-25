@@ -35,10 +35,12 @@ import static org.junit.Assert.assertTrue;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -410,7 +412,9 @@ public class DocumentServiceImplTest implements DbKeys {
       // then
       assertEquals(documentId, item.getDocumentId());
       assertNotNull(item.getInsertedDate());
+      assertNotNull(item.getLastModifiedDate());
       assertEquals(document.getInsertedDate(), item.getInsertedDate());
+      assertEquals(document.getInsertedDate(), item.getLastModifiedDate());
       assertNotNull(item.getPath());
       assertEquals("text/plain", item.getContentType());
       assertNotNull(item.getChecksum());
@@ -490,14 +494,17 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(items.size(), documentIds.size());
       assertEquals(d0.getDocumentId(), items.get(i).getDocumentId());
       assertNotNull(items.get(i).getInsertedDate());
+      assertNotNull(items.get(i).getLastModifiedDate());
       assertEquals(d0.getInsertedDate(), items.get(i++).getInsertedDate());
 
       assertEquals(d1.getDocumentId(), items.get(i).getDocumentId());
       assertNotNull(items.get(i).getInsertedDate());
+      assertNotNull(items.get(i).getLastModifiedDate());
       assertEquals(d1.getInsertedDate(), items.get(i++).getInsertedDate());
 
       assertEquals(d2.getDocumentId(), items.get(i).getDocumentId());
       assertNotNull(items.get(i).getInsertedDate());
+      assertNotNull(items.get(i).getLastModifiedDate());
       assertEquals(d2.getInsertedDate(), items.get(i++).getInsertedDate());
     }
   }
@@ -518,7 +525,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(items.size(), documentIds.size());
       assertNotNull(items.get(0).getDocumentId());
       assertNotNull(items.get(0).getInsertedDate());
-      assertNotNull(items.get(0).getInsertedDate());
+      assertNotNull(items.get(0).getLastModifiedDate());
     }
   }
 
@@ -1273,14 +1280,18 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveDocumentItemWithTag01() {
+    final int year = 2020;
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
+      LocalDate localDate = LocalDate.of(year, 1, 2);
+      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
           Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      doc.setLastModifiedDate(date);
 
       // when
       DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
@@ -1288,6 +1299,11 @@ public class DocumentServiceImplTest implements DbKeys {
       // then
       item = this.service.findDocument(siteId, item.getDocumentId());
       assertNotNull(item);
+
+      ZoneId timeZone = ZoneId.systemDefault();
+      LocalDate lastModifiedDate =
+          item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
+      assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
 
       PaginationResults<DocumentTag> tags =
           this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
@@ -1587,6 +1603,48 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(tagKey1, next.getKey());
       assertNull(next.getValue());
       assertEquals("[111, 222]", next.getValues().toString());
+    }
+  }
+
+  /**
+   * Find Documents more than 100 combination of Tags.
+   */
+  @Test
+  public void testFindDocumentsTags02() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 1000;
+      Date now = new Date();
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+
+      String tagKey0 = "category";
+      String tagValue0 = "person";
+      String tagKey1 = "playerId";
+
+      List<String> tagValue1 = Arrays.asList("111", "222");
+      List<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
+              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+
+      this.service.saveDocument(siteId, document, tags);
+
+      List<String> documentIds = new ArrayList<>();
+      documentIds.add(documentId);
+      for (int i = 0; i < count; i++) {
+        documentIds.add(UUID.randomUUID().toString());
+      }
+
+      // when
+      Map<String, Collection<DocumentTag>> tagMap =
+          this.service.findDocumentsTags(siteId, documentIds, Arrays.asList(tagKey0, tagKey1));
+
+      // then
+      assertEquals(count + 1, tagMap.size());
+      Collection<DocumentTag> tags0 = tagMap.get(documentId);
+      assertEquals(2, tags0.size());
     }
   }
 }

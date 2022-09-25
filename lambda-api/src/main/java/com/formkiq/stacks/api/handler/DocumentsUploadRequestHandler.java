@@ -54,12 +54,13 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.plugins.validation.ValidationError;
-import com.formkiq.plugins.validation.ValidationException;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for GET "/documents/upload". */
 public class DocumentsUploadRequestHandler
@@ -133,7 +134,9 @@ public class DocumentsUploadRequestHandler
 
       DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
       logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
-      service.saveDocument(siteId, item, tags);
+
+      SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(false);
+      service.saveDocument(siteId, item, tags, options);
 
       if (item.containsKey("actions")) {
         ActionsService actionsService = awsservice.getExtension(ActionsService.class);

@@ -1,0 +1,142 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>FormKiQ Password Reset</title>
+    <style type="text/css">
+    h4 {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    .flex {
+        display: flex;
+    }
+
+    .w-12 {
+        width: 3rem;
+    }
+
+    .h-12 {
+        height: 3rem;
+    }
+
+    .p-1 {
+        padding: .25rem;
+    }
+
+    .mt-0 {
+        margin-top: 0px;
+    }
+
+    .mb-0 {
+        margin-bottom: 0px;
+    }
+
+    .bg-red-600 {
+        --tw-bg-opacity: 1;
+        background-color: rgba(220, 38, 38, var(--tw-bg-opacity));
+    }
+
+    .text-white {
+        --tw-text-opacity: 1;
+        color: rgba(255, 255, 255, var(--tw-text-opacity));
+    }
+
+    .mr-2 {
+        margin-right: .5rem;
+    }
+
+    .rounded-lg {
+        border-radius: .5rem;
+    }
+
+    .text-xl {
+        font-size: 1.25rem;
+    }
+
+    .text-red-600 {
+        --tw-text-opacity: 1;
+        color: rgba(220, 38, 38, var(--tw-text-opacity));
+    }
+
+    .font-brand {
+        font-family: nolan, sans;
+    }
+
+    .tracking-tight {
+        letter-spacing: -.025em;
+    }
+
+    .text-proTeal-500 {
+        --tw-text-opacity: 1;
+        color: rgba(0, 127, 128, var(--tw-text-opacity));
+    }
+
+    .text-xs {
+        font-size: .75rem;
+        line-height: 1rem;
+    }
+
+    @media (max-width: 600px) {
+        .btn {
+            min-width: 100px !important;
+        }
+
+        .text {
+            font-size: 17px;
+        }
+
+        .text,
+        .image,
+        .button {
+            padding-left: 24px !important;
+            padding-right: 24px !important;
+        }
+
+        .image.image-full {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+    }
+    </style>
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <div style="width: 100%; background-color: #f9f9f9; padding-top: 60px; padding-bottom: 60px; font-family: Arial, Helvetica, sans-serif;">
+        <div class="content" style="max-width: 680px; margin-left: auto; margin-right: auto; display: block; color: #494949;">
+            <div class="image image-full" style="padding-left: 0; padding-right: 0; background-color: white;">
+                <div class="flex" style="padding: 1rem;">
+                    <div>
+                        <h1 class="pt-1 mt-0 mb-0 md:pt-0 text-xl font-black font-brand text-red-600 focus:outline-none"><a target="_none" href="https://formkiq.com"><span style="color:#5E2500">Form</span><span style="color:#F26803">KiQ</span></a> </h1>
+                        <h4 class="text-xs mt-0 mb-0 text-proTeal-500 md:text-sm tracking-tight"> Headless Document Management </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="text" style="background-color: #fff; padding: 30px 45px; white-space: normal; text-align: center; font-size: 26px; font-weight: bolder; font-family: Arial, Helvetica, sans-serif; line-height: 1.4em; padding-bottom: 10px;">
+                <div></div>
+                <div style="text-align: left;padding-bottom:10px;">
+                    <b>FormKiQ Password Reset Requested</b>
+                </div>
+            </div>
+            <div class="text" style="background-color: #fff; padding: 30px 45px; font-size: 16px; line-height: 1.6em; font-family: Arial, Helvetica, sans-serif; white-space: normal; padding-top: 0px; padding-bottom: 0px;">
+                <div>
+                    <div>Click on the <b>Reset Password</b> link below to reset your FormKiQ user account.</div>
+                    <br />
+                    <div class="button button-left" style="background-color: #fff; padding: 30px 45px; text-align: center; padding-top: 0px;">
+                        <a href="${link}" target="_blank" class="btn" style="display: inline-block; text-decoration: none; background-color: #0a9ed0; color: #fff; border-radius: 5px; font-size: 15px; padding: 11px 15px; box-sizing: border-box; min-width: 225px; max-width: 100%; font-weight: bold; font-family: Lato, Montserrat, Arial, Helvetica, sans-serif;">
+                            <div style="text-align: center;">Reset Password</div>
+                        </a>
+                    </div>
+                    <p style="-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; mar=
+        gin-top: 15px; margin-bottom: 15px; font-size: 16px; line-height: 1.5; colo=
+        r: #555;"><br style="-ms-text-size-adjust: 100%; -webkit-text-=
+        size-adjust: 100%;">
+                        <span style="display:none">{####}{##Verify Email##}{##Click Here##}{username}</span></p>
+                    <br />
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

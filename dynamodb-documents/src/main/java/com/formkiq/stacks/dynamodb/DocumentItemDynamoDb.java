@@ -32,37 +32,40 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class DocumentItemDynamoDb implements DocumentItem {
 
-  /** Document Id. */
-  @Reflectable
-  private String documentId;
-  /** Document Inserted Date. */
-  @Reflectable
-  private Date insertedDate;
-  /** Document Path. */
-  @Reflectable
-  private String path;
-  /** User Id. */
-  @Reflectable
-  private String userId;
-  /** Content Type. */
-  @Reflectable
-  private String contentType;
+  /** Belongs To Document Id. */
+  private String belongsToDocumentId;
   /** Entity tag. */
   @Reflectable
   private String checksum;
   /** {@link Long}. */
   @Reflectable
   private Long contentLength;
+  /** Content Type. */
+  @Reflectable
+  private String contentType;
+  /** Document Id. */
+  @Reflectable
+  private String documentId;
   /** {@link List} {@link DocumentItem}. */
   private List<DocumentItem> documents;
-  /** Belongs To Document Id. */
-  private String belongsToDocumentId;
-  /** Time to Live. */
+  /** Document Inserted Date. */
   @Reflectable
-  private String timeToLive;
+  private Date insertedDate;
+  /** Document Last Modified Date. */
+  @Reflectable
+  private Date lastModifiedDate;
+  /** Document Path. */
+  @Reflectable
+  private String path;
   /** Tag Schema Id. */
   @Reflectable
   private String tagSchemaId;
+  /** Time to Live. */
+  @Reflectable
+  private String timeToLive;
+  /** User Id. */
+  @Reflectable
+  private String userId;
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -114,6 +117,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public Date getInsertedDate() {
     return this.insertedDate != null ? (Date) this.insertedDate.clone() : null;
+  }
+
+  @Override
+  public Date getLastModifiedDate() {
+    return this.lastModifiedDate != null ? (Date) this.lastModifiedDate.clone() : null;
   }
 
   @Override
@@ -169,6 +177,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setInsertedDate(final Date date) {
     this.insertedDate = date != null ? (Date) date.clone() : null;
+  }
+
+  @Override
+  public void setLastModifiedDate(final Date date) {
+    this.lastModifiedDate = date != null ? (Date) date.clone() : null;
   }
 
   @Override

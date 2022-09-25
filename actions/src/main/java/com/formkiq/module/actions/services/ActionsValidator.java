@@ -21,27 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.validation;
+package com.formkiq.module.actions.services;
+
+import java.util.Collection;
+import java.util.List;
+import com.formkiq.module.actions.Action;
+import com.formkiq.validation.ValidationError;
 
 /**
  * 
- * Validation Errors.
+ * {@link Action} Validator.
  *
  */
-public interface ValidationError {
+public interface ActionsValidator {
 
   /**
-   * Get Error.
+   * Validates {@link Action}.
    * 
-   * @return {@link String}
+   * @param action {@link Action}
+   * @return {@link Collection} {@link ValidationError}
    */
-  String error();
-
+  Collection<ValidationError> validation(Action action);
 
   /**
-   * Get Error Key.
+   * Validates {@link List} {@link Action}.
    * 
-   * @return {@link String}
+   * @param action {@link Action}
+   * @return {@link List} {@link Collection} {@link ValidationError}
    */
-  String key();
+  List<Collection<ValidationError>> validation(List<Action> action);
 }

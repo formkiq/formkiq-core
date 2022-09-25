@@ -116,6 +116,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       assertEquals(documentId, resp.getString("documentId"));
       assertEquals(userId, resp.getString("userId"));
       assertNotNull(resp.get("insertedDate"));
+      assertNotNull(resp.get("lastModifiedDate"));
+      assertEquals(resp.get("insertedDate"), resp.get("lastModifiedDate"));
       assertNull(resp.get("next"));
       assertNull(resp.get("previous"));
     }

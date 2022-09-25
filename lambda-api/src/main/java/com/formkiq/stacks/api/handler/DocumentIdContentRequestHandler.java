@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -84,12 +85,18 @@ public class DocumentIdContentRequestHandler
 
     } else {
 
+      String contentType =
+          item.getContentType() != null ? item.getContentType() : "application/octet-stream";
+
+      PresignGetUrlConfig config = new PresignGetUrlConfig()
+          .contentDispositionByPath(item.getPath()).contentType(s3key).contentType(contentType);
+
       Duration duration = Duration.ofHours(1);
       URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
-          duration, versionId);
+          duration, versionId, config);
 
-      response = new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType",
-          item.getContentType() != null ? item.getContentType() : "application/octet-stream"));
+      response =
+          new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType", contentType));
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);

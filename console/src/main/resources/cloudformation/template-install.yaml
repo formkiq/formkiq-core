@@ -14,9 +14,19 @@ Parameters:
     Description: Version of FormKiQ console to deploy
     AllowedPattern: ".+"
  
+  Domain:
+    Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
+    AllowedPattern: ".+"
+    Type: String
+    
   ConsoleBucket:
     Type: String
     Description: Console S3 Bucket
+    AllowedPattern: ".+"
+
+  CognitoConfigBucket:
+    Type: String
+    Description: Cognito Config S3 Bucket
     AllowedPattern: ".+"
 
   ApiUrl:
@@ -115,6 +125,8 @@ Resources:
             Fn::Sub: "${AWS::Region}"
           CONSOLE_BUCKET: 
             Fn::Sub: "${ConsoleBucket}"
+          COGNITO_CONFIG_BUCKET:
+            Fn::Sub: "${CognitoConfigBucket}"
           API_URL: 
             Fn::Sub: "${ApiUrl}"
           API_WEBSOCKET_URL: 
@@ -129,6 +141,8 @@ Resources:
             Ref: CognitoHostedUi
           USER_AUTHENTICATION:
             Ref: UserAuthentication
+          DOMAIN:
+            Ref: Domain
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role
@@ -183,7 +197,16 @@ Resources:
                 - ''
                 - - 'arn:aws:s3:::'
                   - Ref: ConsoleBucket
-                  - '/*'              
+                  - '/*'
+            - Effect: Allow
+              Action:
+              - s3:PutObject
+              Resource: 
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: CognitoConfigBucket
+                  - '/*'
             - Effect: Allow
               Action:
               - s3:GetObject

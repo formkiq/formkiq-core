@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -67,5 +68,24 @@ public class Objects {
    */
   public static <T, S> Map<T, S> notNull(final Map<T, S> map) {
     return map != null ? map : Collections.emptyMap();
+  }
+
+  /**
+   * Parition a {@link List} into a certain max size.
+   * 
+   * @param <T> Type of {@link List}
+   * @param list {@link List}
+   * @param partitionSize max size
+   * @return {@link List}
+   */
+  public static <T> List<List<T>> parition(final List<T> list, final int partitionSize) {
+
+    List<List<T>> partitions = new ArrayList<>();
+
+    for (int i = 0; i < list.size(); i += partitionSize) {
+      partitions.add(list.subList(i, Math.min(i + partitionSize, list.size())));
+    }
+
+    return partitions;
   }
 }

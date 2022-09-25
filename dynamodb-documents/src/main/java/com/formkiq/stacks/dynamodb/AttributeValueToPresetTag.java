@@ -34,8 +34,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  */
 public class AttributeValueToPresetTag implements Function<Map<String, AttributeValue>, PresetTag> {
 
-  /** {@link AttributeValueToInsertedDate}. */
-  private AttributeValueToInsertedDate toDate = new AttributeValueToInsertedDate();
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toDate = new AttributeValueToDate("inserteddate");
 
   @Override
   public PresetTag apply(final Map<String, AttributeValue> map) {

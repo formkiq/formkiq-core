@@ -8,7 +8,7 @@
 	<subpackage name="tagschema">
 	
 		<allow pkg="com.formkiq.aws.dynamodb.model" />
-		<allow pkg="com.formkiq.plugins.validation" />
+		<allow pkg="com.formkiq.validation" />
 		<allow pkg="java.util" />
 		
 		<allow pkg="com.formkiq.module.lambdaservices" />
