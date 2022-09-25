@@ -300,6 +300,7 @@ Resources:
     DependsOn:
       - CoreApi
       - SsmProperties
+      - CoreConsoleInstall
     Properties:
       Location: console/template-users.yaml
       Parameters:

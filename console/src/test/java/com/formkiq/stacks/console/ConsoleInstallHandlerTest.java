@@ -300,6 +300,8 @@ public class ConsoleInstallHandlerTest {
     assertTrue(
         s3.getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message")
             .isObjectExists());
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
+        "formkiq/cognito/dev/CustomMessage_ForgotPassword/Message").isObjectExists());
   }
 
   /**
