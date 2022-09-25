@@ -127,7 +127,7 @@
                     <div>Finish setting up your account by clicking on the <b>Verify Email</b> link below.</div>
                     <br />
                     <div class="button button-left" style="background-color: #fff; padding: 30px 45px; text-align: center; padding-top: 0px;">
-                        <a href=\"${link}\" target=\"_blank\" class="btn" style="display: inline-block; text-decoration: none; background-color: #0a9ed0; color: #fff; border-radius: 5px; font-size: 15px; padding: 11px 15px; box-sizing: border-box; min-width: 225px; max-width: 100%; font-weight: bold; font-family: Lato, Montserrat, Arial, Helvetica, sans-serif;">
+                        <a href="${link}" target="_blank" class="btn" style="display: inline-block; text-decoration: none; background-color: #0a9ed0; color: #fff; border-radius: 5px; font-size: 15px; padding: 11px 15px; box-sizing: border-box; min-width: 225px; max-width: 100%; font-weight: bold; font-family: Lato, Montserrat, Arial, Helvetica, sans-serif;">
                             <div style="text-align: center;">Verify Email</div>
                         </a>
                     </div>
