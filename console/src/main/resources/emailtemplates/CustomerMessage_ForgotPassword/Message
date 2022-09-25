@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-    <title>Welcome to FormKiQ</title>
+    <title>FormKiQ Password Reset</title>
     <style type="text/css">
     h4 {
         font-size: inherit;
@@ -115,25 +115,21 @@
             <div class="text" style="background-color: #fff; padding: 30px 45px; white-space: normal; text-align: center; font-size: 26px; font-weight: bolder; font-family: Arial, Helvetica, sans-serif; line-height: 1.4em; padding-bottom: 10px;">
                 <div></div>
                 <div style="text-align: left;padding-bottom:10px;">
-                    <b>Welcome to FormKiQ,</b>
+                    <b>FormKiQ Password Reset Requested</b>
                 </div>
             </div>
             <div class="text" style="background-color: #fff; padding: 30px 45px; font-size: 16px; line-height: 1.6em; font-family: Arial, Helvetica, sans-serif; white-space: normal; padding-top: 0px; padding-bottom: 0px;">
                 <div>
-                    <div>FormKiQ gives you full control of your organization's documents, including storage, search, data extraction, and workflows.</div>
-                    <br />
-                    <div><span style="color:#F26803"><b>All in Your AWS Cloud!</b></span></div>
-                    <br />
-                    <div>Finish setting up your account by clicking on the <b>Verify Email</b> link below.</div>
+                    <div>Click on the <b>Reset Password</b> link below to reset your FormKiQ user account.</div>
                     <br />
                     <div class="button button-left" style="background-color: #fff; padding: 30px 45px; text-align: center; padding-top: 0px;">
                         <a href=\"${link}\" target=\"_blank\" class="btn" style="display: inline-block; text-decoration: none; background-color: #0a9ed0; color: #fff; border-radius: 5px; font-size: 15px; padding: 11px 15px; box-sizing: border-box; min-width: 225px; max-width: 100%; font-weight: bold; font-family: Lato, Montserrat, Arial, Helvetica, sans-serif;">
-                            <div style="text-align: center;">Verify Email</div>
+                            <div style="text-align: center;">Reset Password</div>
                         </a>
                     </div>
                     <p style="-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; mar=
         gin-top: 15px; margin-bottom: 15px; font-size: 16px; line-height: 1.5; colo=
-        r: #555;">Learn more about <a target="_none" href="https://formkiq.com">https://formkiq.com</a><br style="-ms-text-size-adjust: 100%; -webkit-text-=
+        r: #555;"><br style="-ms-text-size-adjust: 100%; -webkit-text-=
         size-adjust: 100%;">
                         <span style="display:none">{####}{##Verify Email##}{##Click Here##}{username}</span></p>
                     <br />

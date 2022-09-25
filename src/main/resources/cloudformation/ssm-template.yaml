@@ -125,15 +125,15 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-
-  CustomMessageAdminCreateUserMessageParameter:
+          
+  CustomMessageSignUpUserSubjectParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "AdminCreateUser Email Message"
+      Description: "SignUp Email Subject"
       Name: 
-        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_AdminCreateUser/Message"
+        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_SignUp/Subject"
       Type: String
-      Value: "Hello {username} {email},<br /><br />Welcome to FormKiQ.<br /><br />FormKiQ gives you full control of your organization's documents, including storage, search, data extraction, and workflows.<br />All in Your AWS Cloud.<br /><br />Log into your FormKiQ account ${link}"
+      Value: "Welcome to FormKiQ"
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -141,3 +141,36 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
+          
+  CustomMessageSignUpUserSubjectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SignUp Email Subject"
+      Name: 
+        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_SignUp/Subject"
+      Type: String
+      Value: "Welcome to FormKiQ"
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  CustomMessageForgotPasswordUserSubjectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SignUp Email Subject"
+      Name: 
+        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_ForgotPassword/Subject"
+      Type: String
+      Value: "FormKiQ Password Reset"
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
