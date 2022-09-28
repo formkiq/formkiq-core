@@ -807,6 +807,37 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /queryFulltext:
+            post:
+              description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/) ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Search
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/QueryFulltextRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/QueryFulltextResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /documents/{documentId}/actions:
             get:
               description: Get Document Actions and their Status
@@ -1964,6 +1995,27 @@
                 key:
                   type: string
                   description: Tag key
+            QueryFulltextRequest:
+              description: OpenSearch search API request (https://opensearch.org/docs/latest/opensearch/rest-api/search/)
+              type: object
+              example:
+                query:
+                  match:
+                    title: Wind
+            QueryFulltextResponse:
+              type: object
+              properties:
+                result:
+                  type: object
+              example:
+                result:
+                  hits:
+                    hits:
+                    - _index: ""
+                      _id: ""
+                      _source:
+                        documentId: ""
+                        content: ""
             DocumentFulltextResponse:
               type: object
               properties:
