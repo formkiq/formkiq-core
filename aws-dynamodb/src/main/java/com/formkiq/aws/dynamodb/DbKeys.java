@@ -91,6 +91,8 @@ public interface DbKeys {
   String PREFIX_WEBHOOK = "webhook" + TAG_DELIMINATOR;
   /** Webhooks Partition Key Prefix. */
   String PREFIX_WEBHOOKS = "webhooks" + TAG_DELIMINATOR;
+  /** Global Meta Data Key Prefix. */
+  String GLOBAL_FOLDER_METADATA = "global" + TAG_DELIMINATOR + "folders";
 
   /**
    * Add {@link Map} to {@link Map} {@link AttributeValue}.

@@ -51,6 +51,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -666,6 +667,79 @@ public class DocumentSearchServiceImplTest {
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
       });
+    }
+  }
+
+  /** Search for meta "folder" data. */
+  @Test
+  public void testSearch14() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      DocumentItem doc1 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc1.setPath("test1.pdf");
+      this.service.saveDocument(siteId, doc1, null);
+
+      DocumentItem doc2 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc2.setPath("sample/test3.pdf");
+      this.service.saveDocument(siteId, doc2, null);
+
+      DocumentItem doc3 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc3.setPath("sample/anotherone/test4.pdf");
+      this.service.saveDocument(siteId, doc3, null);
+
+      PaginationMapToken startkey = null;
+      String folder = "";
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      final int expected = 3;
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(expected, list.size());
+      assertNull(results.getToken());
+
+      int i = 0;
+      assertNull(list.get(i).getDocumentId());
+      assertEquals("sample", list.get(i++).getPath());
+      assertEquals(doc1.getDocumentId(), results.getResults().get(i).getDocumentId());
+      assertEquals("test1.pdf", list.get(i++).getPath());
+      assertEquals(doc0.getDocumentId(), results.getResults().get(i).getDocumentId());
+      assertEquals("test2.pdf", list.get(i++).getPath());
+
+      // given
+      folder = "sample";
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+
+      // when
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      list = results.getResults();
+      assertEquals(2, list.size());
+      assertEquals("sample/anotherone", list.get(0).getPath());
+      assertNull(list.get(0).getDocumentId());
+      assertEquals("sample/test3.pdf", list.get(1).getPath());
+      assertEquals(doc2.getDocumentId(), list.get(1).getDocumentId());
+
+      // given
+      folder = "sample/anotherone";
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+
+      // when
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      list = results.getResults();
+      assertEquals(1, list.size());
+      assertEquals("sample/anotherone/test4.pdf", list.get(0).getPath());
+      assertEquals(doc3.getDocumentId(), list.get(0).getDocumentId());
     }
   }
 }

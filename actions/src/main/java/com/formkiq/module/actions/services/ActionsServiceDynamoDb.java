@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -44,7 +45,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -236,15 +236,8 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       idx++;
     }
 
-    List<WriteRequest> list = new ArrayList<>();
-
-    values.forEach(value -> {
-      PutRequest put = PutRequest.builder().item(value).build();
-      WriteRequest req = WriteRequest.builder().putRequest(put).build();
-      list.add(req);
-    });
-
-    Map<String, Collection<WriteRequest>> items = Map.of(this.documentTableName, list);
+    Map<String, Collection<WriteRequest>> items =
+        new AttributeValuesToWriteRequests(this.documentTableName).apply(values);
 
     BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
     this.dbClient.batchWriteItem(batch);

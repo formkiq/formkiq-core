@@ -37,7 +37,6 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
-import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -52,9 +51,11 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
+import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import software.amazon.awssdk.utils.StringUtils;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -67,30 +68,6 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    *
    */
   public SearchRequestHandler() {}
-
-  /**
-   * Is {@link QueryRequest} valid.
-   * 
-   * @param q {@link QueryRequest}
-   * @throws BadException BadException
-   */
-  private void checkIsRequestValid(final QueryRequest q) throws BadException {
-    if (q == null || q.query() == null || (q.query().tag() == null && q.query().tags() == null)) {
-      throw new BadException("Invalid JSON body.");
-    }
-
-    if (q.query().tag() != null) {
-      if (StringUtils.isEmpty(q.query().tag().key())) {
-        throw new BadException("'tag' attribute is required.");
-      }
-    }
-
-    for (SearchTagCriteria tag : Objects.notNull(q.query().tags())) {
-      if (StringUtils.isEmpty(tag.key())) {
-        throw new BadException("'tag' attribute is required.");
-      }
-    }
-  }
 
   @Override
   public String getRequestUrl() {
@@ -170,11 +147,11 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     QueryRequest q = fromBodyToObject(logger, event, QueryRequest.class);
 
-    checkIsRequestValid(q);
+    validatePost(q);
 
     DocumentSearchService documentSearchService = serviceCache.documentSearchService();
 
-    if (q.query().tag() == null
+    if (q.query().tag() == null && q.query().meta() == null
         && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive()) {
 
       ApiMapResponse resp = new ApiMapResponse();
@@ -182,7 +159,6 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       response = new ApiRequestHandlerResponse(SC_PAYMENT, resp);
 
     } else {
-
 
       CacheService cacheService = awsservice.getExtension(CacheService.class);
       ApiPagination pagination = getPagination(cacheService, event);
@@ -223,5 +199,13 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
 
     return response;
+  }
+
+  private void validatePost(final QueryRequest q) throws ValidationException {
+    QueryRequestValidator validator = new QueryRequestValidator();
+    Collection<ValidationError> errors = validator.validation(q);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 }
