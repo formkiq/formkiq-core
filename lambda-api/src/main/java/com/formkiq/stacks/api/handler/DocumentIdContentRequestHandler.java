@@ -88,8 +88,9 @@ public class DocumentIdContentRequestHandler
       String contentType =
           item.getContentType() != null ? item.getContentType() : "application/octet-stream";
 
-      PresignGetUrlConfig config = new PresignGetUrlConfig()
-          .contentDispositionByPath(item.getPath()).contentType(s3key).contentType(contentType);
+      PresignGetUrlConfig config =
+          new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false)
+              .contentType(s3key).contentType(contentType);
 
       Duration duration = Duration.ofHours(1);
       URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,

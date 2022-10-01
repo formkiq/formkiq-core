@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.8"
+          version: "1.8.9"
         paths:
           /version:
             get:
@@ -605,6 +605,12 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/versionIdParam'
               - $ref: '#/components/parameters/durationParam'
+              - name: "inline"
+                in: "query"
+                description: "Set the Content-Disposition to inline"
+                schema:
+                  type: boolean
+                  default: false
               responses:
                 '200':
                   description: 200 OK
@@ -1620,6 +1626,8 @@ Resources:
               type: "object"
               description: "Document tag search criteria"
               properties:
+                meta:
+                  $ref: "#/components/schemas/DocumentSearchItemMeta"              
                 tag:
                   $ref: "#/components/schemas/DocumentSearchItemTag"
                 documentIds:
@@ -1832,6 +1840,14 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
+            DocumentSearchItemMeta:
+              required:
+              - "folder"
+              type: "object"
+              properties:
+                folder:
+                  type: "string"
+                  description: "Searches for a folder"              
             DocumentSearchItemTag:
               required:
               - "key"
