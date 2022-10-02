@@ -66,6 +66,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -359,6 +360,7 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
       DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), now, userId);
+      item.setPath("a/test.txt");
       final String documentId = item.getDocumentId();
 
       DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
@@ -371,9 +373,20 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       assertNull(this.service.findDocument(siteId, documentId));
+
       PaginationResults<DocumentTag> results =
           this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
+
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      PaginationResults<DynamicDocumentItem> folders =
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, folders.getResults().size());
+
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder("a"));
+      folders = this.searchService.search(siteId, q, null, MAX_RESULTS);
+
+      assertEquals(0, folders.getResults().size());
     }
   }
 

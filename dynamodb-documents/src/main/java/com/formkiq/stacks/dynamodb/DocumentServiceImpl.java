@@ -161,8 +161,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public boolean deleteDocument(final String siteId, final String documentId) {
 
-    // handle deleting index
     Map<String, AttributeValue> startkey = null;
+
+    DocumentItem item = findDocument(siteId, documentId);
+
+    deleteFolderIndex(siteId, item);
 
     do {
       Map<String, AttributeValue> values =
@@ -231,6 +234,25 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       startkey = pr.getToken();
 
     } while (startkey != null);
+  }
+
+  /**
+   * Delete Folder Index.
+   * 
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   */
+  private void deleteFolderIndex(final String siteId, final DocumentItem item) {
+    if (item != null) {
+      List<Map<String, AttributeValue>> indexes =
+          this.folderIndexProcessor.generateIndex(siteId, item);
+      if (!indexes.isEmpty()) {
+        Map<String, AttributeValue> attr = indexes.get(indexes.size() - 1);
+        if (attr.containsKey("documentId")) {
+          deleteItem(Map.of(PK, attr.get(PK), SK, attr.get(SK)));
+        }
+      }
+    }
   }
 
   /**

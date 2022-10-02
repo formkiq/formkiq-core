@@ -38,6 +38,76 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
+  /** Deliminator. */
+  private static final String DELIMINATOR = "/";
+
+  /**
+   * Generate PKs from tokens.
+   * 
+   * @param tokens {@link String}
+   * @return {@link List} {@link String}
+   */
+  public static List<String> generatePks(final String[] tokens) {
+
+    int i = 0;
+    StringBuilder sb = new StringBuilder();
+    List<String> pks = new ArrayList<>(tokens.length);
+
+    for (String folder : tokens) {
+      String pk = GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + sb.toString();
+      pks.add(pk);
+
+      if (i > 0) {
+        sb.append("/");
+      }
+
+      sb.append(folder);
+
+      i++;
+    }
+
+    return pks;
+  }
+
+  /**
+   * Generate SKs from tokens.
+   * 
+   * @param tokens {@link String}
+   * @param documentId {@link String}
+   * @return {@link List} {@link String}
+   */
+  public static List<String> generateSks(final String[] tokens, final String documentId) {
+
+    int i = 0;
+    int len = tokens.length;
+    List<String> sks = new ArrayList<>(tokens.length);
+
+    for (String folder : tokens) {
+
+      if (i >= len - 1) {
+        sks.add(folder + TAG_DELIMINATOR + documentId);
+      } else {
+        sks.add(folder);
+      }
+
+      i++;
+    }
+
+    return sks;
+  }
+
+  /**
+   * Generate Path Tokens.
+   * 
+   * @param path {@link String}
+   * @return {@link String}
+   */
+  public static String[] tokens(final String path) {
+    String ss = path.startsWith(DELIMINATOR) ? path.substring(DELIMINATOR.length()) : path;
+    ss = ss.replaceAll(":://", DELIMINATOR);
+    return ss.split(DELIMINATOR);
+  }
+
   @Override
   public List<Map<String, AttributeValue>> generateIndex(final String siteId,
       final DocumentItem item) {
@@ -47,6 +117,8 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
     if (!StringUtils.isEmpty(item.getPath())) {
 
       String[] folders = tokens(item.getPath());
+      List<String> pks = generatePks(folders);
+      List<String> sks = generateSks(folders, item.getDocumentId());
       int len = folders.length;
 
       int i = 0;
@@ -55,24 +127,23 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
       for (String folder : folders) {
 
-        final String pk = GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + sb.toString();
-        String sk = folder;
         String documentId = null;
 
         if (i > 0) {
-          sb.append("/");
+          sb.append(DELIMINATOR);
         }
 
         sb.append(folder);
 
         if (i >= len - 1) {
           documentId = item.getDocumentId();
-          sk = folder + TAG_DELIMINATOR + documentId;
         }
 
-        String path = sb.toString();
+        String pk = pks.get(i);
+        String sk = sks.get(i);
+
         Map<String, AttributeValue> values = keysGeneric(siteId, pk, sk);
-        values.put("path", AttributeValue.fromS(path));
+        values.put("path", AttributeValue.fromS(sb.toString()));
 
         if (documentId != null) {
           values.put("documentId", AttributeValue.fromS(documentId));
@@ -85,12 +156,5 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
     }
 
     return list;
-  }
-
-  private String[] tokens(final String s) {
-    String split = "/";
-    String ss = s.startsWith(split) ? s.substring(split.length()) : s;
-    ss = ss.replaceAll(":://", split);
-    return ss.split(split);
   }
 }

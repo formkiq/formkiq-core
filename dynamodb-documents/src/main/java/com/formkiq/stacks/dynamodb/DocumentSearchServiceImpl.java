@@ -478,17 +478,21 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         .map(r -> r.get("documentId").s()).collect(Collectors.toList());
 
     List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+
     Map<String, DocumentItem> documentMap = list != null
         ? list.stream().collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()))
         : Collections.emptyMap();
 
     DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
 
-    List<DynamicDocumentItem> results = result.items().stream()
-        .map(r -> r.containsKey("documentId")
-            ? transform.apply(documentMap.get(r.get("documentId").s()))
-            : new DynamicDocumentItem(Map.of("path", r.get("path").s())))
-        .collect(Collectors.toList());
+    List<DynamicDocumentItem> results = result.items().stream().map(r -> {
+
+      AttributeValue documentId = r.get("documentId");
+      return documentId != null && documentMap.containsKey(documentId.s())
+          ? transform.apply(documentMap.get(r.get("documentId").s()))
+          : new DynamicDocumentItem(Map.of("path", r.get("path").s()));
+
+    }).collect(Collectors.toList());
 
     return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
   }
