@@ -113,6 +113,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public void addFolderIndex(final String siteId, final DocumentItem item) {
+    List<Map<String, AttributeValue>> folderIndex =
+        this.folderIndexProcessor.generateIndex(siteId, item);
+
+    WriteRequestBuilder writeBuilder =
+        new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
+
+    writeBuilder.batchWriteItem(this.dbClient);
+  }
+
+  @Override
   public void addTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
 

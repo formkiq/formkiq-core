@@ -162,4 +162,36 @@ class FolderIndexProcessorTest implements DbKeys {
     }
   }
 
+  /**
+   * Test Folders structure only.
+   */
+  @Test
+  void testGenerateIndex05() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String site = siteId != null ? siteId + "/" : "";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("/a/b/");
+
+      // when
+      List<Map<String, AttributeValue>> indexes = this.index.generateIndex(siteId, item);
+
+      // then
+      final int expected = 2;
+      assertEquals(expected, indexes.size());
+
+      int i = 0;
+      assertEquals(site + "global#folders#", indexes.get(i).get(PK).s());
+      assertEquals("a", indexes.get(i).get(SK).s());
+      assertEquals("a", indexes.get(i).get("path").s());
+      assertNull(indexes.get(i++).get("documentId"));
+
+      assertEquals(site + "global#folders#a", indexes.get(i).get(PK).s());
+      assertEquals("b", indexes.get(i).get(SK).s());
+      assertEquals("a/b", indexes.get(i).get("path").s());
+      assertNull(indexes.get(i++).get("documentId"));
+    }
+  }
 }

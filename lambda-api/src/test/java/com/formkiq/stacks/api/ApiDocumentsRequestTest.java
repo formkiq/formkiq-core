@@ -52,8 +52,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -62,6 +66,7 @@ import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -1269,6 +1274,47 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
       Map<String, Object> map = fromJson(content, Map.class);
       assertEquals("true", map.get("newCompositeTags").toString());
+    }
+  }
+
+  /**
+   * POST /documents to create index "folder".
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocuments15() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      event.setBody("{\"path\":\"something/bleh/\"}");
+
+      // when
+      String response = handleRequest(event);
+      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNull(body.getString("documentId"));
+      assertEquals("folder created", body.getString("message"));
+
+      DocumentSearchService search = getAwsServices().getExtension(DocumentSearchService.class);
+
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      PaginationResults<DynamicDocumentItem> results = search.search(siteId, q, null, 2);
+      assertEquals(1, results.getResults().size());
+      assertEquals("something", results.getResults().get(0).get("path"));
+
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
+      results = search.search(siteId, q, null, 2);
+      assertEquals(1, results.getResults().size());
+      assertEquals("something/bleh", results.getResults().get(0).get("path"));
     }
   }
 

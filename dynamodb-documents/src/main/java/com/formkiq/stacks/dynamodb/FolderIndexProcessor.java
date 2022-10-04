@@ -74,9 +74,11 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
    * 
    * @param tokens {@link String}
    * @param documentId {@link String}
+   * @param path {@link String}
    * @return {@link List} {@link String}
    */
-  public static List<String> generateSks(final String[] tokens, final String documentId) {
+  public static List<String> generateSks(final String[] tokens, final String documentId,
+      final String path) {
 
     int i = 0;
     int len = tokens.length;
@@ -84,7 +86,7 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
     for (String folder : tokens) {
 
-      if (i >= len - 1) {
+      if (isDocumentToken(path, i, len)) {
         sks.add(folder + TAG_DELIMINATOR + documentId);
       } else {
         sks.add(folder);
@@ -94,6 +96,10 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
     }
 
     return sks;
+  }
+
+  private static boolean isDocumentToken(final String path, final int i, final int len) {
+    return i >= len - 1 && !path.endsWith("/");
   }
 
   /**
@@ -114,11 +120,12 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
     List<Map<String, AttributeValue>> list = new ArrayList<>();
 
-    if (!StringUtils.isEmpty(item.getPath())) {
+    String path = item.getPath();
+    if (!StringUtils.isEmpty(path)) {
 
-      String[] folders = tokens(item.getPath());
+      String[] folders = tokens(path);
       List<String> pks = generatePks(folders);
-      List<String> sks = generateSks(folders, item.getDocumentId());
+      List<String> sks = generateSks(folders, item.getDocumentId(), path);
       int len = folders.length;
 
       int i = 0;
@@ -135,7 +142,7 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
         sb.append(folder);
 
-        if (i >= len - 1) {
+        if (isDocumentToken(path, i, len)) {
           documentId = item.getDocumentId();
         }
 

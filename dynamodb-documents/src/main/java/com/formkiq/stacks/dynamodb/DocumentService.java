@@ -46,6 +46,14 @@ public interface DocumentService extends DocumentTagLoader {
       Set.of("untagged", "path", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
 
   /**
+   * Add Folder Index.
+   * 
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   */
+  void addFolderIndex(String siteId, DocumentItem item);
+
+  /**
    * Add Tags to Document.
    * 
    * @param siteId Optional Grouping siteId

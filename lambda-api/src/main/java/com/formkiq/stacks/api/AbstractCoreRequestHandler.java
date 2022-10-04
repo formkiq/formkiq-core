@@ -79,6 +79,8 @@ import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -168,6 +170,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
         new DocumentTagSchemaPluginExtension(schemaEvents));
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));

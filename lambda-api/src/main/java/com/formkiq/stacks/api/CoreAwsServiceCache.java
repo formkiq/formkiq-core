@@ -28,11 +28,9 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentCountServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
@@ -58,8 +56,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
     throw new UnsupportedOperationException("expected CoreAwsServiceCache.class");
   }
 
-  /** {@link DocumentSearchService}. */
-  private DocumentSearchService documentSearchService;
   /** {@link ConfigService}. */
   private ConfigService configService;
   /** {@link WebhooksService}. */
@@ -110,13 +106,7 @@ public class CoreAwsServiceCache extends AwsServiceCache {
    * @return {@link DocumentSearchService}
    */
   public DocumentSearchService documentSearchService() {
-    if (this.documentSearchService == null) {
-      DocumentTagSchemaPlugin documentTagSchemaPlugin = getExtension(DocumentTagSchemaPlugin.class);
-      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
-      this.documentSearchService = new DocumentSearchServiceImpl(connection, documentService(),
-          environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin);
-    }
-    return this.documentSearchService;
+    return getExtension(DocumentSearchService.class);
   }
 
   /**
