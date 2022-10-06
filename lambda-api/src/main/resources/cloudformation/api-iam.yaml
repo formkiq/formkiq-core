@@ -1444,6 +1444,38 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /onlyoffice/{documentId}/edit:
+            post:
+              description: Provides OnlyOffice integration for editing Documents. ONLY available with FormKiQ Enterprise
+              tags:
+              - OnlyOffice
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OnlyOfficeDocumentEditRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/OnlyOfficeDocumentEditResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -2637,6 +2669,13 @@ Resources:
                   description: "Only valid values"
                   items:
                     type: "string"
+            OnlyOfficeDocumentEditRequest:
+              description: "Only Office Edit Document Request"
+            OnlyOfficeDocumentEditResponse:
+              type: "object"
+              properties:
+                config:
+                  type: "object"
           securitySchemes:
             AuthorizationCognito:
               type: oauth2
@@ -2711,6 +2750,20 @@ Resources:
               httpMethod: "POST"
               type: "aws_proxy"
               payloadFormatVersion: "1.0"
+            onlyOfficeLambdaApi200:
+              uri:
+                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: "'*'"
+                    method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                    method.response.header.Access-Control-Allow-Origin: "'*'"
+              passthroughBehavior: "when_no_templates"
+              httpMethod: "POST"
+              type: "aws_proxy"
+              payloadFormatVersion: "1.0"              
             lambdaApi201:
               uri:
                 Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
