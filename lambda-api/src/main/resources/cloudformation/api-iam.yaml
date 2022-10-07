@@ -1476,9 +1476,9 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
-          /onlyoffice/{documentId}/content:
+          /onlyoffice/{documentId}/url:
             get:
-              description: Get Document content for OnlyOffice integration. ONLY available with FormKiQ Enterprise
+              description: Get Document content url for OnlyOffice integration. ONLY available with FormKiQ Enterprise
               tags:
               - OnlyOffice
               parameters:
