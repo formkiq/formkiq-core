@@ -1476,6 +1476,30 @@ Resources:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
+          /onlyoffice/{documentId}/content:
+            get:
+              description: Get Document content for OnlyOffice integration. ONLY available with FormKiQ Enterprise
+              tags:
+              - OnlyOffice
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/OnlyOfficeDocumentContentResponse'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -2676,6 +2700,8 @@ Resources:
               properties:
                 config:
                   type: "object"
+            OnlyOfficeDocumentContentResponse:
+              type: "object"
           securitySchemes:
             AuthorizationCognito:
               type: oauth2
