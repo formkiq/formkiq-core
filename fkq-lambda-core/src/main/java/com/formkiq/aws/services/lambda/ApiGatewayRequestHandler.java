@@ -36,16 +36,18 @@ public interface ApiGatewayRequestHandler {
 
   /**
    * Is caller Authorized to continue.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param method {@link String}
    * @return boolean
    */
-  default boolean isAuthorized(ApiGatewayRequestEvent event, ApiAuthorizer authorizer,
-      String method) {
+  default boolean isAuthorized(AwsServiceCache awsServiceCache, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, String method) {
     return "options".equals(method) || hasAccess(method, event.getPath(), authorizer);
   }
-  
+
   /**
    * Whether {@link ApiGatewayRequestEvent} has access.
    * 
@@ -54,8 +56,7 @@ public interface ApiGatewayRequestHandler {
    * @param authorizer {@link ApiAuthorizer}
    * @return boolean
    */
-  default boolean hasAccess(String method, String path,
-      ApiAuthorizer authorizer) {
+  default boolean hasAccess(String method, String path, ApiAuthorizer authorizer) {
 
     boolean access = false;
 
@@ -72,7 +73,7 @@ public interface ApiGatewayRequestHandler {
 
     return access;
   }
-  
+
   /**
    * Called Before "delete" method is called.
    * 

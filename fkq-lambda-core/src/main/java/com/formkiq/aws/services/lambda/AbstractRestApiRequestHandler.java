@@ -403,7 +403,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     String resource = event.getResource();
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
-    if (!handler.isAuthorized(event, authorizer, method)) {
+    if (!handler.isAuthorized(getAwsServices(), event, authorizer, method)) {
       String s = String.format("fkq access denied (%s)", authorizer.accessSummary());
       throw new ForbiddenException(s);
     }
