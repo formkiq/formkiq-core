@@ -1476,9 +1476,9 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
-          /onlyoffice/{documentId}/url:
-            get:
-              description: Get Document content url for OnlyOffice integration. ONLY available with FormKiQ Enterprise
+          /onlyoffice/{documentId}/save:
+            post:
+              description: Saves Updated Documents for OnlyOffice integration. ONLY available with FormKiQ Enterprise
               tags:
               - OnlyOffice
               parameters:
@@ -1497,7 +1497,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentContentResponse'
+                        $ref: '#/components/schemas/OnlyOfficeDocumentSaveResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
         components:
@@ -2700,8 +2700,41 @@ Resources:
               properties:
                 config:
                   type: "object"
-            OnlyOfficeDocumentContentResponse:
+                  properties:
+                    onlyOfficeUrl:
+                      description: "Url of the OnlyOffice application"
+                      type: "string"                    
+                    token:
+                      description: "OnlyOffice security token"
+                      type: "string"
+                    documentType:
+                      description: "Type of document (https://api.onlyoffice.com/editors/config/)"
+                      type: "string"
+                    editorConfig:
+                      type: "object"
+                      properties:
+                        callbackUrl:
+                          type: "string"
+                    document:
+                      type: "object"
+                      properties:
+                        url:
+                          description: "Defines the absolute URL where the source viewed or edited document is stored"
+                          type: "string"
+                        title:
+                          description: "Defines the desired file name for the viewed or edited document"
+                          type: "string"
+                        key:
+                          description: "Defines the unique document identifier used by the service to recognize the document"
+                          type: "string"
+                        fileType:
+                          description: "Defines the type of the file for the source viewed or edited document"
+                          type: "string"
+            OnlyOfficeDocumentSaveResponse:
               type: "object"
+              properties:
+                message:
+                  type: "string"
           securitySchemes:
             AuthorizationCognito:
               type: oauth2
