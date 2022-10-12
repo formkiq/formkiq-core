@@ -66,6 +66,9 @@ import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
+import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
+import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
+import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
@@ -138,6 +141,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksRequestHandler());
     addRequestHandler(new DocumentsRequestHandler());
     addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new OnlyOfficeNewRequestHandler());
+    addRequestHandler(new OnlyOfficeSaveRequestHandler());
+    addRequestHandler(new OnlyOfficeEditRequestHandler());
   }
 
   /**

@@ -22,17 +22,17 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
-/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/ocr". */
-public class DocumentsOcrRequestHandler extends AbstractPaymentRequiredRequestHandler {
+/** {@link ApiGatewayRequestHandler} for "/onlyoffice/{documentId}/save". */
+public class OnlyOfficeSaveRequestHandler extends AbstractPaymentRequiredRequestHandler {
 
-  /** {@link DocumentsOcrRequestHandler} URL. */
-  public static final String URL = "/documents/{documentId}/ocr";
+  /** {@link OnlyOfficeSaveRequestHandler} URL. */
+  public static final String URL = "/onlyoffice/{documentId}/save";
 
   /**
    * constructor.
    *
    */
-  public DocumentsOcrRequestHandler() {}
+  public OnlyOfficeSaveRequestHandler() {}
 
   @Override
   public String getRequestUrl() {

@@ -1471,7 +1471,38 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/OnlyOfficeDocumentEditResponse'
+                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
+          /onlyoffice/new:
+            post:
+              description: Provides OnlyOffice integration for creation Documents. ONLY available with FormKiQ Enterprise
+              tags:
+              - OnlyOffice
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OnlyOfficeDocumentNewRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -2693,9 +2724,18 @@ Resources:
                   description: "Only valid values"
                   items:
                     type: "string"
+            OnlyOfficeDocumentNewRequest:
+              description: "Only Office New Document Request"
+              properties:
+                extension:
+                  type: "string"
+                  enum:
+                    - DOCX
+                    - XLSX
+                    - PPTX
             OnlyOfficeDocumentEditRequest:
               description: "Only Office Edit Document Request"
-            OnlyOfficeDocumentEditResponse:
+            OnlyOfficeDocumentResponse:
               type: "object"
               properties:
                 config:

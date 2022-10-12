@@ -2,7 +2,7 @@
         info:
           title: FormKiQ HTTP API
           description: FormKiQ HTTP API
-          version: 1.8.8
+          version: 1.8.9
         paths:
           /version:
             get:
@@ -597,6 +597,12 @@
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/versionIdParam'
               - $ref: '#/components/parameters/durationParam'
+              - name: inline
+                in: query
+                description: Set the Content-Disposition to inline
+                schema:
+                  type: boolean
+                  default: false
               responses:
                 "200":
                   description: 200 OK
@@ -1432,6 +1438,93 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /onlyoffice/{documentId}/edit:
+            post:
+              description: Provides OnlyOffice integration for editing Documents. ONLY available with FormKiQ Enterprise
+              tags:
+              - OnlyOffice
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OnlyOfficeDocumentEditRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
+          /onlyoffice/new:
+            post:
+              description: Provides OnlyOffice integration for creation Documents. ONLY available with FormKiQ Enterprise
+              tags:
+              - OnlyOffice
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OnlyOfficeDocumentNewRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
+          /onlyoffice/{documentId}/save:
+            post:
+              description: Saves Updated Documents for OnlyOffice integration. ONLY available with FormKiQ Enterprise
+              tags:
+              - OnlyOffice
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/OnlyOfficeDocumentSaveResponse'
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:
@@ -1614,6 +1707,8 @@
               type: object
               description: Document tag search criteria
               properties:
+                meta:
+                  $ref: '#/components/schemas/DocumentSearchItemMeta'
                 tag:
                   $ref: '#/components/schemas/DocumentSearchItemTag'
                 documentIds:
@@ -1826,6 +1921,14 @@
                   type: array
                   items:
                     type: string
+            DocumentSearchItemMeta:
+              required:
+              - folder
+              type: object
+              properties:
+                folder:
+                  type: string
+                  description: Searches for a folder
             DocumentSearchItemTag:
               required:
               - key
@@ -2615,6 +2718,57 @@
                   description: Only valid values
                   items:
                     type: string
+            OnlyOfficeDocumentNewRequest:
+              description: Only Office New Document Request
+              properties:
+                extension:
+                  type: string
+                  enum:
+                  - DOCX
+                  - XLSX
+                  - PPTX
+            OnlyOfficeDocumentEditRequest:
+              description: Only Office Edit Document Request
+            OnlyOfficeDocumentResponse:
+              type: object
+              properties:
+                config:
+                  type: object
+                  properties:
+                    onlyOfficeUrl:
+                      description: Url of the OnlyOffice application
+                      type: string
+                    token:
+                      description: OnlyOffice security token
+                      type: string
+                    documentType:
+                      description: Type of document (https://api.onlyoffice.com/editors/config/)
+                      type: string
+                    editorConfig:
+                      type: object
+                      properties:
+                        callbackUrl:
+                          type: string
+                    document:
+                      type: object
+                      properties:
+                        url:
+                          description: Defines the absolute URL where the source viewed or edited document is stored
+                          type: string
+                        title:
+                          description: Defines the desired file name for the viewed or edited document
+                          type: string
+                        key:
+                          description: Defines the unique document identifier used by the service to recognize the document
+                          type: string
+                        fileType:
+                          description: Defines the type of the file for the source viewed or edited document
+                          type: string
+            OnlyOfficeDocumentSaveResponse:
+              type: object
+              properties:
+                message:
+                  type: string
           securitySchemes:
             AuthorizationCognito:
               type: oauth2
@@ -2676,6 +2830,20 @@
               type: aws_proxy
               payloadFormatVersion: "1.0"
             fulltextLambdaApi200:
+              uri:
+                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+              responses:
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
+              payloadFormatVersion: "1.0"
+            onlyOfficeLambdaApi200:
               uri:
                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
