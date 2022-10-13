@@ -26,8 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/fulltext". */
-public class DocumentsFulltextRequestHandler
-    extends AbstractPaymentRequiredRequestHandler {
+public class DocumentsFulltextRequestHandler extends AbstractPaymentRequiredRequestHandler {
 
   /** {@link DocumentsFulltextRequestHandler} URL. */
   public static final String URL = "/documents/{documentId}/fulltext";
