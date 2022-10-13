@@ -69,10 +69,6 @@ public class QueryRequestValidator {
 
       errors.add(new ValidationErrorImpl().key("tag/key").error("attribute is required"));
 
-    } else if (q.query().meta() != null && isEmpty(q.query().meta().folder())) {
-
-      errors.add(new ValidationErrorImpl().key("meta/folder").error("attribute is required"));
-
     } else {
 
       for (SearchTagCriteria tag : Objects.notNull(q.query().tags())) {

@@ -591,23 +591,40 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       document.setPath("something/path.txt");
       getDocumentService().saveDocument(siteId, document, null);
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
-      addParameter(event, "siteId", siteId);
-      event.setIsBase64Encoded(Boolean.FALSE);
-      QueryRequest q = new QueryRequest()
+      ApiGatewayRequestEvent event0 = toRequestEvent("/request-post-search01.json");
+      addParameter(event0, "siteId", siteId);
+      event0.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q0 = new QueryRequest()
           .query(new SearchQuery().meta(new SearchMetaCriteria().folder("something")));
-      event.setBody(GsonUtil.getInstance().toJson(q));
+      event0.setBody(GsonUtil.getInstance().toJson(q0));
+
+      ApiGatewayRequestEvent event1 = toRequestEvent("/request-post-search01.json");
+      addParameter(event1, "siteId", siteId);
+      event1.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q1 =
+          new QueryRequest().query(new SearchQuery().meta(new SearchMetaCriteria().folder("")));
+      event1.setBody(GsonUtil.getInstance().toJson(q1));
 
       // when
-      String response = handleRequest(event);
+      final String response0 = handleRequest(event0);
+      final String response1 = handleRequest(event1);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      Map<String, String> m0 = fromJson(response0, Map.class);
+      assertEquals("200.0", String.valueOf(m0.get("statusCode")));
+      DynamicObject resp0 = new DynamicObject(fromJson(m0.get("body"), Map.class));
 
-      List<DynamicObject> documents = resp.getList("documents");
+      List<DynamicObject> documents = resp0.getList("documents");
       assertEquals(1, documents.size());
       assertEquals("something/path.txt", documents.get(0).get("path"));
+
+      Map<String, String> m1 = fromJson(response1, Map.class);
+      assertEquals("200.0", String.valueOf(m1.get("statusCode")));
+      DynamicObject resp1 = new DynamicObject(fromJson(m1.get("body"), Map.class));
+
+      documents = resp1.getList("documents");
+      assertEquals(1, documents.size());
+      assertEquals("something", documents.get(0).get("path"));
     }
   }
 }
