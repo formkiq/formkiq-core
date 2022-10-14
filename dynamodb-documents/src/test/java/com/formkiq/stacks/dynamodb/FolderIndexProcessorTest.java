@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
@@ -67,11 +68,17 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals(site + "global#folders#", indexes.get(i).get(PK).s());
       assertEquals("a", indexes.get(i).get(SK).s());
       assertEquals("a", indexes.get(i).get("path").s());
-      assertNull(indexes.get(i++).get("documentId"));
+      assertNull(indexes.get(i).get("documentId"));
+      assertNotNull(indexes.get(i).get("inserteddate"));
+      assertNotNull(indexes.get(i).get("lastModifiedDate"));
+      assertEquals("joe", indexes.get(i++).get("userId").s());
 
       assertEquals(site + "global#folders#a", indexes.get(i).get(PK).s());
       assertEquals("b", indexes.get(i).get(SK).s());
       assertEquals("a/b", indexes.get(i).get("path").s());
+      assertNotNull(indexes.get(i).get("inserteddate"));
+      assertNotNull(indexes.get(i).get("lastModifiedDate"));
+      assertEquals("joe", indexes.get(i).get("userId").s());
       assertNull(indexes.get(i++).get("documentId"));
 
       assertEquals(site + "global#folders#a/b", indexes.get(i).get(PK).s());
@@ -82,6 +89,9 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals(site + "global#folders#a/b/c", indexes.get(i).get(PK).s());
       assertEquals("test.pdf#" + documentId, indexes.get(i).get(SK).s());
       assertEquals("a/b/c/test.pdf", indexes.get(i).get("path").s());
+      assertNull(indexes.get(i).get("inserteddate"));
+      assertNull(indexes.get(i).get("lastModifiedDate"));
+      assertNull(indexes.get(i).get("userId"));
       assertEquals(item.getDocumentId(), indexes.get(i++).get("documentId").s());
     }
   }

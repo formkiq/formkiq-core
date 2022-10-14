@@ -40,9 +40,6 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 public class LocalStackExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
-  /** {@link LocalStackContainer}. */
-  private LocalStackContainer localstack = null;
-
   /** Start Local Stack. */
   private boolean startLocalStack = true;
 
@@ -50,8 +47,7 @@ public class LocalStackExtension
   public void beforeAll(final ExtensionContext context) throws Exception {
 
     if (this.startLocalStack) {
-      this.localstack = TestServices.getLocalStack();
-      this.localstack.start();
+      TestServices.startLocalStack();
     }
 
     S3Service s3service = new S3Service(TestServices.getS3Connection(null));
@@ -69,9 +65,7 @@ public class LocalStackExtension
 
   @Override
   public void close() throws Throwable {
-    if (this.localstack != null) {
-      this.localstack.stop();
-    }
+    TestServices.stopLocalStack();
   }
 
   /**

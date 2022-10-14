@@ -617,6 +617,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       List<DynamicObject> documents = resp0.getList("documents");
       assertEquals(1, documents.size());
       assertEquals("something/path.txt", documents.get(0).get("path"));
+      assertNull(documents.get(0).get("folder"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
 
       Map<String, String> m1 = fromJson(response1, Map.class);
       assertEquals("200.0", String.valueOf(m1.get("statusCode")));
@@ -625,6 +628,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       documents = resp1.getList("documents");
       assertEquals(1, documents.size());
       assertEquals("something", documents.get(0).get("path"));
+      assertEquals("true", documents.get(0).get("folder").toString());
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
     }
   }
 }

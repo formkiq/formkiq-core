@@ -23,7 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -40,6 +42,8 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
   /** Deliminator. */
   private static final String DELIMINATOR = "/";
+  /** {@link SimpleDateFormat} in ISO Standard format. */
+  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   /**
    * Generate PKs from tokens.
@@ -154,6 +158,12 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
         if (documentId != null) {
           values.put("documentId", AttributeValue.fromS(documentId));
+        } else {
+          Date insertedDate = new Date();
+          String fullInsertedDate = this.df.format(insertedDate);
+          addS(values, "inserteddate", fullInsertedDate);
+          addS(values, "lastModifiedDate", fullInsertedDate);
+          addS(values, "userId", item.getUserId());
         }
 
         list.add(values);

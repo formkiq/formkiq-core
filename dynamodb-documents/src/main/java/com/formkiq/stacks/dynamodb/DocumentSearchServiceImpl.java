@@ -396,7 +396,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
     values.put(":pk", AttributeValue.builder()
         .s(createDatabaseKey(siteId, GLOBAL_FOLDER_METADATA + value)).build());
-    // values.put(":sk", AttributeValue.builder().s(value).build());
 
     String expression = PK + " = :pk";
     QueryRequest q = createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE);
@@ -483,6 +482,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         ? list.stream().collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()))
         : Collections.emptyMap();
 
+    AttributeValueToGlobalMetaFolder metaFolder = new AttributeValueToGlobalMetaFolder();
     DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
 
     List<DynamicDocumentItem> results = result.items().stream().map(r -> {
@@ -490,7 +490,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       AttributeValue documentId = r.get("documentId");
       return documentId != null && documentMap.containsKey(documentId.s())
           ? transform.apply(documentMap.get(r.get("documentId").s()))
-          : new DynamicDocumentItem(Map.of("path", r.get("path").s()));
+          : new DynamicDocumentItem(metaFolder.apply(r));
 
     }).collect(Collectors.toList());
 

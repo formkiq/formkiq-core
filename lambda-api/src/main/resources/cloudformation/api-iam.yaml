@@ -2211,6 +2211,13 @@ Resources:
                   type: "string"
                   format: "date-time"
                   description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Last Modified Timestamp"
+                folder:
+                  type: "boolean"
+                  description: "Is Result a Document Folder"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"

@@ -23,6 +23,9 @@
  */
 package com.formkiq.testutils.aws;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -48,12 +51,14 @@ public final class TestServices {
   public static final Region AWS_REGION = Region.US_EAST_1;
   /** {@link String}. */
   public static final String BUCKET_NAME = "testbucket";
+  /** Default LocalStack Port. */
+  private static final int DEFAULT_LOCALSTACK_PORT = 4566;
   /** App Environment. */
   public static final String FORMKIQ_APP_ENVIRONMENT = "test";
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack = null;
   /** Default Localstack Endpoint. */
-  private static final String LOCALSTACK_ENDPOINT = "http://localhost:4566";
+  private static final String LOCALSTACK_ENDPOINT = "http://localhost:" + DEFAULT_LOCALSTACK_PORT;
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
       DockerImageName.parse("localstack/localstack:0.12.2");
@@ -85,12 +90,11 @@ public final class TestServices {
    * @param endpointOverride {@link String}
    * @return {@link String}
    */
-  @SuppressWarnings("resource")
   private static String getEndpoint(final Service service, final String endpointOverride) {
     String endpoint = endpointOverride;
 
     if (endpoint == null) {
-      endpoint = localstack != null ? getLocalStack().getEndpointOverride(service).toString()
+      endpoint = localstack != null ? localstack.getEndpointOverride(service).toString()
           : LOCALSTACK_ENDPOINT;
     }
 
@@ -98,18 +102,15 @@ public final class TestServices {
   }
 
   /**
-   * Get Singleton Instance of {@link LocalStackContainer}.
+   * Get LocalStack {@link Service}.
    * 
-   * @return {@link LocalStackContainer}
+   * @param service {@link Service}
+   * @return {@link URI}
+   * @throws URISyntaxException URISyntaxException
    */
-  @SuppressWarnings("resource")
-  public static LocalStackContainer getLocalStack() {
-    if (localstack == null) {
-      localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(Service.S3, Service.SQS,
-          Service.SSM, Service.SNS);
-    }
-
-    return localstack;
+  public static URI getEndpointOverride(final Service service) throws URISyntaxException {
+    return localstack != null ? localstack.getEndpointOverride(service)
+        : new URI(LOCALSTACK_ENDPOINT);
   }
 
   /**
@@ -244,6 +245,43 @@ public final class TestServices {
     }
 
     return ssmConnection;
+  }
+
+  /**
+   * Checks Whether LocalStack is currently running on the default port.
+   * 
+   * @return boolean
+   */
+  private static boolean isPortAvailable() {
+    boolean available;
+    try (ServerSocket ignored = new ServerSocket(DEFAULT_LOCALSTACK_PORT)) {
+      available = true;
+    } catch (IOException e) {
+      available = false;
+    }
+    return available;
+  }
+
+  /**
+   * Start LocalStack.
+   */
+  @SuppressWarnings("resource")
+  public static void startLocalStack() {
+
+    if (isPortAvailable()) {
+      localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(Service.S3, Service.SQS,
+          Service.SSM, Service.SNS);
+      localstack.start();
+    }
+  }
+
+  /**
+   * Stop LocalStack.
+   */
+  public static void stopLocalStack() {
+    if (localstack != null) {
+      localstack.stop();
+    }
   }
 
   private TestServices() {}

@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -116,6 +117,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public void addFolderIndex(final String siteId, final DocumentItem item) {
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, item);
+
+    folderIndex = updateFromExistingFolder(folderIndex);
 
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
@@ -502,12 +505,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       List<Map<String, AttributeValue>> keys = ids.stream()
           .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
 
-      Map<String, KeysAndAttributes> requestedItems =
-          Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
-
-      BatchGetItemRequest batchReq =
-          BatchGetItemRequest.builder().requestItems(requestedItems).build();
-      BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
+      BatchGetItemResponse batchResponse = getBatch(keys);
 
       Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
       List<Map<String, AttributeValue>> result =
@@ -808,6 +806,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
+   * Get Batch Keys.
+   * 
+   * @param keys {@link List} {@link Map} {@link AttributeValue}
+   * @return {@link BatchGetItemResponse}
+   */
+  private BatchGetItemResponse getBatch(final List<Map<String, AttributeValue>> keys) {
+    Map<String, KeysAndAttributes> requestedItems =
+        Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
+
+    BatchGetItemRequest batchReq =
+        BatchGetItemRequest.builder().requestItems(requestedItems).build();
+    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
+    return batchResponse;
+  }
+
+  /**
    * Is {@link List} {@link DynamicObject} contain a non generated tag.
    * 
    * @param tags {@link List} {@link DynamicObject}
@@ -1028,6 +1042,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, document);
+    folderIndex = updateFromExistingFolder(folderIndex);
 
     WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
         .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
@@ -1320,5 +1335,45 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
     return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Update Folder Index from any existing Folder Index.
+   * 
+   * @param folderIndex {@link List} {@link Map}
+   * @return {@link List} {@link Map}
+   */
+  private List<Map<String, AttributeValue>> updateFromExistingFolder(
+      final List<Map<String, AttributeValue>> folderIndex) {
+
+    List<Map<String, AttributeValue>> indexKeys = folderIndex.stream()
+        .map(f -> Map.of(PK, f.get(PK), SK, f.get(SK))).collect(Collectors.toList());
+
+    if (!indexKeys.isEmpty()) {
+
+      BatchGetItemResponse batchResponse = getBatch(indexKeys);
+
+      List<Map<String, AttributeValue>> attrs =
+          batchResponse.responses().get(this.documentTableName);
+
+      if (!notNull(attrs).isEmpty()) {
+
+        folderIndex.forEach(f -> {
+
+          Optional<Map<String, AttributeValue>> o = attrs.stream()
+              .filter(
+                  a -> a.get(PK).s().equals(f.get(PK).s()) && a.get(SK).s().equals(f.get(SK).s()))
+              .findFirst();
+
+          if (o.isPresent()) {
+            f.put("inserteddate", o.get().get("inserteddate"));
+            f.put("userId", o.get().get("userId"));
+          }
+
+        });
+      }
+    }
+
+    return folderIndex;
   }
 }
