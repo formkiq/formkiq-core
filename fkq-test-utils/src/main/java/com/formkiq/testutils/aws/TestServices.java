@@ -268,7 +268,7 @@ public final class TestServices {
   @SuppressWarnings("resource")
   public static void startLocalStack() {
 
-    if (isPortAvailable()) {
+    if (localstack == null && isPortAvailable()) {
       localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(Service.S3, Service.SQS,
           Service.SSM, Service.SNS);
       localstack.start();
