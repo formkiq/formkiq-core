@@ -121,7 +121,7 @@ public final class TestServices {
    * @return {@link S3ConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static S3ConnectionBuilder getS3Connection(final String endpointOverride)
+  public static synchronized S3ConnectionBuilder getS3Connection(final String endpointOverride)
       throws URISyntaxException {
     if (s3Connection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -142,7 +142,7 @@ public final class TestServices {
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SnsConnectionBuilder getSnsConnection(final String endpointOverride)
+  public static synchronized SnsConnectionBuilder getSnsConnection(final String endpointOverride)
       throws URISyntaxException {
     if (snsConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -163,7 +163,7 @@ public final class TestServices {
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SqsConnectionBuilder getSqsConnection(final String endpointOverride)
+  public static synchronized SqsConnectionBuilder getSqsConnection(final String endpointOverride)
       throws URISyntaxException {
     if (sqsConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -201,7 +201,8 @@ public final class TestServices {
    * @return {@link SqsService}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SqsService getSqsService(final SqsConnectionBuilder sqs) throws URISyntaxException {
+  public static synchronized SqsService getSqsService(final SqsConnectionBuilder sqs)
+      throws URISyntaxException {
     if (sqsservice == null) {
       sqsservice = new SqsService(sqs);
     }
@@ -234,7 +235,7 @@ public final class TestServices {
    * @return {@link SsmConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static SsmConnectionBuilder getSsmConnection(final String endpointOverride)
+  public static synchronized SsmConnectionBuilder getSsmConnection(final String endpointOverride)
       throws URISyntaxException {
     if (ssmConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -266,7 +267,7 @@ public final class TestServices {
    * Start LocalStack.
    */
   @SuppressWarnings("resource")
-  public static void startLocalStack() {
+  public static synchronized void startLocalStack() {
 
     if (localstack == null && isPortAvailable()) {
       localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(Service.S3, Service.SQS,
