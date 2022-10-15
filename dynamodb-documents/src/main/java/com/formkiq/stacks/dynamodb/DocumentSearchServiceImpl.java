@@ -390,8 +390,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchQuery query, final SearchMetaCriteria meta, final PaginationMapToken token,
       final int maxresults) {
 
-    String value =
-        StringUtils.isBlank(meta.folder()) ? TAG_DELIMINATOR : TAG_DELIMINATOR + meta.folder();
+    String folder = meta.folder();
+    if (folder.endsWith("/")) {
+      folder = folder.substring(0, folder.length() - 1);
+    }
+
+    String value = StringUtils.isBlank(meta.folder()) ? TAG_DELIMINATOR : TAG_DELIMINATOR + folder;
 
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
     values.put(":pk", AttributeValue.builder()
