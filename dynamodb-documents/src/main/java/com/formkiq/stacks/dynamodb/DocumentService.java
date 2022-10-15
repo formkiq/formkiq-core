@@ -319,6 +319,15 @@ public interface DocumentService extends DocumentTagLoader {
       int maxresults);
 
   /**
+   * Is Folder Exists.
+   * 
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   * @return boolean
+   */
+  boolean isFolderExists(String siteId, DocumentItem item);
+
+  /**
    * Remove Tag from Document.
    * 
    * @param siteId Optional Grouping siteId

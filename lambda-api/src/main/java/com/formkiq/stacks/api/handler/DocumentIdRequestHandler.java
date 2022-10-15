@@ -32,6 +32,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -72,6 +73,7 @@ import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -344,8 +346,14 @@ public class DocumentIdRequestHandler
     if (!isUpdate && isFolder(item)) {
 
       DocumentService docService = awsservice.getExtension(DocumentService.class);
-      docService.addFolderIndex(siteId, item);
-      map = Map.of("message", "folder created");
+
+      if (!docService.isFolderExists(siteId, item)) {
+        docService.addFolderIndex(siteId, item);
+        map = Map.of("message", "folder created");
+      } else {
+        throw new ValidationException(
+            Arrays.asList(new ValidationErrorImpl().key("folder").error("already exists")));
+      }
 
     } else {
       addFieldsToObject(event, awsservice, siteId, documentId, item, documents);

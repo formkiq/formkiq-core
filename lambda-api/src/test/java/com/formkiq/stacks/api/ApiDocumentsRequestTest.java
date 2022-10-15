@@ -1315,6 +1315,17 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       results = search.search(siteId, q, null, 2);
       assertEquals(1, results.getResults().size());
       assertEquals("something/bleh", results.getResults().get(0).get("path"));
+
+      // given
+      // when
+      response = handleRequest(event);
+      obj = new DynamicObject(fromJson(response, Map.class));
+
+      // then
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"folder\",\"error\":\"already exists\"}]}",
+          obj.getString("body"));
     }
   }
 

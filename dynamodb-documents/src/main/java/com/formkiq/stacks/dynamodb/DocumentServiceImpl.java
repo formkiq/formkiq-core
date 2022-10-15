@@ -67,6 +67,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -831,6 +832,28 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return tags != null
         ? tags.stream().filter(t -> !SYSTEM_DEFINED_TAGS.contains(t.getString("key"))).count() > 0
         : false;
+  }
+
+  @Override
+  public boolean isFolderExists(final String siteId, final DocumentItem item) {
+
+    boolean exists = false;
+    List<Map<String, AttributeValue>> folderIndex =
+        this.folderIndexProcessor.generateIndex(siteId, item);
+
+    if (!folderIndex.isEmpty()) {
+
+      Map<String, AttributeValue> map = folderIndex.get(folderIndex.size() - 1);
+
+      if (!map.containsKey("documentId")) {
+        GetItemResponse response =
+            this.dbClient.getItem(GetItemRequest.builder().tableName(this.documentTableName)
+                .key(Map.of(PK, map.get(PK), SK, map.get(SK))).build());
+        exists = !response.item().isEmpty();
+      }
+    }
+
+    return exists;
   }
 
   /**
