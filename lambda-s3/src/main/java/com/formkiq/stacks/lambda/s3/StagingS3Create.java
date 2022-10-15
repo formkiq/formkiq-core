@@ -45,6 +45,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -74,6 +75,7 @@ import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -239,24 +241,22 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param s3Key {@link String}
    * @return {@link DynamicDocumentItem}
    */
-  @SuppressWarnings("unchecked")
   private DynamicDocumentItem configfile(final LambdaLogger logger, final String bucket,
-      final String siteId, final String documentId) {
+      final String siteId, final String s3Key) {
 
     DynamicDocumentItem obj = null;
 
-    if (documentId.endsWith(FORMKIQ_B64_EXT)) {
-      String s = this.s3.getContentAsString(bucket, documentId, null);
+    if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
 
-      if ("true".equals(System.getenv("DEBUG"))) {
-        logger.log(s);
+      obj = loadDocument(logger, bucket, siteId, s3Key);
+
+      if (obj.containsKey("contentLength") && obj.get("contentLength") instanceof Double) {
+        long contentLength = obj.getDouble("contentLength").longValue();
+        obj.setContentLength(Long.valueOf(contentLength));
       }
-
-      Map<String, Object> map = this.gson.fromJson(s, Map.class);
-      obj = new DynamicDocumentItem(map);
 
       if (obj.containsKey("insertedDate")) {
 
@@ -276,6 +276,46 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         String realDocumentId = getDocumentIdForPath(siteId, obj.getPath());
         obj.setDocumentId(realDocumentId);
       }
+    }
+
+    return obj;
+  }
+
+  /**
+   * Loads Document from Bucket / DB.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param bucket {@link String}
+   * @param siteId {@link String}
+   * @param s3Key {@link String}
+   * @return {@link DynamicDocumentItem}
+   */
+  @SuppressWarnings("unchecked")
+  private DynamicDocumentItem loadDocument(final LambdaLogger logger, final String bucket,
+      final String siteId, final String s3Key) {
+
+    String s = this.s3.getContentAsString(bucket, s3Key, null);
+
+    if ("true".equals(System.getenv("DEBUG"))) {
+      logger.log(s);
+    }
+
+    DynamicDocumentItem obj = null;
+
+    Map<String, Object> map = this.gson.fromJson(s, Map.class);
+    DynamicDocumentItem objFromMap = new DynamicDocumentItem(map);
+
+    String documentId = objFromMap.getDocumentId();
+    DocumentItem item = this.service.findDocument(siteId, documentId);
+
+    if (item != null) {
+      obj = new DocumentItemToDynamicDocumentItem().apply(item);
+    }
+
+    if (obj != null) {
+      obj.putAll(objFromMap);
+    } else {
+      obj = objFromMap;
     }
 
     return obj;
@@ -523,12 +563,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String bucket = getBucketName(event);
 
     String key = getObjectKey(event);
-    String documentId = urlDecode(key);
-    String siteId = getSiteId(documentId);
+    String s3Key = urlDecode(key);
+    String siteId = getSiteId(s3Key);
 
     if (objectCreated) {
 
-      DynamicDocumentItem doc = configfile(logger, bucket, siteId, documentId);
+      DynamicDocumentItem doc = configfile(logger, bucket, siteId, s3Key);
 
       if (doc != null) {
         write(logger, doc, date, siteId);
@@ -542,10 +582,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         }
 
       } else {
-        copyFile(logger, bucket, documentId, date);
+        copyFile(logger, bucket, s3Key, date);
       }
 
-      deleteObject(logger, bucket, documentId);
+      deleteObject(logger, bucket, s3Key);
     }
 
     if (!objectCreated) {

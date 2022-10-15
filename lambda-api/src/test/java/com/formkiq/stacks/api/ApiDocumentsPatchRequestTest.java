@@ -41,6 +41,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
@@ -111,6 +112,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
+  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -118,9 +120,12 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // given
       String documentId = UUID.randomUUID().toString();
       String userId = "jsmith";
+      final long contentLength = 1000;
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setPath("test.txt");
+      item.setContentLength(Long.valueOf(contentLength));
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
@@ -131,6 +136,18 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       // then
       assert200Response(siteId, response);
+
+      DocumentItem doc = getDocumentService().findDocument(siteId, documentId);
+      assertEquals("test.txt", doc.getPath());
+      assertEquals("jsmith", doc.getUserId());
+      assertEquals(doc.getLastModifiedDate(), doc.getInsertedDate());
+
+      String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+      String s = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
+      Map<String, Object> map = fromJson(s, Map.class);
+      assertEquals(documentId, map.get("documentId"));
+      assertEquals("/documents/test2.txt", map.get("path"));
+      assertNull(map.get("contentLength"));
     }
   }
 
