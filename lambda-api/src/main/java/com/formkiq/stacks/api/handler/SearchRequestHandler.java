@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
@@ -93,8 +94,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
       DocumentService service = awsservice.documentService();
 
-      List<String> documentIds =
-          documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toList());
+      Set<String> documentIds =
+          documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toSet());
 
       map = service.findDocumentsTags(siteId, documentIds, responseFields.tags());
     }

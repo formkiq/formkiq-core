@@ -587,7 +587,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public Map<String, Collection<DocumentTag>> findDocumentsTags(final String siteId,
-      final List<String> documentIds, final List<String> tags) {
+      final Collection<String> documentIds, final List<String> tags) {
 
     final Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
     List<Map<String, AttributeValue>> keys = new ArrayList<>();

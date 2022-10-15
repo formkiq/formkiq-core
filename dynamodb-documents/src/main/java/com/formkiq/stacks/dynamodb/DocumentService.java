@@ -232,8 +232,8 @@ public interface DocumentService extends DocumentTagLoader {
    * @param tags {@link List} {@link String}
    * @return {@link Map}
    */
-  Map<String, Collection<DocumentTag>> findDocumentsTags(String siteId, List<String> documentIds,
-      List<String> tags);
+  Map<String, Collection<DocumentTag>> findDocumentsTags(String siteId,
+      Collection<String> documentIds, List<String> tags);
 
   /**
    * Find Document Tag Value.
