@@ -77,26 +77,24 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
  */
 public class DocumentsRequestTest extends AbstractApiTest {
 
-  /** 200 OK. */
-  private static final int STATUS_OK = 200;
-  /** 201 Created. */
-  private static final int STATUS_CREATED = 201;
-  /** 200 No Content. */
-  private static final int STATUS_NO_CONTENT = 204;
-  /** 400 Bad Request. */
-  private static final int STATUS_BAD_REQUEST = 400;
-  /** 403 Forbidden. */
-  private static final int STATUS_FORBIDDEN = 403;
-  /** 404 Not Found. */
-  private static final int STATUS_NOT_FOUND = 404;
-  /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 60000;
   /** 1 Second. */
   private static final int ONE_SECOND = 1000;
   /** Random Site ID. */
   private static final String SITEID1 = UUID.randomUUID().toString();
-  /** {@link HttpClient}. */
-  private HttpClient http = HttpClient.newHttpClient();
+  /** 400 Bad Request. */
+  private static final int STATUS_BAD_REQUEST = 400;
+  /** 201 Created. */
+  private static final int STATUS_CREATED = 201;
+  /** 403 Forbidden. */
+  private static final int STATUS_FORBIDDEN = 403;
+  /** 200 No Content. */
+  private static final int STATUS_NO_CONTENT = 204;
+  /** 404 Not Found. */
+  private static final int STATUS_NOT_FOUND = 404;
+  /** 200 OK. */
+  private static final int STATUS_OK = 200;
+  /** JUnit Test Timeout. */
+  private static final int TEST_TIMEOUT = 60000;
 
   /**
    * After Class.
@@ -105,6 +103,9 @@ public class DocumentsRequestTest extends AbstractApiTest {
   public static void afterClass() {
     getConfigService().delete(SITEID1);
   }
+
+  /** {@link HttpClient}. */
+  private HttpClient http = HttpClient.newHttpClient();
 
   /**
    * Fetch Document.
@@ -140,6 +141,20 @@ public class DocumentsRequestTest extends AbstractApiTest {
     }
 
     return map;
+  }
+
+  /**
+   * Get Document Tags.
+   * 
+   * @param client {@link FormKiqClient}
+   * @param documentId {@link String}
+   * @return {@link DocumentTags}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
+  private DocumentTags getDocumentTags(final FormKiqClient client, final String documentId)
+      throws IOException, InterruptedException {
+    return client.getDocumentTags(new GetDocumentTagsRequest().documentId(documentId));
   }
 
   /**
@@ -672,20 +687,6 @@ public class DocumentsRequestTest extends AbstractApiTest {
   }
 
   /**
-   * Get Document Tags.
-   * 
-   * @param client {@link FormKiqClient}
-   * @param documentId {@link String}
-   * @return {@link DocumentTags}
-   * @throws InterruptedException InterruptedException
-   * @throws IOException IOException
-   */
-  private DocumentTags getDocumentTags(final FormKiqClient client, final String documentId)
-      throws IOException, InterruptedException {
-    return client.getDocumentTags(new GetDocumentTagsRequest().documentId(documentId));
-  }
-
-  /**
    * Save new File test content-type being set correctly from the Header.
    * 
    * @throws Exception Exception
@@ -728,6 +729,63 @@ public class DocumentsRequestTest extends AbstractApiTest {
         break;
       }
       Thread.sleep(ONE_SECOND);
+    }
+  }
+
+  /**
+   * Save new File and PATCH a new path.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testPost09() throws Exception {
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      // given
+      AddDocument post = new AddDocument().path("something.txt").contentType("text/plain")
+          .content("test data", StandardCharsets.UTF_8);
+      AddDocumentRequest req = new AddDocumentRequest().document(post);
+
+      // when
+      HttpResponse<String> response = client.addDocumentAsHttpResponse(req);
+      assertEquals(STATUS_CREATED, response.statusCode());
+      Map<String, Object> map = toMap(response);
+
+      // given
+      String documentId = map.get("documentId").toString();
+
+      // when - fetch document
+      while (true) {
+        map = fetchDocument(client, documentId);
+        if (map.containsKey("contentType")) {
+          assertTrue(map.get("contentType").toString().startsWith("text/plain"));
+          break;
+        }
+
+        Thread.sleep(ONE_SECOND);
+      }
+
+      // given
+      String newpath = "newpath.txt";
+      UpdateDocument updateDocument = new UpdateDocument().path(newpath);
+      UpdateDocumentRequest request =
+          new UpdateDocumentRequest().document(updateDocument).documentId(documentId);
+
+      // when - patch document
+      response = client.updateDocumentAsHttpResponse(request);
+      assertEquals(STATUS_OK, response.statusCode());
+      assertRequestCorsHeaders(response.headers());
+
+      // when - check content type changed
+      while (true) {
+        map = fetchDocument(client, documentId);
+
+        if (newpath.equals(map.get("path"))) {
+          assertNotNull(map.get("contentLength"));
+          break;
+        }
+
+        Thread.sleep(ONE_SECOND);
+      }
     }
   }
 }
