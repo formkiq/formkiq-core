@@ -59,6 +59,7 @@ import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.DeleteFulltextTagsRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -152,6 +153,11 @@ public class DocumentTagRequestHandler
       throw new NotFoundException("Tag " + tagKey + " not found.");
     }
 
+    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tag);
+    if (!tagErrors.isEmpty()) {
+      throw new ValidationException(tagErrors);
+    }
+
     ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
     resp.setKey(tagKey);
     resp.setValue(tag.getValue());
@@ -209,9 +215,6 @@ public class DocumentTagRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    Date now = new Date();
-    String userId = getCallingCognitoUsername(event);
-
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (tag == null) {
       throw new NotFoundException("Tag " + tagKey + " not found.");
@@ -221,6 +224,9 @@ public class DocumentTagRequestHandler
     if (isTagValueTypeChanged(tag, value, values)) {
       documentService.removeTags(siteId, documentId, Arrays.asList(tagKey));
     }
+
+    Date now = new Date();
+    String userId = getCallingCognitoUsername(event);
 
     tag = new DocumentTag(null, tagKey, value, now, userId);
     if (values != null) {

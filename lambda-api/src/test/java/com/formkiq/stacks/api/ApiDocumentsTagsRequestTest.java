@@ -1383,6 +1383,38 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents/{documentId}/tags tags request. Add Restricted Tag Name
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentTags14() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      getDocumentService().saveDocument(siteId, item, null);
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-post-documents-documentid-tags01.json");
+      event.setIsBase64Encoded(Boolean.FALSE);
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody("{\"key\": \"CLAMAV_SCAN_STATUS\",\"value\": \"asdkjasd\"}");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      String expected = "{" + getHeaders() + ",\"body\":\""
+          + "{\\\"errors\\\":[{\\\"key\\\":\\\"CLAMAV_SCAN_STATUS\\\","
+          + "\\\"error\\\":\\\"unallowed tag key\\\"}]}\",\"statusCode\":400}";
+      assertEquals(expected, response);
+    }
+  }
+
+  /**
    * PUT /documents/{documentId}/tags/{tagKey} VALUE request.
    *
    * @throws Exception an error has occurred

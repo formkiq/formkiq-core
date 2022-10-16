@@ -1325,21 +1325,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private List<Map<String, AttributeValue>> saveTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
 
-    List<Map<String, AttributeValue>> items = Collections.emptyList();
+    Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
+        || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
 
-    if (tags != null) {
-      Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
-          || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
+    DocumentTagToAttributeValueMap mapper =
+        new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
 
-      DocumentTagToAttributeValueMap mapper =
-          new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
+    List<Map<String, AttributeValue>> items = notNull(tags).stream().filter(predicate).map(mapper)
+        .flatMap(List::stream).collect(Collectors.toList());
 
-      items = tags.stream().filter(predicate).map(mapper).flatMap(List::stream)
-          .collect(Collectors.toList());
-
-      if (timeToLive != null) {
-        items.forEach(v -> addN(v, "TimeToLive", timeToLive));
-      }
+    if (timeToLive != null) {
+      items.forEach(v -> addN(v, "TimeToLive", timeToLive));
     }
 
     return items;

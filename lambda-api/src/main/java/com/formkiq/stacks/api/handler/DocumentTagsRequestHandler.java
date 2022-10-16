@@ -62,6 +62,8 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -181,7 +183,9 @@ public class DocumentTagsRequestHandler
 
     CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
 
-    DocumentItem item = coreServices.documentService().findDocument(siteId, documentId);
+    DocumentService documentService = coreServices.documentService();
+
+    DocumentItem item = documentService.findDocument(siteId, documentId);
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
@@ -199,7 +203,42 @@ public class DocumentTagsRequestHandler
       t.setUserId(userId);
     });
 
-    coreServices.documentService().deleteDocumentTag(siteId, documentId, "untagged");
+    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tags);
+    if (!tagErrors.isEmpty()) {
+      throw new ValidationException(tagErrors);
+    }
+
+    documentService.deleteDocumentTag(siteId, documentId, "untagged");
+
+    Collection<DocumentTag> newTags = tagSchemaValidation(coreServices, siteId, tags, item, userId);
+
+    List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
+    allTags.addAll(newTags);
+
+    updateFulltextIfInstalled(awsservice, siteId, documentId, allTags);
+
+    documentService.addTags(siteId, documentId, allTags, null);
+
+    ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
+        : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
+
+    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+  }
+
+  /**
+   * Added Any TagSchema Composite Keys and Validate.
+   * 
+   * @param coreServices {@link CoreAwsServiceCache}
+   * @param siteId {@link String}
+   * @param tags {@link DocumentTags}
+   * @param item {@link DocumentItem}
+   * @param userId {@link String}
+   * @return {@link Collection} {@link DocumentTag}
+   * @throws ValidationException ValidationException
+   */
+  private Collection<DocumentTag> tagSchemaValidation(final CoreAwsServiceCache coreServices,
+      final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
+      throws ValidationException {
 
     DocumentTagSchemaPlugin plugin = coreServices.getExtension(DocumentTagSchemaPlugin.class);
 
@@ -211,18 +250,7 @@ public class DocumentTagsRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-
-    List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
-    allTags.addAll(newTags);
-
-    updateFulltextIfInstalled(awsservice, siteId, documentId, allTags);
-
-    coreServices.documentService().addTags(siteId, documentId, allTags, null);
-
-    ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
-        : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
-
-    return new ApiRequestHandlerResponse(SC_CREATED, resp);
+    return newTags;
   }
 
   /**

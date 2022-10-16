@@ -5,6 +5,7 @@ dependencies {
 
 	implementation project(':aws-dynamodb')
 	implementation project(':fkq-plugins')
+	implementation project(':fkq-validation')
 	implementation project(':fkq-lambda-services')
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
     
