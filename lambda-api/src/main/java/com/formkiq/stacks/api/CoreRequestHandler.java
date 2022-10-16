@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -48,6 +49,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.stacks.dynamodb.Preset;
 import com.formkiq.stacks.dynamodb.PresetTag;
+import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -55,9 +57,10 @@ import software.amazon.awssdk.regions.Region;
 @Reflectable
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
     DocumentTags.class, PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class,
-    SearchResponseFields.class, PresetTag.class, Preset.class, ApiGatewayRequestEvent.class,
-    ApiMapResponse.class, ApiGatewayRequestContext.class, ApiMessageResponse.class,
-    ApiResponseError.class, ApiPagination.class, Action.class})
+    SearchMetaCriteria.class, SearchResponseFields.class, PresetTag.class, Preset.class,
+    ApiGatewayRequestEvent.class, ApiMapResponse.class, ApiGatewayRequestContext.class,
+    ApiMessageResponse.class, ApiResponseError.class, ApiPagination.class, Action.class,
+    ValidationErrorImpl.class})
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   static {

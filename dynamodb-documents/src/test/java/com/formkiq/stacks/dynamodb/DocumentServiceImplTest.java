@@ -29,6 +29,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +68,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -83,11 +86,11 @@ public class DocumentServiceImplTest implements DbKeys {
   /** {@link SimpleDateFormat}. */
   private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-  /** {@link DocumentService}. */
-  private DocumentService service;
-
   /** {@link DocumentSearchService}. */
   private DocumentSearchService searchService;
+
+  /** {@link DocumentService}. */
+  private DocumentService service;
 
   /**
    * Before Test.
@@ -359,6 +362,7 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
       DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), now, userId);
+      item.setPath("a/test.txt");
       final String documentId = item.getDocumentId();
 
       DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
@@ -371,9 +375,20 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       assertNull(this.service.findDocument(siteId, documentId));
+
       PaginationResults<DocumentTag> results =
           this.service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, results.getResults().size());
+
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      PaginationResults<DynamicDocumentItem> folders =
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, folders.getResults().size());
+
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder("a"));
+      folders = this.searchService.search(siteId, q, null, MAX_RESULTS);
+
+      assertEquals(0, folders.getResults().size());
     }
   }
 
@@ -745,6 +760,101 @@ public class DocumentServiceImplTest implements DbKeys {
     assertNull(results.getResults().get(0).getBelongsToDocumentId());
   }
 
+  /**
+   * Find Documents Tags.
+   */
+  @Test
+  public void testFindDocumentsTags01() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+      String tagKey0 = "category";
+      String tagValue0 = "person";
+      String tagKey1 = "playerId";
+      List<String> tagValue1 = Arrays.asList("111", "222");
+      List<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
+              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+
+      this.service.saveDocument(siteId, document, tags);
+
+      // when
+      final Map<String, Collection<DocumentTag>> tagMap0 = this.service.findDocumentsTags(siteId,
+          Arrays.asList(documentId), Arrays.asList(tagKey0, tagKey1));
+      final Map<String, Collection<DocumentTag>> tagMap1 =
+          this.service.findDocumentsTags(siteId, Arrays.asList(documentId), Arrays.asList(tagKey0));
+      final Map<String, Collection<DocumentTag>> tagMap2 =
+          this.service.findDocumentsTags(siteId, Arrays.asList(documentId), Arrays.asList(tagKey1));
+
+      // then
+      assertEquals(1, tagMap0.size());
+      Collection<DocumentTag> tags0 = tagMap0.get(documentId);
+      assertEquals(2, tags0.size());
+
+      Collection<DocumentTag> tags1 = tagMap1.get(documentId);
+      assertEquals(1, tags1.size());
+      DocumentTag next = tags1.iterator().next();
+      assertEquals(documentId, next.getDocumentId());
+      assertEquals(tagKey0, next.getKey());
+      assertEquals(tagValue0, next.getValue());
+      assertNull(next.getValues());
+
+      Collection<DocumentTag> tags2 = tagMap2.get(documentId);
+      assertEquals(1, tags2.size());
+      next = tags2.iterator().next();
+      assertEquals(documentId, next.getDocumentId());
+      assertEquals(tagKey1, next.getKey());
+      assertNull(next.getValue());
+      assertEquals("[111, 222]", next.getValues().toString());
+    }
+  }
+
+  /**
+   * Find Documents more than 100 combination of Tags.
+   */
+  @Test
+  public void testFindDocumentsTags02() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 1000;
+      Date now = new Date();
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+
+      String tagKey0 = "category";
+      String tagValue0 = "person";
+      String tagKey1 = "playerId";
+
+      List<String> tagValue1 = Arrays.asList("111", "222");
+      List<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
+              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+
+      this.service.saveDocument(siteId, document, tags);
+
+      List<String> documentIds = new ArrayList<>();
+      documentIds.add(documentId);
+      for (int i = 0; i < count; i++) {
+        documentIds.add(UUID.randomUUID().toString());
+      }
+
+      // when
+      Map<String, Collection<DocumentTag>> tagMap =
+          this.service.findDocumentsTags(siteId, documentIds, Arrays.asList(tagKey0, tagKey1));
+
+      // then
+      assertEquals(count + 1, tagMap.size());
+      Collection<DocumentTag> tags0 = tagMap.get(documentId);
+      assertEquals(2, tags0.size());
+    }
+  }
+
   /** Test Finding Document's Tag && Remove one. */
   @Test
   public void testFindDocumentTags01() {
@@ -1067,56 +1177,6 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Test Remove Tags from Document.
-   */
-  @Test
-  public void testRemoveTags01() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String docid = UUID.randomUUID().toString();
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
-
-      Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(docid, "untagged", "true", new Date(), "jsmith"));
-      this.service.saveDocument(siteId, item, tags);
-
-      // when
-      this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
-
-      // then
-      assertEquals(0,
-          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
-    }
-  }
-
-  /**
-   * Test Remove 'VALUES' Tags from Document.
-   */
-  @Test
-  public void testRemoveTags02() {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String docid = UUID.randomUUID().toString();
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
-
-      DocumentTag tag = new DocumentTag(docid, "category", null, new Date(), "jsmith");
-      tag.setValues(Arrays.asList("abc", "xyz"));
-      Collection<DocumentTag> tags = Arrays.asList(tag);
-      this.service.saveDocument(siteId, item, tags);
-
-      assertEquals(1,
-          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
-
-      // when
-      this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
-
-      // then
-      assertEquals(0,
-          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
-    }
-  }
-
-  /**
    * Test Remove 1 tag value from a 2 multi-value Document Tag.
    */
   @Test
@@ -1272,6 +1332,56 @@ public class DocumentServiceImplTest implements DbKeys {
       // then
       results = this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
       assertEquals(1, results.size());
+    }
+  }
+
+  /**
+   * Test Remove Tags from Document.
+   */
+  @Test
+  public void testRemoveTags01() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      Collection<DocumentTag> tags =
+          Arrays.asList(new DocumentTag(docid, "untagged", "true", new Date(), "jsmith"));
+      this.service.saveDocument(siteId, item, tags);
+
+      // when
+      this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
+
+      // then
+      assertEquals(0,
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
+    }
+  }
+
+  /**
+   * Test Remove 'VALUES' Tags from Document.
+   */
+  @Test
+  public void testRemoveTags02() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String docid = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+
+      DocumentTag tag = new DocumentTag(docid, "category", null, new Date(), "jsmith");
+      tag.setValues(Arrays.asList("abc", "xyz"));
+      Collection<DocumentTag> tags = Arrays.asList(tag);
+      this.service.saveDocument(siteId, item, tags);
+
+      assertEquals(1,
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
+
+      // when
+      this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
+
+      // then
+      assertEquals(0,
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
     }
   }
 
@@ -1554,97 +1664,105 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Find Documents Tags.
+   * Test Saving / updating folders.
+   * 
+   * @throws InterruptedException InterruptedException
    */
   @Test
-  public void testFindDocumentsTags01() {
-
+  public void testSaveFolders01() throws InterruptedException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      Date now = new Date();
-      String userId = "jsmith";
+      String userId0 = "joe";
       String documentId = UUID.randomUUID().toString();
-      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
-      String tagKey0 = "category";
-      String tagValue0 = "person";
-      String tagKey1 = "playerId";
-      List<String> tagValue1 = Arrays.asList("111", "222");
-      List<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
-              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
-
-      this.service.saveDocument(siteId, document, tags);
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId0);
+      item.setPath("a/b/test.txt");
+      this.service.saveDocument(siteId, item, null);
 
       // when
-      final Map<String, Collection<DocumentTag>> tagMap0 = this.service.findDocumentsTags(siteId,
-          Arrays.asList(documentId), Arrays.asList(tagKey0, tagKey1));
-      final Map<String, Collection<DocumentTag>> tagMap1 =
-          this.service.findDocumentsTags(siteId, Arrays.asList(documentId), Arrays.asList(tagKey0));
-      final Map<String, Collection<DocumentTag>> tagMap2 =
-          this.service.findDocumentsTags(siteId, Arrays.asList(documentId), Arrays.asList(tagKey1));
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
 
       // then
-      assertEquals(1, tagMap0.size());
-      Collection<DocumentTag> tags0 = tagMap0.get(documentId);
-      assertEquals(2, tags0.size());
+      PaginationResults<DynamicDocumentItem> folders =
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, folders.getResults().size());
+      DynamicDocumentItem result = folders.getResults().get(0);
+      assertEquals(result.get("insertedDate"), result.get("lastModifiedDate"));
+      assertEquals(Boolean.TRUE, result.get("folder"));
+      assertEquals("a", result.get("path"));
+      assertEquals(userId0, result.get("userId"));
 
-      Collection<DocumentTag> tags1 = tagMap1.get(documentId);
-      assertEquals(1, tags1.size());
-      DocumentTag next = tags1.iterator().next();
-      assertEquals(documentId, next.getDocumentId());
-      assertEquals(tagKey0, next.getKey());
-      assertEquals(tagValue0, next.getValue());
-      assertNull(next.getValues());
+      TimeUnit.SECONDS.sleep(1);
 
-      Collection<DocumentTag> tags2 = tagMap2.get(documentId);
-      assertEquals(1, tags2.size());
-      next = tags2.iterator().next();
-      assertEquals(documentId, next.getDocumentId());
-      assertEquals(tagKey1, next.getKey());
-      assertNull(next.getValue());
-      assertEquals("[111, 222]", next.getValues().toString());
+      // given
+      String userId1 = "frank";
+      documentId = UUID.randomUUID().toString();
+      item = new DocumentItemDynamoDb(documentId, new Date(), userId1);
+      item.setPath("a/something.txt");
+      this.service.saveDocument(siteId, item, null);
+
+      // when
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+
+      // then
+      folders = this.searchService.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, folders.getResults().size());
+      result = folders.getResults().get(0);
+      assertEquals(Boolean.TRUE, result.get("folder"));
+      assertEquals("a", result.get("path"));
+      assertEquals(userId0, result.get("userId"));
+      assertNotEquals(result.get("insertedDate"), result.get("lastModifiedDate"));
     }
   }
 
   /**
-   * Find Documents more than 100 combination of Tags.
+   * Test Saving / adding folders.
+   * 
+   * @throws InterruptedException InterruptedException
    */
   @Test
-  public void testFindDocumentsTags02() {
-
+  public void testSaveFolders02() throws InterruptedException {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      final int count = 1000;
-      Date now = new Date();
-      String userId = "jsmith";
+      String userId0 = "joe";
       String documentId = UUID.randomUUID().toString();
-      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
-
-      String tagKey0 = "category";
-      String tagValue0 = "person";
-      String tagKey1 = "playerId";
-
-      List<String> tagValue1 = Arrays.asList("111", "222");
-      List<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
-              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
-
-      this.service.saveDocument(siteId, document, tags);
-
-      List<String> documentIds = new ArrayList<>();
-      documentIds.add(documentId);
-      for (int i = 0; i < count; i++) {
-        documentIds.add(UUID.randomUUID().toString());
-      }
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId0);
+      item.setPath("a/b/test.txt");
+      this.service.saveDocument(siteId, item, null);
 
       // when
-      Map<String, Collection<DocumentTag>> tagMap =
-          this.service.findDocumentsTags(siteId, documentIds, Arrays.asList(tagKey0, tagKey1));
+      this.service.addFolderIndex(siteId, item);
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
 
       // then
-      assertEquals(count + 1, tagMap.size());
-      Collection<DocumentTag> tags0 = tagMap.get(documentId);
-      assertEquals(2, tags0.size());
+      PaginationResults<DynamicDocumentItem> folders =
+          this.searchService.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, folders.getResults().size());
+      DynamicDocumentItem result = folders.getResults().get(0);
+      assertEquals(result.get("insertedDate"), result.get("lastModifiedDate"));
+      assertEquals(Boolean.TRUE, result.get("folder"));
+      assertEquals("a", result.get("path"));
+      assertEquals(userId0, result.get("userId"));
+
+      TimeUnit.SECONDS.sleep(1);
+
+      // given
+      String userId1 = "frank";
+      documentId = UUID.randomUUID().toString();
+      item = new DocumentItemDynamoDb(documentId, new Date(), userId1);
+      item.setPath("a/something.txt");
+      this.service.addFolderIndex(siteId, item);
+
+      // when
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+
+      // then
+      folders = this.searchService.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, folders.getResults().size());
+      result = folders.getResults().get(0);
+      assertEquals(Boolean.TRUE, result.get("folder"));
+      assertEquals("a", result.get("path"));
+      assertEquals(userId0, result.get("userId"));
+      assertNotEquals(result.get("insertedDate"), result.get("lastModifiedDate"));
     }
   }
 }

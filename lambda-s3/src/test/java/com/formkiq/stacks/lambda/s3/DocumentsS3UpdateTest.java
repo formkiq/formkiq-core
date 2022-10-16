@@ -128,7 +128,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /** Request OK Status. */
   private static final int OK = 200;
   /** Port to run Test server. */
-  private static final int PORT = 8080;
+  private static final int PORT = 8888;
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Builder;
   /** {@link S3Service}. */
@@ -341,7 +341,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * 
    * @throws URISyntaxException URISyntaxException
    */
-  @SuppressWarnings("resource")
   @BeforeEach
   public void before() throws URISyntaxException {
 
@@ -353,8 +352,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     Map<String, String> map = new HashMap<>();
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("SQS_ERROR_URL",
-        TestServices.getLocalStack().getEndpointOverride(Service.SQS).toString() + "/queue/"
-            + ERROR_SQS_QUEUE);
+        TestServices.getEndpointOverride(Service.SQS).toString() + "/queue/" + ERROR_SQS_QUEUE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     map.put("AWS_REGION", AWS_REGION.id());
     map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);

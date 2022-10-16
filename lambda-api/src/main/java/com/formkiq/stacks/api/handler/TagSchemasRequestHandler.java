@@ -23,45 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
-import java.util.Map;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/tagSchemas". */
-public class TagSchemasRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
-
-  /**
-   * constructor.
-   *
-   */
-  public TagSchemasRequestHandler() {}
-
-  @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    return post(logger, event, authorizer, awsservice);
-  }
+public class TagSchemasRequestHandler extends AbstractPaymentRequiredRequestHandler {
 
   @Override
   public String getRequestUrl() {
     return "/tagSchemas";
-  }
-
-  @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
-    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
   }
 }

@@ -306,44 +306,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       LambdaInputRecord record) throws IOException;
 
   /**
-   * Whether {@link ApiGatewayRequestEvent} has access.
-   * 
-   * @param method {@link String}
-   * @param path {@link String}
-   * @param handler {@link ApiGatewayRequestHandler}
-   * @param authorizer {@link ApiAuthorizer}
-   * @return boolean
-   */
-  private boolean hasAccess(final String method, final String path,
-      final ApiGatewayRequestHandler handler, final ApiAuthorizer authorizer) {
-
-    boolean access = false;
-
-    if (authorizer.isCallerAssumeRole() || authorizer.isCallerIamUser() || authorizer.isUserAdmin()
-        || isPublicUrl(path)) {
-
-      access = true;
-
-    } else if ((handler.isReadonly(method) && authorizer.isUserReadAccess())
-        || authorizer.isUserWriteAccess()) {
-
-      access = true;
-    }
-
-    return access;
-  }
-
-  /**
-   * Whether to Http Method requires access check.
-   * 
-   * @param method {@link String}
-   * @return boolean
-   */
-  private boolean isCheckAccess(final String method) {
-    return !"options".equals(method);
-  }
-
-  /**
    * Is {@link ApiGatewayRequestEvent} empty.
    * 
    * @param event {@link ApiGatewayRequestEvent}
@@ -351,16 +313,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   private boolean isEmpty(final ApiGatewayRequestEvent event) {
     return event != null && event.getHeaders() == null && event.getPath() == null;
-  }
-
-  /**
-   * Is Path /public/ and public urls are enabled.
-   * 
-   * @param path {@link String}
-   * @return boolean
-   */
-  private boolean isPublicUrl(final String path) {
-    return path.startsWith("/public/");
   }
 
   /**
@@ -451,7 +403,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     String resource = event.getResource();
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
-    if (isCheckAccess(method) && !hasAccess(method, event.getPath(), handler, authorizer)) {
+    if (!handler.isAuthorized(getAwsServices(), event, authorizer, method)) {
       String s = String.format("fkq access denied (%s)", authorizer.accessSummary());
       throw new ForbiddenException(s);
     }

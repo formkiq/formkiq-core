@@ -23,19 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/ocr". */
-public class DocumentsOcrRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+public class DocumentsOcrRequestHandler extends AbstractPaymentRequiredRequestHandler {
 
   /** {@link DocumentsOcrRequestHandler} URL. */
   public static final String URL = "/documents/{documentId}/ocr";
@@ -47,39 +38,7 @@ public class DocumentsOcrRequestHandler
   public DocumentsOcrRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    ApiMapResponse resp = new ApiMapResponse();
-    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    ApiMapResponse resp = new ApiMapResponse();
-    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
-  }
-
-  @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    ApiMapResponse resp = new ApiMapResponse();
-    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
-  }
-
-  @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-    ApiMapResponse resp = new ApiMapResponse();
-    return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
   }
 }

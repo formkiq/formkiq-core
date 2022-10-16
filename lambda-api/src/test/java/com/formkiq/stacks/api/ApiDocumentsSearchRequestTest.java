@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -238,7 +239,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"message\\\":\\\"Invalid JSON body.\\\"}\",\"statusCode\":400}";
+          + "{\\\"errors\\\":[{\\\"error\\\":\\\"invalid body\\\"}]}\",\"statusCode\":400}";
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-search02.json");
       addParameter(event, "siteId", siteId);
@@ -510,8 +511,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      String expected = "{" + getHeaders() + ",\"body\":"
-          + "\"{\\\"message\\\":\\\"'tag' attribute is required.\\\"}\"," + "\"statusCode\":400}";
+      String expected =
+          "{" + getHeaders() + ",\"body\":" + "\"{\\\"errors\\\":[{\\\"key\\\":\\\"tag/key\\\","
+              + "\\\"error\\\":\\\"attribute is required\\\"}]}\"," + "\"statusCode\":400}";
       assertEquals(expected, response);
     }
   }
@@ -567,6 +569,58 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         assertEquals(1, tags.size());
         assertEquals(tagvalue1, tags.get(tagKey1));
       });
+    }
+  }
+
+  /**
+   * /search meta data.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest13() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String username = "joe";
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
+      document.setPath("something/path.txt");
+      getDocumentService().saveDocument(siteId, document, null);
+
+      for (String folder : Arrays.asList("something", "something/", "")) {
+
+        ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+        addParameter(event, "siteId", siteId);
+        event.setIsBase64Encoded(Boolean.FALSE);
+        QueryRequest q = new QueryRequest()
+            .query(new SearchQuery().meta(new SearchMetaCriteria().folder(folder)));
+        event.setBody(GsonUtil.getInstance().toJson(q));
+
+        // when
+        String response = handleRequest(event);
+
+        // then
+        Map<String, String> m = fromJson(response, Map.class);
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        DynamicObject resp0 = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+        List<DynamicObject> documents = resp0.getList("documents");
+        assertEquals(1, documents.size());
+        assertNotNull(documents.get(0).get("insertedDate"));
+        assertNotNull(documents.get(0).get("lastModifiedDate"));
+
+        if (folder.length() == 0) {
+          assertEquals("something", documents.get(0).get("path"));
+          assertEquals("true", documents.get(0).get("folder").toString());
+        } else {
+          assertEquals("something/path.txt", documents.get(0).get("path"));
+          assertNull(documents.get(0).get("folder"));
+        }
+      }
     }
   }
 }

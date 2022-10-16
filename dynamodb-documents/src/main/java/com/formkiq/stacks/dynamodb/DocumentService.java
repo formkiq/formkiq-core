@@ -43,7 +43,15 @@ public interface DocumentService extends DocumentTagLoader {
   int MAX_RESULTS = 10;
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
-      Set.of("untagged", "path", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
+      Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
+
+  /**
+   * Add Folder Index.
+   * 
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   */
+  void addFolderIndex(String siteId, DocumentItem item);
 
   /**
    * Add Tags to Document.
@@ -224,8 +232,8 @@ public interface DocumentService extends DocumentTagLoader {
    * @param tags {@link List} {@link String}
    * @return {@link Map}
    */
-  Map<String, Collection<DocumentTag>> findDocumentsTags(String siteId, List<String> documentIds,
-      List<String> tags);
+  Map<String, Collection<DocumentTag>> findDocumentsTags(String siteId,
+      Collection<String> documentIds, List<String> tags);
 
   /**
    * Find Document Tag Value.
@@ -309,6 +317,15 @@ public interface DocumentService extends DocumentTagLoader {
   @Deprecated
   PaginationResults<PresetTag> findPresetTags(String siteId, String id, PaginationMapToken token,
       int maxresults);
+
+  /**
+   * Is Folder Exists.
+   * 
+   * @param siteId {@link String}
+   * @param item {@link DocumentItem}
+   * @return boolean
+   */
+  boolean isFolderExists(String siteId, DocumentItem item);
 
   /**
    * Remove Tag from Document.

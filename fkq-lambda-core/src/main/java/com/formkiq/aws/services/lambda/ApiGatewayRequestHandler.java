@@ -35,6 +35,46 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 public interface ApiGatewayRequestHandler {
 
   /**
+   * Is caller Authorized to continue.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param method {@link String}
+   * @return boolean
+   */
+  default boolean isAuthorized(AwsServiceCache awsServiceCache, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, String method) {
+    return "options".equals(method) || hasAccess(method, event.getPath(), authorizer);
+  }
+
+  /**
+   * Whether {@link ApiGatewayRequestEvent} has access.
+   * 
+   * @param method {@link String}
+   * @param path {@link String}
+   * @param authorizer {@link ApiAuthorizer}
+   * @return boolean
+   */
+  default boolean hasAccess(String method, String path, ApiAuthorizer authorizer) {
+
+    boolean access = false;
+
+    if (authorizer.isCallerAssumeRole() || authorizer.isCallerIamUser() || authorizer.isUserAdmin()
+        || path.startsWith("/public/")) {
+
+      access = true;
+
+    } else if ((isReadonly(method) && authorizer.isUserReadAccess())
+        || authorizer.isUserWriteAccess()) {
+
+      access = true;
+    }
+
+    return access;
+  }
+
+  /**
    * Called Before "delete" method is called.
    * 
    * @param logger {@link LambdaLogger}

@@ -36,6 +36,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -93,6 +94,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DateUtil;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -142,7 +144,7 @@ public class StagingS3CreateTest implements DbKeys {
   private static ClientAndServer mockServer;
 
   /** Port to run Test server. */
-  private static final int PORT = 8080;
+  private static final int PORT = 8888;
 
   /** {@link S3Service}. */
   private static S3Service s3;
@@ -1117,11 +1119,13 @@ public class StagingS3CreateTest implements DbKeys {
   /**
    * Test add tags to existing Document with .fkb64 file and NO content.
    * 
-   * @throws IOException IOException
+   * @throws Exception Exception
    */
   @Test
-  public void testFkB64Extension12() throws IOException {
+  public void testFkB64Extension12() throws Exception {
+    final Date now = new Date();
     final String userId = "joesmith";
+    final long contentLength = 1000;
     String documentId = UUID.randomUUID().toString();
     Map<String, Object> data = new HashMap<>();
     data.put("documentId", documentId);
@@ -1132,9 +1136,14 @@ public class StagingS3CreateTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      service.saveDocument(siteId, ditem,
+      DocumentItem item = new DocumentItemDynamoDb(documentId, now, "joe");
+      item.setContentLength(Long.valueOf(contentLength));
+
+      service.saveDocument(siteId, item,
           Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
+
+      TimeUnit.SECONDS.sleep(1);
 
       String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
@@ -1147,12 +1156,18 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(map);
 
       // then
-      int i = 0;
       final int count = 3;
+      item = service.findDocument(siteId, documentId);
+
+      assertEquals(userId, item.getUserId());
+      assertEquals(contentLength, item.getContentLength().longValue());
+      assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());
+
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
 
+      int i = 0;
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", userId));
 

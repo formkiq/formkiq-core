@@ -71,6 +71,16 @@ public class DynamicObject extends HashMap<String, Object> {
   }
 
   /**
+   * Get {@link Double} Value.
+   * 
+   * @param key {@link String}
+   * @return {@link Double}
+   */
+  public Double getDouble(final String key) {
+    return (Double) getOrDefault(key, null);
+  }
+
+  /**
    * Get {@link List} {@link DynamicObject} Value.
    * 
    * @param key {@link String}

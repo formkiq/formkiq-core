@@ -67,6 +67,7 @@ public class DocumentIdUrlRequestHandler
     String documentId = event.getPathParameters().get("documentId");
     String versionId = getParameter(event, "versionId");
     String siteId = authorizer.getSiteId();
+    boolean inline = "true".equals(getParameter(event, "inline"));
 
     DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
 
@@ -74,7 +75,7 @@ public class DocumentIdUrlRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId);
+    URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId, inline);
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
@@ -116,11 +117,12 @@ public class DocumentIdUrlRequestHandler
    * @param event {@link ApiGatewayRequestEvent}
    * @param item {@link DocumentItem}
    * @param versionId {@link String}
+   * @param inline boolean
    * @return {@link URL}
    */
   private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
-      final String versionId) {
+      final String versionId, final boolean inline) {
 
     final String documentId = item.getDocumentId();
     CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
@@ -137,7 +139,8 @@ public class DocumentIdUrlRequestHandler
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 
-    PresignGetUrlConfig config = new PresignGetUrlConfig().contentDispositionByPath(item.getPath());
+    PresignGetUrlConfig config =
+        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), inline);
 
     if (contentType == null || contentType.equals(item.getContentType())) {
 

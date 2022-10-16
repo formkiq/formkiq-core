@@ -25,21 +25,26 @@ package com.formkiq.aws.dynamodb.model;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Search Query. */
 @Reflectable
 public class SearchQuery {
 
+  /** Collection of Document Ids use {@link SearchTagCriteria} against. */
+  @Reflectable
+  private Collection<String> documentIds;
+  /** {@link SearchMetaCriteria}. */
+  @Reflectable
+  private SearchMetaCriteria meta;
   /** {@link SearchTagCriteria}. */
   @Reflectable
   private SearchTagCriteria tag;
   /** {@link List} {@link SearchTagCriteria}. */
   @Reflectable
   private List<SearchTagCriteria> tags;
-  /** Collection of Document Ids use {@link SearchTagCriteria} against. */
-  @Reflectable
-  private Collection<String> documentIds;
+
 
   /** constructor. */
   public SearchQuery() {}
@@ -61,6 +66,26 @@ public class SearchQuery {
    */
   public SearchQuery documentsIds(final Collection<String> ids) {
     this.documentIds = ids;
+    return this;
+  }
+
+  /**
+   * Get {@link Map}.
+   *
+   * @return {@link Map}
+   */
+  public SearchMetaCriteria meta() {
+    return this.meta;
+  }
+
+  /**
+   * Set {@link SearchTagCriteria}.
+   *
+   * @param searchMeta {@link SearchMetaCriteria}
+   * @return {@link SearchQuery}
+   */
+  public SearchQuery meta(final SearchMetaCriteria searchMeta) {
+    this.meta = searchMeta;
     return this;
   }
 

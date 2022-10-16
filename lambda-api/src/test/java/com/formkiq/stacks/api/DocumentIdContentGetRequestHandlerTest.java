@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -48,9 +47,6 @@ import com.formkiq.testutils.aws.TestServices;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandler {
-
-  /** {@link LocalStackContainer}. */
-  private LocalStackContainer localstack = TestServices.getLocalStack();
 
   /**
    * /documents/{documentId}/content request.
@@ -95,11 +91,11 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandl
       assertEquals("application/octet-stream", body.get("contentType"));
 
       if (siteId != null) {
-        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+        assertTrue(url.startsWith(TestServices.getEndpointOverride(Service.S3).toString()
             + "/testbucket/" + siteId + "/" + documentId));
       } else {
-        assertTrue(url.startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-            + "/testbucket/" + documentId));
+        assertTrue(url.startsWith(
+            TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + documentId));
       }
     }
   }

@@ -229,7 +229,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (MimeType.isPlainText(item.getContentType())) {
 
       PresignGetUrlConfig config = new PresignGetUrlConfig()
-          .contentDispositionByPath(item.getPath()).contentType(item.getContentType());
+          .contentDispositionByPath(item.getPath(), false).contentType(item.getContentType());
 
       String bucket =
           MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;

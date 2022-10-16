@@ -66,6 +66,9 @@ import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
+import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
+import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
+import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
@@ -79,6 +82,10 @@ import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.dynamodb.DocumentCountService;
+import com.formkiq.stacks.dynamodb.DocumentCountServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -136,6 +143,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksRequestHandler());
     addRequestHandler(new DocumentsRequestHandler());
     addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new OnlyOfficeNewRequestHandler());
+    addRequestHandler(new OnlyOfficeSaveRequestHandler());
+    addRequestHandler(new OnlyOfficeEditRequestHandler());
   }
 
   /**
@@ -168,6 +178,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
         new DocumentTagSchemaPluginExtension(schemaEvents));
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));

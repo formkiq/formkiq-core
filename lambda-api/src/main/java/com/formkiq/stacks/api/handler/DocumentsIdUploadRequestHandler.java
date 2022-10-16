@@ -49,6 +49,7 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
@@ -200,7 +201,8 @@ public class DocumentsIdUploadRequestHandler
         service.saveDocument(siteId, item, tags);
 
         if (value != null) {
-          cacheService.documentCountService().incrementDocumentCount(siteId);
+          DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+          countService.incrementDocumentCount(siteId);
         } else {
           throw new BadException("Max Number of Documents reached");
         }

@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
@@ -49,9 +48,6 @@ import com.formkiq.testutils.aws.TestServices;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
-
-  /** {@link LocalStackContainer}. */
-  private LocalStackContainer localstack = TestServices.getLocalStack();
 
   /**
    * /documents/{documentId}/url request.
@@ -115,11 +111,11 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
 
         if (siteId != null) {
           assertTrue(
-              resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+              resp.getUrl().startsWith(TestServices.getEndpointOverride(Service.S3).toString()
                   + "/testbucket/" + siteId + "/" + documentId));
         } else {
           assertTrue(
-              resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
+              resp.getUrl().startsWith(TestServices.getEndpointOverride(Service.S3).toString()
                   + "/testbucket/" + documentId));
         }
       }
@@ -164,13 +160,11 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
       assertNull(resp.getPrevious());
 
       if (siteId != null) {
-        assertTrue(
-            resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-                + "/testbucket/" + siteId + "/" + documentId));
+        assertTrue(resp.getUrl().startsWith(TestServices.getEndpointOverride(Service.S3).toString()
+            + "/testbucket/" + siteId + "/" + documentId));
       } else {
-        assertTrue(
-            resp.getUrl().startsWith(this.localstack.getEndpointOverride(Service.S3).toString()
-                + "/testbucket/" + documentId));
+        assertTrue(resp.getUrl().startsWith(
+            TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + documentId));
       }
     }
   }

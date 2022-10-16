@@ -32,6 +32,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +65,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
+import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
@@ -71,6 +73,7 @@ import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -295,6 +298,22 @@ public class DocumentIdRequestHandler
     return "/documents/{documentId}";
   }
 
+  /**
+   * Validate Patch Request.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @throws NotFoundException NotFoundException
+   */
+  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) throws NotFoundException {
+    DocumentService docService = awsservice.getExtension(DocumentService.class);
+    if (docService.findDocument(siteId, documentId) == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
+  }
+
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -305,51 +324,77 @@ public class DocumentIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     String documentId = UUID.randomUUID().toString();
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
-      if (cacheService.documentService().findDocument(siteId, documentId) == null) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
+      validatePatch(awsservice, siteId, documentId);
     }
-
-    String maxDocumentCount = null;
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
     updateContentType(event, item);
 
     List<DynamicObject> documents = item.getList("documents");
 
+    String maxDocumentCount = null;
+
     if (!isUpdate) {
-
-      if (!item.hasString("content") && item.getList("documents").isEmpty()) {
-        throw new BadException("Invalid JSON body.");
-      }
-
-      maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
-      if (maxDocumentCount != null
-          && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
-        throw new BadException("Max Number of Documents reached");
-      }
+      maxDocumentCount = validatePost(awsservice, siteId, item);
     }
 
-    addFieldsToObject(event, awsservice, siteId, documentId, item, documents);
-    item.put("documents", documents);
+    Map<String, Object> map = null;
 
-    logger.log("setting userId: " + item.getString("userId") + " contentType: "
-        + item.getString("contentType"));
+    if (!isUpdate && isFolder(item)) {
 
-    validateTagSchema(cacheService, siteId, item, item.getUserId(), isUpdate);
-    putObjectToStaging(logger, cacheService, maxDocumentCount, siteId, item);
+      DocumentService docService = awsservice.getExtension(DocumentService.class);
 
-    Map<String, String> uploadUrls =
-        generateUploadUrls(awsservice, siteId, documentId, item, documents);
-    Map<String, Object> map = buildResponse(siteId, documentId, documents, uploadUrls);
+      if (!docService.isFolderExists(siteId, item)) {
+        docService.addFolderIndex(siteId, item);
+        map = Map.of("message", "folder created");
+      } else {
+        throw new ValidationException(
+            Arrays.asList(new ValidationErrorImpl().key("folder").error("already exists")));
+      }
+
+    } else {
+      addFieldsToObject(event, awsservice, siteId, documentId, item, documents);
+      item.put("documents", documents);
+
+      logger.log("setting userId: " + item.getString("userId") + " contentType: "
+          + item.getString("contentType"));
+
+      validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
+      putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
+
+      Map<String, String> uploadUrls =
+          generateUploadUrls(awsservice, siteId, documentId, item, documents);
+      map = buildResponse(siteId, documentId, documents, uploadUrls);
+    }
 
     ApiResponseStatus status = isUpdate ? SC_OK : SC_CREATED;
-
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
+  }
+
+  private String validatePost(final AwsServiceCache awsservice, final String siteId,
+      final DynamicDocumentItem item) throws BadException {
+
+    boolean isFolder = isFolder(item);
+
+    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()) {
+      throw new BadException("Invalid JSON body.");
+    }
+
+    String maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
+    if (maxDocumentCount != null
+        && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
+      throw new BadException("Max Number of Documents reached");
+    }
+
+    return maxDocumentCount;
+  }
+
+  private boolean isFolder(final DynamicDocumentItem item) {
+    boolean isFolder = item.hasString("path") && item.getString("path").endsWith("/");
+    return isFolder;
   }
 
   /**
@@ -361,7 +406,7 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param item {@link DynamicObject}
    */
-  private void putObjectToStaging(final LambdaLogger logger, final CoreAwsServiceCache awsservice,
+  private void putObjectToStaging(final LambdaLogger logger, final AwsServiceCache awsservice,
       final String maxDocumentCount, final String siteId, final DynamicObject item) {
 
     List<DynamicObject> documents = item.getList("documents");
@@ -380,7 +425,8 @@ public class DocumentIdRequestHandler
     s3.putObject(stageS3Bucket, key, bytes, item.getString("contentType"));
 
     if (maxDocumentCount != null) {
-      awsservice.documentCountService().incrementDocumentCount(siteId);
+      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+      countService.incrementDocumentCount(siteId);
     }
   }
 

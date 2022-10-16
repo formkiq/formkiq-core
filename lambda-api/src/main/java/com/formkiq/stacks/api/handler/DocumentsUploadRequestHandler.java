@@ -56,6 +56,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
@@ -147,8 +148,8 @@ public class DocumentsUploadRequestHandler
 
       if (value != null) {
 
-        (CoreAwsServiceCache.cast(awsservice)).documentCountService()
-            .incrementDocumentCount(siteId);
+        DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+        countService.incrementDocumentCount(siteId);
       }
 
     } else {
