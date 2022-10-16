@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
@@ -155,6 +156,10 @@ public class AwsResourceTest extends AbstractApiTest {
         List<Map<String, Map<String, String>>> list =
             (List<Map<String, Map<String, String>>>) map.get("documents");
 
+        while (list.isEmpty()) {
+          TimeUnit.SECONDS.sleep(1);
+        }
+        
         assertFalse(list.isEmpty());
         assertNotNull(list.get(0).get("documentId"));
 

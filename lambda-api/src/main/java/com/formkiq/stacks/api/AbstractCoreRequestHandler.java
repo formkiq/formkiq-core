@@ -82,6 +82,8 @@ import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
 import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.stacks.dynamodb.DocumentCountService;
+import com.formkiq.stacks.dynamodb.DocumentCountServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -177,6 +179,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));

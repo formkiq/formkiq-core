@@ -28,8 +28,6 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentCountService;
-import com.formkiq.stacks.dynamodb.DocumentCountServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
@@ -60,8 +58,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
   private ConfigService configService;
   /** {@link WebhooksService}. */
   private WebhooksService webhookService;
-  /** {@link DocumentCountService}. */
-  private DocumentCountService documentCountService;
 
   /**
    * Get SiteId Config.
@@ -84,20 +80,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
       this.configService = new ConfigServiceImpl(connection, environment("DOCUMENTS_TABLE"));
     }
     return this.configService;
-  }
-
-  /**
-   * Get {@link DocumentCountService}.
-   * 
-   * @return {@link DocumentCountService}
-   */
-  public DocumentCountService documentCountService() {
-    if (this.documentCountService == null) {
-      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
-      this.documentCountService =
-          new DocumentCountServiceDynamoDb(connection, environment("DOCUMENTS_TABLE"));
-    }
-    return this.documentCountService;
   }
 
   /**
