@@ -500,6 +500,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (item != null) {
 
+      // TODO fix possible race condition -> should only update lastModified, ContentType,
+      // ContentLength of document
+      // without updating entire document
       DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
 
       if (contentType != null && contentType.length() > 0) {

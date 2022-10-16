@@ -764,6 +764,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
         Thread.sleep(ONE_SECOND);
       }
 
+      Thread.sleep(ONE_SECOND * 2);
+
       // given
       String newpath = "newpath.txt";
       UpdateDocument updateDocument = new UpdateDocument().path(newpath);
@@ -775,10 +777,9 @@ public class DocumentsRequestTest extends AbstractApiTest {
       assertEquals(STATUS_OK, response.statusCode());
       assertRequestCorsHeaders(response.headers());
 
-      // when - check content type changed
+      // when - check path changed
       while (true) {
         map = fetchDocument(client, documentId);
-
         if (newpath.equals(map.get("path"))) {
           assertNotNull(map.get("contentLength"));
           break;
