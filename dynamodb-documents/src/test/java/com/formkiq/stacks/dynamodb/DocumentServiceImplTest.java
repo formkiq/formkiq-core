@@ -1664,6 +1664,54 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
+   * Test Save lots of tag records and duplicates.
+   */
+  @Test
+  public void testSaveDocumentItemWithTag07() {
+    final int year = 2020;
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int numberOfTags = 500;
+      String content = "This is a test";
+      String username = UUID.randomUUID() + "@formkiq.com";
+      LocalDate localDate = LocalDate.of(year, 1, 2);
+      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
+          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      doc.setLastModifiedDate(date);
+
+      List<Map<String, Object>> taglist = new ArrayList<>();
+      for (int j = 0; j < numberOfTags; j++) {
+        for (int i = 0; i < 2; i++) { // add duplicate tags
+          taglist
+              .add(Map.of("documentId", doc.getDocumentId(), "key", "category_" + j, "insertedDate",
+                  new Date(), "userId", username, "type", DocumentTagType.USERDEFINED.name()));
+        }
+      }
+
+      doc.put("tags", taglist);
+
+      // when
+      DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
+
+      // then
+      item = this.service.findDocument(siteId, item.getDocumentId());
+      assertNotNull(item);
+
+      ZoneId timeZone = ZoneId.systemDefault();
+      LocalDate lastModifiedDate =
+          item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
+      assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
+
+      PaginationResults<DocumentTag> tags = this.service.findDocumentTags(siteId,
+          item.getDocumentId(), null, MAX_RESULTS * MAX_RESULTS);
+      assertEquals(MAX_RESULTS * MAX_RESULTS, tags.getResults().size());
+    }
+  }
+
+  /**
    * Test Saving / updating folders.
    * 
    * @throws InterruptedException InterruptedException
