@@ -26,8 +26,12 @@ package com.formkiq.aws.dynamodb;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
@@ -39,8 +43,10 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  */
 public class WriteRequestBuilder {
 
+  /** Max Batch Size. */
+  private static final int MAX_BATCH_SIZE = 25;
   /** {@link Map} of {@link WriteRequest}. */
-  private Map<String, Collection<WriteRequest>> items = new HashMap<>();
+  private Map<String, List<WriteRequest>> items = new HashMap<>();
 
   /**
    * constructor.
@@ -61,7 +67,7 @@ public class WriteRequestBuilder {
       if (this.items.containsKey(e.getKey())) {
         this.items.get(e.getKey()).add(e.getValue());
       } else {
-        Collection<WriteRequest> list = new ArrayList<>();
+        List<WriteRequest> list = new ArrayList<>();
         list.add(e.getValue());
         this.items.put(e.getKey(), list);
       }
@@ -90,9 +96,9 @@ public class WriteRequestBuilder {
    * @param writes {@link Map} {@link WriteRequest}
    * @return {@link WriteRequestBuilder}
    */
-  public WriteRequestBuilder appends(final Map<String, Collection<WriteRequest>> writes) {
+  public WriteRequestBuilder appends(final Map<String, List<WriteRequest>> writes) {
 
-    for (Entry<String, Collection<WriteRequest>> e : writes.entrySet()) {
+    for (Entry<String, List<WriteRequest>> e : writes.entrySet()) {
       if (this.items.containsKey(e.getKey())) {
         this.items.get(e.getKey()).addAll(e.getValue());
       } else {
@@ -132,12 +138,22 @@ public class WriteRequestBuilder {
 
     boolean write = false;
 
-    if (!getItems().isEmpty()) {
+    Map<String, List<WriteRequest>> map = new HashMap<>(getItems());
 
-      BatchWriteItemRequest batch =
-          BatchWriteItemRequest.builder().requestItems(getItems()).build();
-      dbClient.batchWriteItem(batch);
-      write = true;
+    for (Map.Entry<String, List<WriteRequest>> e : map.entrySet()) {
+
+      Set<WriteRequest> wrs = new HashSet<>(e.getValue());
+      List<List<WriteRequest>> parition = Objects.parition(new ArrayList<>(wrs), MAX_BATCH_SIZE);
+
+      for (List<WriteRequest> writelist : parition) {
+
+        if (!writelist.isEmpty()) {
+          BatchWriteItemRequest batch =
+              BatchWriteItemRequest.builder().requestItems(Map.of(e.getKey(), writelist)).build();
+          dbClient.batchWriteItem(batch);
+          write = true;
+        }
+      }
     }
 
     return write;
@@ -148,7 +164,7 @@ public class WriteRequestBuilder {
    * 
    * @return {@link Map}
    */
-  public Map<String, Collection<WriteRequest>> getItems() {
+  public Map<String, List<WriteRequest>> getItems() {
     return this.items;
   }
 

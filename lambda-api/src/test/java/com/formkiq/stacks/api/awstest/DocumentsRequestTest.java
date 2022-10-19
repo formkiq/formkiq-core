@@ -733,7 +733,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   }
 
   /**
-   * Save new File and PATCH a new path.
+   * Save new File and PATCH a new path and tags.
    * 
    * @throws Exception Exception
    */
@@ -742,7 +742,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
       AddDocument post = new AddDocument().path("something.txt").contentType("text/plain")
-          .content("test data", StandardCharsets.UTF_8);
+          .content("test data", StandardCharsets.UTF_8)
+          .tags(Arrays.asList(new AddDocumentTag().key("person").value("123")));
       AddDocumentRequest req = new AddDocumentRequest().document(post);
 
       // when
@@ -768,7 +769,9 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
       // given
       String newpath = "newpath.txt";
-      UpdateDocument updateDocument = new UpdateDocument().path(newpath);
+      UpdateDocument updateDocument = new UpdateDocument().path(newpath)
+          .tags(Arrays.asList(new AddDocumentTag().key("some").value("thing"),
+              new AddDocumentTag().key("person").value("555")));
       UpdateDocumentRequest request =
           new UpdateDocumentRequest().document(updateDocument).documentId(documentId);
 
@@ -787,6 +790,15 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
         Thread.sleep(ONE_SECOND);
       }
+
+      DocumentTags tags =
+          client.getDocumentTags(new GetDocumentTagsRequest().documentId(documentId));
+      assertEquals("newpath.txt",
+          tags.tags().stream().filter(t -> t.key().equals("path")).findAny().get().value());
+      assertEquals("555",
+          tags.tags().stream().filter(t -> t.key().equals("person")).findAny().get().value());
+      assertEquals("thing",
+          tags.tags().stream().filter(t -> t.key().equals("some")).findAny().get().value());
     }
   }
 }
