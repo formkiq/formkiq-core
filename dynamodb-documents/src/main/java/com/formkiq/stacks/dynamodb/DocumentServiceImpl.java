@@ -1223,13 +1223,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     if (doc.getPath() != null) {
-      tags.add(new DocumentTag(null, "path", doc.getPath(), date, username,
-          DocumentTagType.SYSTEMDEFINED));
+      if (tags.stream().filter(t -> t.getKey().equals("path")).findAny().isEmpty()) {
+        tags.add(new DocumentTag(null, "path", doc.getPath(), date, username,
+            DocumentTagType.SYSTEMDEFINED));
+      }
     }
 
     if (doc.getUserId() != null) {
-      tags.add(new DocumentTag(null, "userId", doc.getUserId(), date, username,
-          DocumentTagType.SYSTEMDEFINED));
+      if (tags.stream().filter(t -> t.getKey().equals("userId")).findAny().isEmpty()) {
+        tags.add(new DocumentTag(null, "userId", doc.getUserId(), date, username,
+            DocumentTagType.SYSTEMDEFINED));
+      }
     }
 
     return tags;
