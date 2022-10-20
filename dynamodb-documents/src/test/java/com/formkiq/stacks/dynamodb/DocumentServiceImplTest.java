@@ -1712,6 +1712,56 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
+   * Test Save 'path', 'userId' tags.
+   */
+  @Test
+  public void testSaveDocumentItemWithTag08() {
+    final int year = 2020;
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String content = "This is a test";
+      String username = UUID.randomUUID() + "@formkiq.com";
+      LocalDate localDate = LocalDate.of(year, 1, 2);
+      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
+          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      doc.setLastModifiedDate(date);
+      doc.setPath("test.pdf");
+
+      List<Map<String, Object>> taglist = new ArrayList<>();
+
+      taglist.add(Map.of("documentId", doc.getDocumentId(), "key", "path", "value", "test.pdf",
+          "insertedDate", new Date(), "userId", username, "type",
+          DocumentTagType.USERDEFINED.name()));
+
+      taglist.add(Map.of("documentId", doc.getDocumentId(), "key", "userId", "value", "test",
+          "insertedDate", new Date(), "userId", username, "type",
+          DocumentTagType.USERDEFINED.name()));
+
+      doc.put("tags", taglist);
+
+      // when
+      DocumentItem item = this.service.saveDocumentItemWithTag(siteId, doc);
+
+      // then
+      item = this.service.findDocument(siteId, item.getDocumentId());
+      assertNotNull(item);
+
+      ZoneId timeZone = ZoneId.systemDefault();
+      LocalDate lastModifiedDate =
+          item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
+      assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
+
+      PaginationResults<DocumentTag> tags =
+          this.service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals("path", tags.getResults().get(0).getKey());
+    }
+  }
+
+  /**
    * Test Saving / updating folders.
    * 
    * @throws InterruptedException InterruptedException
