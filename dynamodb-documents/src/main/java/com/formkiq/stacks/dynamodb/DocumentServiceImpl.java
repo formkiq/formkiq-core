@@ -971,8 +971,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<String> tags) {
 
     for (String tag : tags) {
+
       QueryResponse response = findDocumentTagAttributes(siteId, documentId, tag, null);
+
       List<Map<String, AttributeValue>> items = response.items();
+      items =
+          items.stream().filter(i -> tag.equals(i.get("tagKey").s())).collect(Collectors.toList());
+
       items.forEach(i -> {
         Map<String, AttributeValue> key = keysGeneric(i.get("PK").s(), i.get("SK").s());
         DeleteItemRequest deleteItemRequest =
