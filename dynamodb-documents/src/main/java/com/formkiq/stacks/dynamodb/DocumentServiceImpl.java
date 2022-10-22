@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -87,7 +88,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   /** Documents Table Name. */
   private String documentTableName;
   /** {@link IndexProcessor}. */
-  private IndexProcessor folderIndexProcessor = new FolderIndexProcessor();
+  private IndexProcessor folderIndexProcessor;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
   private SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
@@ -107,6 +108,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
+    this.folderIndexProcessor = new FolderIndexProcessor(connection, documentsTable);
 
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -115,7 +117,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void addFolderIndex(final String siteId, final DocumentItem item) {
+  public void addFolderIndex(final String siteId, final DocumentItem item) throws IOException {
+
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, item);
 
@@ -259,13 +262,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    */
   private void deleteFolderIndex(final String siteId, final DocumentItem item) {
     if (item != null) {
-      List<Map<String, AttributeValue>> indexes =
-          this.folderIndexProcessor.generateIndex(siteId, item);
-      if (!indexes.isEmpty()) {
-        Map<String, AttributeValue> attr = indexes.get(indexes.size() - 1);
+
+      try {
+        Map<String, String> attr = this.folderIndexProcessor.getIndex(siteId, item.getPath());
+
         if (attr.containsKey("documentId")) {
-          deleteItem(Map.of(PK, attr.get(PK), SK, attr.get(SK)));
+          deleteItem(Map.of(PK, AttributeValue.builder().s(attr.get(PK)).build(), SK,
+              AttributeValue.builder().s(attr.get(SK)).build()));
         }
+      } catch (IOException e) {
+        // ignore folder doesn't exist
       }
     }
   }
@@ -838,19 +844,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean isFolderExists(final String siteId, final DocumentItem item) {
 
     boolean exists = false;
-    List<Map<String, AttributeValue>> folderIndex =
-        this.folderIndexProcessor.generateIndex(siteId, item);
+    try {
+      Map<String, String> map = this.folderIndexProcessor.getIndex(siteId, item.getPath());
 
-    if (!folderIndex.isEmpty()) {
-
-      Map<String, AttributeValue> map = folderIndex.get(folderIndex.size() - 1);
-
-      if (!map.containsKey("documentId")) {
+      if ("folder".equals(map.get("type"))) {
         GetItemResponse response =
             this.dbClient.getItem(GetItemRequest.builder().tableName(this.documentTableName)
-                .key(Map.of(PK, map.get(PK), SK, map.get(SK))).build());
+                .key(Map.of(PK, AttributeValue.builder().s(map.get(PK)).build(), SK,
+                    AttributeValue.builder().s(map.get(SK)).build()))
+                .build());
         exists = !response.item().isEmpty();
       }
+    } catch (IOException e) {
+      exists = false;
     }
 
     return exists;

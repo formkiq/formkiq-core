@@ -14,7 +14,7 @@ Resources:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
           description: "FormKiQ HTTP API"
-          version: "1.8.9"
+          version: "1.9.0"
         paths:
           /version:
             get:
@@ -1531,6 +1531,41 @@ Resources:
                         $ref: '#/components/schemas/OnlyOfficeDocumentSaveResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
+          /indices/folder/move:
+            post:
+              description: Performs an Folder Index Move
+              tags:
+              - Index
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/IndexFolderMoveRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/IndexFolderMoveResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -1652,6 +1687,34 @@ Resources:
               schema:
                 type: string
           schemas:
+            ValidationErrorsResponse:
+              type: "object"
+              properties:
+                errors:
+                  $ref: "#/components/schemas/ValidationErrors"
+            ValidationErrors:
+              type: "array"
+              description: "List of errors"
+              items:
+                $ref: "#/components/schemas/ValidationError"
+            ValidationError:
+              type: "object"
+              properties:
+                key:
+                  type: "string"
+                  description: "Error Key"
+                error:
+                  type: "string"
+                  description: "Error Message"
+            IndexFolderMoveRequest:
+              type: "object"
+              properties:
+                source:
+                  type: "string"
+                  description: "Source path"
+                target:
+                  type: "string"
+                  description: "Target path"
             SetDocumentTagKeyRequest:
               type: "object"
               properties:
@@ -1663,6 +1726,12 @@ Resources:
                   description: "Tag values"
                   items:
                     type: "string"
+            IndexFolderMoveResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Folder move message"            
             GetDocumentContentResponse:
               type: "object"
               properties:

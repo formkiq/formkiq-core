@@ -1314,7 +1314,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
       results = search.search(siteId, q, null, 2);
       assertEquals(1, results.getResults().size());
-      assertEquals("something/bleh", results.getResults().get(0).get("path"));
+      assertEquals("bleh", results.getResults().get(0).get("path"));
 
       // given
       // when

@@ -53,6 +53,7 @@ public class AttributeValueToGlobalMetaFolder
 
     Map<String, Object> result = new HashMap<>();
     result.put("path", map.get("path").s());
+    result.put("documentId", map.get("documentId").s());
     result.put("folder", Boolean.TRUE);
 
     Date insertedDate = this.toInsertedDateDate.apply(map);

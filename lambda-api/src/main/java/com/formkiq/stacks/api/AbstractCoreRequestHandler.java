@@ -66,6 +66,7 @@ import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
+import com.formkiq.stacks.api.handler.IndicesFolderMoveRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
@@ -88,6 +89,8 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.IndexProcessor;
+import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.regions.Region;
 
@@ -146,6 +149,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new OnlyOfficeNewRequestHandler());
     addRequestHandler(new OnlyOfficeSaveRequestHandler());
     addRequestHandler(new OnlyOfficeEditRequestHandler());
+    addRequestHandler(new IndicesFolderMoveRequestHandler());
   }
 
   /**
@@ -180,6 +184,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
     AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
+    AwsServiceCache.register(IndexProcessor.class, new IndexProcessorExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));

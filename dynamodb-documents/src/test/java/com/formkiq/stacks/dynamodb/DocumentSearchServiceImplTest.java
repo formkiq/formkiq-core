@@ -706,7 +706,7 @@ public class DocumentSearchServiceImplTest {
       assertNull(results.getToken());
 
       int i = 0;
-      assertNull(list.get(i).getDocumentId());
+      assertNotNull(list.get(i).getDocumentId());
       assertEquals("sample", list.get(i++).getPath());
       assertEquals(doc1.getDocumentId(), results.getResults().get(i).getDocumentId());
       assertEquals("test1.pdf", list.get(i++).getPath());
@@ -723,8 +723,8 @@ public class DocumentSearchServiceImplTest {
       // then
       list = results.getResults();
       assertEquals(2, list.size());
-      assertEquals("sample/anotherone", list.get(0).getPath());
-      assertNull(list.get(0).getDocumentId());
+      assertEquals("anotherone", list.get(0).getPath());
+      assertNotNull(list.get(0).getDocumentId());
       assertEquals("sample/test3.pdf", list.get(1).getPath());
       assertEquals(doc2.getDocumentId(), list.get(1).getDocumentId());
 
@@ -740,6 +740,53 @@ public class DocumentSearchServiceImplTest {
       assertEquals(1, list.size());
       assertEquals("sample/anotherone/test4.pdf", list.get(0).getPath());
       assertEquals(doc3.getDocumentId(), list.get(0).getDocumentId());
+    }
+  }
+
+  /** Add and Delete Document. */
+  @Test
+  public void testSearch15() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("sample/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      PaginationMapToken startkey = null;
+      SearchQuery q0 = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      SearchQuery q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results0 =
+          this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+
+      PaginationResults<DynamicDocumentItem> results1 =
+          this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list0 = results0.getResults();
+      assertEquals(1, list0.size());
+      assertEquals("sample", list0.get(0).getPath());
+
+      List<DynamicDocumentItem> list1 = results1.getResults();
+      assertEquals(1, list1.size());
+      assertEquals("sample/test2.pdf", list1.get(0).getPath());
+
+      // given
+      q0 = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
+
+      // when
+      this.service.deleteDocument(siteId, doc0.getDocumentId());
+
+      // then
+      results0 = this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+      list0 = results0.getResults();
+      assertEquals(1, list0.size());
+      assertEquals("sample", list0.get(0).getPath());
+
+      results1 = this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+      assertEquals(0, results1.getResults().size());
     }
   }
 }

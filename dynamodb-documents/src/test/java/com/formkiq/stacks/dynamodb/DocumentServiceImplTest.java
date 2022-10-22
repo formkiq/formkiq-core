@@ -1820,10 +1820,10 @@ public class DocumentServiceImplTest implements DbKeys {
   /**
    * Test Saving / adding folders.
    * 
-   * @throws InterruptedException InterruptedException
+   * @throws Exception Exception
    */
   @Test
-  public void testSaveFolders02() throws InterruptedException {
+  public void testSaveFolders02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String userId0 = "joe";

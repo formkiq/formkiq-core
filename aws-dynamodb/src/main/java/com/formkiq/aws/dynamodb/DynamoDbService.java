@@ -21,50 +21,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
  * 
- * Generates Indexes Processor.
+ * DynamoDB Wrapper Service.
  *
  */
-public interface IndexProcessor {
+public interface DynamoDbService {
 
   /**
-   * Generates DynamoDB {@link WriteRequest} for Index.
+   * Delete DynamoDb Record.
    * 
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @return {@link List} {@link Map} {@link String}
-   * @throws IOException IOException
+   * @param pk {@link String}
+   * @param sk {@link String}
    */
-  Map<String, String> getIndex(String siteId, String path) throws IOException;
+  void deleteItem(String pk, String sk);
 
   /**
-   * Generates DynamoDB {@link WriteRequest} for Index.
+   * Gets DynamoDB Record.
    * 
-   * @param siteId {@link String}
-   * @param item {@link DocumentItem}
-   * @return {@link List} {@link Map} {@link AttributeValue}
+   * @param pk {@link String}
+   * @param sk {@link String}
+   * @return {@link Map}
    */
-  List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
+  Map<String, AttributeValue> get(String pk, String sk);
 
   /**
-   * Move Index from one to another.
+   * Put DynamoDb Record.
    * 
-   * @param siteId {@link String}
-   * @param sourcePath {@link String}
-   * @param targetPath {@link String}
-   * @param userId {@link String}
-   * @throws IOException IOException
+   * @param attr {@link Map}
    */
-  void moveIndex(String siteId, String sourcePath, String targetPath, String userId)
-      throws IOException;
+  void putItem(Map<String, AttributeValue> attr);
+
+  /**
+   * Update DynamoDB Record.
+   * 
+   * @param pk {@link String}
+   * @param sk {@link String}
+   * @param updateValues {@link Map}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> updateFields(AttributeValue pk, AttributeValue sk,
+      Map<String, String> updateValues);
+
+  /**
+   * Update DynamoDB Record.
+   * 
+   * @param pk {@link String}
+   * @param sk {@link String}
+   * @param updateValues {@link Map}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> updateFields(String pk, String sk, Map<String, String> updateValues);
 }

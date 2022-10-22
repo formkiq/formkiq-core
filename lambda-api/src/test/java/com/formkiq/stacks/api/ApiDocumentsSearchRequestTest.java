@@ -616,9 +616,11 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         if (folder.length() == 0) {
           assertEquals("something", documents.get(0).get("path"));
           assertEquals("true", documents.get(0).get("folder").toString());
+          assertNotNull(documents.get(0).get("documentId"));
         } else {
           assertEquals("something/path.txt", documents.get(0).get("path"));
           assertNull(documents.get(0).get("folder"));
+          assertNotNull(documents.get(0).get("documentId"));
         }
       }
     }

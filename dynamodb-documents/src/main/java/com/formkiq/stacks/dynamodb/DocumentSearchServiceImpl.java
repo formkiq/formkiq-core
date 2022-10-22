@@ -37,6 +37,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -78,14 +79,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
-
   /** {@link DocumentService}. */
   private DocumentService docService;
-
   /** Documents Table Name. */
   private String documentTableName;
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin tagSchemaPlugin;
+  /** {@link IndexProcessor}. */
+  private IndexProcessor folderIndexProcesor;
 
   /**
    * constructor.
@@ -108,6 +109,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     this.documentTableName = documentsTable;
+    this.folderIndexProcesor = new FolderIndexProcessor(connection, documentsTable);
   }
 
   private QueryRequest createQueryRequest(final String index, final String expression,
@@ -390,23 +392,50 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final SearchQuery query, final SearchMetaCriteria meta, final PaginationMapToken token,
       final int maxresults) {
 
+    String value = getMetaDataKey(siteId, meta);
+
+    PaginationResults<DynamicDocumentItem> result = null;
+
+    if (value != null) {
+
+      Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
+      values.put(":pk", AttributeValue.builder()
+          .s(createDatabaseKey(siteId, GLOBAL_FOLDER_METADATA + value)).build());
+
+      String expression = PK + " = :pk";
+      QueryRequest q =
+          createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE);
+
+      result = searchForMetaDocuments(q, siteId, query);
+
+    } else {
+      result = new PaginationResults<>(Collections.emptyList(), null);
+    }
+
+    return result;
+  }
+
+  private String getMetaDataKey(final String siteId, final SearchMetaCriteria meta) {
     String folder = meta.folder();
     if (folder.endsWith("/")) {
       folder = folder.substring(0, folder.length() - 1);
     }
 
-    String value = StringUtils.isBlank(meta.folder()) ? TAG_DELIMINATOR : TAG_DELIMINATOR + folder;
+    String value = TAG_DELIMINATOR;
+    if (!StringUtils.isBlank(meta.folder())) {
 
-    Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
-    values.put(":pk", AttributeValue.builder()
-        .s(createDatabaseKey(siteId, GLOBAL_FOLDER_METADATA + value)).build());
+      try {
+        Map<String, String> map = this.folderIndexProcesor.getIndex(siteId, folder + "/");
 
-    String expression = PK + " = :pk";
-    QueryRequest q = createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE);
+        if (map.containsKey("documentId")) {
+          value += map.get("documentId");
+        }
+      } catch (IOException e) {
+        value = null;
+      }
+    }
 
-    PaginationResults<DynamicDocumentItem> result = searchForMetaDocuments(q, siteId, query);
-
-    return result;
+    return value;
   }
 
   private PaginationResults<DynamicDocumentItem> searchByTag(final String siteId,
@@ -492,8 +521,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     List<DynamicDocumentItem> results = result.items().stream().map(r -> {
 
       AttributeValue documentId = r.get("documentId");
-      return documentId != null && documentMap.containsKey(documentId.s())
-          ? transform.apply(documentMap.get(r.get("documentId").s()))
+      boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
+
+      return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
           : new DynamicDocumentItem(metaFolder.apply(r));
 
     }).collect(Collectors.toList());

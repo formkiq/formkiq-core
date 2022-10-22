@@ -53,7 +53,10 @@ public class DynamoDbExtension
   public void beforeAll(final ExtensionContext context) throws Exception {
 
     this.dynamoDbLocal = DynamoDbTestServices.getDynamoDbLocal();
-    this.dynamoDbLocal.start();
+
+    if (this.dynamoDbLocal != null) {
+      this.dynamoDbLocal.start();
+    }
 
     this.dbConnection = DynamoDbTestServices.getDynamoDbConnection(this.dynamoDbLocal);
     this.dbhelper =

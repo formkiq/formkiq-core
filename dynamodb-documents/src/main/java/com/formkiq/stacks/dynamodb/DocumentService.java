@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -50,8 +51,9 @@ public interface DocumentService extends DocumentTagLoader {
    * 
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
+   * @throws IOException IOException
    */
-  void addFolderIndex(String siteId, DocumentItem item);
+  void addFolderIndex(String siteId, DocumentItem item) throws IOException;
 
   /**
    * Add Tags to Document.
