@@ -236,11 +236,13 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       idx++;
     }
 
-    Map<String, Collection<WriteRequest>> items =
-        new AttributeValuesToWriteRequests(this.documentTableName).apply(values);
+    if (!values.isEmpty()) {
+      Map<String, Collection<WriteRequest>> items =
+          new AttributeValuesToWriteRequests(this.documentTableName).apply(values);
 
-    BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
-    this.dbClient.batchWriteItem(batch);
+      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
+      this.dbClient.batchWriteItem(batch);
+    }
 
     return values;
   }

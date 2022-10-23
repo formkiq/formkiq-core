@@ -159,7 +159,7 @@ public class AwsResourceTest extends AbstractApiTest {
         while (list.isEmpty()) {
           TimeUnit.SECONDS.sleep(1);
         }
-        
+
         assertFalse(list.isEmpty());
         assertNotNull(list.get(0).get("documentId"));
 

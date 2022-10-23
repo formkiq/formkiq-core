@@ -1368,20 +1368,25 @@ public class DocumentServiceImplTest implements DbKeys {
       String docid = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
 
-      DocumentTag tag = new DocumentTag(docid, "category", null, new Date(), "jsmith");
-      tag.setValues(Arrays.asList("abc", "xyz"));
-      Collection<DocumentTag> tags = Arrays.asList(tag);
+      DocumentTag tag0 = new DocumentTag(docid, "category", null, new Date(), "jsmith");
+      tag0.setValues(Arrays.asList("abc", "xyz"));
+      DocumentTag tag1 = new DocumentTag(docid, "category2", null, new Date(), "jsmith");
+      tag1.setValues(Arrays.asList("abc2", "xyz2"));
+      Collection<DocumentTag> tags = Arrays.asList(tag0, tag1);
       this.service.saveDocument(siteId, item, tags);
 
-      assertEquals(1,
+      assertEquals(2,
           this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
 
       // when
       this.service.removeTags(siteId, docid, Arrays.asList(tags.iterator().next().getKey()));
 
       // then
-      assertEquals(0,
-          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults().size());
+      List<DocumentTag> results =
+          this.service.findDocumentTags(siteId, docid, null, MAX_RESULTS).getResults();
+      assertEquals(1, results.size());
+      assertEquals("category2", results.get(0).getKey());
+      assertEquals("[abc2, xyz2]", results.get(0).getValues().toString());
     }
   }
 

@@ -82,6 +82,7 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
@@ -90,6 +91,7 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
@@ -122,7 +124,6 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** {@link ActionsService}. */
   private static ActionsService actionsService;
-
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
   /** {@link DynamoDbConnectionBuilder}. */
@@ -133,6 +134,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String DOCUMENTS_BUCKET = "documentsbucket";
   /** SQS Sns Queue. */
   private static final String ERROR_SQS_QUEUE = "sqserror";
+  /** SQS Sns Create QueueUrl. */
+  private static String sqsDocumentEventUrl;
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
@@ -158,10 +161,14 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate";
   /** SQS Sns Queue. */
   private static final String SNS_SQS_DELETE_QUEUE = "sqssnsDelete";
+  /** {@link SnsConnectionBuilder}. */
+  private static SnsConnectionBuilder snsBuilder;
   /** SQS Create Url. */
   private static String snsCreateTopic;
   /** SNS Update Topic Arn. */
   private static String snsDeleteTopic;
+  /** SQS Create Url. */
+  private static String snsDocumentEvent;
   /** {@link SnsService}. */
   private static SnsService snsService;
   /** SQS Sns Create QueueUrl. */
@@ -172,12 +179,11 @@ public class StagingS3CreateTest implements DbKeys {
   private static SqsConnectionBuilder sqsBuilder;
   /** SQS Error Url. */
   private static String sqsErrorUrl;
+
   /** {@link SqsService}. */
   private static SqsService sqsService;
-
   /** {@link SsmConnectionBuilder}. */
   private static SsmConnectionBuilder ssmBuilder;
-
   /** Document S3 Staging Bucket. */
   private static final String STAGING_BUCKET = "example-bucket";
 
@@ -210,6 +216,7 @@ public class StagingS3CreateTest implements DbKeys {
     ssmBuilder = TestServices.getSsmConnection(null);
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
+    snsBuilder = TestServices.getSnsConnection(null);
 
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
@@ -224,6 +231,14 @@ public class StagingS3CreateTest implements DbKeys {
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     search = new DocumentSearchServiceImpl(dbBuilder, service, DOCUMENTS_TABLE, null);
+
+    if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
+      sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
+    }
+
+    snsService = new SnsService(snsBuilder);
+    snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
 
     createResources();
 
@@ -343,12 +358,14 @@ public class StagingS3CreateTest implements DbKeys {
   public void before() {
 
     this.env = new HashMap<>();
+    this.env.put("AWS_REGION", Region.US_EAST_1.id());
     this.env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
     this.env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
     this.env.put("SNS_CREATE_TOPIC", snsCreateTopic);
     this.env.put("SQS_ERROR_URL", sqsErrorUrl);
     this.env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     this.env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    this.env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
@@ -439,8 +456,8 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    final StagingS3Create handler = new StagingS3Create(this.env, Region.US_EAST_1, null, dbBuilder,
-        s3Builder, sqsBuilder, ssmBuilder);
+    final StagingS3Create handler = new StagingS3Create(this.env, null, dbBuilder, s3Builder,
+        sqsBuilder, ssmBuilder, snsBuilder);
 
     Void result = handler.handleRequest(map, this.context);
     assertNull(result);
@@ -1117,7 +1134,7 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Test add tags to existing Document with .fkb64 file and NO content.
+   * Test add tags to existing Document with .fkb64 file and NO content and FULLTEXT action.
    * 
    * @throws Exception Exception
    */
@@ -1142,6 +1159,8 @@ public class StagingS3CreateTest implements DbKeys {
       service.saveDocument(siteId, item,
           Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
+      actionsService.saveAction(siteId, documentId,
+          new Action().type(ActionType.FULLTEXT).status(ActionStatus.COMPLETE), 0);
 
       TimeUnit.SECONDS.sleep(1);
 
@@ -1176,7 +1195,21 @@ public class StagingS3CreateTest implements DbKeys {
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "userId", "value",
           userId, "type", "SYSTEMDEFINED", "userId", userId));
+
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+      assertPublishedSnsMessage();
     }
+  }
+
+  private void assertPublishedSnsMessage() throws InterruptedException {
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    while (msgs.size() != 1) {
+      TimeUnit.SECONDS.sleep(1);
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    }
+    assertEquals(1, msgs.size());
   }
 
   /**
@@ -1199,8 +1232,8 @@ public class StagingS3CreateTest implements DbKeys {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
-    final StagingS3Create handler = new StagingS3Create(this.env, Region.US_EAST_1, null, dbBuilder,
-        s3Builder, sqsBuilder, ssmBuilder);
+    final StagingS3Create handler = new StagingS3Create(this.env, null, dbBuilder, s3Builder,
+        sqsBuilder, ssmBuilder, snsBuilder);
 
     // when
     Void result = handler.handleRequest(map, this.context);

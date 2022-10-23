@@ -87,11 +87,14 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentItem item = new DocumentItemDynamoDb(documentId, now, "joe");
       getDocumentService().saveDocument(siteId, item, null);
 
-      DocumentTag tag = new DocumentTag(documentId, tagKey, tagKey, now, userId);
-      tag.setInsertedDate(new Date());
+      DocumentTag tag0 = new DocumentTag(documentId, tagKey, tagKey, now, userId);
+      tag0.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      DocumentTag tag1 = new DocumentTag(documentId, tagKey + "2", tagKey, now, userId);
+      tag1.setInsertedDate(new Date());
+
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag0, tag1), null);
+      assertEquals(2, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -112,7 +115,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       PaginationResults<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals(0, tags.getResults().size());
+      assertEquals(1, tags.getResults().size());
+      assertEquals("category2", tags.getResults().get(0).getKey());
 
       String expected = "response: {" + getHeaders()
           + ",\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '" + documentId
