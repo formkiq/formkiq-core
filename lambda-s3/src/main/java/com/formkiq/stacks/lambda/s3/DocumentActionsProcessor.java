@@ -46,6 +46,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -70,6 +71,7 @@ import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.SetDocumentFulltext;
+import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
@@ -213,17 +215,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * Find Content Url.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param item {@link DocumentItem}
    * @return {@link List} {@link String}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  private List<String> findContentUrls(final String siteId, final String documentId)
+  private List<String> findContentUrls(final String siteId, final DocumentItem item)
       throws IOException, InterruptedException {
 
     List<String> urls = null;
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    String documentId = item.getDocumentId();
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
     if (MimeType.isPlainText(item.getContentType())) {
@@ -332,9 +334,20 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      List<String> contentUrls = findContentUrls(siteId, documentId);
+      DocumentItem item = this.documentService.findDocument(siteId, documentId);
+      List<String> contentUrls = findContentUrls(siteId, item);
 
-      SetDocumentFulltext fulltext = new SetDocumentFulltext().contentUrls(contentUrls);
+      final int maxTags = 100;
+      PaginationResults<DocumentTag> docTags =
+          this.documentService.findDocumentTags(siteId, documentId, null, maxTags);
+
+      List<UpdateFulltextTag> tags = docTags.getResults().stream().map(
+          t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue()).values(t.getValues()))
+          .collect(Collectors.toList());
+
+      SetDocumentFulltext fulltext =
+          new SetDocumentFulltext().contentUrls(contentUrls).path(item.getPath()).tags(tags);
+
       SetDocumentFulltextRequest req =
           new SetDocumentFulltextRequest().siteId(siteId).documentId(documentId).document(fulltext);
 

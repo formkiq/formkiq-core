@@ -2459,7 +2459,12 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
-                  description: "Url which contains Document content"                
+                  description: "Url which contains Document content"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                tags:
+                  $ref: "#/components/schemas/AddDocumentTags"
             UpdateDocumentFulltextRequest:
               type: object
               properties:
