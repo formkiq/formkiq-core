@@ -50,6 +50,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -58,6 +59,9 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.graalvm.annotations.ReflectableClass;
+import com.formkiq.graalvm.annotations.ReflectableClasses;
+import com.formkiq.graalvm.annotations.ReflectableField;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -89,6 +93,9 @@ import software.amazon.awssdk.regions.Region;
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
 @ReflectableImport(classes = DocumentEvent.class)
+@ReflectableClasses({@ReflectableClass(className = UpdateFulltextTag.class,
+    allPublicConstructors = true, fields = {@ReflectableField(name = "key"),
+        @ReflectableField(name = "value"), @ReflectableField(name = "values")})})
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void> {
 
   /** {@link ActionsService}. */
@@ -311,14 +318,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Process Action.
    * 
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void processAction(final String siteId, final String documentId, final Action action)
-      throws IOException, InterruptedException {
+  private void processAction(final LambdaLogger logger, final String siteId,
+      final String documentId, final Action action) throws IOException, InterruptedException {
 
     if (ActionType.OCR.equals(action.type())) {
 
@@ -341,9 +349,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       PaginationResults<DocumentTag> docTags =
           this.documentService.findDocumentTags(siteId, documentId, null, maxTags);
 
-      List<UpdateFulltextTag> tags = docTags.getResults().stream().map(
-          t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue()).values(t.getValues()))
-          .collect(Collectors.toList());
+      List<UpdateFulltextTag> tags =
+          docTags.getResults().stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
+              .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
+                  .values(t.getValues()))
+              .collect(Collectors.toList());
 
       SetDocumentFulltext fulltext =
           new SetDocumentFulltext().contentUrls(contentUrls).path(item.getPath()).tags(tags);
@@ -395,7 +405,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
 
         try {
-          processAction(siteId, documentId, action);
+          processAction(logger, siteId, documentId, action);
 
         } catch (Exception e) {
           e.printStackTrace();
