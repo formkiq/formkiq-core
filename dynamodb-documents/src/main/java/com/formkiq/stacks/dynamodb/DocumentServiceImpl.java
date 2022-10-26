@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.FolderIndexProcessor.INDEX_SK;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -49,16 +50,20 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.plugins.version.DocumentVersionService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -83,12 +88,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private static final int MAX_QUERY_RECORDS = 100;
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService dbService;
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Documents Table Name. */
   private String documentTableName;
   /** {@link IndexProcessor}. */
   private IndexProcessor folderIndexProcessor;
+  /** {@link DocumentVersionService}. */
+  private DocumentVersionService versionsService;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
   private SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
@@ -99,16 +108,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param documentVersionsService {@link DocumentVersionService}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable) {
+      final String documentsTable, final DocumentVersionService documentVersionsService) {
     if (documentsTable == null) {
-      throw new IllegalArgumentException("Table name is null");
+      throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
     this.folderIndexProcessor = new FolderIndexProcessor(connection, documentsTable);
+    this.dbService = new DynamoDbServiceImpl(connection, documentsTable);
 
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -134,7 +146,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public void addTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
 
-    List<Map<String, AttributeValue>> items = saveTags(siteId, documentId, tags, timeToLive);
+    List<Map<String, AttributeValue>> items =
+        getSaveTagsAttributes(siteId, documentId, tags, timeToLive);
     if (!items.isEmpty()) {
       WriteRequestBuilder builder =
           new WriteRequestBuilder().appends(this.documentTableName, items);
@@ -338,9 +351,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public boolean exists(final String siteId, final String documentId) {
-    GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
-        .tableName(this.documentTableName).projectionExpression("PK").build();
-    return this.dbClient.getItem(r).hasItem();
+    Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+    return this.dbService.exists(keys.get(PK), keys.get(SK));
   }
 
   /**
@@ -512,9 +524,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       List<Map<String, AttributeValue>> keys = ids.stream()
           .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
 
-      BatchGetItemResponse batchResponse = getBatch(keys);
-
-      Collection<List<Map<String, AttributeValue>>> values = batchResponse.responses().values();
+      Collection<List<Map<String, AttributeValue>>> values = getBatch(keys).values();
       List<Map<String, AttributeValue>> result =
           !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
 
@@ -816,16 +826,101 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * Get Batch Keys.
    * 
    * @param keys {@link List} {@link Map} {@link AttributeValue}
-   * @return {@link BatchGetItemResponse}
+   * @return {@link Map}
    */
-  private BatchGetItemResponse getBatch(final List<Map<String, AttributeValue>> keys) {
-    Map<String, KeysAndAttributes> requestedItems =
-        Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
+  private Map<String, List<Map<String, AttributeValue>>> getBatch(
+      final Collection<Map<String, AttributeValue>> keys) {
+    ReadRequestBuilder builder = new ReadRequestBuilder();
+    builder.append(this.documentTableName, keys);
+    return builder.batchReadItems(this.dbClient);
+  }
 
-    BatchGetItemRequest batchReq =
-        BatchGetItemRequest.builder().requestItems(requestedItems).build();
-    BatchGetItemResponse batchResponse = this.dbClient.batchGetItem(batchReq);
-    return batchResponse;
+  /**
+   * Save {@link DocumentItemDynamoDb}.
+   * 
+   * @param keys {@link Map}
+   * @param siteId DynamoDB PK siteId
+   * @param document {@link DocumentItem}
+   * @param options {@link SaveDocumentOptions}
+   * @return {@link Map}
+   */
+  private Map<String, AttributeValue> getSaveDocumentAttributes(
+      final Map<String, AttributeValue> keys, final String siteId, final DocumentItem document,
+      final SaveDocumentOptions options) {
+
+    Date insertedDate = document.getInsertedDate();
+    String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
+    String fullInsertedDate = insertedDate != null ? this.df.format(insertedDate) : null;
+
+    Date lastModifiedDate = document.getLastModifiedDate();
+    String fullLastModifiedDate =
+        lastModifiedDate != null ? this.df.format(lastModifiedDate) : fullInsertedDate;
+
+    Map<String, AttributeValue> pkvalues = new HashMap<>(keys);
+
+    if (options.saveDocumentDate()) {
+      addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_DOCUMENT_DATE_TS + shortdate));
+      addS(pkvalues, GSI1_SK, fullInsertedDate + TAG_DELIMINATOR + document.getDocumentId());
+    }
+
+    addS(pkvalues, "documentId", document.getDocumentId());
+
+    if (fullInsertedDate != null) {
+      addS(pkvalues, "inserteddate", fullInsertedDate);
+      addS(pkvalues, "lastModifiedDate", fullLastModifiedDate);
+    }
+
+    addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
+    addS(pkvalues, "userId", document.getUserId());
+    addS(pkvalues, "path", document.getPath());
+    addS(pkvalues, "contentType", document.getContentType());
+
+    if (document.getContentLength() != null) {
+      addN(pkvalues, "contentLength", "" + document.getContentLength());
+    }
+
+    if (document.getChecksum() != null) {
+      String etag = document.getChecksum().replaceAll("^\"|\"$", "");
+      addS(pkvalues, "etag", etag);
+    }
+
+    if (document.getBelongsToDocumentId() != null) {
+      addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
+    }
+
+    if (options.timeToLive() != null) {
+      addN(pkvalues, "TimeToLive", options.timeToLive());
+    }
+
+    return pkvalues;
+  }
+
+  /**
+   * Generate Save Tags DynamoDb Keys.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param tags {@link Collection} {@link DocumentTag}
+   * @param timeToLive {@link String}
+   * @return {@link List} {@link Map}
+   */
+  private List<Map<String, AttributeValue>> getSaveTagsAttributes(final String siteId,
+      final String documentId, final Collection<DocumentTag> tags, final String timeToLive) {
+
+    Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
+        || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
+
+    DocumentTagToAttributeValueMap mapper =
+        new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
+
+    List<Map<String, AttributeValue>> items = notNull(tags).stream().filter(predicate).map(mapper)
+        .flatMap(List::stream).collect(Collectors.toList());
+
+    if (timeToLive != null) {
+      items.forEach(v -> addN(v, "TimeToLive", timeToLive));
+    }
+
+    return items;
   }
 
   /**
@@ -995,6 +1090,34 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
+   * Rename a document document.
+   * 
+   * @param documentId {@link String}
+   * @param documentValues {@link Map}
+   * @param folderIndex {@link List}
+   */
+  private void renameDuplicateDocumentIfNeeded(final String documentId,
+      final Map<String, AttributeValue> documentValues,
+      final List<Map<String, AttributeValue>> folderIndex) {
+
+    if (!folderIndex.isEmpty()) {
+      int len = folderIndex.size();
+      Map<String, AttributeValue> documentPath = folderIndex.get(len - 1);
+
+      if (this.dbService.exists(documentPath.get(PK), documentPath.get(SK))) {
+
+        String oldPath = documentValues.get("path").s();
+        String oldFilename = documentPath.get("path").s();
+        String newFilename = String.format("%s (%s)", documentPath.get("path").s(), documentId);
+        String newPath = oldPath.replaceAll(oldFilename, newFilename);
+        documentValues.put("path", AttributeValue.fromS(newPath));
+        documentPath.put(SK, AttributeValue.fromS(INDEX_SK + newFilename));
+        documentPath.put("path", AttributeValue.fromS(newFilename));
+      }
+    }
+  }
+
+  /**
    * Save Record.
    * 
    * @param values {@link Map} {@link AttributeValue}
@@ -1069,83 +1192,57 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final DocumentItem document, final Collection<DocumentTag> tags,
       final SaveDocumentOptions options) {
 
-    Map<String, AttributeValue> documentValues = saveDocument(keys, siteId, document, options);
+    boolean documentExists = exists(siteId, document.getDocumentId());
 
-    List<Map<String, AttributeValue>> tagValues =
-        saveTags(siteId, document.getDocumentId(), tags, options.timeToLive());
+    Map<String, AttributeValue> previous =
+        documentExists ? new HashMap<>(this.dbService.get(keys.get(PK), keys.get(SK)))
+            : Collections.emptyMap();
+
+    Map<String, AttributeValue> documentValues = new HashMap<>(previous);
+    Map<String, AttributeValue> current =
+        getSaveDocumentAttributes(keys, siteId, document, options);
+    documentValues.putAll(current);
+
+    boolean previousSameAsCurrent = previous.equals(current);
+
+    if (!previousSameAsCurrent) {
+      this.versionsService.addDocumentVersionAttributes(previous, documentValues);
+    }
+
+    Collection<Map<String, AttributeValue>> previousList =
+        !previous.isEmpty() ? Arrays.asList(previous) : Collections.emptyList();
 
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, document);
     folderIndex = updateFromExistingFolder(folderIndex);
 
+    if (!documentExists) {
+      renameDuplicateDocumentIfNeeded(document.getDocumentId(), documentValues, folderIndex);
+    }
+
+    // update top level directory
+    if (folderIndex.size() > 1) {
+      int len = folderIndex.size();
+      folderIndex.get(len - 2).put("lastModifiedDate", documentValues.get("lastModifiedDate"));
+    }
+
+    List<Map<String, AttributeValue>> tagValues =
+        getSaveTagsAttributes(siteId, document.getDocumentId(), tags, options.timeToLive());
+
     WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
         .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
         .appends(this.documentTableName, folderIndex);
+
+    String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
+    if (documentVersionsTableName != null) {
+      writeBuilder = writeBuilder.appends(documentVersionsTableName, previousList);
+    }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
       if (options.saveDocumentDate()) {
         saveDocumentDate(document);
       }
     }
-  }
-
-  /**
-   * Save {@link DocumentItemDynamoDb}.
-   * 
-   * @param keys {@link Map}
-   * @param siteId DynamoDB PK siteId
-   * @param document {@link DocumentItem}
-   * @param options {@link SaveDocumentOptions}
-   * @return {@link Map}
-   */
-  private Map<String, AttributeValue> saveDocument(final Map<String, AttributeValue> keys,
-      final String siteId, final DocumentItem document, final SaveDocumentOptions options) {
-
-    Date insertedDate = document.getInsertedDate();
-    String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
-    String fullInsertedDate = insertedDate != null ? this.df.format(insertedDate) : null;
-
-    Date lastModifiedDate = document.getLastModifiedDate();
-    String fullLastModifiedDate =
-        lastModifiedDate != null ? this.df.format(lastModifiedDate) : fullInsertedDate;
-
-    Map<String, AttributeValue> pkvalues = new HashMap<>(keys);
-
-    if (options.saveDocumentDate()) {
-      addS(pkvalues, GSI1_PK, createDatabaseKey(siteId, PREFIX_DOCUMENT_DATE_TS + shortdate));
-      addS(pkvalues, GSI1_SK, fullInsertedDate + TAG_DELIMINATOR + document.getDocumentId());
-    }
-
-    addS(pkvalues, "documentId", document.getDocumentId());
-
-    if (fullInsertedDate != null) {
-      addS(pkvalues, "inserteddate", fullInsertedDate);
-      addS(pkvalues, "lastModifiedDate", fullLastModifiedDate);
-    }
-
-    addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
-    addS(pkvalues, "userId", document.getUserId());
-    addS(pkvalues, "path", document.getPath());
-    addS(pkvalues, "contentType", document.getContentType());
-
-    if (document.getContentLength() != null) {
-      addN(pkvalues, "contentLength", "" + document.getContentLength());
-    }
-
-    if (document.getChecksum() != null) {
-      String etag = document.getChecksum().replaceAll("^\"|\"$", "");
-      addS(pkvalues, "etag", etag);
-    }
-
-    if (document.getBelongsToDocumentId() != null) {
-      addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
-    }
-
-    if (options.timeToLive() != null) {
-      addN(pkvalues, "TimeToLive", options.timeToLive());
-    }
-
-    return pkvalues;
   }
 
   @Override
@@ -1329,34 +1426,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Generate Save Tags DynamoDb Keys.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param tags {@link Collection} {@link DocumentTag}
-   * @param timeToLive {@link String}
-   * @return {@link List} {@link Map}
-   */
-  private List<Map<String, AttributeValue>> saveTags(final String siteId, final String documentId,
-      final Collection<DocumentTag> tags, final String timeToLive) {
-
-    Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
-        || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
-
-    DocumentTagToAttributeValueMap mapper =
-        new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, documentId);
-
-    List<Map<String, AttributeValue>> items = notNull(tags).stream().filter(predicate).map(mapper)
-        .flatMap(List::stream).collect(Collectors.toList());
-
-    if (timeToLive != null) {
-      items.forEach(v -> addN(v, "TimeToLive", timeToLive));
-    }
-
-    return items;
-  }
-
-  /**
    * Sort {@link DocumentItem} to match DocumentIds {@link List}.
    * 
    * @param documentIds {@link List} {@link String}
@@ -1369,6 +1438,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
     return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public void updateDocument(final String siteId, final String documentId,
+      final Map<String, AttributeValue> attributes) {
+
+    Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+    attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
+    this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
   }
 
   /**
@@ -1385,10 +1463,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (!indexKeys.isEmpty()) {
 
-      BatchGetItemResponse batchResponse = getBatch(indexKeys);
-
-      List<Map<String, AttributeValue>> attrs =
-          batchResponse.responses().get(this.documentTableName);
+      List<Map<String, AttributeValue>> attrs = getBatch(indexKeys).get(this.documentTableName);
 
       if (!notNull(attrs).isEmpty()) {
 
@@ -1401,6 +1476,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
           if (o.isPresent()) {
             f.put("inserteddate", o.get().get("inserteddate"));
+            f.put("lastModifiedDate", o.get().get("lastModifiedDate"));
             f.put("userId", o.get().get("userId"));
           }
 

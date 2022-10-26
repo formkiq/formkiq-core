@@ -31,16 +31,18 @@ import java.util.Map;
  *
  */
 public class S3ObjectMetadata {
-  /** S3 Object ETag. */
-  private String etag;
+  /** Content Length. */
+  private Long contentLength;
   /** Object Content Type. */
   private String contentType;
+  /** S3 Object ETag. */
+  private String etag;
   /** Object Metadata. */
   private Map<String, String> metadata;
   /** boolean. */
   private boolean objectExists;
-  /** Content Length. */
-  private Long contentLength;
+  /** S3 Version Id. */
+  private String versionId;
 
   /**
    * constructor.
@@ -81,6 +83,15 @@ public class S3ObjectMetadata {
    */
   public Map<String, String> getMetadata() {
     return Collections.unmodifiableMap(this.metadata);
+  }
+
+  /**
+   * Get S3 Version Id.
+   * 
+   * @return {@link String}
+   */
+  public String getVersionId() {
+    return this.versionId;
   }
 
   /**
@@ -142,6 +153,17 @@ public class S3ObjectMetadata {
    */
   public S3ObjectMetadata setObjectExists(final boolean exists) {
     this.objectExists = exists;
+    return this;
+  }
+
+  /**
+   * Set S3 Version Id.
+   * 
+   * @param s3VersionId {@link String}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setVersionId(final String s3VersionId) {
+    this.versionId = s3VersionId;
     return this;
   }
 }

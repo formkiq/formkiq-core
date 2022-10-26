@@ -43,6 +43,7 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -66,7 +67,8 @@ public class ActionsServiceDynamoDbTest {
 
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
-    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE);
+    documentService =
+        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
   }
 
   /**

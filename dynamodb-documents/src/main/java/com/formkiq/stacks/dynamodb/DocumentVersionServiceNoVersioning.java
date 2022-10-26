@@ -21,14 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import java.util.Map;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.plugins.version.DocumentVersionService;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/versions". */
-public class DocumentVersionsRequestHandler extends AbstractPaymentRequiredRequestHandler {
+/**
+ * 
+ * No versioning implementation of {@link DocumentVersionService}.
+ *
+ */
+@Reflectable
+public class DocumentVersionServiceNoVersioning implements DocumentVersionService {
+
   @Override
-  public String getRequestUrl() {
-    return "/documents/{documentId}/versions";
+  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
+    // empty
+  }
+
+  @Override
+  public String getDocumentVersionsTableName() {
+    return null;
+  }
+
+  @Override
+  public void initialize(final Map<String, String> map) {
+    // empty
   }
 }

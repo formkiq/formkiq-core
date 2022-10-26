@@ -507,7 +507,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     QueryResponse result = this.dbClient.query(q);
 
     List<String> documentIds = result.items().stream().filter(r -> r.containsKey("documentId"))
-        .map(r -> r.get("documentId").s()).collect(Collectors.toList());
+        .map(r -> r.get("documentId").s()).distinct().collect(Collectors.toList());
 
     List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
 

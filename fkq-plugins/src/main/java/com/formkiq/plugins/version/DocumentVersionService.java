@@ -21,14 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.plugins.version;
 
-import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import java.util.Map;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/versions". */
-public class DocumentVersionsRequestHandler extends AbstractPaymentRequiredRequestHandler {
-  @Override
-  public String getRequestUrl() {
-    return "/documents/{documentId}/versions";
-  }
+/**
+ * 
+ * Interface for Document Versioning.
+ *
+ */
+public interface DocumentVersionService {
+
+  /** FormKiQ S3 Version. */
+  String S3VERSION_ATTRIBUTE = "fk#s3version";
+  /** FormKiQ Version. */
+  String VERSION_ATTRIBUTE = "fk#version";
+
+  /**
+   * Add Document Versioning Attributes to Previous / Current Objects.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   */
+  void addDocumentVersionAttributes(Map<String, AttributeValue> previous,
+      Map<String, AttributeValue> current);
+
+  /**
+   * Get DynamoDB Documents Versions Table Name.
+   * 
+   * @return {@link String}
+   */
+  String getDocumentVersionsTableName();
+
+  /**
+   * Initialize Service.
+   * 
+   * @param map {@link Map}
+   */
+  void initialize(Map<String, String> map);
 }

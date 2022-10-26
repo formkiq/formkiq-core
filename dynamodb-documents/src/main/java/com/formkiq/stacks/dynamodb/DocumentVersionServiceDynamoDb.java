@@ -21,59 +21,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.plugins.version.DocumentVersionService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * DynamoDB Wrapper Service.
+ * {@link DocumentVersionService} implementation.
  *
  */
-public interface DynamoDbService {
+@Reflectable
+public class DocumentVersionServiceDynamoDb implements DocumentVersionService, DbKeys {
 
-  /**
-   * Delete DynamoDb Record.
-   * 
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
-   */
-  void deleteItem(AttributeValue pk, AttributeValue sk);
+  /** DynamoDB Document Versions Table Name. */
+  private String tableName = null;
 
-  /**
-   * Whether Database Record Exists.
-   * 
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
-   * @return boolean
-   */
-  boolean exists(AttributeValue pk, AttributeValue sk);
+  @Override
+  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
 
-  /**
-   * Gets DynamoDB Record.
-   * 
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
-   * @return {@link Map}
-   */
-  Map<String, AttributeValue> get(AttributeValue pk, AttributeValue sk);
+    if (!previous.isEmpty()) {
 
-  /**
-   * Put DynamoDb Record.
-   * 
-   * @param attr {@link Map}
-   */
-  void putItem(Map<String, AttributeValue> attr);
+      String version = current.getOrDefault(VERSION_ATTRIBUTE, AttributeValue.fromS("0")).s();
+      String nextVersion = String.valueOf(Integer.parseInt(version) + 1);
 
-  /**
-   * Update DynamoDB Record.
-   * 
-   * @param pk {@link String}
-   * @param sk {@link String}
-   * @param updateValues {@link Map}
-   * @return {@link Map}
-   */
-  Map<String, AttributeValue> updateFields(AttributeValue pk, AttributeValue sk,
-      Map<String, AttributeValue> updateValues);
+      previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(version));
+      previous.put(SK, AttributeValue.fromS(previous.get(SK).s() + "#v" + nextVersion));
+
+      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
+    }
+  }
+
+  @Override
+  public String getDocumentVersionsTableName() {
+    return this.tableName;
+  }
+
+  @Override
+  public void initialize(final Map<String, String> map) {
+    this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
+  }
 }

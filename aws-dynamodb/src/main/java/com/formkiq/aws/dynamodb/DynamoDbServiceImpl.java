@@ -32,6 +32,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
@@ -64,46 +65,61 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public void deleteItem(final String pk, final String sk) {
-    Map<String, AttributeValue> sourceKey =
-        Map.of(PK, AttributeValue.fromS(pk), SK, AttributeValue.fromS(sk));
+  public void deleteItem(final AttributeValue pk, final AttributeValue sk) {
+    Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);
     this.dbClient
         .deleteItem(DeleteItemRequest.builder().tableName(this.tableName).key(sourceKey).build());
   }
 
   @Override
-  public Map<String, AttributeValue> get(final String pk, final String sk) {
-    Map<String, AttributeValue> key =
-        Map.of(PK, AttributeValue.fromS(pk), SK, AttributeValue.fromS(sk));
+  public boolean exists(final AttributeValue pk, final AttributeValue sk) {
+    GetItemRequest r = GetItemRequest.builder().key(Map.of(PK, pk, SK, sk))
+        .tableName(this.tableName).projectionExpression("PK").build();
+    GetItemResponse response = this.dbClient.getItem(r);
+    return !response.item().isEmpty();
+  }
+
+  @Override
+  public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
+    Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
     return this.dbClient
         .getItem(GetItemRequest.builder().tableName(this.tableName).key(key).build()).item();
   }
 
   @Override
   public void putItem(final Map<String, AttributeValue> attributes) {
+    putItem(this.tableName, attributes);
+  }
+
+  /**
+   * Put Item in DynamoDb.
+   * 
+   * @param dynamoDbTable {@link String}
+   * @param attributes {@link Map}
+   */
+  private void putItem(final String dynamoDbTable, final Map<String, AttributeValue> attributes) {
     this.dbClient
-        .putItem(PutItemRequest.builder().tableName(this.tableName).item(attributes).build());
+        .putItem(PutItemRequest.builder().tableName(dynamoDbTable).item(attributes).build());
   }
 
   @Override
   public Map<String, AttributeValue> updateFields(final AttributeValue pk, final AttributeValue sk,
-      final Map<String, String> updateValues) {
+      final Map<String, AttributeValue> updateValues) {
+    return updateFields(this.tableName, pk, sk, updateValues);
+  }
+
+  private Map<String, AttributeValue> updateFields(final String dynamoDbTable,
+      final AttributeValue pk, final AttributeValue sk,
+      final Map<String, AttributeValue> updateValues) {
 
     Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
 
     Map<String, AttributeValueUpdate> values = new HashMap<>();
     updateValues.forEach((key, value) -> {
-      values.put(key,
-          AttributeValueUpdate.builder().value(AttributeValue.builder().s(value).build()).build());
+      values.put(key, AttributeValueUpdate.builder().value(value).build());
     });
 
-    return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.tableName).key(dbKey)
+    return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(dynamoDbTable).key(dbKey)
         .attributeUpdates(values).build()).attributes();
-  }
-
-  @Override
-  public Map<String, AttributeValue> updateFields(final String pk, final String sk,
-      final Map<String, String> updateValues) {
-    return updateFields(AttributeValue.fromS(pk), AttributeValue.fromS(sk), updateValues);
   }
 }

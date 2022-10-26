@@ -73,6 +73,7 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
+import com.formkiq.plugins.version.DocumentVersionService;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -84,6 +85,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -200,7 +202,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
 
-  /** constructor. */
+  /**
+   * constructor.
+   * 
+   */
   public StagingS3Create() {
     this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
@@ -220,6 +225,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
+   * @throws Exception Exception
    */
   protected StagingS3Create(final Map<String, String> map, final AwsCredentials awsCredentials,
       final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3Builder,
@@ -228,8 +234,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     this.region = Region.of(map.get("AWS_REGION"));
     this.credentials = awsCredentials;
+
     String documentsTable = map.get("DOCUMENTS_TABLE");
-    this.service = new DocumentServiceImpl(dbBuilder, documentsTable);
+
+    DocumentServiceExtension dsExtension = new DocumentServiceExtension();
+    DocumentVersionService versionService = dsExtension.getVersionService(map);
+
+    this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
     this.searchService =
         new DocumentSearchServiceImpl(dbBuilder, this.service, documentsTable, null);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);

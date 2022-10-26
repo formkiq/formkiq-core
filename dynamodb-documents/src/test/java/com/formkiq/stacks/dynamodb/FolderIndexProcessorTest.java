@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -41,6 +42,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -58,6 +61,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @ExtendWith(DynamoDbExtension.class)
 class FolderIndexProcessorTest implements DbKeys {
 
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService dbService;
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor index;
   /** {@link DocumentService}. */
@@ -70,9 +75,11 @@ class FolderIndexProcessorTest implements DbKeys {
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
     index = new FolderIndexProcessor(dynamoDbConnection, DOCUMENTS_TABLE);
 
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
     searchService =
         new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE, null);
+    dbService = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
   }
 
   /**
@@ -96,10 +103,6 @@ class FolderIndexProcessorTest implements DbKeys {
 
       for (int j = 0; j < loop; j++) {
 
-        if (j < 2) {
-          index.clearCache();
-        }
-
         // when
         List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
 
@@ -108,38 +111,25 @@ class FolderIndexProcessorTest implements DbKeys {
         assertEquals(expected, indexes.size());
 
         int i = 0;
-        assertEquals(site + "global#folders#", indexes.get(i).get(PK).s());
-        assertEquals("f#a", indexes.get(i).get(SK).s());
-        assertEquals("a", indexes.get(i).get("path").s());
-        assertNotNull(indexes.get(i).get("documentId"));
-        assertNotNull(indexes.get(i).get("inserteddate"));
-        assertNotNull(indexes.get(i).get("lastModifiedDate"));
-        documentIdA = documentIdA != null ? documentIdA : indexes.get(i).get("documentId").s();
-        assertEquals("joe", indexes.get(i++).get("userId").s());
+        Map<String, AttributeValue> map = indexes.get(i++);
+        assertTrue(dbService.exists(map.get(PK), map.get(SK)));
 
-        assertEquals(site + "global#folders#" + documentIdA, indexes.get(i).get(PK).s());
-        assertEquals("f#b", indexes.get(i).get(SK).s());
-        assertEquals("b", indexes.get(i).get("path").s());
-        assertNotNull(indexes.get(i).get("inserteddate"));
-        assertNotNull(indexes.get(i).get("lastModifiedDate"));
-        documentIdB = documentIdB != null ? documentIdB : indexes.get(i).get("documentId").s();
-        assertEquals("joe", indexes.get(i++).get("userId").s());
+        verifyIndex(map, map.get(PK).s(), "f#a", "a", true);
+        documentIdA = documentIdA != null ? documentIdA : map.get("documentId").s();
 
-        assertEquals(site + "global#folders#" + documentIdB, indexes.get(i).get(PK).s());
-        assertEquals("f#c", indexes.get(i).get(SK).s());
-        assertEquals("c", indexes.get(i).get("path").s());
-        assertNotNull(indexes.get(i).get("inserteddate"));
-        assertNotNull(indexes.get(i).get("lastModifiedDate"));
-        documentIdC = documentIdC != null ? documentIdC : indexes.get(i).get("documentId").s();
-        assertEquals("joe", indexes.get(i++).get("userId").s());
+        map = indexes.get(i++);
+        assertTrue(dbService.exists(map.get(PK), map.get(SK)));
+        verifyIndex(map, site + "global#folders#" + documentIdA, "f#b", "b", true);
+        documentIdB = documentIdB != null ? documentIdB : map.get("documentId").s();
 
-        assertEquals(site + "global#folders#" + documentIdC, indexes.get(i).get(PK).s());
-        assertEquals("f#test.pdf", indexes.get(i).get(SK).s());
-        assertEquals("test.pdf", indexes.get(i).get("path").s());
-        assertNull(indexes.get(i).get("inserteddate"));
-        assertNull(indexes.get(i).get("lastModifiedDate"));
-        assertNull(indexes.get(i).get("userId"));
-        assertEquals(item.getDocumentId(), indexes.get(i++).get("documentId").s());
+        map = indexes.get(i++);
+        assertTrue(dbService.exists(map.get(PK), map.get(SK)));
+        verifyIndex(map, site + "global#folders#" + documentIdB, "f#c", "c", true);
+        documentIdC = documentIdC != null ? documentIdC : map.get("documentId").s();
+
+        map = indexes.get(i++);
+        assertFalse(dbService.exists(map.get(PK), map.get(SK)));
+        verifyIndex(map, site + "global#folders#" + documentIdC, "f#test.pdf", "test.pdf", false);
       }
     }
   }
@@ -258,6 +248,29 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   /**
+   * Test ROOT Folder structure only.
+   */
+  @Test
+  void testGenerateIndex06() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      for (String path : Arrays.asList("/", "")) {
+
+        String documentId = UUID.randomUUID().toString();
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        item.setPath(path);
+
+        // when
+        List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
+
+        // then
+        assertEquals(0, indexes.size());
+      }
+    }
+  }
+
+  /**
    * Move Directory to another directory.
    * 
    * @throws Exception Exception
@@ -336,10 +349,8 @@ class FolderIndexProcessorTest implements DbKeys {
       PaginationResults<DynamicDocumentItem> results =
           searchService.search(siteId, q, null, MAX_RESULTS);
 
-      assertEquals(2, results.getResults().size());
-      DynamicDocumentItem doc = results.getResults().get(0);
-      assertEquals("directory1", doc.get("path"));
-      DynamicDocumentItem dir2 = results.getResults().get(1);
+      assertEquals(1, results.getResults().size());
+      DynamicDocumentItem dir2 = results.getResults().get(0);
       assertEquals("directory2", dir2.get("path"));
 
       smc.folder("directory1");
@@ -352,6 +363,79 @@ class FolderIndexProcessorTest implements DbKeys {
       DynamicDocumentItem doc2 = results.getResults().get(0);
       assertEquals("directory2/test.pdf", doc2.get("path"));
       assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
+    }
+  }
+
+  /**
+   * Move File to ROOT, keep original directory.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testMove03() throws Exception {
+    // given
+    String userId = "fred";
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String source0 = "directory1/test.pdf";
+      String source1 = "directory1/test2.pdf";
+
+      for (String destination : Arrays.asList("/", "")) {
+
+        String documentId0 = UUID.randomUUID().toString();
+        DocumentItem item0 = new DocumentItemDynamoDb(documentId0, new Date(), "joe");
+        item0.setPath(source0);
+        service.saveDocument(siteId, item0, null);
+
+        String documentId1 = UUID.randomUUID().toString();
+        DocumentItem item1 = new DocumentItemDynamoDb(documentId1, new Date(), "joe");
+        item1.setPath(source1);
+        service.saveDocument(siteId, item1, null);
+
+        // when
+        index.moveIndex(siteId, source0, destination, userId);
+
+        // then
+        SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
+        SearchQuery q = new SearchQuery().meta(smc);
+        PaginationResults<DynamicDocumentItem> results =
+            searchService.search(siteId, q, null, MAX_RESULTS);
+
+        assertEquals(2, results.getResults().size());
+        DynamicDocumentItem doc = results.getResults().get(0);
+        assertEquals("directory1", doc.get("path"));
+        DynamicDocumentItem dir2 = results.getResults().get(1);
+        assertEquals("test.pdf", dir2.get("path"));
+
+        smc.folder("directory1");
+        results = searchService.search(siteId, q, null, MAX_RESULTS);
+
+        assertEquals(1, results.getResults().size());
+        doc = results.getResults().get(0);
+        assertEquals("directory1/test2.pdf", doc.get("path"));
+
+        service.deleteDocument(siteId, item0.getDocumentId());
+        service.deleteDocument(siteId, item1.getDocumentId());
+      }
+    }
+  }
+
+  private void verifyIndex(final Map<String, AttributeValue> map, final String pk, final String sk,
+      final String path, final boolean hasDates) {
+
+    assertEquals(pk, map.get(PK).s());
+    assertEquals(sk, map.get(SK).s());
+    assertEquals(path, map.get("path").s());
+    assertNotNull(map.get("documentId"));
+
+    if (hasDates) {
+      assertNotNull(map.get("inserteddate"));
+      assertNotNull(map.get("lastModifiedDate"));
+      assertEquals("joe", map.get("userId").s());
+    } else {
+      assertNull(map.get("inserteddate"));
+      assertNull(map.get("lastModifiedDate"));
+      assertNull(map.get("userId"));
     }
   }
 }

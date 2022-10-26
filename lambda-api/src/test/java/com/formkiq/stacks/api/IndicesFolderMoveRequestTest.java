@@ -170,4 +170,45 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       assertEquals("{\"message\":\"index for '" + path + "' does not exist\"}", m.get("body"));
     }
   }
+
+  /**
+   * POST /indices/folder/move to root request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePost05() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      for (String target : Arrays.asList("/")) {
+
+        String documentId = UUID.randomUUID().toString();
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        item.setPath("x/z/test.pdf");
+        getDocumentService().saveDocument(siteId, item, null);
+
+        ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
+        addParameter(event, "siteId", siteId);
+        Map<String, String> body = Map.of("source", item.getPath(), "target", target);
+        event.setBody(GsonUtil.getInstance().toJson(body));
+
+        // when
+        String response = handleRequest(event);
+
+        // then
+        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+        final int mapsize = 3;
+        assertEquals(mapsize, m.size());
+        assertEquals("200.0", String.valueOf(m.get("statusCode")));
+        assertEquals(getHeaders(),
+            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+        assertEquals("{\"message\":\"Folder moved\"}", m.get("body"));
+
+        assertEquals("test.pdf", getDocumentService().findDocument(siteId, documentId).getPath());
+      }
+    }
+  }
 }

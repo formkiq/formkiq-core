@@ -58,6 +58,7 @@ import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
@@ -75,7 +76,8 @@ public abstract class AbstractRequestHandler {
   private static String cacheTable = "Cache";
   /** Documents Table. */
   private static String documentsTable = "Documents";
-
+  /** Documents Table. */
+  private static String documentVersionsTable = "DocumentVersions";
   /** Port to run Test server. */
   private static final int PORT = 8080;
 
@@ -180,8 +182,10 @@ public abstract class AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
 
+    this.map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
     this.map.put("DOCUMENTS_TABLE", documentsTable);
+    this.map.put("DOCUMENT_VERSIONS_TABLE", documentVersionsTable);
     this.map.put("CACHE_TABLE", cacheTable);
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);

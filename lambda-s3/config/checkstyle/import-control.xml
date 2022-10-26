@@ -25,6 +25,7 @@
 			<allow pkg="com.formkiq.module.actions.services" />
 			<allow pkg="com.formkiq.module.documentevents" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
+			<allow pkg="com.formkiq.plugins.version" />
 			<allow pkg="com.formkiq.stacks.client" />
 			<allow pkg="com.formkiq.stacks.common.objects" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />
@@ -46,6 +47,7 @@
 			<allow pkg="software.amazon.awssdk.awscore.exception" />
 			<allow pkg="software.amazon.awssdk.core" />
 			<allow pkg="software.amazon.awssdk.regions" />
+			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
 			<allow pkg="software.amazon.awssdk.services.s3" />
 			<allow pkg="software.amazon.awssdk.services.ssm" />
 			<allow pkg="software.amazon.awssdk.utils" />

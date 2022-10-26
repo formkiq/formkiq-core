@@ -116,6 +116,8 @@ Resources:
           DEBUG: false
           DOCUMENTS_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          DOCUMENT_VERSIONS_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentVersionsTableName}}"
           CACHE_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
           DOCUMENTS_S3_BUCKET: 
@@ -130,6 +132,7 @@ Resources:
             Ref: WebsocketSqsQueueUrl
           USER_AUTHENTICATION:
             Ref: UserAuthentication
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning.class"
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole
@@ -280,6 +283,16 @@ Resources:
               - dynamodb:UpdateItem
               Resource: 
               - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              Resource: 
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentVersionsTableName}}"
             - Effect: Allow
               Action:
               - dynamodb:Query

@@ -85,8 +85,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    * 
    * @param prefix {@link String}
    * @param testdatacount int
+   * @throws Exception Exception
    */
-  private void createTestData(final String prefix, final int testdatacount) {
+  private void createTestData(final String prefix, final int testdatacount) throws Exception {
     String userId = "jsmith";
     final int min10 = 10;
     LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
@@ -1336,9 +1337,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    * @param hasContent boolean
    * @param userId {@link String}
    * @return {@link DynamicObject}
+   * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
-  private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId) {
+  private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId)
+      throws Exception {
     assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
     String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
     DynamicObject obj = new DynamicObject(fromJson(content, Map.class));

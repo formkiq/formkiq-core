@@ -72,6 +72,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.plugins.version.DocumentVersionService;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.SetDocumentFulltext;
@@ -83,6 +84,7 @@ import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
 import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -119,7 +121,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /** {@link S3Service}. */
   private S3Service s3Service;
 
-  /** constructor. */
+  /**
+   * constructor.
+   * 
+   */
   public DocumentActionsProcessor() {
     this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
         EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
@@ -145,8 +150,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
+    DocumentServiceExtension dsExtension = new DocumentServiceExtension();
+    DocumentVersionService versionService = dsExtension.getVersionService(map);
+
     this.s3Service = new S3Service(s3);
-    this.documentService = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.documentService =
+        new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"), versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);

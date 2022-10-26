@@ -5,6 +5,11 @@
 
 <import-control pkg="com.formkiq.plugins">
 	
+	<subpackage name="version">
+		<allow pkg="java.util" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+	</subpackage>
+	
 	<subpackage name="tagschema">
 	
 		<allow pkg="com.formkiq.aws.dynamodb.model" />

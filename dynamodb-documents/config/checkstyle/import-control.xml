@@ -19,11 +19,13 @@
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.plugins.tagschema" />
+		<allow pkg="com.formkiq.plugins.version" />
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.validation" />
 		
 		<allow pkg="java.io" />
+		<allow pkg="java.lang.reflect" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />
