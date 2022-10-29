@@ -30,17 +30,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.DocumentVersions;
-import com.formkiq.stacks.client.models.UpdateDocument;
 import com.formkiq.stacks.client.requests.GetDocumentContentUrlRequest;
-import com.formkiq.stacks.client.requests.GetDocumentVersionsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentUploadRequest;
-import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
 
 /**
  * GET, OPTIONS /documents/{documentId}/url tests.
@@ -66,22 +61,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
       // given
       String documentId = addDocumentWithoutFile(client);
       Thread.sleep(SLEEP * 2);
-      client.updateDocument(new UpdateDocumentRequest().documentId(documentId)
-          .document(new UpdateDocument().content("new content", StandardCharsets.UTF_8)));
-
-      GetDocumentVersionsRequest req = new GetDocumentVersionsRequest().documentId(documentId);
-      DocumentVersions list = client.getDocumentVersions(req);
-
-      while (list.versions().size() != 2) {
-        Thread.sleep(SLEEP);
-        list = client.getDocumentVersions(req);
-      }
-
-      assertEquals(2, list.versions().size());
-
-      verifyDocumentContent(client, documentId, "new content", list.versions().get(0).versionId());
-      verifyDocumentContent(client, documentId, "sample content",
-          list.versions().get(1).versionId());
+      verifyDocumentContent(client, documentId, "sample content", null);
     }
   }
 

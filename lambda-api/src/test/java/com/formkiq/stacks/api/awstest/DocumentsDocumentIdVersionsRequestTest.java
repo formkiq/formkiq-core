@@ -24,10 +24,7 @@
 package com.formkiq.stacks.api.awstest;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import java.net.http.HttpResponse;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -48,10 +45,9 @@ public class DocumentsDocumentIdVersionsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test(timeout = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    final int status200 = 200;
+    final int status402 = 402;
 
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
@@ -62,16 +58,8 @@ public class DocumentsDocumentIdVersionsRequestTest extends AbstractApiTest {
       HttpResponse<String> response = client.getDocumentVersionsAsHttpResponse(request);
 
       // then
-      assertEquals(status200, response.statusCode());
+      assertEquals(status402, response.statusCode());
       assertRequestCorsHeaders(response.headers());
-
-      Map<String, Object> map = toMap(response);
-      List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("versions");
-      assertEquals(1, list.size());
-
-      map = list.get(0);
-      assertNotNull(list.get(0).get("versionId"));
-      assertNotNull(list.get(0).get("lastModifiedDate"));
     }
   }
 

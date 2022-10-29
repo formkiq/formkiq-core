@@ -1445,7 +1445,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Map<String, AttributeValue> attributes) {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-    attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
     this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
   }
 
