@@ -224,7 +224,7 @@ Resources:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
-          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning.class"
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -273,7 +273,7 @@ Resources:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
-          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning.class"
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -347,7 +347,7 @@ Resources:
             Ref: SnsDocumentEvent
           FormKiQType:
             Ref: FormKiQType
-          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning.class"
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
