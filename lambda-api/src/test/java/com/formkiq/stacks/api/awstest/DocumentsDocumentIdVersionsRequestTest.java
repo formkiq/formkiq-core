@@ -28,7 +28,6 @@ import java.net.http.HttpResponse;
 import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.GetDocumentVersionsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentVersionsRequest;
 
 /**
@@ -39,29 +38,6 @@ public class DocumentsDocumentIdVersionsRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
-
-  /**
-   * Get Request Upload Document Versions.
-   * 
-   * @throws Exception Exception
-   */
-  @Test(timeout = TEST_TIMEOUT)
-  public void testGet01() throws Exception {
-    final int status402 = 402;
-
-    for (FormKiqClientV1 client : getFormKiqClients()) {
-      // given
-      String documentId = addDocumentWithoutFile(client);
-      GetDocumentVersionsRequest request = new GetDocumentVersionsRequest().documentId(documentId);
-
-      // when
-      HttpResponse<String> response = client.getDocumentVersionsAsHttpResponse(request);
-
-      // then
-      assertEquals(status402, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
-    }
-  }
 
   /**
    * Get Request Document Not Found.
