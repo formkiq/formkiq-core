@@ -34,6 +34,7 @@ import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,6 +75,7 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.DeleteDocumentFulltextRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentOcrRequest;
 import com.formkiq.stacks.common.formats.MimeType;
+import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -137,6 +139,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /** {@link ActionsService}. */
   private ActionsService actionsService;
+
+  /** {@link SimpleDateFormat} in ISO Standard format. */
+  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** {@link DocumentEventService}. */
   private DocumentEventService documentEventService;
   /** {@link Gson}. */
@@ -332,6 +337,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
+  private boolean isChecksumChanged(final S3ObjectMetadata resp, final DocumentItem doc) {
+    return doc.getChecksum() != null && resp.getEtag() != null
+        && !resp.getEtag().contains(doc.getChecksum());
+  }
+
   /**
    * Process S3 Event.
    * 
@@ -498,6 +508,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     if (item != null) {
 
       Map<String, AttributeValue> attributes = new HashMap<>();
+
+      if (isChecksumChanged(resp, item)) {
+        attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
+      }
 
       if (contentType != null && contentType.length() > 0) {
         attributes.put("contentType", AttributeValue.fromS(contentType));
