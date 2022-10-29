@@ -78,7 +78,7 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
     } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
         | InvocationTargetException | NoSuchMethodException | SecurityException
         | ClassNotFoundException e) {
-      versionService = new DocumentVersionServiceNoVersioning();
+      throw new RuntimeException(e);
     }
 
     versionService.initialize(map);

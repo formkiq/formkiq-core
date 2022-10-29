@@ -86,6 +86,8 @@ import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -94,7 +96,8 @@ import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
-@ReflectableImport(classes = DocumentEvent.class)
+@ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
+    DocumentVersionServiceNoVersioning.class})
 @ReflectableClasses({@ReflectableClass(className = UpdateFulltextTag.class,
     allPublicConstructors = true, fields = {@ReflectableField(name = "key"),
         @ReflectableField(name = "value"), @ReflectableField(name = "values")})})

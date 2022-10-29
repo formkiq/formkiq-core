@@ -87,6 +87,8 @@ import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -100,8 +102,11 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentTagType.class,
-    AddDocumentTag.class})
+    AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
+    DocumentVersionServiceNoVersioning.class})
 @ReflectableClasses({
+    @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")}),
     @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
         fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")}),
     @ReflectableClass(className = AddDocumentTag.class, allPublicConstructors = true,
