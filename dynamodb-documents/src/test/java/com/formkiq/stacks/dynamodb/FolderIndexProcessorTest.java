@@ -271,6 +271,33 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   /**
+   * Filename starts with '/'.
+   */
+  @Test
+  void testGenerateIndex07() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("/test.pdf");
+
+      String site = siteId != null ? siteId + "/" : "";
+
+      // when
+      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
+
+      // then
+      final int expected = 1;
+      assertEquals(expected, indexes.size());
+
+      Map<String, AttributeValue> map = indexes.get(0);
+      assertFalse(dbService.exists(map.get(PK), map.get(SK)));
+      verifyIndex(map, site + "global#folders#", "f#test.pdf", "test.pdf", false);
+    }
+  }
+
+  /**
    * Move Directory to another directory.
    * 
    * @throws Exception Exception
@@ -349,9 +376,9 @@ class FolderIndexProcessorTest implements DbKeys {
       PaginationResults<DynamicDocumentItem> results =
           searchService.search(siteId, q, null, MAX_RESULTS);
 
-      assertEquals(1, results.getResults().size());
-      DynamicDocumentItem dir2 = results.getResults().get(0);
-      assertEquals("directory2", dir2.get("path"));
+      assertEquals(2, results.getResults().size());
+      assertEquals("directory1", results.getResults().get(0).get("path"));
+      assertEquals("directory2", results.getResults().get(1).get("path"));
 
       smc.folder("directory1");
       results = searchService.search(siteId, q, null, MAX_RESULTS);

@@ -44,8 +44,6 @@ import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
@@ -449,7 +447,6 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
     if ("file".equals(sourceType) && "folder".equals(targetType)) {
 
       moveFileToDirectory(siteId, sourceMap, sourceFolders, targetMap, targetPath);
-      deleteEmptyDirectory(source, sourceFolders);
 
     } else if ("folder".equals(sourceType) && "folder".equals(targetType)) {
 
@@ -459,41 +456,6 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
       throw new RuntimeException(
           String.format("Unsupported move %s to %s", sourceType, targetType));
     }
-  }
-
-  /**
-   * Delete Empty Directories.
-   * 
-   * @param source {@link Map}
-   * @param sourceFolders {@link String}
-   */
-  private void deleteEmptyDirectory(final Map<String, Map<String, String>> source,
-      final String[] sourceFolders) {
-
-    int len = sourceFolders.length;
-
-    for (int i = 0; i < len - 1; i++) {
-      String dir = sourceFolders[i];
-      Map<String, String> attrs = source.get(dir);
-
-      String pk = attrs.get(PK) + attrs.get("documentId");
-      String expression = PK + " = :pk";
-
-      Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.fromS(pk));
-
-      QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-          .keyConditionExpression(expression).expressionAttributeValues(values)
-          .limit(Integer.valueOf(1)).build();
-
-
-      QueryResponse response = this.dbClient.query(q);
-
-      if (response.items().isEmpty()) {
-        this.dynamoDb.deleteItem(AttributeValue.fromS(attrs.get(PK)),
-            AttributeValue.fromS(attrs.get(SK)));
-      }
-    }
-
   }
 
   /**
