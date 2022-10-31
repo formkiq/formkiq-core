@@ -85,8 +85,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private String documentTableName;
   /** {@link DocumentTagSchemaPlugin}. */
   private DocumentTagSchemaPlugin tagSchemaPlugin;
-  /** {@link IndexProcessor}. */
-  private IndexProcessor folderIndexProcesor;
+  /** {@link FolderIndexProcessor}. */
+  private FolderIndexProcessor folderIndexProcesor;
 
   /**
    * constructor.
@@ -109,7 +109,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     this.documentTableName = documentsTable;
-    this.folderIndexProcesor = new FolderIndexProcessor(connection, documentsTable);
+    this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable);
   }
 
   private QueryRequest createQueryRequest(final String index, final String expression,

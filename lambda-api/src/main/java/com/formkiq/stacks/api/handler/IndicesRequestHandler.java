@@ -37,7 +37,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.IndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 
 /** {@link ApiGatewayRequestHandler} for "/indices/{type}/{key}". */
 public class IndicesRequestHandler
@@ -76,7 +76,7 @@ public class IndicesRequestHandler
         String parentId = indexKey.substring(0, pos);
         String path = indexKey.substring(pos + 1);
 
-        IndexProcessor ip = awsServices.getExtension(IndexProcessor.class);
+        FolderIndexProcessor ip = awsServices.getExtension(FolderIndexProcessor.class);
         if (!ip.deleteEmptyDirectory(siteId, parentId, path)) {
           throw new BadException("Folder not empty");
         }

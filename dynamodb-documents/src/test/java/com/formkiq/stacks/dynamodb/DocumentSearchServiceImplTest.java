@@ -790,4 +790,43 @@ public class DocumentSearchServiceImplTest {
       assertEquals(0, results1.getResults().size());
     }
   }
+
+  /** Search for meta "folder" different cases data. */
+  @Test
+  public void testSearch16() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("Chicago/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      DocumentItem doc1 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc1.setPath("abc.pdf");
+      this.service.saveDocument(siteId, doc1, null);
+
+      DocumentItem doc2 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc2.setPath("aaaa/test3.pdf");
+      this.service.saveDocument(siteId, doc2, null);
+
+      PaginationMapToken startkey = null;
+      String folder = "";
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      final int expected = 3;
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(expected, list.size());
+      assertNull(results.getToken());
+
+      int i = 0;
+      assertNotNull(list.get(i).getDocumentId());
+      assertEquals("aaaa", list.get(i++).getPath());
+      assertEquals("Chicago", list.get(i++).getPath());
+      assertEquals("abc.pdf", list.get(i++).getPath());
+    }
+  }
 }

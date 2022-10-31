@@ -26,7 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.FolderIndexProcessor.INDEX_SK;
+import static com.formkiq.stacks.dynamodb.FolderIndexProcessor.INDEX_FILE_SK;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -94,8 +94,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Documents Table Name. */
   private String documentTableName;
-  /** {@link IndexProcessor}. */
-  private IndexProcessor folderIndexProcessor;
+  /** {@link FolderIndexProcessor}. */
+  private FolderIndexProcessor folderIndexProcessor;
   /** {@link DocumentVersionService}. */
   private DocumentVersionService versionsService;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
@@ -119,7 +119,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
-    this.folderIndexProcessor = new FolderIndexProcessor(connection, documentsTable);
+    this.folderIndexProcessor = new FolderIndexProcessorImpl(connection, documentsTable);
     this.dbService = new DynamoDbServiceImpl(connection, documentsTable);
 
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -1111,7 +1111,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         String newFilename = String.format("%s (%s)", documentPath.get("path").s(), documentId);
         String newPath = oldPath.replaceAll(oldFilename, newFilename);
         documentValues.put("path", AttributeValue.fromS(newPath));
-        documentPath.put(SK, AttributeValue.fromS(INDEX_SK + newFilename));
+        documentPath.put(SK, AttributeValue.fromS(INDEX_FILE_SK + newFilename));
         documentPath.put("path", AttributeValue.fromS(newFilename));
       }
     }

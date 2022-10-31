@@ -55,7 +55,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * Unit Test {@link FolderIndexProcessor}.
+ * Unit Test {@link FolderIndexProcessorImpl}.
  *
  */
 @ExtendWith(DynamoDbExtension.class)
@@ -63,8 +63,8 @@ class FolderIndexProcessorTest implements DbKeys {
 
   /** {@link DynamoDbService}. */
   private static DynamoDbService dbService;
-  /** {@link FolderIndexProcessor}. */
-  private static FolderIndexProcessor index;
+  /** {@link FolderIndexProcessorImpl}. */
+  private static FolderIndexProcessorImpl index;
   /** {@link DocumentService}. */
   private static DocumentSearchService searchService;
   /** {@link DocumentService}. */
@@ -73,7 +73,7 @@ class FolderIndexProcessorTest implements DbKeys {
   @BeforeAll
   static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
-    index = new FolderIndexProcessor(dynamoDbConnection, DOCUMENTS_TABLE);
+    index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
 
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
@@ -114,22 +114,22 @@ class FolderIndexProcessorTest implements DbKeys {
         Map<String, AttributeValue> map = indexes.get(i++);
         assertTrue(dbService.exists(map.get(PK), map.get(SK)));
 
-        verifyIndex(map, map.get(PK).s(), "f#a", "a", true);
+        verifyIndex(map, map.get(PK).s(), "ff#a", "a", true);
         documentIdA = documentIdA != null ? documentIdA : map.get("documentId").s();
 
         map = indexes.get(i++);
         assertTrue(dbService.exists(map.get(PK), map.get(SK)));
-        verifyIndex(map, site + "global#folders#" + documentIdA, "f#b", "b", true);
+        verifyIndex(map, site + "global#folders#" + documentIdA, "ff#b", "b", true);
         documentIdB = documentIdB != null ? documentIdB : map.get("documentId").s();
 
         map = indexes.get(i++);
         assertTrue(dbService.exists(map.get(PK), map.get(SK)));
-        verifyIndex(map, site + "global#folders#" + documentIdB, "f#c", "c", true);
+        verifyIndex(map, site + "global#folders#" + documentIdB, "ff#c", "c", true);
         documentIdC = documentIdC != null ? documentIdC : map.get("documentId").s();
 
         map = indexes.get(i++);
         assertFalse(dbService.exists(map.get(PK), map.get(SK)));
-        verifyIndex(map, site + "global#folders#" + documentIdC, "f#test.pdf", "test.pdf", false);
+        verifyIndex(map, site + "global#folders#" + documentIdC, "fi#test.pdf", "test.pdf", false);
       }
     }
   }
@@ -153,7 +153,7 @@ class FolderIndexProcessorTest implements DbKeys {
 
       int i = 0;
       assertEquals(site + "global#folders#", indexes.get(i).get(PK).s());
-      assertEquals("f#test.pdf", indexes.get(i).get(SK).s());
+      assertEquals("fi#test.pdf", indexes.get(i).get(SK).s());
       assertEquals("test.pdf", indexes.get(i).get("path").s());
       assertEquals(item.getDocumentId(), indexes.get(i++).get("documentId").s());
     }
@@ -194,18 +194,18 @@ class FolderIndexProcessorTest implements DbKeys {
 
       int i = 0;
       assertEquals(site + "global#folders#", indexes.get(i).get(PK).s());
-      assertEquals("f#formkiq", indexes.get(i).get(SK).s());
+      assertEquals("ff#formkiq", indexes.get(i).get(SK).s());
       assertEquals("formkiq", indexes.get(i).get("path").s());
       String documentId0 = indexes.get(i++).get("documentId").s();
 
       assertEquals(site + "global#folders#" + documentId0, indexes.get(i).get(PK).s());
-      assertEquals("f#sample", indexes.get(i).get(SK).s());
+      assertEquals("ff#sample", indexes.get(i).get(SK).s());
       assertEquals("sample", indexes.get(i).get("path").s());
       String documentId1 = indexes.get(i++).get("documentId").s();
       assertNotEquals(documentId0, documentId1);
 
       assertEquals(site + "global#folders#" + documentId1, indexes.get(i).get(PK).s());
-      assertEquals("f#test.txt", indexes.get(i).get(SK).s());
+      assertEquals("fi#test.txt", indexes.get(i).get(SK).s());
       assertEquals("test.txt", indexes.get(i).get("path").s());
       String documentId2 = indexes.get(i).get("documentId").s();
       assertEquals(item.getDocumentId(), indexes.get(i++).get("documentId").s());
@@ -224,7 +224,7 @@ class FolderIndexProcessorTest implements DbKeys {
       String site = siteId != null ? siteId + "/" : "";
       String documentId = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("/a/b/");
+      item.setPath("/a/B/");
 
       // when
       List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
@@ -235,14 +235,14 @@ class FolderIndexProcessorTest implements DbKeys {
 
       int i = 0;
       assertEquals(site + "global#folders#", indexes.get(i).get(PK).s());
-      assertEquals("f#a", indexes.get(i).get(SK).s());
+      assertEquals("ff#a", indexes.get(i).get(SK).s());
       assertEquals("a", indexes.get(i).get("path").s());
       String documentIdA = indexes.get(i).get("documentId").s();
       assertNotNull(indexes.get(i++).get("documentId"));
 
       assertEquals(site + "global#folders#" + documentIdA, indexes.get(i).get(PK).s());
-      assertEquals("f#b", indexes.get(i).get(SK).s());
-      assertEquals("b", indexes.get(i).get("path").s());
+      assertEquals("ff#b", indexes.get(i).get(SK).s());
+      assertEquals("B", indexes.get(i).get("path").s());
       assertNotNull(indexes.get(i++).get("documentId"));
     }
   }
@@ -293,7 +293,7 @@ class FolderIndexProcessorTest implements DbKeys {
 
       Map<String, AttributeValue> map = indexes.get(0);
       assertFalse(dbService.exists(map.get(PK), map.get(SK)));
-      verifyIndex(map, site + "global#folders#", "f#test.pdf", "test.pdf", false);
+      verifyIndex(map, site + "global#folders#", "fi#test.pdf", "test.pdf", false);
     }
   }
 

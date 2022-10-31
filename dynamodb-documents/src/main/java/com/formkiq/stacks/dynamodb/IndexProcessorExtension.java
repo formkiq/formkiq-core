@@ -29,13 +29,13 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link IndexProcessor}.
+ * {@link AwsServiceExtension} for {@link FolderIndexProcessor}.
  *
  */
-public class IndexProcessorExtension implements AwsServiceExtension<IndexProcessor> {
+public class IndexProcessorExtension implements AwsServiceExtension<FolderIndexProcessor> {
 
-  /** {@link IndexProcessor}. */
-  private IndexProcessor service;
+  /** {@link FolderIndexProcessor}. */
+  private FolderIndexProcessor service;
 
   /**
    * constructor.
@@ -45,13 +45,13 @@ public class IndexProcessorExtension implements AwsServiceExtension<IndexProcess
   }
 
   @Override
-  public IndexProcessor loadService(final AwsServiceCache awsServiceCache) {
+  public FolderIndexProcessor loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
       this.service =
-          new FolderIndexProcessor(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+          new FolderIndexProcessorImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
 
     return this.service;

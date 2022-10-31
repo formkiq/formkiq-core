@@ -38,7 +38,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.IndexProcessor;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -77,7 +77,7 @@ public class IndicesFolderMoveRequestHandler
       throw new ValidationException(errors);
     }
 
-    IndexProcessor indexProcessor = awsServices.getExtension(IndexProcessor.class);
+    FolderIndexProcessor indexProcessor = awsServices.getExtension(FolderIndexProcessor.class);
 
     try {
       indexProcessor.moveIndex(siteId, body.get("source").toString(), body.get("target").toString(),
