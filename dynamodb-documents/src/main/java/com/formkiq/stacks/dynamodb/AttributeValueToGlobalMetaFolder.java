@@ -23,10 +23,13 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -35,7 +38,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  *
  */
 public class AttributeValueToGlobalMetaFolder
-    implements Function<Map<String, AttributeValue>, Map<String, Object>> {
+    implements Function<Map<String, AttributeValue>, Map<String, Object>>, DbKeys {
 
   /** {@link AttributeValueToDate}. */
   private AttributeValueToDate toInsertedDateDate = new AttributeValueToDate("inserteddate");
@@ -51,10 +54,17 @@ public class AttributeValueToGlobalMetaFolder
   @Override
   public Map<String, Object> apply(final Map<String, AttributeValue> map) {
 
+    String parent = map.get(PK).s().substring(map.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1);
+    String documentId = map.get("documentId").s();
+    String path = map.get("path").s();
+
+    String key = URLEncoder.encode(parent + TAG_DELIMINATOR + path, StandardCharsets.UTF_8);
+
     Map<String, Object> result = new HashMap<>();
-    result.put("path", map.get("path").s());
-    result.put("documentId", map.get("documentId").s());
+    result.put("path", path);
+    result.put("documentId", documentId);
     result.put("folder", Boolean.TRUE);
+    result.put("indexKey", key);
 
     Date insertedDate = this.toInsertedDateDate.apply(map);
     result.put("insertedDate", insertedDate);

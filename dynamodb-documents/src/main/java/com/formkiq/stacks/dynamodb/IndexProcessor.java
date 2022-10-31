@@ -38,14 +38,14 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public interface IndexProcessor {
 
   /**
-   * Generates DynamoDB {@link WriteRequest} for Index.
+   * Delete Empty Directory.
    * 
    * @param siteId {@link String}
+   * @param parentId {@link String}
    * @param path {@link String}
-   * @return {@link List} {@link Map} {@link String}
-   * @throws IOException IOException
+   * @return boolean
    */
-  Map<String, String> getIndex(String siteId, String path) throws IOException;
+  boolean deleteEmptyDirectory(String siteId, String parentId, String path);
 
   /**
    * Generates DynamoDB {@link WriteRequest} for Index.
@@ -55,6 +55,16 @@ public interface IndexProcessor {
    * @return {@link List} {@link Map} {@link AttributeValue}
    */
   List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
+
+  /**
+   * Generates DynamoDB {@link WriteRequest} for Index.
+   * 
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link List} {@link Map} {@link String}
+   * @throws IOException IOException
+   */
+  Map<String, String> getIndex(String siteId, String path) throws IOException;
 
   /**
    * Move Index from one to another.

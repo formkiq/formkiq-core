@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
@@ -72,12 +75,6 @@ import software.amazon.awssdk.utils.IoUtils;
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
 
-  /** Cache Table. */
-  private static String cacheTable = "Cache";
-  /** Documents Table. */
-  private static String documentsTable = "Documents";
-  /** Documents Table. */
-  private static String documentVersionsTable = "DocumentVersions";
   /** Port to run Test server. */
   private static final int PORT = 8080;
 
@@ -184,9 +181,9 @@ public abstract class AbstractRequestHandler {
 
     this.map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
-    this.map.put("DOCUMENTS_TABLE", documentsTable);
-    this.map.put("DOCUMENT_VERSIONS_TABLE", documentVersionsTable);
-    this.map.put("CACHE_TABLE", cacheTable);
+    this.map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    this.map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    this.map.put("CACHE_TABLE", CACHE_TABLE);
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     this.map.put("AWS_REGION", AWS_REGION.toString());

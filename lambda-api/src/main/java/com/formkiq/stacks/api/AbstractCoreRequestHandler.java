@@ -67,6 +67,7 @@ import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesFolderMoveRequestHandler;
+import com.formkiq.stacks.api.handler.IndicesRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeEditRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeNewRequestHandler;
 import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
@@ -150,6 +151,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new OnlyOfficeSaveRequestHandler());
     addRequestHandler(new OnlyOfficeEditRequestHandler());
     addRequestHandler(new IndicesFolderMoveRequestHandler());
+    addRequestHandler(new IndicesRequestHandler());
   }
 
   /**

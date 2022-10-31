@@ -44,6 +44,8 @@ import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
@@ -57,10 +59,10 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
-  /** Index SK. */
-  public static final String INDEX_SK = "f" + TAG_DELIMINATOR;
   /** Deliminator. */
   private static final String DELIMINATOR = "/";
+  /** Index SK. */
+  public static final String INDEX_SK = "f" + TAG_DELIMINATOR;
 
   /**
    * Is File Token.
@@ -188,6 +190,43 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
 
       i++;
     }
+  }
+
+  @Override
+  public boolean deleteEmptyDirectory(final String siteId, final String parentId,
+      final String path) {
+
+    boolean deleted = false;
+    String pk = getPk(siteId, parentId);
+    String sk = getSk(path);
+
+    Map<String, AttributeValue> attr =
+        this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+
+    String documentId = attr.get("documentId").s();
+
+    if (!hasFiles(siteId, documentId)) {
+      this.dynamoDb.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+      deleted = true;
+    }
+
+    return deleted;
+  }
+
+  private boolean hasFiles(final String siteId, final String documentId) {
+
+    String pk = getPk(siteId, documentId);
+    String expression = PK + " = :pk";
+
+    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.fromS(pk));
+
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).limit(Integer.valueOf(1)).build();
+
+    QueryResponse response = this.dbClient.query(q);
+
+    return !response.items().isEmpty();
   }
 
   private Map<String, Map<String, String>> generateFileKeys(final String siteId, final String path,
@@ -362,6 +401,33 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
    * @param target {@link Map}
    * @param targetPath {@link String}
    */
+  private void moveDirectoryToDirectory(final String siteId, final Map<String, String> source,
+      final String[] sourceFolders, final Map<String, String> target, final String targetPath) {
+
+    Map<String, AttributeValue> sourceAttr = this.dynamoDb.get(AttributeValue.fromS(source.get(PK)),
+        AttributeValue.fromS(source.get(SK)));
+
+    Map<String, AttributeValue> targetAttr = new HashMap<>(sourceAttr);
+
+    String pk =
+        targetAttr.get(PK).s().substring(0, targetAttr.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1)
+            + target.get("documentId");
+    targetAttr.put(PK, AttributeValue.fromS(pk));
+    this.dynamoDb.putItem(targetAttr);
+
+    this.dynamoDb.deleteItem(AttributeValue.fromS(source.get(PK)),
+        AttributeValue.fromS(source.get(SK)));
+  }
+
+  /**
+   * Move Directory from one to another.
+   * 
+   * @param siteId {@link String}
+   * @param source {@link Map}
+   * @param sourceFolders {@link String}
+   * @param target {@link Map}
+   * @param targetPath {@link String}
+   */
   private void moveFileToDirectory(final String siteId, final Map<String, String> source,
       final String[] sourceFolders, final Map<String, String> target, final String targetPath) {
 
@@ -393,33 +459,6 @@ public class FolderIndexProcessor implements IndexProcessor, DbKeys {
       this.dynamoDb.updateFields(AttributeValue.fromS(targetPk), AttributeValue.fromS(targetSk),
           Map.of("lastModifiedDate", AttributeValue.fromS(lastModifiedDate)));
     }
-  }
-
-  /**
-   * Move Directory from one to another.
-   * 
-   * @param siteId {@link String}
-   * @param source {@link Map}
-   * @param sourceFolders {@link String}
-   * @param target {@link Map}
-   * @param targetPath {@link String}
-   */
-  private void moveDirectoryToDirectory(final String siteId, final Map<String, String> source,
-      final String[] sourceFolders, final Map<String, String> target, final String targetPath) {
-
-    Map<String, AttributeValue> sourceAttr = this.dynamoDb.get(AttributeValue.fromS(source.get(PK)),
-        AttributeValue.fromS(source.get(SK)));
-
-    Map<String, AttributeValue> targetAttr = new HashMap<>(sourceAttr);
-
-    String pk =
-        targetAttr.get(PK).s().substring(0, targetAttr.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1)
-            + target.get("documentId");
-    targetAttr.put(PK, AttributeValue.fromS(pk));
-    this.dynamoDb.putItem(targetAttr);
-
-    this.dynamoDb.deleteItem(AttributeValue.fromS(source.get(PK)),
-        AttributeValue.fromS(source.get(SK)));
   }
 
   @Override

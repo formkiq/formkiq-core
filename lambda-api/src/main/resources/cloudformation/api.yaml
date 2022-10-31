@@ -1535,7 +1535,7 @@ Resources:
             post:
               description: Performs an Folder Index Move
               tags:
-              - Index
+              - Folder Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -1566,6 +1566,32 @@ Resources:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /indices/folder/{indexKey}:
+            delete:
+              description: Performs an delete on the Folder Index
+              tags:
+              - Folder Index
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexKeyParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
         components:
           headers:
             AccessControlAllowOrigin:
@@ -1684,6 +1710,13 @@ Resources:
               in: query
               description: Returns raw 'text' of OCR content. e.g. AWS Textract returns JSON, setting parameter to 'true' converts JSON to Text
               required: false
+              schema:
+                type: string
+            indexKeyParam:
+              name: indexKey
+              in: path
+              description: Index Key Identifier
+              required: true
               schema:
                 type: string
           schemas:
@@ -2287,6 +2320,9 @@ Resources:
                 folder:
                   type: "boolean"
                   description: "Is Result a Document Folder"
+                indexKey:
+                  type: "string"
+                  description: "populated if search result are from an index"
                 checksum:
                   type: "string"
                   description: "Document checksum, changes when document file changes"
