@@ -44,7 +44,7 @@ public class IndicesRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil, DbKeys {
 
   /** {@link IndicesRequestHandler} URL. */
-  public static final String URL = "/indices/{type}/{indexKey}";
+  public static final String URL = "/indices/{indexType}/{indexKey}";
 
   /**
    * constructor.

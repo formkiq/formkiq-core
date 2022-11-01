@@ -1,6 +1,6 @@
 {
-    "resource": "/indices/{type}/{indexKey}",
-    "path": "/indices/{type}/{indexKey}",
+    "resource": "/indices/{indexType}/{indexKey}",
+    "path": "/indices/{indexType}/{indexKey}",
     "httpMethod": "DELETE",
     "headers": {
         "Accept": "*/*",

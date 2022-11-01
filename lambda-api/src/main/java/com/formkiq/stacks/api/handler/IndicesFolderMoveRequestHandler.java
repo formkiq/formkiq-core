@@ -49,7 +49,7 @@ public class IndicesFolderMoveRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link IndicesFolderMoveRequestHandler} URL. */
-  public static final String URL = "/indices/folder/move";
+  public static final String URL = "/indices/{indexType}/move";
 
   /**
    * constructor.
@@ -106,7 +106,7 @@ public class IndicesFolderMoveRequestHandler
 
     String siteId = authorizer.getSiteId();
     String userId = getCallingCognitoUsername(event);
-    String type = event.getPathParameters().get("type");
+    String type = event.getPathParameters().get("indexType");
 
     if ("folder".equals(type)) {
       return moveFolderIndex(logger, event, awsServices, siteId, userId);

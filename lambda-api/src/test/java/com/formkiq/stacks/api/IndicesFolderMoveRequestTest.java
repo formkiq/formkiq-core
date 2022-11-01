@@ -59,6 +59,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       getDocumentService().saveDocument(siteId, item, null);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
+      event.setPathParameters(Map.of("indexType", "folder"));
       addParameter(event, "siteId", siteId);
       Map<String, String> body = Map.of("source", item.getPath(), "target", "a/b/c/");
       event.setBody(GsonUtil.getInstance().toJson(body));
@@ -92,6 +93,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
+      event.setPathParameters(Map.of("indexType", "folder"));
       addParameter(event, "siteId", siteId);
       event.setBody("");
 
@@ -121,6 +123,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
+      event.setPathParameters(Map.of("indexType", "folder"));
       addParameter(event, "siteId", siteId);
       event.setBody("{}");
 
@@ -153,6 +156,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       String path = UUID.randomUUID().toString() + ".txt";
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
+      event.setPathParameters(Map.of("indexType", "folder"));
       addParameter(event, "siteId", siteId);
       Map<String, String> body = Map.of("source", path, "target", "a/b/c/");
       event.setBody(GsonUtil.getInstance().toJson(body));
@@ -190,6 +194,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
         getDocumentService().saveDocument(siteId, item, null);
 
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
+        event.setPathParameters(Map.of("indexType", "folder"));
         addParameter(event, "siteId", siteId);
         Map<String, String> body = Map.of("source", item.getPath(), "target", target);
         event.setBody(GsonUtil.getInstance().toJson(body));

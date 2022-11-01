@@ -1,6 +1,6 @@
 {
-    "resource": "/indices/folder/move",
-    "path": "/indices/folder/move",
+    "resource": "/indices/{indexType}/move",
+    "path": "/indices/{indexType}/move",
     "httpMethod": "POST",
     "headers": {
         "Accept": "*/*",
