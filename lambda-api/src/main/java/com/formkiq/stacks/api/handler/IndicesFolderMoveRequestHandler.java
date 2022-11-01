@@ -62,13 +62,21 @@ public class IndicesFolderMoveRequestHandler
     return URL;
   }
 
-  @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsServices) throws Exception {
-
-    String siteId = authorizer.getSiteId();
-    String userId = getCallingCognitoUsername(event);
+  /**
+   * Run Move Folder Index.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param awsServices {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param userId {@link String}
+   * @return {@link ApiRequestHandlerResponse}
+   * @throws BadException BadException
+   * @throws ValidationException ValidationException
+   */
+  private ApiRequestHandlerResponse moveFolderIndex(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices, final String siteId,
+      final String userId) throws BadException, ValidationException {
 
     Map<String, Object> body = fromBodyToMap(logger, event);
 
@@ -89,6 +97,22 @@ public class IndicesFolderMoveRequestHandler
     ApiMapResponse resp = new ApiMapResponse();
     resp.setMap(Map.of("message", "Folder moved"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsServices) throws Exception {
+
+    String siteId = authorizer.getSiteId();
+    String userId = getCallingCognitoUsername(event);
+    String type = event.getPathParameters().get("type");
+
+    if ("folder".equals(type)) {
+      return moveFolderIndex(logger, event, awsServices, siteId, userId);
+    }
+
+    throw new BadException("invalid 'type' parameter");
   }
 
   /**

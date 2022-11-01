@@ -1531,13 +1531,14 @@ Resources:
                         $ref: '#/components/schemas/OnlyOfficeDocumentSaveResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
-          /indices/folder/move:
+          /indices/{indexType}/move:
             post:
               description: Performs an Folder Index Move
               tags:
               - Folder Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexTypeParam'
               requestBody:
                 required: true
                 content:
@@ -1566,7 +1567,7 @@ Resources:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /indices/folder/{indexKey}:
+          /indices/{indexType}/{indexKey}:
             delete:
               description: Performs an delete on the Folder Index
               tags:
@@ -1574,6 +1575,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexKeyParam'
+              - $ref: '#/components/parameters/indexTypeParam'
               responses:
                 '200':
                   description: 200 OK
@@ -1716,6 +1718,13 @@ Resources:
               name: indexKey
               in: path
               description: Index Key Identifier
+              required: true
+              schema:
+                type: string
+            indexTypeParam:
+              name: indexType
+              in: path
+              description: Index Type
               required: true
               schema:
                 type: string
