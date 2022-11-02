@@ -29,12 +29,38 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class SearchMetaCriteria {
 
+  /** Search Tag Value Equals. */
+  @Reflectable
+  private String eq;
   /** Folder Key. */
   @Reflectable
   private String folder;
+  /** Index Key. */
+  @Reflectable
+  private String indexType;
 
   /** constructor. */
   public SearchMetaCriteria() {}
+
+  /**
+   * Get EQ {@link String}.
+   *
+   * @return {@link String}
+   */
+  public String eq() {
+    return this.eq;
+  }
+
+  /**
+   * Set EQ String.
+   *
+   * @param s {@link String}
+   * @return {@link SearchMetaCriteria}
+   */
+  public SearchMetaCriteria eq(final String s) {
+    this.eq = s;
+    return this;
+  }
 
   /**
    * Get Folder.
@@ -53,6 +79,26 @@ public class SearchMetaCriteria {
    */
   public SearchMetaCriteria folder(final String s) {
     this.folder = s;
+    return this;
+  }
+
+  /**
+   * Get Index Type.
+   * 
+   * @return {@link String}
+   */
+  public String indexType() {
+    return this.indexType;
+  }
+
+  /**
+   * Set Index Type.
+   * 
+   * @param index {@link String}
+   * @return {@link SearchMetaCriteria}
+   */
+  public SearchMetaCriteria indexType(final String index) {
+    this.indexType = index;
     return this;
   }
 }

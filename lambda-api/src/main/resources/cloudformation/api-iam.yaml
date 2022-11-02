@@ -1593,7 +1593,53 @@ Resources:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /indices/search:
+            post:
+              description: Performs an search on an index
+              tags:
+              - Folder Index
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - name: next
+                in: query
+                description: "Next page of results token"
+                schema:
+                  type: string
+              - name: previous
+                in: query
+                description: "Previous page of results token"
+                schema:
+                  type: string
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/IndexSearchRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/IndexSearchResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -1773,7 +1819,35 @@ Resources:
               properties:
                 message:
                   type: "string"
-                  description: "Folder move message"            
+                  description: "Folder move message"
+            IndexSearchRequest:
+              type: "object"
+              properties:
+                indexType: 
+                  type: "string"
+                  description: "The name of the index to search"
+            IndexSearchResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                previous:
+                  type: "string"
+                  description: "Previous page of results token"
+                values:
+                  $ref: "#/components/schemas/IndexSearchItems"
+            IndexSearchItems:
+              type: "array"
+              description: "List of search results"
+              items:
+                $ref: "#/components/schemas/IndexSearch"
+            IndexSearch:
+              type: "object"
+              properties:
+                value:
+                  type: "string"
+                  description: "value of index"
             GetDocumentContentResponse:
               type: "object"
               properties:
@@ -2045,7 +2119,10 @@ Resources:
               properties:
                 folder:
                   type: "string"
-                  description: "Searches for a folder"              
+                  description: "Searches for a folder"
+                indexType:
+                  type: "string"
+                  description: "Searches in an index"
             DocumentSearchItemTag:
               required:
               - "key"

@@ -54,27 +54,34 @@ public class AttributeValueToGlobalMetaFolder
   @Override
   public Map<String, Object> apply(final Map<String, AttributeValue> map) {
 
-    String parent = map.get(PK).s().substring(map.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1);
-    String documentId = map.get("documentId").s();
-    String path = map.get("path").s();
-
-    String key = URLEncoder.encode(parent + TAG_DELIMINATOR + path, StandardCharsets.UTF_8);
-
     Map<String, Object> result = new HashMap<>();
-    result.put("path", path);
-    result.put("documentId", documentId);
-    result.put("folder", Boolean.TRUE);
-    result.put("indexKey", key);
 
-    Date insertedDate = this.toInsertedDateDate.apply(map);
-    result.put("insertedDate", insertedDate);
+    if (map.get(PK).s().contains(GLOBAL_FOLDER_TAGS)) {
 
-    Date lastmodifedDate = this.toLastModifiedDate.apply(map);
-    result.put("lastModifiedDate", lastmodifedDate);
+      result.put("value", map.get("tagKey").s());
 
-    String userId = map.containsKey("userId") ? map.get("userId").s() : null;
-    result.put("userId", userId);
+    } else {
 
+      String parent = map.get(PK).s().substring(map.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1);
+      String documentId = map.get("documentId").s();
+      String path = map.get("path").s();
+
+      String key = URLEncoder.encode(parent + TAG_DELIMINATOR + path, StandardCharsets.UTF_8);
+
+      result.put("path", path);
+      result.put("documentId", documentId);
+      result.put("folder", Boolean.TRUE);
+      result.put("indexKey", key);
+
+      Date insertedDate = this.toInsertedDateDate.apply(map);
+      result.put("insertedDate", insertedDate);
+
+      Date lastmodifedDate = this.toLastModifiedDate.apply(map);
+      result.put("lastModifiedDate", lastmodifedDate);
+
+      String userId = map.containsKey("userId") ? map.get("userId").s() : null;
+      result.put("userId", userId);
+    }
 
     return result;
   }

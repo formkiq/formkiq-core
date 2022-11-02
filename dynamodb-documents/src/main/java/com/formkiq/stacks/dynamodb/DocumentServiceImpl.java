@@ -69,17 +69,23 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
+import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 /** Implementation of the {@link DocumentService}. */
 public class DocumentServiceImpl implements DocumentService, DbKeys {
@@ -148,12 +154,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     List<Map<String, AttributeValue>> items =
         getSaveTagsAttributes(siteId, documentId, tags, timeToLive);
+
     if (!items.isEmpty()) {
       WriteRequestBuilder builder =
           new WriteRequestBuilder().appends(this.documentTableName, items);
       BatchWriteItemRequest batch =
           BatchWriteItemRequest.builder().requestItems(builder.getItems()).build();
       this.dbClient.batchWriteItem(batch);
+
+      List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
+      writeTagIndex(siteId, tagKeys);
     }
   }
 
@@ -1239,6 +1249,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
+
+      List<String> tagKeys =
+          notNull(tags).stream().map(t -> t.getKey()).collect(Collectors.toList());
+      writeTagIndex(siteId, tagKeys);
+
       if (options.saveDocumentDate()) {
         saveDocumentDate(document);
       }
@@ -1484,5 +1499,46 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return folderIndex;
+  }
+
+  /**
+   * Write Tag Index.
+   * 
+   * @param siteId {@link String}
+   * @param tagKeys {@link Collection} {@link String}
+   */
+  private void writeTagIndex(final String siteId, final Collection<String> tagKeys) {
+
+    Collection<TransactWriteItem> list = new ArrayList<>();
+
+    for (String tagKey : tagKeys) {
+
+      String pk = createDatabaseKey(siteId, GLOBAL_FOLDER_TAGS);
+      String sk = "key" + TAG_DELIMINATOR + tagKey.toLowerCase();
+
+      Map<String, AttributeValue> values = new HashMap<>(Map.of(PK, AttributeValue.fromS(pk), SK,
+          AttributeValue.fromS(sk), "tagKey", AttributeValue.fromS(tagKey)));
+
+      String conditionExpression = "attribute_not_exists(" + PK + ")";
+
+      Put put = Put.builder().tableName(this.documentTableName)
+          .conditionExpression(conditionExpression).item(values)
+          .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD).build();
+
+      list.add(TransactWriteItem.builder().put(put).build());
+    }
+
+    if (!list.isEmpty()) {
+      try {
+        this.dbClient
+            .transactWriteItems(TransactWriteItemsRequest.builder().transactItems(list).build());
+      } catch (TransactionCanceledException e) {
+        Optional<CancellationReason> o = e.cancellationReasons().stream()
+            .filter(f -> f.code().equals("ConditionalCheckFailed")).findAny();
+        if (!o.isPresent()) {
+          throw e;
+        }
+      }
+    }
   }
 }
