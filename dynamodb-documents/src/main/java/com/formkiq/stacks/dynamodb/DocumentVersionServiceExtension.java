@@ -21,43 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.plugins.version;
+package com.formkiq.stacks.dynamodb;
 
-import java.util.Map;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import java.lang.reflect.InvocationTargetException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Interface for Document Versioning.
+ * {@link AwsServiceExtension} for {@link DocumentVersionService}.
  *
  */
-public interface DocumentVersionService {
+public class DocumentVersionServiceExtension
+    implements AwsServiceExtension<DocumentVersionService> {
 
-  /** FormKiQ S3 Version. */
-  String S3VERSION_ATTRIBUTE = "fk#s3version";
-  /** FormKiQ Version. */
-  String VERSION_ATTRIBUTE = "fk#version";
-
-  /**
-   * Add Document Versioning Attributes to Previous / Current Objects.
-   * 
-   * @param previous {@link Map}
-   * @param current {@link Map}
-   */
-  void addDocumentVersionAttributes(Map<String, AttributeValue> previous,
-      Map<String, AttributeValue> current);
+  /** {@link DocumentVersionService}. */
+  private DocumentVersionService service;
 
   /**
-   * Get DynamoDB Documents Versions Table Name.
-   * 
-   * @return {@link String}
+   * constructor.
    */
-  String getDocumentVersionsTableName();
+  public DocumentVersionServiceExtension() {}
 
-  /**
-   * Initialize Service.
-   * 
-   * @param map {@link Map}
-   */
-  void initialize(Map<String, String> map);
+  @Override
+  public DocumentVersionService loadService(final AwsServiceCache awsServiceCache) {
+
+    if (this.service == null) {
+
+      try {
+
+        this.service = (DocumentVersionService) Class
+            .forName(awsServiceCache.environment("DOCUMENT_VERSIONS_PLUGIN")).getConstructor()
+            .newInstance();
+
+      } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+          | InvocationTargetException | NoSuchMethodException | SecurityException
+          | ClassNotFoundException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    return this.service;
+  }
 }

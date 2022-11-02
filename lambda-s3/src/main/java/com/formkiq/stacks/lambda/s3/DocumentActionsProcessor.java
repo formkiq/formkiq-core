@@ -72,7 +72,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
-import com.formkiq.plugins.version.DocumentVersionService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.SetDocumentFulltext;
@@ -84,9 +84,10 @@ import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
 import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -153,8 +154,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
-    DocumentServiceExtension dsExtension = new DocumentServiceExtension();
-    DocumentVersionService versionService = dsExtension.getVersionService(map);
+    AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
+    DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
+    DocumentVersionService versionService = dsExtension.loadService(serviceCache);
 
     this.s3Service = new S3Service(s3);
     this.documentService =

@@ -23,12 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
-import com.formkiq.plugins.version.DocumentVersionService;
 
 /**
  * 
@@ -51,37 +48,13 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
 
-      DocumentVersionService versionService = getVersionService(awsServiceCache.environment());
+      DocumentVersionService versionService =
+          awsServiceCache.getExtension(DocumentVersionService.class);
 
       this.service = new DocumentServiceImpl(connection,
           awsServiceCache.environment("DOCUMENTS_TABLE"), versionService);
     }
 
     return this.service;
-  }
-
-  /**
-   * Get Version Service.
-   * 
-   * @param map {@link String}
-   * @return {@link DocumentVersionService}
-   */
-  public DocumentVersionService getVersionService(final Map<String, String> map) {
-
-    DocumentVersionService versionService;
-
-    try {
-
-      versionService = (DocumentVersionService) Class.forName(map.get("DOCUMENT_VERSIONS_PLUGIN"))
-          .getConstructor().newInstance();
-
-    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-        | InvocationTargetException | NoSuchMethodException | SecurityException
-        | ClassNotFoundException e) {
-      throw new RuntimeException(e);
-    }
-
-    versionService.initialize(map);
-    return versionService;
   }
 }

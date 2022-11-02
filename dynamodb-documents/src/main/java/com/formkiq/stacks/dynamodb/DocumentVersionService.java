@@ -24,44 +24,40 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * {@link DocumentVersionService} implementation.
+ * Interface for Document Versioning.
  *
  */
-@Reflectable
-public class DocumentVersionServiceDynamoDb implements DocumentVersionService, DbKeys {
+public interface DocumentVersionService {
 
-  /** DynamoDB Document Versions Table Name. */
-  private String tableName = null;
+  /** FormKiQ S3 Version. */
+  String S3VERSION_ATTRIBUTE = "fk#s3version";
+  /** FormKiQ Version. */
+  String VERSION_ATTRIBUTE = "fk#version";
 
-  @Override
-  public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
-      final Map<String, AttributeValue> current) {
+  /**
+   * Add Document Versioning Attributes to Previous / Current Objects.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   */
+  void addDocumentVersionAttributes(Map<String, AttributeValue> previous,
+      Map<String, AttributeValue> current);
 
-    if (!previous.isEmpty()) {
+  /**
+   * Get DynamoDB Documents Versions Table Name.
+   * 
+   * @return {@link String}
+   */
+  String getDocumentVersionsTableName();
 
-      String version = current.getOrDefault(VERSION_ATTRIBUTE, AttributeValue.fromS("0")).s();
-      String nextVersion = String.valueOf(Integer.parseInt(version) + 1);
-
-      previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(version));
-      previous.put(SK, AttributeValue.fromS(previous.get(SK).s() + "#v" + nextVersion));
-
-      current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
-    }
-  }
-
-  @Override
-  public String getDocumentVersionsTableName() {
-    return this.tableName;
-  }
-
-  @Override
-  public void initialize(final Map<String, String> map) {
-    this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
-  }
+  /**
+   * Initialize Service.
+   * 
+   * @param map {@link Map}
+   */
+  void initialize(Map<String, String> map);
 }

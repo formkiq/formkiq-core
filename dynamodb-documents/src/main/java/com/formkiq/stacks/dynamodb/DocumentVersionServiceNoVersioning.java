@@ -25,7 +25,6 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.plugins.version.DocumentVersionService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
