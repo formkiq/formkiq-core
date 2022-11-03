@@ -53,6 +53,7 @@ public class DocumentVersionServiceExtension
         this.service = (DocumentVersionService) Class
             .forName(awsServiceCache.environment("DOCUMENT_VERSIONS_PLUGIN")).getConstructor()
             .newInstance();
+        this.service.initialize(awsServiceCache.environment());
 
       } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
           | InvocationTargetException | NoSuchMethodException | SecurityException
