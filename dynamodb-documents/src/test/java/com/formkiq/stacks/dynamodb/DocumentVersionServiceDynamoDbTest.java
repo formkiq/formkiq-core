@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentVersionService.VERSION_ATTRIBUTE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -58,7 +59,8 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
       this.service.addDocumentVersionAttributes(previous, current);
 
       // then
-      assertEquals("document#v49", previous.get(SK).s());
+      assertTrue(previous.get(SK).s().startsWith("document#"));
+      assertTrue(previous.get(SK).s().endsWith("#v1"));
       assertEquals("1", previous.get(VERSION_ATTRIBUTE).s());
       assertEquals("1", previous.get(VERSION_ATTRIBUTE).s());
 
@@ -86,7 +88,8 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
       this.service.addDocumentVersionAttributes(previous, current);
 
       // then
-      assertEquals("document#v50", previous.get(SK).s());
+      assertTrue(previous.get(SK).s().startsWith("document#"));
+      assertTrue(previous.get(SK).s().endsWith("#v2"));
       assertEquals("2", previous.get(VERSION_ATTRIBUTE).s());
       assertEquals("2", previous.get(VERSION_ATTRIBUTE).s());
 
@@ -114,7 +117,8 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
       this.service.addDocumentVersionAttributes(previous, current);
 
       // then
-      assertEquals("document#v494848", previous.get(SK).s());
+      assertTrue(previous.get(SK).s().startsWith("document#"));
+      assertTrue(previous.get(SK).s().endsWith("#v100"));
       assertEquals("100", previous.get(VERSION_ATTRIBUTE).s());
       assertEquals("100", previous.get(VERSION_ATTRIBUTE).s());
 

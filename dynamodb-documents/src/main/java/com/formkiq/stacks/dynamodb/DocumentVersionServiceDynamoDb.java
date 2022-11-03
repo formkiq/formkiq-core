@@ -25,6 +25,8 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -39,6 +41,8 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
   /** DynamoDB Document Versions Table Name. */
   private String tableName = null;
+  /** {@link SimpleDateFormat} in ISO Standard format. */
+  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   @Override
   public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
@@ -51,20 +55,12 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
       previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(version));
 
-      String sk = previous.get(SK).s() + TAG_DELIMINATOR + "v" + toAscii(version);
+      String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
+          + TAG_DELIMINATOR + "v" + version;
       previous.put(SK, AttributeValue.fromS(sk));
 
       current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
     }
-  }
-
-  private String toAscii(final String s) {
-    StringBuilder sb = new StringBuilder();
-    for (char c : s.toCharArray()) {
-      sb.append((int) c);
-    }
-
-    return sb.toString();
   }
 
   @Override

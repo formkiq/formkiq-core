@@ -44,7 +44,7 @@ public class AttributeValueToMap
       String s = e.getValue().s();
       String n = e.getValue().n();
       String v = s == null && n != null ? n : s;
-      
+
       String key = getKey(e.getKey());
       result.put(key, v);
     }
@@ -53,7 +53,7 @@ public class AttributeValueToMap
   }
 
   private String getKey(final String key) {
-    
+
     String k = key;
     if ("inserteddate".equals(key)) {
       k = "insertedDate";
