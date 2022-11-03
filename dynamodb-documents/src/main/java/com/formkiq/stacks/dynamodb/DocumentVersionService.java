@@ -48,6 +48,15 @@ public interface DocumentVersionService {
       Map<String, AttributeValue> current);
 
   /**
+   * Revert to previous Document Version.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   */
+  void revertDocumentVersionAttributes(Map<String, AttributeValue> previous,
+      Map<String, AttributeValue> current);
+
+  /**
    * Get DynamoDB Documents Versions Table Name.
    * 
    * @return {@link String}

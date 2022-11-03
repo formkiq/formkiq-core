@@ -34,7 +34,7 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
  */
 public class DocumentServiceExtension implements AwsServiceExtension<DocumentService> {
 
-  /** {@link CacheService}. */
+  /** {@link DocumentService}. */
   private DocumentService service;
 
   /**

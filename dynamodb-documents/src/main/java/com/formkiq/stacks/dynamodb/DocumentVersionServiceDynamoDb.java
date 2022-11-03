@@ -39,10 +39,10 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Reflectable
 public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
-  /** DynamoDB Document Versions Table Name. */
-  private String tableName = null;
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+  /** DynamoDB Document Versions Table Name. */
+  private String tableName = null;
 
   @Override
   public void addDocumentVersionAttributes(final Map<String, AttributeValue> previous,
@@ -55,12 +55,17 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
       previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(version));
 
-      String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
-          + TAG_DELIMINATOR + "v" + version;
+      String sk = getSk(previous, version);
       previous.put(SK, AttributeValue.fromS(sk));
 
       current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
     }
+  }
+
+  private String getSk(final Map<String, AttributeValue> previous, final String version) {
+    String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
+        + TAG_DELIMINATOR + "v" + version;
+    return sk;
   }
 
   @Override
@@ -71,5 +76,18 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   @Override
   public void initialize(final Map<String, String> map) {
     this.tableName = map.get("DOCUMENT_VERSIONS_TABLE");
+  }
+
+  @Override
+  public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
+
+    String nextVersion = String.valueOf(Integer.parseInt(current.get(VERSION_ATTRIBUTE).s()) + 1);
+
+    previous.put(SK, current.get(SK));
+    previous.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
+
+    String sk = getSk(current, current.get(VERSION_ATTRIBUTE).s());
+    current.put(SK, AttributeValue.fromS(sk));
   }
 }

@@ -50,4 +50,10 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
   public void initialize(final Map<String, String> map) {
     // empty
   }
+
+  @Override
+  public void revertDocumentVersionAttributes(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
+    // empty
+  }
 }

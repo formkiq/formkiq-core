@@ -52,8 +52,12 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String documentId = UUID.randomUUID().toString();
+
       Map<String, AttributeValue> previous = keysDocument(siteId, documentId);
+      previous.put("path", AttributeValue.fromS("previous.txt"));
+
       Map<String, AttributeValue> current = keysDocument(siteId, documentId);
+      current.put("path", AttributeValue.fromS("current.txt"));
 
       // when
       this.service.addDocumentVersionAttributes(previous, current);
@@ -66,6 +70,16 @@ class DocumentVersionServiceDynamoDbTest implements DbKeys {
 
       assertEquals("document", current.get(SK).s());
       assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
+      assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
+
+      // when - revert
+      this.service.revertDocumentVersionAttributes(previous, current);
+
+      // then
+      assertEquals("document", previous.get(SK).s());
+      assertEquals("3", previous.get(VERSION_ATTRIBUTE).s());
+
+      assertTrue(current.get(SK).s().endsWith("#v2"));
       assertEquals("2", current.get(VERSION_ATTRIBUTE).s());
     }
   }
