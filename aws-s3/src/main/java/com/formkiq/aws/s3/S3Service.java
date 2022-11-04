@@ -164,6 +164,16 @@ public class S3Service {
   }
 
   /**
+   * Perform {@link CopyObjectRequest}.
+   * 
+   * @param req {@link CopyObjectRequest}
+   * @return {@link CopyObjectResponse}
+   */
+  public CopyObjectResponse copyRequest(final CopyObjectRequest req) {
+    return this.s3Client.copyObject(req);
+  }
+
+  /**
    * Create S3 Bucket.
    * 
    * @param bucket {@link String}
