@@ -367,9 +367,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/versions:
             get:
-              description: Get a listing of document content versions
+              description: Get a listing of document content versions; ONLY available with FormKiQ Enterprise
               tags:
-              - Documents
+              - Document Versions
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -392,6 +392,43 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetDocumentVersionsResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              description: Set Document to a previous document version; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentVersionRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetDocumentVersionResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
@@ -1882,6 +1919,18 @@ Resources:
                   description: "Previous page of results token"
                 tags:
                   $ref: "#/components/schemas/DocumentItemTags"
+            SetDocumentVersionRequest:
+              type: "object"
+              properties:
+                versionKey:
+                  type: "string"
+                  description: "VersionKey returned by the GET /documents/{documentId}/versions to revert to"
+            SetDocumentVersionResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Response Message" 
             DocumentItemTags:
               type: "array"
               description: "List of tags"
