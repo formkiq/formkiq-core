@@ -91,9 +91,7 @@ public class AttributeValueToDocumentItem
     DocumentItemDynamoDb item = new DocumentItemDynamoDb(id, insertedDate, userId);
     item.setLastModifiedDate(lastModifiedDate != null ? lastModifiedDate : insertedDate);
 
-    if (map.containsKey("path")) {
-      item.setPath(map.get("path").s());
-    }
+    item.setPath(getString(map.get("path")));
 
     if (map.containsKey("contentType")) {
       item.setContentType(map.get("contentType").s());
@@ -116,10 +114,21 @@ public class AttributeValueToDocumentItem
       item.setTagSchemaId(map.get("tagSchemaId").s());
     }
 
+    item.setVersion(getString(map.get("version")));
+    item.setS3version(getString(map.get("s3version")));
+
+    if (map.containsKey("tagSchemaId")) {
+      item.setTagSchemaId(map.get("tagSchemaId").s());
+    }
+
     if (map.containsKey("TimeToLive")) {
       item.setTimeToLive(map.get("TimeToLive").n());
     }
 
     return item;
+  }
+
+  private String getString(final AttributeValue value) {
+    return value != null ? value.s() : null;
   }
 }

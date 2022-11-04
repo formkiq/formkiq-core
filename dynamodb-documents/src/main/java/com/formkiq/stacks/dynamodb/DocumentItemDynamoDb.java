@@ -57,6 +57,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Path. */
   @Reflectable
   private String path;
+  /** S3 Version. */
+  @Reflectable
+  private String s3version;
   /** Tag Schema Id. */
   @Reflectable
   private String tagSchemaId;
@@ -66,6 +69,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** User Id. */
   @Reflectable
   private String userId;
+  /** Document Version. */
+  @Reflectable
+  private String version;
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -130,6 +136,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public String getS3version() {
+    return this.s3version;
+  }
+
+  @Override
   public String getTagSchemaId() {
     return this.tagSchemaId;
   }
@@ -142,6 +153,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public String getUserId() {
     return this.userId;
+  }
+
+  @Override
+  public String getVersion() {
+    return this.version;
   }
 
   @Override
@@ -190,6 +206,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public void setS3version(final String s3Version) {
+    this.s3version = s3Version;
+  }
+
+  @Override
   public void setTagSchemaId(final String id) {
     this.tagSchemaId = id;
   }
@@ -202,6 +223,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setUserId(final String username) {
     this.userId = username;
+  }
+
+  @Override
+  public void setVersion(final String documentVersion) {
+    this.version = documentVersion;
   }
 
   @Override

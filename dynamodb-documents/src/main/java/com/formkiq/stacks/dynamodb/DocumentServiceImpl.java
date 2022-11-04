@@ -879,7 +879,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
     addS(pkvalues, "userId", document.getUserId());
     addS(pkvalues, "path", document.getPath());
+    addS(pkvalues, "version", document.getVersion());
+    addS(pkvalues, "s3version", document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
+
 
     if (document.getContentLength() != null) {
       addN(pkvalues, "contentLength", "" + document.getContentLength());

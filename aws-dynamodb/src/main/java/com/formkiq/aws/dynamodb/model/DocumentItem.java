@@ -93,6 +93,13 @@ public interface DocumentItem {
   String getPath();
 
   /**
+   * Get S3 Version.
+   * 
+   * @return {@link String}
+   */
+  String getS3version();
+
+  /**
    * Get Tag Schema Id.
    * 
    * @return {@link String}
@@ -112,6 +119,13 @@ public interface DocumentItem {
    * @return {@link String}
    */
   String getUserId();
+
+  /**
+   * Get Document Version.
+   * 
+   * @return {@link String}
+   */
+  String getVersion();
 
   /**
    * Sets Belongs To DocumentId.
@@ -177,6 +191,13 @@ public interface DocumentItem {
   void setPath(String filepath);
 
   /**
+   * Set S3 Version.
+   * 
+   * @param version {@link String}
+   */
+  void setS3version(String version);
+
+  /**
    * Set TagSchema Id.
    * 
    * @param id {@link String}
@@ -196,4 +217,11 @@ public interface DocumentItem {
    * @param username {@link String}
    */
   void setUserId(String username);
+
+  /**
+   * Set Document Version.
+   * 
+   * @param version {@link String}
+   */
+  void setVersion(String version);
 }

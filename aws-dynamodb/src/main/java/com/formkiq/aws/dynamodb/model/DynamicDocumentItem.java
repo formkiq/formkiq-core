@@ -96,6 +96,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getS3version() {
+    return getString("s3version");
+  }
+
+  @Override
   public String getTagSchemaId() {
     return getString("tagSchemaId");
   }
@@ -108,6 +113,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public String getUserId() {
     return getString("userId");
+  }
+
+  @Override
+  public String getVersion() {
+    return getString("version");
   }
 
   @Override
@@ -157,6 +167,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public void setS3version(final String version) {
+    put("s3version", version);
+  }
+
+  @Override
   public void setTagSchemaId(final String id) {
     put("tagSchemaId", id);
   }
@@ -169,5 +184,10 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setUserId(final String userId) {
     put("userId", userId);
+  }
+
+  @Override
+  public void setVersion(final String version) {
+    put("version", version);
   }
 }

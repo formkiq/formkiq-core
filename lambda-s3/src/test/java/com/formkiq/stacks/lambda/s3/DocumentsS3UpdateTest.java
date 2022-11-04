@@ -484,6 +484,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      assertNotNull(item.getS3version());
+
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 

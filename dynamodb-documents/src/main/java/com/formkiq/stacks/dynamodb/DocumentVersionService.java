@@ -34,9 +34,9 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public interface DocumentVersionService {
 
   /** FormKiQ S3 Version. */
-  String S3VERSION_ATTRIBUTE = "fk#s3version";
+  String S3VERSION_ATTRIBUTE = "s3version";
   /** FormKiQ Version. */
-  String VERSION_ATTRIBUTE = "fk#version";
+  String VERSION_ATTRIBUTE = "version";
 
   /**
    * Add Document Versioning Attributes to Previous / Current Objects.
