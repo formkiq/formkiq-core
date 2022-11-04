@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -34,6 +35,8 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
@@ -100,6 +103,18 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   private void putItem(final String dynamoDbTable, final Map<String, AttributeValue> attributes) {
     this.dbClient
         .putItem(PutItemRequest.builder().tableName(dynamoDbTable).item(attributes).build());
+  }
+
+  @Override
+  public List<Map<String, AttributeValue>> query(final AttributeValue pk) {
+    String expression = PK + " = :pk";
+    Map<String, AttributeValue> values = Map.of(":pk", pk);
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE).build();
+
+    QueryResponse result = this.dbClient.query(q);
+    return result.items();
   }
 
   @Override

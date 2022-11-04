@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -65,6 +66,14 @@ public interface DynamoDbService {
    * @param attr {@link Map}
    */
   void putItem(Map<String, AttributeValue> attr);
+
+  /**
+   * Query DynamoDB Records.
+   * 
+   * @param pk {@link AttributeValue}
+   * @return {@link List} {@link Map}
+   */
+  List<Map<String, AttributeValue>> query(AttributeValue pk);
 
   /**
    * Update DynamoDB Record.
