@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -41,6 +42,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,8 +57,11 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
 import com.formkiq.stacks.client.models.AddDocument;
+import com.formkiq.stacks.client.models.AddDocumentMetadata;
 import com.formkiq.stacks.client.models.AddDocumentResponse;
 import com.formkiq.stacks.client.models.AddDocumentTag;
+import com.formkiq.stacks.client.models.Document;
+import com.formkiq.stacks.client.models.DocumentMetadata;
 import com.formkiq.stacks.client.models.DocumentTags;
 import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.models.UpdateDocument;
@@ -799,6 +804,49 @@ public class DocumentsRequestTest extends AbstractApiTest {
           tags.tags().stream().filter(t -> t.key().equals("person")).findAny().get().value());
       assertEquals("thing",
           tags.tags().stream().filter(t -> t.key().equals("some")).findAny().get().value());
+    }
+  }
+
+  /**
+   * Save Document with Metadata.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testPost10() throws Exception {
+    // given
+    String content = "test data";
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (FormKiqClientV1 client : getFormKiqClients()) {
+
+        AddDocument post =
+            new AddDocument().contentType("text/plain").content(content, StandardCharsets.UTF_8)
+                .metadata(Arrays.asList(new AddDocumentMetadata().key("person").value("category"),
+                    new AddDocumentMetadata().key("playerId").values(Arrays.asList("11", "22"))));
+        AddDocumentRequest req = new AddDocumentRequest().siteId(siteId).document(post);
+
+        // when
+        AddDocumentResponse response = client.addDocument(req);
+
+        // given
+        String documentId = response.documentId();
+
+        // when - fetch document
+        waitForDocumentContent(client, siteId, documentId, content);
+
+        // then
+        GetDocumentRequest getReq = new GetDocumentRequest().siteId(siteId).documentId(documentId);
+
+        Document document = client.getDocument(getReq);
+        assertEquals(2, document.metadata().size());
+        Iterator<DocumentMetadata> itr = document.metadata().iterator();
+        DocumentMetadata md = itr.next();
+        assertEquals("playerId", md.key());
+        assertEquals("[11, 22]", md.values().toString());
+        md = itr.next();
+        assertEquals("person", md.key());
+        assertEquals("category", md.value());
+      }
     }
   }
 }
