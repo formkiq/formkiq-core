@@ -86,7 +86,7 @@ public class IndicesRequestHandler
       }
 
     } else {
-      throw new BadException("invalid 'type' parameter");
+      throw new BadException("invalid 'indexType' parameter");
     }
 
     ApiMapResponse resp = new ApiMapResponse();

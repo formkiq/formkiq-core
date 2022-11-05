@@ -112,7 +112,7 @@ public class IndicesFolderMoveRequestHandler
       return moveFolderIndex(logger, event, awsServices, siteId, userId);
     }
 
-    throw new BadException("invalid 'type' parameter");
+    throw new BadException("invalid 'indexType' parameter");
   }
 
   /**
