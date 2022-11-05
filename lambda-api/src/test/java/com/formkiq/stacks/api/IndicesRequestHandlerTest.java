@@ -75,7 +75,7 @@ public class IndicesRequestHandlerTest extends AbstractRequestHandler {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-indices.json");
       addParameter(event, "siteId", siteId);
-      event.setPathParameters(Map.of("type", "folder", "indexKey", indexKey));
+      event.setPathParameters(Map.of("indexType", "folder", "indexKey", indexKey));
 
       // when
       String response = handleRequest(event);
@@ -120,7 +120,7 @@ public class IndicesRequestHandlerTest extends AbstractRequestHandler {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-indices.json");
       addParameter(event, "siteId", siteId);
-      event.setPathParameters(Map.of("type", "folder", "indexKey", indexKey));
+      event.setPathParameters(Map.of("indexType", "folder", "indexKey", indexKey));
 
       // when
       String response = handleRequest(event);
@@ -154,7 +154,7 @@ public class IndicesRequestHandlerTest extends AbstractRequestHandler {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-indices.json");
       addParameter(event, "siteId", siteId);
-      event.setPathParameters(Map.of("type", "folder", "indexKey", indexKey));
+      event.setPathParameters(Map.of("indexType", "folder", "indexKey", indexKey));
 
       // when
       String response = handleRequest(event);
@@ -185,7 +185,7 @@ public class IndicesRequestHandlerTest extends AbstractRequestHandler {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-indices.json");
       addParameter(event, "siteId", siteId);
-      event.setPathParameters(Map.of("type", "asd", "indexKey", indexKey));
+      event.setPathParameters(Map.of("indexType", "asd", "indexKey", indexKey));
 
       // when
       String response = handleRequest(event);

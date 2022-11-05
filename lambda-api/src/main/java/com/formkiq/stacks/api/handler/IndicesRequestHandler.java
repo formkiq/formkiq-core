@@ -63,7 +63,7 @@ public class IndicesRequestHandler
       final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorizer.getSiteId();
-    String type = event.getPathParameters().get("type");
+    String type = event.getPathParameters().get("indexType");
 
     if ("folder".equals(type)) {
 
