@@ -68,6 +68,7 @@ public class DocumentItemToDynamicDocumentItem
     map.put("userId", item.getUserId());
     map.put("belongsToDocumentId", item.getBelongsToDocumentId());
     map.put("TimeToLive", item.getTimeToLive());
+    map.put("metadata", item.getMetadata());
 
     return new DynamicDocumentItem(map);
   }
