@@ -369,7 +369,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -411,7 +411,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertNotNull(s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -474,7 +474,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -543,7 +543,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -611,7 +611,7 @@ public class DocumentSearchServiceImplTest {
 
       list.forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertNull(s.getMap("matchedTag").get("documentId"));
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
@@ -661,7 +661,7 @@ public class DocumentSearchServiceImplTest {
 
       list.forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));

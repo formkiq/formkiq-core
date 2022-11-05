@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.FolderIndexProcessor.INDEX_FILE_SK;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -95,14 +96,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private String documentTableName;
   /** {@link FolderIndexProcessor}. */
   private FolderIndexProcessor folderIndexProcessor;
+  /** {@link GlobalIndexWriter}. */
+  private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
   /** {@link DocumentVersionService}. */
   private DocumentVersionService versionsService;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
   private SimpleDateFormat yyyymmddFormat;
   /** {@link DateTimeFormatter}. */
   private DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-  /** {@link GlobalIndexWriter}. */
-  private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
 
   /**
    * constructor.
@@ -141,6 +142,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
 
     writeBuilder.batchWriteItem(this.dbClient);
+  }
+
+  private void addMetadata(final DocumentItem document,
+      final Map<String, AttributeValue> pkvalues) {
+    notNull(document.getMetadata()).forEach(m -> {
+      if (m.getValues() != null) {
+        addL(pkvalues, PREFIX_DOCUMENT_METADATA + m.getKey(), m.getValues());
+      } else {
+        addS(pkvalues, PREFIX_DOCUMENT_METADATA + m.getKey(), m.getValue());
+      }
+    });
   }
 
   @Override
@@ -878,7 +890,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
     addS(pkvalues, "userId", document.getUserId());
-    addS(pkvalues, "path", document.getPath());
+    addS(pkvalues, "path",
+        isEmpty(document.getPath()) ? document.getDocumentId() : document.getPath());
     addS(pkvalues, "version", document.getVersion());
     addS(pkvalues, "s3version", document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
@@ -893,13 +906,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       addS(pkvalues, "etag", etag);
     }
 
-    if (document.getBelongsToDocumentId() != null) {
-      addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
-    }
+    addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());
 
-    if (options.timeToLive() != null) {
-      addN(pkvalues, "TimeToLive", options.timeToLive());
-    }
+    addN(pkvalues, "TimeToLive", options.timeToLive());
+
+    addMetadata(document, pkvalues);
 
     return pkvalues;
   }
@@ -1212,6 +1223,11 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         getSaveDocumentAttributes(keys, siteId, document, options);
     documentValues.putAll(current);
 
+    // remove null metadata
+    notNull(document.getMetadata()).stream()
+        .filter(m -> m.getValues() == null && isEmpty(m.getValue())).collect(Collectors.toList())
+        .forEach(m -> documentValues.remove(PREFIX_DOCUMENT_METADATA + m.getKey()));
+
     boolean previousSameAsCurrent = previous.equals(current);
 
     if (!previousSameAsCurrent) {
@@ -1386,6 +1402,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setLastModifiedDate(doc.getLastModifiedDate() != null ? doc.getLastModifiedDate() : date);
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
+    item.setMetadata(doc.getMetadata());
 
     List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
 

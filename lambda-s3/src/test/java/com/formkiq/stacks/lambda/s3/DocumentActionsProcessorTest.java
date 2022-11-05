@@ -101,7 +101,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static ClientAndServer mockServer;
 
   /** Port to run Test server. */
-  private static final int PORT = 8080;
+  private static final int PORT = 8888;
   /** {@link DocumentActionsProcessor}. */
   private static DocumentActionsProcessor processor;
   /** {@link SsmService}. */

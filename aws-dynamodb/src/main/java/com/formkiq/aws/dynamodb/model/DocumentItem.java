@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.model;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -84,6 +85,13 @@ public interface DocumentItem {
    * @return {@link Date}
    */
   Date getLastModifiedDate();
+
+  /**
+   * Get Document Metadata.
+   * 
+   * @return {@link Collection} {@link DocumentMetadata}
+   */
+  Collection<DocumentMetadata> getMetadata();
 
   /**
    * Get Path.
@@ -182,6 +190,13 @@ public interface DocumentItem {
    * @param date {@link Date}
    */
   void setLastModifiedDate(Date date);
+
+  /**
+   * Set Metadata {@link Collection} {@link DocumentMetadata}.
+   * 
+   * @param metadata {@link Collection} {@link DocumentMetadata}
+   */
+  void setMetadata(Collection<DocumentMetadata> metadata);
 
   /**
    * Set Path.

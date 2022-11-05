@@ -66,6 +66,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -1396,6 +1397,45 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertEquals("category2", results.get(0).getKey());
       assertEquals("[abc2, xyz2]", results.get(0).getValues().toString());
+    }
+  }
+
+  /**
+   * Test Save {@link DocumentItem} with {@link DocumentMetadata}.
+   */
+  @Test
+  public void testSaveDocumentItemWithMetadata01() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String content = "This is a test";
+      final String username = UUID.randomUUID() + "@formkiq.com";
+
+      DocumentMetadata m0 = new DocumentMetadata();
+      m0.setKey("some");
+      m0.setValue("thing");
+
+      DocumentMetadata m1 = new DocumentMetadata();
+      m1.setKey("playerId");
+      m1.setValues(Arrays.asList("111", "222"));
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(
+          Map.of("documentId", UUID.randomUUID().toString(), "userId", username, "content",
+              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      doc.setMetadata(Arrays.asList(m0, m1));
+
+      // when
+      DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
+
+      // then
+      item = service.findDocument(siteId, item.getDocumentId());
+      assertNotNull(item);
+      List<DocumentMetadata> metadata = new ArrayList<>(item.getMetadata());
+      Collections.sort(metadata, new DocumentMetadataComparator());
+      assertEquals(2, metadata.size());
+      assertEquals("playerId", metadata.get(0).getKey());
+      assertEquals("[111, 222]", metadata.get(0).getValues().toString());
+      assertEquals("some", metadata.get(1).getKey());
+      assertEquals("thing", metadata.get(1).getValue());
     }
   }
 

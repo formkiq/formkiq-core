@@ -54,6 +54,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,6 +77,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -136,15 +138,12 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String DOCUMENTS_BUCKET = "documentsbucket";
   /** SQS Sns Queue. */
   private static final String ERROR_SQS_QUEUE = "sqserror";
-  /** SQS Sns Create QueueUrl. */
-  private static String sqsDocumentEventUrl;
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
   /** Register LocalStack extension. */
   @RegisterExtension
   static LocalStackExtension localStack = new LocalStackExtension();
-
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
 
@@ -153,6 +152,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** {@link S3Service}. */
   private static S3Service s3;
+
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Builder;
   /** {@link DocumentSearchService}. */
@@ -179,6 +179,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static String snsSqsDeleteQueueUrl;
   /** {@link SqsConnectionBuilder}. */
   private static SqsConnectionBuilder sqsBuilder;
+  /** SQS Sns Create QueueUrl. */
+  private static String sqsDocumentEventUrl;
   /** SQS Error Url. */
   private static String sqsErrorUrl;
 
@@ -352,6 +354,15 @@ public class StagingS3CreateTest implements DbKeys {
     } else {
       assertEquals(attributes.get("value"), tag.getValue());
     }
+  }
+
+  private void assertPublishedSnsMessage() throws InterruptedException {
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    while (msgs.size() != 1) {
+      TimeUnit.SECONDS.sleep(1);
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    }
+    assertEquals(1, msgs.size());
   }
 
   /**
@@ -587,7 +598,7 @@ public class StagingS3CreateTest implements DbKeys {
     assertEquals("application/pdf", item.getContentType());
     assertEquals("ef654c40ab4f1747fc699915d4f70902", item.getChecksum());
     assertNotNull(item.getInsertedDate());
-    assertEquals(item.getPath(), expectedPath);
+    assertEquals(item.getPath(), expectedPath != null ? expectedPath : item.getDocumentId());
     assertEquals("1234", item.getUserId());
 
     List<DocumentTag> tags =
@@ -596,7 +607,7 @@ public class StagingS3CreateTest implements DbKeys {
     int i = 0;
     int count = 2;
 
-    if (item.getPath() != null) {
+    if (expectedPath != null) {
       count++;
       assertEquals("path", tags.get(i).getKey());
       assertEquals(expectedPath, tags.get(i).getValue());
@@ -857,7 +868,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("14", item.getContentLength().toString());
       assertEquals("text/plain", item.getContentType());
       assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
-      assertNull(item.getPath());
+      assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
       final int count = 3;
@@ -919,7 +930,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("14", item.getContentLength().toString());
       assertEquals("text/plain", item.getContentType());
       assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
-      assertNull(item.getPath());
+      assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
       final int count = 3;
@@ -978,7 +989,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("14", item.getContentLength().toString());
       assertEquals("text/plain", item.getContentType());
       assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
-      assertNull(item.getPath());
+      assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
       int i = 0;
@@ -1180,7 +1191,7 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(map);
 
       // then
-      final int count = 3;
+      final int count = 4;
       item = service.findDocument(siteId, documentId);
 
       assertEquals(userId, item.getUserId());
@@ -1195,6 +1206,9 @@ public class StagingS3CreateTest implements DbKeys {
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", userId));
 
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
+          item.getDocumentId(), "type", "SYSTEMDEFINED", "userId", userId));
+
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "playerId", "value",
           "1234", "type", "USERDEFINED", "userId", userId));
 
@@ -1208,13 +1222,92 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
-  private void assertPublishedSnsMessage() throws InterruptedException {
-    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    while (msgs.size() != 1) {
-      TimeUnit.SECONDS.sleep(1);
-      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+  /**
+   * Test .fkb64 file with Metadata.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension13() throws IOException {
+    DynamicDocumentItem item = createDocumentItem();
+
+    item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
+        Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      processFkB64File(siteId, item);
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals(2, doc.getMetadata().size());
+      Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
+      DocumentMetadata md = itr.next();
+      assertEquals("category", md.getKey());
+      assertEquals("person", md.getValue());
+      md = itr.next();
+      assertEquals("playerId", md.getKey());
+      assertEquals("[111, 222]", md.getValues().toString());
     }
-    assertEquals(1, msgs.size());
+  }
+
+  /**
+   * Test .fkb64 file add Metadata.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension14() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+
+      item.put("tags", new ArrayList<>());
+      item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
+          Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
+      service.saveDocument(siteId, item, null);
+
+      item.put("metadata", Arrays.asList(Map.of("key", "playerId", "value", "333")));
+
+      processFkB64File(siteId, item);
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals(2, doc.getMetadata().size());
+      Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
+      DocumentMetadata md = itr.next();
+      assertEquals("category", md.getKey());
+      assertEquals("person", md.getValue());
+      md = itr.next();
+      assertEquals("playerId", md.getKey());
+      assertNull(md.getValues());
+      assertEquals("333", md.getValue());
+    }
+  }
+
+  /**
+   * Test .fkb64 file removing Metadata.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension15() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+
+      item.put("tags", new ArrayList<>());
+      item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
+          Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
+      service.saveDocument(siteId, item, null);
+
+      item.put("metadata", Arrays.asList(Map.of("key", "playerId")));
+
+      processFkB64File(siteId, item);
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals(1, doc.getMetadata().size());
+      Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
+      DocumentMetadata md = itr.next();
+      assertEquals("category", md.getKey());
+      assertEquals("person", md.getValue());
+    }
   }
 
   /**

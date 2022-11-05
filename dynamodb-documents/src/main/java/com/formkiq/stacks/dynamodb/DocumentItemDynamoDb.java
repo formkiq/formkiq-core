@@ -23,9 +23,11 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Holder class for Document(s). */
@@ -54,6 +56,8 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Last Modified Date. */
   @Reflectable
   private Date lastModifiedDate;
+  /** {@link Collection} {@link DocumentMetadata}. */
+  private Collection<DocumentMetadata> metadata;
   /** Document Path. */
   @Reflectable
   private String path;
@@ -72,6 +76,7 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Version. */
   @Reflectable
   private String version;
+
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -128,6 +133,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public Date getLastModifiedDate() {
     return this.lastModifiedDate != null ? (Date) this.lastModifiedDate.clone() : null;
+  }
+
+  @Override
+  public Collection<DocumentMetadata> getMetadata() {
+    return this.metadata;
   }
 
   @Override
@@ -198,6 +208,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setLastModifiedDate(final Date date) {
     this.lastModifiedDate = date != null ? (Date) date.clone() : null;
+  }
+
+  @Override
+  public void setMetadata(final Collection<DocumentMetadata> documentMetadata) {
+    this.metadata = documentMetadata;
   }
 
   @Override

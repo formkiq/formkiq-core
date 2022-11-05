@@ -23,7 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -125,7 +128,44 @@ public class AttributeValueToDocumentItem
       item.setTimeToLive(map.get("TimeToLive").n());
     }
 
+    Collection<DocumentMetadata> metadata = toDocumentMetadata(map);
+    item.setMetadata(metadata);
+
     return item;
+  }
+
+  /**
+   * Convert {@link Map} to {@link DocumentMetadata}.
+   * 
+   * @param map {@link Map} {@link String} {@link AttributeValue}
+   * @return {@link Collection} {@link DocumentMetadata}
+   */
+  private Collection<DocumentMetadata> toDocumentMetadata(final Map<String, AttributeValue> map) {
+    Collection<DocumentMetadata> c = null;
+
+    List<String> metadataKeys = map.keySet().stream()
+        .filter(k -> k.startsWith(PREFIX_DOCUMENT_METADATA)).collect(Collectors.toList());
+
+    if (!metadataKeys.isEmpty()) {
+      c = metadataKeys.stream().map(k -> {
+
+        DocumentMetadata meta = null;
+        AttributeValue av = map.get(k);
+
+        String kk = k.substring(PREFIX_DOCUMENT_METADATA.length());
+
+        if (av.s() != null) {
+          meta = new DocumentMetadata(kk, map.get(k).s());
+        } else {
+          List<String> strs = av.l().stream().map(m -> m.s()).collect(Collectors.toList());
+          meta = new DocumentMetadata(kk, strs);
+        }
+
+        return meta;
+      }).collect(Collectors.toList());
+    }
+
+    return c;
   }
 
   private String getString(final AttributeValue value) {

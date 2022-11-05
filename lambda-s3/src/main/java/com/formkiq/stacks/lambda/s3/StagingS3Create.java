@@ -46,6 +46,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -102,8 +103,8 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
-@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentTagType.class,
-    AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
+@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentMetadata.class,
+    DocumentTagType.class, AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
     DocumentVersionServiceNoVersioning.class})
 @ReflectableClasses({
     @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,

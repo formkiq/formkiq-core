@@ -2244,6 +2244,8 @@ Resources:
                   description: "Document content"
                 tags:
                   $ref: "#/components/schemas/AddDocumentTags"
+                metadata:
+                  $ref: "#/components/schemas/AddDocumentMetadatas"
                 actions:
                   $ref: "#/components/schemas/AddActions"
                 documents:
@@ -2254,6 +2256,29 @@ Resources:
               properties:
                 tags:
                   $ref: "#/components/schemas/AddDocumentTags"
+            AddDocumentMetadatas:
+              type: "array"
+              description: "List of document Metadata"
+              items:
+                $ref: "#/components/schemas/AddDocumentMetadata"
+            AddDocumentMetadata:
+              required:
+              - "key"
+              type: "object"
+              description: "Document Metadata (use either 'value' or 'values' not both)"
+              properties:
+                key:
+                  type: "string"
+                  description: "Metadata key"
+                value:
+                  type: "string"
+                  description: "Metadata value"
+                values:
+                  type: "array"
+                  description: "Metadata values"
+                  items:
+                    type: "string"
+                    description: "Metadata value"
             AddDocumentTags:
               type: "array"
               description: "List of document tags"
@@ -2301,16 +2326,41 @@ Resources:
                   type: "string"
                   description: "Document content"
             DocumentItemVersion:
-              required:
-              - "versionId"
               type: "object"
               properties:
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Last Modified Timestamp"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                contentLength:
+                  type: "integer"
+                  description: "Document size"
                 versionId:
                   type: "string"
                   description: "Document version"
-                lastModifiedDate:
+                versionKey:
                   type: "string"
-                  description: "Last modified date"
+                  description: "Document Version Identifier"
             GetDocumentTagResponse:
               required:
               - "key"
