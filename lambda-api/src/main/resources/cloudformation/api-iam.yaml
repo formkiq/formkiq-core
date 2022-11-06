@@ -1764,7 +1764,27 @@ Resources:
                         $ref: '#/components/schemas/EsignatureSetDocusignConfigResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
-
+          /esignature/docusign/events:
+            post:
+              description: Docusign callback URL handler; ONLY available in FormKiQ Enterprise 
+              tags:
+              - E-Signature
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/EsignatureDocusignResponse'
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
