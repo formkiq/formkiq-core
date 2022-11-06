@@ -65,12 +65,15 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
   /** Results Limit. */
   private static final int LIMIT = 10;
+  /** {@link ConfigService}. */
+  private ConfigService configService = null;
 
   @Override
   @BeforeEach
   public void before() throws Exception {
     super.before();
-    getAwsServices().configService().delete(null);
+    this.configService = getAwsServices().getExtension(ConfigService.class);
+    this.configService.delete(null);
   }
 
   /**
@@ -395,13 +398,13 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload06() throws Exception {
 
     String maxContentLengthBytes = "2783034";
-    getAwsServices().configService().save(null,
+    this.configService.save(null,
         new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       if (siteId != null) {
-        getAwsServices().configService().save(siteId, new DynamicObject(
+        this.configService.save(siteId, new DynamicObject(
             Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
       }
 
@@ -434,13 +437,13 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   public void testHandleGetDocumentsUpload07() throws Exception {
 
     String maxContentLengthBytes = "2783034";
-    getAwsServices().configService().save(null,
+    this.configService.save(null,
         new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       if (siteId != null) {
-        getAwsServices().configService().save(siteId, new DynamicObject(
+        this.configService.save(siteId, new DynamicObject(
             Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
       }
 

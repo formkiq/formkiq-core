@@ -37,6 +37,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.services.lambda.services.ConfigService;
+import com.formkiq.aws.services.lambda.services.ConfigServiceExtension;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
@@ -196,6 +198,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
     AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
+    AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));

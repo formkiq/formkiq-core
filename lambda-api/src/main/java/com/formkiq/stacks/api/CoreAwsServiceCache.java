@@ -23,10 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.services.lambda.services.ConfigService;
-import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -54,33 +51,8 @@ public class CoreAwsServiceCache extends AwsServiceCache {
     throw new UnsupportedOperationException("expected CoreAwsServiceCache.class");
   }
 
-  /** {@link ConfigService}. */
-  private ConfigService configService;
   /** {@link WebhooksService}. */
   private WebhooksService webhookService;
-
-  /**
-   * Get SiteId Config.
-   * 
-   * @param siteId {@link String}
-   * @return {@link DynamicObject}
-   */
-  public DynamicObject config(final String siteId) {
-    return configService().get(siteId);
-  }
-
-  /**
-   * Get {@link ConfigService}.
-   * 
-   * @return {@link ConfigService}
-   */
-  public ConfigService configService() {
-    if (this.configService == null) {
-      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
-      this.configService = new ConfigServiceImpl(connection, environment("DOCUMENTS_TABLE"));
-    }
-    return this.configService;
-  }
 
   /**
    * Get {@link DocumentSearchService}.

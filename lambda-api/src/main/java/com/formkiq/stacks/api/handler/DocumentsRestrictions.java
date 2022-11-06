@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 
 /**
  * Interface for providing restrictions around Document.
@@ -52,7 +52,8 @@ public interface DocumentsRestrictions {
    * @return {@link String}
    */
   default String getValue(final AwsServiceCache awsservice, final String siteId, final String key) {
-    return (CoreAwsServiceCache.cast(awsservice)).config(siteId).getString(key);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    return configService.get(siteId).getString(key);
   }
 
   /**

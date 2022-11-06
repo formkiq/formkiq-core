@@ -21,25 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.aws.services.lambda.services;
 
-import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
-/** {@link ApiGatewayRequestHandler} for "/esignature/docusign/{documentId}". */
-public class EsignatureDocusignDocumentIdRequestHandler
-    extends AbstractPaymentRequiredRequestHandler {
+/**
+ * 
+ * {@link AwsServiceExtension} for {@link ConfigService}.
+ *
+ */
+public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
 
-  /** {@link EsignatureDocusignDocumentIdRequestHandler} URL. */
-  public static final String URL = "/esignature/docusign/{documentId}";
+  /** {@link ConfigService}. */
+  private ConfigService service;
 
   /**
    * constructor.
-   *
    */
-  public EsignatureDocusignDocumentIdRequestHandler() {}
+  public ConfigServiceExtension() {}
 
   @Override
-  public String getRequestUrl() {
-    return URL;
+  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new ConfigServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    }
+
+    return this.service;
   }
 }

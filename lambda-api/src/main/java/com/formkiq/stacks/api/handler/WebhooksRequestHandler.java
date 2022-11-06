@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
@@ -105,7 +106,8 @@ public class WebhooksRequestHandler
     String ttl = o.getString("ttl");
 
     if (ttl == null) {
-      DynamicObject config = awsservice.config(siteId);
+      ConfigService configService = awsservice.getExtension(ConfigService.class);
+      DynamicObject config = configService.get(siteId);
       ttl = config.getString(WEBHOOK_TIME_TO_LIVE);
     }
 
@@ -121,8 +123,8 @@ public class WebhooksRequestHandler
       final String siteId) {
 
     boolean over = false;
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
-    DynamicObject config = serviceCache.config(siteId);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    DynamicObject config = configService.get(siteId);
 
     String maxString = config.getString(MAX_WEBHOOKS);
 
@@ -131,6 +133,7 @@ public class WebhooksRequestHandler
       try {
 
         int max = Integer.parseInt(maxString);
+        CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
         int numberOfWebhooks = serviceCache.webhookService().findWebhooks(siteId).size();
 
         if (awsservice.debug()) {

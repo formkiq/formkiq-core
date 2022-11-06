@@ -46,6 +46,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -359,16 +360,15 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks04() throws Exception {
     // given
+    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     for (String maxWebHooks : Arrays.asList("2", "0")) {
 
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
         if (!"0".equals(maxWebHooks)) {
-          getAwsServices().configService().save(siteId,
-              new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
+          configService.save(siteId, new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
         } else {
-          getAwsServices().configService().save(null,
-              new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
+          configService.save(null, new DynamicObject(Map.of(MAX_WEBHOOKS, maxWebHooks)));
         }
 
         String response = null;
@@ -399,6 +399,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
+    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
@@ -409,8 +410,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
     String siteId = null;
     String ttl = "87400";
-    getAwsServices().configService().save(siteId,
-        new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
+    configService.save(siteId, new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
 
     // when
     String responsePost = handleRequest(eventPost);
@@ -441,8 +441,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
     // given
     ttl = "-87400";
-    getAwsServices().configService().save(siteId,
-        new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
+    configService.save(siteId, new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
 
     // when
     responsePost = handleRequest(eventPost);
