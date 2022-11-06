@@ -1602,6 +1602,8 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /indices/{indexType}/{indexKey}:
@@ -1629,6 +1631,8 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /indices/search:
@@ -1675,6 +1679,8 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /esignature/docusign/{documentId}:
@@ -1711,6 +1717,8 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
           /esignature/docusign/config:
@@ -1734,6 +1742,8 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/EsignatureDocusignConfigResponse'
+              security:
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
             put:
@@ -1762,6 +1772,8 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/EsignatureSetDocusignConfigResponse'
+              security:
+              - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
           /esignature/docusign/events:
