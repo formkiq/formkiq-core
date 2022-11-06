@@ -35,6 +35,8 @@ public class ApiGatewayRequestContext {
 
   /** {@link Map} of Authorizer. */
   private Map<String, Object> authorizer;
+  /** Domain Name. */
+  private String domainName;
   /** {@link Map} of Identity. */
   private Map<String, Object> identity;
 
@@ -53,12 +55,12 @@ public class ApiGatewayRequestContext {
   }
 
   /**
-   * Set Authorizer.
+   * Get Domain Name.
    * 
-   * @param map {@link Map}
+   * @return {@link String}
    */
-  public void setAuthorizer(final Map<String, Object> map) {
-    this.authorizer = map;
+  public String getDomainName() {
+    return this.domainName;
   }
 
   /**
@@ -68,6 +70,24 @@ public class ApiGatewayRequestContext {
    */
   public Map<String, Object> getIdentity() {
     return this.identity;
+  }
+
+  /**
+   * Set Authorizer.
+   * 
+   * @param map {@link Map}
+   */
+  public void setAuthorizer(final Map<String, Object> map) {
+    this.authorizer = map;
+  }
+
+  /**
+   * Set Domain Name.
+   * 
+   * @param domain {@link String}
+   */
+  public void setDomainName(final String domain) {
+    this.domainName = domain;
   }
 
   /**
