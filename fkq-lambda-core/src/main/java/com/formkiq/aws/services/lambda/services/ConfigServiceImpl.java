@@ -26,10 +26,10 @@ package com.formkiq.aws.services.lambda.services;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -45,10 +45,6 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 /** Implementation of the {@link ConfigService}. */
 public class ConfigServiceImpl implements ConfigService, DbKeys {
-
-  /** Config Keys. */
-  private static final List<String> KEYS = Arrays.asList(DOCUMENT_TIME_TO_LIVE, MAX_WEBHOOKS,
-      MAX_DOCUMENTS, MAX_DOCUMENT_SIZE_BYTES, WEBHOOK_TIME_TO_LIVE);
 
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
@@ -117,11 +113,9 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
     Map<String, AttributeValue> item =
         keysGeneric(null, PREFIX_CONFIG, siteId != null ? siteId : DEFAULT_SITE_ID);
 
-    KEYS.forEach(key -> {
-      if (obj.containsKey(key)) {
-        item.put(key, AttributeValue.builder().s(obj.getString(key)).build());
-      }
-    });
+    for (Entry<String, Object> e : obj.entrySet()) {
+      item.put(e.getKey(), AttributeValue.builder().s(e.getValue().toString()).build());
+    }
 
     this.dbClient
         .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
