@@ -351,6 +351,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     s3service.deleteAllFiles("example-bucket");
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
+    service.setLastShortDate(null);
 
     Map<String, String> map = new HashMap<>();
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);

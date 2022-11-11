@@ -200,12 +200,7 @@ public class DocumentsIdUploadRequestHandler
         logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
         service.saveDocument(siteId, item, tags);
 
-        if (value != null) {
-          DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-          countService.incrementDocumentCount(siteId);
-        } else {
-          throw new BadException("Max Number of Documents reached");
-        }
+        incrementDocumentCount(awsservice, siteId, value);
       }
     }
 
@@ -215,5 +210,23 @@ public class DocumentsIdUploadRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/upload";
+  }
+
+  /**
+   * Increment Document Count.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param value {@link String}
+   * @throws BadException BadException
+   */
+  private void incrementDocumentCount(final AwsServiceCache awsservice, final String siteId,
+      final String value) throws BadException {
+    if (value != null) {
+      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+      countService.incrementDocumentCount(siteId);
+    } else {
+      throw new BadException("Max Number of Documents reached");
+    }
   }
 }

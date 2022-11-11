@@ -228,6 +228,31 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
+   * Create {@link ApiGatewayRequestEvent}.
+   * 
+   * @param file {@link String}
+   * @param siteId {@link String}
+   * @param username {@link String}
+   * @param cognitoGroups {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   * @throws IOException IOException
+   */
+  protected ApiGatewayRequestEvent createRequest(final String file, final String siteId,
+      final String username, final String cognitoGroups) throws IOException {
+    ApiGatewayRequestEvent event = toRequestEvent(file);
+    addParameter(event, "siteId", siteId);
+
+    if (username != null) {
+      setUsername(event, username);
+    }
+
+    if (cognitoGroups != null) {
+      setCognitoGroup(event, cognitoGroups);
+    }
+    return event;
+  }
+
+  /**
    * Convert JSON to Object.
    * 
    * @param <T> Class Type
@@ -374,16 +399,8 @@ public abstract class AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   public DynamicObject handleRequest(final String file, final String siteId, final String username,
       final String cognitoGroups) throws IOException {
-    ApiGatewayRequestEvent event = toRequestEvent(file);
-    addParameter(event, "siteId", siteId);
 
-    if (username != null) {
-      setUsername(event, username);
-    }
-
-    if (cognitoGroups != null) {
-      setCognitoGroup(event, cognitoGroups);
-    }
+    ApiGatewayRequestEvent event = createRequest(file, siteId, username, cognitoGroups);
 
     String response = handleRequest(event);
 

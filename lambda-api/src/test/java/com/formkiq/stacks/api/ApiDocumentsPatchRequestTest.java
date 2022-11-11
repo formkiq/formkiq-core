@@ -283,6 +283,48 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * PATCH /documents Metadata too many metadata.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePatchDocuments07() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 30;
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
+          new DocumentMetadata("playerId", "something")));
+      getDocumentService().saveDocument(siteId, doc, null);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      Map<String, Object> data = new HashMap<>();
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+        metadata.add(Map.of("key", "ad_" + i, "value", "some"));
+      }
+      data.put("metadata", metadata);
+      event.setBody(GsonUtil.getInstance().toJson(data));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"errors\":[{\"key\":\"metadata\",\"error\":\"maximum number is 25\"}]}",
+          String.valueOf(m.get("body")));
+    }
+  }
+
+  /**
    * Asserts 200 response.
    *
    * @param siteId {@link String}

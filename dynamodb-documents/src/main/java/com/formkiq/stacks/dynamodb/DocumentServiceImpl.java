@@ -99,6 +99,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private FolderIndexProcessor folderIndexProcessor;
   /** {@link GlobalIndexWriter}. */
   private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
+  /** Last Short Date. */
+  private String lastShortDate = null;
   /** {@link DocumentVersionService}. */
   private DocumentVersionService versionsService;
   /** {@link SimpleDateFormat} YYYY-mm-dd format. */
@@ -1043,6 +1045,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return new PaginationResults<>(list, new QueryResponseToPagination().apply(result));
   }
 
+  /**
+   * Remove Null Metadata.
+   * 
+   * @param document {@link DocumentItem}
+   * @param documentValues {@link Map}
+   */
+  private void removeNullMetadata(final DocumentItem document,
+      final Map<String, AttributeValue> documentValues) {
+    notNull(document.getMetadata()).stream()
+        .filter(m -> m.getValues() == null && isEmpty(m.getValue())).collect(Collectors.toList())
+        .forEach(m -> documentValues.remove(PREFIX_DOCUMENT_METADATA + m.getKey()));
+  }
+
   @Override
   public boolean removeTag(final String siteId, final String documentId, final String tagKey,
       final String tagValue) {
@@ -1169,6 +1184,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DocumentTag> tags;
     Map<String, AttributeValue> keys;
     List<DynamicObject> documents = doc.getList("documents");
+
     for (DynamicObject subdoc : documents) {
 
       if (subdoc.getDate("insertedDate") == null) {
@@ -1228,10 +1244,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         getSaveDocumentAttributes(keys, siteId, document, options);
     documentValues.putAll(current);
 
-    // remove null metadata
-    notNull(document.getMetadata()).stream()
-        .filter(m -> m.getValues() == null && isEmpty(m.getValue())).collect(Collectors.toList())
-        .forEach(m -> documentValues.remove(PREFIX_DOCUMENT_METADATA + m.getKey()));
+    removeNullMetadata(document, documentValues);
 
     boolean previousSameAsCurrent = previous.equals(current);
 
@@ -1301,21 +1314,27 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param document {@link DocumentItem}
    */
   private void saveDocumentDate(final DocumentItem document) {
+
     Date insertedDate =
         document.getInsertedDate() != null ? document.getInsertedDate() : new Date();
     String shortdate = this.yyyymmddFormat.format(insertedDate);
 
-    Map<String, AttributeValue> values =
-        Map.of(PK, AttributeValue.builder().s(PREFIX_DOCUMENT_DATE).build(), SK,
-            AttributeValue.builder().s(shortdate).build());
-    String conditionExpression = "attribute_not_exists(" + PK + ")";
-    PutItemRequest put = PutItemRequest.builder().tableName(this.documentTableName)
-        .conditionExpression(conditionExpression).item(values).build();
+    if (this.lastShortDate == null || !this.lastShortDate.equals(shortdate)) {
 
-    try {
-      this.dbClient.putItem(put).attributes();
-    } catch (ConditionalCheckFailedException e) {
-      // Conditional Check Fails on second insert attempt
+      this.lastShortDate = shortdate;
+
+      Map<String, AttributeValue> values =
+          Map.of(PK, AttributeValue.builder().s(PREFIX_DOCUMENT_DATE).build(), SK,
+              AttributeValue.builder().s(shortdate).build());
+      String conditionExpression = "attribute_not_exists(" + PK + ")";
+      PutItemRequest put = PutItemRequest.builder().tableName(this.documentTableName)
+          .conditionExpression(conditionExpression).item(values).build();
+
+      try {
+        this.dbClient.putItem(put).attributes();
+      } catch (ConditionalCheckFailedException e) {
+        // Conditional Check Fails on second insert attempt
+      }
     }
   }
 
@@ -1459,6 +1478,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return preset;
+  }
+
+  /**
+   * Set Last Short Date.
+   * 
+   * @param date {@link String}
+   */
+  public void setLastShortDate(final String date) {
+    this.lastShortDate = date;
   }
 
   /**
