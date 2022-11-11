@@ -1969,9 +1969,9 @@ public class DocumentServiceImplTest implements DbKeys {
       q = new SearchQuery().meta(smc);
       items = searchService.search(siteId, q, null, MAX_RESULTS);
       assertEquals(2, items.getResults().size());
-      assertEquals("a/b/test.txt", items.getResults().get(0).get("path"));
-      assertEquals("a/b/test.txt (" + items.getResults().get(1).get("documentId") + ")",
-          items.getResults().get(1).get("path"));
+      assertEquals("a/b/test (" + items.getResults().get(0).get("documentId") + ").txt",
+          items.getResults().get(0).get("path"));
+      assertEquals("a/b/test.txt", items.getResults().get(1).get("path"));
     }
   }
 

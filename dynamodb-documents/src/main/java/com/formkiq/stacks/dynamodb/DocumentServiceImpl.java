@@ -64,6 +64,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -1128,8 +1129,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
         String oldPath = documentValues.get("path").s();
         String oldFilename = documentPath.get("path").s();
-        String newFilename = String.format("%s (%s)", documentPath.get("path").s(), documentId);
+
+        String extension = Strings.getExtension(oldFilename);
+        String newFilename =
+            oldFilename.replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
         String newPath = oldPath.replaceAll(oldFilename, newFilename);
+
         documentValues.put("path", AttributeValue.fromS(newPath));
         documentPath.put(SK, AttributeValue.fromS(INDEX_FILE_SK + newFilename));
         documentPath.put("path", AttributeValue.fromS(newFilename));
