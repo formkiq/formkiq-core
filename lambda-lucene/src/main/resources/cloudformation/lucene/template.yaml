@@ -1,0 +1,146 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Lucene
+    
+Parameters:
+    
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 1024
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 60
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "enterprise"]
+    
+Resources:
+      
+  LuceneProcessor:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - S3LambdaRolePolicy
+    Properties:
+      Handler: com.formkiq.module.lambda.lucene.LuceneProcessor
+      Description: Lambda function to add DynamoDB records to Lucene
+      Runtime: provided
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-lucene-graalvm.zip
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false  
+          FormKiQType:
+            Ref: FormKiQType
+      Role: 
+        Fn::GetAtt:
+        - LuceneLambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  LuceneProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for processing records for Lucene"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/LuceneProcessor"
+      Type: String
+      Value: 
+        Ref: LuceneProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  LuceneLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      
+  LuceneLambdaRolePolicy: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: Lucene-lambdarole
+      Roles: 
+        - 
+          Ref: "LuceneLambdaRole"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - dynamodb:DescribeStream
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+            Resource: 
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}}/stream/*"
+
+  LuceneTableStream:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      Enabled: True
+      EventSourceArn:
+        Fn::GetAtt:
+        - Documents
+        - StreamArn
+      FunctionName:
+        Fn::GetAtt:
+        - LuceneProcessor
+        - Arn      
+      StartingPosition: LATEST

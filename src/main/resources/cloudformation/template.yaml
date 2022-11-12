@@ -331,6 +331,22 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  LambdaLucene:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreStorage
+    Properties:
+      Location: lambda-lucene/template.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   WebsocketApi:
     Type: AWS::Serverless::Application
     DependsOn:
