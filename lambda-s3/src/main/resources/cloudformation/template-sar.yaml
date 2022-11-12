@@ -667,6 +667,25 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  DocumentsStreamArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn"
+      Type: String
+      Value: 
+        Fn::GetAtt:
+        - Documents
+        - StreamArn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   Documents:
     Type: AWS::DynamoDB::Table
     Properties:

@@ -46,6 +46,8 @@ Resources:
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./formkiq-module-lambda-lucene-graalvm.zip
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
       Environment:
         Variables:
           APP_ENVIRONMENT: 
@@ -129,16 +131,14 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             Resource: 
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}}/stream/*"
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
 
   LuceneTableStream:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       Enabled: True
       EventSourceArn:
-        Fn::GetAtt:
-        - Documents
-        - StreamArn
+        Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn}}"
       FunctionName:
         Fn::GetAtt:
         - LuceneProcessor
