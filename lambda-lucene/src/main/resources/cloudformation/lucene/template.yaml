@@ -35,7 +35,7 @@ Resources:
   LuceneProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
-    - S3LambdaRolePolicy
+    - LuceneLambdaRolePolicy
     Properties:
       Handler: com.formkiq.module.lambda.lucene.LuceneProcessor
       Description: Lambda function to add DynamoDB records to Lucene
