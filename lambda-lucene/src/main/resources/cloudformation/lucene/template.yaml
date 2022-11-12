@@ -46,8 +46,7 @@ Resources:
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./formkiq-module-lambda-lucene-graalvm.zip
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
-      ProvisionedConcurrencyConfig:
-        ProvisionedConcurrentExecutions: 1
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           APP_ENVIRONMENT: 
