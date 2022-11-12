@@ -336,7 +336,7 @@ Resources:
     DependsOn:
       - CoreStorage
     Properties:
-      Location: lambda-lucene/template.yaml
+      Location: lucene/template.yaml
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
