@@ -44,7 +44,7 @@ Resources:
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
-      CodeUri: ./lambda-lucene-graalvm.zip
+      CodeUri: ./formkiq-module-lambda-lucene-graalvm.zip
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
