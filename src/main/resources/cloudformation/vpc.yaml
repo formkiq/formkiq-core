@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - VPC
+    
+Parameters:
+
+  VpcCidr:
+    Type: String
+    Description: VPC CIDR block
+    AllowedPattern: "^[0-9./\\s]*"
+    Default: 10.1.0.0/16
+         
+  PrivateSubnet1Cidr:
+    Type: String
+    Description: Private Subnet1 CIDR block
+    AllowedPattern: "^[0-9./\\s]*"
+    Default: 10.1.10.0/24
+
+  PrivateSubnet2Cidr:
+    Type: String
+    Description: Private Subnet2 CIDR block
+    AllowedPattern: "^[0-9./\\s]*"
+    Default: 10.1.20.0/24
+    
+  PrivateSubnet3Cidr:
+    Type: String
+    Description: Public Subnet3 CIDR block
+    AllowedPattern: "^[0-9./\\s]*"
+    Default: 10.1.30.0/24
+    
+Resources:
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: Vpc
+      CidrBlock:
+        Ref: PrivateSubnet1Cidr
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs:
+              Ref: 'AWS::Region'
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+            
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: Vpc
+      CidrBlock:
+        Ref: PrivateSubnet2Cidr
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs:
+              Ref: 'AWS::Region'
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+            
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: Vpc
+      CidrBlock:
+        Ref: PrivateSubnet3Cidr
+      AvailabilityZone:
+        Fn::Select:
+          - 2
+          - Fn::GetAZs:
+              Ref: 'AWS::Region'
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+                                            
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: Vpc
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+            
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: 
+        Ref: PrivateSubnet1
+      RouteTableId: 
+        Ref: PrivateRouteTable
+        
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: 
+        Ref: PrivateSubnet2
+      RouteTableId: 
+        Ref: PrivateRouteTable
+        
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: 
+        Ref: PrivateSubnet3
+      RouteTableId: 
+        Ref: PrivateRouteTable
+
+  HttpsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group which allows HTTPS access
+      VpcId: 
+        Ref: Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+        
+Outputs:
+  Vpc:
+    Value:
+      Ref: Vpc
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-Vpc"
+  PrivateSubnet1:
+    Value:
+      Ref: PrivateSubnet1
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-PrivateSubnet1"
+  PrivateSubnet2:
+    Value:
+      Ref: PrivateSubnet2
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-PrivateSubnet2"
+  PrivateSubnet3:
+    Value:
+      Ref: PrivateSubnet3
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-PrivateSubnet3"
+  HttpsSecurityGroup:
+    Description: Security Group which allows HTTPS access
+    Value:
+      Ref: HttpsSecurityGroup
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
+  PrivateSubnets:
+    Description: "VPC Private Subnets"
+    Value: 
+      Fn::Join:
+      - ","
+      - - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-PrivateSubnets"

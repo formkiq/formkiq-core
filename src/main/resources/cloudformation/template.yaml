@@ -354,6 +354,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        VpcStackName:
+          Ref: VpcStackName
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 

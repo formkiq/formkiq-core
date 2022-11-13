@@ -29,7 +29,11 @@ Parameters:
     Default: "core"
     Type: String
     AllowedValues: ["core", "enterprise"]
-    
+
+  VpcStackName:
+    Type: String
+    Description: The name of the FormKiQ VPC Stack Name
+
 Resources:
       
   LuceneProcessor:
@@ -65,6 +69,12 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
+      VpcConfig:
+        SubnetIds:
+          Fn::Split:
+            - ","
+            - Fn::ImportValue:
+                Fn::Sub: '${VpcStackName}-PrivateSubnets'
 
   LuceneProcessorParameter:
     Type: AWS::SSM::Parameter
