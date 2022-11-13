@@ -66,6 +66,7 @@ Resources:
           DEBUG: false  
           FormKiQType:
             Ref: FormKiQType
+          LUCENE_BASE_PATH: "/lucene"
       Role: 
         Fn::GetAtt:
         - LuceneLambdaRole
@@ -83,7 +84,12 @@ Resources:
             - ","
             - Fn::ImportValue:
                 Fn::Sub: '${VpcStackName}-PrivateSubnets'
-
+        SecurityGroupIds:
+          Fn::Split:
+          - ","
+          - Fn::ImportValue:
+              Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
+                
   LuceneProcessorParameter:
     Type: AWS::SSM::Parameter
     Condition: HasVpcStackName
