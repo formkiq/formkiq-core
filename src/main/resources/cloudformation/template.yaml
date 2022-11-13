@@ -66,13 +66,6 @@ Parameters:
     Description: (optional) FormKiQ VPC Stack Name 
     Default: ""
 
-Conditions:
-  HasVpcStackName:
-    Fn::Not:
-      - Fn::Equals: 
-        - Ref: VpcStackName
-        - ''
-
 Resources:
 
   EditionParameter:
@@ -346,7 +339,6 @@ Resources:
 
   LambdaLucene:
     Type: AWS::Serverless::Application
-    Condition: HasVpcStackName
     DependsOn:
       - CoreStorage
     Properties:

@@ -38,6 +38,9 @@ Resources:
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ VPC (${VpcCidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
@@ -57,6 +60,9 @@ Resources:
           - Fn::GetAZs:
               Ref: 'AWS::Region'
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ PrivateSubnet1 (${PrivateSubnet1Cidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
@@ -76,6 +82,9 @@ Resources:
           - Fn::GetAZs:
               Ref: 'AWS::Region'
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ PrivateSubnet2 (${PrivateSubnet2Cidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
@@ -95,6 +104,9 @@ Resources:
           - Fn::GetAZs:
               Ref: 'AWS::Region'
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ PrivateSubnet3 (${PrivateSubnet3Cidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
