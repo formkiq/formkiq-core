@@ -60,7 +60,19 @@ Parameters:
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
-     
+
+  VpcStackName:
+    Type: String
+    Description: (optional) FormKiQ VPC Stack Name 
+    Default: ""
+
+Conditions:
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
 Resources:
 
   EditionParameter:
@@ -259,6 +271,7 @@ Resources:
     DependsOn:
       - Cognito
       - WebsocketApi
+      - LambdaLucene
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -333,6 +346,7 @@ Resources:
 
   LambdaLucene:
     Type: AWS::Serverless::Application
+    Condition: HasVpcStackName
     DependsOn:
       - CoreStorage
     Properties:
