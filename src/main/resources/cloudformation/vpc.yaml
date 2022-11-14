@@ -172,6 +172,24 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}"
         
+  NfsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group which allows NFS access
+      VpcId: 
+        Ref: Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: StackName
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
 Outputs:
   Vpc:
     Value:
@@ -204,6 +222,13 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
+  NfsSecurityGroup:
+    Description: Security Group which allows NFS access
+    Value:
+      Ref: NfsSecurityGroup
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-NfsSecurityGroup"
   PrivateSubnets:
     Description: "VPC Private Subnets"
     Value: 

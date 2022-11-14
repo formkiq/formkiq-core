@@ -194,7 +194,19 @@ Resources:
         - Key: "StackName"
           Value: 
             Fn::Sub: "${AWS::StackName}"
-            
+
+  MountTargetResource1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: 
+        Ref: LuceneEfs
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PrivateSubnet1'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+      
   LuceneEfsAccessPoint:
     Type: 'AWS::EFS::AccessPoint'
     Condition: HasVpcStackName
