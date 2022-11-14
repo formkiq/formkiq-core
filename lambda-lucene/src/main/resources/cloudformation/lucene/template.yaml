@@ -197,6 +197,7 @@ Resources:
 
   MountTargetResource1:
     Type: AWS::EFS::MountTarget
+    Condition: HasVpcStackName
     Properties:
       FileSystemId: 
         Ref: LuceneEfs
