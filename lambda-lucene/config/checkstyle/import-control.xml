@@ -9,10 +9,23 @@
 	
 		<subpackage name="lucene">
 		
-			<allow pkg="java.util" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
+			<allow pkg="com.formkiq.aws.dynamodb" />			
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.google.gson" />
+			
+			<allow pkg="java.io" />
+			<allow pkg="java.nio" />
+			<allow pkg="java.util" />
+
+ 			<allow pkg="org.apache.lucene.analysis.standard" />
+			<allow pkg="org.apache.lucene.document" />
+			<allow pkg="org.apache.lucene.index" />
+			<allow pkg="org.apache.lucene.queryparser.classic" />
+			<allow pkg="org.apache.lucene.search" />
+			<allow pkg="org.apache.lucene.store" />
+			
+			<allow pkg="software.amazon.awssdk.utils" />
 
 		</subpackage>
 	</subpackage>
