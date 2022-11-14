@@ -207,7 +207,33 @@ Resources:
       SecurityGroups:
       - Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-      
+
+  MountTargetResource2:
+    Type: AWS::EFS::MountTarget
+    Condition: HasVpcStackName
+    Properties:
+      FileSystemId: 
+        Ref: LuceneEfs
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PrivateSubnet2'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+          
+  MountTargetResource3:
+    Type: AWS::EFS::MountTarget
+    Condition: HasVpcStackName
+    Properties:
+      FileSystemId: 
+        Ref: LuceneEfs
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PrivateSubnet3'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+           
   LuceneEfsAccessPoint:
     Type: 'AWS::EFS::AccessPoint'
     Condition: HasVpcStackName
