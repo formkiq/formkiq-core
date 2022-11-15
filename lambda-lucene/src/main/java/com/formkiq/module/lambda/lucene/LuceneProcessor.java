@@ -30,17 +30,16 @@ import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -109,20 +108,25 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
     String eventName = record.get("eventName").toString();
     Map<String, Object> dynamodb = toMap(record.get("dynamodb"));
 
-    if ("INSERT".equalsIgnoreCase(eventName)) {
+    Map<String, Object> newImage =
+        dynamodb.containsKey("NewImage") ? toMap(dynamodb.get("NewImage")) : Collections.emptyMap();
 
-      Map<String, Object> newImage = toMap(dynamodb.get("NewImage"));
+    String siteId = newImage.containsKey(PK) ? getSiteId(newImage.get(PK).toString()) : null;
+    String documentId =
+        newImage.containsKey("documentId") ? newImage.get("documentId").toString() : null;
 
-      String siteId = SiteIdKeyGenerator.getSiteId(newImage.get(PK).toString());
-      String documentId = newImage.get("documentId").toString();
+    if (documentId != null) {
 
       try {
 
-        writeToIndex(siteId, documentId, newImage);
+        if ("INSERT".equalsIgnoreCase(eventName) || "MODIFY".equalsIgnoreCase(eventName)) {
+          writeToIndex(siteId, documentId, newImage);
+        }
 
       } catch (IOException e) {
         e.printStackTrace();
       }
+
     }
   }
 
@@ -202,14 +206,11 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
 
     if (existingDocument != null) {
 
-      existingDocument.getFields().forEach(f -> {
-        if (document.get(f.name()) == null) {
-          document.add(new StringField(f.name(), f.stringValue(), Field.Store.YES));
-        }
-      });
+      Document merged = this.luceneService.mergeDocument(existingDocument, document);
+      merged = this.fulltext.apply(merged);
 
       Term term = new Term("documentId", documentId);
-      this.luceneService.updateDocument(siteId, term, this.fulltext.apply(document));
+      this.luceneService.updateDocument(siteId, term, merged);
     } else {
       this.luceneService.addDocument(siteId, document);
     }

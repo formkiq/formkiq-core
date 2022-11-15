@@ -66,17 +66,23 @@ class LuceneProcessorTest {
   private Context context = new LambdaContextRecorder();
 
   private void expectDoc1(final Document doc) {
-    final int expected = 7;
-    // final int expected = 6;
+    final int expected = 5;
     assertNotNull(doc);
     assertEquals(expected, doc.getFields().size());
     assertEquals("/somewhere/else/test.pdf", doc.get("path"));
-    assertEquals("2022-11-13T01:07:01+0000", doc.get("lastModifiedDate"));
-    assertEquals("2022-11-13T01:07:01+0000", doc.get("inserteddate"));
     assertEquals("acd4be1b-9466-4dcd-b8b8-e5b19135b460", doc.get("documentId"));
     assertEquals("testadminuser@formkiq.com", doc.get("userId"));
     assertEquals("true", doc.get("tags#untagged"));
     assertEquals("this is some content karate", doc.get("md#content"));
+  }
+
+  private void expectDoc2(final Document doc) {
+    final int expected = 3;
+    assertNotNull(doc);
+    assertEquals(expected, doc.getFields().size());
+    assertEquals("bleh/some.pdf", doc.get("path"));
+    assertEquals("717a3cee-888d-47e0-83a3-a7487a588954", doc.get("documentId"));
+    assertEquals("arn:aws:iam::111111111:user/mike", doc.get("userId"));
   }
 
   /**
@@ -133,5 +139,30 @@ class LuceneProcessorTest {
 
     documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
     assertEquals(0, documents.size());
+  }
+
+  /**
+   * Modify records.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest02() throws Exception {
+    // given
+    String siteId = null;
+    String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
+    Map<String, Object> map = loadRequest("/modify.json");
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    Document document = service.findDocument(siteId, documentId);
+    expectDoc2(document);
+
+    List<Document> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+    assertEquals(1, documents.size());
+    Document doc = documents.get(0);
+    expectDoc2(doc);
   }
 }

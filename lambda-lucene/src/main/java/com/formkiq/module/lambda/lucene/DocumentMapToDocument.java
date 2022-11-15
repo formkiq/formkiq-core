@@ -23,12 +23,15 @@
  */
 package com.formkiq.module.lambda.lucene;
 
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import software.amazon.awssdk.utils.StringUtils;
 
 /**
@@ -38,23 +41,37 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public class DocumentMapToDocument implements Function<Map<String, Object>, Document> {
 
+  /** Fields to Process. */
+  private static final List<String> FIELDS = Arrays.asList("documentId", "path", "userId");
+
   @SuppressWarnings("unchecked")
   @Override
   public Document apply(final Map<String, Object> data) {
 
     Document document = new Document();
 
-    for (Map.Entry<String, Object> e : data.entrySet()) {
+    for (String field : FIELDS) {
 
-      Map<String, Object> values = (Map<String, Object>) e.getValue();
-      String value = values.get("S").toString();
+      if (data.containsKey(field)) {
 
-      if (!StringUtils.isEmpty(value)) {
+        Map<String, Object> values = (Map<String, Object>) data.get(field);
+        String value = values.get("S").toString();
 
-        IndexableField field = new StringField(e.getKey(), value, Field.Store.YES);
-        document.add(field);
+        if (!StringUtils.isEmpty(value)) {
+          document.add(new StringField(field, value, Field.Store.YES));
+        }
       }
     }
+
+    List<String> metadata =
+        data.entrySet().stream().filter(e -> e.getKey().startsWith(PREFIX_DOCUMENT_METADATA))
+            .map(e -> e.getKey()).collect(Collectors.toList());
+
+    metadata.forEach(m -> {
+      Map<String, Object> values = (Map<String, Object>) data.get(m);
+      String value = values.get("S").toString();
+      document.add(new StringField(m, value, Field.Store.YES));
+    });
 
     return document;
   }

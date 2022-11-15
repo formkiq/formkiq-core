@@ -97,6 +97,15 @@ public interface LuceneService {
   Document findDocument(String siteId, String documentId) throws IOException;
 
   /**
+   * Merge Document Data together.
+   * 
+   * @param doc1 {@link Document}
+   * @param doc2 {@link Document}
+   * @return {@link Document}
+   */
+  Document mergeDocument(Document doc1, Document doc2);
+
+  /**
    * Full text search.
    * 
    * @param siteId {@link String}

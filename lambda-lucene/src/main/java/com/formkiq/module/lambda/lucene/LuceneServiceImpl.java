@@ -33,6 +33,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
@@ -156,6 +158,25 @@ public class LuceneServiceImpl implements LuceneService {
 
     Path indexPath = Paths.get(this.indexBasePath, indexName);
     return indexPath;
+  }
+
+  @Override
+  public Document mergeDocument(final Document doc1, final Document doc2) {
+    Document doc = new Document();
+
+    doc1.getFields().forEach(f -> {
+      if (doc.get(f.name()) == null) {
+        doc.add(new StringField(f.name(), f.stringValue(), Field.Store.YES));
+      }
+    });
+
+    doc2.getFields().forEach(f -> {
+      if (doc.get(f.name()) == null) {
+        doc.add(new StringField(f.name(), f.stringValue(), Field.Store.YES));
+      }
+    });
+
+    return doc;
   }
 
   @Override
