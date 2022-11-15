@@ -192,6 +192,8 @@ Resources:
             Ref: UserAuthentication
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           LUCENE_BASE_PATH: "/lucene"
+          ENABLE_LUCENE:
+            Ref: HasVpcStackName
       VpcConfig:
         SubnetIds:
           Fn::If:
