@@ -294,6 +294,8 @@ Resources:
           Fn::GetAtt: 
           - WebsocketApi
           - Outputs.SqsQueueUrl
+        VpcStackName:
+          Ref: VpcStackName
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 

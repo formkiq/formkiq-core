@@ -17,13 +17,10 @@
 			<allow pkg="java.io" />
 			<allow pkg="java.nio" />
 			<allow pkg="java.util" />
-
- 			<allow pkg="org.apache.lucene.analysis.standard" />
+			
+			<allow pkg="com.formkiq.module.lucene" />
 			<allow pkg="org.apache.lucene.document" />
 			<allow pkg="org.apache.lucene.index" />
-			<allow pkg="org.apache.lucene.queryparser.classic" />
-			<allow pkg="org.apache.lucene.search" />
-			<allow pkg="org.apache.lucene.store" />
 			
 			<allow pkg="software.amazon.awssdk.utils" />
 

@@ -29,7 +29,6 @@ import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
 import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
-import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import java.io.IOException;
 import java.util.Collections;
@@ -41,6 +40,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.lucene.LuceneService;
+import com.formkiq.module.lucene.LuceneServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -69,7 +70,7 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
    *
    * @param map {@link Map}
    */
-  protected LuceneProcessor(final Map<String, String> map) {
+  public LuceneProcessor(final Map<String, String> map) {
     this.luceneService = new LuceneServiceImpl(map.get("LUCENE_BASE_PATH"));
   }
 
@@ -176,7 +177,7 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
       final Map<String, Object> data) throws IOException {
 
     boolean isDocument = data.get(SK).toString().contains("document");
-    boolean isTag = data.get(SK).toString().contains("tags" + TAG_DELIMINATOR);
+    // boolean isTag = data.get(SK).toString().contains("tags" + TAG_DELIMINATOR);
 
     removeDynamodbKeys(data);
 
@@ -186,10 +187,10 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
       addOrUpdate(siteId, document);
     }
 
-    if (isTag) {
-      Document document = new DocumentTagMapToDocument().apply(data);
-      addOrUpdate(siteId, document);
-    }
+    // if (isTag) {
+    // Document document = new DocumentTagMapToDocument().apply(data);
+    // addOrUpdate(siteId, document);
+    // }
   }
 
   /**
@@ -199,7 +200,7 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
    * @param document {@link Document}
    * @throws IOException IOException
    */
-  private void addOrUpdate(final String siteId, final Document document) throws IOException {
+  public void addOrUpdate(final String siteId, final Document document) throws IOException {
     String documentId = document.get("documentId");
 
     Document existingDocument = this.luceneService.findDocument(siteId, documentId);

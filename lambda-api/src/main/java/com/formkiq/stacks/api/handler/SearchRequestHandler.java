@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
@@ -49,14 +51,18 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lucene.LuceneService;
+import com.formkiq.module.lucene.LuceneServiceImpl;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.api.QueryRequestValidator;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -101,6 +107,13 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
 
     return map;
+  }
+
+  private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
+
+    return q.query().tag() == null && q.query().meta() == null
+        && StringUtils.isEmpty(q.query().text())
+        && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
   }
 
   @Override
@@ -152,8 +165,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     DocumentSearchService documentSearchService = serviceCache.documentSearchService();
 
-    if (q.query().tag() == null && q.query().meta() == null
-        && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive()) {
+    if (isEnterpriseFeature(serviceCache, q)) {
 
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
@@ -178,8 +190,9 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       }
 
       String siteId = authorizer.getSiteId();
+
       PaginationResults<DynamicDocumentItem> results =
-          documentSearchService.search(siteId, q.query(), ptoken, limit);
+          query(awsservice, documentSearchService, siteId, q, ptoken, limit);
 
       ApiPagination current =
           createPagination(cacheService, event, pagination, results.getToken(), limit);
@@ -200,6 +213,48 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
 
     return response;
+  }
+
+  /**
+   * Query Lucene or DynamoDb.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param documentSearchService {@link DocumentSearchService}
+   * @param siteId {@link String}
+   * @param q {@link QueryRequest}
+   * @param ptoken {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @throws IOException IOException
+   */
+  private PaginationResults<DynamicDocumentItem> query(final AwsServiceCache awsservice,
+      final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
+      final PaginationMapToken ptoken, final int limit) throws IOException {
+
+    String text = q.query().text();
+    PaginationResults<DynamicDocumentItem> results = null;
+
+    if (!StringUtils.isEmpty(text)) {
+
+      DocumentService docService = awsservice.getExtension(DocumentService.class);
+      LuceneService ls = new LuceneServiceImpl(awsservice.environment("LUCENE_BASE_PATH"));
+
+      List<String> documentIds = ls.searchFulltextForDocumentId(siteId, text, limit);
+
+      List<DocumentItem> list = docService.findDocuments(siteId, documentIds);
+
+      List<DynamicDocumentItem> docs =
+          list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+              .collect(Collectors.toList()) : Collections.emptyList();
+
+      results = new PaginationResults<>(docs, null);
+
+    } else {
+
+      results = documentSearchService.search(siteId, q.query(), ptoken, limit);
+    }
+
+    return results;
   }
 
   private void validatePost(final QueryRequest q) throws ValidationException {

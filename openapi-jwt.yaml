@@ -2062,12 +2062,13 @@
               description: List of document versions
               items:
                 $ref: '#/components/schemas/DocumentItemVersion'
-            DocumentSearchTag:
-              required:
-              - tag
+            DocumentSearch:
               type: object
               description: Document tag search criteria
               properties:
+                text:
+                  type: string
+                  description: Full text search
                 meta:
                   $ref: '#/components/schemas/DocumentSearchItemMeta'
                 tag:
@@ -2273,7 +2274,7 @@
               description: Document search tag criteria
               properties:
                 query:
-                  $ref: '#/components/schemas/DocumentSearchTag'
+                  $ref: '#/components/schemas/DocumentSearch'
                 responseFields:
                   $ref: '#/components/schemas/SearchResponseFields'
             SearchResponseFields:

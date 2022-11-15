@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -195,6 +196,8 @@ public abstract class AbstractRequestHandler {
     this.map.put("USER_AUTHENTICATION", "cognito");
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
+    this.map.put("LUCENE_BASE_PATH",
+        System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID());
 
     createApiRequestHandler(this.map);
 

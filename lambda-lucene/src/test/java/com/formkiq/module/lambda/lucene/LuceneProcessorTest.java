@@ -34,6 +34,8 @@ import org.apache.lucene.document.Document;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.module.lucene.LuceneService;
+import com.formkiq.module.lucene.LuceneServiceImpl;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -66,13 +68,12 @@ class LuceneProcessorTest {
   private Context context = new LambdaContextRecorder();
 
   private void expectDoc1(final Document doc) {
-    final int expected = 5;
+    final int expected = 4;
     assertNotNull(doc);
     assertEquals(expected, doc.getFields().size());
     assertEquals("/somewhere/else/test.pdf", doc.get("path"));
     assertEquals("acd4be1b-9466-4dcd-b8b8-e5b19135b460", doc.get("documentId"));
     assertEquals("testadminuser@formkiq.com", doc.get("userId"));
-    assertEquals("true", doc.get("tags#untagged"));
     assertEquals("this is some content karate", doc.get("md#content"));
   }
 
@@ -129,9 +130,9 @@ class LuceneProcessorTest {
     assertEquals(1, findByTerms.size());
     expectDoc1(findByTerms.get(0));
 
-    List<Document> findByTag = service.findByTag(siteId, "untagged", "true");
-    assertEquals(1, findByTag.size());
-    expectDoc1(findByTag.get(0));
+    // List<Document> findByTag = service.findByTag(siteId, "untagged", "true");
+    // assertEquals(1, findByTag.size());
+    // expectDoc1(findByTag.get(0));
 
     documents = service.searchFulltext(siteId, "test.pdf", MAX);
     assertEquals(1, documents.size());

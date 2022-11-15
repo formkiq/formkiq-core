@@ -44,7 +44,9 @@ public class SearchQuery {
   /** {@link List} {@link SearchTagCriteria}. */
   @Reflectable
   private List<SearchTagCriteria> tags;
-
+  /** {@link String}. */
+  @Reflectable
+  private String text;
 
   /** constructor. */
   public SearchQuery() {}
@@ -126,6 +128,26 @@ public class SearchQuery {
    */
   public SearchQuery tags(final List<SearchTagCriteria> list) {
     this.tags = list;
+    return this;
+  }
+
+  /**
+   * Get {@link String}.
+   *
+   * @return {@link String}
+   */
+  public String text() {
+    return this.text;
+  }
+
+  /**
+   * Set {@link SearchTagCriteria}.
+   *
+   * @param textString {@link String}
+   * @return {@link SearchQuery}
+   */
+  public SearchQuery text(final String textString) {
+    this.text = textString;
     return this;
   }
 }

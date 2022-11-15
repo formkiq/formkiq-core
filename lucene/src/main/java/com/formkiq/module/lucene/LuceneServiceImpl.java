@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambda.lucene;
+package com.formkiq.module.lucene;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -67,6 +68,9 @@ public class LuceneServiceImpl implements LuceneService {
    */
   public LuceneServiceImpl(final String basePath) {
     this.indexBasePath = basePath;
+    if (this.indexBasePath == null) {
+      throw new IllegalArgumentException("'basePath' is required");
+    }
   }
 
   @Override
@@ -181,11 +185,25 @@ public class LuceneServiceImpl implements LuceneService {
 
   @Override
   public List<Document> searchFulltext(final String siteId, final String text, final int maxResults)
-      throws IOException, ParseException {
+      throws IOException {
     try (StandardAnalyzer analyzer = new StandardAnalyzer()) {
       Query query = new QueryParser("text", analyzer).parse(text);
       return find(siteId, query);
+    } catch (ParseException e) {
+      throw new IOException(e);
     }
+  }
+
+  @Override
+  public List<String> searchFulltextForDocumentId(final String siteId, final String text,
+      final int maxResults) throws IOException {
+
+    List<Document> documents = searchFulltext(siteId, text, maxResults);
+
+    List<String> documentIds = documents.stream().map(d -> d.get("documentId"))
+        .filter(d -> d != null).collect(Collectors.toList());
+
+    return documentIds;
   }
 
   /**

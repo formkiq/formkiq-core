@@ -92,7 +92,18 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
     Default: "cognito"
-    
+
+  VpcStackName:
+    Type: String
+    Description: The name of the FormKiQ VPC Stack Name
+
+Conditions:
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
 Resources:        
         
   DocumentsApiRequests:
@@ -131,6 +142,73 @@ Resources:
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          LUCENE_BASE_PATH: "/lucene"
+      Role: 
+        Fn::GetAtt:
+        - DocumentsApiRequestsRole
+        - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentSearchApiRequests:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - DocumentsApiRequestsRole
+    Properties:
+      Handler: com.formkiq.stacks.api.CoreRequestHandler
+      Description: Lambda function that processes Search API requests
+      Runtime: provided
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./lambda-api-graalvm.zip
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false
+          DOCUMENTS_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          CACHE_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+          ENABLE_PUBLIC_URLS: 
+            Fn::Sub: "${EnablePublicUrls}"
+          FORMKIQ_TYPE: 
+            Ref: FormKiQType
+          WEBSOCKET_SQS_URL: 
+            Ref: WebsocketSqsQueueUrl
+          USER_AUTHENTICATION:
+            Ref: UserAuthentication
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          LUCENE_BASE_PATH: "/lucene"
+      VpcConfig:
+        SubnetIds:
+          Fn::If:
+          - HasVpcStackName
+          - Fn::Split:
+            - ","
+            - Fn::ImportValue:
+                Fn::Sub: '${VpcStackName}-PrivateSubnets'
+          - Ref: AWS::NoValue
+        SecurityGroupIds:
+          Fn::If:
+          - HasVpcStackName
+          - Fn::Split:
+            - ","
+            - Fn::ImportValue:
+                Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
+          - Ref: AWS::NoValue
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole

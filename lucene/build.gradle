@@ -1,0 +1,7 @@
+
+description = "Lucene"
+
+dependencies {
+	implementation group: 'org.apache.lucene', name: 'lucene-core', version: '9.4.1'
+	implementation group: 'org.apache.lucene', name: 'lucene-queryparser', version: '9.4.1'
+}

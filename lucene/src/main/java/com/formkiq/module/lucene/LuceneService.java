@@ -21,14 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambda.lucene;
+package com.formkiq.module.lucene;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 
 /**
  * 
@@ -113,10 +112,20 @@ public interface LuceneService {
    * @param maxResults int
    * @return {@link List} {@link Document}
    * @throws IOException IOException
-   * @throws ParseException ParseException
    */
-  List<Document> searchFulltext(String siteId, String text, int maxResults)
-      throws IOException, ParseException;
+  List<Document> searchFulltext(String siteId, String text, int maxResults) throws IOException;
+
+  /**
+   * Full text search. Return DocumentIds.
+   * 
+   * @param siteId {@link String}
+   * @param text {@link String}
+   * @param maxResults int
+   * @return {@link List} {@link String}
+   * @throws IOException IOException
+   */
+  List<String> searchFulltextForDocumentId(String siteId, String text, int maxResults)
+      throws IOException;
 
   /**
    * Update Document.
