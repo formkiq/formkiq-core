@@ -198,6 +198,7 @@ public abstract class AbstractRequestHandler {
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
     this.map.put("LUCENE_BASE_PATH",
         System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID());
+    this.map.put("ENABLE_LUCENE", "true");
 
     createApiRequestHandler(this.map);
 

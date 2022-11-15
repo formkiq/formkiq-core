@@ -226,16 +226,21 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    * @param limit int
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    * @throws IOException IOException
+   * @throws BadException BadException
    */
   private PaginationResults<DynamicDocumentItem> query(final AwsServiceCache awsservice,
       final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
-      final PaginationMapToken ptoken, final int limit) throws IOException {
+      final PaginationMapToken ptoken, final int limit) throws IOException, BadException {
 
     String text = q.query().text();
     PaginationResults<DynamicDocumentItem> results = null;
 
     if (!StringUtils.isEmpty(text)) {
 
+      if (!"true".equals(awsservice.environment("ENABLE_LUCENE"))) {
+        throw new BadException("Lucene search is not Enabled");
+      }
+      
       DocumentService docService = awsservice.getExtension(DocumentService.class);
       LuceneService ls = new LuceneServiceImpl(awsservice.environment("LUCENE_BASE_PATH"));
 
