@@ -236,7 +236,18 @@ Resources:
       FunctionName: 
         Ref: DocumentsApiRequests
       Principal: apigateway.amazonaws.com
-  
+
+  DocumentSearchApiInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - DocumentsIamApi
+    - DocumentsApiRequests
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Ref: DocumentSearchApiRequests
+      Principal: apigateway.amazonaws.com
+        
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
