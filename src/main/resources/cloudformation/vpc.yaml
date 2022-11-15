@@ -190,6 +190,17 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}"
 
+  DynamoDbGatewayEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - Ref: PrivateRouteTable      
+      ServiceName: 
+        Fn::Sub: 'com.amazonaws.${AWS::Region}.dynamodb'
+      VpcId:
+        Ref: Vpc
+        
 Outputs:
   Vpc:
     Value:
