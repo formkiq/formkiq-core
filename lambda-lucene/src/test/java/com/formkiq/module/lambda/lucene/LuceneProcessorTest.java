@@ -57,7 +57,7 @@ class LuceneProcessorTest {
 
   @BeforeAll
   public static void beforeAll() {
-    String tmpdir = System.getProperty("java.io.tmpdir") + UUID.randomUUID();
+    String tmpdir = System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID();
     processor = new LuceneProcessor(Map.of("LUCENE_BASE_PATH", tmpdir));
     service = new LuceneServiceImpl(tmpdir);
   }
