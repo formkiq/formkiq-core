@@ -68,8 +68,10 @@ Resources:
             Ref: FormKiQType
           LUCENE_BASE_PATH: "/mnt/lucene"
       FileSystemConfigs:
-      - Arn: 
-          Ref: LuceneEfsAccessPoint
+      - Arn:
+          Fn::GetAtt:
+          - LuceneEfsAccessPoint
+          - Arn
         LocalMountPath: "/mnt/lucene"
       Role: 
         Fn::GetAtt:
@@ -253,10 +255,12 @@ Resources:
     Properties:
       Description: "Lucene EFS Access Point"
       Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/efs/LuceneAccessPoint"
+        Fn::Sub: "/formkiq/${AppEnvironment}/efs/LuceneAccessPointArn"
       Type: String
-      Value: 
-        Ref: LuceneEfsAccessPoint
+      Value:
+        Fn::GetAtt:
+        - LuceneEfsAccessPoint
+        - Arn
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
