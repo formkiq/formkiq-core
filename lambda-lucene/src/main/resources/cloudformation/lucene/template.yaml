@@ -66,11 +66,11 @@ Resources:
           DEBUG: false  
           FormKiQType:
             Ref: FormKiQType
-          LUCENE_BASE_PATH: "/lucene"
+          LUCENE_BASE_PATH: "/mnt/lucene"
       FileSystemConfigs:
       - Arn: 
           Ref: LuceneEfsAccessPoint
-        LocalMountPath: "/lucene"
+        LocalMountPath: "/mnt/lucene"
       Role: 
         Fn::GetAtt:
         - LuceneLambdaRole
