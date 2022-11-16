@@ -67,6 +67,10 @@ Resources:
           FormKiQType:
             Ref: FormKiQType
           LUCENE_BASE_PATH: "/lucene"
+      FileSystemConfigs:
+      - Arn: 
+          Ref: LuceneEfsAccessPoint
+        LocalMountPath: "/lucene"
       Role: 
         Fn::GetAtt:
         - LuceneLambdaRole
@@ -134,6 +138,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      - arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
       
   LuceneLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -194,6 +199,14 @@ Resources:
         - Key: "StackName"
           Value: 
             Fn::Sub: "${AWS::StackName}"
+      FileSystemPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "elasticfilesystem:ClientMount"
+            Principal:
+              AWS: "*"
 
   MountTargetResource1:
     Type: AWS::EFS::MountTarget
@@ -233,7 +246,25 @@ Resources:
       SecurityGroups:
       - Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-           
+
+  LuceneEfsAccessPointParameter:
+    Type: AWS::SSM::Parameter
+    Condition: HasVpcStackName
+    Properties:
+      Description: "Lucene EFS Access Point"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/efs/LuceneAccessPoint"
+      Type: String
+      Value: 
+        Ref: LuceneEfsAccessPoint
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
   LuceneEfsAccessPoint:
     Type: 'AWS::EFS::AccessPoint'
     Condition: HasVpcStackName

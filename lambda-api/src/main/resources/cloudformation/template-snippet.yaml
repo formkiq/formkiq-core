@@ -169,6 +169,10 @@ Resources:
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      FileSystemConfigs:
+      - Arn: 
+          Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/efs/LuceneAccessPoint}}"
+        LocalMountPath: "/lucene"
       Environment:
         Variables:
           APP_ENVIRONMENT: 

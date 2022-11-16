@@ -41,6 +41,8 @@
 	<subpackage name="stacks">
 		<subpackage name="api">
 		
+			<allow pkg="org.apache.lucene.analysis.tokenattributes" />
+			<allow pkg="org.apache.lucene.search" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			<allow pkg="com.amazonaws.xray" />
 			

@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api;
 
+import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
+import org.apache.lucene.search.BoostAttributeImpl;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
@@ -43,6 +45,8 @@ import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.graalvm.annotations.ReflectableClass;
+import com.formkiq.graalvm.annotations.ReflectableClasses;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
@@ -65,6 +69,11 @@ import software.amazon.awssdk.regions.Region;
     ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
     ApiPagination.class, Action.class, ValidationErrorImpl.class,
     DocumentVersionServiceDynamoDb.class, DocumentVersionServiceNoVersioning.class})
+@ReflectableClasses({
+    @ReflectableClass(className = PackedTokenAttributeImpl.class, allDeclaredConstructors = true,
+        allPublicConstructors = true, allDeclaredMethods = true, allPublicMethods = true),
+    @ReflectableClass(className = BoostAttributeImpl.class, allDeclaredConstructors = true,
+        allPublicConstructors = true, allDeclaredMethods = true, allPublicMethods = true)})
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   static {
