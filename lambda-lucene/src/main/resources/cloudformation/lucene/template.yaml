@@ -91,11 +91,11 @@ Resources:
             - Fn::ImportValue:
                 Fn::Sub: '${VpcStackName}-PrivateSubnets'
         SecurityGroupIds:
-          Fn::Split:
-          - ","
           - Fn::ImportValue:
               Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
-                
+          - Fn::ImportValue:
+              Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+
   LuceneProcessorParameter:
     Type: AWS::SSM::Parameter
     Condition: HasVpcStackName

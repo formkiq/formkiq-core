@@ -215,8 +215,12 @@ Resources:
           - HasVpcStackName
           - Fn::Split:
             - ","
-            - Fn::ImportValue:
-                Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
+            - Fn::Join:
+              - ","
+              - - Fn::ImportValue:
+                    Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
+              - - Fn::ImportValue:
+                    Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
           - Ref: AWS::NoValue
       Role: 
         Fn::GetAtt:
@@ -329,6 +333,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
       - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      - arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
       Policies:
         -
           PolicyName: apigatewaylambdarole
