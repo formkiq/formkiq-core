@@ -219,7 +219,7 @@ Resources:
               - ","
               - - Fn::ImportValue:
                     Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
-              - - Fn::ImportValue:
+                - Fn::ImportValue:
                     Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
           - Ref: AWS::NoValue
       Role: 
