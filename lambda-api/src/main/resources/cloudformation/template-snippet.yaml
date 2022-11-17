@@ -97,7 +97,7 @@ Parameters:
     Type: String
     Description: TypeSense API Key
     
-  TypesenseApiEndpoint
+  TypesenseApiEndpoint:
     Type: String
     Description: TypeSense API Endpoint
         
