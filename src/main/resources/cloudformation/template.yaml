@@ -66,6 +66,11 @@ Parameters:
     Description: (optional) FormKiQ VPC Stack Name 
     Default: ""
 
+  TypeSenseApiKey:
+    Type: String
+    Description: (optional) Random string of characters for https://typesense.org API access 
+    Default: ""
+    
 Resources:
 
   EditionParameter:
@@ -264,7 +269,6 @@ Resources:
     DependsOn:
       - Cognito
       - WebsocketApi
-      - LambdaLucene
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -339,23 +343,23 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
-  LambdaLucene:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreStorage
-    Properties:
-      Location: lucene/template.yaml
-      Parameters:
-        AppEnvironment: 
-          Ref: AppEnvironment
-        VpcStackName:
-          Ref: VpcStackName
-      Tags:
-        Application: "FormKiQ Core"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+#  LambdaLucene:
+#    Type: AWS::Serverless::Application
+#    DependsOn:
+#      - CoreStorage
+#    Properties:
+#      Location: lucene/template.yaml
+#      Parameters:
+#        AppEnvironment: 
+#          Ref: AppEnvironment
+#        TypeSenseApiKey:
+#          Ref: TypeSenseApiKey
+#      Tags:
+#        Application: "FormKiQ Core"
+#        AppEnvironment: 
+#          Fn::Sub: "${AppEnvironment}"
+#        StackName: 
+#          Fn::Sub: "${AWS::StackName}"
           
   WebsocketApi:
     Type: AWS::Serverless::Application

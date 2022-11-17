@@ -30,9 +30,9 @@ Parameters:
     Type: String
     AllowedValues: ["core", "enterprise"]
 
-  VpcStackName:
+  TypeSenseApiKey:
     Type: String
-    Description: The name of the FormKiQ VPC Stack Name
+    Description: TypeSense API Key
 
 Conditions:
   HasVpcStackName:
@@ -66,13 +66,16 @@ Resources:
           DEBUG: false  
           FormKiQType:
             Ref: FormKiQType
-          LUCENE_BASE_PATH: "/mnt/lucene"
-      FileSystemConfigs:
-      - Arn:
-          Fn::GetAtt:
-          - LuceneEfsAccessPoint
-          - Arn
-        LocalMountPath: "/mnt/lucene"
+          TYPESENSE_HOST: ""
+          TYPESENSE_API_KEY:
+            Ref: TypeSenseApiKey
+          # LUCENE_BASE_PATH: "/mnt/lucene"
+      # FileSystemConfigs:
+      # - Arn:
+      #     Fn::GetAtt:
+      #     - LuceneEfsAccessPoint
+      #     - Arn
+      #   LocalMountPath: "/mnt/lucene"
       Role: 
         Fn::GetAtt:
         - LuceneLambdaRole
@@ -84,17 +87,17 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-      VpcConfig:
-        SubnetIds:
-          Fn::Split:
-            - ","
-            - Fn::ImportValue:
-                Fn::Sub: '${VpcStackName}-PrivateSubnets'
-        SecurityGroupIds:
-          - Fn::ImportValue:
-              Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
-          - Fn::ImportValue:
-              Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+      # VpcConfig:
+      #   SubnetIds:
+      #     Fn::Split:
+      #       - ","
+      #       - Fn::ImportValue:
+      #           Fn::Sub: '${VpcStackName}-PrivateSubnets'
+      #   SecurityGroupIds:
+      #     - Fn::ImportValue:
+      #         Fn::Sub: '${VpcStackName}-HttpsSecurityGroup'
+      #     - Fn::ImportValue:
+      #         Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
 
   LuceneProcessorParameter:
     Type: AWS::SSM::Parameter
@@ -140,7 +143,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-      - arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
+      # - arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
       
   LuceneLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -181,106 +184,106 @@ Resources:
         - Arn      
       StartingPosition: LATEST
       
-  LuceneEfs:
-    Type: 'AWS::EFS::FileSystem'
-    Condition: HasVpcStackName
-    Properties:
-      BackupPolicy:
-        Status: ENABLED
-      Encrypted: true
-      FileSystemTags:
-        - Key: Name
-          Value: 
-            Fn::Sub: "FormKiQ Lucene ${AppEnvironment}"
-        - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ ${FormKiQType}"        
-        - Key: "AppEnvironment"
-          Value: 
-            Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
-      FileSystemPolicy:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "elasticfilesystem:ClientMount"
-            Principal:
-              AWS: "*"
+  # LuceneEfs:
+  #   Type: 'AWS::EFS::FileSystem'
+  #   Condition: HasVpcStackName
+  #   Properties:
+  #     BackupPolicy:
+  #       Status: ENABLED
+  #     Encrypted: true
+  #     FileSystemTags:
+  #       - Key: Name
+  #         Value: 
+  #           Fn::Sub: "FormKiQ Lucene ${AppEnvironment}"
+  #       - Key: "Application"
+  #         Value: 
+  #           Fn::Sub: "FormKiQ ${FormKiQType}"        
+  #       - Key: "AppEnvironment"
+  #         Value: 
+  #           Fn::Sub: "${AppEnvironment}"
+  #       - Key: "StackName"
+  #         Value: 
+  #           Fn::Sub: "${AWS::StackName}"
+  #     FileSystemPolicy:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: "Allow"
+  #           Action:
+  #             - "elasticfilesystem:ClientMount"
+  #           Principal:
+  #             AWS: "*"
 
-  MountTargetResource1:
-    Type: AWS::EFS::MountTarget
-    Condition: HasVpcStackName
-    Properties:
-      FileSystemId: 
-        Ref: LuceneEfs
-      SubnetId: 
-        Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-PrivateSubnet1'
-      SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+  # MountTargetResource1:
+  #   Type: AWS::EFS::MountTarget
+  #   Condition: HasVpcStackName
+  #   Properties:
+  #     FileSystemId: 
+  #       Ref: LuceneEfs
+  #     SubnetId: 
+  #       Fn::ImportValue:
+  #         Fn::Sub: '${VpcStackName}-PrivateSubnet1'
+  #     SecurityGroups:
+  #     - Fn::ImportValue:
+  #         Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
 
-  MountTargetResource2:
-    Type: AWS::EFS::MountTarget
-    Condition: HasVpcStackName
-    Properties:
-      FileSystemId: 
-        Ref: LuceneEfs
-      SubnetId: 
-        Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-PrivateSubnet2'
-      SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+  # MountTargetResource2:
+  #   Type: AWS::EFS::MountTarget
+  #   Condition: HasVpcStackName
+  #   Properties:
+  #     FileSystemId: 
+  #       Ref: LuceneEfs
+  #     SubnetId: 
+  #       Fn::ImportValue:
+  #         Fn::Sub: '${VpcStackName}-PrivateSubnet2'
+  #     SecurityGroups:
+  #     - Fn::ImportValue:
+  #         Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
           
-  MountTargetResource3:
-    Type: AWS::EFS::MountTarget
-    Condition: HasVpcStackName
-    Properties:
-      FileSystemId: 
-        Ref: LuceneEfs
-      SubnetId: 
-        Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-PrivateSubnet3'
-      SecurityGroups:
-      - Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+  # MountTargetResource3:
+  #   Type: AWS::EFS::MountTarget
+  #   Condition: HasVpcStackName
+  #   Properties:
+  #     FileSystemId: 
+  #       Ref: LuceneEfs
+  #     SubnetId: 
+  #       Fn::ImportValue:
+  #         Fn::Sub: '${VpcStackName}-PrivateSubnet3'
+  #     SecurityGroups:
+  #     - Fn::ImportValue:
+  #         Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
 
-  LuceneEfsAccessPointParameter:
-    Type: AWS::SSM::Parameter
-    Condition: HasVpcStackName
-    Properties:
-      Description: "Lucene EFS Access Point"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/efs/LuceneAccessPointArn"
-      Type: String
-      Value:
-        Fn::GetAtt:
-        - LuceneEfsAccessPoint
-        - Arn
-      Tags:
-        Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-        StackName: 
-          Fn::Sub: "${AWS::StackName}"
+  # LuceneEfsAccessPointParameter:
+  #   Type: AWS::SSM::Parameter
+  #   Condition: HasVpcStackName
+  #   Properties:
+  #     Description: "Lucene EFS Access Point"
+  #     Name: 
+  #       Fn::Sub: "/formkiq/${AppEnvironment}/efs/LuceneAccessPointArn"
+  #     Type: String
+  #     Value:
+  #       Fn::GetAtt:
+  #       - LuceneEfsAccessPoint
+  #       - Arn
+  #     Tags:
+  #       Application: 
+  #         Fn::Sub: "FormKiQ ${FormKiQType}"
+  #       AppEnvironment: 
+  #         Fn::Sub: "${AppEnvironment}"
+  #       StackName: 
+  #         Fn::Sub: "${AWS::StackName}"
 
-  LuceneEfsAccessPoint:
-    Type: 'AWS::EFS::AccessPoint'
-    Condition: HasVpcStackName
-    Properties:
-      FileSystemId: 
-        Ref: LuceneEfs
-      PosixUser:
-        Uid: "1000"
-        Gid: "1000"
-      RootDirectory:
-        CreationInfo:
-          OwnerGid: "1000"
-          OwnerUid: "1000"
-          Permissions: "0777"
-        Path: "/lucene"
+  # LuceneEfsAccessPoint:
+  #   Type: 'AWS::EFS::AccessPoint'
+  #   Condition: HasVpcStackName
+  #   Properties:
+  #     FileSystemId: 
+  #       Ref: LuceneEfs
+  #     PosixUser:
+  #       Uid: "1000"
+  #       Gid: "1000"
+  #     RootDirectory:
+  #       CreationInfo:
+  #         OwnerGid: "1000"
+  #         OwnerUid: "1000"
+  #         Permissions: "0777"
+  #       Path: "/lucene"

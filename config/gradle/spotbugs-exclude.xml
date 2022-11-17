@@ -55,6 +55,13 @@ For a detailed description of spotbugs bug categories, see https://spotbugs.read
             <Class name="com.formkiq.testutils.aws.DynamoDbTestServices"/>
             <Class name="com.formkiq.testutils.aws.TestServices"/>
         </OR>
-    </Match>    
+    </Match>
+    
+        <Match>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+        <OR>
+            <Class name="com.formkiq.testutils.aws.TypeSenseExtension"/>
+        </OR>
+    </Match>
     
 </FindBugsFilter>
