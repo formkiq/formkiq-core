@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +63,6 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -111,8 +111,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
 
-    return q.query().tag() == null && q.query().meta() == null
-        && StringUtils.isEmpty(q.query().text())
+    return q.query().tag() == null && q.query().meta() == null && isEmpty(q.query().text())
         && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
   }
 
@@ -235,9 +234,10 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     String text = q.query().text();
     PaginationResults<DynamicDocumentItem> results = null;
 
-    if (!StringUtils.isEmpty(text)) {
+    if (!isEmpty(text)) {
 
-      if (awsservice.environment("TYPESENSE_HOST") == null) {
+      if (isEmpty(awsservice.environment("TYPESENSE_HOST"))
+          || isEmpty(awsservice.environment("TYPESENSE_API_KEY"))) {
         throw new BadException("Fulltext search is not Enabled");
       }
 

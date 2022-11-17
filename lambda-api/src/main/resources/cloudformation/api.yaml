@@ -3381,7 +3381,7 @@ Resources:
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentSearchApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"

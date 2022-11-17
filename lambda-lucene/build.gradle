@@ -1,6 +1,6 @@
-description = "FormKiQ Core - Lambda Lucene"
+description = "FormKiQ Core - Lambda TypeSense"
 
-def moduleName = "formkiq-module-lambda-lucene"
+def moduleName = "formkiq-module-lambda-typesense"
 
 dependencies {
 
@@ -82,7 +82,7 @@ task copyLambda(type: Copy) {
   dependsOn buildLambdaZip
   outputs.upToDateWhen {false}
   from buildLambdaZip.outputs.files.singleFile
-  into "${buildDir}/distributions/${moduleName}/sam/lucene"
+  into "${buildDir}/distributions/${moduleName}/sam/typesense"
 }
 
 task assembleTemplate {
@@ -94,7 +94,7 @@ task assembleTemplate {
 	
   	doLast {
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/lucene/template.yaml > ${buildDir}/distributions/${moduleName}/sam/lucene/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/${moduleName}/sam/typesense/template.yaml"
 		}
 	}
 }

@@ -70,7 +70,7 @@ Parameters:
     Type: String
     Description: (optional) Random string of characters for https://typesense.org API access 
     Default: ""
-    
+
 Resources:
 
   EditionParameter:
@@ -298,8 +298,6 @@ Resources:
           Fn::GetAtt: 
           - WebsocketApi
           - Outputs.SqsQueueUrl
-        VpcStackName:
-          Ref: VpcStackName
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -366,7 +364,51 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-        
+
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName:
+        Fn::Sub: "FormKiQ-${AppEnvironment}"
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 1
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+            
+  TypeSenseService:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - ECSCluster
+    Properties:
+      Location: lambda-typesense/template.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        TypeSenseApiKey:
+          Ref: TypeSenseApiKey
+        VpcStackName:
+          Ref: VpcStackName
+        ECSCluster:
+          Ref: ECSCluster
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod

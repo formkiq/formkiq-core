@@ -34,18 +34,37 @@ Parameters:
     Type: String
     Description: TypeSense API Key
 
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+
+  ECSCluster:
+    Type: String
+    Description: Reference to the ECSCluster
+    
 Conditions:
   HasVpcStackName:
     Fn::Not:
       - Fn::Equals: 
         - Ref: VpcStackName
         - ''
+
+  HasTypeSenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypeSenseApiKey
+        - ''
         
+  CreateResources: 
+    Fn::And:
+      - Fn::Condition: HasVpcStackName
+      - Fn::Condition: HasTypeSenseApiKey
+
 Resources:
       
   LuceneProcessor:
     Type: AWS::Serverless::Function
-    Condition: HasVpcStackName
+    Condition: CreateResources
     DependsOn:
     - LuceneLambdaRolePolicy
     Properties:
@@ -83,7 +102,7 @@ Resources:
 
   LuceneProcessorParameter:
     Type: AWS::SSM::Parameter
-    Condition: HasVpcStackName
+    Condition: CreateResources
     Properties:
       Description: "Lambda for processing records for Lucene"
       Name: 
@@ -101,7 +120,7 @@ Resources:
 
   LuceneLambdaRole:
     Type: AWS::IAM::Role
-    Condition: HasVpcStackName
+    Condition: CreateResources
     Properties:
       Tags:
         - Key: "Application"
@@ -128,7 +147,7 @@ Resources:
       
   LuceneLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
-    Condition: HasVpcStackName
+    Condition: CreateResources
     Properties: 
       PolicyName: Lucene-lambdarole
       Roles: 
@@ -154,7 +173,7 @@ Resources:
 
   LuceneTableStream:
     Type: AWS::Lambda::EventSourceMapping
-    Condition: HasVpcStackName
+    Condition: CreateResources
     Properties:
       Enabled: True
       EventSourceArn:
