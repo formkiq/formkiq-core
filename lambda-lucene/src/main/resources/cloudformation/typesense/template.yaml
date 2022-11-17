@@ -6,6 +6,11 @@ Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Lucene
     
 Parameters:
+  
+  Image:
+    Type: String
+    Description: Version of Typesense to deploy
+    Default: "typesense/typesense:0.23.1"
     
   AppEnvironment:
     Type: String
@@ -57,8 +62,12 @@ Conditions:
         
   CreateResources: 
     Fn::And:
-      - Fn::Condition: HasVpcStackName
-      - Fn::Condition: HasTypeSenseApiKey
+      - Condition: HasVpcStackName
+      - Condition: HasTypeSenseApiKey
+
+  NotCreateResources: 
+    Fn::Not:
+      - Condition: CreateResources
 
 Resources:
       
@@ -184,3 +193,269 @@ Resources:
         - Arn      
       StartingPosition: LATEST
       
+  Service:
+    Type: AWS::ECS::Service
+    Condition: CreateResources
+    Properties:
+      Cluster:
+        Ref: ECSCluster
+      ServiceName: typesense
+      TaskDefinition: 
+        Ref: TaskDefinition
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 0
+        MaximumPercent: 100
+      DesiredCount: 1
+      ServiceRegistries:
+        - RegistryArn:
+            Fn::GetAtt:
+            - CloudMapService
+            - Arn
+          Port: 8108
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            Fn::Split:
+              - ","
+              - Fn::ImportValue:
+                  Fn::Sub: '${VpcStackName}-PublicSubnets'
+          SecurityGroups:
+            - Ref: FargateSecurityGroup
+
+  FargateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateResources
+    Properties:
+      GroupDescription: Typesense Security Group
+      VpcId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-Vpc'
+      SecurityGroupIngress:
+        - SourceSecurityGroupId:
+            Fn::ImportValue:
+              Fn::Sub: '${VpcStackName}-VpcLinkSecurityGroup'
+          FromPort: 8108
+          ToPort: 8108
+          IpProtocol: tcp
+        - IpProtocol: tcp
+          FromPort: 8108
+          ToPort: 8108
+          CidrIp: 0.0.0.0/0
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateResources
+    Properties:
+      Family: typesense
+      Cpu: 512
+      Memory: 1024
+      NetworkMode: awsvpc
+      TaskRoleArn:
+        Ref: TaskRole
+      ExecutionRoleArn: 
+        Ref: ExecutionRole
+      RequiresCompatibilities: 
+        - FARGATE
+      Volumes:
+        - Name: typesense
+          EFSVolumeConfiguration:
+            FilesystemId: 
+              Ref: EfsVolume
+            TransitEncryption: ENABLED
+      ContainerDefinitions:
+        - Name: 
+            Fn::Sub: "FormKiQ_Typesense_${AppEnvironment}"
+          Image: 
+            Ref: Image
+          Environment:
+            - Name: TYPESENSE_DATA_DIR
+              Value: /data
+            - Name: TYPESENSE_API_KEY
+              Value: 
+                Ref: TypeSenseApiKey
+          MountPoints:
+            - SourceVolume: typesense
+              ContainerPath: '/data'
+              ReadOnly: false
+          PortMappings:
+            - ContainerPort: 8108
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: true
+              awslogs-group: "typsense"
+              awslogs-region: 
+                Fn::Sub: "${AWS::Region}"
+              awslogs-stream-prefix: "typesense"
+
+  CloudMapService:
+    Type: AWS::ServiceDiscovery::Service
+    Condition: CreateResources
+    Properties:
+      NamespaceId:
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-CloudMapNamespace'
+      Name: 
+        Fn::Sub: "FormKiQ_Typesense_${AppEnvironment}"
+      DnsConfig:
+        DnsRecords:
+          - Type: SRV
+            TTL: 60
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Condition: CreateResources
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: sts:AssumeRole
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: CreateResources
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        -
+          PolicyName: 
+            Fn::Sub: "${AWS::StackName}-FargateExecutionPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+              
+  EfsVolume:
+    Type: AWS::EFS::FileSystem
+    Condition: CreateResources
+    Properties:
+      Encrypted: true
+      FileSystemTags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}-typesense"
+
+  MountTargetResource1:
+    Type: AWS::EFS::MountTarget
+    Condition: CreateResources
+    Properties:
+      FileSystemId: 
+        Ref: EfsVolume
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet1'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+
+  MountTargetResource2:
+    Type: AWS::EFS::MountTarget
+    Condition: CreateResources
+    Properties:
+      FileSystemId: 
+        Ref: EfsVolume
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet2'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+          
+  MountTargetResource3:
+    Type: AWS::EFS::MountTarget
+    Condition: CreateResources
+    Properties:
+      FileSystemId: 
+        Ref: EfsVolume
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet3'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Condition: CreateResources
+    Properties:
+      ProtocolType: HTTP
+      Name:
+        Fn::Sub: "${AWS::StackName} Typesense - ${AppEnvironment}"
+
+  Integration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: CreateResources
+    Properties:
+      ApiId: 
+        Ref: ApiGateway
+      ConnectionId:
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-VpcLink'
+      ConnectionType: VPC_LINK
+      IntegrationMethod: ANY
+      IntegrationType: HTTP_PROXY
+      IntegrationUri: 
+        Fn::GetAtt:
+          - CloudMapService
+          - Arn
+      PayloadFormatVersion: 1.0
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Condition: CreateResources
+    Properties:
+      ApiId: 
+        Ref: ApiGateway
+      StageName: $default
+      AutoDeploy: true
+
+  Route:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: CreateResources
+    Properties:
+      ApiId: 
+        Ref: ApiGateway
+      RouteKey: $default
+      Target: 
+        Fn::Sub: integrations/${Integration}
+
+Outputs:
+
+  CloudMapServiceArn:
+    Condition: CreateResources
+    Description: Cloud Map Service
+    Value: 
+      Fn::GetAtt:
+        - CloudMapService
+        - Arn
+
+  CloudMapServiceArn:
+    Condition: NotCreateResources
+    Description: Cloud Map Service
+    Value: ""
+    
+  TypesenseApiEndpoint:
+    Description: Typesense API Endpoint
+    Condition: CreateResources
+    Value:
+      Fn::GetAtt:
+        - ApiGateway
+        - ApiEndpoint

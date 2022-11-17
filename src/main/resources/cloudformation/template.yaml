@@ -269,6 +269,7 @@ Resources:
     DependsOn:
       - Cognito
       - WebsocketApi
+      - TypeSenseService
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -298,6 +299,11 @@ Resources:
           Fn::GetAtt: 
           - WebsocketApi
           - Outputs.SqsQueueUrl
+        CloudMapServiceArn: 
+          Fn::GetAtt: 
+          - TypeSenseService
+          - Outputs.CloudMapServiceArn          
+          
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -392,7 +398,7 @@ Resources:
     DependsOn:
       - ECSCluster
     Properties:
-      Location: lambda-typesense/template.yaml
+      Location: typesense/template.yaml
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
