@@ -446,17 +446,14 @@ Resources:
 Outputs:
 
   CloudMapServiceArn:
-    Condition: CreateResources
     Description: Cloud Map Service
-    Value: 
-      Fn::GetAtt:
-        - CloudMapService
-        - Arn
-
-  CloudMapServiceArn:
-    Condition: NotCreateResources
-    Description: Cloud Map Service
-    Value: ""
+    Value:
+      Fn::If:
+      - CreateResources
+      - Fn::GetAtt:
+          - CloudMapService
+          - Arn
+      - ""
     
   TypesenseApiEndpoint:
     Description: Typesense API Endpoint
