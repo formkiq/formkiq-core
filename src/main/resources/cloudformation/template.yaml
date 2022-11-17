@@ -299,10 +299,12 @@ Resources:
           Fn::GetAtt: 
           - WebsocketApi
           - Outputs.SqsQueueUrl
-        CloudMapServiceArn: 
-          Fn::GetAtt: 
+        TypeSenseApiKey: 
+          Ref: TypeSenseApiKey
+        TypesenseApiEndpoint:
+          Fn::GetAtt:
           - TypeSenseService
-          - Outputs.CloudMapServiceArn          
+          - Outputs.TypesenseApiEndpoint
           
       Tags:
         Application: "FormKiQ Core"

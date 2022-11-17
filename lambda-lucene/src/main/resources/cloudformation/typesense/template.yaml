@@ -94,7 +94,13 @@ Resources:
           DEBUG: false  
           FormKiQType:
             Ref: FormKiQType
-          TYPESENSE_HOST: ""
+          TYPESENSE_HOST:
+            Fn::If:
+            - CreateResources
+            - Fn::GetAtt:
+              - ApiGateway
+              - ApiEndpoint
+            - ""
           TYPESENSE_API_KEY:
             Ref: TypeSenseApiKey
       Role: 
@@ -454,8 +460,10 @@ Outputs:
     
   TypesenseApiEndpoint:
     Description: Typesense API Endpoint
-    Condition: CreateResources
     Value:
-      Fn::GetAtt:
-        - ApiGateway
-        - ApiEndpoint
+      Fn::If:
+      - CreateResources
+      - Fn::GetAtt:
+          - ApiGateway
+          - ApiEndpoint
+      - ""
