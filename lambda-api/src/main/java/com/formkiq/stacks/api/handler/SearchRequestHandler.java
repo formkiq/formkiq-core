@@ -51,8 +51,8 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lucene.LuceneService;
-import com.formkiq.module.lucene.LuceneServiceImpl;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
@@ -237,14 +237,15 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     if (!StringUtils.isEmpty(text)) {
 
-      if (!"true".equals(awsservice.environment("ENABLE_LUCENE"))) {
-        throw new BadException("Lucene search is not Enabled");
+      if (awsservice.environment("TYPESENSE_HOST") == null) {
+        throw new BadException("Fulltext search is not Enabled");
       }
-      
-      DocumentService docService = awsservice.getExtension(DocumentService.class);
-      LuceneService ls = new LuceneServiceImpl(awsservice.environment("LUCENE_BASE_PATH"));
 
-      List<String> documentIds = ls.searchFulltextForDocumentId(siteId, text, limit);
+      DocumentService docService = awsservice.getExtension(DocumentService.class);
+      TypeSenseService ts = new TypeSenseServiceImpl(awsservice.environment("TYPESENSE_HOST"),
+          awsservice.environment("TYPESENSE_API_KEY"));
+
+      List<String> documentIds = ts.searchFulltext(siteId, text, limit);
 
       List<DocumentItem> list = docService.findDocuments(siteId, documentIds);
 

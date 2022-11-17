@@ -25,13 +25,12 @@ package com.formkiq.module.lambda.lucene;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import software.amazon.awssdk.utils.StringUtils;
 
 /**
@@ -39,16 +38,16 @@ import software.amazon.awssdk.utils.StringUtils;
  * {@link Function} for converting {@link Map} to {@link Document}.
  *
  */
-public class DocumentMapToDocument implements Function<Map<String, Object>, Document> {
+public class DocumentMapToDocument implements Function<Map<String, Object>, Map<String, Object>> {
 
   /** Fields to Process. */
   private static final List<String> FIELDS = Arrays.asList("documentId", "path", "userId");
 
   @SuppressWarnings("unchecked")
   @Override
-  public Document apply(final Map<String, Object> data) {
+  public Map<String, Object> apply(final Map<String, Object> data) {
 
-    Document document = new Document();
+    Map<String, Object> document = new HashMap<>();
 
     for (String field : FIELDS) {
 
@@ -58,7 +57,8 @@ public class DocumentMapToDocument implements Function<Map<String, Object>, Docu
         String value = values.get("S").toString();
 
         if (!StringUtils.isEmpty(value)) {
-          document.add(new StringField(field, value, Field.Store.YES));
+          // document.add(new StringField(field, value, Field.Store.YES));
+          document.put(field, value);
         }
       }
     }
@@ -70,7 +70,8 @@ public class DocumentMapToDocument implements Function<Map<String, Object>, Docu
     metadata.forEach(m -> {
       Map<String, Object> values = (Map<String, Object>) data.get(m);
       String value = values.get("S").toString();
-      document.add(new StringField(m, value, Field.Store.YES));
+      // document.add(new StringField(m, value, Field.Store.YES));
+      document.put(m, value);
     });
 
     return document;

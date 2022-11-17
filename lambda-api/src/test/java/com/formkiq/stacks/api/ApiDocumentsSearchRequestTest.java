@@ -34,7 +34,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.lucene.document.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -54,8 +53,10 @@ import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TypeSenseExtension;
 
 /** Unit Tests for request /search. */
+@ExtendWith(TypeSenseExtension.class)
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
@@ -74,12 +75,11 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
     Map<String, Object> data = Map.of("documentId", Map.of("S", item.getDocumentId()), "path",
         Map.of("S", item.getPath()));
-    Document document = new DocumentMapToDocument().apply(data);
+    Map<String, Object> document = new DocumentMapToDocument().apply(data);
     document = this.fulltext.apply(document);
 
-    LuceneProcessor processor = new LuceneProcessor(
-        Map.of("LUCENE_BASE_PATH", getAwsServices().environment("LUCENE_BASE_PATH")));
-    processor.addOrUpdate(siteId, document);
+    LuceneProcessor processor = new LuceneProcessor(getMap());
+    processor.addOrUpdate(siteId, item.getDocumentId(), document);
   }
 
   /**

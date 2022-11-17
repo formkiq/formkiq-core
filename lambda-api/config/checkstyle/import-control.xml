@@ -80,6 +80,7 @@
 			
 			<subpackage name="handler">
 				
+				<allow pkg="com.formkiq.module.typesense" />
 				<allow pkg="com.formkiq.aws.services.lambda" />
 				<allow pkg="com.formkiq.module.lucene" />
 				<allow pkg="com.formkiq.stacks.api" />

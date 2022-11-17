@@ -24,26 +24,28 @@
 package com.formkiq.module.lambda.lucene;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
- * {@link Function} for converting {@link Document} to {@link Document}.
+ * {@link Function} for converting {@link Map} to {@link Map}.
  *
  */
-public class DocumentToFulltextDocument implements Function<Document, Document> {
+public class DocumentToFulltextDocument
+    implements Function<Map<String, Object>, Map<String, Object>> {
 
   @Override
-  public Document apply(final Document document) {
+  public Map<String, Object> apply(final Map<String, Object> document) {
 
     String text = buildText(document);
-    document.add(new TextField("text", text, Field.Store.NO));
+    document.put("text", text);
+    // document.add(new TextField("text", text, Field.Store.NO));
 
     return document;
   }
@@ -54,20 +56,19 @@ public class DocumentToFulltextDocument implements Function<Document, Document> 
    * @param document {@link Document}
    * @return {@link String}
    */
-  private String buildText(final Document document) {
+  private String buildText(final Map<String, Object> document) {
     StringBuilder sb = new StringBuilder();
 
-    if (!StringUtils.isEmpty(document.get("path"))) {
-      sb.append(document.get("path") + " ");
-    }
-
-    if (!StringUtils.isEmpty(document.get("userId"))) {
-      sb.append(document.get("userId") + " ");
+    for (String key : Arrays.asList("path", "userId")) {
+      Object val = document.get(key);
+      if (val != null && !StringUtils.isEmpty(val.toString())) {
+        sb.append(val + " ");
+      }
     }
 
     List<String> metadata =
-        document.getFields().stream().filter(e -> e.name().startsWith(PREFIX_DOCUMENT_METADATA))
-            .map(e -> e.stringValue()).collect(Collectors.toList());
+        document.entrySet().stream().filter(e -> e.getKey().startsWith(PREFIX_DOCUMENT_METADATA))
+            .map(e -> e.getValue().toString()).collect(Collectors.toList());
 
     metadata.forEach(d -> sb.append(d));
 

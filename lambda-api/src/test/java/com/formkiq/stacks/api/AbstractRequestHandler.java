@@ -30,6 +30,7 @@ import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
+import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
 import static org.junit.Assert.assertEquals;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
@@ -43,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -67,6 +67,7 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.aws.TypeSenseExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -196,9 +197,8 @@ public abstract class AbstractRequestHandler {
     this.map.put("USER_AUTHENTICATION", "cognito");
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
-    this.map.put("LUCENE_BASE_PATH",
-        System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID());
-    this.map.put("ENABLE_LUCENE", "true");
+    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
+    this.map.put("TYPESENSE_API_KEY", API_KEY);
 
     createApiRequestHandler(this.map);
 

@@ -47,7 +47,7 @@ public interface LuceneService {
 
   /**
    * Add Document to Lucene Index.
-   * 
+   *
    * @param siteId {@link String}
    * @param documents {@link Collection} {@link Document}
    * @throws IOException IOException
@@ -65,7 +65,7 @@ public interface LuceneService {
 
   /**
    * Find by Tag.
-   * 
+   *
    * @param siteId {@link String}
    * @param tagKey {@link String}
    * @param tagValue {@link String}

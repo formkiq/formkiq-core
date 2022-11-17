@@ -30,12 +30,14 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -401,18 +403,19 @@ public abstract class AbstractApiTest {
    * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
    * @param client {@link FormKiqClientV1}
+   * @param path {@link String}
    * @return {@link String}
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  protected String addDocumentWithoutFile(final FormKiqClientV1 client)
+  protected String addDocumentWithoutFile(final FormKiqClientV1 client, final String path)
       throws IOException, URISyntaxException, InterruptedException {
     // given
     final int status = 200;
     final String content = "sample content";
-    GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().contentLength(content.length());
+    GetDocumentUploadRequest request = new GetDocumentUploadRequest()
+        .path(URLEncoder.encode(path, StandardCharsets.UTF_8)).contentLength(content.length());
 
     // when
     HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);

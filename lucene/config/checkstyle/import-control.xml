@@ -5,6 +5,17 @@
 
 <import-control pkg="com.formkiq.module">
 	
+	<subpackage name="typesense">
+		<allow pkg="java.io" />
+		<allow pkg="java.util" />
+		
+		<allow pkg="java.net" />
+		<allow pkg="java.net.http" />
+		<allow pkg="java.nio.charset" />
+		
+		<allow pkg="com.formkiq.module.http" />
+	</subpackage>
+	
 	<subpackage name="lucene">
 
 		<allow pkg="java.io" />

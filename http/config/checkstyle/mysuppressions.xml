@@ -4,6 +4,5 @@
 
 <suppressions>
     <suppress files="\.*Test\.java" checks="ImportControl"/>
-    <suppress files="\.*Extension\.java" checks="ImportControl"/>
 </suppressions>
 

@@ -23,20 +23,20 @@
  */
 package com.formkiq.module.lambda.lucene;
 
+import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import org.apache.lucene.document.Document;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.formkiq.module.lucene.LuceneService;
-import com.formkiq.module.lucene.LuceneServiceImpl;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
+import com.formkiq.testutils.aws.TypeSenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.utils.IoUtils;
@@ -46,6 +46,7 @@ import software.amazon.awssdk.utils.IoUtils;
  * Unit Tests {@link LuceneProcessor}.
  *
  */
+@ExtendWith(TypeSenseExtension.class)
 class LuceneProcessorTest {
 
   /** {@link Gson}. */
@@ -54,37 +55,20 @@ class LuceneProcessorTest {
   private static final int MAX = 10;
   /** {@link LuceneProcessor}. */
   private static LuceneProcessor processor;
-  /** {@link LuceneService}. */
-  private static LuceneService service;
+  /** {@link TypeSenseService}. */
+  private static TypeSenseService service;
 
   @BeforeAll
   public static void beforeAll() {
-    String tmpdir = System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID();
-    processor = new LuceneProcessor(Map.of("LUCENE_BASE_PATH", tmpdir));
-    service = new LuceneServiceImpl(tmpdir);
+    // String tmpdir = System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID();
+    processor = new LuceneProcessor(Map.of("TYPESENSE_HOST",
+        "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY));
+    service =
+        new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY);
   }
 
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
-
-  private void expectDoc1(final Document doc) {
-    final int expected = 4;
-    assertNotNull(doc);
-    assertEquals(expected, doc.getFields().size());
-    assertEquals("/somewhere/else/test.pdf", doc.get("path"));
-    assertEquals("acd4be1b-9466-4dcd-b8b8-e5b19135b460", doc.get("documentId"));
-    assertEquals("testadminuser@formkiq.com", doc.get("userId"));
-    assertEquals("this is some content karate", doc.get("md#content"));
-  }
-
-  private void expectDoc2(final Document doc) {
-    final int expected = 3;
-    assertNotNull(doc);
-    assertEquals(expected, doc.getFields().size());
-    assertEquals("bleh/some.pdf", doc.get("path"));
-    assertEquals("717a3cee-888d-47e0-83a3-a7487a588954", doc.get("documentId"));
-    assertEquals("arn:aws:iam::111111111:user/mike", doc.get("userId"));
-  }
 
   /**
    * Load Request File.
@@ -118,52 +102,16 @@ class LuceneProcessorTest {
 
     // then
     String documentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
-    Document document = service.findDocument(siteId, documentId);
-    expectDoc1(document);
 
-    List<Document> documents = service.searchFulltext(siteId, "karate", MAX);
+    //
+    List<String> documents = service.searchFulltext(siteId, "karate", MAX);
     assertEquals(1, documents.size());
-    Document doc = documents.get(0);
-    expectDoc1(doc);
-
-    List<Document> findByTerms = service.findByTerms(siteId, "userId", "testadminuser@formkiq.com");
-    assertEquals(1, findByTerms.size());
-    expectDoc1(findByTerms.get(0));
-
-    // List<Document> findByTag = service.findByTag(siteId, "untagged", "true");
-    // assertEquals(1, findByTag.size());
-    // expectDoc1(findByTag.get(0));
+    assertEquals(documentId, documents.get(0));
 
     documents = service.searchFulltext(siteId, "test.pdf", MAX);
     assertEquals(1, documents.size());
-    expectDoc1(documents.get(0));
 
     documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
     assertEquals(0, documents.size());
-  }
-
-  /**
-   * Modify records.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  void testHandleRequest02() throws Exception {
-    // given
-    String siteId = null;
-    String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
-    Map<String, Object> map = loadRequest("/modify.json");
-
-    // when
-    processor.handleRequest(map, this.context);
-
-    // then
-    Document document = service.findDocument(siteId, documentId);
-    expectDoc2(document);
-
-    List<Document> documents = service.searchFulltext(siteId, "some.pdf", MAX);
-    assertEquals(1, documents.size());
-    Document doc = documents.get(0);
-    expectDoc2(doc);
   }
 }

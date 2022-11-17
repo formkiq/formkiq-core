@@ -80,7 +80,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch01() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      addDocumentWithoutFile(client);
+      addDocumentWithoutFile(client, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
       // when
@@ -132,7 +132,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch03() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      String documentId = addDocumentWithoutFile(client);
+      String documentId = addDocumentWithoutFile(client, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
           .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
       // when
@@ -158,7 +158,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch04() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      addDocumentWithoutFile(client);
+      addDocumentWithoutFile(client, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))
               .documentIds(Arrays.asList(UUID.randomUUID().toString())));
@@ -180,7 +180,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch05() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      String documentId = addDocumentWithoutFile(client);
+      String documentId = addDocumentWithoutFile(client, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
@@ -224,7 +224,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch06() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      String documentId = addDocumentWithoutFile(client);
+      String documentId = addDocumentWithoutFile(client, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
@@ -266,7 +266,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
       String tagKey = UUID.randomUUID().toString();
-      String documentId = addDocumentWithoutFile(client);
+      String documentId = addDocumentWithoutFile(client, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
       client.addDocumentTag(tagRequest);
@@ -293,6 +293,35 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
 
       // then
       assertEquals(0, documents.documents().size());
+    }
+  }
+
+  /**
+   * Test /search.
+   * 
+   * @throws Exception Exception
+   */
+  @Test(timeout = TEST_TIMEOUT)
+  public void testDocumentsSearch08() throws Exception {
+    // given
+    String path = "some/thing/else/My Documents.pdf";
+    String text = "My Documents";
+    for (FormKiqClientV1 client : getFormKiqClients()) {
+      addDocumentWithoutFile(client, path);
+      SearchDocumentsRequest req =
+          new SearchDocumentsRequest().query(new DocumentSearchQuery().text(text));
+      // when
+      Documents response = client.search(req);
+
+      // then
+      assertEquals(1, response.documents().size());
+      // assertFalse(documents.documents().isEmpty());
+
+      // Document doc = documents.documents().get(0);
+      // assertNotNull(doc.documentId());
+      // assertNotNull(doc.insertedDate());
+      // assertEquals(doc.insertedDate(), doc.lastModifiedDate());
+      // assertNotNull(doc.userId());
     }
   }
 }
