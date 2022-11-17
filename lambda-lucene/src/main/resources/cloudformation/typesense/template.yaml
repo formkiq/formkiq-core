@@ -75,7 +75,7 @@ Resources:
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
-      CodeUri: ./formkiq-module-lambda-lucene-graalvm.zip
+      CodeUri: ./formkiq-module-lambda-typesense-graalvm.zip
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       ReservedConcurrentExecutions: 1
       Environment:
