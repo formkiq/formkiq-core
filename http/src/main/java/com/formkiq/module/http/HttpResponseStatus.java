@@ -38,6 +38,8 @@ public class HttpResponseStatus {
   private static final int STATUS_300 = 300;
   /** 404 Response Code. */
   private static final int STATUS_404 = 404;
+  /** 409 Response Code. */
+  private static final int STATUS_409 = 409;
   /** 429 Response Code. */
   private static final int STATUS_429 = 404;
 
@@ -61,6 +63,17 @@ public class HttpResponseStatus {
   public static boolean is404(final HttpResponse<?> response) {
     int statusCode = response.statusCode();
     return statusCode == STATUS_404;
+  }
+
+  /**
+   * Is 409 Status Code.
+   * 
+   * @param response {@link HttpResponse}
+   * @return boolean
+   */
+  public static boolean is409(final HttpResponse<?> response) {
+    int statusCode = response.statusCode();
+    return statusCode == STATUS_409;
   }
 
   /**

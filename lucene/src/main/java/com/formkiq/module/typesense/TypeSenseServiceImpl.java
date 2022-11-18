@@ -24,6 +24,7 @@
 package com.formkiq.module.typesense;
 
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
+import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
@@ -170,20 +171,23 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpResponse<String> response = this.service.get(url, Optional.of(headers));
 
-    if (!is2XX(response)) {
-      throw new IOException(response.body());
-    }
-
     List<String> list = Collections.emptyList();
-    Map<String, Object> map = this.json.fromJsonToMap(response.body());
 
-    if (map.containsKey("hits")) {
-      List<Map<String, Object>> hits = (List<Map<String, Object>>) map.get("hits");
+    if (is2XX(response)) {
 
-      list = hits.stream().map(m -> {
-        Map<String, String> mm = (Map<String, String>) m.get("document");
-        return mm.get("id");
-      }).collect(Collectors.toList());
+      Map<String, Object> map = this.json.fromJsonToMap(response.body());
+
+      if (map.containsKey("hits")) {
+        List<Map<String, Object>> hits = (List<Map<String, Object>>) map.get("hits");
+
+        list = hits.stream().map(m -> {
+          Map<String, String> mm = (Map<String, String>) m.get("document");
+          return mm.get("id");
+        }).collect(Collectors.toList());
+      }
+
+    } else if (!is404(response)) {
+      throw new IOException(response.body());
     }
 
     return list;
@@ -193,6 +197,10 @@ public class TypeSenseServiceImpl implements TypeSenseService {
   public HttpResponse<String> updateDocument(final String siteId, final String documentId,
       final Map<String, Object> data) throws IOException {
 
+    Map<String, Object> payload = new HashMap<>(data);
+    payload.put("id", documentId);
+    payload.remove("documentId");
+
     String site = getCollectionName(siteId);
 
     String url =
@@ -201,7 +209,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response =
-        this.service.patch(url, Optional.of(headers), this.json.toJson(data));
+        this.service.patch(url, Optional.of(headers), this.json.toJson(payload));
 
     return response;
   }

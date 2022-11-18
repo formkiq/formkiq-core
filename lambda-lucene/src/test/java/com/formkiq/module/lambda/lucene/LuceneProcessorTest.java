@@ -99,24 +99,28 @@ class LuceneProcessorTest {
   void testHandleRequest01() throws Exception {
     // given
     String siteId = null;
-    Map<String, Object> map = loadRequest("/insert.json");
 
-    // when
-    processor.handleRequest(map, this.context);
+    for (int i = 0; i < 2; i++) {
 
-    // then
-    String documentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
+      Map<String, Object> map = loadRequest("/insert.json");
 
-    //
-    List<String> documents = service.searchFulltext(siteId, "karate", MAX);
-    assertEquals(1, documents.size());
-    assertEquals(documentId, documents.get(0));
+      // when
+      processor.handleRequest(map, this.context);
 
-    documents = service.searchFulltext(siteId, "test.pdf", MAX);
-    assertEquals(1, documents.size());
+      // then
+      String documentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
 
-    documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
-    assertEquals(0, documents.size());
+      //
+      List<String> documents = service.searchFulltext(siteId, "karate", MAX);
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0));
+
+      documents = service.searchFulltext(siteId, "test.pdf", MAX);
+      assertEquals(1, documents.size());
+
+      documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
+      assertEquals(0, documents.size());
+    }
   }
 
   /**
@@ -128,15 +132,17 @@ class LuceneProcessorTest {
   void testHandleRequest02() throws Exception {
     // given
     String siteId = null;
-    String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
-    Map<String, Object> map = loadRequest("/modify.json");
+    for (int i = 0; i < 2; i++) {
+      String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
+      Map<String, Object> map = loadRequest("/modify.json");
 
-    // when
-    processor.handleRequest(map, this.context);
+      // when
+      processor.handleRequest(map, this.context);
 
-    // then
-    List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
-    assertEquals(1, documents.size());
-    assertEquals(documentId, documents.get(0));
+      // then
+      List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0));
+    }
   }
 }

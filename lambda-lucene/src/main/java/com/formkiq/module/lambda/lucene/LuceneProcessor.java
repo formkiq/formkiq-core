@@ -32,6 +32,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
+import static com.formkiq.module.http.HttpResponseStatus.is409;
 import static com.formkiq.module.http.HttpResponseStatus.is429;
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -283,7 +284,7 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
           throw new IOException(response.body());
         }
 
-      } else if (is429(response)) {
+      } else if (is409(response) || is429(response)) {
         this.typeSenseService.updateDocument(siteId, documentId, data);
       } else {
         throw new IOException(response.body());

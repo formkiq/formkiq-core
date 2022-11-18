@@ -91,4 +91,23 @@ class TypeSenseServiceImplTest {
     }
   }
 
+  /**
+   * Add a document.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testSearch01() throws Exception {
+    // given
+    String text = UUID.randomUUID().toString();
+    final int maxResults = 10;
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // when
+      List<String> documentIds = this.service.searchFulltext(siteId, text, maxResults);
+
+      // then
+      assertTrue(documentIds.isEmpty());
+    }
+  }
 }

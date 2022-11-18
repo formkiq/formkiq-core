@@ -697,4 +697,40 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
     }
   }
+
+  /**
+   * Text Fulltext search no data.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest15() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String text = UUID.randomUUID().toString();
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+
+      QueryRequest query = new QueryRequest().query(new SearchQuery().text(text));
+
+      event.setBody(GsonUtil.getInstance().toJson(query));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(0, documents.size());
+    }
+  }
 }
