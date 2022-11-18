@@ -393,8 +393,9 @@ public abstract class AbstractApiTest {
     // given
     final int status = 200;
     final String content = "sample content";
-    GetDocumentUploadRequest request = new GetDocumentUploadRequest()
-        .path(URLEncoder.encode(path, StandardCharsets.UTF_8)).contentLength(content.length());
+    String p = path != null ? URLEncoder.encode(path, StandardCharsets.UTF_8) : null;
+    GetDocumentUploadRequest request =
+        new GetDocumentUploadRequest().path(p).contentLength(content.length());
 
     // when
     HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);

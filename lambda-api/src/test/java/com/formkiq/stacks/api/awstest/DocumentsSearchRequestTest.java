@@ -314,14 +314,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       Documents response = client.search(req);
 
       // then
-      assertEquals(1, response.documents().size());
-      // assertFalse(documents.documents().isEmpty());
-
-      // Document doc = documents.documents().get(0);
-      // assertNotNull(doc.documentId());
-      // assertNotNull(doc.insertedDate());
-      // assertEquals(doc.insertedDate(), doc.lastModifiedDate());
-      // assertNotNull(doc.userId());
+      assertFalse(response.documents().isEmpty());
+      assertTrue(response.documents().get(0).path().startsWith("some/thing/else/My Documents"));
     }
   }
 }
