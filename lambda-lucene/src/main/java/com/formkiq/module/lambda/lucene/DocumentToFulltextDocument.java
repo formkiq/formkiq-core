@@ -66,6 +66,14 @@ public class DocumentToFulltextDocument
       }
     }
 
+    if (document.containsKey("path")) {
+      String[] ss = document.get("path").toString().split("/");
+      if (ss.length > 1) {
+        String s = Arrays.asList(ss).stream().collect(Collectors.joining(" "));
+        sb.append(s);
+      }
+    }
+
     List<String> metadata =
         document.entrySet().stream().filter(e -> e.getKey().startsWith(PREFIX_DOCUMENT_METADATA))
             .map(e -> e.getValue().toString()).collect(Collectors.toList());

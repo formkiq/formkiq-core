@@ -60,7 +60,6 @@ class LuceneProcessorTest {
 
   @BeforeAll
   public static void beforeAll() {
-    // String tmpdir = System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID();
     processor = new LuceneProcessor(Map.of("TYPESENSE_HOST",
         "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY));
     service =
@@ -113,5 +112,26 @@ class LuceneProcessorTest {
 
     documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
     assertEquals(0, documents.size());
+  }
+
+  /**
+   * Modify records.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest02() throws Exception {
+    // given
+    String siteId = null;
+    String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
+    Map<String, Object> map = loadRequest("/modify.json");
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+    assertEquals(1, documents.size());
+    assertEquals(documentId, documents.get(0));
   }
 }
