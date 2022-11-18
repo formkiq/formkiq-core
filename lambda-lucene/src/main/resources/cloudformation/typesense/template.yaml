@@ -159,6 +159,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
       
   LuceneLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
