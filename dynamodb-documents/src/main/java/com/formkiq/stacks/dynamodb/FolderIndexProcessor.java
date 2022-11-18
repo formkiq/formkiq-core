@@ -40,10 +40,10 @@ public interface FolderIndexProcessor {
 
   /** Deliminator. */
   String DELIMINATOR = "/";
-  /** Index Folder SK. */
-  String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
   /** Index File SK. */
   String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
+  /** Index Folder SK. */
+  String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
   /**
    * Delete Empty Directory.
@@ -54,6 +54,15 @@ public interface FolderIndexProcessor {
    * @return boolean
    */
   boolean deleteEmptyDirectory(String siteId, String parentId, String path);
+
+  /**
+   * Delete Index Path.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param path {@link String}
+   */
+  void deletePath(String siteId, String documentId, String path);
 
   /**
    * Generates DynamoDB {@link WriteRequest} for Index.

@@ -829,4 +829,38 @@ public class DocumentSearchServiceImplTest {
       assertEquals("abc.pdf", list.get(i++).getPath());
     }
   }
+
+  /** Save document twice and change path make sure only 1 result. */
+  @Test
+  public void testSearch17() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("/a/b/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      doc0.setPath("/c/b/test3.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      PaginationMapToken startkey = null;
+      String folder = "";
+      SearchMetaCriteria meta = new SearchMetaCriteria();
+      SearchQuery q = new SearchQuery().meta(meta.folder(folder));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(2, list.size());
+      assertEquals("a", list.get(0).getPath());
+      assertEquals("c", list.get(1).getPath());
+
+      meta.folder("a/b");
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      list = results.getResults();
+      assertEquals(0, list.size());
+    }
+  }
 }

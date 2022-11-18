@@ -995,6 +995,20 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
+   * Is Document Path Changed.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   * @return boolean
+   */
+  private boolean isPathChanges(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
+    String path0 = previous.containsKey("path") ? previous.get("path").s() : "";
+    String path1 = current.containsKey("path") ? current.get("path").s() : "";
+    return !path1.equals(path0) && !"".equals(path0);
+  }
+
+  /**
    * Query Documents by Primary Key.
    * 
    * @param siteId DynamoDB PK siteId
@@ -1261,6 +1275,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (!documentExists) {
       renameDuplicateDocumentIfNeeded(document.getDocumentId(), documentValues, folderIndex);
+    } else if (isPathChanges(previous, documentValues)) {
+      this.folderIndexProcessor.deletePath(siteId, document.getDocumentId(),
+          previous.get("path").s());
     }
 
     // update top level directory

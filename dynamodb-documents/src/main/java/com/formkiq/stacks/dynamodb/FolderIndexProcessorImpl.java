@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -208,20 +209,26 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return deleted;
   }
 
-  private boolean hasFiles(final String siteId, final String documentId) {
+  @Override
+  public void deletePath(final String siteId, final String documentId, final String path) {
 
-    String pk = getPk(siteId, documentId);
-    String expression = PK + " = :pk";
+    try {
+      String[] folders = tokens(path);
 
-    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.fromS(pk));
+      Map<String, Map<String, String>> map = generateFileKeys(siteId, path, folders, documentId);
 
-    QueryRequest q =
-        QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).limit(Integer.valueOf(1)).build();
+      List<Map<String, String>> files =
+          map.entrySet().stream().filter(f -> "file".equals(f.getValue().get("type")))
+              .map(e -> e.getValue()).collect(Collectors.toList());
 
-    QueryResponse response = this.dbClient.query(q);
+      for (Map<String, String> file : files) {
+        this.dynamoDb.deleteItem(AttributeValue.fromS(file.get(PK)),
+            AttributeValue.fromS(file.get(SK)));
+      }
 
-    return !response.items().isEmpty();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   private Map<String, Map<String, String>> generateFileKeys(final String siteId, final String path,
@@ -389,6 +396,22 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
   private String getSk(final String folder, final boolean isFile) {
     return isFile ? INDEX_FILE_SK + folder.toLowerCase() : INDEX_FOLDER_SK + folder.toLowerCase();
+  }
+
+  private boolean hasFiles(final String siteId, final String documentId) {
+
+    String pk = getPk(siteId, documentId);
+    String expression = PK + " = :pk";
+
+    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.fromS(pk));
+
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).limit(Integer.valueOf(1)).build();
+
+    QueryResponse response = this.dbClient.query(q);
+
+    return !response.items().isEmpty();
   }
 
   /**
