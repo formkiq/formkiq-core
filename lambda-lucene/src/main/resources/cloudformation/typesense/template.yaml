@@ -397,7 +397,7 @@ Resources:
       SecurityGroups:
       - Fn::ImportValue:
           Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
-
+    
   ApiGateway:
     Type: AWS::ApiGatewayV2::Api
     Condition: CreateResources
@@ -422,7 +422,7 @@ Resources:
         Fn::GetAtt:
           - CloudMapService
           - Arn
-      PayloadFormatVersion: 1.0
+      PayloadFormatVersion: "1.0"
 
   Stage:
     Type: AWS::ApiGatewayV2::Stage
@@ -439,6 +439,7 @@ Resources:
     Properties:
       ApiId: 
         Ref: ApiGateway
+      AuthorizationType: AWS_IAM
       RouteKey: $default
       Target: 
         Fn::Sub: integrations/${Integration}
