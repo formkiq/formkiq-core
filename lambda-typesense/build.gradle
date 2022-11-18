@@ -1,0 +1,102 @@
+description = "FormKiQ Core - Lambda TypeSense"
+
+def moduleName = "formkiq-module-lambda-typesense"
+
+dependencies {
+
+ 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.2.0'
+ 
+	implementation project(':aws-dynamodb')
+	implementation project(':typesense')
+	implementation project(':http')
+	
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.1'
+    
+	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
+    
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.2'
+	testImplementation project(':fkq-test-utils')
+
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.3'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.3'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.3'
+}
+
+compileJava {
+    options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage { 
+	outputFileName = "server"
+	javaVersion = "java11"
+	imageVersion = "21.3.0"
+	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+    enableHttp = true
+    enableHttps = true
+    enableDocker = true
+	reflectionConfig = "$buildDir/classes/java/main/META-INF/graal/reflect.json"
+	systemProperty = ["java.net.preferIPv4Stack=true"]
+}
+
+test {
+  failFast = true
+  exclude 'com/formkiq/module/lambda/typesense/awstest/**'
+  useJUnitPlatform()
+}
+
+task testaws(type: Test) {
+  description = 'Runs AWS integration tests.'
+  outputs.upToDateWhen {false}
+  include 'com/formkiq/module/lambda/typesense/awstest/**'    
+}
+
+task buildLambdaZip(type: Zip) {
+	dependsOn test, graalvmNativeImage
+	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
+  outputs.files("${buildDir}/${moduleName}-graalvm.zip")
+    
+	archiveFileName = "${moduleName}-graalvm.zip"
+    destinationDirectory = file("${buildDir}")
+    from("${project.projectDir}/runtime") {
+        include 'bootstrap'
+    }
+    from("${buildDir}/graalvm") {
+        include 'server'
+    }
+}
+
+task buildJava11Zip(type: Zip) {
+    from compileJava
+    into('lib') {
+        from configurations.default
+    }           
+}
+
+task copyLambda(type: Copy) {
+  dependsOn buildLambdaZip
+  outputs.upToDateWhen {false}
+  from buildLambdaZip.outputs.files.singleFile
+  into "${buildDir}/distributions/${moduleName}/sam/typesense"
+}
+
+task assembleTemplate {
+	dependsOn copyLambda
+  outputs.upToDateWhen { false }
+  
+	def randomtext = ('0'..'z').shuffled().take(10).join();
+	def sha256 = randomtext.digest('SHA-256')
+	
+  	doLast {
+		exec {
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/${moduleName}/sam/typesense/template.yaml"
+		}
+	}
+}
+
+buildJava11Zip.dependsOn jar
+
+graalvmNativeImage.dependsOn check
+build.dependsOn assembleTemplate

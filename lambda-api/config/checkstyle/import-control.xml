@@ -41,8 +41,6 @@
 	<subpackage name="stacks">
 		<subpackage name="api">
 		
-			<allow pkg="org.apache.lucene.analysis.tokenattributes" />
-			<allow pkg="org.apache.lucene.search" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			<allow pkg="com.amazonaws.xray" />
 			
@@ -82,7 +80,6 @@
 				
 				<allow pkg="com.formkiq.module.typesense" />
 				<allow pkg="com.formkiq.aws.services.lambda" />
-				<allow pkg="com.formkiq.module.lucene" />
 				<allow pkg="com.formkiq.stacks.api" />
 				<allow pkg="com.formkiq.stacks.common.formats" />
 				<allow pkg="com.formkiq.stacks.common.objects" />

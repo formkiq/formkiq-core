@@ -1,0 +1,468 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Typesense
+    
+Parameters:
+  
+  Image:
+    Type: String
+    Description: Version of Typesense to deploy
+    Default: "typesense/typesense:0.23.1"
+    
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 1024
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 60
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "enterprise"]
+
+  TypeSenseApiKey:
+    Type: String
+    Description: TypeSense API Key
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+
+  ECSCluster:
+    Type: String
+    Description: Reference to the ECSCluster
+    
+Conditions:
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypeSenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypeSenseApiKey
+        - ''
+        
+  CreateResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypeSenseApiKey
+
+  NotCreateResources: 
+    Fn::Not:
+      - Condition: CreateResources
+
+Resources:
+      
+  TypesenseProcessor:
+    Type: AWS::Serverless::Function
+    Condition: CreateResources
+    DependsOn:
+    - TypesenseLambdaRolePolicy
+    Properties:
+      Handler: com.formkiq.module.lambda.typesense.TypesenseProcessor
+      Description: Lambda function to add DynamoDB records to Typesense
+      Runtime: provided
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./formkiq-module-lambda-typesense-graalvm.zip
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      ReservedConcurrentExecutions: 1
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false  
+          FormKiQType:
+            Ref: FormKiQType
+          TYPESENSE_HOST:
+            Fn::If:
+            - CreateResources
+            - Fn::GetAtt:
+              - ApiGateway
+              - ApiEndpoint
+            - ""
+          TYPESENSE_API_KEY:
+            Ref: TypeSenseApiKey
+      Role: 
+        Fn::GetAtt:
+        - TypesenseLambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  TypesenseProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Condition: CreateResources
+    Properties:
+      Description: "Lambda for processing records for Typesense"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/TypesenseProcessor"
+      Type: String
+      Value: 
+        Ref: TypesenseProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  TypesenseLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: CreateResources
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      
+  TypesenseLambdaRolePolicy: 
+    Type: "AWS::IAM::Policy"
+    Condition: CreateResources
+    Properties: 
+      PolicyName: Typesense-lambdarole
+      Roles: 
+        - 
+          Ref: "TypesenseLambdaRole"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - dynamodb:DescribeStream
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+            Resource: 
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
+
+  TypesenseTableStream:
+    Type: AWS::Lambda::EventSourceMapping
+    Condition: CreateResources
+    Properties:
+      Enabled: True
+      EventSourceArn:
+        Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn}}"
+      FunctionName:
+        Fn::GetAtt:
+        - TypesenseProcessor
+        - Arn      
+      StartingPosition: LATEST
+      
+  Service:
+    Type: AWS::ECS::Service
+    Condition: CreateResources
+    Properties:
+      Cluster:
+        Ref: ECSCluster
+      ServiceName: typesense
+      TaskDefinition: 
+        Ref: TaskDefinition
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 0
+        MaximumPercent: 100
+      DesiredCount: 1
+      ServiceRegistries:
+        - RegistryArn:
+            Fn::GetAtt:
+            - CloudMapService
+            - Arn
+          Port: 8108
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            Fn::Split:
+              - ","
+              - Fn::ImportValue:
+                  Fn::Sub: '${VpcStackName}-PublicSubnets'
+          SecurityGroups:
+            - Ref: FargateSecurityGroup
+
+  FargateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateResources
+    Properties:
+      GroupDescription: Typesense Security Group
+      VpcId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-Vpc'
+      SecurityGroupIngress:
+        - SourceSecurityGroupId:
+            Fn::ImportValue:
+              Fn::Sub: '${VpcStackName}-VpcLinkSecurityGroup'
+          FromPort: 8108
+          ToPort: 8108
+          IpProtocol: tcp
+        - IpProtocol: tcp
+          FromPort: 8108
+          ToPort: 8108
+          CidrIp: 0.0.0.0/0
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateResources
+    Properties:
+      Family: typesense
+      Cpu: 512
+      Memory: 1024
+      NetworkMode: awsvpc
+      TaskRoleArn:
+        Ref: TaskRole
+      ExecutionRoleArn: 
+        Ref: ExecutionRole
+      RequiresCompatibilities: 
+        - FARGATE
+      Volumes:
+        - Name: typesense
+          EFSVolumeConfiguration:
+            FilesystemId: 
+              Ref: EfsVolume
+            TransitEncryption: ENABLED
+      ContainerDefinitions:
+        - Name: 
+            Fn::Sub: "FormKiQ_Typesense_${AppEnvironment}"
+          Image: 
+            Ref: Image
+          Environment:
+            - Name: TYPESENSE_DATA_DIR
+              Value: /data
+            - Name: TYPESENSE_API_KEY
+              Value: 
+                Ref: TypeSenseApiKey
+          MountPoints:
+            - SourceVolume: typesense
+              ContainerPath: '/data'
+              ReadOnly: false
+          PortMappings:
+            - ContainerPort: 8108
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: true
+              awslogs-group: "typsense"
+              awslogs-region: 
+                Fn::Sub: "${AWS::Region}"
+              awslogs-stream-prefix: "typesense"
+
+  CloudMapService:
+    Type: AWS::ServiceDiscovery::Service
+    Condition: CreateResources
+    Properties:
+      NamespaceId:
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-CloudMapNamespace'
+      Name: 
+        Fn::Sub: "FormKiQ_Typesense_${AppEnvironment}"
+      DnsConfig:
+        DnsRecords:
+          - Type: SRV
+            TTL: 60
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Condition: CreateResources
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: sts:AssumeRole
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: CreateResources
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        -
+          PolicyName: 
+            Fn::Sub: "${AWS::StackName}-FargateExecutionPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+              
+  EfsVolume:
+    Type: AWS::EFS::FileSystem
+    Condition: CreateResources
+    Properties:
+      Encrypted: true
+      FileSystemTags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}-typesense"
+
+  MountTargetResource1:
+    Type: AWS::EFS::MountTarget
+    Condition: CreateResources
+    Properties:
+      FileSystemId: 
+        Ref: EfsVolume
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet1'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+
+  MountTargetResource2:
+    Type: AWS::EFS::MountTarget
+    Condition: CreateResources
+    Properties:
+      FileSystemId: 
+        Ref: EfsVolume
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet2'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+          
+  MountTargetResource3:
+    Type: AWS::EFS::MountTarget
+    Condition: CreateResources
+    Properties:
+      FileSystemId: 
+        Ref: EfsVolume
+      SubnetId: 
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-PublicSubnet3'
+      SecurityGroups:
+      - Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-NfsSecurityGroup'
+    
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Condition: CreateResources
+    Properties:
+      ProtocolType: HTTP
+      Name:
+        Fn::Sub: "${AWS::StackName} Typesense - ${AppEnvironment}"
+
+  Integration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: CreateResources
+    Properties:
+      ApiId: 
+        Ref: ApiGateway
+      ConnectionId:
+        Fn::ImportValue:
+          Fn::Sub: '${VpcStackName}-VpcLink'
+      ConnectionType: VPC_LINK
+      IntegrationMethod: ANY
+      IntegrationType: HTTP_PROXY
+      IntegrationUri: 
+        Fn::GetAtt:
+          - CloudMapService
+          - Arn
+      PayloadFormatVersion: "1.0"
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Condition: CreateResources
+    Properties:
+      ApiId: 
+        Ref: ApiGateway
+      StageName: $default
+      AutoDeploy: true
+
+  Route:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: CreateResources
+    Properties:
+      ApiId: 
+        Ref: ApiGateway
+      AuthorizationType: AWS_IAM
+      RouteKey: $default
+      Target: 
+        Fn::Sub: integrations/${Integration}
+
+Outputs:
+
+  CloudMapServiceArn:
+    Description: Cloud Map Service
+    Value:
+      Fn::If:
+      - CreateResources
+      - Fn::GetAtt:
+          - CloudMapService
+          - Arn
+      - ""
+    
+  TypesenseApiEndpoint:
+    Description: Typesense API Endpoint
+    Value:
+      Fn::If:
+      - CreateResources
+      - Fn::GetAtt:
+          - ApiGateway
+          - ApiEndpoint
+      - ""

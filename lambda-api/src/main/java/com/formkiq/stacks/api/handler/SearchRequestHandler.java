@@ -217,7 +217,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   }
 
   /**
-   * Query Lucene or DynamoDb.
+   * Query Typesense or DynamoDb.
    * 
    * @param awsservice {@link AwsServiceCache}
    * @param documentSearchService {@link DocumentSearchService}

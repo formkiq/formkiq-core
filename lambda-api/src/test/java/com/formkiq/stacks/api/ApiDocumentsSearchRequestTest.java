@@ -45,9 +45,9 @@ import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.lambda.lucene.DocumentMapToDocument;
-import com.formkiq.module.lambda.lucene.DocumentToFulltextDocument;
-import com.formkiq.module.lambda.lucene.LuceneProcessor;
+import com.formkiq.module.lambda.typesense.DocumentMapToDocument;
+import com.formkiq.module.lambda.typesense.DocumentToFulltextDocument;
+import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -79,8 +79,8 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
     document = this.fulltext.apply(document);
 
-    LuceneProcessor processor =
-        new LuceneProcessor(getMap(), AwsBasicCredentials.create("asd", path));
+    TypesenseProcessor processor =
+        new TypesenseProcessor(getMap(), AwsBasicCredentials.create("asd", path));
     processor.addOrUpdate(siteId, item.getDocumentId(), document);
   }
 
