@@ -68,6 +68,8 @@ import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -225,7 +227,8 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    AbstractCoreRequestHandler.configureHandler(prop, null,
+    AwsCredentials creds = AwsBasicCredentials.create("asd", "asd");
+    AbstractCoreRequestHandler.configureHandler(prop, creds,
         DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(null),
         TestServices.getSsmConnection(null), TestServices.getSqsConnection(null),
         new DocumentTagSchemaPluginEmpty());

@@ -34,6 +34,9 @@
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="com.formkiq.module.typesense" />
 
+			<allow pkg="software.amazon.awssdk.auth.credentials" />
+			<allow pkg="software.amazon.awssdk.regions" />
+
 		</subpackage>
 	</subpackage>
 	

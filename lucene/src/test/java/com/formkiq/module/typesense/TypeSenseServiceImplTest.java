@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -48,8 +49,8 @@ class TypeSenseServiceImplTest {
 
   @BeforeEach
   public void beforeEach() {
-    this.service =
-        new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY);
+    this.service = new TypeSenseServiceImpl(
+        "http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY, Region.US_EAST_1, null);
   }
 
   /**

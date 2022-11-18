@@ -63,6 +63,8 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -241,9 +243,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         throw new BadException("Fulltext search is not Enabled");
       }
 
+      Region region = Region.of(awsservice.environment("AWS_REGION"));
+
+      AwsCredentials awsCredentials = awsservice.getExtension(AwsCredentials.class);
       DocumentService docService = awsservice.getExtension(DocumentService.class);
       TypeSenseService ts = new TypeSenseServiceImpl(awsservice.environment("TYPESENSE_HOST"),
-          awsservice.environment("TYPESENSE_API_KEY"));
+          awsservice.environment("TYPESENSE_API_KEY"), region, awsCredentials);
 
       List<String> documentIds = ts.searchFulltext(siteId, text, limit);
 

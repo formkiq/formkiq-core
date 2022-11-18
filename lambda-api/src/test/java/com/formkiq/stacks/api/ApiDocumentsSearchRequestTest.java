@@ -54,6 +54,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 
 /** Unit Tests for request /search. */
 @ExtendWith(TypeSenseExtension.class)
@@ -78,7 +79,8 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
     document = this.fulltext.apply(document);
 
-    LuceneProcessor processor = new LuceneProcessor(getMap());
+    LuceneProcessor processor =
+        new LuceneProcessor(getMap(), AwsBasicCredentials.create("asd", path));
     processor.addOrUpdate(siteId, item.getDocumentId(), document);
   }
 

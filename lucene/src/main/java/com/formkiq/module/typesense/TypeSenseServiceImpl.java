@@ -26,19 +26,21 @@ package com.formkiq.module.typesense;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
-import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.http.JsonService;
 import com.formkiq.module.http.JsonServiceGson;
+import com.formkiq.module.httpsigv4.HttpServiceSigv4;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -55,19 +57,26 @@ public class TypeSenseServiceImpl implements TypeSenseService {
   private JsonService json = new JsonServiceGson();
   /** {@link HttpService}. */
   private HttpService service;
+  /** {@link Map}. */
+  private Map<String, String> additionalHeaders = Collections.emptyMap();
 
   /**
    * constructor.
    * 
    * @param hostAddress {@link String}
    * @param typeSenseApiKey {@link String}
+   * @param region {@link Region}
+   * @param awsCredentials {@link AwsCredentials}
    */
-  public TypeSenseServiceImpl(final String hostAddress, final String typeSenseApiKey) {
+  public TypeSenseServiceImpl(final String hostAddress, final String typeSenseApiKey,
+      final Region region, final AwsCredentials awsCredentials) {
+
     if (hostAddress == null || typeSenseApiKey == null) {
       throw new IllegalArgumentException();
     }
 
-    this.service = new HttpServiceJdk11();
+    this.service = new HttpServiceSigv4(region, awsCredentials);
+    // this.service = new HttpServiceJdk11();
     this.host = hostAddress;
     this.apiKey = typeSenseApiKey;
   }
@@ -82,8 +91,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response =
-        this.service.post(url, headers, BodyPublishers.ofString(payload));
+    HttpResponse<String> response = this.service.post(url, Optional.of(headers), payload);
 
     return response;
   }
@@ -104,7 +112,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response =
-        this.service.post(url, headers, BodyPublishers.ofString(this.json.toJson(payload)));
+        this.service.post(url, Optional.of(headers), this.json.toJson(payload));
 
     return response;
   }
@@ -119,12 +127,9 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response = this.service.delete(url, headers);
+    HttpResponse<String> response = this.service.delete(url, Optional.of(headers));
 
     return response;
-    // if (!is2XX(response)) {
-    // throw new IOException(response.body());
-    // }
   }
 
   private String encode(final String s) {
@@ -143,6 +148,11 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
   private HttpHeaders getHeader() {
     HttpHeaders headers = new HttpHeaders().add("X-TYPESENSE-API-KEY", this.apiKey);
+
+    for (Map.Entry<String, String> e : this.additionalHeaders.entrySet()) {
+      headers.add(e.getKey(), e.getValue());
+    }
+
     return headers;
   }
 
@@ -158,7 +168,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response = this.service.get(url, headers);
+    HttpResponse<String> response = this.service.get(url, Optional.of(headers));
 
     if (!is2XX(response)) {
       throw new IOException(response.body());
@@ -191,11 +201,8 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response =
-        this.service.patch(url, headers, BodyPublishers.ofString(this.json.toJson(data)));
+        this.service.patch(url, Optional.of(headers), this.json.toJson(data));
 
     return response;
-    // if (!is2XX(response)) {
-    // throw new IOException(response.body());
-    // }
   }
 }

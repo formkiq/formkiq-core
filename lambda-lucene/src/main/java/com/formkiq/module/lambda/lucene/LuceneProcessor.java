@@ -46,6 +46,9 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestHandler} for handling DynamoDb to Lucene Processor. */
 @Reflectable
@@ -99,17 +102,21 @@ public class LuceneProcessor implements RequestHandler<Map<String, Object>, Void
    * 
    */
   public LuceneProcessor() {
-    this(System.getenv());
+    this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials());
   }
 
   /**
    * constructor.
    *
    * @param map {@link Map}
+   * @param credentials {@link AwsCredentials}
    */
-  public LuceneProcessor(final Map<String, String> map) {
-    this.typeSenseService =
-        new TypeSenseServiceImpl(map.get("TYPESENSE_HOST"), map.get("TYPESENSE_API_KEY"));
+  public LuceneProcessor(final Map<String, String> map, final AwsCredentials credentials) {
+
+    Region region = Region.of(map.get("AWS_REGION"));
+
+    this.typeSenseService = new TypeSenseServiceImpl(map.get("TYPESENSE_HOST"),
+        map.get("TYPESENSE_API_KEY"), region, credentials);
     this.debug = "true".equals(map.get("DEBUG"));
   }
 

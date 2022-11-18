@@ -24,8 +24,8 @@
 package com.formkiq.module.http;
 
 import java.io.IOException;
-import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 
 /**
  * 
@@ -42,7 +42,7 @@ public interface HttpService {
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> delete(String url, HttpHeaders headers) throws IOException;
+  HttpResponse<String> delete(String url, Optional<HttpHeaders> headers) throws IOException;
 
   /**
    * GET HTTP Request and return a {@link String}.
@@ -52,18 +52,18 @@ public interface HttpService {
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> get(String url, HttpHeaders headers) throws IOException;
+  HttpResponse<String> get(String url, Optional<HttpHeaders> headers) throws IOException;
 
   /**
    * Patch HTTP Request and return a {@link String}.
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
-   * @param payload {@link BodyPublisher}
+   * @param payload {@link String}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> patch(String url, HttpHeaders headers, BodyPublisher payload)
+  HttpResponse<String> patch(String url, Optional<HttpHeaders> headers, String payload)
       throws IOException;
 
   /**
@@ -71,10 +71,10 @@ public interface HttpService {
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
-   * @param payload {@link BodyPublisher}
+   * @param payload {@link String}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> post(String url, HttpHeaders headers, BodyPublisher payload)
+  HttpResponse<String> post(String url, Optional<HttpHeaders> headers, String payload)
       throws IOException;
 }

@@ -29,9 +29,11 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublisher;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
-import java.util.Map;
 import java.net.http.HttpResponse;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * 
@@ -59,18 +61,20 @@ public class HttpServiceJdk11 implements HttpService {
    * @return {@link Builder}
    * @throws IOException IOException
    */
-  private Builder build(final String url, final HttpHeaders headers) throws IOException {
+  private Builder build(final String url, final Optional<HttpHeaders> headers) throws IOException {
     Builder builder = HttpRequest.newBuilder().uri(toUri(url));
 
-    for (Map.Entry<String, String> e : headers.getAll().entrySet()) {
-      builder.headers(e.getKey(), e.getValue());
+    if (headers.isPresent()) {
+      for (Map.Entry<String, String> e : headers.get().getAll().entrySet()) {
+        builder.headers(e.getKey(), e.getValue());
+      }
     }
 
     return builder;
   }
 
   @Override
-  public HttpResponse<String> delete(final String url, final HttpHeaders headers)
+  public HttpResponse<String> delete(final String url, final Optional<HttpHeaders> headers)
       throws IOException {
     HttpRequest request = build(url, headers).DELETE().build();
     try {
@@ -81,7 +85,8 @@ public class HttpServiceJdk11 implements HttpService {
   }
 
   @Override
-  public HttpResponse<String> get(final String url, final HttpHeaders headers) throws IOException {
+  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers)
+      throws IOException {
     HttpRequest request = build(url, headers).GET().build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -92,9 +97,14 @@ public class HttpServiceJdk11 implements HttpService {
 
 
   @Override
-  public HttpResponse<String> patch(final String url, final HttpHeaders headers,
-      final BodyPublisher payload) throws IOException {
-    HttpRequest request = build(url, headers).method("PATCH", payload).build();
+  public HttpResponse<String> patch(final String url, final Optional<HttpHeaders> headers,
+      final String payload) throws IOException {
+
+    BodyPublisher body =
+        payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
+
+    HttpRequest request = build(url, headers).method("PATCH", body).build();
+
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {
@@ -104,9 +114,12 @@ public class HttpServiceJdk11 implements HttpService {
 
 
   @Override
-  public HttpResponse<String> post(final String url, final HttpHeaders headers,
-      final BodyPublisher payload) throws IOException {
-    HttpRequest request = build(url, headers).POST(payload).build();
+  public HttpResponse<String> post(final String url, final Optional<HttpHeaders> headers,
+      final String payload) throws IOException {
+
+    BodyPublisher body =
+        payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
+    HttpRequest request = build(url, headers).POST(body).build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {

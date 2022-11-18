@@ -39,6 +39,8 @@ import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.TypeSenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.utils.IoUtils;
 
 /**
@@ -60,10 +62,13 @@ class LuceneProcessorTest {
 
   @BeforeAll
   public static void beforeAll() {
-    processor = new LuceneProcessor(Map.of("TYPESENSE_HOST",
-        "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY));
-    service =
-        new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY);
+    AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
+    processor = new LuceneProcessor(
+        Map.of("AWS_REGION", "us-east-1", "TYPESENSE_HOST",
+            "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY),
+        cred);
+    service = new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(),
+        API_KEY, Region.US_EAST_1, cred);
   }
 
   /** {@link Context}. */

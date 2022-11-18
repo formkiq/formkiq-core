@@ -14,6 +14,9 @@
 		<allow pkg="java.nio.charset" />
 		
 		<allow pkg="com.formkiq.module.http" />
+		<allow pkg="com.formkiq.module.httpsigv4" />
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.regions" />
 	</subpackage>
 	
 	<subpackage name="lucene">

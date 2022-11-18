@@ -180,6 +180,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
       final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
       final DocumentTagSchemaPlugin schemaEvents) {
 
+    AwsServiceCache.register(AwsCredentials.class, new ClassServiceExtension<>(creds));
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(db));
     AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
