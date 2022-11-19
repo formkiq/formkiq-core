@@ -186,14 +186,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String documentsBucket;
   /** IAM Documents Url. */
   private String documentsIamUrl = null;
-  /** {@link ActionsNotificationService}. */
-  private ActionsNotificationService notificationService;
   /** {@link FormKiqClient}. */
   private FormKiqClientV1 formkiqClient = null;
-  /** SNS Document Event Arn. */
-  private String snsDocumentEvent;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+  /** {@link ActionsNotificationService}. */
+  private ActionsNotificationService notificationService;
   /** {@link Region}. */
   private Region region;
   /** {@link S3Service}. */
@@ -202,6 +200,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private DocumentSearchService searchService;
   /** {@link DocumentService}. */
   private DocumentService service;
+  /** SNS Document Event Arn. */
+  private String snsDocumentEvent;
   /** SQS Error Queue. */
   private String sqsErrorQueue;
   /** {@link SqsService}. */
@@ -287,65 +287,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         obj.setContentLength(Long.valueOf(contentLength));
       }
 
-      if (obj.containsKey("insertedDate")) {
-
-        SimpleDateFormat f = DateUtil.getIsoDateFormatter();
-
-        try {
-          obj.setInsertedDate(f.parse(obj.getString("insertedDate")));
-        } catch (ParseException e) {
-          obj.setInsertedDate(new Date());
-        }
-
-      } else {
-        obj.setInsertedDate(new Date());
-      }
+      Date insertedDate = getDate(obj, "insertedDate");
+      obj.setInsertedDate(insertedDate);
+      obj.setLastModifiedDate(null);
 
       if (obj.getPath() != null && obj.getPath().contains(VIRTUAL_FOLDER_DELIM)) {
         String realDocumentId = getDocumentIdForPath(siteId, obj.getPath());
         obj.setDocumentId(realDocumentId);
       }
-    }
-
-    return obj;
-  }
-
-  /**
-   * Loads Document from Bucket / DB.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param bucket {@link String}
-   * @param siteId {@link String}
-   * @param s3Key {@link String}
-   * @return {@link DynamicDocumentItem}
-   */
-  @SuppressWarnings("unchecked")
-  private DynamicDocumentItem loadDocument(final LambdaLogger logger, final String bucket,
-      final String siteId, final String s3Key) {
-
-    String s = this.s3.getContentAsString(bucket, s3Key, null);
-
-    if ("true".equals(System.getenv("DEBUG"))) {
-      logger.log(s);
-    }
-
-    DynamicDocumentItem obj = null;
-
-    Map<String, Object> map = this.gson.fromJson(s, Map.class);
-    DynamicDocumentItem objFromMap = new DynamicDocumentItem(map);
-
-    String documentId = objFromMap.getDocumentId();
-    DocumentItem item = this.service.findDocument(siteId, documentId);
-
-    if (item != null) {
-      obj = new DocumentItemToDynamicDocumentItem().apply(item);
-      obj.put("existingDocument", Boolean.TRUE);
-    }
-
-    if (obj != null) {
-      obj.putAll(objFromMap);
-    } else {
-      obj = objFromMap;
     }
 
     return obj;
@@ -493,6 +442,27 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.s3.deleteObject(bucket, key);
   }
 
+  private Date getDate(final DynamicDocumentItem obj, final String key) {
+
+    Date date = null;
+
+    if (obj.containsKey(key)) {
+
+      SimpleDateFormat f = DateUtil.getIsoDateFormatter();
+
+      try {
+        date = f.parse(obj.getString(key));
+      } catch (ParseException e) {
+        date = new Date();
+      }
+
+    } else {
+      date = new Date();
+    }
+
+    return date;
+  }
+
   /**
    * Find DocumentId for File Path.
    * 
@@ -539,6 +509,47 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
 
     return null;
+  }
+
+  /**
+   * Loads Document from Bucket / DB.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param bucket {@link String}
+   * @param siteId {@link String}
+   * @param s3Key {@link String}
+   * @return {@link DynamicDocumentItem}
+   */
+  @SuppressWarnings("unchecked")
+  private DynamicDocumentItem loadDocument(final LambdaLogger logger, final String bucket,
+      final String siteId, final String s3Key) {
+
+    String s = this.s3.getContentAsString(bucket, s3Key, null);
+
+    if ("true".equals(System.getenv("DEBUG"))) {
+      logger.log(s);
+    }
+
+    DynamicDocumentItem obj = null;
+
+    Map<String, Object> map = this.gson.fromJson(s, Map.class);
+    DynamicDocumentItem objFromMap = new DynamicDocumentItem(map);
+
+    String documentId = objFromMap.getDocumentId();
+    DocumentItem item = this.service.findDocument(siteId, documentId);
+
+    if (item != null) {
+      obj = new DocumentItemToDynamicDocumentItem().apply(item);
+      obj.put("existingDocument", Boolean.TRUE);
+    }
+
+    if (obj != null) {
+      obj.putAll(objFromMap);
+    } else {
+      obj = objFromMap;
+    }
+
+    return obj;
   }
 
   /**

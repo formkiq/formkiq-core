@@ -29,6 +29,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.FolderIndexProcessor.INDEX_FILE_SK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -867,24 +868,53 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return date != null ? date : defaultDate;
   }
 
+  private Date getPreviousInsertedDate(final Map<String, AttributeValue> previous) {
+
+    Date date = null;
+    AttributeValue insertedDate = previous.get("inserteddate");
+    if (insertedDate != null) {
+      try {
+        date = this.df.parse(insertedDate.s());
+      } catch (ParseException e) {
+        // ignore
+      }
+    }
+
+    return date;
+  }
+
   /**
    * Save {@link DocumentItemDynamoDb}.
    * 
    * @param keys {@link Map}
    * @param siteId DynamoDB PK siteId
    * @param document {@link DocumentItem}
+   * @param previous {@link Map}
    * @param options {@link SaveDocumentOptions}
+   * @param documentExists boolean
    * @return {@link Map}
    */
   private Map<String, AttributeValue> getSaveDocumentAttributes(
       final Map<String, AttributeValue> keys, final String siteId, final DocumentItem document,
-      final SaveDocumentOptions options) {
+      final Map<String, AttributeValue> previous, final SaveDocumentOptions options,
+      final boolean documentExists) {
+
+    Date previousInsertedDate = getPreviousInsertedDate(previous);
 
     Date insertedDate = getDateOrNow(document.getInsertedDate(), new Date());
+    if (previousInsertedDate != null) {
+      insertedDate = previousInsertedDate;
+    }
+
     document.setInsertedDate(insertedDate);
 
     Date lastModifiedDate = getDateOrNow(document.getLastModifiedDate(), insertedDate);
+    if (documentExists) {
+      lastModifiedDate = new Date();
+    }
     document.setLastModifiedDate(lastModifiedDate);
+    System.out
+        .println("INSERT: " + document.getInsertedDate() + " " + document.getLastModifiedDate());
 
     String shortdate = this.yyyymmddFormat.format(insertedDate);
     String fullInsertedDate = this.df.format(insertedDate);
@@ -1268,7 +1298,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> documentValues = new HashMap<>(previous);
     Map<String, AttributeValue> current =
-        getSaveDocumentAttributes(keys, siteId, document, options);
+        getSaveDocumentAttributes(keys, siteId, document, previous, options, documentExists);
     documentValues.putAll(current);
 
     removeNullMetadata(document, documentValues);

@@ -1187,6 +1187,8 @@ public class StagingS3CreateTest implements DbKeys {
       byte[] content = gson.toJson(ditem).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
+      TimeUnit.SECONDS.sleep(1);
+
       // when
       handleRequest(map);
 
