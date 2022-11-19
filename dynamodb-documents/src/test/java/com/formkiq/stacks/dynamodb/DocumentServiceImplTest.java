@@ -1929,7 +1929,7 @@ public class DocumentServiceImplTest implements DbKeys {
       String path = "a/b/test.txt";
       String userId0 = "joe";
       String documentId0 = UUID.randomUUID().toString();
-      DocumentItem item0 = new DocumentItemDynamoDb(documentId0, new Date(), userId0);
+      DocumentItem item0 = new DocumentItemDynamoDb(documentId0, null, userId0);
       item0.setPath(path);
 
       // when
@@ -1940,7 +1940,7 @@ public class DocumentServiceImplTest implements DbKeys {
       TimeUnit.SECONDS.sleep(1);
 
       String documentId1 = UUID.randomUUID().toString();
-      DocumentItem item1 = new DocumentItemDynamoDb(documentId1, new Date(), userId0);
+      DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);
       item1.setPath(path);
       service.saveDocument(siteId, item1, null);
       final Date item1Date =

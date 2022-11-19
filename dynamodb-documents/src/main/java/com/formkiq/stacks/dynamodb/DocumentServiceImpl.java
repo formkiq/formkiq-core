@@ -857,6 +857,17 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
+   * Get {@link Date} or Now.
+   * 
+   * @param date {@link Date}
+   * @param defaultDate {@link Date}
+   * @return {@link Date}
+   */
+  private Date getDateOrNow(final Date date, final Date defaultDate) {
+    return date != null ? date : defaultDate;
+  }
+
+  /**
    * Save {@link DocumentItemDynamoDb}.
    * 
    * @param keys {@link Map}
@@ -869,13 +880,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Map<String, AttributeValue> keys, final String siteId, final DocumentItem document,
       final SaveDocumentOptions options) {
 
-    Date insertedDate = document.getInsertedDate();
-    String shortdate = insertedDate != null ? this.yyyymmddFormat.format(insertedDate) : null;
-    String fullInsertedDate = insertedDate != null ? this.df.format(insertedDate) : null;
+    Date insertedDate = getDateOrNow(document.getInsertedDate(), new Date());
+    document.setInsertedDate(insertedDate);
 
-    Date lastModifiedDate = document.getLastModifiedDate();
-    String fullLastModifiedDate =
-        lastModifiedDate != null ? this.df.format(lastModifiedDate) : fullInsertedDate;
+    Date lastModifiedDate = getDateOrNow(document.getLastModifiedDate(), insertedDate);
+    document.setLastModifiedDate(lastModifiedDate);
+
+    String shortdate = this.yyyymmddFormat.format(insertedDate);
+    String fullInsertedDate = this.df.format(insertedDate);
+    String fullLastModifiedDate = this.df.format(lastModifiedDate);
 
     Map<String, AttributeValue> pkvalues = new HashMap<>(keys);
 

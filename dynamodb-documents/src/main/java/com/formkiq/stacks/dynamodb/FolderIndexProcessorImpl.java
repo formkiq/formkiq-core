@@ -126,11 +126,12 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @param pk {@link String}
    * @param sk {@link String}
    * @param folder {@link String}
+   * @param insertedDate {@link Date}
    * @param userId {@link String}
    * @return {@link String}
    */
   private String createFolder(final String siteId, final String pk, final String sk,
-      final String folder, final String userId) {
+      final String folder, final Date insertedDate, final String userId) {
 
     String uuid;
 
@@ -140,7 +141,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         AttributeValue.builder().s(pk).build(), SK, AttributeValue.builder().s(sk).build(),
         "documentId", AttributeValue.builder().s(uuid).build()));
 
-    Date insertedDate = new Date();
     String fullInsertedDate = this.df.format(insertedDate);
     addS(values, "inserteddate", fullInsertedDate);
     addS(values, "lastModifiedDate", fullInsertedDate);
@@ -169,8 +169,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return uuid;
   }
 
-  private void createFolderPaths(final String siteId, final String[] folders, final String userId,
-      final boolean allDirectories) {
+  private void createFolderPaths(final String siteId, final String[] folders,
+      final Date insertedDate, final String userId, final boolean allDirectories) {
 
     int i = 0;
     String lastUuid = "";
@@ -181,7 +181,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       String sk = getSk(folder, false);
 
       if (allDirectories || !isFileToken(folder, i, len)) {
-        lastUuid = createFolder(siteId, pk, sk, folder, userId);
+        lastUuid = createFolder(siteId, pk, sk, folder, insertedDate, userId);
       }
 
       i++;
@@ -275,12 +275,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @param siteId {@link String}
    * @param path {@link String}
    * @param folders {@link String}
+   * @param insertedDate {@link Date}
    * @param userId {@link String}
    * @return {@link Map}
    * @throws IOException IOException
    */
   private Map<String, Map<String, String>> generateFileKeysAndCreatePaths(final String siteId,
-      final String path, final String[] folders, final String userId) throws IOException {
+      final String path, final String[] folders, final Date insertedDate, final String userId)
+      throws IOException {
 
     Map<String, Map<String, String>> destination;
 
@@ -288,7 +290,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       destination = generateFileKeys(siteId, path, folders, null);
     } catch (IOException e) {
       boolean allDirectories = path != null && path.endsWith("/");
-      createFolderPaths(siteId, folders, userId, allDirectories);
+      createFolderPaths(siteId, folders, insertedDate, userId, allDirectories);
       destination = generateFileKeys(siteId, path, folders, null);
     }
 
@@ -311,7 +313,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     } catch (IOException e) {
 
       boolean allDirectories = path != null && path.endsWith("/");
-      createFolderPaths(siteId, folders, item.getUserId(), allDirectories);
+      createFolderPaths(siteId, folders, item.getInsertedDate(), item.getUserId(), allDirectories);
 
       try {
         uuidMap = generateFileKeys(siteId, item.getPath(), folders, item.getDocumentId());
@@ -497,7 +499,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     String sourceType = sourceMap.get("type");
 
     Map<String, Map<String, String>> target =
-        generateFileKeysAndCreatePaths(siteId, targetPath, targetFolders, userId);
+        generateFileKeysAndCreatePaths(siteId, targetPath, targetFolders, new Date(), userId);
 
     Map<String, String> targetMap =
         !target.isEmpty() ? target.get(targetFolders[targetFolders.length - 1])
