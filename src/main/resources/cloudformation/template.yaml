@@ -71,6 +71,12 @@ Parameters:
     Description: (optional) Random string of characters for https://typesense.org API access 
     Default: ""
 
+  CapacityProvider:
+    Description: AWS Fargate capacity provider to use, either the FARGATE or FARGATE_SPOT 
+    Default: "FARGATE_SPOT"
+    Type: String
+    AllowedValues: ["FARGATE_SPOT", "FARGATE"]
+    
 Resources:
 
   EditionParameter:
@@ -382,7 +388,8 @@ Resources:
         - FARGATE
         - FARGATE_SPOT
       DefaultCapacityProviderStrategy:
-        - CapacityProvider: FARGATE_SPOT
+        - CapacityProvider:
+            Ref: CapacityProvider
           Weight: 1
       Tags:
         - Key: "Application"

@@ -206,7 +206,7 @@ Resources:
     Properties:
       Cluster:
         Ref: ECSCluster
-      ServiceName: typesense
+      ServiceName: Typesense
       TaskDefinition: 
         Ref: TaskDefinition
       DeploymentConfiguration:
@@ -254,7 +254,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Condition: CreateResources
     Properties:
-      Family: typesense
+      Family: Typesense
       Cpu: 512
       Memory: 1024
       NetworkMode: awsvpc
@@ -265,7 +265,7 @@ Resources:
       RequiresCompatibilities: 
         - FARGATE
       Volumes:
-        - Name: typesense
+        - Name: Typesense
           EFSVolumeConfiguration:
             FilesystemId: 
               Ref: EfsVolume
@@ -282,7 +282,7 @@ Resources:
               Value: 
                 Ref: TypeSenseApiKey
           MountPoints:
-            - SourceVolume: typesense
+            - SourceVolume: Typesense
               ContainerPath: '/data'
               ReadOnly: false
           PortMappings:
@@ -292,7 +292,7 @@ Resources:
             LogDriver: awslogs
             Options:
               awslogs-create-group: true
-              awslogs-group: "typsense"
+              awslogs-group: "Typsense"
               awslogs-region: 
                 Fn::Sub: "${AWS::Region}"
               awslogs-stream-prefix: "typesense"
@@ -358,7 +358,7 @@ Resources:
       FileSystemTags:
         - Key: Name
           Value: 
-            Fn::Sub: "${AWS::StackName}-typesense"
+            Fn::Sub: "${AWS::StackName}-Typesense"
 
   MountTargetResource1:
     Type: AWS::EFS::MountTarget

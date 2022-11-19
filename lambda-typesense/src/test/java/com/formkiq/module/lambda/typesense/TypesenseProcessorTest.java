@@ -145,4 +145,37 @@ class TypesenseProcessorTest {
       assertEquals(documentId, documents.get(0));
     }
   }
+
+  /**
+   * Test Delete records.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest03() throws Exception {
+    // given
+    String siteId = null;
+    for (int i = 0; i < 2; i++) {
+      String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
+      Map<String, Object> map = loadRequest("/modify.json");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0));
+
+      // given
+      map = loadRequest("/remove.json");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      documents = service.searchFulltext(siteId, "some.pdf", MAX);
+      assertEquals(0, documents.size());
+    }
+  }
 }

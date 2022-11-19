@@ -29,6 +29,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -38,6 +39,7 @@ import com.formkiq.stacks.client.models.DocumentSearchResponseFields;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.client.models.Documents;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
+import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
 
 /**
@@ -304,18 +306,43 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch08() throws Exception {
     // given
+    String siteId = null;
     String path = "some/thing/else/My Documents.pdf";
     String text = "My Documents";
+    final int limit = 100;
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      addDocumentWithoutFile(client, path);
-      SearchDocumentsRequest req =
-          new SearchDocumentsRequest().query(new DocumentSearchQuery().text(text));
+
+      String documentId = addDocumentWithoutFile(client, path);
+      SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)
+          .query(new DocumentSearchQuery().text(text)).limit(limit);
+
+      Documents response = null;
+      Optional<Document> o = Optional.empty();
+
       // when
-      Documents response = client.search(req);
+      while (o.isEmpty()) {
+        response = client.search(req);
+        o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+      }
 
       // then
+      assertNotNull(response);
       assertFalse(response.documents().isEmpty());
       assertTrue(response.documents().get(0).path().startsWith("some/thing/else/My Documents"));
+
+      // given
+      DeleteDocumentRequest delReq =
+          new DeleteDocumentRequest().siteId(siteId).documentId(documentId);
+
+      // when
+      boolean deleteResponse = client.deleteDocument(delReq);
+
+      // then
+      assertTrue(deleteResponse);
+
+      response = client.search(req);
+      o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+      assertFalse(o.isPresent());
     }
   }
 }

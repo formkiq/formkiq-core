@@ -55,15 +55,15 @@ import software.amazon.awssdk.regions.Region;
 @Reflectable
 public class TypesenseProcessor implements RequestHandler<Map<String, Object>, Void> {
 
-  /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
-
-  /** {@link TypeSenseService}. */
-  private TypeSenseService typeSenseService;
-  /** {@link DocumentToFulltextDocument}. */
-  private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
   /** Debug. */
   private boolean debug;
+
+  /** {@link DocumentToFulltextDocument}. */
+  private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().create();
+  /** {@link TypeSenseService}. */
+  private TypeSenseService typeSenseService;
 
   /**
    * constructor.
@@ -86,6 +86,62 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     this.typeSenseService = new TypeSenseServiceImpl(map.get("TYPESENSE_HOST"),
         map.get("TYPESENSE_API_KEY"), region, credentials);
     this.debug = "true".equals(map.get("DEBUG"));
+  }
+
+  /**
+   * Add or Update Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param data {@link Map}
+   * @throws IOException IOException
+   */
+  public void addOrUpdate(final String siteId, final String documentId,
+      final Map<String, Object> data) throws IOException {
+
+    HttpResponse<String> response = this.typeSenseService.addDocument(siteId, documentId, data);
+
+    if (!is2XX(response)) {
+
+      if (is404(response)) {
+
+        response = this.typeSenseService.addCollection(siteId);
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
+
+        response = this.typeSenseService.addDocument(siteId, documentId, data);
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
+
+      } else if (is409(response) || is429(response)) {
+        this.typeSenseService.updateDocument(siteId, documentId, data);
+      } else {
+        throw new IOException(response.body());
+      }
+    }
+  }
+
+  /**
+   * Get DocumentId from NewImage / OldImage.
+   * 
+   * @param newImage {@link Map}
+   * @param oldImage {@link Map}
+   * @return {@link String}
+   */
+  @SuppressWarnings("unchecked")
+  private String getDocumentId(final Map<String, Object> newImage,
+      final Map<String, Object> oldImage) {
+    Map<String, String> documentId =
+        newImage.containsKey("documentId") ? (Map<String, String>) newImage.get("documentId")
+            : Collections.emptyMap();
+
+    documentId =
+        oldImage.containsKey("documentId") ? (Map<String, String>) oldImage.get("documentId")
+            : Collections.emptyMap();
+
+    return documentId.get("S");
   }
 
   @SuppressWarnings("unchecked")
@@ -128,19 +184,26 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     Map<String, Object> newImage =
         dynamodb.containsKey("NewImage") ? toMap(dynamodb.get("NewImage")) : Collections.emptyMap();
 
+    Map<String, Object> oldImage =
+        dynamodb.containsKey("OldImage") ? toMap(dynamodb.get("OldImage")) : Collections.emptyMap();
+
     String siteId = newImage.containsKey(PK) ? getSiteId(newImage.get(PK).toString()) : null;
-    String documentId =
-        newImage.containsKey("documentId") ? newImage.get("documentId").toString() : null;
+    String documentId = getDocumentId(newImage, oldImage);
 
     if (documentId != null) {
 
       try {
 
         if ("INSERT".equalsIgnoreCase(eventName) || "MODIFY".equalsIgnoreCase(eventName)) {
+
           logger
               .log("processing event " + eventName + " for document " + siteId + " " + documentId);
-
           writeToIndex(logger, siteId, documentId, newImage);
+
+        } else if ("REMOVE".equalsIgnoreCase(eventName)) {
+
+          this.typeSenseService.deleteDocument(siteId, documentId);
+
         } else {
           logger.log("skipping event " + eventName + " for document " + siteId + " " + documentId);
         }
@@ -213,7 +276,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     if (isDocument) {
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
       document = this.fulltext.apply(document);
-      addOrUpdate(siteId, document.get("documentId").toString(), document);
+      addOrUpdate(siteId, documentId, document);
     } else if (this.debug) {
       logger.log("skipping dynamodb record");
     }
@@ -222,40 +285,5 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     // Document document = new DocumentTagMapToDocument().apply(data);
     // addOrUpdate(siteId, document);
     // }
-  }
-
-  /**
-   * Add or Update Document.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param data {@link Map}
-   * @throws IOException IOException
-   */
-  public void addOrUpdate(final String siteId, final String documentId,
-      final Map<String, Object> data) throws IOException {
-
-    HttpResponse<String> response = this.typeSenseService.addDocument(siteId, documentId, data);
-
-    if (!is2XX(response)) {
-
-      if (is404(response)) {
-
-        response = this.typeSenseService.addCollection(siteId);
-        if (!is2XX(response)) {
-          throw new IOException(response.body());
-        }
-
-        response = this.typeSenseService.addDocument(siteId, documentId, data);
-        if (!is2XX(response)) {
-          throw new IOException(response.body());
-        }
-
-      } else if (is409(response) || is429(response)) {
-        this.typeSenseService.updateDocument(siteId, documentId, data);
-      } else {
-        throw new IOException(response.body());
-      }
-    }
   }
 }
