@@ -305,6 +305,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     String path = item.getPath();
     String[] folders = tokens(path);
+    Date insertedDate = item.getInsertedDate() != null ? item.getInsertedDate() : new Date();
 
     Map<String, Map<String, String>> uuidMap = Collections.emptyMap();
 
@@ -313,7 +314,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     } catch (IOException e) {
 
       boolean allDirectories = path != null && path.endsWith("/");
-      createFolderPaths(siteId, folders, item.getInsertedDate(), item.getUserId(), allDirectories);
+      createFolderPaths(siteId, folders, insertedDate, item.getUserId(), allDirectories);
 
       try {
         uuidMap = generateFileKeys(siteId, item.getPath(), folders, item.getDocumentId());
@@ -337,7 +338,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       if ("file".equals(type)) {
         addS(values, "documentId", item.getDocumentId());
       } else {
-        Date insertedDate = new Date();
         String fullInsertedDate = this.df.format(insertedDate);
         addS(values, "inserteddate", fullInsertedDate);
         addS(values, "lastModifiedDate", fullInsertedDate);
