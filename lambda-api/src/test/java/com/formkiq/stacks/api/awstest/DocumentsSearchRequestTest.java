@@ -31,6 +31,7 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Document;
@@ -323,6 +324,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       while (o.isEmpty()) {
         response = client.search(req);
         o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+        TimeUnit.SECONDS.sleep(1);
       }
 
       // then
@@ -340,8 +342,12 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       // then
       assertTrue(deleteResponse);
 
-      response = client.search(req);
-      o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+      while (o.isPresent()) {
+        response = client.search(req);
+        o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+        TimeUnit.SECONDS.sleep(1);
+      }
+
       assertFalse(o.isPresent());
     }
   }
