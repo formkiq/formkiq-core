@@ -137,9 +137,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
         newImage.containsKey("documentId") ? (Map<String, String>) newImage.get("documentId")
             : Collections.emptyMap();
 
-    documentId =
-        oldImage.containsKey("documentId") ? (Map<String, String>) oldImage.get("documentId")
-            : Collections.emptyMap();
+    if (documentId.isEmpty()) {
+      documentId =
+          oldImage.containsKey("documentId") ? (Map<String, String>) oldImage.get("documentId")
+              : Collections.emptyMap();
+    }
 
     return documentId.get("S");
   }
