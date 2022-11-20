@@ -2012,4 +2012,28 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("a/test.txt", result.get("path"));
     }
   }
+
+  /**
+   * Update Document.
+   */
+  @Test
+  public void updateDocument01() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("test.pdf");
+      service.saveDocument(siteId, item, null);
+      Map<String, AttributeValue> newAttributes =
+          Map.of("path", AttributeValue.fromS("sample.pdf"));
+
+      // when
+      service.updateDocument(siteId, documentId, newAttributes, false);
+      service.updateDocument(siteId, documentId, newAttributes, true);
+
+      // then
+      assertEquals("sample.pdf", service.findDocument(siteId, documentId).getPath());
+    }
+  }
 }

@@ -48,7 +48,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiUrlResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -149,7 +148,6 @@ public class DocumentsIdUploadRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     boolean documentExists = false;
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     Date date = new Date();
     String documentId = UUID.randomUUID().toString();
@@ -162,7 +160,7 @@ public class DocumentsIdUploadRequestHandler
     Map<String, String> query = event.getQueryStringParameters();
 
     String siteId = authorizer.getSiteId();
-    DocumentService service = cacheService.documentService();
+    DocumentService service = awsservice.getExtension(DocumentService.class);
 
     if (map != null && map.containsKey("documentId")) {
 

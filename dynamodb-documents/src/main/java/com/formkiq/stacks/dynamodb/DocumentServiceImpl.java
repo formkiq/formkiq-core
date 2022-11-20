@@ -913,8 +913,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       lastModifiedDate = new Date();
     }
     document.setLastModifiedDate(lastModifiedDate);
-    System.out
-        .println("INSERT: " + document.getInsertedDate() + " " + document.getLastModifiedDate());
 
     String shortdate = this.yyyymmddFormat.format(insertedDate);
     String fullInsertedDate = this.df.format(insertedDate);
@@ -1566,10 +1564,29 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void updateDocument(final String siteId, final String documentId,
-      final Map<String, AttributeValue> attributes) {
+      final Map<String, AttributeValue> attributes, final boolean updateVersioning) {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
     this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
+
+    if (updateVersioning) {
+
+      String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
+      if (documentVersionsTableName != null) {
+
+        Map<String, AttributeValue> current =
+            new HashMap<>(this.dbService.get(keys.get(PK), keys.get(SK)));
+        Map<String, AttributeValue> updated = new HashMap<>(current);
+        updated.putAll(attributes);
+
+        this.versionsService.addDocumentVersionAttributes(current, updated);
+
+        WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
+            .append(this.documentTableName, updated).append(documentVersionsTableName, current);
+
+        writeBuilder.batchWriteItem(this.dbClient);
+      }
+    }
   }
 
   /**

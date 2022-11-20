@@ -409,6 +409,8 @@ public interface DocumentService extends DocumentTagLoader {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param attributes {@link Map}
+   * @param updateVersioning boolean
    */
-  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes);
+  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes,
+      boolean updateVersioning);
 }

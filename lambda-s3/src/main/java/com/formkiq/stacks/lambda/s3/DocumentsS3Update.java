@@ -515,7 +515,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       Map<String, AttributeValue> attributes = new HashMap<>();
 
-      if (isChecksumChanged(resp, item)) {
+      boolean isChecksumChanged = isChecksumChanged(resp, item);
+      if (isChecksumChanged) {
         attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
       }
 
@@ -531,7 +532,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
 
-      this.service.updateDocument(siteId, documentId, attributes);
+      this.service.updateDocument(siteId, documentId, attributes, isChecksumChanged);
       logger.log("saving document " + createDatabaseKey(siteId, documentId));
 
       List<DocumentTag> tags = getObjectTags(s3bucket, key);
