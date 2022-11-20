@@ -344,8 +344,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   private boolean isChecksumChanged(final S3ObjectMetadata resp, final DocumentItem doc) {
-    return doc.getChecksum() != null && resp.getEtag() != null
-        && !resp.getEtag().contains(doc.getChecksum());
+    return doc.getChecksum() == null
+        || (doc.getChecksum() != null && !resp.getEtag().contains(doc.getChecksum()));
   }
 
   /**

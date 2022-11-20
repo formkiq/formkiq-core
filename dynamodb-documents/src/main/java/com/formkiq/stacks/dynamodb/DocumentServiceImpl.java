@@ -1578,6 +1578,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         Map<String, AttributeValue> updated = new HashMap<>(current);
         updated.putAll(attributes);
 
+        String fullLastModifiedDate = this.df.format(new Date());
+        addS(updated, "lastModifiedDate", fullLastModifiedDate);
+        
         this.versionsService.addDocumentVersionAttributes(current, updated);
 
         WriteRequestBuilder writeBuilder = new WriteRequestBuilder()
