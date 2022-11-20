@@ -245,10 +245,6 @@ Resources:
           FromPort: 8108
           ToPort: 8108
           IpProtocol: tcp
-        - IpProtocol: tcp
-          FromPort: 8108
-          ToPort: 8108
-          CidrIp: 0.0.0.0/0
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition

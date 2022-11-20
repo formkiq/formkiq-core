@@ -50,6 +50,18 @@ Parameters:
     Description: Public Subnet3 CIDR block
     AllowedPattern: "^[0-9./\\s]*"
     Default: 10.1.30.0/24
+
+  EnableEnterpriseFeatures:
+    Description: Enable Enterprise VPC features
+    Default: "false"
+    Type: String
+    AllowedValues: ["false", "true"]
+    
+Conditions:
+  IsEnableEnterpriseFeatures: 
+    Fn::Equals: 
+    - Ref: EnableEnterpriseFeatures
+    - 'true'
     
 Resources:
 
@@ -363,14 +375,58 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}"
 
+  S3GatewayEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Condition: IsEnableEnterpriseFeatures
+    Properties:
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - Ref: PrivateRouteTable      
+      ServiceName: 
+        Fn::Sub: 'com.amazonaws.${AWS::Region}.s3'
+      VpcId:
+        Ref: Vpc
+        
   DynamoDbGatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
+    Condition: IsEnableEnterpriseFeatures
     Properties:
       VpcEndpointType: Gateway
       RouteTableIds:
         - Ref: PrivateRouteTable      
       ServiceName: 
         Fn::Sub: 'com.amazonaws.${AWS::Region}.dynamodb'
+      VpcId:
+        Ref: Vpc
+
+  SnsInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Condition: IsEnableEnterpriseFeatures
+    Properties:
+      VpcEndpointType: Interface      
+      ServiceName: 
+        Fn::Sub: 'com.amazonaws.${AWS::Region}.sns'
+      VpcId:
+        Ref: Vpc
+
+  SsmInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Condition: IsEnableEnterpriseFeatures
+    Properties:
+      VpcEndpointType: Interface      
+      ServiceName: 
+        Fn::Sub: 'com.amazonaws.${AWS::Region}.ssm'
+      VpcId:
+        Ref: Vpc
+
+  ExecuteApiInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Condition: IsEnableEnterpriseFeatures
+    Properties:
+      PrivateDnsEnabled: true
+      VpcEndpointType: Interface      
+      ServiceName: 
+        Fn::Sub: 'com.amazonaws.${AWS::Region}.execute-api'
       VpcId:
         Ref: Vpc
         
