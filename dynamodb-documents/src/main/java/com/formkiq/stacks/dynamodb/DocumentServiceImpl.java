@@ -1567,7 +1567,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       final Map<String, AttributeValue> attributes, final boolean updateVersioning) {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-    this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
 
     if (updateVersioning) {
 
@@ -1587,6 +1586,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         writeBuilder.batchWriteItem(this.dbClient);
       }
     }
+
+    this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
   }
 
   /**
