@@ -45,6 +45,7 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -1444,18 +1445,15 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveDocumentItemWithTag01() {
-    final int year = 2020;
+    final int year = Calendar.getInstance().get(Calendar.YEAR);
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
-      LocalDate localDate = LocalDate.of(year, 1, 2);
-      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
           Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
-      doc.setLastModifiedDate(date);
 
       // when
       DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
@@ -1720,19 +1718,16 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveDocumentItemWithTag07() {
-    final int year = 2020;
+    final int year = Calendar.getInstance().get(Calendar.YEAR);
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final int numberOfTags = 500;
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
-      LocalDate localDate = LocalDate.of(year, 1, 2);
-      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
           Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
-      doc.setLastModifiedDate(date);
 
       List<Map<String, Object>> taglist = new ArrayList<>();
       for (int j = 0; j < numberOfTags; j++) {
@@ -1768,18 +1763,15 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testSaveDocumentItemWithTag08() {
-    final int year = 2020;
+    final int year = Calendar.getInstance().get(Calendar.YEAR);
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String content = "This is a test";
       String username = UUID.randomUUID() + "@formkiq.com";
-      LocalDate localDate = LocalDate.of(year, 1, 2);
-      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
           Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
-      doc.setLastModifiedDate(date);
       doc.setPath("test.pdf");
 
       List<Map<String, Object>> taglist = new ArrayList<>();

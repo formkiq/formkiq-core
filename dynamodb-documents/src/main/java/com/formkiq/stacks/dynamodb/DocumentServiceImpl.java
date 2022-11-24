@@ -1462,7 +1462,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public DocumentItem saveDocumentItemWithTag(final String siteId, final DynamicDocumentItem doc) {
 
-    Date date = new Date();
+    final Date date = new Date();
     String username = doc.getUserId();
     String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
 
@@ -1470,7 +1470,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       deleteDocumentTag(siteId, documentId, "untagged");
     }
 
-    DocumentItem item = new DocumentItemDynamoDb(documentId, date, username);
+    DocumentItem item = new DocumentItemDynamoDb(documentId, null, username);
 
     String path = doc.getPath();
 
@@ -1480,8 +1480,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setChecksum(doc.getChecksum());
     item.setContentLength(doc.getContentLength());
     item.setUserId(doc.getUserId());
-    item.setInsertedDate(doc.getInsertedDate() != null ? doc.getInsertedDate() : date);
-    item.setLastModifiedDate(doc.getLastModifiedDate() != null ? doc.getLastModifiedDate() : date);
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
     item.setMetadata(doc.getMetadata());

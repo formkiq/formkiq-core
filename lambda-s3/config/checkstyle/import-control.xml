@@ -15,6 +15,7 @@
 			<allow pkg="software.amazon.awssdk.auth.credentials" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			
+			<allow pkg="com.formkiq.stacks.lambda.s3" />
 			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.aws.s3" />
 			<allow pkg="com.formkiq.aws.sns" />

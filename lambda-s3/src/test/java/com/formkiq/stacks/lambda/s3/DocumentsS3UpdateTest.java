@@ -555,14 +555,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.put("tags", Arrays.asList(tag));
       service.saveDocumentItemWithTag(siteId, doc);
 
-      DocumentFormat format = new DocumentFormat();
-      format.setContentType("application/pdf");
-      format.setDocumentId(BUCKET_KEY);
-      format.setInsertedDate(new Date());
-      format.setUserId("asd");
-      service.saveDocumentFormat(siteId, format);
-
       addS3File(key, "pdf", true, "testdata");
+
+      TimeUnit.SECONDS.sleep(1);
 
       // when
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);

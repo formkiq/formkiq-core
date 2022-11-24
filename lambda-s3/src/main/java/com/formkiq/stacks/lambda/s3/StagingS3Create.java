@@ -26,10 +26,9 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -80,7 +79,6 @@ import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
-import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -96,7 +94,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
@@ -265,94 +262,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
-   * Determines whether {@link String} is a JSON config file.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param bucket {@link String}
-   * @param siteId {@link String}
-   * @param s3Key {@link String}
-   * @return {@link DynamicDocumentItem}
-   */
-  private DynamicDocumentItem configfile(final LambdaLogger logger, final String bucket,
-      final String siteId, final String s3Key) {
-
-    DynamicDocumentItem obj = null;
-
-    if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
-
-      obj = loadDocument(logger, bucket, siteId, s3Key);
-
-      if (obj.containsKey("contentLength") && obj.get("contentLength") instanceof Double) {
-        long contentLength = obj.getDouble("contentLength").longValue();
-        obj.setContentLength(Long.valueOf(contentLength));
-      }
-
-      Date insertedDate = getDate(obj, "insertedDate");
-      obj.setInsertedDate(insertedDate);
-      obj.setLastModifiedDate(null);
-
-      if (obj.getPath() != null && obj.getPath().contains(VIRTUAL_FOLDER_DELIM)) {
-        String realDocumentId = getDocumentIdForPath(siteId, obj.getPath());
-        obj.setDocumentId(realDocumentId);
-      }
-    }
-
-    return obj;
-  }
-
-  /**
-   * Copies Documentid to a new file that is a {@link UUID}.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param bucket {@link String}
-   * @param originalkey {@link String}
-   * @param date {@link Date}
-   */
-  private void copyFile(final LambdaLogger logger, final String bucket, final String originalkey,
-      final Date date) {
-
-    String siteId = getSiteId(originalkey);
-    String key = resetDatabaseKey(siteId, originalkey);
-
-    boolean uuid = isUuid(key);
-    String documentIdForPath = !uuid ? getDocumentIdForPath(siteId, key) : null;
-    String documentId =
-        documentIdForPath != null ? documentIdForPath : uuid ? key : UUID.randomUUID().toString();
-
-    String destKey = createDatabaseKey(siteId, documentId);
-
-    S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, originalkey);
-
-    // if file path isn't in the database it's already saved
-    if (documentIdForPath == null) {
-      String username = metadata.getMetadata().entrySet().stream()
-          .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(s -> s.getValue())
-          .orElse("System");
-
-      DynamicDocumentItem doc = new DynamicDocumentItem(Collections.emptyMap());
-      doc.setDocumentId(documentId);
-      doc.setContentLength(metadata.getContentLength());
-      doc.setContentType(metadata.getContentType());
-      doc.setUserId(username);
-      doc.setChecksum(metadata.getEtag());
-      doc.setInsertedDate(date);
-      doc.setLastModifiedDate(date);
-
-      if (!uuid) {
-        doc.setPath(key);
-      }
-
-      saveDocument(logger, siteId, doc, true);
-    }
-
-    logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", originalkey, bucket,
-        destKey, this.documentsBucket));
-
-    this.s3.copyObject(bucket, originalkey, this.documentsBucket, destKey,
-        metadata.getContentType());
-  }
-
-  /**
    * Generate {@link Map} of DocumentId / Content.
    * 
    * @param doc {@link DynamicDocumentItem}
@@ -442,27 +351,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.s3.deleteObject(bucket, key);
   }
 
-  private Date getDate(final DynamicDocumentItem obj, final String key) {
-
-    Date date = null;
-
-    if (obj.containsKey(key)) {
-
-      SimpleDateFormat f = DateUtil.getIsoDateFormatter();
-
-      try {
-        date = f.parse(obj.getString(key));
-      } catch (ParseException e) {
-        date = new Date();
-      }
-
-    } else {
-      date = new Date();
-    }
-
-    return date;
-  }
-
   /**
    * Find DocumentId for File Path.
    * 
@@ -473,7 +361,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String getDocumentIdForPath(final String siteId, final String path) {
     SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
     PaginationResults<DynamicDocumentItem> result = this.searchService.search(siteId, q, null, 1);
-    return !result.getResults().isEmpty() ? result.getResults().get(0).getDocumentId() : null;
+    return !result.getResults().isEmpty() ? result.getResults().get(0).getDocumentId()
+        : UUID.randomUUID().toString();
   }
 
   @SuppressWarnings("unchecked")
@@ -524,32 +413,45 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private DynamicDocumentItem loadDocument(final LambdaLogger logger, final String bucket,
       final String siteId, final String s3Key) {
 
-    String s = this.s3.getContentAsString(bucket, s3Key, null);
+    DynamicDocumentItem doc = null;
 
-    if ("true".equals(System.getenv("DEBUG"))) {
-      logger.log(s);
-    }
+    if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
 
-    DynamicDocumentItem obj = null;
+      String s = this.s3.getContentAsString(bucket, s3Key, null);
 
-    Map<String, Object> map = this.gson.fromJson(s, Map.class);
-    DynamicDocumentItem objFromMap = new DynamicDocumentItem(map);
+      if ("true".equals(System.getenv("DEBUG"))) {
+        logger.log(s);
+      }
 
-    String documentId = objFromMap.getDocumentId();
-    DocumentItem item = this.service.findDocument(siteId, documentId);
+      Map<String, Object> map = this.gson.fromJson(s, Map.class);
+      doc = new DynamicDocumentItem(map);
 
-    if (item != null) {
-      obj = new DocumentItemToDynamicDocumentItem().apply(item);
-      obj.put("existingDocument", Boolean.TRUE);
-    }
-
-    if (obj != null) {
-      obj.putAll(objFromMap);
     } else {
-      obj = objFromMap;
+      doc = new DynamicDocumentItem(Collections.emptyMap());
+
+      String key = resetDatabaseKey(siteId, s3Key);
+      boolean uuid = isUuid(key);
+
+      if (!uuid) {
+        doc.setPath(key);
+      }
     }
 
-    return obj;
+    updateDocumentId(siteId, s3Key, doc);
+
+    if (isEmpty(doc.getUserId())) {
+
+      S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, s3Key);
+      String username = metadata.getMetadata().entrySet().stream()
+          .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(s -> s.getValue())
+          .orElse("System");
+
+      doc.setUserId(username);
+    }
+
+    updateContentLength(siteId, doc);
+
+    return doc;
   }
 
   /**
@@ -609,21 +511,45 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (objectCreated) {
 
-      DynamicDocumentItem doc = configfile(logger, bucket, siteId, s3Key);
+      DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
 
-      if (doc != null) {
-        write(logger, doc, date, siteId);
+      Map<String, String> contentMap = createContentMap(loadDocument);
+      Map<String, String> contentTypeMap = createContentTypeMap(loadDocument);
 
-        String tagSchemaId = doc.getString("tagSchemaId");
-        Boolean newCompositeTags = doc.getBoolean("newCompositeTags");
+      boolean hasContent = !contentMap.isEmpty();
+
+      DocumentItem existingDocument =
+          this.service.findDocument(siteId, loadDocument.getDocumentId());
+      DynamicDocumentItem item =
+          createDocument(logger, siteId, loadDocument, date, hasContent, existingDocument);
+
+      if (item != null) {
+
+        String tagSchemaId = item.getString("tagSchemaId");
+        Boolean newCompositeTags = item.getBoolean("newCompositeTags");
 
         if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
           createFormKiQConnectionIfNeeded();
-          postDocumentTags(siteId, doc);
+          postDocumentTags(siteId, item);
         }
 
-      } else {
-        copyFile(logger, bucket, s3Key, date);
+        writeS3Document(logger, bucket, s3Key, siteId, item, contentMap, contentTypeMap);
+
+        if (contentMap.isEmpty()) {
+          logger.log(String.format("Skipping %s no content", item.getPath()));
+        }
+
+        if (existingDocument != null && !hasContent) {
+
+          List<Action> actions = this.actionsService.getActions(siteId, item.getDocumentId());
+          List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
+              .collect(Collectors.toList());
+          syncs.forEach(a -> a.status(ActionStatus.PENDING));
+          this.actionsService.saveActions(siteId, item.getDocumentId(), actions);
+
+          logger.log("publishing actions message to " + this.snsDocumentEvent);
+          this.notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
+        }
       }
 
       deleteObject(logger, bucket, s3Key);
@@ -631,6 +557,143 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (!objectCreated) {
       logger.log("skipping event " + eventName);
+    }
+  }
+
+  private void writeS3Document(final LambdaLogger logger, final String bucket, final String s3Key,
+      final String siteId, final DynamicDocumentItem item, final Map<String, String> contentMap,
+      final Map<String, String> contentTypeMap) {
+
+    if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
+
+      for (Map.Entry<String, String> e : contentMap.entrySet()) {
+
+        boolean isBase64 = item.getBoolean("isBase64").booleanValue();
+        byte[] bytes =
+            isBase64 ? Base64.getDecoder().decode(e.getValue().getBytes(StandardCharsets.UTF_8))
+                : e.getValue().getBytes(StandardCharsets.UTF_8);
+
+        String key = createDatabaseKey(siteId, e.getKey());
+        String contentType = contentTypeMap.get(e.getKey());
+
+        logger.log(String.format("Inserted %s into bucket %s as %s", item.getPath(),
+            this.documentsBucket, createDatabaseKey(siteId, item.getDocumentId())));
+
+        this.s3.putObject(this.documentsBucket, key, bytes, contentType);
+        // attributes.put("checksum", AttributeValue.fromS(resp.eTag()));
+        // item.setChecksum(response.eTag());
+        // item.setContentLength(Long.valueOf(bytes.length));
+      }
+
+    } else {
+
+      S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, s3Key);
+
+      String destKey = createDatabaseKey(siteId, item.getDocumentId());
+
+      logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", s3Key, bucket,
+          destKey, this.documentsBucket));
+
+      this.s3.copyObject(bucket, s3Key, this.documentsBucket, destKey, metadata.getContentType());
+      // attributes.put("checksum", AttributeValue.fromS(response.responseMetadata()));
+      // this.d
+    }
+  }
+
+  private DynamicDocumentItem createDocument(final LambdaLogger logger, final String siteId,
+      final DynamicDocumentItem loadedDoc, final Date date, final boolean hasContent,
+      final DocumentItem existingDocument) {
+
+    DynamicDocumentItem doc = new DynamicDocumentItem(loadedDoc);
+
+    doc = updateFromExistingDocument(siteId, doc, existingDocument);
+
+    // saving service will set these
+    doc.setInsertedDate(null);
+    doc.setLastModifiedDate(null);
+
+    if (hasContent) {
+      doc.setContentLength(null);
+    }
+
+    if (isEmpty(doc.getPath())) {
+      doc.setPath(doc.getDocumentId());
+    }
+
+    this.service.saveDocumentItemWithTag(siteId, doc);
+
+    if (doc.containsKey("actions")) {
+
+      this.actionsService.deleteActions(siteId, doc.getDocumentId());
+
+      DynamicObjectToAction transform = new DynamicObjectToAction();
+      List<DynamicObject> list = doc.getList("actions");
+      List<Action> actions =
+          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
+
+      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
+    }
+
+    return doc;
+  }
+
+  private void updateContentLength(final String siteId, final DynamicDocumentItem obj) {
+
+    if (obj.containsKey("contentLength") && obj.get("contentLength") instanceof Double) {
+      long contentLength = obj.getDouble("contentLength").longValue();
+      obj.setContentLength(Long.valueOf(contentLength));
+    }
+  }
+
+  /**
+   * Update from existing Document.
+   * 
+   * @param siteId {@link String}
+   * @param obj {@link DynamicDocumentItem}
+   * @param existingDocument {@link DocumentItem}
+   * @return {@link DynamicDocumentItem}
+   */
+  private DynamicDocumentItem updateFromExistingDocument(final String siteId,
+      final DynamicDocumentItem obj, final DocumentItem existingDocument) {
+
+    DynamicDocumentItem response = null;
+
+    if (existingDocument != null) {
+      DynamicDocumentItem origMap = new DocumentItemToDynamicDocumentItem().apply(existingDocument);
+      origMap.putAll(obj);
+      response = origMap;
+    } else {
+      response = obj;
+    }
+
+    return response;
+  }
+
+  /**
+   * Update {@link DynamicDocumentItem} DocumentId.
+   * 
+   * @param siteId {@link String}
+   * @param s3Key {@link String}
+   * @param obj {@link DynamicDocumentItem}
+   */
+  private void updateDocumentId(final String siteId, final String s3Key,
+      final DynamicDocumentItem obj) {
+
+    if (isEmpty(obj.getDocumentId())) {
+
+      if (obj.getPath() != null && obj.getPath().contains(VIRTUAL_FOLDER_DELIM)) {
+
+        String documentId = getDocumentIdForPath(siteId, obj.getPath());
+        obj.setDocumentId(documentId);
+
+      } else {
+
+        String key = resetDatabaseKey(siteId, s3Key);
+
+        boolean uuid = isUuid(key);
+        String documentId = uuid ? key : getDocumentIdForPath(siteId, key);
+        obj.setDocumentId(documentId);
+      }
     }
   }
 
@@ -664,121 +727,5 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         }
       }
     }
-  }
-
-  /**
-   * Save {@link DynamicDocumentItem}.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @param hasContent boolean
-   */
-  private void saveDocument(final LambdaLogger logger, final String siteId,
-      final DynamicDocumentItem doc, final boolean hasContent) {
-
-    this.service.saveDocumentItemWithTag(siteId, doc);
-
-    if (doc.containsKey("actions")) {
-
-      this.actionsService.deleteActions(siteId, doc.getDocumentId());
-
-      DynamicObjectToAction transform = new DynamicObjectToAction();
-      List<DynamicObject> list = doc.getList("actions");
-      List<Action> actions =
-          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
-
-      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
-
-    } else if (Boolean.TRUE.equals(doc.getBoolean("existingDocument")) && !hasContent) {
-
-      List<Action> actions = this.actionsService.getActions(siteId, doc.getDocumentId());
-      List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
-          .collect(Collectors.toList());
-      syncs.forEach(a -> a.status(ActionStatus.PENDING));
-      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
-
-      logger.log("publishing actions message to " + this.snsDocumentEvent);
-      this.notificationService.publishNextActionEvent(actions, siteId, doc.getDocumentId());
-    }
-  }
-
-  /**
-   * Update Document Id, if needed.
-   * 
-   * @param doc {@link DynamicDocumentItem}s
-   */
-  private void updateDocumentIdIfNeeded(final DynamicDocumentItem doc) {
-    if (!doc.hasString("documentId")) {
-      doc.put("documentId", UUID.randomUUID().toString());
-    }
-
-    List<DynamicObject> documents = doc.getList("documents");
-    for (DynamicObject document : documents) {
-      if (!document.hasString("documentId")) {
-        document.put("documentId", UUID.randomUUID().toString());
-      }
-    }
-  }
-
-  /**
-   * Write {@link DynamicDocumentItem} to S3 & DynamoDB.
-   *
-   * @param logger {@link LambdaLogger}
-   * @param doc {@link DynamicDocumentItem}
-   * @param date {@link Date}
-   * @param siteId {@link String}
-   */
-  private void write(final LambdaLogger logger, final DynamicDocumentItem doc, final Date date,
-      final String siteId) {
-
-    boolean writeS3File = writeS3File(logger, siteId, doc);
-    if (writeS3File) {
-
-      logger.log(String.format("Inserted %s into bucket %s as %s", doc.getPath(),
-          this.documentsBucket, createDatabaseKey(siteId, doc.getDocumentId())));
-
-    } else {
-      logger.log(String.format("Skipping %s no content", doc.getPath()));
-    }
-
-    saveDocument(logger, siteId, doc, writeS3File);
-  }
-
-  /**
-   * Writes File to S3.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @return boolean
-   */
-  private boolean writeS3File(final LambdaLogger logger, final String siteId,
-      final DynamicDocumentItem doc) {
-
-    boolean wrote = false;
-
-    updateDocumentIdIfNeeded(doc);
-
-    Map<String, String> contentMap = createContentMap(doc);
-    Map<String, String> contentTypeMap = createContentTypeMap(doc);
-
-    for (Map.Entry<String, String> e : contentMap.entrySet()) {
-
-      boolean isBase64 = doc.getBoolean("isBase64").booleanValue();
-      byte[] bytes =
-          isBase64 ? Base64.getDecoder().decode(e.getValue().getBytes(StandardCharsets.UTF_8))
-              : e.getValue().getBytes(StandardCharsets.UTF_8);
-
-      String key = createDatabaseKey(siteId, e.getKey());
-      String contentType = contentTypeMap.get(e.getKey());
-
-      PutObjectResponse response = this.s3.putObject(this.documentsBucket, key, bytes, contentType);
-      doc.setChecksum(response.eTag());
-      doc.setContentLength(Long.valueOf(bytes.length));
-      wrote = true;
-    }
-
-    return wrote;
   }
 }
