@@ -247,7 +247,7 @@ public class DocumentTagRequestHandler
 
     tags.addAll(newTags);
 
-    updateFulltextIfInstalled(awsservice, siteId, documentId, tags);
+    updateFulltextIfInstalled(logger, awsservice, siteId, documentId, tags);
     documentService.addTags(siteId, documentId, tags, null);
 
     ApiResponse resp =
@@ -259,6 +259,7 @@ public class DocumentTagRequestHandler
   /**
    * Update Fulltext index if Module available.
    * 
+   * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param documentId {@link String}
@@ -266,9 +267,9 @@ public class DocumentTagRequestHandler
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void updateFulltextIfInstalled(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final List<DocumentTag> tags)
-      throws IOException, InterruptedException {
+  private void updateFulltextIfInstalled(final LambdaLogger logger,
+      final AwsServiceCache awsservice, final String siteId, final String documentId,
+      final List<DocumentTag> tags) throws IOException, InterruptedException {
 
     if (awsservice.hasModule("fulltext")) {
       FormKiqClientV1 client = awsservice.getExtension(FormKiqClientV1.class);
@@ -286,6 +287,9 @@ public class DocumentTagRequestHandler
 
         if (response.statusCode() == SC_BAD_REQUEST.getStatusCode()
             || response.statusCode() == SC_ERROR.getStatusCode()) {
+          logger.log("unable to update Fulltext");
+          logger.log("status: " + response.statusCode());
+          logger.log("body: " + response.body());
           throw new IOException("unable to update Fulltext");
         }
       }
