@@ -483,7 +483,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     PaginationMapToken pagination = null;
 
     GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
-        .tableName(this.documentTableName).build();
+        .tableName(this.documentTableName).consistentRead(Boolean.TRUE).build();
 
     Map<String, AttributeValue> result = this.dbClient.getItem(r).item();
 

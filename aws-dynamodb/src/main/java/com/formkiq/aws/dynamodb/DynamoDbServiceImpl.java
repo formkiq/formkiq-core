@@ -77,7 +77,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public boolean exists(final AttributeValue pk, final AttributeValue sk) {
     GetItemRequest r = GetItemRequest.builder().key(Map.of(PK, pk, SK, sk))
-        .tableName(this.tableName).projectionExpression("PK").build();
+        .tableName(this.tableName).projectionExpression("PK").consistentRead(Boolean.TRUE).build();
     GetItemResponse response = this.dbClient.getItem(r);
     return !response.item().isEmpty();
   }
@@ -85,8 +85,8 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
-    return this.dbClient
-        .getItem(GetItemRequest.builder().tableName(this.tableName).key(key).build()).item();
+    return this.dbClient.getItem(GetItemRequest.builder().tableName(this.tableName).key(key)
+        .consistentRead(Boolean.TRUE).build()).item();
   }
 
   @Override
