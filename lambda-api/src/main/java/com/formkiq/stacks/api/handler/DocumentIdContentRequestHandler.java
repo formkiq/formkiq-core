@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
@@ -33,7 +35,6 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
@@ -128,7 +129,7 @@ public class DocumentIdContentRequestHandler
 
     if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
 
-      String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, documentId);
+      String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
       String sk = versionKey;
 
       DynamoDbConnectionBuilder connection =
