@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRIBUTE;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.URL;
 import java.time.Duration;
@@ -136,10 +137,17 @@ public class DocumentIdContentRequestHandler
           awsservice.getExtension(DynamoDbConnectionBuilder.class);
 
       DynamoDbService db = new DynamoDbServiceImpl(connection, documentVersionsTable);
+
       Map<String, AttributeValue> attrs =
           db.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+
+      if (attrs.containsKey(S3VERSION_ATTRIBUTE)) {
+        versionId = attrs.get(S3VERSION_ATTRIBUTE).s();
+      }
+
       logger.log("PK: " + pk + " SK: " + sk);
       logger.log("attrs: " + attrs);
+      logger.log("versionId: " + versionId);
     }
 
     return versionId;
