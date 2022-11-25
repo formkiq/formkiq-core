@@ -441,7 +441,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/versionIdParam'
+              - $ref: '#/components/parameters/versionKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -640,7 +640,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/versionIdParam'
+              - $ref: '#/components/parameters/versionKeyParam'
               - $ref: '#/components/parameters/durationParam'
               - name: "inline"
                 in: "query"
@@ -1826,10 +1826,10 @@ Resources:
                     type: string
               content: {}
           parameters:
-            versionIdParam:
-              name: versionId
+            versionKeyParam:
+              name: versionKey
               in: query
-              description: Version Identifier
+              description: Version Key
               required: false
               schema:
                 type: string
