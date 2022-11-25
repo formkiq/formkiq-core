@@ -532,8 +532,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
 
+      logger.log("updating document " + createDatabaseKey(siteId, documentId));
+
+      if (debug) {
+        logger.log("document attributes " + attributes);
+      }
+      
       this.service.updateDocument(siteId, documentId, attributes, isChecksumChanged);
-      logger.log("saving document " + createDatabaseKey(siteId, documentId));
 
       List<DocumentTag> tags = getObjectTags(s3bucket, key);
       this.service.addTags(siteId, documentId, tags, null);
