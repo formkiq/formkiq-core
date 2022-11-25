@@ -23,11 +23,17 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -62,6 +68,11 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
     }
   }
 
+  @Override
+  public String getDocumentVersionsTableName() {
+    return this.tableName;
+  }
+
   private String getSk(final Map<String, AttributeValue> previous, final String version) {
     String sk = previous.get(SK).s() + TAG_DELIMINATOR + this.df.format(new Date())
         + TAG_DELIMINATOR + "v" + version;
@@ -69,8 +80,28 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public String getDocumentVersionsTableName() {
-    return this.tableName;
+  public String getVersionId(final DynamoDbConnectionBuilder connection, final String siteId,
+      final String documentId, final String versionKey) {
+
+    String versionId = null;
+    String documentVersionsTable = getDocumentVersionsTableName();
+
+    if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
+
+      String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
+      String sk = versionKey;
+
+      DynamoDbService db = new DynamoDbServiceImpl(connection, documentVersionsTable);
+
+      Map<String, AttributeValue> attrs =
+          db.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+
+      if (attrs.containsKey(S3VERSION_ATTRIBUTE)) {
+        versionId = attrs.get(S3VERSION_ATTRIBUTE).s();
+      }
+    }
+
+    return versionId;
   }
 
   @Override

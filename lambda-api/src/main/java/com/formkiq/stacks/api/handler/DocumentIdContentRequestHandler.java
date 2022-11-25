@@ -23,19 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRIBUTE;
-import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
@@ -50,7 +44,7 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */
 public class DocumentIdContentRequestHandler
@@ -78,7 +72,10 @@ public class DocumentIdContentRequestHandler
       throw new NotFoundException("Document " + documentId + " not found.");
     }
 
-    String versionId = getVersionId(logger, awsservice, siteId, documentId, versionKey);
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+    String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
+
     ApiResponse response = null;
 
     String s3key = createS3Key(siteId, documentId);
@@ -110,47 +107,6 @@ public class DocumentIdContentRequestHandler
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);
-  }
-
-  /**
-   * Get S3 Version Id.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param versionKey {@link String}
-   * @return {@link String}
-   */
-  private String getVersionId(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final String siteId, final String documentId, final String versionKey) {
-
-    String versionId = null;
-    String documentVersionsTable = awsservice.environment("DOCUMENT_VERSIONS_TABLE");
-
-    if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
-
-      String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
-      String sk = versionKey;
-
-      DynamoDbConnectionBuilder connection =
-          awsservice.getExtension(DynamoDbConnectionBuilder.class);
-
-      DynamoDbService db = new DynamoDbServiceImpl(connection, documentVersionsTable);
-
-      Map<String, AttributeValue> attrs =
-          db.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
-
-      if (attrs.containsKey(S3VERSION_ATTRIBUTE)) {
-        versionId = attrs.get(S3VERSION_ATTRIBUTE).s();
-      }
-
-      logger.log("PK: " + pk + " SK: " + sk);
-      logger.log("attrs: " + attrs);
-      logger.log("versionId: " + versionId);
-    }
-
-    return versionId;
   }
 
   @Override

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -48,15 +49,6 @@ public interface DocumentVersionService {
       Map<String, AttributeValue> current);
 
   /**
-   * Revert to previous Document Version.
-   * 
-   * @param previous {@link Map}
-   * @param current {@link Map}
-   */
-  void revertDocumentVersionAttributes(Map<String, AttributeValue> previous,
-      Map<String, AttributeValue> current);
-
-  /**
    * Get DynamoDB Documents Versions Table Name.
    * 
    * @return {@link String}
@@ -64,9 +56,30 @@ public interface DocumentVersionService {
   String getDocumentVersionsTableName();
 
   /**
+   * Get S3 Version Id.
+   * 
+   * @param connection {@link DynamoDbConnectionBuilder}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param versionKey {@link String}
+   * @return {@link String}
+   */
+  String getVersionId(DynamoDbConnectionBuilder connection, String siteId, String documentId,
+      String versionKey);
+
+  /**
    * Initialize Service.
    * 
    * @param map {@link Map}
    */
   void initialize(Map<String, String> map);
+
+  /**
+   * Revert to previous Document Version.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   */
+  void revertDocumentVersionAttributes(Map<String, AttributeValue> previous,
+      Map<String, AttributeValue> current);
 }

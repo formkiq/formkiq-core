@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
@@ -46,6 +47,8 @@ import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -62,18 +65,21 @@ public class DocumentIdUrlRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-
     String documentId = event.getPathParameters().get("documentId");
-    String versionId = getParameter(event, "versionId");
+    String versionKey = getParameter(event, "versionKey");
     String siteId = authorizer.getSiteId();
     boolean inline = "true".equals(getParameter(event, "inline"));
 
-    DocumentItem item = cacheService.documentService().findDocument(siteId, documentId);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = documentService.findDocument(siteId, documentId);
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
+
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+    String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
     URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId, inline);
 
