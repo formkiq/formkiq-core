@@ -101,7 +101,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
     final int status200 = 200;
 
     GetDocumentContentUrlRequest request =
-        new GetDocumentContentUrlRequest().documentId(documentId).versionId(versionId);
+        new GetDocumentContentUrlRequest().documentId(documentId).versionKey(versionId);
 
     // when
     HttpResponse<String> response = client.getDocumentContentUrlAsHttpResponse(request);

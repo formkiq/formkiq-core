@@ -27,8 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -129,8 +127,9 @@ public class DocumentIdContentRequestHandler
     String documentVersionsTable = awsservice.environment("DOCUMENT_VERSIONS_TABLE");
 
     if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
+
       String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, documentId);
-      String sk = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
+      String sk = versionKey;
 
       DynamoDbConnectionBuilder connection =
           awsservice.getExtension(DynamoDbConnectionBuilder.class);
