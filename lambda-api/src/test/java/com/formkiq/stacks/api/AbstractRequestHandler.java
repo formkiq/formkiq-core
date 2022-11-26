@@ -286,7 +286,7 @@ public abstract class AbstractRequestHandler {
    * @return {@link DocumentService}
    */
   public DocumentService getDocumentService() {
-    return this.awsServices.documentService();
+    return this.awsServices.getExtension(DocumentService.class);
   }
 
   /**

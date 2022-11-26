@@ -55,7 +55,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -86,26 +85,24 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   /**
    * Get Response Tags.
    * 
-   * @param awsservice {@link CoreAwsServiceCache}
+   * @param documentService {@link DocumentService}
    * @param siteId {@link String}
    * @param responseFields {@link SearchResponseFields}
    * @param documents {@link List} {@link DynamicDocumentItem}
    * @return {@link Map}
    */
-  private Map<String, Collection<DocumentTag>> getResponseTags(final CoreAwsServiceCache awsservice,
-      final String siteId, final SearchResponseFields responseFields,
-      final List<DynamicDocumentItem> documents) {
+  private Map<String, Collection<DocumentTag>> getResponseTags(
+      final DocumentService documentService, final String siteId,
+      final SearchResponseFields responseFields, final List<DynamicDocumentItem> documents) {
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
     if (responseFields != null && !Objects.notNull(responseFields.tags()).isEmpty()) {
 
-      DocumentService service = awsservice.documentService();
-
       Set<String> documentIds =
           documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toSet());
 
-      map = service.findDocumentsTags(siteId, documentIds, responseFields.tags());
+      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
     }
 
     return map;
@@ -158,15 +155,14 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final AwsServiceCache awsservice) throws Exception {
 
     ApiRequestHandlerResponse response = null;
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
     QueryRequest q = fromBodyToObject(logger, event, QueryRequest.class);
 
     validatePost(q);
 
-    DocumentSearchService documentSearchService = serviceCache.documentSearchService();
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    if (isEnterpriseFeature(serviceCache, q)) {
+    if (isEnterpriseFeature(awsservice, q)) {
 
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
@@ -191,6 +187,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       }
 
       String siteId = authorizer.getSiteId();
+      DocumentSearchService documentSearchService =
+          awsservice.getExtension(DocumentSearchService.class);
 
       PaginationResults<DynamicDocumentItem> results =
           query(awsservice, documentSearchService, siteId, q, ptoken, limit);
@@ -201,7 +199,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
 
       Map<String, Collection<DocumentTag>> responseTags =
-          getResponseTags(serviceCache, siteId, q.responseFields(), documents);
+          getResponseTags(documentService, siteId, q.responseFields(), documents);
       mergeResponseTags(documents, responseTags);
 
       Map<String, Object> map = new HashMap<>();

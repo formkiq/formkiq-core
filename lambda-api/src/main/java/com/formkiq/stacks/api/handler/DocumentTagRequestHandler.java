@@ -51,7 +51,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.DeleteFulltextTag;
 import com.formkiq.stacks.client.models.UpdateFulltext;
@@ -83,15 +82,14 @@ public class DocumentTagRequestHandler
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DocumentService documentService = cacheService.documentService();
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentTag docTag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (docTag == null) {
       throw new NotFoundException("Tag '" + tagKey + "' not found.");
     }
 
-    DocumentItem document = cacheService.documentService().findDocument(siteId, documentId);
+    DocumentItem document = documentService.findDocument(siteId, documentId);
     if (document == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
@@ -145,9 +143,9 @@ public class DocumentTagRequestHandler
     String tagKey = event.getPathParameters().get("tagKey");
     String siteId = authorizer.getSiteId();
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentTag tag = cacheService.documentService().findDocumentTag(siteId, documentId, tagKey);
+    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
 
     if (tag == null) {
       throw new NotFoundException("Tag " + tagKey + " not found.");
@@ -207,8 +205,8 @@ public class DocumentTagRequestHandler
     }
 
     String siteId = authorizer.getSiteId();
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DocumentService documentService = cacheService.documentService();
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
     if (document == null) {

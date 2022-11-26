@@ -64,7 +64,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
@@ -271,16 +270,16 @@ public class DocumentIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     int limit = getLimit(logger, event);
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     ApiPagination token = getPagination(cacheService, event);
     String documentId = event.getPathParameters().get("documentId");
     ApiPagination pagination = getPagination(cacheService, event);
 
-    PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
-        documentId, true, token != null ? token.getStartkey() : null, limit);
+    PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
+        token != null ? token.getStartkey() : null, limit);
     DocumentItem result = presult.getResult();
 
     if (result == null) {

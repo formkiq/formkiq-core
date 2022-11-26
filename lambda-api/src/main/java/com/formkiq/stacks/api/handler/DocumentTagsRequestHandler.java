@@ -57,7 +57,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
@@ -83,7 +82,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
@@ -95,7 +94,7 @@ public class DocumentTagsRequestHandler
     String documentId = event.getPathParameters().get("documentId");
 
     PaginationResults<DocumentTag> results =
-        coreServices.documentService().findDocumentTags(siteId, documentId, ptoken, limit);
+        documentService.findDocumentTags(siteId, documentId, ptoken, limit);
 
     results.getResults().forEach(r -> r.setDocumentId(null));
 

@@ -25,8 +25,6 @@ package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
 
@@ -53,24 +51,6 @@ public class CoreAwsServiceCache extends AwsServiceCache {
 
   /** {@link WebhooksService}. */
   private WebhooksService webhookService;
-
-  /**
-   * Get {@link DocumentSearchService}.
-   * 
-   * @return {@link DocumentSearchService}
-   */
-  public DocumentSearchService documentSearchService() {
-    return getExtension(DocumentSearchService.class);
-  }
-
-  /**
-   * Get {@link DocumentService}.
-   * 
-   * @return {@link DocumentService}
-   */
-  public DocumentService documentService() {
-    return getExtension(DocumentService.class);
-  }
 
   /**
    * Get {@link WebhooksService}.

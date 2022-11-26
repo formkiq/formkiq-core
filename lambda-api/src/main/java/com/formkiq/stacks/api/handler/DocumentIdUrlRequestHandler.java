@@ -45,7 +45,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -131,7 +130,6 @@ public class DocumentIdUrlRequestHandler
       final String versionId, final boolean inline) {
 
     final String documentId = item.getDocumentId();
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     URL url = null;
     String contentType = getContentType(event);
@@ -162,8 +160,9 @@ public class DocumentIdUrlRequestHandler
 
       config.contentType(item.getContentType());
 
+      DocumentService documentService = awsservice.getExtension(DocumentService.class);
       Optional<DocumentFormat> format =
-          cacheService.documentService().findDocumentFormat(siteId, documentId, contentType);
+          documentService.findDocumentFormat(siteId, documentId, contentType);
 
       if (format.isPresent()) {
 
