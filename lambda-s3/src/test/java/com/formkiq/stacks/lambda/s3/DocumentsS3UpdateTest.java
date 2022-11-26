@@ -489,7 +489,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int count = 3;
+      final int count = 2;
       assertEquals(count, tags.getResults().size());
 
       int i = 0;
@@ -502,13 +502,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       assertEquals("untagged", tags.getResults().get(i).getKey());
       assertEquals("true", tags.getResults().get(i).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
-      assertEquals("joe", tags.getResults().get(i).getUserId());
-      assertNotNull(tags.getResults().get(i++).getInsertedDate());
-
-      assertEquals("userId", tags.getResults().get(i).getKey());
-      assertEquals("joe", tags.getResults().get(i).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
       assertEquals("joe", tags.getResults().get(i).getUserId());
@@ -567,7 +560,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int size = 5;
+      final int size = 4;
       int i = 0;
       assertEquals(size, tags.getResults().size());
       assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(i).getKey());
@@ -580,8 +573,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals("12345", tags.getResults().get(i).getValue());
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i).getType());
       assertEquals("12345", tags.getResults().get(i++).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
-      assertEquals("asd", tags.getResults().get(i++).getValue());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
@@ -681,7 +672,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
         assertNull(m.get(GSI1_PK));
       }
 
-      final int count = 3;
+      final int count = 2;
       int i = 0;
       assertEquals(count, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("path").setValue("test.txt")
@@ -689,10 +680,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
           tags.getResults().get(i++));
 
       assertDocumentTagEquals(new DocumentTag().setKey("untagged").setValue("true")
-          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
-          tags.getResults().get(i++));
-
-      assertDocumentTagEquals(new DocumentTag().setKey("userId").setValue("joe")
           .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
           tags.getResults().get(i++));
 
@@ -747,14 +734,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(doc.getDocumentId(), item.getDocumentId());
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(2, tags.getResults().size());
+      assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")
           .setType(DocumentTagType.USERDEFINED).setDocumentId(doc.getDocumentId()),
           tags.getResults().get(0));
-      assertDocumentTagEquals(
-          new DocumentTag().setKey("userId").setValue(doc.getUserId())
-              .setType(DocumentTagType.SYSTEMDEFINED).setDocumentId(doc.getDocumentId()),
-          tags.getResults().get(1));
 
       tags = service.findDocumentTags(siteId, itemchild.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
@@ -908,7 +891,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       Map<String, AttributeValue> result = db.getItem(r).item();
       assertEquals(ttl, result.get("TimeToLive").n());
 
-      for (String tagKey : Arrays.asList("untagged", "userId")) {
+      for (String tagKey : Arrays.asList("untagged")) {
         r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
             .tableName(DOCUMENTS_TABLE).build();
 

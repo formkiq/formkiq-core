@@ -1449,13 +1449,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    if (doc.getUserId() != null) {
-      if (tags.stream().filter(t -> t.getKey().equals("userId")).findAny().isEmpty()) {
-        tags.add(new DocumentTag(null, "userId", doc.getUserId(), date, username,
-            DocumentTagType.SYSTEMDEFINED));
-      }
-    }
-
     return tags;
   }
 

@@ -1075,9 +1075,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       PaginationResults<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals(2, tags.getResults().size());
+      assertEquals(1, tags.getResults().size());
       assertEquals("untagged", tags.getResults().get(0).getKey());
-      assertEquals("userId", tags.getResults().get(1).getKey());
 
       final String tagname = "category";
       final String tagvalue = "";
@@ -1097,11 +1096,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(expected, response);
 
       tags = getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals(2, tags.getResults().size());
+      assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
-      assertEquals("userId", tags.getResults().get(1).getKey());
-      assertEquals(username, tags.getResults().get(1).getValue());
 
       assertTrue(getLogger().containsString("response: " + expected));
     }
