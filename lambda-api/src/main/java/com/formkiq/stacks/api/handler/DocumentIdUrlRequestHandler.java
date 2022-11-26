@@ -26,7 +26,10 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,7 +68,6 @@ public class DocumentIdUrlRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
-    String versionKey = getParameter(event, "versionKey");
     String siteId = authorizer.getSiteId();
     boolean inline = "true".equals(getParameter(event, "inline"));
 
@@ -74,6 +76,11 @@ public class DocumentIdUrlRequestHandler
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
+    }
+
+    String versionKey = getParameter(event, "versionKey");
+    if (!isEmpty(versionKey)) {
+      versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
     }
 
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
