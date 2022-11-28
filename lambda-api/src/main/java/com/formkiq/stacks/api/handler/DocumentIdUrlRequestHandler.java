@@ -79,7 +79,7 @@ public class DocumentIdUrlRequestHandler
     }
 
     String versionKey = getParameter(event, "versionKey");
-    if (!isEmpty(versionKey)) {
+    if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {
       versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
     }
 
