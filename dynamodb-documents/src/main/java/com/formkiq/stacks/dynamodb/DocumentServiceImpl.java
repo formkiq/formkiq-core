@@ -1206,7 +1206,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         String newPath = oldPath.replaceAll(oldFilename, newFilename);
 
         documentValues.put("path", AttributeValue.fromS(newPath));
-        documentPath.put(SK, AttributeValue.fromS(INDEX_FILE_SK + newFilename));
+        documentPath.put(SK, AttributeValue.fromS(INDEX_FILE_SK + newFilename.toLowerCase()));
         documentPath.put("path", AttributeValue.fromS(newFilename));
       }
     }
