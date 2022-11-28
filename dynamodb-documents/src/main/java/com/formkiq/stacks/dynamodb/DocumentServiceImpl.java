@@ -947,7 +947,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (document.getChecksum() != null) {
       String etag = document.getChecksum().replaceAll("^\"|\"$", "");
-      addS(pkvalues, "etag", etag);
+      addS(pkvalues, "checksum", etag);
     }
 
     addS(pkvalues, "belongsToDocumentId", document.getBelongsToDocumentId());

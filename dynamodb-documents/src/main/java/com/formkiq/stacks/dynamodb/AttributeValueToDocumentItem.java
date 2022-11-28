@@ -105,8 +105,8 @@ public class AttributeValueToDocumentItem
       item.setContentLength(contentType);
     }
 
-    if (map.containsKey("etag")) {
-      item.setChecksum(map.get("etag").s());
+    if (map.containsKey("checksum")) {
+      item.setChecksum(map.get("checksum").s());
     }
 
     if (map.containsKey("belongsToDocumentId")) {
