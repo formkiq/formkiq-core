@@ -407,10 +407,9 @@ public class DocumentIdRequestHandler
    * @param item {@link DynamicObject}
    */
   private void updateContentType(final ApiGatewayRequestEvent event, final DynamicObject item) {
-    String contentType = getContentType(event);
 
-    if (!item.containsKey("contentType") && contentType != null) {
-      item.put("contentType", contentType);
+    if (!item.containsKey("contentType")) {
+      item.put("contentType", "application/octet-stream");
     }
   }
 

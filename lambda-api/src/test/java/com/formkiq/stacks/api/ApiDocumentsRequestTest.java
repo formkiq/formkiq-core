@@ -1206,9 +1206,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNotNull(verifyS3.getString("documentId"));
       assertNotNull(verifyS3.getString("userId"));
       assertNull(verifyS3.getString("uploadUrl"));
-      assertEquals("text/html", verifyS3.getString("contentType"));
+      assertEquals("application/octet-stream", verifyS3.getString("contentType"));
 
-      assertEquals("text/html", getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).getContentType());
+      assertEquals("application/octet-stream",
+          getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).getContentType());
     }
   }
 
