@@ -319,11 +319,12 @@ public class DocumentIdRequestHandler
     String documentId = UUID.randomUUID().toString();
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
-    updateContentType(event, item);
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
       validatePatch(awsservice, siteId, documentId, item);
+    } else {
+      updateContentType(event, item);
     }
 
     List<DynamicObject> documents = item.getList("documents");
