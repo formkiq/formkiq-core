@@ -30,13 +30,15 @@ import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-import com.formkiq.aws.dynamodb.WriteTransactionRequestBuilder;
+import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.ReadRequestBuilder;
+import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.Put;
-import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 
 /**
  * 
@@ -76,6 +78,10 @@ public class GlobalIndexWriter {
     return cache;
   }
 
+  private String getCacheKey(final Map<String, AttributeValue> r) {
+    return r.get(PK).s() + "_" + r.get(SK).s();
+  }
+
   /**
    * Write Tag Index.
    * 
@@ -87,14 +93,12 @@ public class GlobalIndexWriter {
   public void writeTagIndex(final String documentTableName, final DynamoDbClient dbClient,
       final String siteId, final Collection<String> tagKeys) {
 
-    WriteTransactionRequestBuilder txBuilder = new WriteTransactionRequestBuilder();
-
     ArrayBlockingQueue<String> cache = getCache(siteId);
 
     tagKeys.removeIf(e -> cache.contains(e));
     addToCache(cache, tagKeys);
 
-    for (String tagKey : tagKeys) {
+    List<Map<String, AttributeValue>> valueList = tagKeys.stream().map(tagKey -> {
 
       String pk = createDatabaseKey(siteId, GLOBAL_FOLDER_TAGS);
       String sk = "key" + TAG_DELIMINATOR + tagKey.toLowerCase();
@@ -102,15 +106,27 @@ public class GlobalIndexWriter {
       Map<String, AttributeValue> values = new HashMap<>(Map.of(PK, AttributeValue.fromS(pk), SK,
           AttributeValue.fromS(sk), "tagKey", AttributeValue.fromS(tagKey)));
 
-      String conditionExpression = "attribute_not_exists(" + PK + ")";
+      return values;
+    }).collect(Collectors.toList());
 
-      Put put = Put.builder().tableName(documentTableName).conditionExpression(conditionExpression)
-          .item(values)
-          .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD).build();
+    ReadRequestBuilder readBuilder = new ReadRequestBuilder();
+    List<Map<String, AttributeValue>> keys = valueList.stream()
+        .map(v -> Map.of(PK, v.get(PK), SK, v.get(SK))).collect(Collectors.toList());
+    readBuilder.append(documentTableName, keys);
 
-      txBuilder.append(put);
+    Map<String, List<Map<String, AttributeValue>>> batchReadItems =
+        readBuilder.batchReadItems(dbClient);
+
+    List<Map<String, AttributeValue>> batchReads = batchReadItems.get(documentTableName);
+
+    Set<String> existingKeys =
+        batchReads.stream().map(r -> getCacheKey(r)).collect(Collectors.toSet());
+
+    valueList.removeIf(v -> existingKeys.contains(getCacheKey(v)));
+
+    if (!valueList.isEmpty()) {
+      WriteRequestBuilder builder = new WriteRequestBuilder().appends(documentTableName, valueList);
+      builder.batchWriteItem(dbClient);
     }
-
-    txBuilder.batchTransactionWrite(dbClient);
   }
 }

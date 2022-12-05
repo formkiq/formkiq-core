@@ -67,6 +67,21 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     this.tableName = dynamoDbTableName;
   }
 
+  /**
+   * constructor.
+   * 
+   * @param client {@link DynamoDbClient}
+   * @param dynamoDbTableName {@link String}
+   */
+  public DynamoDbServiceImpl(final DynamoDbClient client, final String dynamoDbTableName) {
+    if (dynamoDbTableName == null) {
+      throw new IllegalArgumentException("Table name is null");
+    }
+
+    this.dbClient = client;
+    this.tableName = dynamoDbTableName;
+  }
+
   @Override
   public void deleteItem(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);

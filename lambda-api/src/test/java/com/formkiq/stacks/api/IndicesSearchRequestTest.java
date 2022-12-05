@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,13 +38,19 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.GlobalIndexWriter;
 import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for request /search. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class IndicesSearchRequestTest extends AbstractRequestHandler {
+
+  /** {@link GlobalIndexWriter}. */
+  private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
 
   /**
    * /indices/search by index Type "tags".
@@ -60,10 +67,16 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
 
       String documentId = UUID.randomUUID().toString();
 
+      try (DynamoDbClient dbClient = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+        this.indexWriter.writeTagIndex(DOCUMENTS_TABLE, dbClient, siteId,
+            Arrays.asList("categoryId"));
+      }
+
       DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
       document.setPath("something/path.txt");
       Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(documentId, "personId", "111", now, username));
+          Arrays.asList(new DocumentTag(documentId, "personId", "111", now, username),
+              new DocumentTag(documentId, "categoryId", "555", now, username));
       getDocumentService().saveDocument(siteId, document, tags);
 
       String indexType = "tags";
@@ -82,8 +95,9 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
       DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("values");
-      assertEquals(1, documents.size());
-      assertEquals("personId", documents.get(0).get("value"));
+      assertEquals(2, documents.size());
+      assertEquals("categoryId", documents.get(0).get("value"));
+      assertEquals("personId", documents.get(1).get("value"));
     }
   }
 }

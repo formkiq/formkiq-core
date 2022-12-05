@@ -109,7 +109,13 @@ public class ReadRequestBuilder {
         }
 
       } else {
-        map = batchReadItems(dbClient, e.getKey(), e.getValue()).responses();
+
+        BatchGetItemResponse response = batchReadItems(dbClient, e.getKey(), e.getValue());
+        if (response != null) {
+          map = response.responses();
+        } else {
+          map.put(e.getKey(), new ArrayList<>());
+        }
       }
     }
 
@@ -119,12 +125,16 @@ public class ReadRequestBuilder {
   private BatchGetItemResponse batchReadItems(final DynamoDbClient dbClient, final String tableName,
       final Collection<Map<String, AttributeValue>> keys) {
 
-    Map<String, KeysAndAttributes> requestedItems =
-        Map.of(tableName, KeysAndAttributes.builder().keys(keys).build());
+    BatchGetItemResponse batchResponse = null;
 
-    BatchGetItemRequest batchReq =
-        BatchGetItemRequest.builder().requestItems(requestedItems).build();
-    BatchGetItemResponse batchResponse = dbClient.batchGetItem(batchReq);
+    if (!keys.isEmpty()) {
+      Map<String, KeysAndAttributes> requestedItems =
+          Map.of(tableName, KeysAndAttributes.builder().keys(keys).build());
+
+      BatchGetItemRequest batchReq =
+          BatchGetItemRequest.builder().requestItems(requestedItems).build();
+      batchResponse = dbClient.batchGetItem(batchReq);
+    }
 
     return batchResponse;
   }

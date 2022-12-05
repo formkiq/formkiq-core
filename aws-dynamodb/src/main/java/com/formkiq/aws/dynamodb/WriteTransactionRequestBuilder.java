@@ -55,27 +55,6 @@ public class WriteTransactionRequestBuilder {
 
   }
 
-  // /**
-  // * Collects {@link WriteRequest} and adds to a internal list.
-  // *
-  // * @param writes {@link Map} {@link WriteRequest}
-  // * @return {@link WriteTransactionRequestBuilder}
-  // */
-  // public WriteTransactionRequestBuilder append(final Map<String, TransactWriteItem> writes) {
-  //
-  // for (Map.Entry<String, TransactWriteItem> e : writes.entrySet()) {
-  // if (this.items.containsKey(e.getKey())) {
-  // this.items.get(e.getKey()).add(e.getValue());
-  // } else {
-  // List<TransactWriteItem> list = new ArrayList<>();
-  // list.add(e.getValue());
-  // this.items.put(e.getKey(), list);
-  // }
-  // }
-  //
-  // return this;
-  // }
-
   /**
    * Append {@link Put} request to transaction.
    * 
@@ -86,60 +65,6 @@ public class WriteTransactionRequestBuilder {
     this.items.add(TransactWriteItem.builder().put(put).build());
     return this;
   }
-
-  // /**
-  // * Append {@link Map} {@link AttributeValue}.
-  // *
-  // * @param tableName {@link String}
-  // * @param values {@link Map} {@link AttributeValue}
-  // * @return {@link WriteTransactionRequestBuilder}
-  // */
-  // public WriteTransactionRequestBuilder append(final String tableName,
-  // final Map<String, AttributeValue> values) {
-  // Map<String, TransactWriteItem> writes =
-  // new AttributeValueToTransactionWriteRequest(tableName).apply(values);
-  // append(writes);
-  // return this;
-  // }
-
-  // /**
-  // * Collects {@link WriteRequest} and adds to a internal list.
-  // *
-  // * @param writes {@link Map} {@link TransactWriteItem}
-  // * @return {@link WriteTransactionRequestBuilder}
-  // */
-  // public WriteTransactionRequestBuilder appends(final Map<String, List<TransactWriteItem>>
-  // writes) {
-  //
-  // for (Entry<String, List<TransactWriteItem>> e : writes.entrySet()) {
-  // if (this.items.containsKey(e.getKey())) {
-  // this.items.get(e.getKey()).addAll(e.getValue());
-  // } else {
-  // this.items.put(e.getKey(), e.getValue());
-  // }
-  // }
-  //
-  // return this;
-  // }
-
-  // /**
-  // * Append List {@link Map} {@link AttributeValue}.
-  // *
-  // * @param tableName {@link String}
-  // * @param values {@link Collection} {@link Map} {@link AttributeValue}
-  // * @return {@link WriteTransactionRequestBuilder}
-  // */
-  // public WriteTransactionRequestBuilder appends(final String tableName,
-  // final Collection<Map<String, AttributeValue>> values) {
-  //
-  // AttributeValueToWriteRequest convert = new AttributeValueToWriteRequest(tableName);
-  // for (Map<String, AttributeValue> value : values) {
-  // Map<String, TransactWriteItem> writes = convert.apply(value);
-  // append(writes);
-  // }
-  //
-  // return this;
-  // }
 
   /**
    * Batch Write Items.
@@ -176,7 +101,7 @@ public class WriteTransactionRequestBuilder {
             if (message != null && message.length() > 0) {
               throw new RuntimeException("unable to write DynamoDb Tx: " + message);
             }
-            
+
             throw e;
           }
 
