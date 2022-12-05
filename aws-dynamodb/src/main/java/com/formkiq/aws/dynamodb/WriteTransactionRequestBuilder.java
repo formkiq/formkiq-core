@@ -168,14 +168,15 @@ public class WriteTransactionRequestBuilder {
           Optional<CancellationReason> o = e.cancellationReasons().stream()
               .filter(f -> f.code().equals("ConditionalCheckFailed")).findAny();
 
-          String message = e.cancellationReasons().stream().map(s -> s.message())
-              .collect(Collectors.joining(","));
-
-          if (message != null && message.length() > 0) {
-            throw new RuntimeException("unable to write DynamoDb Tx: " + message);
-          }
-
           if (!o.isPresent()) {
+
+            String message = e.cancellationReasons().stream().map(s -> s.message())
+                .collect(Collectors.joining(","));
+
+            if (message != null && message.length() > 0) {
+              throw new RuntimeException("unable to write DynamoDb Tx: " + message);
+            }
+            
             throw e;
           }
 
