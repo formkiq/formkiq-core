@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
@@ -157,16 +158,27 @@ public class WriteTransactionRequestBuilder {
     for (List<TransactWriteItem> writelist : parition) {
 
       if (!writelist.isEmpty()) {
+
         try {
           write = true;
           dbClient.transactWriteItems(
               TransactWriteItemsRequest.builder().transactItems(writelist).build());
         } catch (TransactionCanceledException e) {
+
           Optional<CancellationReason> o = e.cancellationReasons().stream()
               .filter(f -> f.code().equals("ConditionalCheckFailed")).findAny();
+
+          String message = e.cancellationReasons().stream().map(s -> s.message())
+              .collect(Collectors.joining(","));
+
+          if (message != null && message.length() > 0) {
+            throw new RuntimeException("unable to write DynamoDb Tx: " + message);
+          }
+
           if (!o.isPresent()) {
             throw e;
           }
+
         }
       }
     }
