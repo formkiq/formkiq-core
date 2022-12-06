@@ -665,11 +665,12 @@ public class DocumentsRequestTest extends AbstractApiTest {
         // when - fetch document
         final DocumentWithChildren documentc = getDocument(client, documentId, true);
         DocumentTags tags = getDocumentTags(client, documentId);
+
         assertEquals(2, tags.tags().size());
         assertEquals("formName", tags.tags().get(0).key());
         assertEquals("Job Application Form", tags.tags().get(0).value());
-        assertEquals("userId", tags.tags().get(1).key());
-        assertNotNull(tags.tags().get(1).value());
+        assertEquals("path", tags.tags().get(1).key());
+        assertEquals(documentId, tags.tags().get(1).value());
 
         // then
         assertNotNull(documentc);
@@ -702,8 +703,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
     FormKiqClientV1 client = getFormKiqClients().get(0);
     String url = getRootHttpUrl() + "/documents";
 
-    Map<String, List<String>> headers = Map.of("Authorization",
-        Arrays.asList(getAdminToken().idToken()), "Content-Type", Arrays.asList("text/plain"));
+    Map<String, List<String>> headers =
+        Map.of("Authorization", Arrays.asList(getAdminToken().idToken()));
     Optional<HttpHeaders> o =
         Optional.of(HttpHeaders.of(headers, new BiPredicate<String, String>() {
           @Override
@@ -712,7 +713,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
           }
         }));
 
-    String content = "{\"path\": \"test.txt\",\"content\":\"dGhpcyBpcyBhIHRlc3Q=\","
+    String content = "{\"path\": \"test.txt\",\"contentType\":\"text/plain\","
+        + "\"content\":\"dGhpcyBpcyBhIHRlc3Q=\","
         + "\"tags\":[{\"key\":\"author\",\"value\":\"Pierre Loti\"}]}";
 
     // when
