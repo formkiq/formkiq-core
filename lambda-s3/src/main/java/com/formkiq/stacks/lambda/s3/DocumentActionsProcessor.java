@@ -273,8 +273,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (map != null && map.containsKey("contentUrls")) {
         urls = (List<String>) map.get("contentUrls");
-      } else {
-        throw new IOException("Cannot find 'contentUrls' from OCR request");
       }
     }
 
