@@ -406,6 +406,7 @@ Resources:
     Type: AWS::Serverless::Application
     DependsOn:
       - ECSCluster
+      - CoreStorage
     Properties:
       Location: typesense/template.yaml
       Parameters:
