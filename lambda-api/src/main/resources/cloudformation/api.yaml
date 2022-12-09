@@ -13,11 +13,19 @@ Resources:
         info:
           title:
             Fn::Sub: "${AWS::StackName} HTTP API - ${AppEnvironment}"
+          contact:
+            name: FormKiQ
+            url: https://formkiq.com
+            email: support@formkiq.com
+          license:
+            name: Apache 2.0
+            url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: "FormKiQ HTTP API"
           version: "1.9.0"
         paths:
           /version:
             get:
+              operationId: GetVersion
               description: Return the version of FormKiQ
               tags:
               - Miscellaneous
@@ -44,6 +52,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /sites:
             get:
+              operationId: GetSites
               description: Returns the list of sites that the user has access to
               tags:
               - Miscellaneous
@@ -70,6 +79,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /tagSchemas:
             get:
+              operationId: GetTagSchemas
               description: Returns the list of tagSchemas; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise TagSchema
@@ -108,6 +118,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddTagSchema
               description: Creates a new TagSchema; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise TagSchema
@@ -152,6 +163,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /tagSchemas/{tagSchemaId}:
             get:
+              operationId: GetTagSchema
               description: Retrieves a TagSchema's details, i.e., metadata; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise TagSchema
@@ -177,6 +189,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
+              operationId: DeleteTagSchema
               description: Delete a TagSchema; ONLY available in FormKiQ Enterprise
               tags:
               - Enterprise TagSchema
@@ -192,6 +205,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents:
             get:
+              operationId: GetDocuments
               tags:
               - Documents
               description: Returns a list of the most recent documents added, ordered by inserted, descending
@@ -240,6 +254,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddDocument            
               description: Creates a new document; body may include document content if less than 5 MB
               tags:
               - Documents
@@ -296,6 +311,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}:
             get:
+              operationId: GetDocument
               description: Retrieves a document's details, i.e., metadata
               tags:
               - Documents
@@ -321,6 +337,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
+              operationId: UpdateDocument
               description: Update a document's details, i.e., metadata
               tags:
               - Documents
@@ -352,6 +369,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
+              operationId: DeleteDocument
               description: Delete a document
               tags:
               - Documents
@@ -367,6 +385,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/versions:
             get:
+              operationId: GetDocumentVersions
               description: Get a listing of document content versions; ONLY available with FormKiQ Enterprise
               tags:
               - Document Versions
@@ -397,6 +416,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
+              operationId: SetDocumentVersion
               description: Set Document to a previous document version; ONLY available with FormKiQ Enterprise
               tags:
               - Document Versions
@@ -435,6 +455,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/content:
             get:
+              operationId: GetDocumentContent
               description: Get a document's contents. text/*, application/json, application/x-www-form-urlencoded returns "content" field, all other content-types returns a 'contentUrl' for the content. 
               tags:
               - Documents
@@ -464,6 +485,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags:
             get:
+              operationId: GetDocumentTags
               description: Get a listing of a document's tags
               tags:
               - Document Tags
@@ -500,6 +522,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddDocumentTag
               description: Add a single tag to a document; endpoint also accepts a different body parameter for adding multiple tags at one time
               tags:
               - Document Tags
@@ -533,6 +556,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags#:
             post:
+              operationId: AddDocumentTags
               description: Add multiple tags to a document; endpoint also accepts a different body parameter for adding a single tag
               tags:
               - Document Tags
@@ -554,6 +578,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags/{tagKey}:
             get:
+              operationId: GetDocumentTag
               description: Get a document tag by using its key
               tags:
               - Document Tags
@@ -580,6 +605,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
+              operationId: SetDocumentTag
               description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
               tags:
               - Document Tags
@@ -601,6 +627,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
+              operationId: DeleteDocumentTag
               description: Delete a document tag by using its key
               tags:
               - Document Tags
@@ -617,6 +644,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags/{tagKey}/{tagValue}:
             delete:
+              operationId: SetDocumentTagAndValue
               description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
               - Document Tags
@@ -634,6 +662,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/url:
             get:
+              operationId: GetDocumentUrl
               description: Returns a URL for the document's contents that expires (default is 48 hours)
               tags:
               - Documents
@@ -668,6 +697,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/upload:
             get:
+              operationId: GetDocumentUpload
               description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
               tags:
               - Documents
@@ -699,6 +729,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddDocumentUpload
               description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
               tags:
               - Documents
@@ -731,6 +762,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/upload:
             get:
+              operationId: GetDocumentIdUpload
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -759,6 +791,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /search:
             post:
+              operationId: DocumentSearch
               description: Document search query request; documents are searched primarily using a document tag key and optional tag value, while an optional documentIds parameter is also available in the DocumentSearchBody to filter within up to 100 documentIds
               tags:
               - Document Search
@@ -826,6 +859,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
           /searchFulltext:
             post:
+              operationId: DocumentFulltext
               description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch) ONLY available with FormKiQ Enterprise
               tags:
               - Document Search
@@ -858,6 +892,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /queryFulltext:
             post:
+              operationId: QueryFulltext
               description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/) ONLY available with FormKiQ Enterprise
               tags:
               - Document Search
@@ -889,6 +924,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"                
           /documents/{documentId}/actions:
             get:
+              operationId: GetDocumentActions
               description: Get Document Actions and their Status
               tags:
               - Document Actions
@@ -914,6 +950,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddDocumentActions
               description: Add action to a document
               tags:
               - Document Actions
@@ -946,6 +983,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/ocr:
             get:
+              operationId: GetDocumentOcr
               description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise OCR
@@ -973,6 +1011,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             post:
+              operationId: AddDocumentOcr
               description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise OCR
@@ -1004,6 +1043,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"                        
             put:
+              operationId: SetDocumentOcr
               description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise OCR
@@ -1035,6 +1075,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             delete:
+              operationId: DeleteDocumentOcr
               description: Delete a Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise OCR
@@ -1050,6 +1091,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
           /documents/{documentId}/antivirus:                       
             put:
+              operationId: SetAntivirus
               description: Performs Antivirus scan on a document. ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise Antivirus
@@ -1082,6 +1124,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"                
           /documents/{documentId}/fulltext:
             get:
+              operationId: GetDocumentFulltext
               description: Retrieves an OpenSearch document's details, i.e., metadata
               tags:
               - Enterprise Fulltext
@@ -1107,6 +1150,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
+              operationId: DeleteDocumentFulltext
               description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise Fulltext
@@ -1121,6 +1165,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             put:
+              operationId: SetDocumentFulltext
               description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise Fulltext
@@ -1152,6 +1197,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             patch:
+              operationId: UpdateDocumentFulltext
               description: Updates Opensearch document; ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise Fulltext
@@ -1184,6 +1230,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /documents/{documentId}/fulltext/tags/{tagKey}:
             delete:
+              operationId: DeleteDocumentFulltextTag
               description: Removes document tags from full text search; ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise Fulltext
@@ -1200,6 +1247,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
             delete:
+              operationId: DeleteDocumentFulltextTagAndValue
               description: Removes document tag/value from full text search; ONLY available with FormKiQ Enterprise
               tags:
               - Enterprise Fulltext
@@ -1217,6 +1265,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"                
           /public/documents:
             post:
+              operationId: PublicAddDocument
               description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
               tags:
               - Public
@@ -1246,6 +1295,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /public/webhooks/{webhooks+}:
             post:
+              operationId: PublicAddWebhook
               description: Receives an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
               tags:
               - Public
@@ -1276,6 +1326,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /private/webhooks/{webhooks+}:
             post:
+              operationId: AddWebhookDocument
               description: Receives an incoming private webhook and creates a document based on the webhook's body; requires authentication
               tags:
               - Webhooks
@@ -1308,6 +1359,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks:
             get:
+              operationId: GetWebhooks
               tags:
               - Webhooks
               description: Returns a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
@@ -1335,6 +1387,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddWebhook
               description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               tags:
               - Webhooks
@@ -1366,6 +1419,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /webhooks/{webhookId}:
             get:
+              operationId: GetWebhook
               tags:
               - Webhooks
               description: Returns a webhook's details, i.e., its metadata
@@ -1394,6 +1448,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
+              operationId: DeleteWebhook
               description: Deletes a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
               tags:
               - Webhooks
@@ -1408,6 +1463,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
+              operationId: UpdateWebhook
               description: Updates a webhook's details, i.e., its metadata
               tags:
               - Webhooks
@@ -1429,6 +1485,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /webhooks/{webhookId}/tags:
             get:
+              operationId: GetWebhookTags
               description: Get a webhook's tags
               tags:
               - Webhooks
@@ -1454,6 +1511,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
+              operationId: AddWebhookTag
               description: Add a tag to a webhook
               tags:
               - Webhooks
@@ -1483,6 +1541,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /onlyoffice/{documentId}/edit:
             post:
+              operationId: OnlyOfficeDocumentEdit
               description: Provides OnlyOffice integration for editing Documents. ONLY available with FormKiQ Enterprise
               tags:
               - OnlyOffice
@@ -1515,6 +1574,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
           /onlyoffice/new:
             post:
+              operationId: OnlyOfficeDocumentNew
               description: Provides OnlyOffice integration for creation Documents. ONLY available with FormKiQ Enterprise
               tags:
               - OnlyOffice
@@ -1546,6 +1606,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
           /onlyoffice/{documentId}/save:
             post:
+              operationId: OnlyOfficeDocumentSave
               description: Saves Updated Documents for OnlyOffice integration. ONLY available with FormKiQ Enterprise
               tags:
               - OnlyOffice
@@ -1570,6 +1631,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200"
           /indices/{indexType}/move:
             post:
+              operationId: IndexFolderMove
               description: Performs an Folder Index Move
               tags:
               - Folder Index
@@ -1608,6 +1670,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /indices/{indexType}/{indexKey}:
             delete:
+              operationId: DeleteIndex
               description: Performs an delete on the Folder Index
               tags:
               - Folder Index
@@ -1637,6 +1700,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /indices/search:
             post:
+              operationId: IndexSearch
               description: Performs an search on an index
               tags:
               - Folder Index
@@ -1685,6 +1749,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /esignature/docusign/{documentId}:
             post:
+              operationId: EsignatureDocusign
               description: Creates an Docusign E-Signature request; ONLY available in FormKiQ Enterprise 
               tags:
               - E-Signature
@@ -1723,6 +1788,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
           /esignature/docusign/config:
             get:
+              operationId: EsignatureDocusignConfig
               description: Configures Docusign configuration; ONLY available in FormKiQ Enterprise 
               tags:
               - E-Signature
@@ -1747,6 +1813,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
             put:
+              operationId: EsignatureSetDocusignConfig
               description: Sets Docusign configuration; ONLY available in FormKiQ Enterprise 
               tags:
               - E-Signature
@@ -1778,6 +1845,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
           /esignature/docusign/events:
             post:
+              operationId: AddEsignatureDocusignEvents
               description: Docusign callback URL handler; ONLY available in FormKiQ Enterprise 
               tags:
               - E-Signature
