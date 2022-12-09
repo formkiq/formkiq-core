@@ -56,7 +56,7 @@ The following are AWS CloudFormation scripts that can be used to install FormKiQ
 
 [<img src="https://github.com/formkiq/formkiq-core/blob/3b64a239b76426550408b40b43fd815b69292441/install-play.png">](https://www.youtube.com/watch?v=jVIK2ZJZsKE "Install FormKiQ Core into any AWS Account - Click to Watch!")
 
-[Full Installation Instructions](https://docs.formkiq.com/docs/1.8.0/reference/README.html#installation)
+### FormKiQ Core CloudFormation
 
 | AWS Region   | Install Link  |
 | ------------- | -------------|
@@ -65,7 +65,7 @@ The following are AWS CloudFormation scripts that can be used to install FormKiQ
 | ca-central-1| [Install FormKiQ Core in CA-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-ca-central-1.s3.amazonaws.com/1.9.0/template.yaml)
 | eu-central-1| [Install FormKiQ Core in EU-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-eu-central-1.s3.amazonaws.com/1.9.0/template.yaml)
 
-VPC CloudFormation Script
+### FormKiQ VPC CloudFormation
 
 | AWS Region   | Install Link  |
 | ------------- | -------------|
