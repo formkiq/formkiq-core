@@ -35,7 +35,7 @@ Parameters:
     Type: String
     AllowedValues: ["core", "enterprise"]
 
-  TypeSenseApiKey:
+  TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
 
@@ -54,16 +54,16 @@ Conditions:
         - Ref: VpcStackName
         - ''
 
-  HasTypeSenseApiKey:
+  HasTypesenseApiKey:
     Fn::Not:
       - Fn::Equals: 
-        - Ref: TypeSenseApiKey
+        - Ref: TypesenseApiKey
         - ''
         
   CreateResources: 
     Fn::And:
       - Condition: HasVpcStackName
-      - Condition: HasTypeSenseApiKey
+      - Condition: HasTypesenseApiKey
 
   NotCreateResources: 
     Fn::Not:
@@ -102,7 +102,7 @@ Resources:
               - ApiEndpoint
             - ""
           TYPESENSE_API_KEY:
-            Ref: TypeSenseApiKey
+            Ref: TypesenseApiKey
       Role: 
         Fn::GetAtt:
         - TypesenseLambdaRole
@@ -276,7 +276,7 @@ Resources:
               Value: /data
             - Name: TYPESENSE_API_KEY
               Value: 
-                Ref: TypeSenseApiKey
+                Ref: TypesenseApiKey
           MountPoints:
             - SourceVolume: Typesense
               ContainerPath: '/data'

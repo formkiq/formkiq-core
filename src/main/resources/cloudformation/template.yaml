@@ -60,7 +60,7 @@ Parameters:
     Description: (optional) FormKiQ VPC Stack Name 
     Default: ""
 
-  TypeSenseApiKey:
+  TypesenseApiKey:
     Type: String
     Description: (optional) Random string of characters for https://typesense.org API access 
     Default: ""
@@ -297,8 +297,8 @@ Resources:
           Fn::GetAtt: 
           - WebsocketApi
           - Outputs.SqsQueueUrl
-        TypeSenseApiKey: 
-          Ref: TypeSenseApiKey
+        TypesenseApiKey: 
+          Ref: TypesenseApiKey
         TypesenseApiEndpoint:
           Fn::GetAtt:
           - TypeSenseService
@@ -404,8 +404,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        TypeSenseApiKey:
-          Ref: TypeSenseApiKey
+        TypesenseApiKey:
+          Ref: TypesenseApiKey
         VpcStackName:
           Ref: VpcStackName
         ECSCluster:

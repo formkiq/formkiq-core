@@ -93,7 +93,7 @@ Parameters:
     Type: String
     Default: "cognito"
 
-  TypeSenseApiKey:
+  TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
     
@@ -142,7 +142,7 @@ Resources:
           TYPESENSE_HOST:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
-            Ref: TypeSenseApiKey
+            Ref: TypesenseApiKey
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole
