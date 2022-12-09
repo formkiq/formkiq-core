@@ -8,6 +8,7 @@ Parameters:
     Type: String
     Description: A Label for the VPC
     AllowedPattern: ".+"
+    Default: "formkiq"
     
   VpcCidr:
     Type: String
