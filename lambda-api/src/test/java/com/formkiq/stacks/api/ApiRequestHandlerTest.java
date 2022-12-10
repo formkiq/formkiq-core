@@ -281,6 +281,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     // given
     setEnvironment("MODULE_ocr", "true");
     setEnvironment("MODULE_fulltext", "true");
+    setEnvironment("MODULE_otherone", "false");
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-version.json");
 
