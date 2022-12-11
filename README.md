@@ -23,9 +23,9 @@
 
 ## What is FormKiQ?
 
-FormKiQ is an Open Source Headless Document Management System (DMS) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).
+FormKiQ is a API-first, highly scalable document management system built on top on top of the latest in [Amazon Web Services(AWS) infrastructure and technology](https://aws.amazon.com) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).
 
-You can use FormKiQ as a stand alone Document Management System or you can use the FormKiQ API to quickly and easily add Document Management features to your existing applications.
+The API-first design allows anyone to quickly and easily to add document management functionality to any application and cut months off of development time. Or with FormKiQ’s Web UI, it can be used as a fully-featured stand-alone application.
 
 
 ### Features
