@@ -44,7 +44,6 @@ import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import software.amazon.awssdk.regions.Region;
 
-
 /** {@link RequestHandler} for installing the console. */
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
 
@@ -96,29 +95,26 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    */
   private void createCognitoConfig(final LambdaLogger logger) {
 
-    String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
+    String consoleVersion = this.environmentMap.get("CONSOLE_VERSION");
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
     String brand = this.environmentMap.get("BRAND");
-    String allowAdminCreateUserOnly = this.environmentMap.get("ALLOW_ADMIN_CREATE_USER_ONLY");
     String authApi = this.environmentMap.get("API_AUTH_URL");
     String cognitoHostedUi = this.environmentMap.get("COGNITO_HOSTED_UI");
     String userAuthentication = this.environmentMap.get("USER_AUTHENTICATION");
+    String cognitoUserPoolId = this.environmentMap.get("COGNITO_USER_POOL_ID");
+    String congitoClientId = this.environmentMap.get("COGNITO_USER_POOL_CLIENT_ID");
 
     String documentApi = this.environmentMap.get("API_URL");
 
-    String chartApi = brand.contains("24hourcharts") ? "https://chartapi.24hourcharts.com" : "";
-
-    String webSocketApi = this.environmentMap.get("API_WEBSOCKET_URL");
-
     String json = String.format(
-        "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
-            + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"},"
-            + "\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\","
-            + "\"userAuthentication\":\"%s\"}",
-        cognitoHostedUi, authApi, chartApi, webSocketApi, documentApi, consoleversion, brand,
-        allowAdminCreateUserOnly, userAuthentication);
+        "{%n" + "  \"documentApi\": \"%s\",%n" + "  \"userPoolId\": \"%s\",%n"
+            + "  \"clientId\": \"%s\",%n" + "  \"consoleVersion\": \"%s\",%n"
+            + "  \"brand\": \"%s\",%n" + "  \"userAuthentication\": \"%s\",%n"
+            + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\"%n" + "}",
+        documentApi, cognitoUserPoolId, congitoClientId, consoleVersion, brand, userAuthentication,
+        authApi, cognitoHostedUi);
 
-    String fileName = consoleversion + "/assets/config.json";
+    String fileName = consoleVersion + "/assets/config.json";
 
     this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null);
 

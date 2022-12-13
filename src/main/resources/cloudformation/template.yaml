@@ -184,6 +184,14 @@ Resources:
           Fn::GetAtt:
           - Cognito
           - Outputs.CognitoHostedUi
+        CognitoUserPoolId:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoUserPoolClientId
         CognitoConfigBucket:
           Fn::GetAtt:
           - Cognito
