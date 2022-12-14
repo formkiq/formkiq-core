@@ -159,8 +159,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private void deleteConsole(final LambdaLogger logger) {
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
     logger.log("deleting console from: " + destinationBucket);
-
     this.s3.deleteAllFiles(destinationBucket);
+    
+    String cognitoConfigBucket = this.environmentMap.get("COGNITO_CONFIG_BUCKET");
+    logger.log("deleting cognito config from: " + cognitoConfigBucket);
+    this.s3.deleteAllFiles(cognitoConfigBucket);
   }
 
   /**
