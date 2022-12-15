@@ -103,6 +103,7 @@ Resources:
     Properties:
       Precedence: 0
       GroupName: "Admins"
+      Description: "Administrator group access"
       RoleArn: 
         Fn::GetAtt:
         - AdminGroupRole
@@ -242,6 +243,7 @@ Resources:
     Properties:
       Precedence: 0
       GroupName: "default"
+      Description: "Read/Write access to the 'default' site id"
       UserPoolId: 
         Ref: CognitoUserPool
 
@@ -250,6 +252,7 @@ Resources:
     Properties:
       Precedence: 0
       GroupName: "default_read"
+      Description: "Read only access to the 'default' site id"
       UserPoolId: 
         Ref: CognitoUserPool
                       
