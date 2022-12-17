@@ -23,6 +23,10 @@
 
 ## What is FormKiQ?
 
+<div align="center" style="margin: 30px;">
+<img src="https://raw.githubusercontent.com/formkiq/formkiq-core/master/images/formkiq-console.png" style="width:600px;" align="center" />
+</div>
+<br />
 FormKiQ is a API-first, highly scalable document management system built on top on top of the latest in [Amazon Web Services(AWS) infrastructure and technology](https://aws.amazon.com) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).
 
 The API-first design allows anyone to quickly and easily to add document management functionality to any application and cut months off of development time. Or with FormKiQ’s Web UI, it can be used as a fully-featured stand-alone application.
