@@ -16,7 +16,7 @@
 
 <br />
 
-<div align="center"><strong>Add Document Management functionality to your  applications, without constraints.</strong><br>An open core, Headless Document Management System (DMS) developed with flexibility in mind.
+<div align="center"><strong>Add Document Management functionality to your  applications, without constraints.</strong><br>An open core, API-First Document Management System (DMS), developed with flexibility in mind.
 <br />
 <br />
 </div>
@@ -27,16 +27,16 @@
 <img src="https://raw.githubusercontent.com/formkiq/formkiq-core/master/images/formkiq-console.png" style="width:600px;" align="center" />
 </div>
 <br />
-FormKiQ is a API-first, highly scalable document management system built on top on top of the latest in [Amazon Web Services(AWS) infrastructure and technology](https://aws.amazon.com) that runs completely in *YOUR* [Amazon Web Services (AWS) Cloud](https://aws.amazon.com).
+FormKiQ Core is a flexible Open Source Document Management System (DMS) that can be used as headless software or run using our web-based client interface. FormKiQ runs in your [Amazon Web Services (AWS) Cloud](https://aws.amazon.com/), and can be used for document workflows, records management, and other document storage and processing needs using an extendable Document API.
 
-The API-first design allows anyone to quickly and easily to add document management functionality to any application and cut months off of development time. Or with FormKiQ’s Web UI, it can be used as a fully-featured stand-alone application.
+FormKiQ’s API-first design allows for anyone to quickly and easily add document management functionality to any application, cutting months off of development time. Alternatively, with FormKiQ’s customizable Front-End Web Interface, the Document Console, FormKiQ can be used as a full-featured stand-alone document management system.
 
 
 ### Features
 
 ✅ One-click Installation, though [AWS CloudFormation](https://aws.amazon.com/cloudformation)
 
-✅ API First (FormKiQ API) and Cloud-Native Architecture
+✅ API-First (FormKiQ API) and Cloud-Native Architecture
 
 ✅ Easy Integration with Existing Applications
 
