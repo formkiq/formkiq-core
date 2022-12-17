@@ -124,6 +124,8 @@ public class ConsoleInstallHandlerTest {
     map.put("USER_AUTHENTICATION", "cognito");
     map.put("COGNITO_CONFIG_BUCKET", CONSOLE_BUCKET);
     map.put("DOMAIN", "dev");
+    map.put("COGNITO_USER_POOL_ID", "us-east-2_blGeBpyLg");
+    map.put("COGNITO_USER_POOL_CLIENT_ID", "7223423m2pfgf34qnfokb2po2l");
 
     this.handler = new ConsoleInstallHandler(map, s3Connection, s3Connection) {
 
@@ -363,16 +365,14 @@ public class ConsoleInstallHandlerTest {
    * Verify Config File is written.
    */
   private void verifyConfigWritten() {
-    String config = String.format(
-        "{%n\"url\": {%n\"cognitoHostedUi\":\"%s\",%n\"authApi\":\"%s\",%n\"chartApi\":\"%s\","
-            + "%n\"webSocketApi\":\"%s\",%n\"documentApi\":\"%s\"}"
-            + ",\"consoleversion\":\"%s\",\"brand\":\"%s\",\"allowAdminCreateUserOnly\":\"%s\","
-            + "\"userAuthentication\":\"cognito\"}",
-        "https://test2622653865277.auth.us-east-2.amazoncognito.com",
-        "https://auth.execute-api.us-east-1.amazonaws.com/prod/",
-        "https://chartapi.24hourcharts.com", "wss://me.execute-api.us-east-1.amazonaws.com/prod/",
-        "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/", "0.1",
-        "24hourcharts", "false");
+    String config = String.format("{%n"
+        + "  \"documentApi\": \"https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/\",%n"
+        + "  \"userPoolId\": \"us-east-2_blGeBpyLg\",%n"
+        + "  \"clientId\": \"7223423m2pfgf34qnfokb2po2l\",%n" + "  \"consoleVersion\": \"0.1\",%n"
+        + "  \"brand\": \"24hourcharts\",%n" + "  \"userAuthentication\": \"cognito\",%n"
+        + "  \"authApi\": \"https://auth.execute-api.us-east-1.amazonaws.com/prod/\",%n"
+        + "  \"cognitoHostedUi\": \"https://test2622653865277.auth.us-east-2.amazoncognito.com\"%n"
+        + "}");
 
     assertTrue(this.logger.containsString("writing Cognito config: " + config));
   }

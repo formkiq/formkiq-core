@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -35,12 +36,14 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.plugins.tagschema.DocumentTagLoader;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Services for Querying, Updating Documents. */
 public interface DocumentService extends DocumentTagLoader {
 
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
+
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
       Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
@@ -50,8 +53,9 @@ public interface DocumentService extends DocumentTagLoader {
    * 
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
+   * @throws IOException IOException
    */
-  void addFolderIndex(String siteId, DocumentItem item);
+  void addFolderIndex(String siteId, DocumentItem item) throws IOException;
 
   /**
    * Add Tags to Document.
@@ -398,4 +402,15 @@ public interface DocumentService extends DocumentTagLoader {
    */
   @Deprecated
   Preset savePreset(String siteId, String id, String type, Preset preset, List<PresetTag> tags);
+
+  /**
+   * Update Document Attributes.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributes {@link Map}
+   * @param updateVersioning boolean
+   */
+  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes,
+      boolean updateVersioning);
 }

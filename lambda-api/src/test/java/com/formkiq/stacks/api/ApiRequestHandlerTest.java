@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -95,6 +96,8 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       String userId = "jsmith";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+      DocumentMetadata md = new DocumentMetadata("category", "person");
+      item.setMetadata(Arrays.asList(md));
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
@@ -117,6 +120,11 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       assertEquals(userId, resp.getString("userId"));
       assertNotNull(resp.get("insertedDate"));
       assertNotNull(resp.get("lastModifiedDate"));
+
+      List<DynamicObject> metadata = resp.getList("metadata");
+      assertEquals(1, metadata.size());
+      assertEquals("{value=person, key=category}", metadata.get(0).toString());
+
       assertEquals(resp.get("insertedDate"), resp.get("lastModifiedDate"));
       assertNull(resp.get("next"));
       assertNull(resp.get("previous"));
@@ -273,6 +281,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     // given
     setEnvironment("MODULE_ocr", "true");
     setEnvironment("MODULE_fulltext", "true");
+    setEnvironment("MODULE_otherone", "false");
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-version.json");
 

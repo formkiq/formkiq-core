@@ -29,6 +29,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
@@ -41,8 +42,9 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.common.formats.MimeType;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/content". */
 public class DocumentIdContentRequestHandler
@@ -60,15 +62,19 @@ public class DocumentIdContentRequestHandler
       final AwsServiceCache awsservice) throws Exception {
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
-    String versionId = getParameter(event, "versionId");
+    String versionKey = getParameter(event, "versionKey");
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = serviceCache.documentService().findDocument(siteId, documentId);
+    DocumentItem item = documentService.findDocument(siteId, documentId);
 
     if (item == null) {
       throw new NotFoundException("Document " + documentId + " not found.");
     }
+
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
+    String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
     ApiResponse response = null;
 

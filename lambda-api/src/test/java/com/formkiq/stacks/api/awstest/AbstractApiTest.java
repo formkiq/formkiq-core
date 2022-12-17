@@ -30,12 +30,14 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +52,7 @@ import com.formkiq.aws.services.lambda.services.ConfigServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
-import com.formkiq.aws.sts.Aws4SignerParamsBuilder;
 import com.formkiq.aws.sts.StsConnectionBuilder;
-import com.formkiq.aws.sts.StsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -62,7 +62,6 @@ import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
-import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
@@ -102,8 +101,6 @@ public abstract class AbstractApiTest {
   private static ConfigService configService;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
-  /** {@link Aws4SignerParams}. */
-  private static Aws4SignerParams executeApiSigner;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
   /** FormKiQ Http API Client. */
@@ -124,8 +121,6 @@ public abstract class AbstractApiTest {
   private static SsmService ssmService;
   /** {@link StsConnectionBuilder}. */
   private static StsConnectionBuilder stsBuilder;
-  /** {@link StsService}. */
-  private static StsService stsService;
   /** Temporary Cognito Password. */
   private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
   /** Cognito User Email. */
@@ -191,7 +186,6 @@ public abstract class AbstractApiTest {
     adminCognitoService = new CognitoService(adminBuilder);
 
     stsBuilder = new StsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    stsService = new StsService(stsBuilder);
 
     try (StsClient stsClient = stsBuilder.build()) {
 
@@ -204,9 +198,6 @@ public abstract class AbstractApiTest {
       try (IamClient iamClient = iamBuilder.build()) {
         iam.addUserToGroup(iamClient, user, apiGatewayInvokeGroup);
       }
-
-      executeApiSigner = new Aws4SignerParamsBuilder().setRegion(awsregion)
-          .setSigningName("execute-api").setCredentials(awsprofile).build();
     }
 
     setupCognito();
@@ -274,16 +265,6 @@ public abstract class AbstractApiTest {
    */
   private static String getRootRestUrl() {
     return rootRestUrl;
-  }
-
-  /**
-   * Get {@link StsService}.
-   * 
-   * @param url {@link String}
-   * @return {@link StsService}
-   */
-  public static StsService getStsService(final String url) {
-    return isIamAuthentication(url) ? stsService : null;
   }
 
   /**
@@ -401,18 +382,20 @@ public abstract class AbstractApiTest {
    * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
    * @param client {@link FormKiqClientV1}
+   * @param path {@link String}
    * @return {@link String}
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  protected String addDocumentWithoutFile(final FormKiqClientV1 client)
+  protected String addDocumentWithoutFile(final FormKiqClientV1 client, final String path)
       throws IOException, URISyntaxException, InterruptedException {
     // given
     final int status = 200;
     final String content = "sample content";
+    String p = path != null ? URLEncoder.encode(path, StandardCharsets.UTF_8) : null;
     GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().contentLength(content.length());
+        new GetDocumentUploadRequest().path(p).contentLength(content.length());
 
     // when
     HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
@@ -548,15 +531,6 @@ public abstract class AbstractApiTest {
         Thread.sleep(ONE_SECOND);
       }
     }
-  }
-
-  /**
-   * Get {@link Aws4SignerParams}.
-   * 
-   * @return {@link Aws4SignerParams}
-   */
-  public Aws4SignerParams getExecuteApiSigner() {
-    return executeApiSigner;
   }
 
   /**

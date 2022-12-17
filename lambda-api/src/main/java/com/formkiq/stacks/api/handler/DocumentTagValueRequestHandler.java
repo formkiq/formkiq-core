@@ -40,7 +40,6 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.DeleteFulltextTag;
 import com.formkiq.stacks.client.requests.DeleteFulltextTagsRequest;
@@ -69,8 +68,7 @@ public class DocumentTagValueRequestHandler
     String tagKey = map.get("tagKey");
     String tagValue = map.get("tagValue");
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DocumentService documentService = cacheService.documentService();
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem item = documentService.findDocument(siteId, documentId);
     if (item == null) {

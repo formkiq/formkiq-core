@@ -21,27 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.api.handler;
 
-import java.util.List;
-import java.util.Map;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
-/**
- * 
- * Generates Indexes Processor.
- *
- */
-public interface IndexProcessor {
+/** {@link ApiGatewayRequestHandler} for "/esignature/docusign/{documentId}". */
+public class EsignatureDocusignDocumentIdRequestHandler
+    extends AbstractPaymentRequiredRequestHandler {
+
+  /** {@link EsignatureDocusignDocumentIdRequestHandler} URL. */
+  public static final String URL = "/esignature/docusign/{documentId}";
 
   /**
-   * Generates DynamoDB {@link WriteRequest} for Index.
-   * 
-   * @param siteId {@link String}
-   * @param item {@link DocumentItem}
-   * @return {@link List} {@link Map} {@link AttributeValue}
+   * constructor.
+   *
    */
-  List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
+  public EsignatureDocusignDocumentIdRequestHandler() {}
+
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
 }

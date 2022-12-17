@@ -44,6 +44,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -63,12 +64,13 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DateUtil;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
+import com.formkiq.stacks.dynamodb.DocumentValidator;
+import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.PaginationResult;
@@ -87,6 +89,8 @@ public class DocumentIdRequestHandler
   /** Extension for FormKiQ config file. */
   public static final String FORMKIQ_DOC_EXT = ".fkb64";
 
+  /** {@link DocumentValidator}. */
+  private DocumentValidator documentValidator = new DocumentValidatorImpl();
   /** {@link DocumentsRestrictionsMaxDocuments}. */
   private DocumentsRestrictionsMaxDocuments restrictionMaxDocuments =
       new DocumentsRestrictionsMaxDocuments();
@@ -266,16 +270,16 @@ public class DocumentIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     int limit = getLimit(logger, event);
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     ApiPagination token = getPagination(cacheService, event);
     String documentId = event.getPathParameters().get("documentId");
     ApiPagination pagination = getPagination(cacheService, event);
 
-    PaginationResult<DocumentItem> presult = serviceCache.documentService().findDocument(siteId,
-        documentId, true, token != null ? token.getStartkey() : null, limit);
+    PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
+        token != null ? token.getStartkey() : null, limit);
     DocumentItem result = presult.getResult();
 
     if (result == null) {
@@ -298,20 +302,9 @@ public class DocumentIdRequestHandler
     return "/documents/{documentId}";
   }
 
-  /**
-   * Validate Patch Request.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @throws NotFoundException NotFoundException
-   */
-  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws NotFoundException {
-    DocumentService docService = awsservice.getExtension(DocumentService.class);
-    if (docService.findDocument(siteId, documentId) == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+  private boolean isFolder(final DynamicDocumentItem item) {
+    boolean isFolder = item.hasString("path") && item.getString("path").endsWith("/");
+    return isFolder;
   }
 
   @Override
@@ -325,13 +318,14 @@ public class DocumentIdRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = UUID.randomUUID().toString();
 
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
+
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
-      validatePatch(awsservice, siteId, documentId);
+      validatePatch(awsservice, siteId, documentId, item);
+    } else {
+      updateContentType(event, item);
     }
-
-    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
-    updateContentType(event, item);
 
     List<DynamicObject> documents = item.getList("documents");
 
@@ -374,29 +368,6 @@ public class DocumentIdRequestHandler
     return new ApiRequestHandlerResponse(status, new ApiMapResponse(map));
   }
 
-  private String validatePost(final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item) throws BadException {
-
-    boolean isFolder = isFolder(item);
-
-    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()) {
-      throw new BadException("Invalid JSON body.");
-    }
-
-    String maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
-    if (maxDocumentCount != null
-        && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
-      throw new BadException("Max Number of Documents reached");
-    }
-
-    return maxDocumentCount;
-  }
-
-  private boolean isFolder(final DynamicDocumentItem item) {
-    boolean isFolder = item.hasString("path") && item.getString("path").endsWith("/");
-    return isFolder;
-  }
-
   /**
    * Put Object to Staging Bucket.
    * 
@@ -437,11 +408,64 @@ public class DocumentIdRequestHandler
    * @param item {@link DynamicObject}
    */
   private void updateContentType(final ApiGatewayRequestEvent event, final DynamicObject item) {
-    String contentType = getContentType(event);
 
-    if (!item.containsKey("contentType") && contentType != null) {
-      item.put("contentType", contentType);
+    if (!item.containsKey("contentType")) {
+      item.put("contentType", "application/octet-stream");
     }
+  }
+
+  /**
+   * Validate Patch Request.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param doc {@link DocumentItem}
+   * @throws NotFoundException NotFoundException
+   * @throws ValidationException ValidationException
+   */
+  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final DocumentItem doc)
+      throws NotFoundException, ValidationException {
+    DocumentService docService = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = docService.findDocument(siteId, documentId);
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
+
+    Collection<DocumentMetadata> metadata =
+        item.getMetadata() != null ? new ArrayList<>(item.getMetadata()) : new ArrayList<>();
+    if (doc.getMetadata() != null) {
+      metadata.addAll(doc.getMetadata());
+    }
+
+    Collection<ValidationError> errors = this.documentValidator.validate(metadata);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+
+  private String validatePost(final AwsServiceCache awsservice, final String siteId,
+      final DynamicDocumentItem item) throws BadException, ValidationException {
+
+    boolean isFolder = isFolder(item);
+
+    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()) {
+      throw new BadException("Invalid JSON body.");
+    }
+
+    Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    String maxDocumentCount = this.restrictionMaxDocuments.getValue(awsservice, siteId);
+    if (maxDocumentCount != null
+        && this.restrictionMaxDocuments.enforced(awsservice, siteId, maxDocumentCount)) {
+      throw new BadException("Max Number of Documents reached");
+    }
+
+    return maxDocumentCount;
   }
 
   /**

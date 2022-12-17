@@ -48,7 +48,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiUrlResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -149,7 +148,6 @@ public class DocumentsIdUploadRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     boolean documentExists = false;
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
 
     Date date = new Date();
     String documentId = UUID.randomUUID().toString();
@@ -162,7 +160,7 @@ public class DocumentsIdUploadRequestHandler
     Map<String, String> query = event.getQueryStringParameters();
 
     String siteId = authorizer.getSiteId();
-    DocumentService service = cacheService.documentService();
+    DocumentService service = awsservice.getExtension(DocumentService.class);
 
     if (map != null && map.containsKey("documentId")) {
 
@@ -200,12 +198,7 @@ public class DocumentsIdUploadRequestHandler
         logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
         service.saveDocument(siteId, item, tags);
 
-        if (value != null) {
-          DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
-          countService.incrementDocumentCount(siteId);
-        } else {
-          throw new BadException("Max Number of Documents reached");
-        }
+        incrementDocumentCount(awsservice, siteId, value);
       }
     }
 
@@ -215,5 +208,23 @@ public class DocumentsIdUploadRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/upload";
+  }
+
+  /**
+   * Increment Document Count.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param value {@link String}
+   * @throws BadException BadException
+   */
+  private void incrementDocumentCount(final AwsServiceCache awsservice, final String siteId,
+      final String value) throws BadException {
+    if (value != null) {
+      DocumentCountService countService = awsservice.getExtension(DocumentCountService.class);
+      countService.incrementDocumentCount(siteId);
+    } else {
+      throw new BadException("Max Number of Documents reached");
+    }
   }
 }

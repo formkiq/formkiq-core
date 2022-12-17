@@ -34,7 +34,7 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
  */
 public class DocumentServiceExtension implements AwsServiceExtension<DocumentService> {
 
-  /** {@link CacheService}. */
+  /** {@link DocumentService}. */
   private DocumentService service;
 
   /**
@@ -47,8 +47,12 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
     if (this.service == null) {
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new DocumentServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+
+      DocumentVersionService versionService =
+          awsServiceCache.getExtension(DocumentVersionService.class);
+
+      this.service = new DocumentServiceImpl(connection,
+          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService);
     }
 
     return this.service;

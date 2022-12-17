@@ -57,7 +57,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
@@ -83,7 +82,7 @@ public class DocumentTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
@@ -95,7 +94,7 @@ public class DocumentTagsRequestHandler
     String documentId = event.getPathParameters().get("documentId");
 
     PaginationResults<DocumentTag> results =
-        coreServices.documentService().findDocumentTags(siteId, documentId, ptoken, limit);
+        documentService.findDocumentTags(siteId, documentId, ptoken, limit);
 
     results.getResults().forEach(r -> r.setDocumentId(null));
 
@@ -181,9 +180,7 @@ public class DocumentTagsRequestHandler
       }
     }
 
-    CoreAwsServiceCache coreServices = CoreAwsServiceCache.cast(awsservice);
-
-    DocumentService documentService = coreServices.documentService();
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem item = documentService.findDocument(siteId, documentId);
     if (item == null) {
@@ -210,12 +207,12 @@ public class DocumentTagsRequestHandler
 
     documentService.deleteDocumentTag(siteId, documentId, "untagged");
 
-    Collection<DocumentTag> newTags = tagSchemaValidation(coreServices, siteId, tags, item, userId);
+    Collection<DocumentTag> newTags = tagSchemaValidation(awsservice, siteId, tags, item, userId);
 
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
     allTags.addAll(newTags);
 
-    updateFulltextIfInstalled(awsservice, siteId, documentId, allTags);
+    updateFulltextIfInstalled(logger, awsservice, siteId, documentId, allTags);
 
     documentService.addTags(siteId, documentId, allTags, null);
 
@@ -228,7 +225,7 @@ public class DocumentTagsRequestHandler
   /**
    * Added Any TagSchema Composite Keys and Validate.
    * 
-   * @param coreServices {@link CoreAwsServiceCache}
+   * @param coreServices {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param tags {@link DocumentTags}
    * @param item {@link DocumentItem}
@@ -236,7 +233,7 @@ public class DocumentTagsRequestHandler
    * @return {@link Collection} {@link DocumentTag}
    * @throws ValidationException ValidationException
    */
-  private Collection<DocumentTag> tagSchemaValidation(final CoreAwsServiceCache coreServices,
+  private Collection<DocumentTag> tagSchemaValidation(final AwsServiceCache coreServices,
       final String siteId, final DocumentTags tags, final DocumentItem item, final String userId)
       throws ValidationException {
 
@@ -256,6 +253,7 @@ public class DocumentTagsRequestHandler
   /**
    * Update Fulltext index if Module available.
    * 
+   * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param documentId {@link String}
@@ -263,9 +261,9 @@ public class DocumentTagsRequestHandler
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void updateFulltextIfInstalled(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final List<DocumentTag> tags)
-      throws IOException, InterruptedException {
+  private void updateFulltextIfInstalled(final LambdaLogger logger,
+      final AwsServiceCache awsservice, final String siteId, final String documentId,
+      final List<DocumentTag> tags) throws IOException, InterruptedException {
 
     if (awsservice.hasModule("fulltext")) {
       FormKiqClientV1 client = awsservice.getExtension(FormKiqClientV1.class);
@@ -283,6 +281,10 @@ public class DocumentTagsRequestHandler
 
         if (response.statusCode() == SC_BAD_REQUEST.getStatusCode()
             || response.statusCode() == SC_ERROR.getStatusCode()) {
+
+          logger.log("unable to update Fulltext");
+          logger.log("status: " + response.statusCode());
+          logger.log("body: " + response.body());
           throw new IOException("unable to update Fulltext");
         }
       }

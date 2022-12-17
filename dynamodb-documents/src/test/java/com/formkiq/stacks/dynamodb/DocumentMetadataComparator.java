@@ -21,60 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.dynamodb;
 
-import java.util.List;
-import com.formkiq.aws.services.lambda.ApiResponse;
-import com.formkiq.graalvm.annotations.Reflectable;
+import java.io.Serializable;
+import java.util.Comparator;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 
-/** API Response Object. */
-@Reflectable
-public class ApiDocumentVersionsResponse implements ApiResponse {
+/**
+ * 
+ * {@link Comparator} for {@link DocumentMetadata}.
+ *
+ */
+public class DocumentMetadataComparator implements Comparator<DocumentMetadata>, Serializable {
 
-  /** Next Results Token. */
-  @Reflectable
-  private String next;
-  /** Document String Tag Value. */
-  @Reflectable
-  private List<ApiDocumentVersion> versions;
-
-  /** constructor. */
-  public ApiDocumentVersionsResponse() {}
+  /** serialVersionUID. */
+  private static final long serialVersionUID = -6849249786776453804L;
 
   @Override
-  public String getNext() {
-    return this.next;
-  }
-
-  @Override
-  public String getPrevious() {
-    return null;
-  }
-
-  /**
-   * Get Document Versions.
-   * 
-   * @return {@link List} {@link ApiDocumentVersion}
-   */
-  public List<ApiDocumentVersion> getVersions() {
-    return this.versions;
-  }
-
-  /**
-   * Set Next Token.
-   * 
-   * @param token {@link String}
-   */
-  public void setNext(final String token) {
-    this.next = token;
-  }
-
-  /**
-   * Set Document Versions.
-   * 
-   * @param list {@link List} {@link ApiDocumentVersion}
-   */
-  public void setVersions(final List<ApiDocumentVersion> list) {
-    this.versions = list;
+  public int compare(final DocumentMetadata o1, final DocumentMetadata o2) {
+    return o1.getKey().compareTo(o2.getKey());
   }
 }

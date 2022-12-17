@@ -92,7 +92,15 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
     Default: "cognito"
+
+  TypesenseApiKey:
+    Type: String
+    Description: TypeSense API Key
     
+  TypesenseApiEndpoint:
+    Type: String
+    Description: TypeSense API Endpoint
+        
 Resources:        
         
   DocumentsApiRequests:
@@ -130,6 +138,11 @@ Resources:
             Ref: WebsocketSqsQueueUrl
           USER_AUTHENTICATION:
             Ref: UserAuthentication
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          TYPESENSE_HOST:
+            Ref: TypesenseApiEndpoint
+          TYPESENSE_API_KEY:
+            Ref: TypesenseApiKey
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole
@@ -152,7 +165,7 @@ Resources:
       FunctionName: 
         Ref: DocumentsApiRequests
       Principal: apigateway.amazonaws.com
-  
+
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -228,7 +241,9 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess      
+      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      - arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
       Policies:
         -
           PolicyName: apigatewaylambdarole

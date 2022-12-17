@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
@@ -191,7 +192,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /documents with TAG(s) only.
+   * PATCH /documents with TAG(s) only.
    *
    * @throws Exception an error has occurred
    */
@@ -232,6 +233,94 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       assertEquals("USERDEFINED", tags.get(0).get("type"));
       assertEquals("author", tags.get(0).get("key"));
       assertEquals("Bacon", tags.get(0).get("value"));
+    }
+  }
+
+  /**
+   * PATCH /documents Metadata.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePatchDocuments06() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // given
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
+          new DocumentMetadata("playerId", "something")));
+      getDocumentService().saveDocument(siteId, doc, null);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody("{\"metadata\":[{\"key\":\"person\",\"value\":\"category\"},"
+          + "{\"key\":\"playerId\",\"values\":[\"111\",\"222\"]}]}");
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      assert200Response(siteId, response);
+
+      String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
+
+      String json = getS3().getContentAsString(STAGE_BUCKET_NAME, s3key, null);
+      Map<String, Object> map = fromJson(json, Map.class);
+
+      List<Map<String, Object>> metadata = (List<Map<String, Object>>) map.get("metadata");
+      assertEquals(2, metadata.size());
+      assertEquals("person", metadata.get(0).get("key"));
+      assertEquals("category", metadata.get(0).get("value"));
+      assertEquals("playerId", metadata.get(1).get("key"));
+      assertEquals("[111, 222]", metadata.get(1).get("values").toString());
+    }
+  }
+
+  /**
+   * PATCH /documents Metadata too many metadata.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePatchDocuments07() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int count = 30;
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
+          new DocumentMetadata("playerId", "something")));
+      getDocumentService().saveDocument(siteId, doc, null);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      Map<String, Object> data = new HashMap<>();
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+        metadata.add(Map.of("key", "ad_" + i, "value", "some"));
+      }
+      data.put("metadata", metadata);
+      event.setBody(GsonUtil.getInstance().toJson(data));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"errors\":[{\"key\":\"metadata\",\"error\":\"maximum number is 25\"}]}",
+          String.valueOf(m.get("body")));
     }
   }
 

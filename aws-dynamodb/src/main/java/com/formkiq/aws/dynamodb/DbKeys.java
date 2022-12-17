@@ -25,9 +25,12 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -93,6 +96,26 @@ public interface DbKeys {
   String PREFIX_WEBHOOKS = "webhooks" + TAG_DELIMINATOR;
   /** Global Meta Data Key Prefix. */
   String GLOBAL_FOLDER_METADATA = "global" + TAG_DELIMINATOR + "folders";
+  /** Global Meta Data Tags Prefix. */
+  String GLOBAL_FOLDER_TAGS = "global" + TAG_DELIMINATOR + "tags" + TAG_DELIMINATOR;
+  /** Metadata Prefix. */
+  String PREFIX_DOCUMENT_METADATA = "md" + TAG_DELIMINATOR;
+
+  /**
+   * Add {@link String} to {@link Map} {@link AttributeValue}.
+   * 
+   * @param map {@link Map} {@link AttributeValue}
+   * @param key {@link String}
+   * @param values {@link Collection} {@link String}
+   */
+  default void addL(final Map<String, AttributeValue> map, final String key,
+      final Collection<String> values) {
+    if (values != null) {
+      List<AttributeValue> list =
+          values.stream().map(v -> AttributeValue.fromS(v)).collect(Collectors.toList());
+      map.put(key, AttributeValue.builder().l(list).build());
+    }
+  }
 
   /**
    * Add {@link Map} to {@link Map} {@link AttributeValue}.

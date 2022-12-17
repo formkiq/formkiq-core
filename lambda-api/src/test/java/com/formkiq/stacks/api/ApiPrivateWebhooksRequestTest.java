@@ -100,7 +100,7 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
 
   @SuppressWarnings("unchecked")
   private void verifyS3File(final String webhookId, final String siteId, final String documentId,
-      final String name, final String contentType, final boolean hasTimeToLive) {
+      final String name, final String contentType, final boolean hasTimeToLive) throws Exception {
 
     // verify s3 file
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);

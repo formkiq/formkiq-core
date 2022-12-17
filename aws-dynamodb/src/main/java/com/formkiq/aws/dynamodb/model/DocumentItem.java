@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.model;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -86,11 +87,25 @@ public interface DocumentItem {
   Date getLastModifiedDate();
 
   /**
+   * Get Document Metadata.
+   * 
+   * @return {@link Collection} {@link DocumentMetadata}
+   */
+  Collection<DocumentMetadata> getMetadata();
+
+  /**
    * Get Path.
    *
    * @return {@link String}
    */
   String getPath();
+
+  /**
+   * Get S3 Version.
+   * 
+   * @return {@link String}
+   */
+  String getS3version();
 
   /**
    * Get Tag Schema Id.
@@ -112,6 +127,13 @@ public interface DocumentItem {
    * @return {@link String}
    */
   String getUserId();
+
+  /**
+   * Get Document Version.
+   * 
+   * @return {@link String}
+   */
+  String getVersion();
 
   /**
    * Sets Belongs To DocumentId.
@@ -170,11 +192,25 @@ public interface DocumentItem {
   void setLastModifiedDate(Date date);
 
   /**
+   * Set Metadata {@link Collection} {@link DocumentMetadata}.
+   * 
+   * @param metadata {@link Collection} {@link DocumentMetadata}
+   */
+  void setMetadata(Collection<DocumentMetadata> metadata);
+
+  /**
    * Set Path.
    *
    * @param filepath {@link String}
    */
   void setPath(String filepath);
+
+  /**
+   * Set S3 Version.
+   * 
+   * @param version {@link String}
+   */
+  void setS3version(String version);
 
   /**
    * Set TagSchema Id.
@@ -196,4 +232,11 @@ public interface DocumentItem {
    * @param username {@link String}
    */
   void setUserId(String username);
+
+  /**
+   * Set Document Version.
+   * 
+   * @param version {@link String}
+   */
+  void setVersion(String version);
 }

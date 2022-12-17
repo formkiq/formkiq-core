@@ -25,6 +25,7 @@ package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -64,6 +65,8 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -98,7 +101,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static ClientAndServer mockServer;
 
   /** Port to run Test server. */
-  private static final int PORT = 8080;
+  private static final int PORT = 8888;
   /** {@link DocumentActionsProcessor}. */
   private static DocumentActionsProcessor processor;
   /** {@link SsmService}. */
@@ -118,16 +121,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /**
    * Before Class.
    * 
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
-   * @throws IOException IOException
+   * @throws Exception Exception
    */
   @BeforeAll
-  public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
+  public static void beforeClass() throws Exception {
 
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
 
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
+    DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
+
+    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     createMockServer();
 
@@ -140,7 +143,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     Map<String, String> env = new HashMap<>();
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     processor = new DocumentActionsProcessor(env, Region.US_EAST_1, null, dbBuilder,
         TestServices.getS3Connection(null), TestServices.getSsmConnection(null),

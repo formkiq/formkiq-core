@@ -14,8 +14,8 @@ def moduleName = "formkiq-core"
 repositories { mavenCentral() }
 
 allprojects {
-  version = '1.8.9'
-  ext.awsCognitoVersion = '1.4.3'
+  version = '1.9.0'
+  ext.awsCognitoVersion = '1.4.4'
   group = 'com.formkiq.stacks'
   
 	apply plugin: 'com.diffplug.spotless'
@@ -117,6 +117,7 @@ task buildDistribution(type: Copy) {
     from 'console/build/distributions/formkiq-core'
     from 'lambda-api/build/distributions/formkiq-core'
     from 'lambda-s3/build/distributions/formkiq-core'
+    from 'lambda-typesense/build/distributions/formkiq-module-lambda-typesense'
     from 'module-email-notify/build/distributions/formkiq-core'
     from 'websocket-api/build/distributions/formkiq-core'
     into "${buildDir}/distributions/formkiq-core"

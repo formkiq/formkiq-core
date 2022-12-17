@@ -49,6 +49,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -85,8 +86,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    * 
    * @param prefix {@link String}
    * @param testdatacount int
+   * @throws Exception Exception
    */
-  private void createTestData(final String prefix, final int testdatacount) {
+  private void createTestData(final String prefix, final int testdatacount) throws Exception {
     String userId = "jsmith";
     final int min10 = 10;
     LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
@@ -1204,9 +1206,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNotNull(verifyS3.getString("documentId"));
       assertNotNull(verifyS3.getString("userId"));
       assertNull(verifyS3.getString("uploadUrl"));
-      assertEquals("text/html", verifyS3.getString("contentType"));
+      assertEquals("application/octet-stream", verifyS3.getString("contentType"));
 
-      assertEquals("text/html", getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).getContentType());
+      assertEquals("application/octet-stream",
+          getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).getContentType());
     }
   }
 
@@ -1314,7 +1317,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
       results = search.search(siteId, q, null, 2);
       assertEquals(1, results.getResults().size());
-      assertEquals("something/bleh", results.getResults().get(0).get("path"));
+      assertEquals("bleh", results.getResults().get(0).get("path"));
 
       // given
       // when
@@ -1330,15 +1333,89 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents too many metadata.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocuments16() throws Exception {
+    // given
+    final int count = 30;
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      ApiGatewayRequestEvent event =
+          createRequest("/request-post-documents-documentid01.json", siteId, null, null);
+
+      Map<String, Object> data = fromJson(event.getBody(), Map.class);
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+        metadata.add(Map.of("key", "ad_" + i, "value", "some"));
+      }
+      data.put("metadata", metadata);
+      event.setBody(GsonUtil.getInstance().toJson(data));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{errors=[{key=metadata, error=maximum number is 25}]}", body.toString());
+    }
+  }
+
+  /**
+   * POST /documents too large meta data.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocuments17() throws Exception {
+    // given
+    final int count = 1001;
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      String filled = StringUtils.repeat("*", count);
+      ApiGatewayRequestEvent event =
+          createRequest("/request-post-documents-documentid01.json", siteId, null, null);
+
+      Map<String, Object> data = fromJson(event.getBody(), Map.class);
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      metadata.add(Map.of("key", "ad1", "value", filled));
+      metadata.add(Map.of("key", "ad2", "values", Arrays.asList(filled)));
+
+      data.put("metadata", metadata);
+      event.setBody(GsonUtil.getInstance().toJson(data));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{errors=[{key=ad1, error=value cannot exceed 1000}, "
+          + "{key=ad2, error=value cannot exceed 1000}]}", body.toString());
+    }
+  }
+
+  /**
    * Verify S3 File.
    * 
    * @param key {@link String}
    * @param hasContent boolean
    * @param userId {@link String}
    * @return {@link DynamicObject}
+   * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
-  private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId) {
+  private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId)
+      throws Exception {
     assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
     String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
     DynamicObject obj = new DynamicObject(fromJson(content, Map.class));

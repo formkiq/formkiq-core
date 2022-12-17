@@ -37,10 +37,10 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
@@ -80,13 +80,13 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     SsmConnectionBuilder ssm = awsservice.getExtension(SsmConnectionBuilder.class);
     try (SsmClient ssmClient = ssm.build()) {
 
       List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
-        DynamicObject config = serviceCache.config(siteId);
+        DynamicObject config = configService.get(siteId);
         config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
         return config;
       }).collect(Collectors.toList());

@@ -25,6 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
@@ -49,14 +52,18 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.api.QueryRequest;
 import com.formkiq.stacks.api.QueryRequestValidator;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -78,29 +85,33 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   /**
    * Get Response Tags.
    * 
-   * @param awsservice {@link CoreAwsServiceCache}
+   * @param documentService {@link DocumentService}
    * @param siteId {@link String}
    * @param responseFields {@link SearchResponseFields}
    * @param documents {@link List} {@link DynamicDocumentItem}
    * @return {@link Map}
    */
-  private Map<String, Collection<DocumentTag>> getResponseTags(final CoreAwsServiceCache awsservice,
-      final String siteId, final SearchResponseFields responseFields,
-      final List<DynamicDocumentItem> documents) {
+  private Map<String, Collection<DocumentTag>> getResponseTags(
+      final DocumentService documentService, final String siteId,
+      final SearchResponseFields responseFields, final List<DynamicDocumentItem> documents) {
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
     if (responseFields != null && !Objects.notNull(responseFields.tags()).isEmpty()) {
 
-      DocumentService service = awsservice.documentService();
-
       Set<String> documentIds =
           documents.stream().map(d -> d.getDocumentId()).collect(Collectors.toSet());
 
-      map = service.findDocumentsTags(siteId, documentIds, responseFields.tags());
+      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
     }
 
     return map;
+  }
+
+  private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
+
+    return q.query().tag() == null && q.query().meta() == null && isEmpty(q.query().text())
+        && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
   }
 
   @Override
@@ -144,16 +155,14 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final AwsServiceCache awsservice) throws Exception {
 
     ApiRequestHandlerResponse response = null;
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsservice);
 
     QueryRequest q = fromBodyToObject(logger, event, QueryRequest.class);
 
     validatePost(q);
 
-    DocumentSearchService documentSearchService = serviceCache.documentSearchService();
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    if (q.query().tag() == null && q.query().meta() == null
-        && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive()) {
+    if (isEnterpriseFeature(awsservice, q)) {
 
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Feature only available in FormKiQ Enterprise"));
@@ -178,8 +187,11 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       }
 
       String siteId = authorizer.getSiteId();
+      DocumentSearchService documentSearchService =
+          awsservice.getExtension(DocumentSearchService.class);
+
       PaginationResults<DynamicDocumentItem> results =
-          documentSearchService.search(siteId, q.query(), ptoken, limit);
+          query(awsservice, documentSearchService, siteId, q, ptoken, limit);
 
       ApiPagination current =
           createPagination(cacheService, event, pagination, results.getToken(), limit);
@@ -187,7 +199,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
 
       Map<String, Collection<DocumentTag>> responseTags =
-          getResponseTags(serviceCache, siteId, q.responseFields(), documents);
+          getResponseTags(documentService, siteId, q.responseFields(), documents);
       mergeResponseTags(documents, responseTags);
 
       Map<String, Object> map = new HashMap<>();
@@ -200,6 +212,58 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
 
     return response;
+  }
+
+  /**
+   * Query Typesense or DynamoDb.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param documentSearchService {@link DocumentSearchService}
+   * @param siteId {@link String}
+   * @param q {@link QueryRequest}
+   * @param ptoken {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @throws IOException IOException
+   * @throws BadException BadException
+   */
+  private PaginationResults<DynamicDocumentItem> query(final AwsServiceCache awsservice,
+      final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
+      final PaginationMapToken ptoken, final int limit) throws IOException, BadException {
+
+    String text = q.query().text();
+    PaginationResults<DynamicDocumentItem> results = null;
+
+    if (!isEmpty(text)) {
+
+      if (isEmpty(awsservice.environment("TYPESENSE_HOST"))
+          || isEmpty(awsservice.environment("TYPESENSE_API_KEY"))) {
+        throw new BadException("Fulltext search is not Enabled");
+      }
+
+      Region region = Region.of(awsservice.environment("AWS_REGION"));
+
+      AwsCredentials awsCredentials = awsservice.getExtension(AwsCredentials.class);
+      DocumentService docService = awsservice.getExtension(DocumentService.class);
+      TypeSenseService ts = new TypeSenseServiceImpl(awsservice.environment("TYPESENSE_HOST"),
+          awsservice.environment("TYPESENSE_API_KEY"), region, awsCredentials);
+
+      List<String> documentIds = ts.searchFulltext(siteId, text, limit);
+
+      List<DocumentItem> list = docService.findDocuments(siteId, documentIds);
+
+      List<DynamicDocumentItem> docs =
+          list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+              .collect(Collectors.toList()) : Collections.emptyList();
+
+      results = new PaginationResults<>(docs, null);
+
+    } else {
+
+      results = documentSearchService.search(siteId, q.query(), ptoken, limit);
+    }
+
+    return results;
   }
 
   private void validatePost(final QueryRequest q) throws ValidationException {

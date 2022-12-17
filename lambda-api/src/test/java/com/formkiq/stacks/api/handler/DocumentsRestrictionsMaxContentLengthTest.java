@@ -97,13 +97,13 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced02() {
     // given
+    ConfigService configService = this.awsservice.getExtension(ConfigService.class);
     Long contentLength = null;
     String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
+    DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+    configService.save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);
@@ -119,13 +119,13 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced03() {
     // given
+    ConfigService configService = this.awsservice.getExtension(ConfigService.class);
     Long contentLength = Long.valueOf("10");
     String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
+    DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+    configService.save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);
@@ -141,13 +141,13 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   @Test
   public void testEnforced04() {
     // given
+    ConfigService configService = this.awsservice.getExtension(ConfigService.class);
     Long contentLength = Long.valueOf("15");
     String siteId = UUID.randomUUID().toString();
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
+    DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+    configService.save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);
@@ -165,11 +165,11 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     Long contentLength = Long.valueOf(0);
     String siteId = UUID.randomUUID().toString();
+    ConfigService configService = this.awsservice.getExtension(ConfigService.class);
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(this.awsservice);
-    DynamicObject ob = serviceCache.configService().get(siteId);
+    DynamicObject ob = configService.get(siteId);
     ob.put(ConfigService.MAX_DOCUMENT_SIZE_BYTES, "10");
-    serviceCache.configService().save(siteId, ob);
+    configService.save(siteId, ob);
 
     // when
     String value = service.getValue(this.awsservice, siteId);

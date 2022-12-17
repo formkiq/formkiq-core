@@ -23,10 +23,14 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
+import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
 import static org.junit.Assert.assertEquals;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
@@ -58,10 +62,14 @@ import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -70,11 +78,6 @@ import software.amazon.awssdk.utils.IoUtils;
 
 /** Abstract class for testing API Requests. */
 public abstract class AbstractRequestHandler {
-
-  /** Cache Table. */
-  private static String cacheTable = "Cache";
-  /** Documents Table. */
-  private static String documentsTable = "Documents";
 
   /** Port to run Test server. */
   private static final int PORT = 8080;
@@ -180,9 +183,11 @@ public abstract class AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
 
+    this.map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
-    this.map.put("DOCUMENTS_TABLE", documentsTable);
-    this.map.put("CACHE_TABLE", cacheTable);
+    this.map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    this.map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    this.map.put("CACHE_TABLE", CACHE_TABLE);
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
     this.map.put("AWS_REGION", AWS_REGION.toString());
@@ -194,6 +199,8 @@ public abstract class AbstractRequestHandler {
     this.map.put("USER_AUTHENTICATION", "cognito");
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
+    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
+    this.map.put("TYPESENSE_API_KEY", API_KEY);
 
     createApiRequestHandler(this.map);
 
@@ -220,10 +227,36 @@ public abstract class AbstractRequestHandler {
    * @throws URISyntaxException URISyntaxException
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
-    AbstractCoreRequestHandler.configureHandler(prop, null,
+    AwsCredentials creds = AwsBasicCredentials.create("asd", "asd");
+    AbstractCoreRequestHandler.configureHandler(prop, creds,
         DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(null),
         TestServices.getSsmConnection(null), TestServices.getSqsConnection(null),
         new DocumentTagSchemaPluginEmpty());
+  }
+
+  /**
+   * Create {@link ApiGatewayRequestEvent}.
+   * 
+   * @param file {@link String}
+   * @param siteId {@link String}
+   * @param username {@link String}
+   * @param cognitoGroups {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   * @throws IOException IOException
+   */
+  protected ApiGatewayRequestEvent createRequest(final String file, final String siteId,
+      final String username, final String cognitoGroups) throws IOException {
+    ApiGatewayRequestEvent event = toRequestEvent(file);
+    addParameter(event, "siteId", siteId);
+
+    if (username != null) {
+      setUsername(event, username);
+    }
+
+    if (cognitoGroups != null) {
+      setCognitoGroup(event, cognitoGroups);
+    }
+    return event;
   }
 
   /**
@@ -253,7 +286,7 @@ public abstract class AbstractRequestHandler {
    * @return {@link DocumentService}
    */
   public DocumentService getDocumentService() {
-    return this.awsServices.documentService();
+    return this.awsServices.getExtension(DocumentService.class);
   }
 
   /**
@@ -373,16 +406,8 @@ public abstract class AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   public DynamicObject handleRequest(final String file, final String siteId, final String username,
       final String cognitoGroups) throws IOException {
-    ApiGatewayRequestEvent event = toRequestEvent(file);
-    addParameter(event, "siteId", siteId);
 
-    if (username != null) {
-      setUsername(event, username);
-    }
-
-    if (cognitoGroups != null) {
-      setCognitoGroup(event, cognitoGroups);
-    }
+    ApiGatewayRequestEvent event = createRequest(file, siteId, username, cognitoGroups);
 
     String response = handleRequest(event);
 

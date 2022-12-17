@@ -78,7 +78,8 @@ public class DocumentSearchServiceImplTest {
 
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
-    this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
     this.searchService =
         new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE, null);
   }
@@ -368,7 +369,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -410,7 +411,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertNotNull(s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -473,7 +474,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -542,7 +543,7 @@ public class DocumentSearchServiceImplTest {
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
@@ -610,7 +611,7 @@ public class DocumentSearchServiceImplTest {
 
       list.forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertNull(s.getMap("matchedTag").get("documentId"));
         DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
         assertNotNull(i);
@@ -660,7 +661,7 @@ public class DocumentSearchServiceImplTest {
 
       list.forEach(s -> {
         assertNotNull(s.getInsertedDate());
-        assertNull(s.getPath());
+        assertNotNull(s.getPath());
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
@@ -706,7 +707,7 @@ public class DocumentSearchServiceImplTest {
       assertNull(results.getToken());
 
       int i = 0;
-      assertNull(list.get(i).getDocumentId());
+      assertNotNull(list.get(i).getDocumentId());
       assertEquals("sample", list.get(i++).getPath());
       assertEquals(doc1.getDocumentId(), results.getResults().get(i).getDocumentId());
       assertEquals("test1.pdf", list.get(i++).getPath());
@@ -723,8 +724,8 @@ public class DocumentSearchServiceImplTest {
       // then
       list = results.getResults();
       assertEquals(2, list.size());
-      assertEquals("sample/anotherone", list.get(0).getPath());
-      assertNull(list.get(0).getDocumentId());
+      assertEquals("anotherone", list.get(0).getPath());
+      assertNotNull(list.get(0).getDocumentId());
       assertEquals("sample/test3.pdf", list.get(1).getPath());
       assertEquals(doc2.getDocumentId(), list.get(1).getDocumentId());
 
@@ -740,6 +741,126 @@ public class DocumentSearchServiceImplTest {
       assertEquals(1, list.size());
       assertEquals("sample/anotherone/test4.pdf", list.get(0).getPath());
       assertEquals(doc3.getDocumentId(), list.get(0).getDocumentId());
+    }
+  }
+
+  /** Add and Delete Document. */
+  @Test
+  public void testSearch15() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("sample/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      PaginationMapToken startkey = null;
+      SearchQuery q0 = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      SearchQuery q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results0 =
+          this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+
+      PaginationResults<DynamicDocumentItem> results1 =
+          this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list0 = results0.getResults();
+      assertEquals(1, list0.size());
+      assertEquals("sample", list0.get(0).getPath());
+
+      List<DynamicDocumentItem> list1 = results1.getResults();
+      assertEquals(1, list1.size());
+      assertEquals("sample/test2.pdf", list1.get(0).getPath());
+
+      // given
+      q0 = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
+
+      // when
+      this.service.deleteDocument(siteId, doc0.getDocumentId());
+
+      // then
+      results0 = this.searchService.search(siteId, q0, startkey, MAX_RESULTS);
+      list0 = results0.getResults();
+      assertEquals(1, list0.size());
+      assertEquals("sample", list0.get(0).getPath());
+
+      results1 = this.searchService.search(siteId, q1, startkey, MAX_RESULTS);
+      assertEquals(0, results1.getResults().size());
+    }
+  }
+
+  /** Search for meta "folder" different cases data. */
+  @Test
+  public void testSearch16() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("Chicago/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      DocumentItem doc1 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc1.setPath("abc.pdf");
+      this.service.saveDocument(siteId, doc1, null);
+
+      DocumentItem doc2 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc2.setPath("aaaa/test3.pdf");
+      this.service.saveDocument(siteId, doc2, null);
+
+      PaginationMapToken startkey = null;
+      String folder = "";
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      final int expected = 3;
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(expected, list.size());
+      assertNull(results.getToken());
+
+      int i = 0;
+      assertNotNull(list.get(i).getDocumentId());
+      assertEquals("aaaa", list.get(i++).getPath());
+      assertEquals("Chicago", list.get(i++).getPath());
+      assertEquals("abc.pdf", list.get(i++).getPath());
+    }
+  }
+
+  /** Save document twice and change path make sure only 1 result. */
+  @Test
+  public void testSearch17() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc0.setPath("/a/b/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      doc0.setPath("/c/b/test3.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      PaginationMapToken startkey = null;
+      String folder = "";
+      SearchMetaCriteria meta = new SearchMetaCriteria();
+      SearchQuery q = new SearchQuery().meta(meta.folder(folder));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(2, list.size());
+      assertEquals("a", list.get(0).getPath());
+      assertEquals("c", list.get(1).getPath());
+
+      meta.folder("a/b");
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+      list = results.getResults();
+      assertEquals(0, list.size());
     }
   }
 }

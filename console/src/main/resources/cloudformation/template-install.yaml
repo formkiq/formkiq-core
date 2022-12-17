@@ -69,6 +69,16 @@ Parameters:
     Description: Amazon Cognito Hosted UI Url
     AllowedPattern: ".+"
     Type: String
+
+  CognitoUserPoolId:
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+    Type: String
+    
+  CognitoUserPoolClientId:
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+    Type: String
     
   UserAuthentication:
     Description: How are the users authenticating
@@ -143,6 +153,10 @@ Resources:
             Ref: UserAuthentication
           DOMAIN:
             Ref: Domain
+          COGNITO_USER_POOL_CLIENT_ID:
+            Ref: CognitoUserPoolClientId
+          COGNITO_USER_POOL_ID:
+            Ref: CognitoUserPoolId
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role
@@ -201,7 +215,13 @@ Resources:
             - Effect: Allow
               Action:
               - s3:PutObject
-              Resource: 
+              - s3:DeleteObject
+              - s3:ListBucket
+              Resource:
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: CognitoConfigBucket
               - Fn::Join:
                 - ''
                 - - 'arn:aws:s3:::'

@@ -32,6 +32,7 @@ import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -83,9 +84,9 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
@@ -192,7 +193,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     sqsService = new SqsService(sqsBuilder);
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
@@ -348,14 +350,17 @@ public class DocumentsS3UpdateTest implements DbKeys {
     s3service.deleteAllFiles("example-bucket");
 
     dbHelper.truncateTable(DOCUMENTS_TABLE);
+    service.setLastShortDate(null);
 
     Map<String, String> map = new HashMap<>();
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     map.put("SQS_ERROR_URL",
         TestServices.getEndpointOverride(Service.SQS).toString() + "/queue/" + ERROR_SQS_QUEUE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     map.put("AWS_REGION", AWS_REGION.id());
     map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     this.modules.forEach(m -> map.put("MODULE_" + m, "true"));
 
@@ -479,10 +484,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      assertNotNull(item.getS3version());
+
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int count = 3;
+      final int count = 2;
       assertEquals(count, tags.getResults().size());
 
       int i = 0;
@@ -495,13 +502,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       assertEquals("untagged", tags.getResults().get(i).getKey());
       assertEquals("true", tags.getResults().get(i).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
-      assertEquals("joe", tags.getResults().get(i).getUserId());
-      assertNotNull(tags.getResults().get(i++).getInsertedDate());
-
-      assertEquals("userId", tags.getResults().get(i).getKey());
-      assertEquals("joe", tags.getResults().get(i).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
       assertEquals("joe", tags.getResults().get(i).getUserId());
@@ -547,14 +547,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.put("tags", Arrays.asList(tag));
       service.saveDocumentItemWithTag(siteId, doc);
 
-      DocumentFormat format = new DocumentFormat();
-      format.setContentType("application/pdf");
-      format.setDocumentId(BUCKET_KEY);
-      format.setInsertedDate(new Date());
-      format.setUserId("asd");
-      service.saveDocumentFormat(siteId, format);
-
       addS3File(key, "pdf", true, "testdata");
+
+      TimeUnit.SECONDS.sleep(1);
 
       // when
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
@@ -565,7 +560,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int size = 5;
+      final int size = 4;
       int i = 0;
       assertEquals(size, tags.getResults().size());
       assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(i).getKey());
@@ -578,8 +573,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals("12345", tags.getResults().get(i).getValue());
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i).getType());
       assertEquals("12345", tags.getResults().get(i++).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
-      assertEquals("asd", tags.getResults().get(i++).getValue());
 
       assertEquals(0,
           service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
@@ -679,7 +672,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
         assertNull(m.get(GSI1_PK));
       }
 
-      final int count = 3;
+      final int count = 2;
       int i = 0;
       assertEquals(count, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("path").setValue("test.txt")
@@ -687,10 +680,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
           tags.getResults().get(i++));
 
       assertDocumentTagEquals(new DocumentTag().setKey("untagged").setValue("true")
-          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
-          tags.getResults().get(i++));
-
-      assertDocumentTagEquals(new DocumentTag().setKey("userId").setValue("joe")
           .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
           tags.getResults().get(i++));
 
@@ -745,14 +734,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(doc.getDocumentId(), item.getDocumentId());
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(2, tags.getResults().size());
+      assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")
           .setType(DocumentTagType.USERDEFINED).setDocumentId(doc.getDocumentId()),
           tags.getResults().get(0));
-      assertDocumentTagEquals(
-          new DocumentTag().setKey("userId").setValue(doc.getUserId())
-              .setType(DocumentTagType.SYSTEMDEFINED).setDocumentId(doc.getDocumentId()),
-          tags.getResults().get(1));
 
       tags = service.findDocumentTags(siteId, itemchild.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
@@ -906,7 +891,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       Map<String, AttributeValue> result = db.getItem(r).item();
       assertEquals(ttl, result.get("TimeToLive").n());
 
-      for (String tagKey : Arrays.asList("untagged", "userId")) {
+      for (String tagKey : Arrays.asList("untagged")) {
         r = GetItemRequest.builder().key(keysDocumentTag(siteId, item.getDocumentId(), tagKey))
             .tableName(DOCUMENTS_TABLE).build();
 
@@ -1074,7 +1059,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final String contentType, final String contentLength) {
 
     assertTrue(this.logger
-        .containsString("saving document " + createDatabaseKey(siteId, item.getDocumentId())));
+        .containsString("updating document " + createDatabaseKey(siteId, item.getDocumentId())));
 
     assertEquals(contentType, item.getContentType());
     assertEquals(contentLength, item.getContentLength().toString());

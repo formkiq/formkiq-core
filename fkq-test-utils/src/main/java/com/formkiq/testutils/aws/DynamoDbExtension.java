@@ -39,6 +39,8 @@ public class DynamoDbExtension
 
   /** Documents Table Name. */
   public static final String DOCUMENTS_TABLE = "Documents";
+  /** Documents Table Name. */
+  public static final String DOCUMENTS_VERSION_TABLE = "DocumentVersions";
   /** Cache Table Name. */
   public static final String CACHE_TABLE = "Cache";
   /** {@link DynamoDbConnectionBuilder}. */
@@ -53,7 +55,10 @@ public class DynamoDbExtension
   public void beforeAll(final ExtensionContext context) throws Exception {
 
     this.dynamoDbLocal = DynamoDbTestServices.getDynamoDbLocal();
-    this.dynamoDbLocal.start();
+
+    if (this.dynamoDbLocal != null) {
+      this.dynamoDbLocal.start();
+    }
 
     this.dbConnection = DynamoDbTestServices.getDynamoDbConnection(this.dynamoDbLocal);
     this.dbhelper =
@@ -62,6 +67,10 @@ public class DynamoDbExtension
     DynamoDbHelper dbHelper = new DynamoDbHelper(this.dbConnection);
     if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
+    }
+
+    if (!dbHelper.isTableExists(DOCUMENTS_VERSION_TABLE)) {
+      dbHelper.createDocumentsTable(DOCUMENTS_VERSION_TABLE);
     }
 
     if (!dbHelper.isTableExists(CACHE_TABLE)) {

@@ -44,7 +44,8 @@ public class QueryRequestValidator {
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return q.query().tag() == null && q.query().tags() == null && q.query().meta() == null;
+    return q.query().tag() == null && q.query().tags() == null && q.query().meta() == null
+        && StringUtils.isEmpty(q.query().text());
   }
 
   /**

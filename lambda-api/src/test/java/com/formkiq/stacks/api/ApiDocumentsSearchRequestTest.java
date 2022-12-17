@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -36,6 +37,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
@@ -43,19 +45,44 @@ import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.lambda.typesense.DocumentMapToDocument;
+import com.formkiq.module.lambda.typesense.DocumentToFulltextDocument;
+import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 
 /** Unit Tests for request /search. */
+@ExtendWith(TypeSenseExtension.class)
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
   /** Match Tag element count. */
   private static final int MATCH_COUNT = 3;
+  /** {@link DocumentToFulltextDocument}. */
+  private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
+
+  private void saveDocument(final String siteId, final String documentId, final String path)
+      throws IOException {
+
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setPath(path);
+    getDocumentService().saveDocument(siteId, item, null);
+
+    Map<String, Object> data = Map.of("documentId", Map.of("S", item.getDocumentId()), "path",
+        Map.of("S", item.getPath()));
+    Map<String, Object> document = new DocumentMapToDocument().apply(data);
+    document = this.fulltext.apply(document);
+
+    TypesenseProcessor processor =
+        new TypesenseProcessor(getMap(), AwsBasicCredentials.create("asd", path));
+    processor.addOrUpdate(siteId, item.getDocumentId(), document);
+  }
 
   /**
    * Invalid search.
@@ -616,11 +643,94 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
         if (folder.length() == 0) {
           assertEquals("something", documents.get(0).get("path"));
           assertEquals("true", documents.get(0).get("folder").toString());
+          assertNotNull(documents.get(0).get("documentId"));
         } else {
           assertEquals("something/path.txt", documents.get(0).get("path"));
           assertNull(documents.get(0).get("folder"));
+          assertNotNull(documents.get(0).get("documentId"));
         }
       }
+    }
+  }
+
+  /**
+   * Text Fulltext search.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest14() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String documentId = UUID.randomUUID().toString();
+      final String text = "My Document.docx";
+      final String path = "something/My Document.docx";
+
+      saveDocument(siteId, documentId, path);
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+
+      QueryRequest query = new QueryRequest().query(new SearchQuery().text(text));
+
+      event.setBody(GsonUtil.getInstance().toJson(query));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0).get("documentId"));
+      assertEquals(path, documents.get(0).get("path"));
+
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+    }
+  }
+
+  /**
+   * Text Fulltext search no data.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest15() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final String text = UUID.randomUUID().toString();
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+
+      QueryRequest query = new QueryRequest().query(new SearchQuery().text(text));
+
+      event.setBody(GsonUtil.getInstance().toJson(query));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(0, documents.size());
     }
   }
 }

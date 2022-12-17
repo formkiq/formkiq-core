@@ -1,0 +1,84 @@
+{
+    "Records": [
+        {
+            "eventID": "ac74257775cb956e6cb0f6e50ff7a924",
+            "eventName": "MODIFY",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-2",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1668301621,
+                "Keys": {
+                    "SK": {
+                        "S": "document"
+                    },
+                    "PK": {
+                        "S": "docs#717a3cee-888d-47e0-83a3-a7487a588954"
+                    }
+                },
+                "NewImage": {
+                    "path": {
+                        "S": "bleh/some.pdf"
+                    },
+                    "lastModifiedDate": {
+                        "S": "2022-11-13T01:06:59+0000"
+                    },
+                    "s3version": {
+                        "S": "vp4vYiq9oCo0Hu8wavbzgzYxK.g4l9RC"
+                    },
+                    "inserteddate": {
+                        "S": "2022-11-13T01:06:59+0000"
+                    },
+                    "SK": {
+                        "S": "document"
+                    },
+                    "checksum": {
+                        "S": "\"d524cc049aa9e17e50110b184db46691\""
+                    },
+                    "contentLength": {
+                        "N": "14"
+                    },
+                    "documentId": {
+                        "S": "717a3cee-888d-47e0-83a3-a7487a588954"
+                    },
+                    "PK": {
+                        "S": "docs#717a3cee-888d-47e0-83a3-a7487a588954"
+                    },
+                    "contentType": {
+                        "S": "text/plain"
+                    },
+                    "userId": {
+                        "S": "arn:aws:iam::111111111:user/mike"
+                    }
+                },
+                "OldImage": {
+                    "path": {
+                        "S": "717a3cee-888d-47e0-83a3-a7487a588954"
+                    },
+                    "lastModifiedDate": {
+                        "S": "2022-11-13T01:06:59+0000"
+                    },
+                    "inserteddate": {
+                        "S": "2022-11-13T01:06:59+0000"
+                    },
+                    "SK": {
+                        "S": "document"
+                    },
+                    "documentId": {
+                        "S": "717a3cee-888d-47e0-83a3-a7487a588954"
+                    },
+                    "PK": {
+                        "S": "docs#717a3cee-888d-47e0-83a3-a7487a588954"
+                    },
+                    "userId": {
+                        "S": "arn:aws:iam::622653865277:user/mike"
+                    }
+                },
+                "SequenceNumber": "4412200000000003762840297",
+                "SizeBytes": 684,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+        }
+    ]
+}

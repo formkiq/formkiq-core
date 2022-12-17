@@ -23,78 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.text.SimpleDateFormat;
-import java.time.ZoneOffset;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.ApiDocumentVersion;
-import com.formkiq.stacks.api.ApiDocumentVersionsResponse;
-import com.formkiq.stacks.dynamodb.DateUtil;
-import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/versions". */
-public class DocumentVersionsRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
-
-  /**
-   * constructor.
-   *
-   */
-  public DocumentVersionsRequestHandler() {}
-
-  @Override
-  public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
-      final AwsServiceCache awsservice) throws Exception {
-
-    SimpleDateFormat df = new SimpleDateFormat(GsonUtil.DATE_FORMAT);
-
-    String siteId = authorizer.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
-    String next = getParameter(event, "next");
-
-    String tz = getParameter(event, "tz");
-    ZoneOffset offset = DateUtil.getZoneOffset(tz);
-    df.setTimeZone(TimeZone.getTimeZone(offset));
-
-    String s3key = createDatabaseKey(siteId, documentId);
-
-    S3Service s3service = awsservice.getExtension(S3Service.class);
-
-    ListObjectVersionsResponse response =
-        s3service.getObjectVersions(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, next);
-
-    List<ApiDocumentVersion> list = response.versions().stream().map(v -> {
-
-      ApiDocumentVersion dv = new ApiDocumentVersion();
-      dv.setVersionId(v.versionId());
-
-      Date date = Date.from(v.lastModified());
-      dv.setLastModifiedDate(df.format(date));
-      return dv;
-
-    }).collect(Collectors.toList());
-
-    ApiDocumentVersionsResponse resp = new ApiDocumentVersionsResponse();
-    resp.setNext(response.nextKeyMarker());
-    resp.setVersions(list);
-
-    return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
+public class DocumentVersionsRequestHandler extends AbstractPaymentRequiredRequestHandler {
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/versions";

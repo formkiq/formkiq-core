@@ -224,6 +224,7 @@ Resources:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -272,6 +273,7 @@ Resources:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -345,6 +347,7 @@ Resources:
             Ref: SnsDocumentEvent
           FormKiQType:
             Ref: FormKiQType
+          DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -664,6 +667,25 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  DocumentsStreamArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn"
+      Type: String
+      Value: 
+        Fn::GetAtt:
+        - Documents
+        - StreamArn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   Documents:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -674,7 +696,7 @@ Resources:
         AttributeName: TimeToLive
         Enabled: TRUE            
       StreamSpecification:
-        StreamViewType: NEW_IMAGE
+        StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       Tags:

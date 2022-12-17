@@ -26,6 +26,7 @@ package com.formkiq.stacks.api;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
@@ -47,6 +48,8 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTags;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.Preset;
 import com.formkiq.stacks.dynamodb.PresetTag;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -56,11 +59,12 @@ import software.amazon.awssdk.regions.Region;
 /** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
 @Reflectable
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
-    DocumentTags.class, PaginationMapToken.class, SearchQuery.class, SearchTagCriteria.class,
-    SearchMetaCriteria.class, SearchResponseFields.class, PresetTag.class, Preset.class,
-    ApiGatewayRequestEvent.class, ApiMapResponse.class, ApiGatewayRequestContext.class,
-    ApiMessageResponse.class, ApiResponseError.class, ApiPagination.class, Action.class,
-    ValidationErrorImpl.class})
+    DocumentMetadata.class, DocumentTags.class, PaginationMapToken.class, SearchQuery.class,
+    SearchTagCriteria.class, SearchMetaCriteria.class, SearchResponseFields.class, PresetTag.class,
+    Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class,
+    ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
+    ApiPagination.class, Action.class, ValidationErrorImpl.class,
+    DocumentVersionServiceDynamoDb.class, DocumentVersionServiceNoVersioning.class})
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   static {

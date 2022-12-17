@@ -41,6 +41,7 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sns.SnsClient;
@@ -126,8 +127,10 @@ public abstract class AbstractAwsTest {
 
     String documentsTable =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
+
     dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    documentService = new DocumentServiceImpl(dbConnection, documentsTable);
+    documentService = new DocumentServiceImpl(dbConnection, documentsTable,
+        new DocumentVersionServiceNoVersioning());
     searchService =
         new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable, null);
   }

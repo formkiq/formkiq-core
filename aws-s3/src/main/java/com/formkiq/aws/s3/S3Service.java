@@ -40,6 +40,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
@@ -148,8 +149,9 @@ public class S3Service {
    * @param destinationBucket {@link String}
    * @param destinationKey {@link String}
    * @param contentType {@link String}
+   * @return {@link CopyObjectResponse}
    */
-  public void copyObject(final String sourcebucket, final String sourcekey,
+  public CopyObjectResponse copyObject(final String sourcebucket, final String sourcekey,
       final String destinationBucket, final String destinationKey, final String contentType) {
     CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
         .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
@@ -158,7 +160,17 @@ public class S3Service {
       req = req.contentType(contentType);
     }
 
-    this.s3Client.copyObject(req.build());
+    return this.s3Client.copyObject(req.build());
+  }
+
+  /**
+   * Perform {@link CopyObjectRequest}.
+   * 
+   * @param req {@link CopyObjectRequest}
+   * @return {@link CopyObjectResponse}
+   */
+  public CopyObjectResponse copyRequest(final CopyObjectRequest req) {
+    return this.s3Client.copyObject(req);
   }
 
   /**
@@ -297,6 +309,7 @@ public class S3Service {
       md.setMetadata(metadata);
       md.setEtag(resp.eTag());
       md.setContentLength(resp.contentLength());
+      md.setVersionId(resp.versionId());
 
     } catch (NoSuchKeyException e) {
       md.setObjectExists(false);

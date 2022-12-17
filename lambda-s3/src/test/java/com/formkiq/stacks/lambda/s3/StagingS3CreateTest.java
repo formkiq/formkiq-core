@@ -33,6 +33,7 @@ import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,6 +54,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,6 +77,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -101,6 +104,7 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -119,7 +123,6 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for {@link StagingS3Create}. */
 @ExtendWith(DynamoDbExtension.class)
-// @ExtendWith(LocalStackExtension.class)
 public class StagingS3CreateTest implements DbKeys {
 
   /** {@link ActionsService}. */
@@ -134,15 +137,12 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String DOCUMENTS_BUCKET = "documentsbucket";
   /** SQS Sns Queue. */
   private static final String ERROR_SQS_QUEUE = "sqserror";
-  /** SQS Sns Create QueueUrl. */
-  private static String sqsDocumentEventUrl;
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
   /** Register LocalStack extension. */
   @RegisterExtension
   static LocalStackExtension localStack = new LocalStackExtension();
-
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
 
@@ -151,6 +151,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** {@link S3Service}. */
   private static S3Service s3;
+
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Builder;
   /** {@link DocumentSearchService}. */
@@ -177,6 +178,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static String snsSqsDeleteQueueUrl;
   /** {@link SqsConnectionBuilder}. */
   private static SqsConnectionBuilder sqsBuilder;
+  /** SQS Sns Create QueueUrl. */
+  private static String sqsDocumentEventUrl;
   /** SQS Error Url. */
   private static String sqsErrorUrl;
 
@@ -221,7 +224,8 @@ public class StagingS3CreateTest implements DbKeys {
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE);
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
 
     s3 = new S3Service(s3Builder);
 
@@ -351,6 +355,15 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
+  private void assertPublishedSnsMessage() throws InterruptedException {
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    while (msgs.size() != 1) {
+      TimeUnit.SECONDS.sleep(1);
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    }
+    assertEquals(1, msgs.size());
+  }
+
   /**
    * before.
    */
@@ -364,8 +377,10 @@ public class StagingS3CreateTest implements DbKeys {
     this.env.put("SNS_CREATE_TOPIC", snsCreateTopic);
     this.env.put("SQS_ERROR_URL", sqsErrorUrl);
     this.env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    this.env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     this.env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     this.env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    this.env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
@@ -468,10 +483,11 @@ public class StagingS3CreateTest implements DbKeys {
    * 
    * @param siteId {@link String}
    * @param docitem {@link DynamicDocumentItem}
+   * @param expectedContentLength {@link String}
    * @throws IOException IOException
    */
-  private void processFkB64File(final String siteId, final DynamicDocumentItem docitem)
-      throws IOException {
+  private void processFkB64File(final String siteId, final DynamicDocumentItem docitem,
+      final String expectedContentLength) throws IOException {
 
     // given
     String documentId = UUID.randomUUID().toString();
@@ -479,29 +495,32 @@ public class StagingS3CreateTest implements DbKeys {
 
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
-    Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
-
     byte[] content = gson.toJson(docitem).getBytes(UTF_8);
     s3.putObject(STAGING_BUCKET, key, content, null, null);
 
     // when
-    handleRequest(map);
+    handleRequest(loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key));
 
     // then
     String destDocumentId = findDocumentIdFromLogger(siteId);
 
     if (destDocumentId != null) {
       assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
-      assertTrue(this.logger.containsString("handling 1 record(s)."));
       assertTrue(this.logger.containsString("Inserted " + docitem.getPath()
           + " into bucket documentsbucket as " + createDatabaseKey(siteId, destDocumentId)));
 
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, destDocumentId);
-      assertEquals("20", item.getContentLength().toString());
+
+      if (expectedContentLength != null) {
+        assertEquals(expectedContentLength, "" + item.getContentLength());
+      } else {
+        assertNull(item.getContentLength());
+      }
       assertEquals("plain/text", item.getContentType());
-      assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
+      assertNotNull(item.getInsertedDate());
+      assertNull(item.getChecksum());
       assertEquals("test.txt", item.getPath());
       assertEquals("joe", item.getUserId());
 
@@ -509,7 +528,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
-      int tagcount = hasTags ? docitem.getList("tags").size() + 2 : 2 + 1;
+      int tagcount = hasTags ? docitem.getList("tags").size() + 1 : 1 + 1;
       assertEquals(tagcount, tags.size());
 
       DocumentTag ptag = findTag(tags, "path");
@@ -578,20 +597,24 @@ public class StagingS3CreateTest implements DbKeys {
 
     DocumentItem item = service.findDocument(siteId, destDocumentId);
     assertNotNull(item);
-    assertEquals("8", item.getContentLength().toString());
-    assertEquals("application/pdf", item.getContentType());
-    assertEquals("ef654c40ab4f1747fc699915d4f70902", item.getChecksum());
+    // assertEquals("8", item.getContentLength().toString());
+    // assertEquals("application/pdf", item.getContentType());
+    assertNull(item.getContentLength());
+    assertNull(item.getContentType());
+    assertNull(item.getChecksum());
     assertNotNull(item.getInsertedDate());
-    assertEquals(item.getPath(), expectedPath);
+    assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
+
+    assertEquals(item.getPath(), expectedPath != null ? expectedPath : item.getDocumentId());
     assertEquals("1234", item.getUserId());
 
     List<DocumentTag> tags =
         service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
 
     int i = 0;
-    int count = 2;
+    int count = 1;
 
-    if (item.getPath() != null) {
+    if (expectedPath != null) {
       count++;
       assertEquals("path", tags.get(i).getKey());
       assertEquals(expectedPath, tags.get(i).getValue());
@@ -602,8 +625,6 @@ public class StagingS3CreateTest implements DbKeys {
 
     assertEquals("untagged", tags.get(i).getKey());
     assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
-    assertEquals("userId", tags.get(i).getKey());
-    assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
   }
 
   /**
@@ -613,9 +634,9 @@ public class StagingS3CreateTest implements DbKeys {
    */
   @Test
   public void testCopyFile01() throws Exception {
-    final String documentId = "b53c92cf-f7b9-4787-9541-76574ec70d71";
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      testCopyFile(siteId, documentId, null);
+      String documentId = UUID.randomUUID().toString();
+      testCopyFile(siteId, documentId, documentId);
     }
   }
 
@@ -626,9 +647,11 @@ public class StagingS3CreateTest implements DbKeys {
    */
   @Test
   public void testCopyFile02() throws Exception {
-    final String documentId = "test.pdf";
+    int i = 0;
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
-      testCopyFile(siteId, documentId, "test.pdf");
+      final String documentId = "test" + i + ".pdf";
+      testCopyFile(siteId, documentId, "test" + i + ".pdf");
+      i++;
     }
   }
 
@@ -660,7 +683,7 @@ public class StagingS3CreateTest implements DbKeys {
             DocumentTagType.USERDEFINED.name())));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      processFkB64File(siteId, item);
+      processFkB64File(siteId, item, null);
     }
   }
 
@@ -674,7 +697,7 @@ public class StagingS3CreateTest implements DbKeys {
     DynamicDocumentItem item = createDocumentItem();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      processFkB64File(siteId, item);
+      processFkB64File(siteId, item, null);
     }
   }
 
@@ -689,7 +712,7 @@ public class StagingS3CreateTest implements DbKeys {
     item.put("content", null);
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      processFkB64File(siteId, item);
+      processFkB64File(siteId, item, null);
     }
 
     assertTrue(this.logger.containsString("Skipping " + item.getPath() + " no content"));
@@ -706,7 +729,7 @@ public class StagingS3CreateTest implements DbKeys {
     item.setDocumentId(null);
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      processFkB64File(siteId, item);
+      processFkB64File(siteId, item, null);
     }
   }
 
@@ -726,13 +749,12 @@ public class StagingS3CreateTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String key = createDatabaseKey(siteId, documentId0 + FORMKIQ_B64_EXT);
-      Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
       String json = loadFile(this, "/document_multiple" + FORMKIQ_B64_EXT);
       s3.putObject(STAGING_BUCKET, key, json.getBytes(UTF_8), null, null);
 
       // when
-      handleRequest(map);
+      handleRequest(loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key));
 
       // then
       assertEquals(1,
@@ -743,11 +765,15 @@ public class StagingS3CreateTest implements DbKeys {
       assertNull(i.getContentType());
       verifyBelongsToDocument(i, documentId0, Arrays.asList(documentId1, documentId2));
 
+      final int expected = 2;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId0, null, MAX_RESULTS).getResults();
-      assertEquals(1, tags.size());
+      assertEquals(expected, tags.size());
       assertEquals("formName", tags.get(0).getKey());
       assertEquals("Job Application Form", tags.get(0).getValue());
+
+      assertEquals("path", tags.get(1).getKey());
+      assertEquals(documentId0, tags.get(1).getValue());
 
       String k = createDatabaseKey(siteId, i.getDocumentId());
       assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k).isObjectExists());
@@ -795,7 +821,7 @@ public class StagingS3CreateTest implements DbKeys {
             DocumentTagType.USERDEFINED.name())));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      processFkB64File(siteId, item);
+      processFkB64File(siteId, item, null);
 
       String key = createDatabaseKey(siteId, item.getDocumentId());
       String content = s3.getContentAsString(DOCUMENTS_BUCKET, key, null);
@@ -849,25 +875,30 @@ public class StagingS3CreateTest implements DbKeys {
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, documentId);
-      assertEquals("14", item.getContentLength().toString());
+      // assertEquals("14", item.getContentLength().toString());
+      assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
-      assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
-      assertNull(item.getPath());
+      assertNotNull(item.getInsertedDate());
+      assertNull(item.getChecksum());
+      // assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
+      assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
       final int count = 3;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
+
+      int i = 0;
       assertEquals(count, tags.size());
 
-      assertEqualsTag(tags.get(0), Map.of("documentId", documentId, "key", "category", "value",
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
 
-      assertEqualsTag(tags.get(1), Map.of("documentId", documentId, "key", "status", "values",
-          Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
+          "" + documentId, "type", "SYSTEMDEFINED", "userId", "joesmith"));
 
-      assertEqualsTag(tags.get(2), Map.of("documentId", documentId, "key", "userId", "value",
-          "joesmith", "type", "SYSTEMDEFINED", "userId", "joesmith"));
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
+          Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
     }
   }
 
@@ -911,25 +942,27 @@ public class StagingS3CreateTest implements DbKeys {
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, documentId);
-      assertEquals("14", item.getContentLength().toString());
+      assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
-      assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
-      assertNull(item.getPath());
+      assertNotNull(item.getInsertedDate());
+      assertNull(item.getChecksum());
+      assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
+      int i = 0;
       final int count = 3;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
 
-      assertEqualsTag(tags.get(0), Map.of("documentId", documentId, "key", "category", "value",
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
 
-      assertEqualsTag(tags.get(1), Map.of("documentId", documentId, "key", "status", "values",
-          Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
+          documentId, "type", "SYSTEMDEFINED", "userId", "joesmith"));
 
-      assertEqualsTag(tags.get(2), Map.of("documentId", documentId, "key", "userId", "value",
-          "joesmith", "type", "SYSTEMDEFINED", "userId", "joesmith"));
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
+          Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
     }
   }
 
@@ -970,10 +1003,11 @@ public class StagingS3CreateTest implements DbKeys {
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, documentId);
-      assertEquals("14", item.getContentLength().toString());
+      assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
-      assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
-      assertNull(item.getPath());
+      assertNull(item.getChecksum());
+      assertNotNull(item.getInsertedDate());
+      assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
       int i = 0;
@@ -985,14 +1019,14 @@ public class StagingS3CreateTest implements DbKeys {
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
 
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
+          documentId, "type", "SYSTEMDEFINED", "userId", "joesmith"));
+
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
           Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "test", "value",
           "novalue", "type", "USERDEFINED", "userId", "joe"));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "userId", "value",
-          "joesmith", "type", "SYSTEMDEFINED", "userId", "joesmith"));
     }
   }
 
@@ -1110,14 +1144,15 @@ public class StagingS3CreateTest implements DbKeys {
 
       String documentId = results.getResults().get(0).getDocumentId();
       DocumentItem item = service.findDocument(siteId, documentId);
-      assertEquals("23", item.getContentLength().toString());
+      assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
-      assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
+      assertNull(item.getChecksum());
+      assertNotNull(item.getInsertedDate());
       assertEquals(path, item.getPath());
       assertEquals("joesmith", item.getUserId());
 
       int i = 0;
-      final int count = 3;
+      final int count = 2;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
@@ -1127,9 +1162,6 @@ public class StagingS3CreateTest implements DbKeys {
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "untagged", "value",
           "true", "type", "SYSTEMDEFINED", "userId", "joesmith"));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "userId", "value",
-          "joesmith", "type", "SYSTEMDEFINED", "userId", "joesmith"));
     }
   }
 
@@ -1159,6 +1191,7 @@ public class StagingS3CreateTest implements DbKeys {
       service.saveDocument(siteId, item,
           Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
+
       actionsService.saveAction(siteId, documentId,
           new Action().type(ActionType.FULLTEXT).status(ActionStatus.COMPLETE), 0);
 
@@ -1170,6 +1203,8 @@ public class StagingS3CreateTest implements DbKeys {
 
       byte[] content = gson.toJson(ditem).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
+
+      TimeUnit.SECONDS.sleep(1);
 
       // when
       handleRequest(map);
@@ -1190,11 +1225,11 @@ public class StagingS3CreateTest implements DbKeys {
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", userId));
 
+      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
+          item.getDocumentId(), "type", "SYSTEMDEFINED", "userId", userId));
+
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "playerId", "value",
           "1234", "type", "USERDEFINED", "userId", userId));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "userId", "value",
-          userId, "type", "SYSTEMDEFINED", "userId", userId));
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
       assertEquals(1, actions.size());
@@ -1203,13 +1238,92 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
-  private void assertPublishedSnsMessage() throws InterruptedException {
-    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    while (msgs.size() != 1) {
-      TimeUnit.SECONDS.sleep(1);
-      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+  /**
+   * Test .fkb64 file with Metadata.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension13() throws IOException {
+    DynamicDocumentItem item = createDocumentItem();
+
+    item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
+        Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      processFkB64File(siteId, item, null);
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals(2, doc.getMetadata().size());
+      Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
+      DocumentMetadata md = itr.next();
+      assertEquals("category", md.getKey());
+      assertEquals("person", md.getValue());
+      md = itr.next();
+      assertEquals("playerId", md.getKey());
+      assertEquals("[111, 222]", md.getValues().toString());
     }
-    assertEquals(1, msgs.size());
+  }
+
+  /**
+   * Test .fkb64 file add Metadata.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension14() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+
+      item.put("tags", new ArrayList<>());
+      item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
+          Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
+      service.saveDocument(siteId, item, null);
+
+      item.put("metadata", Arrays.asList(Map.of("key", "playerId", "value", "333")));
+
+      processFkB64File(siteId, item, "14");
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals(2, doc.getMetadata().size());
+      Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
+      DocumentMetadata md = itr.next();
+      assertEquals("category", md.getKey());
+      assertEquals("person", md.getValue());
+      md = itr.next();
+      assertEquals("playerId", md.getKey());
+      assertNull(md.getValues());
+      assertEquals("333", md.getValue());
+    }
+  }
+
+  /**
+   * Test .fkb64 file removing Metadata.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension15() throws IOException {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      DynamicDocumentItem item = createDocumentItem();
+
+      item.put("tags", new ArrayList<>());
+      item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
+          Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
+      service.saveDocument(siteId, item, null);
+
+      item.put("metadata", Arrays.asList(Map.of("key", "playerId")));
+
+      processFkB64File(siteId, item, "14");
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertEquals(1, doc.getMetadata().size());
+      Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
+      DocumentMetadata md = itr.next();
+      assertEquals("category", md.getKey());
+      assertEquals("person", md.getValue());
+    }
   }
 
   /**

@@ -24,11 +24,12 @@
 package com.formkiq.testutils.aws;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import org.testcontainers.containers.GenericContainer;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -41,12 +42,14 @@ public final class DynamoDbTestServices {
 
   /** Aws Region. */
   private static final Region AWS_REGION = Region.US_EAST_1;
-  /** DynamoDB Local {@link GenericContainer}. */
-  private static GenericContainer<?> dynamoDbLocal;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
   /** {@link DynamoDbHelper}. */
   private static DynamoDbHelper dbHelper;
+  /** Default DynamoDB Port. */
+  private static final int DEFAULT_PORT = 8000;
+  /** DynamoDB Local {@link GenericContainer}. */
+  private static GenericContainer<?> dynamoDbLocal;
 
   /**
    * Get Singleton Instance of {@link DynamoDbConnectionBuilder}.
@@ -58,11 +61,13 @@ public final class DynamoDbTestServices {
   public static DynamoDbConnectionBuilder getDynamoDbConnection(final GenericContainer<?> dynamoDb)
       throws URISyntaxException {
     if (dbConnection == null) {
-      AwsCredentialsProvider cred = StaticCredentialsProvider
-          .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+      AwsCredentialsProvider cred =
+          StaticCredentialsProvider.create(AwsBasicCredentials.create("ACCESSKEY", "SECRETKEY"));
 
+      Integer port =
+          dynamoDb != null ? dynamoDb.getFirstMappedPort() : Integer.valueOf(DEFAULT_PORT);
       dbConnection = new DynamoDbConnectionBuilder().setRegion(AWS_REGION).setCredentials(cred)
-          .setEndpointOverride("http://localhost:" + dynamoDb.getFirstMappedPort());
+          .setEndpointOverride("http://localhost:" + port);
     }
 
     return dbConnection;
@@ -92,13 +97,28 @@ public final class DynamoDbTestServices {
    */
   @SuppressWarnings("resource")
   public static GenericContainer<?> getDynamoDbLocal() {
-    if (dynamoDbLocal == null) {
-      final Integer exposedPort = Integer.valueOf(8000);
+    if (dynamoDbLocal == null && isPortAvailable()) {
+      final Integer exposedPort = Integer.valueOf(DEFAULT_PORT);
       dynamoDbLocal =
           new GenericContainer<>("amazon/dynamodb-local:1.13.5").withExposedPorts(exposedPort);
     }
 
     return dynamoDbLocal;
+  }
+
+  /**
+   * Checks Whether LocalStack is currently running on the default port.
+   * 
+   * @return boolean
+   */
+  private static boolean isPortAvailable() {
+    boolean available;
+    try (ServerSocket ignored = new ServerSocket(DEFAULT_PORT)) {
+      available = true;
+    } catch (IOException e) {
+      available = false;
+    }
+    return available;
   }
 
   private DynamoDbTestServices() {}

@@ -133,7 +133,7 @@ public class DocumentsUploadRequestHandler
 
     if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
-      DocumentService service = (CoreAwsServiceCache.cast(awsservice)).documentService();
+      DocumentService service = awsservice.getExtension(DocumentService.class);
       logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
 
       SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(false);

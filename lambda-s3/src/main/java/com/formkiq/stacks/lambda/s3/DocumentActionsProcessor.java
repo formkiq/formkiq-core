@@ -72,6 +72,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.SetDocumentFulltext;
@@ -84,6 +85,10 @@ import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -92,7 +97,8 @@ import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
-@ReflectableImport(classes = DocumentEvent.class)
+@ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
+    DocumentVersionServiceNoVersioning.class})
 @ReflectableClasses({@ReflectableClass(className = UpdateFulltextTag.class,
     allPublicConstructors = true, fields = {@ReflectableField(name = "key"),
         @ReflectableField(name = "value"), @ReflectableField(name = "values")})})
@@ -119,7 +125,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /** {@link S3Service}. */
   private S3Service s3Service;
 
-  /** constructor. */
+  /**
+   * constructor.
+   * 
+   */
   public DocumentActionsProcessor() {
     this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
         EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
@@ -145,8 +154,13 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
+    AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
+    DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
+    DocumentVersionService versionService = dsExtension.loadService(serviceCache);
+
     this.s3Service = new S3Service(s3);
-    this.documentService = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.documentService =
+        new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"), versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
@@ -259,8 +273,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (map != null && map.containsKey("contentUrls")) {
         urls = (List<String>) map.get("contentUrls");
-      } else {
-        throw new IOException("Cannot find 'contentUrls' from OCR request");
       }
     }
 

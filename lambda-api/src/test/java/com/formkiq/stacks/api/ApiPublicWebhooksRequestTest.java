@@ -44,6 +44,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -436,8 +437,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       String name = UUID.randomUUID().toString();
 
-      getAwsServices().configService().save(siteId,
-          new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
+      ConfigService configService = getAwsServices().getExtension(ConfigService.class);
+      configService.save(siteId, new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
 
@@ -586,7 +587,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
   @SuppressWarnings("unchecked")
   private void verifyS3File(final String webhookId, final String siteId, final String documentId,
-      final String name, final String contentType, final boolean hasTimeToLive) {
+      final String name, final String contentType, final boolean hasTimeToLive) throws Exception {
 
     // verify s3 file
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);

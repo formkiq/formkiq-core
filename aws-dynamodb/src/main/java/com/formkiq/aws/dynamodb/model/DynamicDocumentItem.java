@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.model;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -90,9 +91,37 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
     return getDate("lastModifiedDate");
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public Collection<DocumentMetadata> getMetadata() {
+    Collection<Map<String, Object>> c =
+        (Collection<Map<String, Object>>) getOrDefault("metadata", null);
+
+    Collection<DocumentMetadata> metadata = null;
+
+    if (c != null) {
+      metadata = c.stream().map(m -> {
+        DocumentMetadata md = null;
+        if (m.containsKey("values")) {
+          md = new DocumentMetadata((String) m.get("key"), (List<String>) m.get("values"));
+        } else {
+          md = new DocumentMetadata((String) m.get("key"), (String) m.get("value"));
+        }
+        return md;
+      }).collect(Collectors.toList());
+    }
+
+    return metadata;
+  }
+
   @Override
   public String getPath() {
     return getString("path");
+  }
+
+  @Override
+  public String getS3version() {
+    return getString("s3version");
   }
 
   @Override
@@ -108,6 +137,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public String getUserId() {
     return getString("userId");
+  }
+
+  @Override
+  public String getVersion() {
+    return getString("version");
   }
 
   @Override
@@ -152,8 +186,24 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public void setMetadata(final Collection<DocumentMetadata> metadata) {
+
+    List<Map<String, ? extends Object>> list = metadata.stream()
+        .map(m -> m.getValues() != null ? Map.of("key", m.getKey(), "values", m.getValues())
+            : Map.of("key", m.getKey(), "value", m.getValue()))
+        .collect(Collectors.toList());
+
+    put("metadata", list);
+  }
+
+  @Override
   public void setPath(final String path) {
     put("path", path);
+  }
+
+  @Override
+  public void setS3version(final String version) {
+    put("s3version", version);
   }
 
   @Override
@@ -169,5 +219,10 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setUserId(final String userId) {
     put("userId", userId);
+  }
+
+  @Override
+  public void setVersion(final String version) {
+    put("version", version);
   }
 }

@@ -51,6 +51,7 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import software.amazon.awssdk.utils.StringUtils;
@@ -98,7 +99,8 @@ public class PublicWebhooksRequestHandler
     if (hook.containsKey("TimeToLive")) {
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
-      String ttl = awsservice.configService().get(siteId).getString(DOCUMENT_TIME_TO_LIVE);
+      ConfigService configService = awsservice.getExtension(ConfigService.class);
+      String ttl = configService.get(siteId).getString(DOCUMENT_TIME_TO_LIVE);
       if (ttl != null) {
         item.put("TimeToLive", ttl);
       }

@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -207,8 +208,8 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     String siteId = "finance";
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
     setCognitoGroup(event, siteId);
-    getAwsServices().configService().save(siteId,
-        new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
+    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
+    configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
     String response = handleRequest(event);

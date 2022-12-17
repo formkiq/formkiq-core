@@ -18,12 +18,6 @@ Parameters:
     AllowedPattern: "[a-zA-Z0-9_.-/]+"
     Default: prod
   
-  AllowAdminCreateUserOnly:
-    Description: When true only Cognito Admin can create users, false users can register themselves
-    Default: "true"
-    Type: String
-    AllowedValues: ["true", "false"]
-
   EnablePublicUrls:
     Description: Enables /public urls (unauthenticated urls)
     Default: "false"
@@ -60,7 +54,23 @@ Parameters:
     Default: "false"
     Type: String
     AllowedValues: ["true", "false"]
-     
+
+  VpcStackName:
+    Type: String
+    Description: (optional) FormKiQ VPC Stack Name 
+    Default: ""
+
+  TypesenseApiKey:
+    Type: String
+    Description: (optional) Random string of characters for https://typesense.org API access 
+    Default: ""
+
+  CapacityProvider:
+    Description: AWS Fargate capacity provider to use, either the FARGATE or FARGATE_SPOT 
+    Default: "FARGATE_SPOT"
+    Type: String
+    AllowedValues: ["FARGATE_SPOT", "FARGATE"]
+    
 Resources:
 
   EditionParameter:
@@ -169,12 +179,19 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.ApiEndpoint
-        AllowAdminCreateUserOnly: 
-          Fn::Sub: "${AllowAdminCreateUserOnly}"
+        AllowAdminCreateUserOnly: "true"
         CognitoHostedUi:
           Fn::GetAtt:
           - Cognito
           - Outputs.CognitoHostedUi
+        CognitoUserPoolId:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId:
+          Fn::GetAtt:
+          - Cognito
+          - Outputs.CognitoUserPoolClientId
         CognitoConfigBucket:
           Fn::GetAtt:
           - Cognito
@@ -199,8 +216,7 @@ Resources:
       Parameters:
         UserPoolName: 
           Fn::Sub: "${AWS::StackName}-${AppEnvironment}"
-        AllowAdminCreateUserOnly: 
-          Fn::Sub: "${AllowAdminCreateUserOnly}"
+        AllowAdminCreateUserOnly: "true"
         PasswordMinimumLength: 
           Fn::Sub: "${PasswordMinimumLength}"
         PasswordRequireLowercase: 
@@ -259,6 +275,7 @@ Resources:
     DependsOn:
       - Cognito
       - WebsocketApi
+      - TypeSenseService
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -288,6 +305,13 @@ Resources:
           Fn::GetAtt: 
           - WebsocketApi
           - Outputs.SqsQueueUrl
+        TypesenseApiKey: 
+          Ref: TypesenseApiKey
+        TypesenseApiEndpoint:
+          Fn::GetAtt:
+          - TypeSenseService
+          - Outputs.TypesenseApiEndpoint
+          
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -330,7 +354,7 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-
+          
   WebsocketApi:
     Type: AWS::Serverless::Application
     DependsOn:
@@ -354,7 +378,53 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-        
+
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName:
+        Fn::Sub: "FormKiQ-${AppEnvironment}"
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider:
+            Ref: CapacityProvider
+          Weight: 1
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+            
+  TypeSenseService:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - ECSCluster
+      - CoreStorage
+    Properties:
+      Location: typesense/template.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        TypesenseApiKey:
+          Ref: TypesenseApiKey
+        VpcStackName:
+          Ref: VpcStackName
+        ECSCluster:
+          Ref: ECSCluster
+      Tags:
+        Application: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod

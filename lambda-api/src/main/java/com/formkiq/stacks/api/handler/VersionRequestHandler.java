@@ -54,9 +54,9 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     String key = "/formkiq/" + awsservice.environment("APP_ENVIRONMENT") + "/version";
 
     String version = ssmService.getParameterValue(key);
-    List<String> modules =
-        awsservice.environment().entrySet().stream().filter(e -> e.getKey().startsWith("MODULE_"))
-            .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
+    List<String> modules = awsservice.environment().entrySet().stream()
+        .filter(e -> e.getKey().startsWith("MODULE_") && "true".equals(e.getValue()))
+        .map(e -> e.getKey().replaceAll("MODULE_", "")).collect(Collectors.toList());
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("version", version,
         "type", awsservice.environment("FORMKIQ_TYPE"), "modules", modules)));
