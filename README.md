@@ -2,7 +2,7 @@
 
 <div align="center" style="margin: 30px;">
 <a href="https://formkiq.com/">
-  <img src="https://raw.githubusercontent.com/formkiq/formkiq-core/v1.9.0/images/logo.png" style="width:250px;" align="center" />
+  <img src="https://github.com/formkiq/formkiq-core/raw/master/images/logo.png" style="width:600px;" align="center" />
 </a>
 <br />
 <br />
