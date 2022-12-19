@@ -80,9 +80,9 @@ Resources:
           /tagSchemas:
             get:
               operationId: GetTagSchemas
-              description: Returns the list of tagSchemas; ONLY available in FormKiQ Enterprise
+              description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise TagSchema
+              - Tag Schema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -119,9 +119,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddTagSchema
-              description: Creates a new TagSchema; ONLY available in FormKiQ Enterprise
+              description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise TagSchema
+              - Tag Schema
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -164,9 +164,9 @@ Resources:
           /tagSchemas/{tagSchemaId}:
             get:
               operationId: GetTagSchema
-              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available in FormKiQ Enterprise
+              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise TagSchema
+              - Tag Schema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -190,9 +190,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
               operationId: DeleteTagSchema
-              description: Delete a TagSchema; ONLY available in FormKiQ Enterprise
+              description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise TagSchema
+              - Tag Schema
               parameters:
               - $ref: '#/components/parameters/tagSchemaIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -386,7 +386,7 @@ Resources:
           /documents/{documentId}/versions:
             get:
               operationId: GetDocumentVersions
-              description: Get a listing of document content versions; ONLY available with FormKiQ Enterprise
+              description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Versions
               parameters:
@@ -417,7 +417,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             put:
               operationId: SetDocumentVersion
-              description: Set Document to a previous document version; ONLY available with FormKiQ Enterprise
+              description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Versions
               parameters:
@@ -456,7 +456,7 @@ Resources:
           /documents/{documentId}/content:
             get:
               operationId: GetDocumentContent
-              description: Get a document's contents. text/*, application/json, application/x-www-form-urlencoded returns "content" field, all other content-types returns a 'contentUrl' for the content. 
+              description: Get a document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
               tags:
               - Documents
               parameters:
@@ -523,7 +523,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddDocumentTag
-              description: Add a single tag to a document; endpoint also accepts a different body parameter for adding multiple tags at one time
+              description: Add a single tag to a document; this endpoint also accepts a different body parameter for adding multiple tags in a single request
               tags:
               - Document Tags
               parameters:
@@ -557,7 +557,7 @@ Resources:
           /documents/{documentId}/tags#:
             post:
               operationId: AddDocumentTags
-              description: Add multiple tags to a document; endpoint also accepts a different body parameter for adding a single tag
+              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
               tags:
               - Document Tags
               parameters:
@@ -663,7 +663,7 @@ Resources:
           /documents/{documentId}/url:
             get:
               operationId: GetDocumentUrl
-              description: Returns a URL for the document's contents that expires (default is 48 hours)
+              description: Returns a URL for the document's contents; this URL will expire (the default is 48 hours)
               tags:
               - Documents
               parameters:
@@ -698,7 +698,7 @@ Resources:
           /documents/upload:
             get:
               operationId: GetDocumentUpload
-              description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
+              description: Returns a URL that can be used to upload document content and create a new document; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
               tags:
               - Documents
               parameters:
@@ -730,7 +730,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddDocumentUpload
-              description: Returns a URL that can be used to upload document content and create a new document; required to add content that is larger than 5 MB
+              description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
               tags:
               - Documents
               parameters:
@@ -768,7 +768,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
-              description: Returns a URL that can be used to upload documents for a specific documentId (required for documents larger than 5 MB)
+              description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
               tags:
               - Documents
               responses:
@@ -792,7 +792,7 @@ Resources:
           /search:
             post:
               operationId: DocumentSearch
-              description: Document search query request; documents are searched primarily using a document tag key and optional tag value, while an optional documentIds parameter is also available in the DocumentSearchBody to filter within up to 100 documentIds
+              description: Document search query request; documents are searched primarily using a document tag key and optional tag value, or if Typesense is enabled, searches on the document path and versioned metadata is also available. An optional documentIds parameter is also available in the DocumentSearchBody to filter, with up to 100 documentIds accepted.
               tags:
               - Document Search
               parameters:
@@ -860,9 +860,9 @@ Resources:
           /searchFulltext:
             post:
               operationId: DocumentFulltext
-              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch) ONLY available with FormKiQ Enterprise
+              description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
               tags:
-              - Document Search
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -893,9 +893,9 @@ Resources:
           /queryFulltext:
             post:
               operationId: QueryFulltext
-              description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/) ONLY available with FormKiQ Enterprise
+              description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
               tags:
-              - Document Search
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -925,7 +925,7 @@ Resources:
           /documents/{documentId}/actions:
             get:
               operationId: GetDocumentActions
-              description: Get Document Actions and their Status
+              description: Get document actions and their status
               tags:
               - Document Actions
               parameters:
@@ -951,7 +951,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddDocumentActions
-              description: Add action to a document
+              description: Add one or more actions to a document; this appends actions and does not replace previous actions
               tags:
               - Document Actions
               parameters:
@@ -984,9 +984,9 @@ Resources:
           /documents/{documentId}/ocr:
             get:
               operationId: GetDocumentOcr
-              description: Get Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
+              description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise OCR
+              - OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1012,9 +1012,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             post:
               operationId: AddDocumentOcr
-              description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Enterprise
+              description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise OCR
+              - OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1044,9 +1044,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"                        
             put:
               operationId: SetDocumentOcr
-              description: Sets a Document optical character recognition (OCR) document. ONLY available with FormKiQ Enterprise
+              description: Set a document's optical character recognition (OCR) result for a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise OCR
+              - OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1076,9 +1076,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             delete:
               operationId: DeleteDocumentOcr
-              description: Delete a Document optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Enterprise
+              description: Delete a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise OCR
+              - OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1092,9 +1092,9 @@ Resources:
           /documents/{documentId}/antivirus:                       
             put:
               operationId: SetAntivirus
-              description: Performs Antivirus scan on a document. ONLY available with FormKiQ Enterprise
+              description: Perform an Anti-Malware / Antivirus scan on a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - Enterprise Antivirus
+              - Antivirus
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1125,9 +1125,9 @@ Resources:
           /documents/{documentId}/fulltext:
             get:
               operationId: GetDocumentFulltext
-              description: Retrieves an OpenSearch document's details, i.e., metadata
+              description: Retrieve an OpenSearch document's details, i.e., metadata
               tags:
-              - Enterprise Fulltext
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
@@ -1151,9 +1151,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             delete:
               operationId: DeleteDocumentFulltext
-              description: Removes full text search for a document; ONLY available with FormKiQ Enterprise
+              description: Remove full text search for a document from OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise Fulltext
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1168,7 +1168,7 @@ Resources:
               operationId: SetDocumentFulltext
               description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise Fulltext
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1198,9 +1198,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
             patch:
               operationId: UpdateDocumentFulltext
-              description: Updates Opensearch document; ONLY available with FormKiQ Enterprise
+              description: Update a document in OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise Fulltext
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1231,9 +1231,9 @@ Resources:
           /documents/{documentId}/fulltext/tags/{tagKey}:
             delete:
               operationId: DeleteDocumentFulltextTag
-              description: Removes document tags from full text search; ONLY available with FormKiQ Enterprise
+              description: Remove document tags from OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise Fulltext
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1248,9 +1248,9 @@ Resources:
           /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
             delete:
               operationId: DeleteDocumentFulltextTagAndValue
-              description: Removes document tag/value from full text search; ONLY available with FormKiQ Enterprise
+              description: Remove document tag/value from OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
-              - Enterprise Fulltext
+              - Advanced Document Search
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1266,7 +1266,7 @@ Resources:
           /public/documents:
             post:
               operationId: PublicAddDocument
-              description: Allows unauthenticated creation of new documents; must be enabled during installation (disabled by default)
+              description: Allow unauthenticated creation of new documents; must be enabled during installation (disabled by default)
               tags:
               - Public
               parameters:
@@ -1296,7 +1296,7 @@ Resources:
           /public/webhooks/{webhooks+}:
             post:
               operationId: PublicAddWebhook
-              description: Receives an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
+              description: Receive an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
               tags:
               - Public
               parameters:
@@ -1327,7 +1327,7 @@ Resources:
           /private/webhooks/{webhooks+}:
             post:
               operationId: AddWebhookDocument
-              description: Receives an incoming private webhook and creates a document based on the webhook's body; requires authentication
+              description: Receive an incoming private webhook and creates a document based on the webhook's body; requires authentication
               tags:
               - Webhooks
               parameters:
@@ -1362,7 +1362,7 @@ Resources:
               operationId: GetWebhooks
               tags:
               - Webhooks
-              description: Returns a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
+              description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               responses:
@@ -1422,7 +1422,7 @@ Resources:
               operationId: GetWebhook
               tags:
               - Webhooks
-              description: Returns a webhook's details, i.e., its metadata
+              description: Return a webhook's details, i.e., its metadata
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
@@ -1449,7 +1449,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             delete:
               operationId: DeleteWebhook
-              description: Deletes a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
+              description: Delete a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
               tags:
               - Webhooks
               parameters:
@@ -1542,9 +1542,9 @@ Resources:
           /onlyoffice/{documentId}/edit:
             post:
               operationId: OnlyOfficeDocumentEdit
-              description: Provides OnlyOffice integration for editing Documents. ONLY available with FormKiQ Enterprise
+              description: Provide ONLYOFFICE integration for editing documents; ONLY available with FormKiQ Enterprise
               tags:
-              - OnlyOffice
+              - Onlyoffice
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1575,9 +1575,9 @@ Resources:
           /onlyoffice/new:
             post:
               operationId: OnlyOfficeDocumentNew
-              description: Provides OnlyOffice integration for creation Documents. ONLY available with FormKiQ Enterprise
+              description: Provide ONLYOFFICE integration for the creation of new documents; ONLY available with FormKiQ Enterprise
               tags:
-              - OnlyOffice
+              - Onlyoffice
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -1607,9 +1607,9 @@ Resources:
           /onlyoffice/{documentId}/save:
             post:
               operationId: OnlyOfficeDocumentSave
-              description: Saves Updated Documents for OnlyOffice integration. ONLY available with FormKiQ Enterprise
+              description: Save an updated document for ONLYOFFICE integration. ONLY available with FormKiQ Enterprise
               tags:
-              - OnlyOffice
+              - Onlyoffice
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1632,7 +1632,7 @@ Resources:
           /indices/{indexType}/move:
             post:
               operationId: IndexFolderMove
-              description: Performs an Folder Index Move
+              description: Perform an Folder Index Move
               tags:
               - Folder Index
               parameters:
@@ -1671,7 +1671,7 @@ Resources:
           /indices/{indexType}/{indexKey}:
             delete:
               operationId: DeleteIndex
-              description: Performs an delete on the Folder Index
+              description: Perform a delete on the Folder Index
               tags:
               - Folder Index
               parameters:
@@ -1701,7 +1701,7 @@ Resources:
           /indices/search:
             post:
               operationId: IndexSearch
-              description: Performs an search on an index
+              description: Perform a search on a index; this is currently only available for folder indices
               tags:
               - Folder Index
               parameters:
@@ -1750,7 +1750,7 @@ Resources:
           /esignature/docusign/{documentId}:
             post:
               operationId: EsignatureDocusign
-              description: Creates an Docusign E-Signature request; ONLY available in FormKiQ Enterprise 
+              description: Create a DocuSign E-Signature request; ONLY available with FormKiQ Enterprise 
               tags:
               - E-Signature
               parameters:
@@ -1789,7 +1789,7 @@ Resources:
           /esignature/docusign/config:
             get:
               operationId: EsignatureDocusignConfig
-              description: Configures Docusign configuration; ONLY available in FormKiQ Enterprise 
+              description: Get DocuSign configuration info; ONLY available with FormKiQ Enterprise 
               tags:
               - E-Signature
               parameters:
@@ -1814,7 +1814,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
             put:
               operationId: EsignatureSetDocusignConfig
-              description: Sets Docusign configuration; ONLY available in FormKiQ Enterprise 
+              description: Set DocuSign configuration, required for integration; ONLY available with FormKiQ Enterprise 
               tags:
               - E-Signature
               parameters:
@@ -1846,7 +1846,7 @@ Resources:
           /esignature/docusign/events:
             post:
               operationId: AddEsignatureDocusignEvents
-              description: Docusign callback URL handler; ONLY available in FormKiQ Enterprise 
+              description: DocuSign callback URL handler; ONLY available with FormKiQ Enterprise 
               tags:
               - E-Signature
               responses:
@@ -2088,13 +2088,13 @@ Resources:
                   description: "Document content"
                 contentUrl:
                   type: "string"
-                  description: "Url to document content"
+                  description: "URL to retrieve document content"
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
-                  description: "Is Content Base64 encoded"
+                  description: "Is the content Base64-encoded?"
             GetDocumentVersionsResponse:
               type: "object"
               properties:
@@ -2434,7 +2434,7 @@ Resources:
                   description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
-                  description: "Is Content Base64 encoded"
+                  description: "Is the content Base64-encoded?"
                 content:
                   type: "string"
                   description: "Document content"
@@ -2517,7 +2517,7 @@ Resources:
                   description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
-                  description: "Is Content Base64 encoded"
+                  description: "Is the content Base64-encoded?"
                 content:
                   type: "string"
                   description: "Document content"
@@ -2906,7 +2906,7 @@ Resources:
                   description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
-                  description: "Is Content Base64 encoded"
+                  description: "Is the content Base64-encoded?"
                 userId:
                   type: "string"
                   description: "User who requested the OCR"
@@ -2945,7 +2945,7 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
-                  description: "Url which contains Document content"
+                  description: "URL(s) which contain document content"
                 path:
                   type: "string"
                   description: "Path or Name of document"
@@ -3003,7 +3003,7 @@ Resources:
                   description: "OCR Parse types - TEXT, FORMS, TABLES"
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
-                  description: "OCR action for rewrite PDF document, converting any Image text to searchable text"
+                  description: "OCR action for the rewriting of the PDF document, converting any image text to searchable text"
                 url:
                   type: "string"
                   description: "Webhook action for the callback URL"
@@ -3033,7 +3033,7 @@ Resources:
                   description: "Document Content-Type"
                 isBase64:
                   type: "boolean"
-                  description: "Is Content Base64 encoded"
+                  description: "Is the content Base64-encoded?"
                 content:
                   type: "string"
                   description: "Document content"
@@ -3223,7 +3223,7 @@ Resources:
                   items:
                     type: "string"
             OnlyOfficeDocumentNewRequest:
-              description: "Only Office New Document Request"
+              description: "ONLYOFFICE New Document Request"
               properties:
                 extension:
                   type: "string"
@@ -3232,7 +3232,7 @@ Resources:
                     - XLSX
                     - PPTX
             OnlyOfficeDocumentEditRequest:
-              description: "Only Office Edit Document Request"
+              description: "ONLYOFFICE Edit Document Request"
             OnlyOfficeDocumentResponse:
               type: "object"
               properties:
@@ -3240,10 +3240,10 @@ Resources:
                   type: "object"
                   properties:
                     onlyOfficeUrl:
-                      description: "Url of the OnlyOffice application"
+                      description: "URL of the ONLYOFFICE application"
                       type: "string"                    
                     token:
-                      description: "OnlyOffice security token"
+                      description: "ONLYOFFICE security token"
                       type: "string"
                     documentType:
                       description: "Type of document (https://api.onlyoffice.com/editors/config/)"
@@ -3296,7 +3296,7 @@ Resources:
                   $ref: "#/components/schemas/EsignatureDocusignRecipientTabs"
             EsignatureDocusignSigners:
               type: "array"
-              description: "List of Docusign Signers"
+              description: "List of DocuSign Signers"
               items:
                 $ref: "#/components/schemas/EsignatureDocusignSigner"
             EsignatureDocusignSigner:
@@ -3310,7 +3310,7 @@ Resources:
                   description: "Email of Signer"
             EsignatureDocusignCarbonCopies:
               type: "array"
-              description: "List of Docusign Carbon Copies"
+              description: "List of DocuSign Carbon Copies"
               items:
                 $ref: "#/components/schemas/EsignatureDocusignCarbonCopy"
             EsignatureDocusignCarbonCopy:
@@ -3324,7 +3324,7 @@ Resources:
                   description: "Email of Signer"
             EsignatureDocusignRecipientTabs:
               type: "array"
-              description: "List of Docusign Recipient Tabs"
+              description: "List of DocuSign Recipient Tabs"
               items:
                 $ref: "#/components/schemas/EsignatureDocusignRecipientTab"
             EsignatureDocusignRecipientTab:
@@ -3349,7 +3349,7 @@ Resources:
               properties:
                 redirect_url:
                   type: "string"
-                  description: "Redirect Url to complete Docusign workflow"
+                  description: "Redirect Url to complete DocuSign workflow"
                 message:
                   type: "string"
                   description: "Result message"
@@ -3358,13 +3358,13 @@ Resources:
               properties:
                 configured:
                   type: "boolean"
-                  description: "Whether Docusign is configured"
+                  description: "Whether DocuSign is configured"
                 userId:
                   type: "string"
-                  description: "Docusign UserId configured"
+                  description: "DocuSign UserId configured"
                 clientId:
                   type: "string"
-                  description: "Docusign Client configured"
+                  description: "DocuSign Client configured"
             EsignatureSetDocusignConfigRequest:
               type: "object"
               required:
@@ -3374,13 +3374,13 @@ Resources:
               properties:
                 privateKey:
                   type: "string"
-                  description: "Docusign App RSA PRIVATE KEY"
+                  description: "DocuSign App RSA PRIVATE KEY"
                 userId:
                   type: "string"
-                  description: "Docusign App UserId"
+                  description: "DocuSign App UserId"
                 clientId:
                   type: "string"
-                  description: "Docusign App Client"
+                  description: "DocuSign App Client"
             EsignatureSetDocusignConfigResponse:
               type: "object"
               properties:
