@@ -44,6 +44,7 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.formkiq.testutils.aws.FkqCognitoService;
 import com.google.gson.GsonBuilder;
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType.LaunchOptions;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
@@ -56,6 +57,8 @@ public class AwsResourceTest {
 
   /** App Environment Name. */
   private static String appenvironment;
+  /** Console Page Title. */
+  private static final String PAGE_TITLE = "FormKiQ Document Console";
   /** Cognito Password. */
   private static final String PASSWORD = "uae82nj23njd!@";
   /** {@link S3Service}. */
@@ -113,7 +116,7 @@ public class AwsResourceTest {
     assertEquals(statusCode, response.statusCode());
 
     String text = response.body();
-    assertTrue(text.contains("<title>FormKiQ Cloud Console</title>"));
+    assertTrue(text.contains("<title>" + PAGE_TITLE + "</title>"));
   }
 
   /**
@@ -135,31 +138,37 @@ public class AwsResourceTest {
     Map<String, Object> map = new GsonBuilder().create().fromJson(response.body(), Map.class);
     String userAuthentication = map.get("userAuthentication").toString();
 
+    LaunchOptions options = new LaunchOptions().setHeadless(false);
+
     try (Playwright playwright = Playwright.create()) {
-      try (Browser browser = playwright.chromium().launch()) {
+      try (Browser browser = playwright.chromium().launch(options)) {
+
         try (Page page = browser.newPage()) {
           page.navigate(url);
-          assertEquals("FormKiQ Cloud Console", page.title());
+
+          page.waitForSelector("input:has-text(\"Sign In\")");
+
+          assertEquals("Sign In", page.title());
 
           if ("saml".equals(userAuthentication)) {
+
             page.waitForNavigation(() -> {
               page.waitForSelector("text=Sign In");
               Locator element = page.locator("text=Sign In");
               assertEquals(1, element.count());
             });
+
           } else {
+
             page.click("[placeholder=\"me@mycompany.com\"]");
             page.fill("[placeholder=\"me@mycompany.com\"]", USER);
             page.click("[placeholder=\"******\"]");
             page.fill("[placeholder=\"******\"]", PASSWORD);
             page.waitForNavigation(() -> {
-              page.click("button:has-text(\"Sign In\")");
+              page.locator("input:has-text(\"Sign In\")").click();
             });
 
-            page.waitForNavigation(() -> {
-              page.click("text=Documents");
-            });
-            assertEquals("Recent Documents - FormKiQ", page.title());
+            page.waitForSelector("button:has-text(\"Create new\")");
           }
         }
       }
@@ -187,7 +196,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v2.0.3",
+    assertEquals("v3.0.0",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));
