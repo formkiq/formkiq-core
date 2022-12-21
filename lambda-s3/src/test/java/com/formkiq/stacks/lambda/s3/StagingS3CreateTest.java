@@ -84,6 +84,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
@@ -520,7 +521,7 @@ public class StagingS3CreateTest implements DbKeys {
       }
       assertEquals("plain/text", item.getContentType());
       assertNotNull(item.getInsertedDate());
-      assertNull(item.getChecksum());
+      assertNotNull(item.getChecksum());
       assertEquals("test.txt", item.getPath());
       assertEquals("joe", item.getUserId());
 
@@ -597,11 +598,9 @@ public class StagingS3CreateTest implements DbKeys {
 
     DocumentItem item = service.findDocument(siteId, destDocumentId);
     assertNotNull(item);
-    // assertEquals("8", item.getContentLength().toString());
-    // assertEquals("application/pdf", item.getContentType());
     assertNull(item.getContentLength());
     assertNull(item.getContentType());
-    assertNull(item.getChecksum());
+    assertNotNull(item.getChecksum());
     assertNotNull(item.getInsertedDate());
     assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
 
@@ -625,6 +624,8 @@ public class StagingS3CreateTest implements DbKeys {
 
     assertEquals("untagged", tags.get(i).getKey());
     assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
+
+    verifyS3Metadata(siteId, item);
   }
 
   /**
@@ -879,7 +880,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
       assertNotNull(item.getInsertedDate());
-      assertNull(item.getChecksum());
+      assertNotNull(item.getChecksum());
       // assertTrue(item.getChecksum() != null && item.getInsertedDate() != null);
       assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
@@ -945,7 +946,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
       assertNotNull(item.getInsertedDate());
-      assertNull(item.getChecksum());
+      assertNotNull(item.getChecksum());
       assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
@@ -1005,7 +1006,7 @@ public class StagingS3CreateTest implements DbKeys {
       DocumentItem item = service.findDocument(siteId, documentId);
       assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
-      assertNull(item.getChecksum());
+      assertNotNull(item.getChecksum());
       assertNotNull(item.getInsertedDate());
       assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
@@ -1146,7 +1147,7 @@ public class StagingS3CreateTest implements DbKeys {
       DocumentItem item = service.findDocument(siteId, documentId);
       assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
-      assertNull(item.getChecksum());
+      assertNotNull(item.getChecksum());
       assertNotNull(item.getInsertedDate());
       assertEquals(path, item.getPath());
       assertEquals("joesmith", item.getUserId());
@@ -1370,6 +1371,14 @@ public class StagingS3CreateTest implements DbKeys {
       assertNotNull(item.getDocuments().get(i).getInsertedDate());
       assertNotNull(item.getDocuments().get(i).getBelongsToDocumentId());
     }
+  }
+
+  private void verifyS3Metadata(final String siteId, final DocumentItem item) {
+    String key = createDatabaseKey(siteId, item.getDocumentId());
+    S3ObjectMetadata objectMetadata = s3.getObjectMetadata(DOCUMENTS_BUCKET, key);
+    assertTrue(objectMetadata.isObjectExists());
+
+    assertNotNull(objectMetadata.getMetadata().get("checksum"));
   }
 
   /**

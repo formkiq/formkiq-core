@@ -564,6 +564,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       final String siteId, final DynamicDocumentItem item, final Map<String, String> contentMap,
       final Map<String, String> contentTypeMap) {
 
+    Map<String, String> map = Map.of("checksum", item.getChecksum());
+
     if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
 
       for (Map.Entry<String, String> e : contentMap.entrySet()) {
@@ -579,10 +581,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         logger.log(String.format("Inserted %s into bucket %s as %s", item.getPath(),
             this.documentsBucket, createDatabaseKey(siteId, item.getDocumentId())));
 
-        this.s3.putObject(this.documentsBucket, key, bytes, contentType);
-        // attributes.put("checksum", AttributeValue.fromS(resp.eTag()));
-        // item.setChecksum(response.eTag());
-        // item.setContentLength(Long.valueOf(bytes.length));
+        this.s3.putObject(this.documentsBucket, key, bytes, contentType, map);
       }
 
     } else {
@@ -594,9 +593,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       logger.log(String.format("Copying %s from bucket %s to %s in bucket %s.", s3Key, bucket,
           destKey, this.documentsBucket));
 
-      this.s3.copyObject(bucket, s3Key, this.documentsBucket, destKey, metadata.getContentType());
-      // attributes.put("checksum", AttributeValue.fromS(response.responseMetadata()));
-      // this.d
+      this.s3.copyObject(bucket, s3Key, this.documentsBucket, destKey, metadata.getContentType(),
+          map);
     }
   }
 
@@ -614,6 +612,9 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (hasContent) {
       doc.setContentLength(null);
+      doc.setChecksum(UUID.randomUUID().toString());
+    } else if (doc.getChecksum() == null) {
+      doc.setChecksum(UUID.randomUUID().toString());
     }
 
     if (isEmpty(doc.getPath())) {

@@ -231,8 +231,9 @@ public class DocumentsUploadRequestHandler
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 
-    URL url = s3Service.presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
-        contentLength);
+    Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
+    URL url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
+        contentLength, map);
 
     String urlstring = url.toString();
     return urlstring;

@@ -46,6 +46,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -291,7 +292,8 @@ public class AwsResourceTest extends AbstractAwsTest {
         getDocumentService().saveDocumentItemWithTag(null, doc);
 
         // when
-        URL url = getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1));
+        URL url = getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1),
+            Optional.empty(), null);
         HttpResponse<String> put =
             http.send(
                 HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
