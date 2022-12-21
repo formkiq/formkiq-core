@@ -344,7 +344,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   private boolean isChecksumChanged(final S3ObjectMetadata resp, final DocumentItem doc) {
-    return doc.getChecksum() != null && !resp.getEtag().contains(doc.getChecksum());
+    String s3Checksum = resp.getMetadata().getOrDefault("checksum", "");
+    return doc.getChecksum() != null && !s3Checksum.contains(doc.getChecksum());
   }
 
   /**
@@ -515,6 +516,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       Map<String, AttributeValue> attributes = new HashMap<>();
 
       boolean isChecksumChanged = isChecksumChanged(resp, item);
+
+      if (debug) {
+        logger.log("metadata: " + resp.getMetadata());
+        logger.log("item checksum: " + item.getChecksum());
+      }
+
       if (isChecksumChanged) {
         attributes.put("lastModifiedDate", AttributeValue.fromS(this.df.format(new Date())));
       }

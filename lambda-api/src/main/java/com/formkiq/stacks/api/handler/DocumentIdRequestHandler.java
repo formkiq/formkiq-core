@@ -226,8 +226,10 @@ public class DocumentIdRequestHandler
       Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
       String key = createS3Key(siteId, documentId);
       S3Service s3Service = awsservice.getExtension(S3Service.class);
-      url = s3Service.presignPostUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
-          Optional.empty()).toString();
+
+      Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
+      url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,
+          Optional.empty(), map).toString();
     }
 
     return url;

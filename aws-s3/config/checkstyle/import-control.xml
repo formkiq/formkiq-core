@@ -15,6 +15,7 @@
 		
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.auth.signer" />
+		<allow pkg="software.amazon.awssdk.awscore"  />
 		<allow pkg="software.amazon.awssdk.core" />
 		<allow pkg="software.amazon.awssdk.http" />
 		<allow pkg="software.amazon.awssdk.regions" />

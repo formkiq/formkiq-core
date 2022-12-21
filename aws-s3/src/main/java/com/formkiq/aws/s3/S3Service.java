@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -58,6 +59,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest.Builder;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
@@ -149,15 +151,21 @@ public class S3Service {
    * @param destinationBucket {@link String}
    * @param destinationKey {@link String}
    * @param contentType {@link String}
+   * @param metadata {@link Map}
    * @return {@link CopyObjectResponse}
    */
   public CopyObjectResponse copyObject(final String sourcebucket, final String sourcekey,
-      final String destinationBucket, final String destinationKey, final String contentType) {
+      final String destinationBucket, final String destinationKey, final String contentType,
+      final Map<String, String> metadata) {
     CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
         .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
 
     if (contentType != null) {
       req = req.contentType(contentType);
+    }
+
+    if (metadata != null) {
+      req = req.metadata(metadata).metadataDirective(MetadataDirective.REPLACE);
     }
 
     return this.s3Client.copyObject(req.build());
@@ -428,17 +436,34 @@ public class S3Service {
    * @param bucket {@link String}
    * @param key {@link String}
    * @param duration {@link Duration}
+   * @param contentLength {@link Optional} {@link Long}
+   * @param metadata {@link Map}
    * @return {@link URL}
    */
-  public URL presignPutUrl(final String bucket, final String key, final Duration duration) {
+  public URL presignPutUrl(final String bucket, final String key, final Duration duration,
+      final Optional<Long> contentLength, final Map<String, String> metadata) {
 
     try (S3Presigner signer = this.builder.buildPresigner()) {
 
-      PutObjectRequest putObjectRequest =
-          PutObjectRequest.builder().bucket(bucket).key(key).build();
+      PutObjectRequest.Builder putObjectRequest =
+          PutObjectRequest.builder().bucket(bucket).key(key);
+
+      if (contentLength.isPresent()) {
+        putObjectRequest = putObjectRequest.contentLength(contentLength.get());
+      }
+
+      if (metadata != null) {
+        AwsRequestOverrideConfiguration.Builder override =
+            AwsRequestOverrideConfiguration.builder();
+
+        for (Map.Entry<String, String> e : metadata.entrySet()) {
+          override = override.putRawQueryParameter(e.getKey(), e.getValue());
+        }
+        putObjectRequest = putObjectRequest.overrideConfiguration(override.build());
+      }
 
       PutObjectPresignRequest putRequest = PutObjectPresignRequest.builder()
-          .signatureDuration(duration).putObjectRequest(putObjectRequest).build();
+          .signatureDuration(duration).putObjectRequest(putObjectRequest.build()).build();
 
       PresignedPutObjectRequest req = signer.presignPutObject(putRequest);
       URL url = req.url();

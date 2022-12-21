@@ -138,7 +138,7 @@ public class AwsResourceTest {
     Map<String, Object> map = new GsonBuilder().create().fromJson(response.body(), Map.class);
     String userAuthentication = map.get("userAuthentication").toString();
 
-    LaunchOptions options = new LaunchOptions().setHeadless(false);
+    LaunchOptions options = new LaunchOptions().setHeadless(true);
 
     try (Playwright playwright = Playwright.create()) {
       try (Browser browser = playwright.chromium().launch(options)) {
