@@ -14,7 +14,7 @@ def moduleName = "formkiq-core"
 repositories { mavenCentral() }
 
 allprojects {
-  version = '1.9.0'
+  version = '1.10.0'
   ext.awsCognitoVersion = '1.4.4'
   group = 'com.formkiq.stacks'
   
