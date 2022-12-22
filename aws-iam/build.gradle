@@ -2,8 +2,8 @@
 description = "AWS IAM"
 
 dependencies {
-    api group: 'software.amazon.awssdk', name: 'iam', version: '2.17.252'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.17.252'
+    api group: 'software.amazon.awssdk', name: 'iam', version: '2.19.2'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.19.2'
     
     configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

@@ -18,14 +18,14 @@ dependencies {
 	implementation project(':typesense')
 	implementation project(':http-sigv4')
 	
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.1'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10'
     
     implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
     implementation group: 'com.formkiq.stacks', name: 'client', version:'1.9.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.2'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
 	
 	testImplementation project(':aws-cognito')
 	testImplementation project(':aws-iam')
@@ -33,15 +33,15 @@ dependencies {
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.17.252'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.17.252'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.19.2'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.19.2'
 	
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
     testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.1'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.3'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.3'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.307'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.370'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.14.0'
 }
 
