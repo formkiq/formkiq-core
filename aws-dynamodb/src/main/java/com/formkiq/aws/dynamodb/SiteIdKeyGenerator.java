@@ -171,11 +171,14 @@ public final class SiteIdKeyGenerator {
           documentId = String.join("", strs);
         }
       } else {
+
         siteId = strs[0];
-        documentId = strs[1];
+        StringBuffer buf = new StringBuffer(strs[1]);
         for (int i = 1; i < strs.length; i++) {
-          documentId += strs[i];
+          buf.append(strs[i]);
         }
+
+        documentId = buf.toString();
       }
     }
 
