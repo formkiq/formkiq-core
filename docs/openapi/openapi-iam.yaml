@@ -1299,6 +1299,61 @@
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /documents/{documentId}/syncs:
+            get:
+              operationId: GetDocumentSyncs
+              description: Retrieve the document syncs with external services status
+              tags:
+              - Document Synchronization
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentSyncResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /documents/{documentId}/syncs/{service}:
+            post:
+              operationId: AddDocumentSyncs
+              description: Manual trigger for syncing data with a service
+              tags:
+              - Document Synchronization
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/serviceParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentSyncResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -1977,6 +2032,13 @@
               name: documentId
               in: path
               description: Document Identifier
+              required: true
+              schema:
+                type: string
+            serviceParam:
+              name: service
+              in: path
+              description: Service
               required: true
               schema:
                 type: string
@@ -2701,6 +2763,56 @@
                   description: User who added document
                 tags:
                   type: object
+            GetDocumentSyncResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                syncs:
+                  $ref: '#/components/schemas/GetDocumentSyncs'
+            GetDocumentSyncs:
+              type: array
+              description: List of document syncs
+              items:
+                $ref: '#/components/schemas/GetDocumentSync'
+            GetDocumentSync:
+              type: object
+              properties:
+                service:
+                  type: string
+                  description: To which service the data was synced
+                  enum:
+                  - TYPESENSE
+                  - OPENSEARCH
+                status:
+                  type: string
+                  description: The status of the sync
+                  enum:
+                  - COMPLETE
+                  - FAILED
+                syncDate:
+                  type: string
+                  format: date-time
+                  description: Timestamp of synchronization
+                userId:
+                  type: string
+                  description: User who added document
+            AddDocumentSyncRequest:
+              type: object
+              properties:
+                service:
+                  type: string
+                  description: To which service to sync the data to
+                  enum:
+                  - TYPESENSE
+                  - OPENSEARCH
+            AddDocumentSyncResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document sync processing message
             DocumentSearchResponse:
               type: object
               properties:

@@ -23,48 +23,36 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
+import java.util.function.Function;
+import com.formkiq.aws.dynamodb.model.DocumentSync;
+import com.formkiq.aws.dynamodb.model.DocumentSyncMap;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServices;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * Pagination Result for a DynamoDB Query.
+ * Convert {@link Map} {@link AttributeValue} to {@link DocumentTag}.
  *
- * @param <T> Type of Result.
  */
-public class PaginationResult<T> {
+public class AttributeValueToDocumentSync
+    implements Function<Map<String, AttributeValue>, DocumentSync> {
 
-  /** Object. */
-  private T result;
-  /** Last Evaluated DynamoDB Key. */
-  private PaginationMapToken token;
+  /** {@link AttributeValueToDate}. */
+  private AttributeValueToDate toDate = new AttributeValueToDate("syncDate");
 
-  /**
-   * constructor.
-   *
-   * @param obj {@link Object}
-   * @param pagination {@link PaginationMapToken}
-   */
-  public PaginationResult(final T obj, final PaginationMapToken pagination) {
-    this.result = obj;
-    this.token = pagination;
-  }
+  @Override
+  public DocumentSync apply(final Map<String, AttributeValue> map) {
 
-  /**
-   * Get Result.
-   *
-   * @return {@link List}
-   */
-  public T getResult() {
-    return this.result;
-  }
+    DocumentSync sync = new DocumentSyncMap(new HashMap<>());
 
-  /**
-   * Get Last Evaluated Key.
-   *
-   * @return {@link Map}
-   */
-  public PaginationMapToken getToken() {
-    return this.token;
+    sync.setDocumentId(map.get("documentId").s());
+    sync.setService(DocumentSyncServices.valueOf(map.get("service").s().toUpperCase()));
+    sync.setStatus(DocumentSyncStatus.valueOf(map.get("status").s().toUpperCase()));
+    sync.setSyncDate(this.toDate.apply(map));
+
+    return sync;
   }
 }
