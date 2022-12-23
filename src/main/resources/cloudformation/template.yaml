@@ -311,7 +311,8 @@ Resources:
           Fn::GetAtt:
           - TypeSenseService
           - Outputs.TypesenseApiEndpoint
-          
+        VpcStackName:
+          Ref: VpcStackName
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
