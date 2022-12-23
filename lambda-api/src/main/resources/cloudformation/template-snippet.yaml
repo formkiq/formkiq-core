@@ -100,7 +100,29 @@ Parameters:
   TypesenseApiEndpoint:
     Type: String
     Description: TypeSense API Endpoint
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+    
+Conditions:
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
         
+  CreateTypesenseResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypesenseApiKey
+      
 Resources:        
         
   DocumentsApiRequests:
@@ -143,6 +165,11 @@ Resources:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
             Ref: TypesenseApiKey
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole
