@@ -10,7 +10,8 @@
 <div align="center">
     <a href="https://formkiq.com">Home Page</a> |
     <a href="https://docs.formkiq.com">Documentation</a> | 
-    <a href="https://blog.formkiq.com">Blog</a>
+    <a href="https://blog.formkiq.com">Blog</a> |
+    <a href="https://github.com/formkiq/formkiq-core#Installation">Installation</a>
 </div>
 </div>
 
