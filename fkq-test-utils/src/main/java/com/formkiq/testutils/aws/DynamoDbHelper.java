@@ -148,6 +148,33 @@ public class DynamoDbHelper {
   }
 
   /**
+   * Create Documents Syncs Table.
+   * 
+   * @param tableName {@link String}
+   */
+  public void createDocumentSyncsTable(final String tableName) {
+    final Long capacity = Long.valueOf(10);
+
+    KeySchemaElement pk =
+        KeySchemaElement.builder().attributeName("PK").keyType(KeyType.HASH).build();
+    KeySchemaElement sk =
+        KeySchemaElement.builder().attributeName("SK").keyType(KeyType.RANGE).build();
+
+    AttributeDefinition a1 = AttributeDefinition.builder().attributeName("PK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
+        .attributeType(ScalarAttributeType.S).build();
+
+    CreateTableRequest table = CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
+        .attributeDefinitions(a1, a2).provisionedThroughput(ProvisionedThroughput.builder()
+            .writeCapacityUnits(capacity).readCapacityUnits(capacity).build())
+        .build();
+
+    this.db.createTable(table);
+  }
+
+  /**
    * Get Document Item Count.
    * 
    * @param tableName {@link String}

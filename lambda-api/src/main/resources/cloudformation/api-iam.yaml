@@ -860,7 +860,7 @@ Resources:
           /searchFulltext:
             post:
               operationId: DocumentFulltext
-              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
+              description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
               parameters:
@@ -984,7 +984,7 @@ Resources:
           /documents/{documentId}/ocr:
             get:
               operationId: GetDocumentOcr
-              description: Get a document's optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Pro and Enterprise
+              description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - OCR
               parameters:
@@ -1012,7 +1012,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             post:
               operationId: AddDocumentOcr
-              description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Pro and Enterprise
+              description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - OCR
               parameters:
@@ -1262,7 +1262,62 @@ Resources:
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"                
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/syncs:
+            get:
+              operationId: GetDocumentSyncs
+              description: Retrieve the document syncs with external services status
+              tags:
+              - Document Synchronization
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentSyncResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /documents/{documentId}/syncs/{service}:
+            post:
+              operationId: AddDocumentSyncs
+              description: Manual trigger for syncing data with a service
+              tags:
+              - Document Synchronization
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/serviceParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentSyncResponse'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -1941,6 +1996,13 @@ Resources:
               name: documentId
               in: path
               description: Document Identifier
+              required: true
+              schema:
+                type: string
+            serviceParam:
+              name: service
+              in: path
+              description: Service
               required: true
               schema:
                 type: string
@@ -2665,6 +2727,56 @@ Resources:
                   description: "User who added document"
                 tags:
                   type: "object"
+            GetDocumentSyncResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                syncs:
+                  $ref: "#/components/schemas/GetDocumentSyncs"
+            GetDocumentSyncs:
+              type: "array"
+              description: "List of document syncs"
+              items:
+                $ref: "#/components/schemas/GetDocumentSync"
+            GetDocumentSync:
+              type: "object"
+              properties:
+                service:
+                  type: "string"
+                  description: "To which service the data was synced"
+                  enum:
+                    - TYPESENSE
+                    - OPENSEARCH
+                status:
+                  type: "string"
+                  description: "The status of the sync"
+                  enum:
+                    - COMPLETE
+                    - FAILED
+                syncDate:
+                  type: "string"
+                  format: "date-time"
+                  description: "Timestamp of synchronization"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+            AddDocumentSyncRequest:
+              type: "object"
+              properties:
+                service:
+                  type: "string"
+                  description: "To which service to sync the data to"
+                  enum:
+                    - TYPESENSE
+                    - OPENSEARCH
+            AddDocumentSyncResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document sync processing message
             DocumentSearchResponse:
               type: "object"
               properties:
@@ -3003,7 +3115,7 @@ Resources:
                   description: "OCR Parse types - TEXT, FORMS, TABLES"
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
-                  description: "Whether to rewrite the PDF document, converting any image text to searchable text"
+                  description: "OCR action for the rewriting of the PDF document, converting any image text to searchable text"
                 url:
                   type: "string"
                   description: "Webhook action for the callback URL"
@@ -3022,7 +3134,7 @@ Resources:
                     type: "string"
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
-                  description: "Whether to rewrite the PDF document, converting any image text to searchable text"
+                  description: "Rewrite PDF document, converting any Image text to searchable text"
             SetDocumentOcrRequest:
               required:
               - "content"
@@ -3349,7 +3461,7 @@ Resources:
               properties:
                 redirect_url:
                   type: "string"
-                  description: "Redirect URL to complete DocuSign workflow"
+                  description: "Redirect Url to complete DocuSign workflow"
                 message:
                   type: "string"
                   description: "Result message"

@@ -37,6 +37,8 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 public class DynamoDbExtension
     implements BeforeAllCallback, BeforeEachCallback, ExtensionContext.Store.CloseableResource {
 
+  /** Document Syncs Table Name. */
+  public static final String DOCUMENT_SYNCS_TABLE = "DocumentSyncs";
   /** Documents Table Name. */
   public static final String DOCUMENTS_TABLE = "Documents";
   /** Documents Table Name. */
@@ -75,6 +77,10 @@ public class DynamoDbExtension
 
     if (!dbHelper.isTableExists(CACHE_TABLE)) {
       dbHelper.createCacheTable(CACHE_TABLE);
+    }
+
+    if (!dbHelper.isTableExists(DOCUMENT_SYNCS_TABLE)) {
+      dbHelper.createDocumentSyncsTable(DOCUMENT_SYNCS_TABLE);
     }
   }
 

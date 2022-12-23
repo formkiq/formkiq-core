@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
  * 
@@ -74,6 +75,18 @@ public interface DynamoDbService {
    * @return {@link List} {@link Map}
    */
   List<Map<String, AttributeValue>> query(AttributeValue pk);
+
+  /**
+   * Query DynamoDB Records.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param token {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse queryBeginsWith(AttributeValue pk, AttributeValue sk, PaginationMapToken token,
+      int limit);
 
   /**
    * Update DynamoDB Record.

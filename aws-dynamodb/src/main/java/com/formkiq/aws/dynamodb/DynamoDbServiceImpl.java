@@ -54,6 +54,21 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   /**
    * constructor.
    * 
+   * @param client {@link DynamoDbClient}
+   * @param dynamoDbTableName {@link String}
+   */
+  public DynamoDbServiceImpl(final DynamoDbClient client, final String dynamoDbTableName) {
+    if (dynamoDbTableName == null) {
+      throw new IllegalArgumentException("Table name is null");
+    }
+
+    this.dbClient = client;
+    this.tableName = dynamoDbTableName;
+  }
+
+  /**
+   * constructor.
+   * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param dynamoDbTableName {@link String}
    */
@@ -64,21 +79,6 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     }
 
     this.dbClient = connection.build();
-    this.tableName = dynamoDbTableName;
-  }
-
-  /**
-   * constructor.
-   * 
-   * @param client {@link DynamoDbClient}
-   * @param dynamoDbTableName {@link String}
-   */
-  public DynamoDbServiceImpl(final DynamoDbClient client, final String dynamoDbTableName) {
-    if (dynamoDbTableName == null) {
-      throw new IllegalArgumentException("Table name is null");
-    }
-
-    this.dbClient = client;
     this.tableName = dynamoDbTableName;
   }
 
@@ -130,6 +130,24 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
     QueryResponse result = this.dbClient.query(q);
     return result.items();
+  }
+
+  @Override
+  public QueryResponse queryBeginsWith(final AttributeValue pk, final AttributeValue sk,
+      final PaginationMapToken token, final int limit) {
+
+    String expression = PK + " = :pk and begins_with(" + SK + ",:sk)";
+
+    Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
+            .exclusiveStartKey(startkey).limit(Integer.valueOf(limit)).build();
+
+    QueryResponse response = this.dbClient.query(q);
+    return response;
   }
 
   @Override
