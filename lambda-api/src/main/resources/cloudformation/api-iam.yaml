@@ -1794,9 +1794,10 @@ Resources:
           /indices/search:
             post:
               operationId: IndexSearch
-              description: Perform a search on a index; this is currently only available for folder indices
+              description: Perform a search on a index; this is currently available for both folder and tag indices
               tags:
               - Folder Index
+              - Tag Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
