@@ -1310,6 +1310,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: 200 OK

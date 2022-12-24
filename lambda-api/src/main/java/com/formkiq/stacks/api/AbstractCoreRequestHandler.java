@@ -67,6 +67,8 @@ import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsSyncsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsSyncsServiceRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.EsignatureDocusignConfigRequestHandler;
 import com.formkiq.stacks.api.handler.EsignatureDocusignDocumentIdRequestHandler;
@@ -95,6 +97,8 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
@@ -146,6 +150,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentsUploadRequestHandler());
     addRequestHandler(new DocumentsIdUploadRequestHandler());
     addRequestHandler(new DocumentsOcrRequestHandler());
+    addRequestHandler(new DocumentsSyncsRequestHandler());
+    addRequestHandler(new DocumentsSyncsServiceRequestHandler());
     addRequestHandler(new DocumentsFulltextRequestHandler());
     addRequestHandler(new TagSchemasRequestHandler());
     addRequestHandler(new TagSchemasIdRequestHandler());
@@ -200,6 +206,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));

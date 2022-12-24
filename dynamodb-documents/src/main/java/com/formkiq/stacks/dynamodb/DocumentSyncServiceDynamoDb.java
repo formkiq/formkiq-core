@@ -40,7 +40,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
-import com.formkiq.aws.dynamodb.model.DocumentSyncServices;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -97,7 +97,7 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
 
   @Override
   public void saveSync(final String siteId, final String documentId,
-      final DocumentSyncServices service, final DocumentSyncStatus status, final String userId) {
+      final DocumentSyncServiceType service, final DocumentSyncStatus status, final String userId) {
 
     String fullInsertedDate = this.df.format(new Date());
 

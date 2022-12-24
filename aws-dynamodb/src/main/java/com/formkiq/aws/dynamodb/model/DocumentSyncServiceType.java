@@ -28,7 +28,7 @@ package com.formkiq.aws.dynamodb.model;
  * Supported Document Sync Services.
  *
  */
-public enum DocumentSyncServices {
+public enum DocumentSyncServiceType {
 
   /** https://opensearch.org. */
   OPENSEARCH,

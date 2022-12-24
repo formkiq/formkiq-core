@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.model.DocumentSyncServices.TYPESENSE;
+import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.TYPESENSE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -69,9 +69,9 @@ public class DocumentSyncServiceDynamoDbTest {
     // given
     String userId = "joe";
 
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    String documentId = UUID.randomUUID().toString();
 
-      String documentId = UUID.randomUUID().toString();
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       // when
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED, userId);

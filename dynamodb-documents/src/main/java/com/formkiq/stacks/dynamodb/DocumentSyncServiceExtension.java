@@ -23,36 +23,35 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
-import com.formkiq.aws.dynamodb.model.DocumentSync;
-import com.formkiq.aws.dynamodb.model.DocumentSyncMap;
-import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
-import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
- * Convert {@link Map} {@link AttributeValue} to {@link DocumentTag}.
+ * 
+ * {@link AwsServiceExtension} for {@link DocumentSyncService}.
  *
  */
-public class AttributeValueToDocumentSync
-    implements Function<Map<String, AttributeValue>, DocumentSync> {
+public class DocumentSyncServiceExtension implements AwsServiceExtension<DocumentSyncService> {
 
-  /** {@link AttributeValueToDate}. */
-  private AttributeValueToDate toDate = new AttributeValueToDate("syncDate");
+  /** {@link DocumentSyncService}. */
+  private DocumentSyncService service;
+
+  /**
+   * constructor.
+   */
+  public DocumentSyncServiceExtension() {}
 
   @Override
-  public DocumentSync apply(final Map<String, AttributeValue> map) {
+  public DocumentSyncService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
 
-    DocumentSync sync = new DocumentSyncMap(new HashMap<>());
+      this.service = new DocumentSyncServiceDynamoDb(connection,
+          awsServiceCache.environment("DOCUMENT_SYNC_TABLE"));
+    }
 
-    sync.setDocumentId(map.get("documentId").s());
-    sync.setService(DocumentSyncServiceType.valueOf(map.get("service").s().toUpperCase()));
-    sync.setStatus(DocumentSyncStatus.valueOf(map.get("status").s().toUpperCase()));
-    sync.setSyncDate(this.toDate.apply(map));
-
-    return sync;
+    return this.service;
   }
 }

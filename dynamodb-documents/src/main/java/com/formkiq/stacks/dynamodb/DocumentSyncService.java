@@ -26,7 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
-import com.formkiq.aws.dynamodb.model.DocumentSyncServices;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 
 /**
@@ -53,10 +53,10 @@ public interface DocumentSyncService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param service {@link DocumentSyncServices}
+   * @param service {@link DocumentSyncServiceType}
    * @param status {@link DocumentSyncStatus}
    * @param userId {@link String}
    */
-  void saveSync(String siteId, String documentId, DocumentSyncServices service,
+  void saveSync(String siteId, String documentId, DocumentSyncServiceType service,
       DocumentSyncStatus status, String userId);
 }

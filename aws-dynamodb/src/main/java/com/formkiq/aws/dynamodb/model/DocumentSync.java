@@ -38,9 +38,9 @@ public interface DocumentSync {
   /**
    * Get service document was synced with.
    * 
-   * @return {@link DocumentSyncServices}
+   * @return {@link DocumentSyncServiceType}
    */
-  DocumentSyncServices getService();
+  DocumentSyncServiceType getService();
 
   /**
    * Get sync status.
@@ -66,9 +66,9 @@ public interface DocumentSync {
   /**
    * Set service document was synced with.
    * 
-   * @param service {@link DocumentSyncServices}
+   * @param service {@link DocumentSyncServiceType}
    */
-  void setService(DocumentSyncServices service);
+  void setService(DocumentSyncServiceType service);
 
   /**
    * Set sync status.
