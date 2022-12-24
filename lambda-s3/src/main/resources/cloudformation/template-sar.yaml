@@ -813,12 +813,65 @@ Resources:
         - 
           AttributeName: "SK"
           AttributeType: "S"
+          
+  DocumentSyncs:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documentsyncs"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+
+  DocumentSyncsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Document Sync table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName"
+      Type: String
+      Value: 
+        Ref: DocumentSyncs
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
 Outputs:
 
   DocumentsTableName:
     Value:
       Ref: Documents
 
+  DocumentSyncsTableName:
+    Value:
+      Ref: DocumentSyncs
+      
   CacheTableName:
     Value:
       Ref: Cache

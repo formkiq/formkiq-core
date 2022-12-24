@@ -94,6 +94,8 @@ Resources:
           DEBUG: false  
           FormKiQType:
             Ref: FormKiQType
+          DOCUMENT_SYNC_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
           TYPESENSE_HOST:
             Fn::If:
             - CreateResources
@@ -186,7 +188,12 @@ Resources:
             - dynamodb:ListStreams
             Resource: 
             - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
-
+          - Effect: Allow
+            Action:
+            - dynamodb:PutItem
+            Resource:
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
+            
   TypesenseTableStream:
     Type: AWS::Lambda::EventSourceMapping
     Condition: CreateResources

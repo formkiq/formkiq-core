@@ -161,6 +161,8 @@ Resources:
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
           TYPESENSE_HOST:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
@@ -346,6 +348,13 @@ Resources:
               Resource:
               - Fn::Sub: "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
+          - Effect: Allow
+            Action:
+            - dynamodb:BatchGetItem
+            - dynamodb:Get*
+            - dynamodb:Query
+            Resource:
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
               
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
