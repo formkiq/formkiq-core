@@ -23,8 +23,10 @@
  */
 package com.formkiq.module.lambda.typesense;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -33,8 +35,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.model.DocumentSync;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.TypeSenseExtension;
 import com.google.gson.Gson;
@@ -48,6 +60,7 @@ import software.amazon.awssdk.utils.IoUtils;
  * Unit Tests {@link TypesenseProcessor}.
  *
  */
+@ExtendWith(DynamoDbExtension.class)
 @ExtendWith(TypeSenseExtension.class)
 class TypesenseProcessorTest {
 
@@ -59,16 +72,23 @@ class TypesenseProcessorTest {
   private static TypesenseProcessor processor;
   /** {@link TypeSenseService}. */
   private static TypeSenseService service;
+  /** {@link DocumentSyncService}. */
+  private static DocumentSyncService syncService;
 
   @BeforeAll
-  public static void beforeAll() {
+  public static void beforeAll() throws Exception {
     AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
-    processor = new TypesenseProcessor(
-        Map.of("AWS_REGION", "us-east-1", "TYPESENSE_HOST",
-            "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY),
+    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
+
+    processor = new TypesenseProcessor(Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE",
+        DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",
+        "http://localhost:" + TypeSenseExtension.getMappedPort(), "TYPESENSE_API_KEY", API_KEY), db,
         cred);
+
     service = new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(),
         API_KEY, Region.US_EAST_1, cred);
+
+    syncService = new DocumentSyncServiceDynamoDb(db, DOCUMENT_SYNCS_TABLE);
   }
 
   /** {@link Context}. */
@@ -120,6 +140,15 @@ class TypesenseProcessorTest {
 
       documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
       assertEquals(0, documents.size());
+
+      PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+      assertEquals(1, syncs.getResults().size());
+
+      assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+      assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+      assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+      assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+      assertNotNull(syncs.getResults().get(0).getSyncdDate());
     }
   }
 
@@ -143,6 +172,18 @@ class TypesenseProcessorTest {
       List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0));
+
+      if (i > 0) {
+        PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+        assertEquals(1, syncs.getResults().size());
+
+        assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+        assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+        assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+        assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+        assertEquals("arn:aws:iam::111111111:user/mike", syncs.getResults().get(0).getUserId());
+        assertNotNull(syncs.getResults().get(0).getSyncdDate());
+      }
     }
   }
 
@@ -176,6 +217,9 @@ class TypesenseProcessorTest {
       // then
       documents = service.searchFulltext(siteId, "some.pdf", MAX);
       assertEquals(0, documents.size());
+
+      PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+      assertEquals(0, syncs.getResults().size());
     }
   }
 }

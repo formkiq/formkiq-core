@@ -69,6 +69,17 @@ public class DocumentSyncMap extends DynamicObject implements DocumentSync {
   }
 
   @Override
+  public DocumentSyncType getType() {
+    String type = getString("type");
+    return type != null ? DocumentSyncType.valueOf(type) : null;
+  }
+
+  @Override
+  public String getUserId() {
+    return getString("userId");
+  }
+
+  @Override
   public void setDocumentId(final String id) {
     put("documentId", id);
   }
@@ -86,5 +97,15 @@ public class DocumentSyncMap extends DynamicObject implements DocumentSync {
   @Override
   public void setSyncDate(final Date date) {
     put("syncDate", date);
+  }
+
+  @Override
+  public void setType(final DocumentSyncType type) {
+    put("type", type.name());
+  }
+
+  @Override
+  public void setUserId(final String id) {
+    put("userId", id);
   }
 }

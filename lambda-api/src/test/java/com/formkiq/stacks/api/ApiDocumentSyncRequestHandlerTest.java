@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -84,10 +85,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       String documentId = UUID.randomUUID().toString();
 
       service.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
-          DocumentSyncStatus.COMPLETE, userId);
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA, userId);
       TimeUnit.SECONDS.sleep(1);
       service.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE,
-          DocumentSyncStatus.FAILED, userId);
+          DocumentSyncStatus.FAILED, DocumentSyncType.METADATA, userId);
 
       ApiGatewayRequestEvent event = getRequest(siteId, documentId);
 
@@ -109,13 +110,14 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       assertEquals("TYPESENSE", list.get(0).get("service"));
       assertEquals(documentId, list.get(0).get("documentId"));
       assertEquals("FAILED", list.get(0).get("status"));
+      assertEquals("METADATA", list.get(0).get("type"));
       assertNotNull(list.get(0).get("syncDate"));
 
       assertEquals("OPENSEARCH", list.get(1).get("service"));
       assertEquals(documentId, list.get(1).get("documentId"));
       assertEquals("COMPLETE", list.get(1).get("status"));
+      assertEquals("METADATA", list.get(1).get("type"));
       assertNotNull(list.get(1).get("syncDate"));
     }
   }
-
 }

@@ -42,9 +42,15 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -62,6 +68,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+  /** {@link DocumentSyncService}. */
+  private DocumentSyncService syncService;
   /** {@link TypeSenseService}. */
   private TypeSenseService typeSenseService;
 
@@ -70,22 +78,37 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * 
    */
   public TypesenseProcessor() {
-    this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials());
+    this(System.getenv(),
+        new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        EnvironmentVariableCredentialsProvider.create().resolveCredentials());
   }
 
   /**
    * constructor.
    *
    * @param map {@link Map}
+   * @param dbConnection {@link DynamoDbConnectionBuilder}
    * @param credentials {@link AwsCredentials}
    */
-  public TypesenseProcessor(final Map<String, String> map, final AwsCredentials credentials) {
+  public TypesenseProcessor(final Map<String, String> map,
+      final DynamoDbConnectionBuilder dbConnection, final AwsCredentials credentials) {
 
     Region region = Region.of(map.get("AWS_REGION"));
 
     this.typeSenseService = new TypeSenseServiceImpl(map.get("TYPESENSE_HOST"),
         map.get("TYPESENSE_API_KEY"), region, credentials);
+    this.syncService =
+        new DocumentSyncServiceDynamoDb(dbConnection, map.get("DOCUMENT_SYNC_TABLE"));
     this.debug = "true".equals(map.get("DEBUG"));
+  }
+
+  private void addDocumentSync(final HttpResponse<String> response, final String siteId,
+      final String documentId, final String userId) {
+
+    DocumentSyncStatus status =
+        is2XX(response) ? DocumentSyncStatus.COMPLETE : DocumentSyncStatus.FAILED;
+    this.syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status,
+        DocumentSyncType.METADATA, userId);
   }
 
   /**
@@ -94,10 +117,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param data {@link Map}
+   * @param userId {@link String}
    * @throws IOException IOException
    */
   public void addOrUpdate(final String siteId, final String documentId,
-      final Map<String, Object> data) throws IOException {
+      final Map<String, Object> data, final String userId) throws IOException {
 
     HttpResponse<String> response = this.typeSenseService.addDocument(siteId, documentId, data);
 
@@ -106,6 +130,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       if (is404(response)) {
 
         response = this.typeSenseService.addCollection(siteId);
+        addDocumentSync(response, siteId, documentId, userId);
+
         if (!is2XX(response)) {
           throw new IOException(response.body());
         }
@@ -116,7 +142,10 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
         }
 
       } else if (is409(response) || is429(response)) {
-        this.typeSenseService.updateDocument(siteId, documentId, data);
+
+        response = this.typeSenseService.updateDocument(siteId, documentId, data);
+        addDocumentSync(response, siteId, documentId, userId);
+
       } else {
         throw new IOException(response.body());
       }
@@ -124,26 +153,37 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   }
 
   /**
+   * Delete Syncs.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  private void deleteSyncs(final String siteId, final String documentId) {
+    this.syncService.deleteAll(siteId, documentId);
+  }
+
+  /**
    * Get DocumentId from NewImage / OldImage.
    * 
    * @param newImage {@link Map}
    * @param oldImage {@link Map}
+   * @param fieldName {@link String}
    * @return {@link String}
    */
   @SuppressWarnings("unchecked")
-  private String getDocumentId(final Map<String, Object> newImage,
-      final Map<String, Object> oldImage) {
-    Map<String, String> documentId =
-        newImage.containsKey("documentId") ? (Map<String, String>) newImage.get("documentId")
+  private String getField(final Map<String, Object> newImage, final Map<String, Object> oldImage,
+      final String fieldName) {
+
+    Map<String, String> field =
+        newImage.containsKey(fieldName) ? (Map<String, String>) newImage.get(fieldName)
             : Collections.emptyMap();
 
-    if (documentId.isEmpty()) {
-      documentId =
-          oldImage.containsKey("documentId") ? (Map<String, String>) oldImage.get("documentId")
-              : Collections.emptyMap();
+    if (field.isEmpty()) {
+      field = oldImage.containsKey(fieldName) ? (Map<String, String>) oldImage.get(fieldName)
+          : Collections.emptyMap();
     }
 
-    return documentId.get("S");
+    return field.get("S");
   }
 
   @SuppressWarnings("unchecked")
@@ -190,7 +230,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
         dynamodb.containsKey("OldImage") ? toMap(dynamodb.get("OldImage")) : Collections.emptyMap();
 
     String siteId = newImage.containsKey(PK) ? getSiteId(newImage.get(PK).toString()) : null;
-    String documentId = getDocumentId(newImage, oldImage);
+    String documentId = getField(newImage, oldImage, "documentId");
 
     if (documentId != null) {
 
@@ -200,11 +240,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
           logger
               .log("processing event " + eventName + " for document " + siteId + " " + documentId);
-          writeToIndex(logger, siteId, documentId, newImage);
+          String userId = getField(newImage, oldImage, "userId");
+          writeToIndex(logger, siteId, documentId, newImage, userId);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
 
           this.typeSenseService.deleteDocument(siteId, documentId);
+          deleteSyncs(siteId, documentId);
 
         } else {
           logger.log("skipping event " + eventName + " for document " + siteId + " " + documentId);
@@ -261,10 +303,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param data {@link Map}
+   * @param userId {@link String}
    * @throws IOException IOException
    */
   private void writeToIndex(final LambdaLogger logger, final String siteId, final String documentId,
-      final Map<String, Object> data) throws IOException {
+      final Map<String, Object> data, final String userId) throws IOException {
 
     if (this.debug) {
       logger.log("writing to index: " + data);
@@ -278,7 +321,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     if (isDocument) {
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
       document = this.fulltext.apply(document);
-      addOrUpdate(siteId, documentId, document);
+      addOrUpdate(siteId, documentId, document, userId);
     } else if (this.debug) {
       logger.log("skipping dynamodb record");
     }

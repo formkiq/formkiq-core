@@ -79,14 +79,15 @@ public interface DynamoDbService {
   /**
    * Query DynamoDB Records.
    * 
+   * @param config {@link QueryConfig}
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}
-   * @param token {@link PaginationMapToken}
+   * @param exclusiveStartKey {@link Map}
    * @param limit int
    * @return {@link QueryResponse}
    */
-  QueryResponse queryBeginsWith(AttributeValue pk, AttributeValue sk, PaginationMapToken token,
-      int limit);
+  QueryResponse queryBeginsWith(QueryConfig config, AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
    * Update DynamoDB Record.

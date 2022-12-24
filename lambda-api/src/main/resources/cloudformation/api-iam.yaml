@@ -2795,6 +2795,12 @@ Resources:
                   enum:
                     - COMPLETE
                     - FAILED
+                type:
+                  type: "string"
+                  description: "The type of the sync"
+                  enum:
+                    - METADATA
+                    - TAG
                 syncDate:
                   type: "string"
                   format: "date-time"

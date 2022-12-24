@@ -7,6 +7,7 @@ dependencies {
  	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.2.0'
  
 	implementation project(':aws-dynamodb')
+	implementation project(':dynamodb-documents')
 	implementation project(':typesense')
 	implementation project(':http')
 	

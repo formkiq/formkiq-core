@@ -57,6 +57,20 @@ public interface DocumentSync {
   Date getSyncdDate();
 
   /**
+   * Get {@link DocumentSyncType}.
+   * 
+   * @return {@link DocumentSyncType}
+   */
+  DocumentSyncType getType();
+
+  /**
+   * Get User Id.
+   *
+   * @return {@link String}
+   */
+  String getUserId();
+
+  /**
    * Set Document ID.
    *
    * @param id {@link String}
@@ -83,5 +97,19 @@ public interface DocumentSync {
    * @param date {@link Date}
    */
   void setSyncDate(Date date);
+
+  /**
+   * Set sync type.
+   * 
+   * @param type {@link DocumentSyncType}
+   */
+  void setType(DocumentSyncType type);
+
+  /**
+   * Set User ID.
+   *
+   * @param id {@link String}
+   */
+  void setUserId(String id);
 
 }

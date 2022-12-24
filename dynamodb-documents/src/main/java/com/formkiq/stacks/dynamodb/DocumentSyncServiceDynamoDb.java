@@ -38,10 +38,13 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -85,9 +88,13 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
   public PaginationResults<DocumentSync> getSyncs(final String siteId, final String documentId,
       final PaginationMapToken token, final int limit) {
 
+    QueryConfig config = new QueryConfig();
+
     String pk = getPk(siteId, documentId);
-    QueryResponse response = this.db.queryBeginsWith(AttributeValue.fromS(pk),
-        AttributeValue.fromS(SK_SYNCS), token, limit);
+    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+
+    QueryResponse response = this.db.queryBeginsWith(config, AttributeValue.fromS(pk),
+        AttributeValue.fromS(SK_SYNCS), startkey, limit);
 
     List<DocumentSync> syncs = response.items().stream().map(new AttributeValueToDocumentSync())
         .collect(Collectors.toList());
@@ -97,7 +104,8 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
 
   @Override
   public void saveSync(final String siteId, final String documentId,
-      final DocumentSyncServiceType service, final DocumentSyncStatus status, final String userId) {
+      final DocumentSyncServiceType service, final DocumentSyncStatus status,
+      final DocumentSyncType type, final String userId) {
 
     String fullInsertedDate = this.df.format(new Date());
 
@@ -110,7 +118,33 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
     attrs.put("syncDate", AttributeValue.fromS(fullInsertedDate));
     attrs.put("userId", AttributeValue.fromS(userId));
     attrs.put("status", AttributeValue.fromS(status.name()));
+    attrs.put("type", AttributeValue.fromS(type.name()));
 
     this.db.putItem(attrs);
+  }
+
+  @Override
+  public void deleteAll(final String siteId, final String documentId) {
+
+    final int limit = 100;
+    String pk = getPk(siteId, documentId);
+    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+
+    Map<String, AttributeValue> startkey = null;
+
+    do {
+
+      QueryResponse response = this.db.queryBeginsWith(config, AttributeValue.fromS(pk),
+          AttributeValue.fromS(SK_SYNCS), startkey, limit);
+
+      List<Map<String, AttributeValue>> results = response.items();
+      for (Map<String, AttributeValue> map : results) {
+        this.db.deleteItem(map.get(PK), map.get(SK));
+      }
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
   }
 }

@@ -1308,6 +1308,7 @@
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1792,9 +1793,10 @@
           /indices/search:
             post:
               operationId: IndexSearch
-              description: Perform a search on a index; this is currently only available for folder indices
+              description: Perform a search on a index; this is currently available for both folder and tag indices
               tags:
               - Folder Index
+              - Tag Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -2791,6 +2793,12 @@
                   enum:
                   - COMPLETE
                   - FAILED
+                type:
+                  type: string
+                  description: The type of the sync
+                  enum:
+                  - METADATA
+                  - TAG
                 syncDate:
                   type: string
                   format: date-time

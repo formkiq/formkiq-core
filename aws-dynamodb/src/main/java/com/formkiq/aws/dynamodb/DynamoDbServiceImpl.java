@@ -133,18 +133,18 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public QueryResponse queryBeginsWith(final AttributeValue pk, final AttributeValue sk,
-      final PaginationMapToken token, final int limit) {
+  public QueryResponse queryBeginsWith(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
+      final int limit) {
 
     String expression = PK + " = :pk and begins_with(" + SK + ",:sk)";
 
     Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
-    QueryRequest q =
-        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
-            .exclusiveStartKey(startkey).limit(Integer.valueOf(limit)).build();
+    QueryRequest q = QueryRequest.builder().tableName(this.tableName)
+        .keyConditionExpression(expression).expressionAttributeValues(values)
+        .scanIndexForward(Boolean.FALSE).projectionExpression(config.projectionExpression())
+        .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
 
     QueryResponse response = this.dbClient.query(q);
     return response;

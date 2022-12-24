@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 
@@ -74,9 +75,11 @@ public class DocumentSyncServiceDynamoDbTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       // when
-      syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED, userId);
+      syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED,
+          DocumentSyncType.METADATA, userId);
       TimeUnit.SECONDS.sleep(1);
-      syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.COMPLETE, userId);
+      syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.COMPLETE,
+          DocumentSyncType.METADATA, userId);
 
       // then
       PaginationResults<DocumentSync> results = syncService.getSyncs(siteId, documentId, null, 1);

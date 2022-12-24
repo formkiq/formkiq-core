@@ -348,13 +348,13 @@ Resources:
               Resource:
               - Fn::Sub: "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
-          - Effect: Allow
-            Action:
-            - dynamodb:BatchGetItem
-            - dynamodb:Get*
-            - dynamodb:Query
-            Resource:
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              Resource:
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
               
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter

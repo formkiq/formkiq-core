@@ -30,6 +30,7 @@ import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncMap;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -49,8 +50,10 @@ public class AttributeValueToDocumentSync
     DocumentSync sync = new DocumentSyncMap(new HashMap<>());
 
     sync.setDocumentId(map.get("documentId").s());
+    sync.setUserId(map.get("userId").s());
     sync.setService(DocumentSyncServiceType.valueOf(map.get("service").s().toUpperCase()));
     sync.setStatus(DocumentSyncStatus.valueOf(map.get("status").s().toUpperCase()));
+    sync.setType(DocumentSyncType.valueOf(map.get("type").s().toUpperCase()));
     sync.setSyncDate(this.toDate.apply(map));
 
     return sync;

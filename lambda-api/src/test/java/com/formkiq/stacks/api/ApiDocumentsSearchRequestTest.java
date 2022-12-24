@@ -27,7 +27,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -52,6 +51,7 @@ import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TypeSenseExtension;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -68,7 +68,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
 
   private void saveDocument(final String siteId, final String documentId, final String path)
-      throws IOException {
+      throws Exception {
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
     item.setPath(path);
@@ -79,9 +79,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
     document = this.fulltext.apply(document);
 
-    TypesenseProcessor processor =
-        new TypesenseProcessor(getMap(), AwsBasicCredentials.create("asd", path));
-    processor.addOrUpdate(siteId, item.getDocumentId(), document);
+    TypesenseProcessor processor = new TypesenseProcessor(getMap(),
+        DynamoDbTestServices.getDynamoDbConnection(null), AwsBasicCredentials.create("asd", path));
+    processor.addOrUpdate(siteId, item.getDocumentId(), document, item.getUserId());
   }
 
   /**

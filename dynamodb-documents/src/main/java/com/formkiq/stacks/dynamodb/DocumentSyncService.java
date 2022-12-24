@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 
 /**
  * 
@@ -35,6 +36,14 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
  *
  */
 public interface DocumentSyncService {
+
+  /**
+   * Delete All.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void deleteAll(String siteId, String documentId);
 
   /**
    * Get List of {@link DocumentSync}.
@@ -55,8 +64,9 @@ public interface DocumentSyncService {
    * @param documentId {@link String}
    * @param service {@link DocumentSyncServiceType}
    * @param status {@link DocumentSyncStatus}
+   * @param type {@link DocumentSyncType}
    * @param userId {@link String}
    */
   void saveSync(String siteId, String documentId, DocumentSyncServiceType service,
-      DocumentSyncStatus status, String userId);
+      DocumentSyncStatus status, DocumentSyncType type, String userId);
 }
