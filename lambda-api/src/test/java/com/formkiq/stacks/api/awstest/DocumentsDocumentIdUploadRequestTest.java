@@ -74,7 +74,7 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractApiTest {
   public void testGet02() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       GetDocumentUploadRequest request =
           new GetDocumentUploadRequest().documentId(documentId).contentLength(1);
 

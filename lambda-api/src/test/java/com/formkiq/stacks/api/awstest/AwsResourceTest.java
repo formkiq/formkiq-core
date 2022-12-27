@@ -135,7 +135,7 @@ public class AwsResourceTest extends AbstractApiTest {
   public void testPresignedUrl01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
-      final String documentId = addDocumentWithoutFile(client, null);
+      final String documentId = addDocumentWithoutFile(client, null, null);
 
       try {
         Date lastHour =

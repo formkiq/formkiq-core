@@ -59,7 +59,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
   public void testGet01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients()) {
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       Thread.sleep(SLEEP * 2);
       verifyDocumentContent(client, documentId, "sample content", null);
     }

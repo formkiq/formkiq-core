@@ -88,7 +88,7 @@ public class DocumentSyncServiceDynamoDbTest {
       assertEquals(documentId, results.getResults().get(0).getDocumentId());
       assertEquals(TYPESENSE, results.getResults().get(0).getService());
       assertEquals(DocumentSyncStatus.COMPLETE, results.getResults().get(0).getStatus());
-      assertNotNull(results.getResults().get(0).getSyncdDate());
+      assertNotNull(results.getResults().get(0).getSyncDate());
 
       results = syncService.getSyncs(siteId, documentId, results.getToken(), 1);
       assertEquals(1, results.getResults().size());
@@ -96,7 +96,7 @@ public class DocumentSyncServiceDynamoDbTest {
       assertEquals(documentId, results.getResults().get(0).getDocumentId());
       assertEquals(TYPESENSE, results.getResults().get(0).getService());
       assertEquals(DocumentSyncStatus.FAILED, results.getResults().get(0).getStatus());
-      assertNotNull(results.getResults().get(0).getSyncdDate());
+      assertNotNull(results.getResults().get(0).getSyncDate());
     }
   }
 }

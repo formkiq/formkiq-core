@@ -54,7 +54,7 @@ public interface DocumentSync {
    *
    * @return {@link Date}
    */
-  Date getSyncdDate();
+  Date getSyncDate();
 
   /**
    * Get {@link DocumentSyncType}.

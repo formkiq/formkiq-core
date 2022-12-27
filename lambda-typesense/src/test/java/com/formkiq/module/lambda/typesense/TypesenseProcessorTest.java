@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -98,14 +99,21 @@ class TypesenseProcessorTest {
    * Load Request File.
    * 
    * @param name {@link String}
+   * @param original {@link String}
+   * @param replacement {@link String}
    * @return {@link Map}
    * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  private Map<String, Object> loadRequest(final String name) throws IOException {
+  private Map<String, Object> loadRequest(final String name, final String original,
+      final String replacement) throws IOException {
 
     try (InputStream is = getClass().getResourceAsStream(name)) {
       String s = IoUtils.toUtf8String(is);
+      if (original != null) {
+        s = s.replaceAll(original, replacement);
+      }
+
       return GSON.fromJson(s, Map.class);
     }
   }
@@ -119,18 +127,17 @@ class TypesenseProcessorTest {
   void testHandleRequest01() throws Exception {
     // given
     String siteId = null;
+    String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
+    String documentId = UUID.randomUUID().toString();
 
     for (int i = 0; i < 2; i++) {
 
-      Map<String, Object> map = loadRequest("/insert.json");
+      Map<String, Object> map = loadRequest("/insert.json", oldDocumentId, documentId);
 
       // when
       processor.handleRequest(map, this.context);
 
       // then
-      String documentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
-
-      //
       List<String> documents = service.searchFulltext(siteId, "karate", MAX);
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0));
@@ -148,7 +155,7 @@ class TypesenseProcessorTest {
       assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
       assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
       assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
-      assertNotNull(syncs.getResults().get(0).getSyncdDate());
+      assertNotNull(syncs.getResults().get(0).getSyncDate());
     }
   }
 
@@ -163,7 +170,7 @@ class TypesenseProcessorTest {
     String siteId = null;
     for (int i = 0; i < 2; i++) {
       String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
-      Map<String, Object> map = loadRequest("/modify.json");
+      Map<String, Object> map = loadRequest("/modify.json", null, null);
 
       // when
       processor.handleRequest(map, this.context);
@@ -182,7 +189,7 @@ class TypesenseProcessorTest {
         assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
         assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
         assertEquals("arn:aws:iam::111111111:user/mike", syncs.getResults().get(0).getUserId());
-        assertNotNull(syncs.getResults().get(0).getSyncdDate());
+        assertNotNull(syncs.getResults().get(0).getSyncDate());
       }
     }
   }
@@ -198,7 +205,7 @@ class TypesenseProcessorTest {
     String siteId = null;
     for (int i = 0; i < 2; i++) {
       String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
-      Map<String, Object> map = loadRequest("/modify.json");
+      Map<String, Object> map = loadRequest("/modify.json", null, null);
 
       // when
       processor.handleRequest(map, this.context);
@@ -209,7 +216,7 @@ class TypesenseProcessorTest {
       assertEquals(documentId, documents.get(0));
 
       // given
-      map = loadRequest("/remove.json");
+      map = loadRequest("/remove.json", null, null);
 
       // when
       processor.handleRequest(map, this.context);
@@ -220,6 +227,42 @@ class TypesenseProcessorTest {
 
       PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
       assertEquals(0, syncs.getResults().size());
+    }
+  }
+
+  /**
+   * Insert 2 records with siteId.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest04() throws Exception {
+    // given
+    String siteId = "5da6c0ef-20ff-45d1-8c08-d5fb0cfcf9b4";
+    String oldDocumentId = "666b7588-fc01-4ed3-8b3d-3e8d13264997";
+    String documentId = UUID.randomUUID().toString();
+
+    for (int i = 0; i < 2; i++) {
+
+      Map<String, Object> map = loadRequest("/insert_siteId.json", oldDocumentId, documentId);
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      String text = "9e803220-127e-45d9-98c6-7b8430812cb5";
+      List<String> documents = service.searchFulltext(siteId, text, MAX);
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0));
+
+      PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+      assertEquals(1, syncs.getResults().size());
+
+      assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+      assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+      assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+      assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+      assertNotNull(syncs.getResults().get(0).getSyncDate());
     }
   }
 }

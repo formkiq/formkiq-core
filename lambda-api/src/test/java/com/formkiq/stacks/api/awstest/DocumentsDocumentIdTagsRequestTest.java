@@ -91,7 +91,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest request =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       OptionsDocumentTagsRequest optionReq =
@@ -144,7 +144,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest request = new AddDocumentTagRequest().documentId(documentId)
           .tagKey("test").tagValues(Arrays.asList("somevalue0", "somevalue1"));
       OptionsDocumentTagsRequest optionReq =
@@ -197,7 +197,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       GetDocumentTagsKeyRequest req =
           new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
       OptionsDocumentTagsKeyRequest oreq =
@@ -274,7 +274,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       GetDocumentTagsKeyRequest req =
           new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
       OptionsDocumentTagsKeyRequest oreq =
@@ -352,7 +352,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       GetDocumentTagsKeyRequest req =
           new GetDocumentTagsKeyRequest().documentId(documentId).tagKey("category");
       OptionsDocumentTagsKeyRequest oreq =
@@ -413,7 +413,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
       // given
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTag tag0 = new AddDocumentTag().key("test1").value("somevalue");
       AddDocumentTag tag1 = new AddDocumentTag().key("test2");
       AddDocumentTag tag2 = new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz"));

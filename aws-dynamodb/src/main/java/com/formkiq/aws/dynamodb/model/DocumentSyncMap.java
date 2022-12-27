@@ -64,7 +64,7 @@ public class DocumentSyncMap extends DynamicObject implements DocumentSync {
   }
 
   @Override
-  public Date getSyncdDate() {
+  public Date getSyncDate() {
     return getDate("syncDate");
   }
 
