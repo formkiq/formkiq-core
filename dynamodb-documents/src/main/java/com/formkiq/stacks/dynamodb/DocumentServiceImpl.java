@@ -938,7 +938,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addS(pkvalues, "path",
         isEmpty(document.getPath()) ? document.getDocumentId() : document.getPath());
     addS(pkvalues, "version", document.getVersion());
-    addS(pkvalues, "s3version", document.getS3version());
+    addS(pkvalues, DocumentVersionService.S3VERSION_ATTRIBUTE, document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
 
 

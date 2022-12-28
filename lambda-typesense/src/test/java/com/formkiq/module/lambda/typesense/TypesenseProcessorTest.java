@@ -29,9 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -130,33 +132,30 @@ class TypesenseProcessorTest {
     String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
     String documentId = UUID.randomUUID().toString();
 
-    for (int i = 0; i < 2; i++) {
+    Map<String, Object> map = loadRequest("/insert.json", oldDocumentId, documentId);
 
-      Map<String, Object> map = loadRequest("/insert.json", oldDocumentId, documentId);
+    // when
+    processor.handleRequest(map, this.context);
 
-      // when
-      processor.handleRequest(map, this.context);
+    // then
+    List<String> documents = service.searchFulltext(siteId, "karate", MAX);
+    assertEquals(1, documents.size());
+    assertEquals(documentId, documents.get(0));
 
-      // then
-      List<String> documents = service.searchFulltext(siteId, "karate", MAX);
-      assertEquals(1, documents.size());
-      assertEquals(documentId, documents.get(0));
+    documents = service.searchFulltext(siteId, "test.pdf", MAX);
+    assertEquals(1, documents.size());
 
-      documents = service.searchFulltext(siteId, "test.pdf", MAX);
-      assertEquals(1, documents.size());
+    documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
+    assertEquals(0, documents.size());
 
-      documents = service.searchFulltext(siteId, "bleh.pdf", MAX);
-      assertEquals(0, documents.size());
+    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    assertEquals(1, syncs.getResults().size());
 
-      PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
-      assertEquals(1, syncs.getResults().size());
-
-      assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
-      assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
-      assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
-      assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
-      assertNotNull(syncs.getResults().get(0).getSyncDate());
-    }
+    assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+    assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+    assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+    assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+    assertNotNull(syncs.getResults().get(0).getSyncDate());
   }
 
   /**
@@ -242,27 +241,70 @@ class TypesenseProcessorTest {
     String oldDocumentId = "666b7588-fc01-4ed3-8b3d-3e8d13264997";
     String documentId = UUID.randomUUID().toString();
 
-    for (int i = 0; i < 2; i++) {
+    Map<String, Object> map = loadRequest("/insert_siteId.json", oldDocumentId, documentId);
 
-      Map<String, Object> map = loadRequest("/insert_siteId.json", oldDocumentId, documentId);
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    String text = "9e803220-127e-45d9-98c6-7b8430812cb5";
+    List<String> documents = service.searchFulltext(siteId, text, MAX);
+    assertEquals(1, documents.size());
+    assertEquals(documentId, documents.get(0));
+
+    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    assertEquals(1, syncs.getResults().size());
+
+    assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+    assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+    assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+    assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+    assertNotNull(syncs.getResults().get(0).getSyncDate());
+  }
+
+  /**
+   * Modify records.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest05() throws Exception {
+    // given
+    final String siteId = "117cc284-98c2-4b9e-8e58-6c6069567640";
+
+    String oldDocumentId = "e66c9a3c-7329-48c2-b4e1-8c244959d173";
+
+    for (String caseType : Arrays.asList("case2", "case3")) {
+
+      String documentId = UUID.randomUUID().toString();
+
+      Map<String, Object> map0 =
+          loadRequest("/" + caseType + "_insert.json", oldDocumentId, documentId);
+      Map<String, Object> map1 =
+          loadRequest("/" + caseType + "_modify_content.json", oldDocumentId, documentId);
 
       // when
-      processor.handleRequest(map, this.context);
+      processor.handleRequest(map0, this.context);
+      TimeUnit.SECONDS.sleep(1);
+      processor.handleRequest(map1, this.context);
 
       // then
-      String text = "9e803220-127e-45d9-98c6-7b8430812cb5";
-      List<String> documents = service.searchFulltext(siteId, text, MAX);
-      assertEquals(1, documents.size());
-      assertEquals(documentId, documents.get(0));
-
       PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
-      assertEquals(1, syncs.getResults().size());
+      assertEquals(2, syncs.getResults().size());
 
       assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
       assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
       assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
-      assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+      assertEquals(DocumentSyncType.CONTENT, syncs.getResults().get(0).getType());
+      assertEquals("testadminuser@formkiq.com", syncs.getResults().get(0).getUserId());
       assertNotNull(syncs.getResults().get(0).getSyncDate());
+
+      assertEquals(documentId, syncs.getResults().get(1).getDocumentId());
+      assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(1).getService());
+      assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(1).getStatus());
+      assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(1).getType());
+      assertEquals("testadminuser@formkiq.com", syncs.getResults().get(1).getUserId());
+      assertNotNull(syncs.getResults().get(1).getSyncDate());
     }
   }
 }

@@ -1,33 +1,33 @@
 {
     "Records": [
         {
-            "eventID": "ac74257775cb956e6cb0f6e50ff7a924",
+            "eventID": "04af8860aab400d44845f96613e5d36a",
             "eventName": "MODIFY",
             "eventVersion": "1.1",
             "eventSource": "aws:dynamodb",
             "awsRegion": "us-east-2",
             "dynamodb": {
-                "ApproximateCreationDateTime": 1668301621,
+                "ApproximateCreationDateTime": 1672198065,
                 "Keys": {
                     "SK": {
                         "S": "document"
                     },
                     "PK": {
-                        "S": "docs#717a3cee-888d-47e0-83a3-a7487a588954"
+                        "S": "117cc284-98c2-4b9e-8e58-6c6069567640/docs#e66c9a3c-7329-48c2-b4e1-8c244959d173"
                     }
                 },
                 "NewImage": {
                     "path": {
-                        "S": "bleh/some.pdf"
+                        "S": "50ec49ed-f634-4de2-81bf-2c4ae877d08f"
                     },
                     "lastModifiedDate": {
-                        "S": "2022-11-13T01:06:59+0000"
+                        "S": "2022-12-28T03:27:43+0000"
                     },
                     "s3version": {
-                        "S": "vp4vYiq9oCo0Hu8wavbzgzYxK.g4l9RC"
+                        "S": "r0_mki5syDDyL3Jvud73QhpKQ5SYIfBx"
                     },
                     "inserteddate": {
-                        "S": "2022-11-13T01:06:59+0000"
+                        "S": "2022-12-28T03:27:43+0000"
                     },
                     "SK": {
                         "S": "document"
@@ -39,49 +39,46 @@
                         "N": "14"
                     },
                     "documentId": {
-                        "S": "717a3cee-888d-47e0-83a3-a7487a588954"
+                        "S": "e66c9a3c-7329-48c2-b4e1-8c244959d173"
                     },
                     "PK": {
-                        "S": "docs#717a3cee-888d-47e0-83a3-a7487a588954"
+                        "S": "117cc284-98c2-4b9e-8e58-6c6069567640/docs#e66c9a3c-7329-48c2-b4e1-8c244959d173"
                     },
                     "contentType": {
                         "S": "text/plain"
                     },
                     "userId": {
-                        "S": "arn:aws:iam::111111111:user/mike"
+                        "S": "testadminuser@formkiq.com"
                     }
                 },
                 "OldImage": {
                     "path": {
-                        "S": "717a3cee-888d-47e0-83a3-a7487a588954"
+                        "S": "50ec49ed-f634-4de2-81bf-2c4ae877d08f"
                     },
                     "lastModifiedDate": {
-                        "S": "2022-11-13T01:06:59+0000"
+                        "S": "2022-12-28T03:27:43+0000"
                     },
                     "inserteddate": {
-                        "S": "2022-11-13T01:06:59+0000"
+                        "S": "2022-12-28T03:27:43+0000"
                     },
                     "SK": {
                         "S": "document"
                     },
                     "documentId": {
-                        "S": "717a3cee-888d-47e0-83a3-a7487a588954"
+                        "S": "e66c9a3c-7329-48c2-b4e1-8c244959d173"
                     },
                     "PK": {
-                        "S": "docs#717a3cee-888d-47e0-83a3-a7487a588954"
+                        "S": "117cc284-98c2-4b9e-8e58-6c6069567640/docs#e66c9a3c-7329-48c2-b4e1-8c244959d173"
                     },
                     "userId": {
-                        "S": "arn:aws:iam::622653865277:user/mike"
-                    },
-                    "s3version": {
-                        "S": "vp4vYiq9oCo0Hu8wavbzgzYxK.g4l9RC"
+                        "S": "testadminuser@formkiq.com"
                     }
                 },
-                "SequenceNumber": "4412200000000003762840297",
-                "SizeBytes": 684,
+                "SequenceNumber": "13487200000000001235150640",
+                "SizeBytes": 775,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-12-25T04:46:44.073"
         }
     ]
 }

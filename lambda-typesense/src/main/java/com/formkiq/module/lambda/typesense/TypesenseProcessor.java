@@ -51,6 +51,7 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -103,12 +104,16 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   }
 
   private void addDocumentSync(final HttpResponse<String> response, final String siteId,
-      final String documentId, final String userId) {
+      final String documentId, final String userId, final boolean s3VersionChanged) {
 
     DocumentSyncStatus status =
         is2XX(response) ? DocumentSyncStatus.COMPLETE : DocumentSyncStatus.FAILED;
+
+    DocumentSyncType syncType =
+        s3VersionChanged ? DocumentSyncType.CONTENT : DocumentSyncType.METADATA;
+
     this.syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status,
-        DocumentSyncType.METADATA, userId);
+        syncType, userId);
   }
 
   /**
@@ -118,10 +123,12 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param documentId {@link String}
    * @param data {@link Map}
    * @param userId {@link String}
+   * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
   public void addOrUpdate(final String siteId, final String documentId,
-      final Map<String, Object> data, final String userId) throws IOException {
+      final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
+      throws IOException {
 
     HttpResponse<String> response = this.typeSenseService.addDocument(siteId, documentId, data);
 
@@ -130,7 +137,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       if (is404(response)) {
 
         response = this.typeSenseService.addCollection(siteId);
-        addDocumentSync(response, siteId, documentId, userId);
+        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged);
 
         if (!is2XX(response)) {
           throw new IOException(response.body());
@@ -144,11 +151,14 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       } else if (is409(response) || is429(response)) {
 
         response = this.typeSenseService.updateDocument(siteId, documentId, data);
-        addDocumentSync(response, siteId, documentId, userId);
+        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged);
 
       } else {
         throw new IOException(response.body());
       }
+
+    } else {
+      addDocumentSync(response, siteId, documentId, userId, s3VersionChanged);
     }
   }
 
@@ -240,8 +250,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
           logger
               .log("processing event " + eventName + " for document " + siteId + " " + documentId);
+
+          boolean s3VersionChanged = isS3VersionChanged(eventName, oldImage, newImage);
+
           String userId = getField(newImage, oldImage, "userId");
-          writeToIndex(logger, siteId, documentId, newImage, userId);
+          writeToIndex(logger, siteId, documentId, newImage, userId, s3VersionChanged);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
 
@@ -259,6 +272,22 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     } else {
       logger.log("skipping event " + eventName);
     }
+  }
+
+  private boolean isS3VersionChanged(final String eventName, final Map<String, Object> oldImage,
+      final Map<String, Object> newImage) {
+
+    boolean changed = false;
+
+    if ("MODIFY".equalsIgnoreCase(eventName)) {
+
+      String oldS3 = getField(oldImage, oldImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
+      String newS3 = getField(newImage, newImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
+
+      changed = (oldS3 == null && newS3 != null) || (oldS3 != null && !oldS3.equals(newS3));
+    }
+
+    return changed;
   }
 
   /**
@@ -304,14 +333,12 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param documentId {@link String}
    * @param data {@link Map}
    * @param userId {@link String}
+   * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
   private void writeToIndex(final LambdaLogger logger, final String siteId, final String documentId,
-      final Map<String, Object> data, final String userId) throws IOException {
-
-    if (this.debug) {
-      logger.log("writing to index: " + data);
-    }
+      final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
+      throws IOException {
 
     boolean isDocument = data.get(SK).toString().contains("document");
     // boolean isTag = data.get(SK).toString().contains("tags" + TAG_DELIMINATOR);
@@ -319,9 +346,14 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     removeDynamodbKeys(data);
 
     if (isDocument) {
+
+      if (this.debug) {
+        logger.log("writing to index: " + data);
+      }
+
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
       document = this.fulltext.apply(document);
-      addOrUpdate(siteId, documentId, document, userId);
+      addOrUpdate(siteId, documentId, document, userId, s3VersionChanged);
     } else if (this.debug) {
       logger.log("skipping dynamodb record");
     }
