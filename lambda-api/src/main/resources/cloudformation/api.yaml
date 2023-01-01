@@ -2767,6 +2767,8 @@ Resources:
                   description: "User who added document"
                 tags:
                   type: "object"
+                metadata:
+                  type: "object"
             GetDocumentSyncResponse:
               type: "object"
               properties:
@@ -3109,6 +3111,8 @@ Resources:
                   description: "Path or Name of document"
                 tags:
                   $ref: "#/components/schemas/AddDocumentTags"
+                metadata:
+                  $ref: "#/components/schemas/AddDocumentMetadatas"
             UpdateDocumentFulltextRequest:
               type: object
               properties:
