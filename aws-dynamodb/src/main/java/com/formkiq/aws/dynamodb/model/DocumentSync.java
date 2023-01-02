@@ -36,6 +36,13 @@ public interface DocumentSync {
   String getDocumentId();
 
   /**
+   * Get Message.
+   *
+   * @return {@link String}
+   */
+  String getMessage();
+
+  /**
    * Get service document was synced with.
    * 
    * @return {@link DocumentSyncServiceType}
@@ -78,6 +85,13 @@ public interface DocumentSync {
   void setDocumentId(String id);
 
   /**
+   * Set Message.
+   *
+   * @param message {@link String}
+   */
+  void setMessage(String message);
+
+  /**
    * Set service document was synced with.
    * 
    * @param service {@link DocumentSyncServiceType}
@@ -104,12 +118,11 @@ public interface DocumentSync {
    * @param type {@link DocumentSyncType}
    */
   void setType(DocumentSyncType type);
-
+  
   /**
    * Set User ID.
    *
    * @param id {@link String}
    */
   void setUserId(String id);
-
 }

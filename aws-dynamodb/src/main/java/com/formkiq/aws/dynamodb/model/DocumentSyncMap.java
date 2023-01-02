@@ -52,6 +52,11 @@ public class DocumentSyncMap extends DynamicObject implements DocumentSync {
   }
 
   @Override
+  public String getMessage() {
+    return getString("message");
+  }
+
+  @Override
   public DocumentSyncServiceType getService() {
     String service = getString("service");
     return service != null ? DocumentSyncServiceType.valueOf(service) : null;
@@ -82,6 +87,11 @@ public class DocumentSyncMap extends DynamicObject implements DocumentSync {
   @Override
   public void setDocumentId(final String id) {
     put("documentId", id);
+  }
+
+  @Override
+  public void setMessage(final String message) {
+    put("message", message);
   }
 
   @Override
