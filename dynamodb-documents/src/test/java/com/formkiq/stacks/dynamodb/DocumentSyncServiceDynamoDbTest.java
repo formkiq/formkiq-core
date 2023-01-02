@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.TYPESENSE;
+import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -76,10 +77,10 @@ public class DocumentSyncServiceDynamoDbTest {
 
       // when
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.FAILED,
-          DocumentSyncType.METADATA, userId);
+          DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
       TimeUnit.SECONDS.sleep(1);
       syncService.saveSync(siteId, documentId, TYPESENSE, DocumentSyncStatus.COMPLETE,
-          DocumentSyncType.METADATA, userId);
+          DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
 
       // then
       PaginationResults<DocumentSync> results = syncService.getSyncs(siteId, documentId, null, 1);

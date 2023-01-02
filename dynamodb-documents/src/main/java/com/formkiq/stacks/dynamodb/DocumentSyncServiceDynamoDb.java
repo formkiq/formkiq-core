@@ -107,7 +107,7 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
   @Override
   public void saveSync(final String siteId, final String documentId,
       final DocumentSyncServiceType service, final DocumentSyncStatus status,
-      final DocumentSyncType type, final String userId) {
+      final DocumentSyncType type, final String userId, final String message) {
 
     String fullInsertedDate = this.df.format(new Date());
 
@@ -122,6 +122,7 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
     attrs.put("userId", AttributeValue.fromS(userId));
     attrs.put("status", AttributeValue.fromS(status.name()));
     attrs.put("type", AttributeValue.fromS(type.name()));
+    attrs.put("message", AttributeValue.fromS(message));
 
     this.db.putItem(attrs);
   }

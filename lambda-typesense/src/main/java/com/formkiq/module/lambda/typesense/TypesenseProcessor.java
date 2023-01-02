@@ -104,7 +104,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   }
 
   private void addDocumentSync(final HttpResponse<String> response, final String siteId,
-      final String documentId, final String userId, final boolean s3VersionChanged) {
+      final String documentId, final String userId, final boolean s3VersionChanged,
+      final boolean added) {
 
     DocumentSyncStatus status =
         is2XX(response) ? DocumentSyncStatus.COMPLETE : DocumentSyncStatus.FAILED;
@@ -112,8 +113,10 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     DocumentSyncType syncType =
         s3VersionChanged ? DocumentSyncType.CONTENT : DocumentSyncType.METADATA;
 
+    String message = added ? DocumentSyncService.MESSAGE_ADDED_METADATA
+        : DocumentSyncService.MESSAGE_UPDATED_METADATA;
     this.syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status,
-        syncType, userId);
+        syncType, userId, message);
   }
 
   /**
@@ -137,13 +140,14 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       if (is404(response)) {
 
         response = this.typeSenseService.addCollection(siteId);
-        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged);
 
         if (!is2XX(response)) {
           throw new IOException(response.body());
         }
 
         response = this.typeSenseService.addDocument(siteId, documentId, data);
+        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
+
         if (!is2XX(response)) {
           throw new IOException(response.body());
         }
@@ -151,14 +155,14 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       } else if (is409(response) || is429(response)) {
 
         response = this.typeSenseService.updateDocument(siteId, documentId, data);
-        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged);
+        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, false);
 
       } else {
         throw new IOException(response.body());
       }
 
     } else {
-      addDocumentSync(response, siteId, documentId, userId, s3VersionChanged);
+      addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
     }
   }
 

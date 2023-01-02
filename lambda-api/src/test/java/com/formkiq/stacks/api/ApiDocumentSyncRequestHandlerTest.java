@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.util.Arrays;
@@ -85,10 +86,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
       String documentId = UUID.randomUUID().toString();
 
       service.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA, userId);
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
       TimeUnit.SECONDS.sleep(1);
       service.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE,
-          DocumentSyncStatus.FAILED, DocumentSyncType.METADATA, userId);
+          DocumentSyncStatus.FAILED, DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
 
       ApiGatewayRequestEvent event = getRequest(siteId, documentId);
 

@@ -2808,6 +2808,9 @@
                 userId:
                   type: string
                   description: User who added document
+                message:
+                  type: string
+                  description: Document sync message
             AddDocumentSyncRequest:
               type: object
               properties:

@@ -37,6 +37,18 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
  */
 public interface DocumentSyncService {
 
+  /** Sync Message for Added Metadata. */
+  String MESSAGE_ADDED_METADATA = "added Document Metadata";
+
+  /** Sync Message for Add Tag. */
+  String MESSAGE_ADDED_TAG = "added Tag '%s'";
+
+  /** Sync Message for Updated Metadata. */
+  String MESSAGE_UPDATED_METADATA = "updated Document Metadata";
+
+  /** Sync Message for Updated Tag. */
+  String MESSAGE_UPDATED_TAG = "updated Tag '%s'";
+
   /**
    * Delete All.
    * 
@@ -66,7 +78,8 @@ public interface DocumentSyncService {
    * @param status {@link DocumentSyncStatus}
    * @param type {@link DocumentSyncType}
    * @param userId {@link String}
+   * @param message {@link String}
    */
   void saveSync(String siteId, String documentId, DocumentSyncServiceType service,
-      DocumentSyncStatus status, DocumentSyncType type, String userId);
+      DocumentSyncStatus status, DocumentSyncType type, String userId, String message);
 }
