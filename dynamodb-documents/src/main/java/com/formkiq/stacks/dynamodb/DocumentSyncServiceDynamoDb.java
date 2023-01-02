@@ -26,12 +26,14 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -111,7 +113,8 @@ public class DocumentSyncServiceDynamoDb implements DocumentSyncService {
 
     Map<String, AttributeValue> attrs = new HashMap<>();
     attrs.put(PK, AttributeValue.fromS(getPk(siteId, documentId)));
-    attrs.put(SK, AttributeValue.fromS(SK_SYNCS + fullInsertedDate));
+    attrs.put(SK, AttributeValue
+        .fromS(SK_SYNCS + fullInsertedDate + TAG_DELIMINATOR + UUID.randomUUID().toString()));
 
     attrs.put("documentId", AttributeValue.fromS(documentId));
     attrs.put("service", AttributeValue.fromS(service.name()));
