@@ -23,12 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,10 +53,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.api.ApiDocumentTagsItemResponse;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.UpdateFulltext;
-import com.formkiq.stacks.client.models.UpdateFulltextTag;
-import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
@@ -212,8 +204,6 @@ public class DocumentTagsRequestHandler
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
     allTags.addAll(newTags);
 
-    updateFulltextIfInstalled(logger, awsservice, siteId, documentId, allTags);
-
     documentService.addTags(siteId, documentId, allTags, null);
 
     ApiResponse resp = tagsValid ? new ApiMessageResponse("Created Tags.")
@@ -248,46 +238,5 @@ public class DocumentTagsRequestHandler
       throw new ValidationException(errors);
     }
     return newTags;
-  }
-
-  /**
-   * Update Fulltext index if Module available.
-   * 
-   * @param logger {@link LambdaLogger}
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param tags {@link List} {@link DocumentTag}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private void updateFulltextIfInstalled(final LambdaLogger logger,
-      final AwsServiceCache awsservice, final String siteId, final String documentId,
-      final List<DocumentTag> tags) throws IOException, InterruptedException {
-
-    if (awsservice.hasModule("fulltext")) {
-      FormKiqClientV1 client = awsservice.getExtension(FormKiqClientV1.class);
-
-      List<UpdateFulltextTag> updateTags =
-          tags.stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
-              .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
-                  .values(t.getValues()))
-              .collect(Collectors.toList());
-
-      if (!updateTags.isEmpty()) {
-        HttpResponse<String> response = client
-            .updateDocumentFulltextAsHttpResponse(new UpdateDocumentFulltextRequest().siteId(siteId)
-                .documentId(documentId).document(new UpdateFulltext().tags(updateTags)));
-
-        if (response.statusCode() == SC_BAD_REQUEST.getStatusCode()
-            || response.statusCode() == SC_ERROR.getStatusCode()) {
-
-          logger.log("unable to update Fulltext");
-          logger.log("status: " + response.statusCode());
-          logger.log("body: " + response.body());
-          throw new IOException("unable to update Fulltext");
-        }
-      }
-    }
   }
 }
