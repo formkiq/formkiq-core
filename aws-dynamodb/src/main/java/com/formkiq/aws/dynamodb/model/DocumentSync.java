@@ -118,7 +118,7 @@ public interface DocumentSync {
    * @param type {@link DocumentSyncType}
    */
   void setType(DocumentSyncType type);
-  
+
   /**
    * Set User ID.
    *

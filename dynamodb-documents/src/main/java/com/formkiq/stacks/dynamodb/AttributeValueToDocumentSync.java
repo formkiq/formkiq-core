@@ -54,6 +54,7 @@ public class AttributeValueToDocumentSync
     sync.setService(DocumentSyncServiceType.valueOf(map.get("service").s().toUpperCase()));
     sync.setStatus(DocumentSyncStatus.valueOf(map.get("status").s().toUpperCase()));
     sync.setType(DocumentSyncType.valueOf(map.get("type").s().toUpperCase()));
+    sync.setMessage(map.get("message").s());
     sync.setSyncDate(this.toDate.apply(map));
 
     return sync;

@@ -155,6 +155,7 @@ class TypesenseProcessorTest {
     assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
     assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
     assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+    assertEquals("added Document Metadata", syncs.getResults().get(0).getMessage());
     assertNotNull(syncs.getResults().get(0).getSyncDate());
   }
 
@@ -186,6 +187,7 @@ class TypesenseProcessorTest {
     assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
     assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
     assertEquals("arn:aws:iam::111111111:user/mike", syncs.getResults().get(0).getUserId());
+    assertEquals("added Document Metadata", syncs.getResults().get(0).getMessage());
     assertNotNull(syncs.getResults().get(0).getSyncDate());
   }
 
@@ -255,6 +257,7 @@ class TypesenseProcessorTest {
     assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
     assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
     assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+    assertEquals("added Document Metadata", syncs.getResults().get(0).getMessage());
     assertNotNull(syncs.getResults().get(0).getSyncDate());
   }
 
@@ -293,6 +296,7 @@ class TypesenseProcessorTest {
       assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
       assertEquals(DocumentSyncType.CONTENT, syncs.getResults().get(0).getType());
       assertEquals("testadminuser@formkiq.com", syncs.getResults().get(0).getUserId());
+      assertEquals("updated Document Metadata", syncs.getResults().get(0).getMessage());
       assertNotNull(syncs.getResults().get(0).getSyncDate());
 
       assertEquals(documentId, syncs.getResults().get(1).getDocumentId());
@@ -300,6 +304,7 @@ class TypesenseProcessorTest {
       assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(1).getStatus());
       assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(1).getType());
       assertEquals("testadminuser@formkiq.com", syncs.getResults().get(1).getUserId());
+      assertEquals("added Document Metadata", syncs.getResults().get(1).getMessage());
       assertNotNull(syncs.getResults().get(1).getSyncDate());
     }
   }
