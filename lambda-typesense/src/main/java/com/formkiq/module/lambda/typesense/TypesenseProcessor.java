@@ -341,7 +341,6 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       throws IOException {
 
     boolean isDocument = data.get(SK).toString().contains("document");
-    // boolean isTag = data.get(SK).toString().contains("tags" + TAG_DELIMINATOR);
 
     removeDynamodbKeys(data);
 
@@ -357,10 +356,5 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     } else if (this.debug) {
       logger.log("skipping dynamodb record");
     }
-
-    // if (isTag) {
-    // Document document = new DocumentTagMapToDocument().apply(data);
-    // addOrUpdate(siteId, document);
-    // }
   }
 }

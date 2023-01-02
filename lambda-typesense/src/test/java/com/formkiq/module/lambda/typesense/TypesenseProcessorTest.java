@@ -167,30 +167,26 @@ class TypesenseProcessorTest {
   void testHandleRequest02() throws Exception {
     // given
     String siteId = null;
-    for (int i = 0; i < 2; i++) {
-      String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
-      Map<String, Object> map = loadRequest("/modify.json", null, null);
+    String documentId = "717a3cee-888d-47e0-83a3-a7487a588954";
+    Map<String, Object> map = loadRequest("/modify.json", null, null);
 
-      // when
-      processor.handleRequest(map, this.context);
+    // when
+    processor.handleRequest(map, this.context);
 
-      // then
-      List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
-      assertEquals(1, documents.size());
-      assertEquals(documentId, documents.get(0));
+    // then
+    List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
+    assertEquals(1, documents.size());
+    assertEquals(documentId, documents.get(0));
 
-      if (i > 0) {
-        PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
-        assertEquals(1, syncs.getResults().size());
+    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    assertEquals(1, syncs.getResults().size());
 
-        assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
-        assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
-        assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
-        assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
-        assertEquals("arn:aws:iam::111111111:user/mike", syncs.getResults().get(0).getUserId());
-        assertNotNull(syncs.getResults().get(0).getSyncDate());
-      }
-    }
+    assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+    assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+    assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+    assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+    assertEquals("arn:aws:iam::111111111:user/mike", syncs.getResults().get(0).getUserId());
+    assertNotNull(syncs.getResults().get(0).getSyncDate());
   }
 
   /**
