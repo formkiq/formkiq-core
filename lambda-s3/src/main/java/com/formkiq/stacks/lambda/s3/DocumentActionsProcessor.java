@@ -97,9 +97,12 @@ import software.amazon.awssdk.regions.Region;
 @Reflectable
 @ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
     DocumentVersionServiceNoVersioning.class})
-@ReflectableClasses({@ReflectableClass(className = UpdateFulltextTag.class,
-    allPublicConstructors = true, fields = {@ReflectableField(name = "key"),
-        @ReflectableField(name = "value"), @ReflectableField(name = "values")})})
+@ReflectableClasses({
+    @ReflectableClass(className = UpdateFulltextTag.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
+            @ReflectableField(name = "values")}),
+    @ReflectableClass(className = UpdateFulltext.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "content"), @ReflectableField(name = "contentUrls")})})
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void> {
 
   /** {@link ActionsService}. */
