@@ -159,6 +159,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     mockServer = startClientAndServer(Integer.valueOf(PORT));
 
+    mockServer.when(request().withMethod("PATCH")).respond(callback);
     mockServer.when(request().withMethod("POST")).respond(callback);
     mockServer.when(request().withMethod("PUT")).respond(callback);
     mockServer.when(request().withMethod("GET")).respond(callback);

@@ -46,11 +46,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -75,13 +73,13 @@ import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.SetDocumentFulltext;
+import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
 import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
-import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
+import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -357,23 +355,22 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
       List<String> contentUrls = findContentUrls(siteId, item);
 
-      final int maxTags = 100;
-      PaginationResults<DocumentTag> docTags =
-          this.documentService.findDocumentTags(siteId, documentId, null, maxTags);
+      // final int maxTags = 100;
+      // PaginationResults<DocumentTag> docTags =
+      // this.documentService.findDocumentTags(siteId, documentId, null, maxTags);
 
-      List<UpdateFulltextTag> tags =
-          docTags.getResults().stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
-              .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
-                  .values(t.getValues()))
-              .collect(Collectors.toList());
+      // List<UpdateFulltextTag> tags =
+      // docTags.getResults().stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
+      // .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
+      // .values(t.getValues()))
+      // .collect(Collectors.toList());
 
-      SetDocumentFulltext fulltext =
-          new SetDocumentFulltext().contentUrls(contentUrls).path(item.getPath()).tags(tags);
+      UpdateFulltext fulltext = new UpdateFulltext().contentUrls(contentUrls);
 
-      SetDocumentFulltextRequest req =
-          new SetDocumentFulltextRequest().siteId(siteId).documentId(documentId).document(fulltext);
+      UpdateDocumentFulltextRequest req = new UpdateDocumentFulltextRequest().siteId(siteId)
+          .documentId(documentId).document(fulltext);
 
-      this.formkiqClient.setDocumentFulltext(req);
+      this.formkiqClient.updateDocumentFulltext(req);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
