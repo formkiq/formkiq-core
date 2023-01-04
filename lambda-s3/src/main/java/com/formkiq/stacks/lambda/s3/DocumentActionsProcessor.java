@@ -380,6 +380,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       sendWebhook(siteId, documentId, action);
     }
+    
+    logger.log(String.format("Updating Action Status to %s", action.status()));
   }
 
   /**
@@ -419,6 +421,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           status = ActionStatus.FAILED;
           action.status(status);
 
+          logger.log(String.format("Updating Action Status to %s", action.status()));
+          
           this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
         }
 
