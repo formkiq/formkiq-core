@@ -261,7 +261,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      assertEquals(ActionStatus.RUNNING,
+      assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
     }
   }
@@ -300,7 +300,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      assertEquals(ActionStatus.RUNNING,
+      assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
     }
   }

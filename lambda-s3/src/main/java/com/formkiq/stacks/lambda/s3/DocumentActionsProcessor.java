@@ -358,22 +358,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
       List<String> contentUrls = findContentUrls(siteId, item);
 
-      // final int maxTags = 100;
-      // PaginationResults<DocumentTag> docTags =
-      // this.documentService.findDocumentTags(siteId, documentId, null, maxTags);
-
-      // List<UpdateFulltextTag> tags =
-      // docTags.getResults().stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
-      // .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
-      // .values(t.getValues()))
-      // .collect(Collectors.toList());
-
       UpdateFulltext fulltext = new UpdateFulltext().contentUrls(contentUrls);
 
       UpdateDocumentFulltextRequest req = new UpdateDocumentFulltextRequest().siteId(siteId)
           .documentId(documentId).document(fulltext);
 
       this.formkiqClient.updateDocumentFulltext(req);
+
+      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
+          ActionType.FULLTEXT, ActionStatus.COMPLETE);
+
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
