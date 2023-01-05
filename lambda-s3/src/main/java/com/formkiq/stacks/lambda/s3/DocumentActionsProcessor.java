@@ -341,6 +341,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void processAction(final LambdaLogger logger, final String siteId,
       final String documentId, final Action action) throws IOException, InterruptedException {
 
+    logger.log(String.format("processing action %s", action.type()));
+    
     if (ActionType.OCR.equals(action.type())) {
 
       List<OcrParseType> parseTypes = getOcrParseTypes(action);
@@ -363,7 +365,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       UpdateDocumentFulltextRequest req = new UpdateDocumentFulltextRequest().siteId(siteId)
           .documentId(documentId).document(fulltext);
 
-      this.formkiqClient.updateDocumentFulltext(req);
+      boolean updateDocumentFulltext = this.formkiqClient.updateDocumentFulltext(req);
+      if (updateDocumentFulltext) {
+        logger.log(String.format("successfully processed action %s", action.type()));
+      } else {
+        throw new IOException("unable to update Document Fulltext");
+      }
 
       List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
           ActionType.FULLTEXT, ActionStatus.COMPLETE);
