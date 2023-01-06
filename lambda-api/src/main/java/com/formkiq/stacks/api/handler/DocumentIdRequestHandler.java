@@ -184,7 +184,7 @@ public class DocumentIdRequestHandler
       S3Service s3Service = awsservice.getExtension(S3Service.class);
 
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key);
+      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
 
       if (md.isObjectExists()) {
         s3Service.deleteObject(documentBucket, s3Key, null);

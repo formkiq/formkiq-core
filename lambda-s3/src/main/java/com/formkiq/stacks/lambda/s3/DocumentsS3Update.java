@@ -500,7 +500,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String siteId = getSiteId(key);
     String documentId = resetDatabaseKey(siteId, key);
 
-    S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3bucket, key);
+    S3ObjectMetadata resp = this.s3service.getObjectMetadata(s3bucket, key, null);
 
     if (!resp.isObjectExists()) {
       throw new FileNotFoundException("Object " + documentId + " not found in bucket " + s3bucket);

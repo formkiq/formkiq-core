@@ -441,7 +441,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (isEmpty(doc.getUserId())) {
 
-      S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, s3Key);
+      S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, s3Key, null);
       String username = metadata.getMetadata().entrySet().stream()
           .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(s -> s.getValue())
           .orElse("System");
@@ -586,7 +586,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     } else {
 
-      S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, s3Key);
+      S3ObjectMetadata metadata = this.s3.getObjectMetadata(bucket, s3Key, null);
 
       String destKey = createDatabaseKey(siteId, item.getDocumentId());
 

@@ -533,7 +533,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   private void verifyFileNotExistInStagingS3(final String key) throws InterruptedException {
     while (true) {
       S3ObjectMetadata meta =
-          getS3Service().getObjectMetadata(getStagingdocumentsbucketname(), key);
+          getS3Service().getObjectMetadata(getStagingdocumentsbucketname(), key, null);
 
       if (!meta.isObjectExists()) {
         assertFalse(meta.isObjectExists());

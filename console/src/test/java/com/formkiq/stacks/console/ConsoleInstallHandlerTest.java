@@ -204,29 +204,31 @@ public class ConsoleInstallHandlerTest {
 
 
     assertEquals("font/woff2",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2", null).getContentType());
 
-    assertEquals("text/css", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css").getContentType());
+    assertEquals("text/css",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css", null).getContentType());
 
     assertEquals("application/vnd.ms-fontobject",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot", null).getContentType());
 
     assertEquals("image/x-icon",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico", null).getContentType());
 
-    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js").getContentType()
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getContentType()
         .endsWith("/javascript"));
 
     assertEquals("image/svg+xml",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg", null).getContentType());
 
-    assertEquals("font/ttf", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
+    assertEquals("font/ttf",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf", null).getContentType());
 
     assertEquals("text/plain",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt", null).getContentType());
 
     assertEquals("font/woff",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
 
     // given
     input = createInput("Delete");
@@ -271,39 +273,41 @@ public class ConsoleInstallHandlerTest {
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Update was successful!\""));
 
     assertEquals("font/woff2",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2", null).getContentType());
 
-    assertEquals("text/css", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css").getContentType());
+    assertEquals("text/css",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css", null).getContentType());
 
     assertEquals("application/vnd.ms-fontobject",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot", null).getContentType());
 
     assertEquals("image/x-icon",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico", null).getContentType());
 
-    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js").getContentType()
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getContentType()
         .endsWith("/javascript"));
 
     assertEquals("image/svg+xml",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg", null).getContentType());
 
-    assertEquals("font/ttf", s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf").getContentType());
+    assertEquals("font/ttf",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf", null).getContentType());
 
     assertEquals("text/plain",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt", null).getContentType());
 
     assertEquals("font/woff",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff").getContentType());
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
   }
 
   private void verifyCognitoConfig() {
     assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
-        "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message").isObjectExists());
-    assertTrue(
-        s3.getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message")
-            .isObjectExists());
+        "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message", null).isObjectExists());
+    assertTrue(s3
+        .getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message", null)
+        .isObjectExists());
     assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
-        "formkiq/cognito/dev/CustomMessage_ForgotPassword/Message").isObjectExists());
+        "formkiq/cognito/dev/CustomMessage_ForgotPassword/Message", null).isObjectExists());
   }
 
   /**

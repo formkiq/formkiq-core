@@ -510,7 +510,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertTrue(this.logger.containsString("Inserted " + docitem.getPath()
           + " into bucket documentsbucket as " + createDatabaseKey(siteId, destDocumentId)));
 
-      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
+      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, destDocumentId);
 
@@ -594,7 +594,7 @@ public class StagingS3CreateTest implements DbKeys {
         + createDatabaseKey(siteId, destDocumentId) + " in bucket " + DOCUMENTS_BUCKET + "."));
     assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
 
-    assertFalse(s3.getObjectMetadata(STAGING_BUCKET, path).isObjectExists());
+    assertFalse(s3.getObjectMetadata(STAGING_BUCKET, path, null).isObjectExists());
 
     DocumentItem item = service.findDocument(siteId, destDocumentId);
     assertNotNull(item);
@@ -777,7 +777,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(documentId0, tags.get(1).getValue());
 
       String k = createDatabaseKey(siteId, i.getDocumentId());
-      assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k).isObjectExists());
+      assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).isObjectExists());
 
       i = service.findDocument(siteId, documentId1, true, null, MAX_RESULTS).getResult();
       assertEquals("application/json", i.getContentType());
@@ -788,7 +788,8 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("", tags.get(0).getValue());
 
       k = createDatabaseKey(siteId, i.getDocumentId());
-      assertEquals("application/json", s3.getObjectMetadata(DOCUMENTS_BUCKET, k).getContentType());
+      assertEquals("application/json",
+          s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).getContentType());
 
       i = service.findDocument(siteId, documentId2);
       assertEquals(documentId0, i.getBelongsToDocumentId());
@@ -801,7 +802,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("", tags.get(1).getValue());
 
       k = createDatabaseKey(siteId, i.getDocumentId());
-      assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k).isObjectExists());
+      assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).isObjectExists());
     }
   }
 
@@ -873,7 +874,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(documentId, UUID.fromString(documentId).toString());
       assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
 
-      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
+      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, documentId);
       // assertEquals("14", item.getContentLength().toString());
@@ -940,7 +941,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(documentId, UUID.fromString(documentId).toString());
       assertTrue(this.logger.containsString("Removing " + key + " from bucket example-bucket."));
 
-      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
+      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, documentId);
       assertNull(item.getContentLength());
@@ -1001,7 +1002,7 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(map);
 
       // then
-      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
+      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
       DocumentItem item = service.findDocument(siteId, documentId);
       assertNull(item.getContentLength());
@@ -1069,7 +1070,7 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(map);
 
       // then
-      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId).isObjectExists());
+      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
       assertEquals(2, actions.size());
@@ -1375,7 +1376,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   private void verifyS3Metadata(final String siteId, final DocumentItem item) {
     String key = createDatabaseKey(siteId, item.getDocumentId());
-    S3ObjectMetadata objectMetadata = s3.getObjectMetadata(DOCUMENTS_BUCKET, key);
+    S3ObjectMetadata objectMetadata = s3.getObjectMetadata(DOCUMENTS_BUCKET, key, null);
     assertTrue(objectMetadata.isObjectExists());
 
     assertNotNull(objectMetadata.getMetadata().get("checksum"));

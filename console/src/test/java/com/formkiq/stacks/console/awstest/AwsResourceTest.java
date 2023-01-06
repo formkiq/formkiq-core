@@ -185,7 +185,7 @@ public class AwsResourceTest {
     final String consoleBucket =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console");
 
-    S3ObjectMetadata resp = s3.getObjectMetadata(consoleBucket, version + "/index.html");
+    S3ObjectMetadata resp = s3.getObjectMetadata(consoleBucket, version + "/index.html", null);
     assertTrue(resp.isObjectExists());
 
     assertTrue(s3.exists(consoleBucket));

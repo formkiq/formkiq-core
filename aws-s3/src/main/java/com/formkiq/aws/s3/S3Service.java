@@ -304,11 +304,15 @@ public class S3Service {
    * 
    * @param bucket {@link String}
    * @param key {@link String}
+   * @param versionId {@link String}
    * 
    * @return {@link S3ObjectMetadata}
    */
-  public S3ObjectMetadata getObjectMetadata(final String bucket, final String key) {
-    HeadObjectRequest hr = HeadObjectRequest.builder().bucket(bucket).key(key).build();
+  public S3ObjectMetadata getObjectMetadata(final String bucket, final String key,
+      final String versionId) {
+
+    HeadObjectRequest hr =
+        HeadObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
     S3ObjectMetadata md = new S3ObjectMetadata();
 
     try {
