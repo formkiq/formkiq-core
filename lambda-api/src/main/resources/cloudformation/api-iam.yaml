@@ -476,6 +476,22 @@ Resources:
               - sigv4: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/versions/{versionKey}:
+            delete:
+              operationId: DeleteDocumentVersion
+              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/versionKeyPath'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
           /documents/{documentId}/content:
             get:
               operationId: GetDocumentContent
@@ -1989,6 +2005,13 @@ Resources:
                     type: string
               content: {}
           parameters:
+            versionKeyPath:
+              name: versionKey
+              in: path
+              description: Version Key
+              required: true
+              schema:
+                type: string
             versionKeyParam:
               name: versionKey
               in: query

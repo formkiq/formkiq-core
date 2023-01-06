@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -66,6 +67,53 @@ public class ApiDocumentsVersionsRequestTest extends AbstractRequestHandler {
           toRequestEvent("/request-get-documents-documentid-versions.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId1);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
+  }
+
+  /**
+   * Delete /documents/{documentId}/versions/{versionKey} request.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param versionKey {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent deleteVersionsRequest(final String siteId, final String documentId,
+      final String versionKey) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("delete")
+        .resource("/documents/{documentId}/versions/{versionKey}")
+        .path("/documents/" + documentId + "/versions/" + versionKey).user("joesmith")
+        .group(siteId != null ? siteId : "default")
+        .pathParameters(Map.of("documentId", documentId, "versionKey", versionKey))
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    return event;
+  }
+
+  /**
+   * Delete /documents/{documentId}/versions/{versionKey} request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleDeleteDocumentVersions01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      ApiGatewayRequestEvent event =
+          deleteVersionsRequest(siteId, documentId, UUID.randomUUID().toString());
 
       // when
       String response = handleRequest(event);
