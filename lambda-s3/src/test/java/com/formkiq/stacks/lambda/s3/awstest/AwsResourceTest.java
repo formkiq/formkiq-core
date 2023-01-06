@@ -217,7 +217,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         assertSnsMessage(documentEventQueueUrl, "create");
 
         // when
-        getS3Service().deleteObject(getDocumentsbucketname(), key);
+        getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
         // then
         assertSnsMessage(documentEventQueueUrl, "delete");
@@ -262,7 +262,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       item = getDocumentService().findDocument(null, key);
     }
 
-    getS3Service().deleteObject(getDocumentsbucketname(), key);
+    getS3Service().deleteObject(getDocumentsbucketname(), key, null);
   }
 
   /**
@@ -306,7 +306,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         assertSnsMessage(documentQueueUrl, "create");
 
         // when
-        getS3Service().deleteObject(getDocumentsbucketname(), key);
+        getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
         // then
         assertSnsMessage(documentQueueUrl, "delete");

@@ -348,7 +348,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private void deleteObject(final LambdaLogger logger, final String bucket, final String key) {
     String msg = String.format("Removing %s from bucket %s.", key, bucket);
     logger.log(msg);
-    this.s3.deleteObject(bucket, key);
+    this.s3.deleteObject(bucket, key, null);
   }
 
   /**

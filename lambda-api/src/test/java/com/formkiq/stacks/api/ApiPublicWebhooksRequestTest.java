@@ -609,6 +609,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
     }
 
-    getS3().deleteObject(STAGE_BUCKET_NAME, key);
+    getS3().deleteObject(STAGE_BUCKET_NAME, key, null);
   }
 }

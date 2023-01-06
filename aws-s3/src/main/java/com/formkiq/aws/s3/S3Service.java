@@ -208,7 +208,7 @@ public class S3Service {
       ListObjectsResponse resp = this.s3Client.listObjects(req);
 
       for (S3Object s3Object : resp.contents()) {
-        deleteObject(bucket, s3Object.key());
+        deleteObject(bucket, s3Object.key(), null);
       }
 
       isDone = !resp.isTruncated().booleanValue();
@@ -232,9 +232,12 @@ public class S3Service {
    * 
    * @param bucket {@link String}
    * @param key {@link String}
+   * @param versionId {@link String}
    */
-  public void deleteObject(final String bucket, final String key) {
-    this.s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+  public void deleteObject(final String bucket, final String key, final String versionId) {
+    this.s3Client.deleteObject(
+        DeleteObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build());
+
   }
 
   /**

@@ -342,7 +342,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final String documentId, final Action action) throws IOException, InterruptedException {
 
     logger.log(String.format("processing action %s", action.type()));
-    
+
     if (ActionType.OCR.equals(action.type())) {
 
       List<OcrParseType> parseTypes = getOcrParseTypes(action);
@@ -387,7 +387,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       sendWebhook(siteId, documentId, action);
     }
-    
+
     logger.log(String.format("Updating Action Status to %s", action.status()));
   }
 
@@ -429,7 +429,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           action.status(status);
 
           logger.log(String.format("Updating Action Status to %s", action.status()));
-          
+
           this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
         }
 

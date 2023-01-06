@@ -187,7 +187,7 @@ public class DocumentIdRequestHandler
       S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key);
 
       if (md.isObjectExists()) {
-        s3Service.deleteObject(documentBucket, s3Key);
+        s3Service.deleteObject(documentBucket, s3Key, null);
 
       } else {
 
