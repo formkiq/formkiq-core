@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -38,6 +39,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.GlobalIndexService;
 
 /** {@link ApiGatewayRequestHandler} for "/indices/{type}/{key}". */
 public class IndicesRequestHandler
@@ -46,16 +48,14 @@ public class IndicesRequestHandler
   /** {@link IndicesRequestHandler} URL. */
   public static final String URL = "/indices/{indexType}/{indexKey}";
 
+  /** {@link GlobalIndexService}. */
+  private GlobalIndexService writer;
+
   /**
    * constructor.
    *
    */
   public IndicesRequestHandler() {}
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
@@ -64,11 +64,10 @@ public class IndicesRequestHandler
 
     String siteId = authorizer.getSiteId();
     String type = event.getPathParameters().get("indexType");
+    String indexKey =
+        URLDecoder.decode(event.getPathParameters().get("indexKey"), StandardCharsets.UTF_8);
 
     if ("folder".equals(type)) {
-
-      String indexKey =
-          URLDecoder.decode(event.getPathParameters().get("indexKey"), StandardCharsets.UTF_8);
 
       int pos = indexKey.indexOf(TAG_DELIMINATOR);
       if (pos > -1) {
@@ -85,6 +84,11 @@ public class IndicesRequestHandler
         throw new BadException("invalid indexKey");
       }
 
+    } else if ("tags".equals(type)) {
+
+      initIndexService(awsServices);
+      this.writer.deleteTagIndex(siteId, indexKey);
+
     } else {
       throw new BadException("invalid 'indexType' parameter");
     }
@@ -92,5 +96,20 @@ public class IndicesRequestHandler
     ApiMapResponse resp = new ApiMapResponse();
     resp.setMap(Map.of("message", "Folder deleted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private void initIndexService(final AwsServiceCache awsServiceCache) {
+
+    if (this.writer == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.writer =
+          new GlobalIndexService(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    }
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return URL;
   }
 }

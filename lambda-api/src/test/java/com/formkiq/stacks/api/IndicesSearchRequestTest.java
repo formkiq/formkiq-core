@@ -38,19 +38,18 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.GlobalIndexWriter;
+import com.formkiq.stacks.dynamodb.GlobalIndexService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-/** Unit Tests for request /search. */
+/** Unit Tests for request /indices/search. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class IndicesSearchRequestTest extends AbstractRequestHandler {
 
-  /** {@link GlobalIndexWriter}. */
-  private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
+  /** {@link GlobalIndexService}. */
+  private GlobalIndexService indexWriter;
 
   /**
    * /indices/search by index Type "tags".
@@ -60,6 +59,10 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleSearchRequest01() throws Exception {
+
+    this.indexWriter =
+        new GlobalIndexService(DynamoDbTestServices.getDynamoDbConnection(null), DOCUMENTS_TABLE);
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       Date now = new Date();
@@ -67,10 +70,7 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
 
       String documentId = UUID.randomUUID().toString();
 
-      try (DynamoDbClient dbClient = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
-        this.indexWriter.writeTagIndex(DOCUMENTS_TABLE, dbClient, siteId,
-            Arrays.asList("categoryId"));
-      }
+      this.indexWriter.writeTagIndex(siteId, Arrays.asList("categoryId"));
 
       DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
       document.setPath("something/path.txt");

@@ -35,6 +35,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -42,15 +45,39 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * Global Index Writer.
+ * Global Index Service.
  *
  */
-public class GlobalIndexWriter {
+public class GlobalIndexService {
 
   /** Cache Size. */
   private static final int CACHE_SIZE = 500;
+  /** {@link DynamoDbClient}. */
+  private DynamoDbClient dbClient;
+
+  /** Documents Table Name. */
+  private String documentTableName;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService service;
   /** Cache Queue. */
   private Map<String, ArrayBlockingQueue<String>> tagCache = new HashMap<>();// new
+
+  /**
+   * constructor.
+   * 
+   * @param connection {@link DynamoDbConnectionBuilder}
+   * @param documentsTable {@link String}
+   */
+  public GlobalIndexService(final DynamoDbConnectionBuilder connection,
+      final String documentsTable) {
+    if (documentsTable == null) {
+      throw new IllegalArgumentException("'documentsTable' is null");
+    }
+
+    this.documentTableName = documentsTable;
+    this.dbClient = connection.build();
+    this.service = new DynamoDbServiceImpl(this.dbClient, this.documentTableName);
+  }
 
   /**
    * Add Keys {@link String} to {@link ArrayBlockingQueue}.
@@ -69,6 +96,20 @@ public class GlobalIndexWriter {
     }
   }
 
+  /**
+   * Delete Tag Index.
+   * 
+   * @param siteId {@link String}
+   * @param tagKey {@link String}
+   */
+  public void deleteTagIndex(final String siteId, final String tagKey) {
+
+    String pk = getTagsPk(siteId);
+    String sk = getTagsSk(tagKey);
+
+    this.service.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+  }
+
   private ArrayBlockingQueue<String> getCache(final String siteId) {
     ArrayBlockingQueue<String> cache = this.tagCache.get(siteId);
     if (cache == null) {
@@ -82,16 +123,21 @@ public class GlobalIndexWriter {
     return r.get(PK).s() + "_" + r.get(SK).s();
   }
 
+  private String getTagsPk(final String siteId) {
+    return createDatabaseKey(siteId, GLOBAL_FOLDER_TAGS);
+  }
+
+  private String getTagsSk(final String tagKey) {
+    return "key" + TAG_DELIMINATOR + tagKey.toLowerCase();
+  }
+
   /**
    * Write Tag Index.
    * 
-   * @param documentTableName {@link String}
-   * @param dbClient {@link DynamoDbClient}
    * @param siteId {@link String}
    * @param tagKeys {@link Collection} {@link String}
    */
-  public void writeTagIndex(final String documentTableName, final DynamoDbClient dbClient,
-      final String siteId, final Collection<String> tagKeys) {
+  public void writeTagIndex(final String siteId, final Collection<String> tagKeys) {
 
     ArrayBlockingQueue<String> cache = getCache(siteId);
 
@@ -100,8 +146,8 @@ public class GlobalIndexWriter {
 
     List<Map<String, AttributeValue>> valueList = tagKeys.stream().map(tagKey -> {
 
-      String pk = createDatabaseKey(siteId, GLOBAL_FOLDER_TAGS);
-      String sk = "key" + TAG_DELIMINATOR + tagKey.toLowerCase();
+      String pk = getTagsPk(siteId);
+      String sk = getTagsSk(tagKey);
 
       Map<String, AttributeValue> values = new HashMap<>(Map.of(PK, AttributeValue.fromS(pk), SK,
           AttributeValue.fromS(sk), "tagKey", AttributeValue.fromS(tagKey)));
@@ -112,12 +158,12 @@ public class GlobalIndexWriter {
     ReadRequestBuilder readBuilder = new ReadRequestBuilder();
     List<Map<String, AttributeValue>> keys = valueList.stream()
         .map(v -> Map.of(PK, v.get(PK), SK, v.get(SK))).collect(Collectors.toList());
-    readBuilder.append(documentTableName, keys);
+    readBuilder.append(this.documentTableName, keys);
 
     Map<String, List<Map<String, AttributeValue>>> batchReadItems =
-        readBuilder.batchReadItems(dbClient);
+        readBuilder.batchReadItems(this.dbClient);
 
-    List<Map<String, AttributeValue>> batchReads = batchReadItems.get(documentTableName);
+    List<Map<String, AttributeValue>> batchReads = batchReadItems.get(this.documentTableName);
 
     Set<String> existingKeys =
         batchReads.stream().map(r -> getCacheKey(r)).collect(Collectors.toSet());
@@ -125,8 +171,9 @@ public class GlobalIndexWriter {
     valueList.removeIf(v -> existingKeys.contains(getCacheKey(v)));
 
     if (!valueList.isEmpty()) {
-      WriteRequestBuilder builder = new WriteRequestBuilder().appends(documentTableName, valueList);
-      builder.batchWriteItem(dbClient);
+      WriteRequestBuilder builder =
+          new WriteRequestBuilder().appends(this.documentTableName, valueList);
+      builder.batchWriteItem(this.dbClient);
     }
   }
 }

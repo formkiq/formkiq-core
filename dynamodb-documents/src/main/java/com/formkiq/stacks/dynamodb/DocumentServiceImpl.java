@@ -99,8 +99,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private String documentTableName;
   /** {@link FolderIndexProcessor}. */
   private FolderIndexProcessor folderIndexProcessor;
-  /** {@link GlobalIndexWriter}. */
-  private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
+  /** {@link GlobalIndexService}. */
+  private GlobalIndexService indexWriter;
   /** Last Short Date. */
   private String lastShortDate = null;
   /** {@link DocumentVersionService}. */
@@ -123,6 +123,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
@@ -176,7 +177,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
 
-      this.indexWriter.writeTagIndex(this.documentTableName, this.dbClient, siteId, tagKeys);
+      this.indexWriter.writeTagIndex(siteId, tagKeys);
     }
   }
 
@@ -1344,7 +1345,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       List<String> tagKeys =
           notNull(tags).stream().map(t -> t.getKey()).collect(Collectors.toList());
-      this.indexWriter.writeTagIndex(this.documentTableName, this.dbClient, siteId, tagKeys);
+      this.indexWriter.writeTagIndex(siteId, tagKeys);
 
       if (options.saveDocumentDate()) {
         saveDocumentDate(document);
