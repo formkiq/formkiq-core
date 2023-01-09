@@ -37,11 +37,17 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
  */
 public interface DocumentSyncService {
 
+  /** Sync Message for Added Content. */
+  String MESSAGE_ADDED_CONTENT = "added Document Content";
+
   /** Sync Message for Added Metadata. */
   String MESSAGE_ADDED_METADATA = "added Document Metadata";
 
   /** Sync Message for Add Tag. */
   String MESSAGE_ADDED_TAG = "added Tag '%s'";
+
+  /** Sync Message for Updated Content. */
+  String MESSAGE_UPDATED_CONTENT = "updated Document Content";
 
   /** Sync Message for Updated Metadata. */
   String MESSAGE_UPDATED_METADATA = "updated Document Metadata";

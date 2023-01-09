@@ -30,6 +30,8 @@ package com.formkiq.aws.dynamodb.model;
  */
 public enum DocumentSyncServiceType {
 
+  /** FormKiQ CLI. */
+  FORMKIQ_CLI,
   /** https://opensearch.org. */
   OPENSEARCH,
   /** https://typesense.org. */
