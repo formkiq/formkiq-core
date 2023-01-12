@@ -182,8 +182,6 @@ public class DocumentsIdUploadRequestHandler
       path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
 
       item.setPath(path);
-      tags.add(
-          new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
     }
 
     String urlstring = generatePresignedUrl(awsservice, siteId, documentId, query);

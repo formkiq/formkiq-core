@@ -39,6 +39,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -404,8 +405,27 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     PaginationResults<DynamicDocumentItem> results = null;
 
     if (meta != null) {
-      updateFolderMetaData(meta);
-      results = searchByMeta(siteId, query, meta, token, maxresults);
+
+      if (meta.path() != null) {
+
+        try {
+          Map<String, String> map = this.folderIndexProcesor.getIndex(siteId, meta.path());
+          String documentId = map.get("documentId");
+
+          DocumentItem item = this.docService.findDocument(siteId, documentId);
+
+          DynamicDocumentItem result = new DocumentItemToDynamicDocumentItem().apply(item);
+          results = new PaginationResults<>(Arrays.asList(result), null);
+
+        } catch (IOException e) {
+          results = new PaginationResults<>(Collections.emptyList(), null);
+        }
+
+      } else {
+        updateFolderMetaData(meta);
+        results = searchByMeta(siteId, query, meta, token, maxresults);
+      }
+
     } else {
       SearchTagCriteria search = query.tag();
       results = searchByTag(siteId, query, search, token, maxresults);
@@ -619,6 +639,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       meta.indexType("folder");
       meta.eq(folder);
       meta.folder(null);
+
     }
   }
 

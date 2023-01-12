@@ -38,6 +38,9 @@ public class SearchMetaCriteria {
   /** Index Key. */
   @Reflectable
   private String indexType;
+  /** Document Path. */
+  @Reflectable
+  private String path;
 
   /** constructor. */
   public SearchMetaCriteria() {}
@@ -99,6 +102,26 @@ public class SearchMetaCriteria {
    */
   public SearchMetaCriteria indexType(final String index) {
     this.indexType = index;
+    return this;
+  }
+
+  /**
+   * Get Path.
+   *
+   * @return {@link String}
+   */
+  public String path() {
+    return this.path;
+  }
+
+  /**
+   * Set Path.
+   *
+   * @param s {@link String}
+   * @return {@link SearchMetaCriteria}
+   */
+  public SearchMetaCriteria path(final String s) {
+    this.path = s;
     return this;
   }
 }

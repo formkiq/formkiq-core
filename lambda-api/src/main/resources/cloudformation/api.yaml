@@ -1345,34 +1345,6 @@ Resources:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
-          /documents/{documentId}/syncs/{service}:
-            post:
-              operationId: AddDocumentSyncs
-              description: Manual trigger for syncing data with a service
-              tags:
-              - Document Synchronization
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/serviceParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddDocumentSyncResponse'
-              security:
-              - AuthorizationCognito: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -2062,13 +2034,6 @@ Resources:
               required: true
               schema:
                 type: string
-            serviceParam:
-              name: service
-              in: path
-              description: Service
-              required: true
-              schema:
-                type: string
             tagSchemaIdParam:
               name: tagSchemaId
               in: path
@@ -2483,13 +2448,14 @@ Resources:
                   items:
                     type: "string"
             DocumentSearchItemMeta:
-              required:
-              - "folder"
               type: "object"
               properties:
                 folder:
                   type: "string"
                   description: "Searches for a folder"
+                path:
+                  type: "string"
+                  description: "Searches for a Path of document"
                 indexType:
                   type: "string"
                   description: "Searches in an index"
@@ -2845,12 +2811,6 @@ Resources:
                   enum:
                     - TYPESENSE
                     - OPENSEARCH
-            AddDocumentSyncResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document sync processing message
             DocumentSearchResponse:
               type: "object"
               properties:

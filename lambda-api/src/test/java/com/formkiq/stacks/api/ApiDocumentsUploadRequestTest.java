@@ -171,11 +171,10 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertEquals(ActionStatus.PENDING, actions.get(0).status());
 
       int i = 0;
-      final int expectedCount = 2;
+      final int expectedCount = 1;
       List<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
       assertEquals(expectedCount, tags.size());
-      assertEquals("path", tags.get(i++).getKey());
       assertEquals("test", tags.get(i).getKey());
       assertEquals("this", tags.get(i++).getValue());
 

@@ -536,15 +536,16 @@ public class StagingS3CreateTest implements DbKeys {
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
-      int tagcount = hasTags ? docitem.getList("tags").size() + 1 : 1 + 1;
+      int tagcount = hasTags ? docitem.getList("tags").size() : 1;
       assertEquals(tagcount, tags.size());
+      // assertEquals(1, tags.size());
 
-      DocumentTag ptag = findTag(tags, "path");
-      assertEquals(destDocumentId, ptag.getDocumentId());
-      assertEquals(docitem.getPath(), ptag.getValue());
-      assertNotNull(ptag.getInsertedDate());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
-      assertEquals(docitem.getUserId(), ptag.getUserId());
+      // DocumentTag ptag = findTag(tags, "path");
+      // assertEquals(destDocumentId, ptag.getDocumentId());
+      // assertEquals(docitem.getPath(), ptag.getValue());
+      // assertNotNull(ptag.getInsertedDate());
+      // assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
+      // assertEquals(docitem.getUserId(), ptag.getUserId());
 
       if (hasTags) {
 
@@ -555,7 +556,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       } else {
 
-        ptag = findTag(tags, "untagged");
+        DocumentTag ptag = findTag(tags, "untagged");
         assertEquals(destDocumentId, ptag.getDocumentId());
         assertEquals("true", ptag.getValue());
         assertNotNull(ptag.getInsertedDate());
@@ -617,20 +618,10 @@ public class StagingS3CreateTest implements DbKeys {
     List<DocumentTag> tags =
         service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
 
-    int i = 0;
-    int count = 1;
+    assertEquals(1, tags.size());
 
-    if (expectedPath != null) {
-      count++;
-      assertEquals("path", tags.get(i).getKey());
-      assertEquals(expectedPath, tags.get(i).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
-    }
-
-    assertEquals(count, tags.size());
-
-    assertEquals("untagged", tags.get(i).getKey());
-    assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(i++).getType());
+    assertEquals("untagged", tags.get(0).getKey());
+    assertEquals(DocumentTagType.SYSTEMDEFINED, tags.get(0).getType());
 
     verifyS3Metadata(siteId, item);
   }
@@ -773,15 +764,11 @@ public class StagingS3CreateTest implements DbKeys {
       assertNull(i.getContentType());
       verifyBelongsToDocument(i, documentId0, Arrays.asList(documentId1, documentId2));
 
-      final int expected = 2;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId0, null, MAX_RESULTS).getResults();
-      assertEquals(expected, tags.size());
+      assertEquals(1, tags.size());
       assertEquals("formName", tags.get(0).getKey());
       assertEquals("Job Application Form", tags.get(0).getValue());
-
-      assertEquals("path", tags.get(1).getKey());
-      assertEquals(documentId0, tags.get(1).getValue());
 
       String k = createDatabaseKey(siteId, i.getDocumentId());
       assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).isObjectExists());
@@ -893,7 +880,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(item.getDocumentId(), item.getPath());
       assertEquals("joesmith", item.getUserId());
 
-      final int count = 3;
+      final int count = 2;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
 
@@ -902,9 +889,6 @@ public class StagingS3CreateTest implements DbKeys {
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
-          "" + documentId, "type", "SYSTEMDEFINED", "userId", "joesmith"));
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
           Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
@@ -959,16 +943,13 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("joesmith", item.getUserId());
 
       int i = 0;
-      final int count = 3;
+      final int count = 2;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
-          documentId, "type", "SYSTEMDEFINED", "userId", "joesmith"));
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
           Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
@@ -1020,16 +1001,13 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("joesmith", item.getUserId());
 
       int i = 0;
-      final int count = 4;
+      final int count = 3;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
-          documentId, "type", "SYSTEMDEFINED", "userId", "joesmith"));
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
           Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
@@ -1165,13 +1143,10 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("joesmith", item.getUserId());
 
       int i = 0;
-      final int count = 2;
+      final int count = 1;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value", path,
-          "type", "SYSTEMDEFINED", "userId", "joesmith"));
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "untagged", "value",
           "true", "type", "SYSTEMDEFINED", "userId", "joesmith"));
@@ -1225,7 +1200,7 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(map);
 
       // then
-      final int count = 3;
+      final int count = 2;
       item = service.findDocument(siteId, documentId);
 
       assertEquals(userId, item.getUserId());
@@ -1239,9 +1214,6 @@ public class StagingS3CreateTest implements DbKeys {
       int i = 0;
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", userId));
-
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "path", "value",
-          item.getDocumentId(), "type", "SYSTEMDEFINED", "userId", userId));
 
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "playerId", "value",
           "1234", "type", "USERDEFINED", "userId", userId));

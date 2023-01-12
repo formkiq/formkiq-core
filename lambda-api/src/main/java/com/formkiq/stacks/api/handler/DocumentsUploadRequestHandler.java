@@ -26,8 +26,6 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,7 +98,6 @@ public class DocumentsUploadRequestHandler
       final DynamicDocumentItem item)
       throws UnsupportedEncodingException, BadException, ValidationException {
 
-    String path = item.getPath();
     Date date = item.getInsertedDate();
     String documentId = item.getDocumentId();
     String username = item.getUserId();
@@ -114,14 +111,6 @@ public class DocumentsUploadRequestHandler
     if (tags.isEmpty()) {
       tags.add(new DocumentTag(documentId, "untagged", "true", date, username,
           DocumentTagType.SYSTEMDEFINED));
-    }
-
-    if (path != null) {
-
-      path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
-
-      tags.add(
-          new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
     }
 
     validateTagSchema(awsservice, siteId, item, username, tags);

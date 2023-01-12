@@ -468,6 +468,22 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/versions/{versionKey}:
+            delete:
+              operationId: DeleteDocumentVersion
+              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/versionKeyPath'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/content:
             get:
               operationId: GetDocumentContent
@@ -1327,34 +1343,6 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-          /documents/{documentId}/syncs/{service}:
-            post:
-              operationId: AddDocumentSyncs
-              description: Manual trigger for syncing data with a service
-              tags:
-              - Document Synchronization
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/serviceParam'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddDocumentSyncResponse'
-              security:
-              - AuthorizationCognito: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -1987,6 +1975,13 @@
                     type: string
               content: {}
           parameters:
+            versionKeyPath:
+              name: versionKey
+              in: path
+              description: Version Key
+              required: true
+              schema:
+                type: string
             versionKeyParam:
               name: versionKey
               in: query
@@ -2034,13 +2029,6 @@
               name: documentId
               in: path
               description: Document Identifier
-              required: true
-              schema:
-                type: string
-            serviceParam:
-              name: service
-              in: path
-              description: Service
               required: true
               schema:
                 type: string
@@ -2458,13 +2446,14 @@
                   items:
                     type: string
             DocumentSearchItemMeta:
-              required:
-              - folder
               type: object
               properties:
                 folder:
                   type: string
                   description: Searches for a folder
+                path:
+                  type: string
+                  description: Searches for a Path of document
                 indexType:
                   type: string
                   description: Searches in an index
@@ -2820,12 +2809,6 @@
                   enum:
                   - TYPESENSE
                   - OPENSEARCH
-            AddDocumentSyncResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document sync processing message
             DocumentSearchResponse:
               type: object
               properties:

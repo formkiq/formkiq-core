@@ -863,4 +863,40 @@ public class DocumentSearchServiceImplTest {
       assertEquals(0, list.size());
     }
   }
+
+  /** Save document and search by path. */
+  @Test
+  public void testSearch18() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String path = "/a/b/test2.pdf";
+      DocumentItem doc = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      doc.setPath(path);
+      this.service.saveDocument(siteId, doc, null);
+
+      PaginationMapToken startkey = null;
+      SearchMetaCriteria meta = new SearchMetaCriteria();
+      SearchQuery q = new SearchQuery().meta(meta.path(path));
+
+      // when
+      PaginationResults<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(1, list.size());
+      assertEquals(doc.getDocumentId(), list.get(0).getDocumentId());
+      assertEquals(doc.getPath(), list.get(0).getPath());
+
+      // given - invalid path
+      path = UUID.randomUUID().toString();
+      q = new SearchQuery().meta(meta.path(path));
+
+      // when
+      results = this.searchService.search(siteId, q, startkey, MAX_RESULTS);
+
+      // then
+      assertEquals(0, results.getResults().size());
+    }
+  }
 }

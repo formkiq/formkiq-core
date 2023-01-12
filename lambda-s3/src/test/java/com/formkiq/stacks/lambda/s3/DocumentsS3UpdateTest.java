@@ -489,17 +489,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int count = 2;
+      final int count = 1;
       assertEquals(count, tags.getResults().size());
 
       int i = 0;
-      assertEquals("path", tags.getResults().get(i).getKey());
-      assertEquals("test.txt", tags.getResults().get(i).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
-      assertEquals("joe", tags.getResults().get(i).getUserId());
-      assertNotNull(tags.getResults().get(i++).getInsertedDate());
-
       assertEquals("untagged", tags.getResults().get(i).getKey());
       assertEquals("true", tags.getResults().get(i).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
@@ -560,13 +553,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int size = 4;
+      final int size = 3;
       int i = 0;
       assertEquals(size, tags.getResults().size());
       assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(i).getKey());
       assertEquals("GOOD", tags.getResults().get(i).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i++).getType());
-      assertEquals("path", tags.getResults().get(i).getKey());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i++).getType());
       assertEquals("person", tags.getResults().get(i).getKey());
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i++).getType());
@@ -672,13 +663,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
         assertNull(m.get(GSI1_PK));
       }
 
-      final int count = 2;
+      final int count = 1;
       int i = 0;
       assertEquals(count, tags.getResults().size());
-      assertDocumentTagEquals(new DocumentTag().setKey("path").setValue("test.txt")
-          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
-          tags.getResults().get(i++));
-
       assertDocumentTagEquals(new DocumentTag().setKey("untagged").setValue("true")
           .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
           tags.getResults().get(i++));
