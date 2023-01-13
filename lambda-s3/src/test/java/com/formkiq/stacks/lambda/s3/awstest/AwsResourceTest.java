@@ -54,8 +54,8 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -478,7 +478,8 @@ public class AwsResourceTest extends AbstractAwsTest {
       getS3Service().putObject(getStagingdocumentsbucketname(), siteId + "/" + path,
           txt1.getBytes(StandardCharsets.UTF_8), contentType);
 
-      SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().path(path));
+      // SearchQuery q = new SearchQuery().tag(new SearchTagCriteria().key("path").eq(path));
 
       // then
       PaginationResults<DynamicDocumentItem> result =
@@ -512,7 +513,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       assertSnsMessage(documentQueueUrl, "create");
       PaginationResults<DocumentTag> list =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals("[path, status, untagged]",
+      assertEquals("[status, untagged]",
           list.getResults().stream().map(m -> m.getKey()).collect(Collectors.toList()).toString());
 
       item = getDocumentService().findDocument(siteId, documentId);

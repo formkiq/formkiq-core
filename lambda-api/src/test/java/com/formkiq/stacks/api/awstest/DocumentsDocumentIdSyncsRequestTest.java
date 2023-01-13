@@ -26,7 +26,9 @@ package com.formkiq.stacks.api.awstest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
@@ -46,6 +48,11 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30000;
+
+  private Optional<DocumentSync> find(final Collection<DocumentSync> list,
+      final DocumentSyncType type) {
+    return list.stream().filter(s -> s.type().equals(type.name())).findFirst();
+  }
 
   /**
    * Get Document Sync.
@@ -77,19 +84,21 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
         List<DocumentSync> list = syncs.syncs();
         assertEquals(2, list.size());
 
-        assertEquals(documentId, list.get(0).documentId());
-        assertEquals(DocumentSyncServiceType.TYPESENSE.name(), list.get(0).service());
-        assertEquals(DocumentSyncStatus.COMPLETE.name(), list.get(0).status());
-        assertEquals(DocumentSyncType.CONTENT.name(), list.get(0).type());
-        assertNotNull(list.get(0).userId());
-        assertNotNull(list.get(0).syncDate());
+        DocumentSync sync = find(list, DocumentSyncType.CONTENT).get();
+        assertEquals(documentId, sync.documentId());
+        assertEquals(DocumentSyncServiceType.TYPESENSE.name(), sync.service());
+        assertEquals(DocumentSyncStatus.COMPLETE.name(), sync.status());
+        assertEquals(DocumentSyncType.CONTENT.name(), sync.type());
+        assertNotNull(sync.userId());
+        assertNotNull(sync.syncDate());
 
-        assertEquals(documentId, list.get(1).documentId());
-        assertEquals(DocumentSyncServiceType.TYPESENSE.name(), list.get(1).service());
-        assertEquals(DocumentSyncStatus.COMPLETE.name(), list.get(1).status());
-        assertEquals(DocumentSyncType.METADATA.name(), list.get(1).type());
-        assertNotNull(list.get(1).userId());
-        assertNotNull(list.get(1).syncDate());
+        sync = find(list, DocumentSyncType.METADATA).get();
+        assertEquals(documentId, sync.documentId());
+        assertEquals(DocumentSyncServiceType.TYPESENSE.name(), sync.service());
+        assertEquals(DocumentSyncStatus.COMPLETE.name(), sync.status());
+        assertEquals(DocumentSyncType.METADATA.name(), sync.type());
+        assertNotNull(sync.userId());
+        assertNotNull(sync.syncDate());
       }
     }
   }
