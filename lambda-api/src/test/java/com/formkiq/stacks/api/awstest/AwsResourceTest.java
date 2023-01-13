@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -140,24 +141,26 @@ public class AwsResourceTest extends AbstractApiTest {
       try {
         Date lastHour =
             Date.from(LocalDateTime.now().minusHours(1).atZone(ZoneId.systemDefault()).toInstant());
-
         String tz = String.format("%tz", Instant.now().atZone(ZoneId.systemDefault()));
+
         GetDocumentsRequest request = new GetDocumentsRequest().date(lastHour).tz(tz);
+        List<Map<String, Map<String, String>>> list = Collections.emptyList();
 
         // when
-        HttpResponse<String> response = client.getDocumentsAsHttpResponse(request);
-
-        // then
-        final int status = 200;
-        assertRequestCorsHeaders(response.headers());
-        assertEquals(status, response.statusCode());
-
-        Map<String, Object> map = toMap(response);
-        List<Map<String, Map<String, String>>> list =
-            (List<Map<String, Map<String, String>>>) map.get("documents");
-
         while (list.isEmpty()) {
-          TimeUnit.SECONDS.sleep(1);
+          HttpResponse<String> response = client.getDocumentsAsHttpResponse(request);
+
+          // then
+          final int status = 200;
+          assertRequestCorsHeaders(response.headers());
+          assertEquals(status, response.statusCode());
+
+          Map<String, Object> map = toMap(response);
+          list = (List<Map<String, Map<String, String>>>) map.get("documents");
+
+          if (list.isEmpty()) {
+            TimeUnit.SECONDS.sleep(1);
+          }
         }
 
         assertFalse(list.isEmpty());

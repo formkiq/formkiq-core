@@ -733,4 +733,47 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
       assertEquals(0, documents.size());
     }
   }
+
+  /**
+   * /search meta path.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest16() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String username = "joe";
+      String path = "something/path.txt";
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
+      document.setPath(path);
+      getDocumentService().saveDocument(siteId, document, null);
+
+      QueryRequest q =
+          new QueryRequest().query(new SearchQuery().meta(new SearchMetaCriteria().path(path)));
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m0 = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m0.get("statusCode")));
+      DynamicObject resp0 = new DynamicObject(fromJson(m0.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp0.getList("documents");
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+      assertEquals(documentId, documents.get(0).get("documentId"));
+    }
+  }
 }
