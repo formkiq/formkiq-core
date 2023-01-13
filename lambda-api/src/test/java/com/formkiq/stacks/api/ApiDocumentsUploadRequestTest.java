@@ -178,7 +178,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertEquals("test", tags.get(i).getKey());
       assertEquals("this", tags.get(i++).getValue());
 
-      assertNull(getDocumentService().findMostDocumentDate());
+      assertNotNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -266,7 +266,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertEquals("testtag", tags.get(i).getKey());
       assertEquals("testvalue", tags.get(i++).getValue());
 
-      assertNull(getDocumentService().findMostDocumentDate());
+      assertNotNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -356,7 +356,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
           item.getUserId());
 
-      assertNull(getDocumentService().findMostDocumentDate());
+      assertNotNull(getDocumentService().findMostDocumentDate());
     }
   }
 

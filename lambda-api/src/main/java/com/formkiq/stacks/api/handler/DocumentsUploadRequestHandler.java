@@ -125,7 +125,7 @@ public class DocumentsUploadRequestHandler
       DocumentService service = awsservice.getExtension(DocumentService.class);
       logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
 
-      SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(false);
+      SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
       service.saveDocument(siteId, item, tags, options);
 
       if (item.containsKey("actions")) {
