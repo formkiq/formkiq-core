@@ -1344,7 +1344,7 @@ Resources:
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/documents:
             post:
               operationId: PublicAddDocument
