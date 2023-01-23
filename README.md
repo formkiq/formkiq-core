@@ -30,29 +30,25 @@
 </div>
 <br />
 FormKiQ Core is a flexible Open Source Document Management System (DMS) that can be used as headless software or run using our web-based client interface. FormKiQ runs in your Amazon Web Services (AWS) Cloud, and can be used for document workflows, records management, and other document storage and processing needs using an extendable Document API.
-<br />
+<br /><br />
 FormKiQ’s API-first design allows for anyone to quickly and easily add document management functionality to any application, cutting months off of development time. Alternatively, with FormKiQ’s customizable Front-End Web Interface, the Document Console, FormKiQ can be used as a full-featured stand-alone document management system.
 
 
 ### Features
 
-✅ One-click Installation, though [AWS CloudFormation](https://aws.amazon.com/cloudformation)
-
-✅ API-First (FormKiQ API) and Cloud-Native Architecture
+✅ API-First Full Featured Document Management API
 
 ✅ Easy Integration with Existing Applications
+
+✅ Supports Document Metadata / Tagging
 
 ✅ Built Using Serverless Services (no servers to maintain or manage)
 
 ✅ Easily scales to thousands of concurrent requests
 
-✅ Only pay AWS for usage (all services come with a generous monthly free tier)
-
-✅ Supports Unlimited Document Tagging
+✅ Google Drive like Web UI for Document Management
 
 ✅ Supports Both Multi-Tenant and Multi-Instance
-
-✅ Includes an Intuitive User Interface (FormKiQ Console) for Document Management
 
 ✅ [Professional and Enterprise Features and Support Available](https://www.formkiq.com)
 
