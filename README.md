@@ -18,7 +18,7 @@
 
 <br />
 
-<div align="center">FormKiQ&trade; Core is an open source Document Management System (DMS) that supports anyone from startups to enterprises.<br>API first design makes it perfect to run standalone or to add Document Management functionality to existing applications.<br><br>It's an alternative to Google Drive, eFileCabinet, DocuPhase, and M-files.
+<div>FormKiQ&trade; Core is an open source Document Management System (DMS) that supports anyone from startups to enterprises.<br>API first design makes it perfect to run standalone or to add Document Management functionality to existing applications.<br><br>FormKiQ can be used as a more robust document control and discovery solution than file storage products like Google Drive and Dropbox, or as a more flexible document management alternative to services like eFileCabinet, DocuPhase, and M-files.
 <br />
 <br />
 </div>
@@ -74,4 +74,4 @@ After FormKiQ is installed checkout the following links to continue on your jour
 
 ## License
 
-MIT - 2020-2022 (c) FormKiQ, Inc. For more details, see LICENSE file.
+MIT - 2020-2023 (c) FormKiQ, Inc. For more details, see LICENSE file.
