@@ -18,7 +18,7 @@
 
 <br />
 
-<div align="center"><strong>Add Document Management functionality to your  applications, without constraints.</strong><br>An open core, API-First Document Management System (DMS), developed with flexibility in mind.
+<div align="center">FormKiQ&trade; Core is an open source Document Management System (DMS) that supports anyone from startups to enterprises.<br>API first design makes it perfect to run standalone or to add Document Management functionality to existing applications.<br><br>It's an alternative to Google Drive, eFileCabinet, DocuPhase, and M-files.
 <br />
 <br />
 </div>
@@ -60,7 +60,7 @@ FormKiQ’s API-first design allows for anyone to quickly and easily add documen
 
 The following are AWS CloudFormation scripts that can be used to install FormKiQ and other resources in a single click!
 
-[<img src="https://github.com/formkiq/formkiq-core/blob/3b64a239b76426550408b40b43fd815b69292441/install-play.png">](https://www.youtube.com/watch?v=jVIK2ZJZsKE "Install FormKiQ Core into any AWS Account - Click to Watch!")
+Follow our [Quickstart Guide](https://docs.formkiq.com/docs/1.9.0/quickstart/README.html) to get started!
 
 ### FormKiQ Core CloudFormation
 
