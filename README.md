@@ -58,6 +58,13 @@ The following are AWS CloudFormation scripts that can be used to install FormKiQ
 
 Follow our [Quickstart Guide](https://docs.formkiq.com/docs/1.9.0/quickstart/README.html) to get started!
 
+## Support
+
+* [Documentation](https://docs.formkiq.com)
+* [Blog](https://blog.formkiq.com)
+* [File a bug report](https://github.com/formkiq/formkiq-core/issues/new)
+* [Paid Support](https://www.formkiq.com/pricing)
+
 ## License
 
 MIT - 2020-2022 (c) FormKiQ, Inc. For more details, see LICENSE file.
