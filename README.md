@@ -62,32 +62,6 @@ The following are AWS CloudFormation scripts that can be used to install FormKiQ
 
 Follow our [Quickstart Guide](https://docs.formkiq.com/docs/1.9.0/quickstart/README.html) to get started!
 
-### FormKiQ Core CloudFormation
-
-*Prerequisite*
-
-Before installation verify that the `AWSServiceRoleForECS` has been enabled on your AWS Account. The easiest fix is to open up AWS CLI and run the following against your account once.
-
-```
-aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
-```
-
-| AWS Region   | Install Link  |
-| ------------- | -------------|
-| us-east-1 | [Install FormKiQ Core in US-EAST-1 region](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-us-east-1.s3.amazonaws.com/1.9.0/template.yaml)
-| us-east-2 | [Install FormKiQ Core in US-EAST-2 region](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-us-east-2.s3.amazonaws.com/1.9.0/template.yaml)
-| ca-central-1| [Install FormKiQ Core in CA-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-ca-central-1.s3.amazonaws.com/1.9.0/template.yaml)
-| eu-central-1| [Install FormKiQ Core in EU-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName=formkiq-core-prod&templateURL=https://formkiq-core-distribution-eu-central-1.s3.amazonaws.com/1.9.0/template.yaml)
-
-### FormKiQ VPC CloudFormation
-
-| AWS Region   | Install Link  |
-| ------------- | -------------|
-| us-east-1 | [Install FormKiQ VPC in US-EAST-1 region](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=formkiq-vpc&templateURL=https://formkiq-core-distribution-us-east-1.s3.amazonaws.com/1.9.0/vpc.yaml)
-| us-east-2 | [Install FormKiQ VPC in US-EAST-2 region](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=formkiq-vpc&templateURL=https://formkiq-core-distribution-us-east-2.s3.amazonaws.com/1.9.0/vpc.yaml)
-| ca-central-1| [Install FormKiQ VPC in CA-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/new?stackName=formkiq-vpc&templateURL=https://formkiq-core-distribution-ca-central-1.s3.amazonaws.com/1.9.0/vpc.yaml)
-| eu-central-1| [Install FormKiQ VPC in EU-CENTRAL-1 region](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName=formkiq-vpc&templateURL=https://formkiq-core-distribution-eu-central-1.s3.amazonaws.com/1.9.0/vpc.yaml)
-
 ## License
 
 MIT - 2020-2022 (c) FormKiQ, Inc. For more details, see LICENSE file.
