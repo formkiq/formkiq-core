@@ -58,6 +58,13 @@ The following are AWS CloudFormation scripts that can be used to install FormKiQ
 
 Follow our [Quickstart Guide](https://docs.formkiq.com/docs/1.9.0/quickstart/README.html) to get started!
 
+## Tutorials
+
+After FormKiQ is installed checkout the following links to continue on your journey!
+
+* [Tutorials](https://docs.formkiq.com/docs/1.9.0/tutorials/overview.html)
+* [How-To](https://docs.formkiq.com/docs/1.9.0/how-to/overview.html)
+
 ## Support
 
 * [Documentation](https://docs.formkiq.com)
