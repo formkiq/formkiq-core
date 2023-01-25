@@ -120,25 +120,43 @@ task assembleTemplate {
 task assembleOpenApiTemplate {
 	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml")
 	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
+	
 	doLast {
+	
 		exec {
 			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
 		}
+		
 		exec {
-			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-jwt.yaml > ${buildDir}/../../openapi-jwt.yaml"
+			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
 		}
-		exec {
-			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-jwt.yaml -g asciidoc -o ${buildDir}/openapi-jwt"
+		
+		for (fileName in ["openapi-jwt", "openapi-iam"]) {
+		
+			def lines = new File("${buildDir}/${fileName}.yaml").readLines()
+			for (int i = 0; i < 5; i++) {
+			  lines.removeAt(0);
+			  lines.removeAt(lines.size - 1);
+			}
+			lines.removeAt(lines.size - 1);
+			
+			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
+			file.text = lines.join(System.lineSeparator())
+			
+			exec {
+				commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../docs/openapi/${fileName}.yaml -g asciidoc -o ${buildDir}/${fileName}"
+			}
 		}
+		/*
 		exec {
 			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
 		}
 		exec {
-			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../openapi-iam.yaml"
+			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../docs/openapi/openapi-iam.yaml"
 		}
 		exec {
 			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-iam.yaml -g asciidoc -o ${buildDir}/openapi-iam"
-		}
+		}*/
 	}
 }
 

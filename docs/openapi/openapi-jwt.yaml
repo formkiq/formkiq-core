@@ -1,6 +1,6 @@
         openapi: 3.0.1
         info:
-          title: FormKiQ IAM API
+          title: FormKiQ HTTP API
           contact:
             name: FormKiQ
             url: https://formkiq.com
@@ -8,7 +8,7 @@
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
-          description: FormKiQ IAM API
+          description: FormKiQ HTTP API
           version: 1.9.0
         paths:
           /version:
@@ -35,7 +35,7 @@
                       schema:
                         $ref: '#/components/schemas/GetVersionRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /sites:
@@ -62,7 +62,7 @@
                       schema:
                         $ref: '#/components/schemas/GetSitesRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /tagSchemas:
@@ -102,7 +102,7 @@
                       schema:
                         $ref: '#/components/schemas/GetTagSchemasRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -146,7 +146,7 @@
                       schema:
                         $ref: '#/components/schemas/ErrorsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /tagSchemas/{tagSchemaId}:
@@ -173,7 +173,7 @@
                       schema:
                         $ref: '#/components/schemas/GetTagSchemaRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
@@ -188,7 +188,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents:
@@ -238,7 +238,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -296,7 +296,7 @@
                       schema:
                         $ref: '#/components/schemas/AddDocumentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /documents/{documentId}:
@@ -323,7 +323,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             patch:
@@ -355,7 +355,7 @@
                       schema:
                         $ref: '#/components/schemas/AddDocumentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
@@ -370,7 +370,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/versions:
@@ -402,7 +402,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentVersionsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
@@ -440,7 +440,7 @@
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/content:
@@ -470,7 +470,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentContentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/tags:
@@ -508,7 +508,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentTagsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -543,7 +543,7 @@
                 "201":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /documents/{documentId}/tags#:
@@ -565,7 +565,7 @@
                 "201":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /documents/{documentId}/tags/{tagKey}:
@@ -593,7 +593,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentTagResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
@@ -615,7 +615,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
@@ -631,12 +631,12 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/tags/{tagKey}/{tagValue}:
             delete:
-              operationId: SetDocumentTagAndValue
+              operationId: DeleteDocumentTagAndValue
               description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
               - Document Tags
@@ -649,7 +649,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/url:
@@ -684,7 +684,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentUrlRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/upload:
@@ -717,7 +717,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentUrlRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -749,7 +749,7 @@
                       schema:
                         $ref: '#/components/schemas/AddDocumentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /documents/{documentId}/upload:
@@ -778,7 +778,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentUrlRequest'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /search:
@@ -848,13 +848,13 @@
                       schema:
                         $ref: '#/components/schemas/DocumentSearchResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
           /searchFulltext:
             post:
               operationId: DocumentFulltext
-              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
+              description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
               parameters:
@@ -881,7 +881,7 @@
                       schema:
                         $ref: '#/components/schemas/DocumentFulltextResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /queryFulltext:
@@ -913,7 +913,7 @@
                       schema:
                         $ref: '#/components/schemas/QueryFulltextResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /documents/{documentId}/actions:
@@ -940,7 +940,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentActionsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -972,13 +972,13 @@
                       schema:
                         $ref: '#/components/schemas/AddDocumentActionsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/ocr:
             get:
               operationId: GetDocumentOcr
-              description: Get a document's optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Pro and Enterprise
+              description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - OCR
               parameters:
@@ -1001,12 +1001,12 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentOcrResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
             post:
               operationId: AddDocumentOcr
-              description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Pro and Enterprise
+              description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - OCR
               parameters:
@@ -1033,7 +1033,7 @@
                       schema:
                         $ref: '#/components/schemas/AddDocumentOcrResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
             put:
@@ -1065,7 +1065,7 @@
                       schema:
                         $ref: '#/components/schemas/AddDocumentOcrResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
             delete:
@@ -1080,7 +1080,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
           /documents/{documentId}/antivirus:
@@ -1113,7 +1113,7 @@
                       schema:
                         $ref: '#/components/schemas/SetAntivirusResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
           /documents/{documentId}/fulltext:
@@ -1140,7 +1140,7 @@
                       schema:
                         $ref: '#/components/schemas/GetDocumentFulltextResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             delete:
@@ -1155,7 +1155,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             put:
@@ -1187,7 +1187,7 @@
                       schema:
                         $ref: '#/components/schemas/SetDocumentFulltextResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             patch:
@@ -1219,7 +1219,7 @@
                       schema:
                         $ref: '#/components/schemas/SetDocumentFulltextResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /documents/{documentId}/fulltext/tags/{tagKey}:
@@ -1236,7 +1236,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
@@ -1254,7 +1254,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
           /public/documents:
@@ -1348,7 +1348,7 @@
                       schema:
                         $ref: '#/components/schemas/DocumentId'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /webhooks:
@@ -1377,7 +1377,7 @@
                       schema:
                         $ref: '#/components/schemas/GetWebhooksResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -1408,7 +1408,7 @@
                       schema:
                         $ref: '#/components/schemas/AddWebhookResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /webhooks/{webhookId}:
@@ -1438,7 +1438,7 @@
                       schema:
                         $ref: '#/components/schemas/GetWebhookResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
@@ -1453,7 +1453,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             patch:
@@ -1474,7 +1474,7 @@
                 "200":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /webhooks/{webhookId}/tags:
@@ -1501,7 +1501,7 @@
                       schema:
                         $ref: '#/components/schemas/GetWebhookTagsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
@@ -1530,7 +1530,7 @@
                 "201":
                   $ref: '#/components/responses/200Cors'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /onlyoffice/{documentId}/edit:
@@ -1563,7 +1563,7 @@
                       schema:
                         $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
           /onlyoffice/new:
@@ -1595,7 +1595,7 @@
                       schema:
                         $ref: '#/components/schemas/OnlyOfficeDocumentResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/onlyOfficeLambdaApi200'
           /onlyoffice/{documentId}/save:
@@ -1659,7 +1659,7 @@
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /indices/{indexType}/{indexKey}:
@@ -1689,7 +1689,7 @@
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /indices/search:
@@ -1738,7 +1738,7 @@
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /esignature/docusign/{documentId}:
@@ -1777,7 +1777,7 @@
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
           /esignature/docusign/config:
@@ -1803,7 +1803,7 @@
                       schema:
                         $ref: '#/components/schemas/EsignatureDocusignConfigResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
             put:
@@ -1834,7 +1834,7 @@
                       schema:
                         $ref: '#/components/schemas/EsignatureSetDocusignConfigResponse'
               security:
-              - sigv4: []
+              - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
           /esignature/docusign/events:
@@ -2997,7 +2997,7 @@
                   description: OCR Parse types - TEXT, FORMS, TABLES
                 addPdfDetectedCharactersAsText:
                   type: boolean
-                  description: Whether to rewrite the PDF document, converting any image text to searchable text
+                  description: OCR action for the rewriting of the PDF document, converting any image text to searchable text
                 url:
                   type: string
                   description: Webhook action for the callback URL
@@ -3016,7 +3016,7 @@
                     type: string
                 addPdfDetectedCharactersAsText:
                   type: boolean
-                  description: Whether to rewrite the PDF document, converting any image text to searchable text
+                  description: Rewrite PDF document, converting any Image text to searchable text
             SetDocumentOcrRequest:
               required:
               - content
@@ -3343,7 +3343,7 @@
               properties:
                 redirect_url:
                   type: string
-                  description: Redirect URL to complete DocuSign workflow
+                  description: Redirect Url to complete DocuSign workflow
                 message:
                   type: string
                   description: Result message
@@ -3526,9 +3526,3 @@
           - '*'
           allowHeaders:
           - '*'
-        tags:
-        - name: Application
-          x-amazon-apigateway-tag-value: FormKiQ
-        - name: AppEnvironment
-          x-amazon-apigateway-tag-value:
-            Fn::Sub: ${AppEnvironment}

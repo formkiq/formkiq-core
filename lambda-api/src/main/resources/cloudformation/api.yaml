@@ -644,7 +644,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/tags/{tagKey}/{tagValue}:
             delete:
-              operationId: SetDocumentTagAndValue
+              operationId: DeleteDocumentTagAndValue
               description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
               - Document Tags
