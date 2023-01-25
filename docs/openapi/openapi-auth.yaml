@@ -1,0 +1,75 @@
+openapi: "3.0.1"
+info:
+  title: "FormKiQ Authentication API"
+  description: "API used to authenticate with FormKiQ"
+  version: "1.4.0"
+paths:
+  /login:
+    post:
+      operationId: Login
+      description: Logins to API and returns a Authentication Tokens
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostLoginRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PostLoginResponse"
+components:
+  schemas:
+    PostLoginRequest:
+      type: "object"
+      properties:
+        username:
+          type: string
+          description: Login Username
+        password:
+          type: string
+          description: Login Password
+    PostLoginResponse:
+      type: "object"
+      properties:
+        AuthenticationResult:
+          $ref: "#/components/schemas/AuthenticationResult"
+    AuthenticationResult:
+      type: "object"
+      properties:
+        AccessToken:
+          type: string
+          description: A valid access token issued to the user who you want to authenticate
+        ExpiresIn:
+          type: number
+          description: The expiration period of the authentication result in seconds
+        IdToken:
+          type: string
+          description: The ID token
+        TokenType:
+          type: string
+          description: The token type
+x-amazon-apigateway-cors:
+  allowMethods:
+  - "*"
+  allowHeaders:
+  - "*"
+  maxAge: 3600
+  allowCredentials: false
+  allowOrigins:
+  - "*"
