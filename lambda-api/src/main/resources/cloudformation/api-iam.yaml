@@ -271,12 +271,16 @@ Resources:
                         value:
                           path: test.txt
                           contentType: text/plain
+                          isBase64: false
                           content: This is sample data file
                           tags:
                             - key: category, 
                               value: sample
                             - key: players, 
                               values: ["111", "222"]
+                          metadata:
+                            - key: info 
+                              value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
                       Nested_Document:
                         value:
                           path: doc1.txt
@@ -860,7 +864,7 @@ Resources:
           /searchFulltext:
             post:
               operationId: DocumentFulltext
-              description: Document full text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
+              description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
               parameters:
@@ -984,7 +988,7 @@ Resources:
           /documents/{documentId}/ocr:
             get:
               operationId: GetDocumentOcr
-              description: Get a document's optical character recognition (OCR) result; if exists. ONLY available with FormKiQ Pro and Enterprise
+              description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - OCR
               parameters:
@@ -1012,7 +1016,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
             post:
               operationId: AddDocumentOcr
-              description: Document optical character recognition (OCR) request; extract text and data from a document. ONLY available with FormKiQ Pro and Enterprise
+              description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - OCR
               parameters:
@@ -3003,7 +3007,7 @@ Resources:
                   description: "OCR Parse types - TEXT, FORMS, TABLES"
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
-                  description: "Whether to rewrite the PDF document, converting any image text to searchable text"
+                  description: "OCR action for the rewriting of the PDF document, converting any image text to searchable text"
                 url:
                   type: "string"
                   description: "Webhook action for the callback URL"
@@ -3022,7 +3026,7 @@ Resources:
                     type: "string"
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
-                  description: "Whether to rewrite the PDF document, converting any image text to searchable text"
+                  description: "Rewrite PDF document, converting any Image text to searchable text"
             SetDocumentOcrRequest:
               required:
               - "content"
@@ -3349,7 +3353,7 @@ Resources:
               properties:
                 redirect_url:
                   type: "string"
-                  description: "Redirect URL to complete DocuSign workflow"
+                  description: "Redirect Url to complete DocuSign workflow"
                 message:
                   type: "string"
                   description: "Result message"
