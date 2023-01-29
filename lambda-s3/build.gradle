@@ -45,12 +45,11 @@ compileJava {
 
 nativeImage { 
 	outputFileName = "server"
-	javaVersion = "java11"
-	imageVersion = "21.3.0"
+	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
     enableHttp = true
     enableHttps = true
-    enableDocker = true
+    enableStatic = true
 	reflectionConfig = "$buildDir/classes/java/main/META-INF/graal/reflect.json"
 	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
