@@ -54,7 +54,7 @@ Then checkout out our [Getting Started with the FormKiQ Document API](https://do
 After FormKiQ is installed checkout the following links to continue on your journey!
 
 * [Getting Started with the FormKiQ Document API](https://docs.formkiq.com/docs/1.9.0/tutorials/formkiq-document-api-with-postman.html)
-* [FormKiQ API](https://editor.swagger.io/?url=https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/openapi/openapi-jwt.yaml)
+* [FormKiQ API Reference](https://docs.formkiq.com/docs/1.9.0/api/index.html)
 * [Tutorials](https://docs.formkiq.com/docs/1.9.0/tutorials/overview.html)
 * [How-To](https://docs.formkiq.com/docs/1.9.0/how-to/overview.html)
 
