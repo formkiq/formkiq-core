@@ -17,6 +17,10 @@ Resources:
             name: FormKiQ
             url: https://formkiq.com
             email: support@formkiq.com
+          x-logo:
+            url: https://docs.formkiq.com/docs/1.9.0/_images/formkiq-logo.png
+            backgroundColor: "#FFFFFF"
+            altText: "FormKiQ Logo"
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -2465,7 +2469,7 @@ Resources:
                   description: "Path or Name of document"
                 contentType:
                   type: "string"
-                  description: "Document Content-Type"
+                  description: "Document media type"
                 isBase64:
                   type: "boolean"
                   description: "Is the content Base64-encoded?"
