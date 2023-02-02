@@ -346,6 +346,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
         // given
         String documentId = UUID.randomUUID().toString();
+
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        item.setContentType("application/pdf");
+        documentService.saveDocument(siteId, item, null);
+
         List<Action> actions = Arrays.asList(
             new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
         actionsService.saveActions(siteId, documentId, actions);
@@ -376,6 +381,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
         }
 
         assertEquals(documentId, documents.get(0).get("documentId"));
+        assertEquals("application/pdf", documents.get(0).get("contentType"));
+        assertEquals("joe", documents.get(0).get("userId"));
+        assertNotNull(documents.get(0).get("insertedDate"));
+        assertNotNull(documents.get(0).get("lastModifiedDate"));
+        assertNotNull(documents.get(0).get("url"));
 
         assertEquals(ActionStatus.COMPLETE,
             actionsService.getActions(siteId, documentId).get(0).status());

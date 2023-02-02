@@ -23,11 +23,13 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
@@ -49,6 +51,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -81,6 +84,7 @@ import com.formkiq.stacks.client.requests.OcrParseType;
 import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -196,13 +200,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private String buildWebhookBody(final String siteId, final String documentId,
       final List<Action> actions) {
 
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    DocumentItem result = this.documentService.findDocument(siteId, documentId);
+    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
 
-    List<Map<String, String>> documents = new ArrayList<>();
-    Map<String, String> map = new HashMap<>();
-    map.put("siteId", site);
-    map.put("documentId", documentId);
-    documents.add(map);
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    item.put("siteId", site);
+
+    URL s3Url = getS3Url(siteId, documentId, item);
+    item.put("url", s3Url);
+
+    List<DynamicDocumentItem> documents = new ArrayList<>();
+    documents.add(item);
 
     Optional<Action> antiVirus = actions.stream()
         .filter(
@@ -210,9 +218,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         .findFirst();
 
     if (antiVirus.isPresent()) {
-
-      DocumentItem item = this.documentService.findDocument(siteId, documentId);
-      map.put("filename", item.getPath());
 
       Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
           Arrays.asList(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
@@ -224,10 +229,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       }
 
       String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
-      map.put("status", status);
+      item.put("status", status);
 
       String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
-      map.put("timestamp", timestamp);
+      item.put("timestamp", timestamp);
     }
 
     return this.gson.toJson(Map.of("documents", documents));
@@ -301,6 +306,22 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     }).distinct().collect(Collectors.toList());
 
     return ocrParseTypes;
+  }
+
+  /**
+   * Get Document S3 Url.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param item {@link DocumentItem}
+   * @return {@link URL}
+   */
+  private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
+    Duration duration = Duration.ofDays(1);
+    PresignGetUrlConfig config =
+        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
+    String s3key = createS3Key(siteId, documentId);
+    return this.s3Service.presignGetUrl(this.documentsBucket, s3key, duration, null, config);
   }
 
   @SuppressWarnings("unchecked")
