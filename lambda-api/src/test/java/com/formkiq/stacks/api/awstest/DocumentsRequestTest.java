@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -394,13 +395,14 @@ public class DocumentsRequestTest extends AbstractApiTest {
       // when - fetch document
       while (true) {
         map = fetchDocument(client, documentId);
-        if (map.containsKey("contentType")) {
+        if (map.containsKey("contentType") && map.get("contentLength") != null) {
           assertTrue(map.get("contentType").toString().startsWith("text/plain"));
           break;
         }
 
         Thread.sleep(ONE_SECOND);
       }
+      assertEquals("9.0", map.get("contentLength").toString());
 
       // given
       UpdateDocument updateDocument = new UpdateDocument()
@@ -418,7 +420,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
         map = fetchDocument(client, documentId);
 
         if (map.containsKey("contentLength")
-            && "application/pdf".equals(map.get("contentType").toString())) {
+            && "application/pdf".equals(map.get("contentType").toString())
+            && !"9.0".equals(map.get("contentLength").toString())) {
           assertEquals("application/pdf", map.get("contentType").toString());
           assertNotNull(map.get("contentLength"));
           break;
@@ -427,27 +430,34 @@ public class DocumentsRequestTest extends AbstractApiTest {
         Thread.sleep(ONE_SECOND);
       }
 
-      // given
-      DeleteDocumentRequest delRequest = new DeleteDocumentRequest().documentId(documentId);
-      GetDocumentRequest getRequest = new GetDocumentRequest().documentId(documentId);
+      assertNotEquals("9.0", map.get("contentLength").toString());
 
-      // when - delete document
-      response = client.deleteDocumentAsHttpResponse(delRequest);
-      assertEquals(STATUS_OK, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
+      testPost01Delete(client, documentId);
+    }
+  }
 
-      while (true) {
-        // when - fetch document
-        response = client.getDocumentAsHttpResponse(getRequest);
-        // then
-        if (STATUS_NOT_FOUND == response.statusCode()) {
-          assertEquals(STATUS_NOT_FOUND, response.statusCode());
-          assertRequestCorsHeaders(response.headers());
-          break;
-        }
+  private void testPost01Delete(final FormKiqClientV1 client, final String documentId)
+      throws IOException, InterruptedException {
+    // given
+    DeleteDocumentRequest delRequest = new DeleteDocumentRequest().documentId(documentId);
+    GetDocumentRequest getRequest = new GetDocumentRequest().documentId(documentId);
 
-        Thread.sleep(ONE_SECOND);
+    // when - delete document
+    HttpResponse<String> response = client.deleteDocumentAsHttpResponse(delRequest);
+    assertEquals(STATUS_OK, response.statusCode());
+    assertRequestCorsHeaders(response.headers());
+
+    while (true) {
+      // when - fetch document
+      response = client.getDocumentAsHttpResponse(getRequest);
+      // then
+      if (STATUS_NOT_FOUND == response.statusCode()) {
+        assertEquals(STATUS_NOT_FOUND, response.statusCode());
+        assertRequestCorsHeaders(response.headers());
+        break;
       }
+
+      Thread.sleep(ONE_SECOND);
     }
   }
 
