@@ -86,6 +86,7 @@ Resources:
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./formkiq-module-lambda-typesense-graalvm.zip
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           APP_ENVIRONMENT: 
@@ -205,8 +206,6 @@ Resources:
         - TypesenseProcessor
         - Arn      
       StartingPosition: LATEST
-      ScalingConfig:
-        MaximumConcurrency: 1
       
   Service:
     Type: AWS::ECS::Service
