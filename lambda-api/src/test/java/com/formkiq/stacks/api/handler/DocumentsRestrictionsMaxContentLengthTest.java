@@ -64,7 +64,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
    */
   @BeforeEach
   public void before() throws URISyntaxException, IOException {
-    DynamoDbConnectionBuilder adb = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder adb = DynamoDbTestServices.getDynamoDbConnection();
 
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(adb));

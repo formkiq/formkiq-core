@@ -39,23 +39,28 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockserver.integration.ClientAndServer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
@@ -71,6 +76,7 @@ import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypeSenseExtension;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -83,6 +89,15 @@ public abstract class AbstractRequestHandler {
   /** Port to run Test server. */
   private static final int PORT = 8080;
 
+  /** 500 Milliseconds. */
+  private static final long SLEEP = 500L;
+
+  /** SQS Sns Update Queue. */
+  private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
+  /** SQS Create Url. */
+  private static String snsDocumentEvent;
+  /** SQS Sns Create QueueUrl. */
+  private static String sqsDocumentEventUrl;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -96,6 +111,15 @@ public abstract class AbstractRequestHandler {
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+
+    SqsService sqsService = new SqsService(TestServices.getSqsConnection(null));
+    if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
+      sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
+    }
+
+    SnsService snsService = new SnsService(TestServices.getSnsConnection(null));
+    snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
   }
 
   /** {@link CoreAwsServiceCache}. */
@@ -103,11 +127,11 @@ public abstract class AbstractRequestHandler {
 
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
+
   /** {@link LambdaLogger}. */
   private LambdaLoggerRecorder logger = (LambdaLoggerRecorder) this.context.getLogger();
   /** System Environment Map. */
   private Map<String, String> map = new HashMap<>();
-
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer = null;
 
@@ -192,6 +216,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("CACHE_TABLE", CACHE_TABLE);
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
+    this.map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     this.map.put("AWS_REGION", AWS_REGION.toString());
     this.map.put("DEBUG", "true");
     this.map.put("SQS_DOCUMENT_FORMATS",
@@ -230,9 +255,15 @@ public abstract class AbstractRequestHandler {
    */
   public void createApiRequestHandler(final Map<String, String> prop) throws URISyntaxException {
     AwsCredentials creds = AwsBasicCredentials.create("asd", "asd");
-    AbstractCoreRequestHandler.configureHandler(prop, creds,
-        DynamoDbTestServices.getDynamoDbConnection(null), TestServices.getS3Connection(null),
-        TestServices.getSsmConnection(null), TestServices.getSqsConnection(null),
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    Map<String, URI> endpoints = Map.of("dynamodb", DynamoDbTestServices.getEndpoint(), "s3",
+        TestServices.getEndpoint(Service.S3, null), "ssm",
+        TestServices.getEndpoint(Service.SSM, null), "sqs",
+        TestServices.getEndpoint(Service.SQS, null), "sns",
+        TestServices.getEndpoint(Service.SNS, null));
+
+    AbstractCoreRequestHandler.configureHandler(prop, AWS_REGION, credentialsProvider, endpoints,
         new DocumentTagSchemaPluginEmpty());
   }
 
@@ -355,6 +386,29 @@ public abstract class AbstractRequestHandler {
    */
   public S3Service getS3() {
     return this.awsServices.getExtension(S3Service.class);
+  }
+
+  /**
+   * Get Sqs Messages.
+   * 
+   * @return {@link List} {@link Message}
+   * @throws InterruptedException InterruptedException
+   */
+  public List<Message> getSqsMessages() throws InterruptedException {
+
+    SqsService sqsService = this.awsServices.getExtension(SqsService.class);
+
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    while (msgs.isEmpty()) {
+      Thread.sleep(SLEEP);
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    }
+
+    for (Message msg : msgs) {
+      sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());
+    }
+
+    return msgs;
   }
 
   /**

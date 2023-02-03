@@ -40,6 +40,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
@@ -119,6 +120,10 @@ public class DocumentsActionsRequestHandler
         service.saveAction(siteId, documentId, a, idx);
         idx++;
       }
+
+      ActionsNotificationService notificationService =
+          awsservice.getExtension(ActionsNotificationService.class);
+      notificationService.publishNextActionEvent(actions, siteId, documentId);
 
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Actions saved"));

@@ -63,7 +63,7 @@ public class ReadRequestBuilderTest implements DbKeys {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     dbClient = dynamoDbConnection.build();
     service = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
   }

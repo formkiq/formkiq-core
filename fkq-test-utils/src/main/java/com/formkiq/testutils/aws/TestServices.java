@@ -87,15 +87,19 @@ public final class TestServices {
    * Get Local Stack Endpoint.
    * 
    * @param service {@link Service}
-   * @param endpointOverride {@link String}
-   * @return {@link String}
+   * @param endpointOverride {@link URI}
+   * @return {@link URI}
    */
-  private static String getEndpoint(final Service service, final String endpointOverride) {
-    String endpoint = endpointOverride;
+  public static URI getEndpoint(final Service service, final URI endpointOverride) {
+    URI endpoint = endpointOverride;
 
     if (endpoint == null) {
-      endpoint = localstack != null ? localstack.getEndpointOverride(service).toString()
-          : LOCALSTACK_ENDPOINT;
+      try {
+        endpoint = new URI(localstack != null ? localstack.getEndpointOverride(service).toString()
+            : LOCALSTACK_ENDPOINT);
+      } catch (URISyntaxException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     return endpoint;
@@ -116,12 +120,12 @@ public final class TestServices {
   /**
    * Get Singleton {@link S3ConnectionBuilder}.
    * 
-   * @param endpointOverride {@link String}
+   * @param endpointOverride {@link URI}
    * 
    * @return {@link S3ConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static synchronized S3ConnectionBuilder getS3Connection(final String endpointOverride)
+  public static synchronized S3ConnectionBuilder getS3Connection(final URI endpointOverride)
       throws URISyntaxException {
     if (s3Connection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -137,12 +141,12 @@ public final class TestServices {
   /**
    * Get Singleton {@link SnsConnectionBuilder}.
    * 
-   * @param endpointOverride {@link String}
+   * @param endpointOverride {@link URI}
    * 
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static synchronized SnsConnectionBuilder getSnsConnection(final String endpointOverride)
+  public static synchronized SnsConnectionBuilder getSnsConnection(final URI endpointOverride)
       throws URISyntaxException {
     if (snsConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -158,12 +162,12 @@ public final class TestServices {
   /**
    * Get Singleton {@link SqsConnectionBuilder}.
    * 
-   * @param endpointOverride {@link String}
+   * @param endpointOverride {@link URI}
    * 
    * @return {@link SqsConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static synchronized SqsConnectionBuilder getSqsConnection(final String endpointOverride)
+  public static synchronized SqsConnectionBuilder getSqsConnection(final URI endpointOverride)
       throws URISyntaxException {
     if (sqsConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -230,12 +234,12 @@ public final class TestServices {
   /**
    * Get Singleton {@link SsmConnectionBuilder}.
    * 
-   * @param endpointOverride {@link String}
+   * @param endpointOverride {@link URI}
    * 
    * @return {@link SsmConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static synchronized SsmConnectionBuilder getSsmConnection(final String endpointOverride)
+  public static synchronized SsmConnectionBuilder getSsmConnection(final URI endpointOverride)
       throws URISyntaxException {
     if (ssmConnection == null) {
       AwsCredentialsProvider cred = StaticCredentialsProvider

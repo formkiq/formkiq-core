@@ -50,7 +50,7 @@ public class DocumentCountServiceDynamoDbTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.db = DynamoDbTestServices.getDynamoDbConnection();
     this.service = new DocumentCountServiceDynamoDb(this.db, DOCUMENTS_TABLE);
   }
 

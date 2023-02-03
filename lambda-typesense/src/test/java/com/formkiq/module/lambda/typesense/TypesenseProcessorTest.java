@@ -81,7 +81,7 @@ class TypesenseProcessorTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
     AwsBasicCredentials cred = AwsBasicCredentials.create("asd", "asd");
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
 
     processor = new TypesenseProcessor(Map.of("AWS_REGION", "us-east-1", "DOCUMENT_SYNC_TABLE",
         DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",

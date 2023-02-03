@@ -12,6 +12,7 @@ dependencies {
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
+	implementation project(':aws-sns')
 	implementation project(':aws-dynamodb')
 	implementation project(':dynamodb-documents')
 	implementation project(':actions')

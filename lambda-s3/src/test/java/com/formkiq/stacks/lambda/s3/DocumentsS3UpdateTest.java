@@ -179,7 +179,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     s3Builder = TestServices.getS3Connection(null);
     sqsBuilder = TestServices.getSqsConnection(null);
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
     db = dbBuilder.build();
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     snsBuilder = TestServices.getSnsConnection(null);

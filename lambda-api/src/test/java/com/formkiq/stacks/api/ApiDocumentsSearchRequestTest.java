@@ -80,7 +80,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     document = this.fulltext.apply(document);
 
     TypesenseProcessor processor = new TypesenseProcessor(getMap(),
-        DynamoDbTestServices.getDynamoDbConnection(null), AwsBasicCredentials.create("asd", path));
+        DynamoDbTestServices.getDynamoDbConnection(), AwsBasicCredentials.create("asd", path));
     processor.addOrUpdate(siteId, item.getDocumentId(), document, item.getUserId(), false);
   }
 

@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +77,7 @@ public class SsmServiceCacheTest {
 
     SsmConnectionBuilder connection =
         new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-            .setEndpointOverride(localstack.getEndpointOverride(Service.SSM).toString());
+            .setEndpointOverride(new URI(localstack.getEndpointOverride(Service.SSM).toString()));
 
     cache = new SsmServiceCache(connection, 1, TimeUnit.SECONDS);
   }

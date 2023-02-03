@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api;
 
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -33,15 +32,12 @@ import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiResponseError;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
@@ -71,16 +67,8 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
     if (System.getenv("AWS_REGION") != null) {
       AbstractCoreRequestHandler.configureHandler(System.getenv(),
-          EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
-          new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
-              .setCredentials(EnvironmentVariableCredentialsProvider.create()),
-          new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
-              .setCredentials(EnvironmentVariableCredentialsProvider.create()),
-          new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
-              .setCredentials(EnvironmentVariableCredentialsProvider.create()),
-          new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION")))
-              .setCredentials(EnvironmentVariableCredentialsProvider.create()),
-          new DocumentTagSchemaPluginEmpty());
+          Region.of(System.getenv("AWS_REGION")), EnvironmentVariableCredentialsProvider.create(),
+          null, new DocumentTagSchemaPluginEmpty());
     }
 
     AbstractCoreRequestHandler.buildUrlMap();

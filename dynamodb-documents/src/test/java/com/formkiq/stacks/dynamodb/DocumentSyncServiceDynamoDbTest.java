@@ -57,7 +57,7 @@ public class DocumentSyncServiceDynamoDbTest {
    */
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     syncService = new DocumentSyncServiceDynamoDb(dynamoDbConnection, DOCUMENT_SYNCS_TABLE);
   }
 

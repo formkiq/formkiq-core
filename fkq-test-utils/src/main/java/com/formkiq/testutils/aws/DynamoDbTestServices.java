@@ -25,6 +25,7 @@ package com.formkiq.testutils.aws;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import org.testcontainers.containers.GenericContainer;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -54,20 +55,16 @@ public final class DynamoDbTestServices {
   /**
    * Get Singleton Instance of {@link DynamoDbConnectionBuilder}.
    * 
-   * @param dynamoDb {@link GenericContainer}
    * @return {@link DynamoDbConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public static DynamoDbConnectionBuilder getDynamoDbConnection(final GenericContainer<?> dynamoDb)
-      throws URISyntaxException {
+  public static DynamoDbConnectionBuilder getDynamoDbConnection() throws URISyntaxException {
     if (dbConnection == null) {
       AwsCredentialsProvider cred =
           StaticCredentialsProvider.create(AwsBasicCredentials.create("ACCESSKEY", "SECRETKEY"));
 
-      Integer port =
-          dynamoDb != null ? dynamoDb.getFirstMappedPort() : Integer.valueOf(DEFAULT_PORT);
       dbConnection = new DynamoDbConnectionBuilder().setRegion(AWS_REGION).setCredentials(cred)
-          .setEndpointOverride("http://localhost:" + port);
+          .setEndpointOverride(getEndpoint());
     }
 
     return dbConnection;
@@ -84,7 +81,7 @@ public final class DynamoDbTestServices {
   public static DynamoDbHelper getDynamoDbHelper(final GenericContainer<?> dynamoDb)
       throws URISyntaxException, IOException {
     if (dbHelper == null) {
-      dbHelper = new DynamoDbHelper(getDynamoDbConnection(dynamoDb));
+      dbHelper = new DynamoDbHelper(getDynamoDbConnection());
     }
 
     return dbHelper;
@@ -99,11 +96,27 @@ public final class DynamoDbTestServices {
   public static GenericContainer<?> getDynamoDbLocal() {
     if (dynamoDbLocal == null && isPortAvailable()) {
       final Integer exposedPort = Integer.valueOf(DEFAULT_PORT);
-      dynamoDbLocal =
-          new GenericContainer<>("amazon/dynamodb-local:1.13.5").withExposedPorts(exposedPort);
+      dynamoDbLocal = new GenericContainer<>("amazon/dynamodb-local:1.21.0")
+          .withExposedPorts(exposedPort).withCommand("-jar DynamoDBLocal.jar -sharedDb");
     }
 
     return dynamoDbLocal;
+  }
+
+  /**
+   * Get Endpoint.
+   * 
+   * @return {@link URI}
+   */
+  @SuppressWarnings("resource")
+  public static URI getEndpoint() {
+    GenericContainer<?> dynamoDb = getDynamoDbLocal();
+    Integer port = dynamoDb != null ? dynamoDb.getFirstMappedPort() : Integer.valueOf(DEFAULT_PORT);
+    try {
+      return new URI("http://localhost:" + port);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**

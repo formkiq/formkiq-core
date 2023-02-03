@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 /** Unit Tests for request /documents/{documentId}/actions. */
 @ExtendWith(LocalStackExtension.class)
@@ -143,6 +145,17 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       assertEquals(ActionType.WEBHOOK, actions.get(i).type());
       assertEquals(ActionStatus.PENDING, actions.get(i).status());
       assertEquals("{url=https://localhost}", actions.get(i++).parameters().toString());
+
+      List<Message> sqsMessages = getSqsMessages();
+      assertEquals(1, sqsMessages.size());
+
+      Map<String, String> map =
+          GsonUtil.getInstance().fromJson(sqsMessages.get(0).body(), Map.class);
+
+      map = GsonUtil.getInstance().fromJson(map.get("Message"), Map.class);
+      assertNotNull(map.get("siteId"));
+      assertEquals(documentId, map.get("documentId"));
+      assertEquals("actions", map.get("type"));
     }
   }
 

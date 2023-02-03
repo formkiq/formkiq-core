@@ -51,6 +51,8 @@
 			<allow pkg="com.formkiq.aws.s3" />
 			<allow pkg="com.formkiq.aws.sqs" />
 			<allow pkg="com.formkiq.aws.ssm" />
+			<allow pkg="com.formkiq.aws.sns" />
+			
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.lambda.apigateway" />
 			<allow pkg="com.formkiq.module.actions" />

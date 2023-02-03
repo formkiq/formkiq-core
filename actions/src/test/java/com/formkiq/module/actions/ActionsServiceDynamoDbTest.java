@@ -65,7 +65,7 @@ public class ActionsServiceDynamoDbTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
     documentService =
         new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());

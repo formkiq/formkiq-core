@@ -59,8 +59,7 @@ public class ConfigServiceImplTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service =
-        new ConfigServiceImpl(DynamoDbTestServices.getDynamoDbConnection(null), "Documents");
+    this.service = new ConfigServiceImpl(DynamoDbTestServices.getDynamoDbConnection(), "Documents");
   }
 
   /**

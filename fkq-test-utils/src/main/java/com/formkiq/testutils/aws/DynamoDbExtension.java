@@ -62,9 +62,8 @@ public class DynamoDbExtension
       this.dynamoDbLocal.start();
     }
 
-    this.dbConnection = DynamoDbTestServices.getDynamoDbConnection(this.dynamoDbLocal);
-    this.dbhelper =
-        new DynamoDbHelper(DynamoDbTestServices.getDynamoDbConnection(this.dynamoDbLocal));
+    this.dbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    this.dbhelper = new DynamoDbHelper(DynamoDbTestServices.getDynamoDbConnection());
 
     DynamoDbHelper dbHelper = new DynamoDbHelper(this.dbConnection);
     if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {

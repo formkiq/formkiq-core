@@ -224,7 +224,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     s3Builder = TestServices.getS3Connection(null);
     ssmBuilder = TestServices.getSsmConnection(null);
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     snsBuilder = TestServices.getSnsConnection(null);
 

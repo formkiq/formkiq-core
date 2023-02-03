@@ -61,7 +61,7 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
   public void testHandleSearchRequest01() throws Exception {
 
     this.indexWriter =
-        new GlobalIndexService(DynamoDbTestServices.getDynamoDbConnection(null), DOCUMENTS_TABLE);
+        new GlobalIndexService(DynamoDbTestServices.getDynamoDbConnection(), DOCUMENTS_TABLE);
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

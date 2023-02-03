@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
@@ -82,7 +83,8 @@ public class ConsoleInstallHandlerTest {
     localStackInstance.start();
 
     s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
-        .setEndpointOverride(localStackInstance.getEndpointOverride(Service.S3).toString());
+        .setEndpointOverride(
+            new URI(localStackInstance.getEndpointOverride(Service.S3).toString()));
 
     s3 = new S3Service(s3Connection);
 

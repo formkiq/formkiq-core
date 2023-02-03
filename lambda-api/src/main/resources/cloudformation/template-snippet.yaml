@@ -152,6 +152,8 @@ Resources:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
           STAGE_DOCUMENTS_S3_BUCKET: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+          SNS_DOCUMENT_EVENT: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
           ENABLE_PUBLIC_URLS: 
             Fn::Sub: "${EnablePublicUrls}"
           FORMKIQ_TYPE: 
@@ -356,7 +358,11 @@ Resources:
               - dynamodb:Query
               Resource:
               - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
-              
+            - Effect: Allow
+              Action:
+              - sns:Publish
+              Resource:
+              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -40,12 +41,15 @@ import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceExtension;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
+import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
+import com.formkiq.module.actions.services.ActionsNotificationService;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -104,6 +108,8 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -174,19 +180,34 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    * Setup Api Request Handlers.
    *
    * @param map {@link Map}
-   * @param creds {@link AwsCredentials}
-   * @param db {@link DynamoDbConnectionBuilder}
-   * @param s3 {@link S3ConnectionBuilder}
-   * @param ssm {@link SsmConnectionBuilder}
-   * @param sqs {@link SqsConnectionBuilder}
+   * @param region {@link Region}
+   * @param credentialsProvider {@link AwsCredentialsProvider}
+   * @param awsServiceEndpoints {@link Map} {@link URI}
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
-  public static void configureHandler(final Map<String, String> map, final AwsCredentials creds,
-      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3,
-      final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
+  public static void configureHandler(final Map<String, String> map, final Region region,
+      final AwsCredentialsProvider credentialsProvider, final Map<String, URI> awsServiceEndpoints,
       final DocumentTagSchemaPlugin schemaEvents) {
 
-    AwsServiceCache.register(AwsCredentials.class, new ClassServiceExtension<>(creds));
+    DynamoDbConnectionBuilder db =
+        new DynamoDbConnectionBuilder().setRegion(region).setCredentials(credentialsProvider)
+            .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
+
+    SsmConnectionBuilder ssm = new SsmConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("ssm"));
+
+    S3ConnectionBuilder s3 = new S3ConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
+
+    SqsConnectionBuilder sqs = new SqsConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sqs"));
+
+    SnsConnectionBuilder sns = new SnsConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
+
+    AwsServiceCache.register(AwsCredentials.class,
+        new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
+
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(db));
     AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
@@ -194,7 +215,11 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
         new ClassServiceExtension<SsmConnectionBuilder>(ssm));
     AwsServiceCache.register(SqsConnectionBuilder.class,
         new ClassServiceExtension<SqsConnectionBuilder>(sqs));
+
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension(sns));
+
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
     AwsServiceCache.register(SqsService.class, new SqsServiceExtension());

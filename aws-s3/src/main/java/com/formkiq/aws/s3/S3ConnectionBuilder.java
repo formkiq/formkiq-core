@@ -24,7 +24,6 @@
 package com.formkiq.aws.s3;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
@@ -142,14 +141,12 @@ public class S3ConnectionBuilder {
   /**
    * Set Endpoint Override.
    * 
-   * @param endpoint {@link String}
+   * @param endpoint {@link URI}
    * @return {@link S3ConnectionBuilder}
-   * @throws URISyntaxException URISyntaxException
    */
-  public S3ConnectionBuilder setEndpointOverride(final String endpoint) throws URISyntaxException {
-    URI uri = new URI(endpoint);
-    this.builder = this.builder.endpointOverride(uri);
-    this.presignerBuilder = this.presignerBuilder.endpointOverride(uri);
+  public S3ConnectionBuilder setEndpointOverride(final URI endpoint) {
+    this.builder = this.builder.endpointOverride(endpoint);
+    this.presignerBuilder = this.presignerBuilder.endpointOverride(endpoint);
     return this;
   }
 

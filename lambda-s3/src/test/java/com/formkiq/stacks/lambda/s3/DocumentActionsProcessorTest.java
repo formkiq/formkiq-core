@@ -126,7 +126,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @BeforeAll
   public static void beforeClass() throws Exception {
 
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
 
     DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
 
