@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
@@ -68,7 +69,7 @@ public class CoreRequestHandler extends AbstractCoreRequestHandler {
     if (System.getenv("AWS_REGION") != null) {
       AbstractCoreRequestHandler.configureHandler(System.getenv(),
           Region.of(System.getenv("AWS_REGION")), EnvironmentVariableCredentialsProvider.create(),
-          null, new DocumentTagSchemaPluginEmpty());
+          Map.of(), new DocumentTagSchemaPluginEmpty());
     }
 
     AbstractCoreRequestHandler.buildUrlMap();

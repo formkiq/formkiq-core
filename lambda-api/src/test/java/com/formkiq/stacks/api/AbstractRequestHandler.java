@@ -53,7 +53,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockserver.integration.ClientAndServer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -69,7 +68,6 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
@@ -257,11 +255,7 @@ public abstract class AbstractRequestHandler {
     AwsCredentials creds = AwsBasicCredentials.create("asd", "asd");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    Map<String, URI> endpoints = Map.of("dynamodb", DynamoDbTestServices.getEndpoint(), "s3",
-        TestServices.getEndpoint(Service.S3, null), "ssm",
-        TestServices.getEndpoint(Service.SSM, null), "sqs",
-        TestServices.getEndpoint(Service.SQS, null), "sns",
-        TestServices.getEndpoint(Service.SNS, null));
+    Map<String, URI> endpoints = TestServices.getEndpointMap();
 
     AbstractCoreRequestHandler.configureHandler(prop, AWS_REGION, credentialsProvider, endpoints,
         new DocumentTagSchemaPluginEmpty());

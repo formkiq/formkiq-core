@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
@@ -103,6 +104,20 @@ public final class TestServices {
     }
 
     return endpoint;
+  }
+
+  /**
+   * Get AWS Services Endpoint Map.
+   * 
+   * @return {@link Map}
+   */
+  public static Map<String, URI> getEndpointMap() {
+    Map<String, URI> endpoints = Map.of("dynamodb", DynamoDbTestServices.getEndpoint(), "s3",
+        TestServices.getEndpoint(Service.S3, null), "ssm",
+        TestServices.getEndpoint(Service.SSM, null), "sqs",
+        TestServices.getEndpoint(Service.SQS, null), "sns",
+        TestServices.getEndpoint(Service.SNS, null));
+    return endpoints;
   }
 
   /**
