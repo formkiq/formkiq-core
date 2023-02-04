@@ -299,6 +299,16 @@ Resources:
                             tags:
                               - key: type
                                 value: subdocument1
+                      Document_with_Webhook:
+                        value:
+                          path: test.txt
+                          contentType: text/plain
+                          isBase64: false
+                          content: This is sample data file
+                          actions:
+                            - type: webhook 
+                              parameters:
+                                url: <callback_url>
               responses:
                 '201':
                   description: 201 CREATED
@@ -3148,13 +3158,16 @@ Resources:
               properties:
                 ocrParseTypes:
                   type: "string"
-                  description: "OCR Parse types - TEXT, FORMS, TABLES"
+                  description: "OCR: Parse types - TEXT, FORMS, TABLES"
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
-                  description: "OCR action for the rewriting of the PDF document, converting any image text to searchable text"
+                  description: "OCR: For the rewriting of the PDF document, converting any image text to searchable text"
                 url:
                   type: "string"
-                  description: "Webhook action for the callback URL"
+                  description: "Webhook: Callback URL"
+                characterMax:
+                  type: "string"
+                  description: "Fulltext: Maximum number of characters (-1 unlimited, Typesense defaults to 2048 characters)"
             AddDocumentOcrRequest:
               type: object
               example:

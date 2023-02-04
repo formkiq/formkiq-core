@@ -27,13 +27,17 @@ import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -51,9 +55,11 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -62,6 +68,8 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -72,14 +80,17 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.aws.TypeSenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
+@ExtendWith(TypeSenseExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
   /** {@link ActionsService}. */
@@ -89,8 +100,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /** {@link RequestRecordExpectationResponseCallback}. */
   private static RequestRecordExpectationResponseCallback callback =
       new RequestRecordExpectationResponseCallback();
+  /** {@link AwsBasicCredentials}. */
+  private static AwsBasicCredentials credentials = AwsBasicCredentials.create("asd", "asd");
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
+
   /** {@link DocumentService}. */
   private static DocumentService documentService;
 
@@ -99,13 +113,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
-
   /** Port to run Test server. */
   private static final int PORT = 8888;
   /** {@link DocumentActionsProcessor}. */
   private static DocumentActionsProcessor processor;
+  /** {@link S3Service}. */
+  private static S3Service s3Service;
   /** {@link SsmService}. */
   private static SsmService ssmService;
+  /** {@link TypeSenseService}. */
+  private static TypeSenseService typesense;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -134,6 +151,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     createMockServer();
 
+    s3Service = new S3Service(TestServices.getS3Connection(null));
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
     ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
 
@@ -141,15 +159,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/DocumentsS3Bucket", BUCKET_NAME);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/OcrBucket", BUCKET_NAME);
 
-    Map<String, String> env = new HashMap<>();
-    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    String typeSenseHost = "http://localhost:" + TypeSenseExtension.getMappedPort();
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiEndpoint",
+        typeSenseHost);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
 
-    processor = new DocumentActionsProcessor(env, Region.US_EAST_1, null, dbBuilder,
-        TestServices.getS3Connection(null), TestServices.getSsmConnection(null),
-        TestServices.getSnsConnection(null));
+    typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, credentials);
   }
 
   /**
@@ -165,15 +180,33 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("GET")).respond(callback);
   }
 
+  private static void initProcessor(final String module) throws URISyntaxException {
+    Map<String, String> env = new HashMap<>();
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("MODULE_" + module, "true");
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+
+    processor = new DocumentActionsProcessor(env, Region.US_EAST_1, credentials, dbBuilder,
+        TestServices.getS3Connection(null), TestServices.getSsmConnection(null),
+        TestServices.getSnsConnection(null));
+  }
+
   /** {@link LambdaContextRecorder}. */
   private LambdaContextRecorder context;
 
   /**
-   * before.
+   * BeforeEach.
+   * 
+   * @throws Exception Exception
    */
   @BeforeEach
-  public void before() {
+  public void beforeEach() throws Exception {
     this.context = new LambdaContextRecorder();
+    callback.reset();
+
+    initProcessor("fulltext");
   }
 
   /**
@@ -229,7 +262,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Fulltext plain/text document.
+   * Handle Fulltext(Opensearch) plain/text document.
    * 
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
@@ -453,6 +486,57 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals(ActionStatus.COMPLETE,
             actionsService.getActions(siteId, documentId).get(0).status());
       }
+    }
+  }
+
+  /**
+   * Handle Fulltext(Typesense) plain/text document.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandle07() throws IOException, URISyntaxException {
+    initProcessor("typesense");
+
+    String content = "this is some data";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      HttpRequest lastRequest = callback.getLastRequest();
+      assertNull(lastRequest);
+
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      HttpResponse<String> response = typesense.getDocument(siteId, documentId);
+      assertEquals("200", String.valueOf(response.statusCode()));
+
+      Map<String, String> body = gson.fromJson(response.body(), Map.class);
+      assertEquals(documentId, body.get("id"));
+      assertEquals(content, body.get("content"));
     }
   }
 }

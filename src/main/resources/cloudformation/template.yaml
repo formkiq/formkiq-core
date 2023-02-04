@@ -426,6 +426,24 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  TypesenseApiKeyParameter:
+    Type: AWS::SSM::Parameter
+    Condition: CreateResources
+    Properties:
+      Description: "Typesense API Key"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/typesense/ApiKey"
+      Type: String
+      Value:
+        Ref: TypesenseApiKey
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod

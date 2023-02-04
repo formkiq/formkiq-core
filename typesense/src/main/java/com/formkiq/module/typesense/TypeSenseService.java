@@ -67,6 +67,16 @@ public interface TypeSenseService {
   HttpResponse<String> deleteDocument(String siteId, String documentId) throws IOException;
 
   /**
+   * Get Document.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link HttpResponse}
+   * @throws IOException IOException
+   */
+  HttpResponse<String> getDocument(String siteId, String documentId) throws IOException;
+
+  /**
    * Full text search.
    * 
    * @param siteId {@link String}

@@ -135,6 +135,29 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  TypesenseApiEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Condition: CreateResources
+    Properties:
+      Description: "Typesense API Endpoint"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/typesense/ApiEndpoint"
+      Type: String
+      Value:
+        Fn::If:
+        - CreateResources
+        - Fn::GetAtt:
+          - ApiGateway
+          - ApiEndpoint
+        - ""
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   TypesenseLambdaRole:
     Type: AWS::IAM::Role
     Condition: CreateResources

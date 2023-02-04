@@ -26,6 +26,8 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.http.HttpResponseStatus.is2XX;
+import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,6 +36,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +77,8 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.UpdateFulltext;
@@ -109,6 +114,8 @@ import software.amazon.awssdk.regions.Region;
         fields = {@ReflectableField(name = "content"), @ReflectableField(name = "contentUrls")})})
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void> {
 
+  /** Default Maximum for Typesense Content. */
+  private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link ActionsService}. */
   private ActionsService actionsService;
   /** S3 Documents Bucket. */
@@ -129,6 +136,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private String ocrBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache serviceCache;
+  /** {@link TypeSenseService}. */
+  private TypeSenseService typesense;
 
   /**
    * constructor.
@@ -159,9 +170,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
-    AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
+    this.serviceCache = new AwsServiceCache().environment(map);
     DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
-    DocumentVersionService versionService = dsExtension.loadService(serviceCache);
+    DocumentVersionService versionService = dsExtension.loadService(this.serviceCache);
 
     this.s3Service = new S3Service(s3);
     this.documentService =
@@ -173,6 +184,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;
     SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
+
+    String typeSenseHost =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiEndpoint");
+    String typeSenseApiKey =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
+
+    this.typesense =
+        new TypeSenseServiceImpl(typeSenseHost, typeSenseApiKey, awsRegion, awsCredentials);
 
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
@@ -285,6 +304,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return urls;
   }
 
+  private int getCharacterMax(final Action action) {
+    Map<String, String> parameters = notNull(action.parameters());
+    return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
+  }
+
   /**
    * Get ParseTypes from {@link Action} parameters.
    * 
@@ -381,16 +405,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
       List<String> contentUrls = findContentUrls(siteId, item);
 
-      UpdateFulltext fulltext = new UpdateFulltext().contentUrls(contentUrls);
+      boolean moduleFulltext = this.serviceCache.hasModule("fulltext");
 
-      UpdateDocumentFulltextRequest req = new UpdateDocumentFulltextRequest().siteId(siteId)
-          .documentId(documentId).document(fulltext);
-
-      boolean updateDocumentFulltext = this.formkiqClient.updateDocumentFulltext(req);
-      if (updateDocumentFulltext) {
-        logger.log(String.format("successfully processed action %s", action.type()));
+      if (moduleFulltext) {
+        updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
       } else {
-        throw new IOException("unable to update Document Fulltext");
+        updateTypesense(siteId, documentId, action, contentUrls);
       }
 
       List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
@@ -535,6 +555,87 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       }
 
     } catch (URISyntaxException e) {
+      throw new IOException(e);
+    }
+  }
+
+  /**
+   * Update Document Content to Opensearch.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void updateOpensearchFulltext(final LambdaLogger logger, final String siteId,
+      final String documentId, final Action action, final List<String> contentUrls)
+      throws IOException, InterruptedException {
+
+    UpdateFulltext fulltext = new UpdateFulltext().contentUrls(contentUrls);
+
+    UpdateDocumentFulltextRequest req = new UpdateDocumentFulltextRequest().siteId(siteId)
+        .documentId(documentId).document(fulltext);
+
+    boolean updateDocumentFulltext = this.formkiqClient.updateDocumentFulltext(req);
+    if (updateDocumentFulltext) {
+      logger.log(String.format("successfully processed action %s", action.type()));
+    } else {
+      throw new IOException("unable to update Document Fulltext");
+    }
+  }
+
+  /**
+   * Update Typesense Content.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @throws IOException IOException
+   */
+  private void updateTypesense(final String siteId, final String documentId, final Action action,
+      final List<String> contentUrls) throws IOException {
+
+    try {
+      StringBuilder sb = new StringBuilder();
+
+      for (String contentUrl : contentUrls) {
+        HttpRequest req =
+            HttpRequest.newBuilder(new URI(contentUrl)).timeout(Duration.ofMinutes(1)).build();
+        HttpResponse<String> response =
+            HttpClient.newBuilder().build().send(req, BodyHandlers.ofString());
+        sb.append(response.body());
+      }
+
+      int characterMax = getCharacterMax(action);
+
+      String content =
+          characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
+              : sb.toString();
+
+      HttpResponse<String> response =
+          this.typesense.updateDocument(siteId, documentId, Map.of("content", content));
+
+      if (!is2XX(response)) {
+        response = this.typesense.addDocument(siteId, documentId, Map.of("content", content));
+
+        if (is404(response)) {
+          response = this.typesense.addCollection(siteId);
+
+          if (is2XX(response)) {
+            response = this.typesense.addDocument(siteId, documentId, Map.of("content", content));
+          }
+
+          if (!is2XX(response)) {
+            throw new IOException(response.body());
+          }
+        }
+      }
+
+    } catch (URISyntaxException | InterruptedException e) {
       throw new IOException(e);
     }
   }
