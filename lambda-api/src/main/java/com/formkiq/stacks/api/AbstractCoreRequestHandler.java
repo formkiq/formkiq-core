@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -192,34 +189,36 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     DynamoDbConnectionBuilder db =
         new DynamoDbConnectionBuilder().setRegion(region).setCredentials(credentialsProvider)
             .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(db));
 
     SsmConnectionBuilder ssm = new SsmConnectionBuilder().setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("ssm"));
-
-    S3ConnectionBuilder s3 = new S3ConnectionBuilder().setRegion(region)
-        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
+    AwsServiceCache.register(SsmConnectionBuilder.class,
+        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
 
     SqsConnectionBuilder sqs = new SqsConnectionBuilder().setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sqs"));
+    AwsServiceCache.register(SqsConnectionBuilder.class,
+        new ClassServiceExtension<SqsConnectionBuilder>(sqs));
+
+    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
+    if (credentialsProvider != null) {
+      AwsServiceCache.register(AwsCredentials.class,
+          new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
+    }
 
     SnsConnectionBuilder sns = new SnsConnectionBuilder().setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
 
-    AwsServiceCache.register(AwsCredentials.class,
-        new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
-
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(db));
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    AwsServiceCache.register(SsmConnectionBuilder.class,
-        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
-    AwsServiceCache.register(SqsConnectionBuilder.class,
-        new ClassServiceExtension<SqsConnectionBuilder>(sqs));
-
-    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension(sns));
 
+    S3ConnectionBuilder s3 = new S3ConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
+
+    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
     AwsServiceCache.register(SqsService.class, new SqsServiceExtension());

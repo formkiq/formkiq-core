@@ -24,7 +24,6 @@
 package com.formkiq.aws.s3;
 
 import java.net.URI;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -42,8 +41,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner.Builder;
  */
 public class S3ConnectionBuilder {
 
-  /** {@link AwsCredentials}. */
-  private AwsCredentials credentials;
   /** S3 Region. */
   private Region region;
   /** {@link S3ClientBuilder}. */
@@ -86,15 +83,6 @@ public class S3ConnectionBuilder {
   }
 
   /**
-   * Get {@link AwsCredentials}.
-   * 
-   * @return {@link AwsCredentials}
-   */
-  public AwsCredentials getCredentials() {
-    return this.credentials;
-  }
-
-  /**
    * Get Region.
    * 
    * @return {@link Region}
@@ -119,7 +107,6 @@ public class S3ConnectionBuilder {
    * @return {@link S3ConnectionBuilder}
    */
   public S3ConnectionBuilder setCredentials(final AwsCredentialsProvider cred) {
-    this.credentials = cred.resolveCredentials();
     this.builder = this.builder.credentialsProvider(cred);
     this.presignerBuilder = this.presignerBuilder.credentialsProvider(cred);
     return this;
