@@ -65,6 +65,12 @@ Parameters:
     Description: (optional) Random string of characters for https://typesense.org API access 
     Default: ""
 
+  TypesenseMemory:
+    Type: Number
+    Description: The amount of memory used by Typesense Fargate Container function (GB)
+    Default: 1024
+    AllowedValues: ["1024", "2048", "3072", "4096", "5120", "6144", "7168", "8192", "16384", "32768"]
+    
   CapacityProvider:
     Description: AWS Fargate capacity provider to use, either the FARGATE or FARGATE_SPOT 
     Default: "FARGATE_SPOT"
@@ -419,6 +425,8 @@ Resources:
           Ref: VpcStackName
         ECSCluster:
           Ref: ECSCluster
+        TypesenseMemory:
+          Ref: TypesenseMemory
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
