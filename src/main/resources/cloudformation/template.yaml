@@ -66,9 +66,9 @@ Parameters:
     Default: ""
 
   TypesenseMemory:
-    Type: Number
-    Description: The amount of memory used by Typesense Fargate Container function (GB)
-    Default: 1024
+    Type: String
+    Description: The amount of memory used by Typesense (GB). (Suggested to be 2-3 times the size of your data)
+    Default: "1024"
     AllowedValues: ["1024", "2048", "3072", "4096", "5120", "6144", "7168", "8192", "16384", "32768"]
     
   CapacityProvider:
@@ -77,6 +77,14 @@ Parameters:
     Type: String
     AllowedValues: ["FARGATE_SPOT", "FARGATE"]
     
+Conditions:
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
 Resources:
 
   EditionParameter:
@@ -436,16 +444,17 @@ Resources:
 
   TypesenseApiKeyParameter:
     Type: AWS::SSM::Parameter
+    Condition: HasTypesenseApiKey
     Properties:
       Description: "Typesense API Key"
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/typesense/ApiKey"
       Type: String
-      Value:
+      Value:      
         Ref: TypesenseApiKey
       Tags:
         Application: 
-          Fn::Sub: "FormKiQ ${FormKiQType}"
+          Fn::Sub: "FormKiQ Core"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
         StackName: 

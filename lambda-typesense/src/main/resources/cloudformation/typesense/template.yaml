@@ -40,9 +40,9 @@ Parameters:
     Description: TypeSense API Key
     
   TypesenseMemory:
-    Type: Number
+    Type: String
     Description: The amount of memory used by Typesense Fargate Container function (GB)
-    Default: 1024
+    Default: "1024"
     AllowedValues: ["1024", "2048", "3072", "4096", "5120", "6144", "7168", "8192", "16384", "32768"]
 
   VpcStackName:
@@ -55,25 +55,25 @@ Parameters:
     
 Mappings: 
   TypesenseMap: 
-    1024: 
+    "1024": 
       "CPU": "512"
-    2048: 
+    "2048": 
       "CPU": "1024"
-    3072: 
+    "3072": 
       "CPU": "1024"
-    4096: 
+    "4096": 
       "CPU": "2048"
-    5120: 
+    "5120": 
       "CPU": "2048"
-    6144: 
+    "6144": 
       "CPU": "2048"
-    7168: 
+    "7168": 
       "CPU": "2048"
-    8192: 
+    "8192": 
       "CPU": "4096"
-    16384: 
+    "16384": 
       "CPU": "8192"
-    32768: 
+    "32768": 
       "CPU": "16384"
 
 Conditions:
