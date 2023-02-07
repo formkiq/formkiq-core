@@ -2467,6 +2467,11 @@
                 indexType:
                   type: string
                   description: Searches in an index
+                  enum:
+                  - folder
+                indexFilterBeginsWith:
+                  type: string
+                  description: Returns index records that begins with a particular substring
             DocumentSearchItemTag:
               required:
               - key

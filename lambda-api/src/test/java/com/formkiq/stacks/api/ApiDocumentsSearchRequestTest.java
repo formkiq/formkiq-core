@@ -600,7 +600,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * /search meta data.
+   * /search meta 'folder' data.
    *
    * @throws Exception an error has occurred
    */
@@ -654,13 +654,83 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Text Fulltext search.
+   * /search meta 'folder' data & folders only.
    *
    * @throws Exception an error has occurred
    */
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleSearchRequest14() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String username = "joe";
+
+      for (String path : Arrays.asList("a/b/test.txt", "a/c/test.txt", "a/test.txt")) {
+        String documentId = UUID.randomUUID().toString();
+        DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
+        document.setPath(path);
+        getDocumentService().saveDocument(siteId, document, null);
+      }
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest().query(new SearchQuery()
+          .meta(new SearchMetaCriteria().indexType("folder").eq("a").indexFilterBeginsWith("ff#")));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(2, documents.size());
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+
+      assertEquals("b", documents.get(0).get("path"));
+      assertEquals("true", documents.get(0).get("folder").toString());
+      assertNotNull(documents.get(0).get("documentId"));
+
+      assertEquals("c", documents.get(1).get("path"));
+      assertEquals("true", documents.get(1).get("folder").toString());
+      assertNotNull(documents.get(1).get("documentId"));
+
+      // given
+      q = new QueryRequest().query(new SearchQuery().meta(
+          new SearchMetaCriteria().indexType("folder").eq("a/").indexFilterBeginsWith("fi#")));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      response = handleRequest(event);
+
+      // then
+      m = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+
+      assertEquals("a/test.txt", documents.get(0).get("path"));
+      assertNull(documents.get(0).get("folder"));
+      assertNotNull(documents.get(0).get("documentId"));
+    }
+  }
+
+  /**
+   * Text Fulltext search.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest15() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId = UUID.randomUUID().toString();
@@ -705,7 +775,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleSearchRequest15() throws Exception {
+  public void testHandleSearchRequest16() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String text = UUID.randomUUID().toString();
@@ -741,7 +811,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleSearchRequest16() throws Exception {
+  public void testHandleSearchRequest17() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       Date now = new Date();

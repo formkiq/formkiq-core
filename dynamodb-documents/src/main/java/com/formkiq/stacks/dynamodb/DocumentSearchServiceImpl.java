@@ -454,10 +454,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     if (value != null) {
 
+      String expression = PK + " = :pk";
       Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
       values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, value)).build());
 
-      String expression = PK + " = :pk";
+      if (meta.indexFilterBeginsWith() != null) {
+        expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
+        values.put(":sk", AttributeValue.builder().s(meta.indexFilterBeginsWith()).build());
+      }
+
       QueryRequest q =
           createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE);
 

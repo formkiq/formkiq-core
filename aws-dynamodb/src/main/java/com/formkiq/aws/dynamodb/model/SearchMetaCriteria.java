@@ -32,9 +32,17 @@ public class SearchMetaCriteria {
   /** Search Tag Value Equals. */
   @Reflectable
   private String eq;
-  /** Folder Key. */
+  /**
+   * Folder Key.
+   * 
+   * @deprecated replaced with indexType = 'folder'
+   */
+  @Deprecated
   @Reflectable
   private String folder;
+  /** Begins With Filter. */
+  @Reflectable
+  private String indexFilterBeginsWith;
   /** Index Key. */
   @Reflectable
   private String indexType;
@@ -82,6 +90,26 @@ public class SearchMetaCriteria {
    */
   public SearchMetaCriteria folder(final String s) {
     this.folder = s;
+    return this;
+  }
+
+  /**
+   * Get Index 'Begins With' filter.
+   * 
+   * @return {@link String}
+   */
+  public String indexFilterBeginsWith() {
+    return this.indexFilterBeginsWith;
+  }
+
+  /**
+   * Set Index 'Begins With' filter.
+   * 
+   * @param beginsWith {@link String}
+   * @return {@link SearchMetaCriteria}
+   */
+  public SearchMetaCriteria indexFilterBeginsWith(final String beginsWith) {
+    this.indexFilterBeginsWith = beginsWith;
     return this;
   }
 
