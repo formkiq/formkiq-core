@@ -17,7 +17,7 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v3.0.0
+    Default: v3.1.0
     
   FormKiQType:
     Description: The type of FormKiQ installation
