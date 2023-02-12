@@ -65,17 +65,9 @@ public class IndicesSearchRequestHandler
     return "/indices/search";
   }
 
-  private void validatePost(final Map<String, Object> q) throws ValidationException {
-
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    if (!q.containsKey("indexType") || StringUtils.isBlank(q.get("indexType").toString())) {
-      errors.add(new ValidationErrorImpl().error("invalid body"));
-    }
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+  @Override
+  public boolean isReadonly(final String method) {
+    return "post".equals(method) || "get".equals(method) || "head".equals(method);
   }
 
   @SuppressWarnings("unchecked")
@@ -117,5 +109,18 @@ public class IndicesSearchRequestHandler
     ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(SC_OK, resp);
 
     return response;
+  }
+
+  private void validatePost(final Map<String, Object> q) throws ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    if (!q.containsKey("indexType") || StringUtils.isBlank(q.get("indexType").toString())) {
+      errors.add(new ValidationErrorImpl().error("invalid body"));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 }
