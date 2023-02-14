@@ -629,6 +629,11 @@ Resources:
             - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
           - Effect: Allow
             Action:
+            - dynamodb:PutItem
+            Resource:
+            - Ref: DocumentSyncs
+          - Effect: Allow
+            Action:
             - sqs:ReceiveMessage
             - sqs:DeleteMessage
             - sqs:GetQueueAttributes
