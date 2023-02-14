@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.Action;
@@ -484,5 +486,60 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     assertNull(resp.getNext());
     assertNull(resp.getPrevious());
     return resp;
+  }
+
+  /**
+   * Valid readonly user generate upload document signed url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload08() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      for (String documentId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+        ApiGatewayRequestEvent event = getRequest(siteId, documentId, true);
+
+        // when
+        String response = handleRequest(event);
+
+        // then
+        Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+        assertEquals("403.0", String.valueOf(m.get("statusCode")));
+
+        String body = String.valueOf(m.get("body"));
+        assertTrue(body.contains("\"message\":\"fkq access denied (groups:"));
+      }
+    }
+  }
+
+  /**
+   * Get /documents/upload request.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param readonly boolean
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getRequest(final String siteId, final String documentId,
+      final boolean readonly) {
+
+    String resource = documentId != null ? "/documents/{documentId}/upload" : "/documents/upload";
+    String path = documentId != null ? "/documents/" + documentId + "/upload" : "/documents/upload";
+    String group = siteId != null ? siteId : "default";
+
+    if (readonly) {
+      group += "_read";
+    }
+
+    Map<String, String> pathMap =
+        documentId != null ? Map.of("documentId", documentId) : Collections.emptyMap();
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
+        .resource(resource).path(path).group(group).user("joesmith").pathParameters(pathMap)
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    return event;
   }
 }

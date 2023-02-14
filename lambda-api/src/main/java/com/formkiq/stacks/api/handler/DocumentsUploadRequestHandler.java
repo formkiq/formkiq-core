@@ -255,6 +255,11 @@ public class DocumentsUploadRequestHandler
   }
 
   @Override
+  public boolean isReadonly(final String method) {
+    return false;
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {

@@ -227,4 +227,9 @@ public class DocumentsIdUploadRequestHandler
       throw new BadException("Max Number of Documents reached");
     }
   }
+
+  @Override
+  public boolean isReadonly(final String method) {
+    return false;
+  }
 }
