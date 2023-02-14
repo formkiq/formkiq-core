@@ -71,7 +71,7 @@ public class PresignGetUrlConfig {
    */
   public PresignGetUrlConfig contentDispositionByPath(final String path, final boolean inline) {
     String s = inline ? "inline" : "attachment";
-    this.contentDisposition = path != null ? String.format("%s; filename=%s;", s, path) : null;
+    this.contentDisposition = path != null ? String.format("%s; filename=\"%s\"", s, path) : null;
     return this;
   }
 
