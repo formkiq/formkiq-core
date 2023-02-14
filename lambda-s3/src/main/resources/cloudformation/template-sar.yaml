@@ -631,7 +631,7 @@ Resources:
             Action:
             - dynamodb:PutItem
             Resource:
-            - Ref: DocumentSyncs
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
           - Effect: Allow
             Action:
             - sqs:ReceiveMessage
