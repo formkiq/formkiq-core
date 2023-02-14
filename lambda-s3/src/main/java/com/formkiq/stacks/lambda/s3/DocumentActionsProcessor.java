@@ -352,23 +352,21 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    String json = null;
+    LambdaLogger logger = context.getLogger();
 
-    try {
-
-      LambdaLogger logger = context.getLogger();
-
-      if ("true".equals(System.getenv("DEBUG"))) {
-        json = this.gson.toJson(map);
-        logger.log(json);
-      }
-
-      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      processRecords(logger, records);
-
-    } catch (Exception e) {
-      e.printStackTrace();
+    if ("true".equals(System.getenv("DEBUG"))) {
+      String json = this.gson.toJson(map);
+      logger.log(json);
     }
+
+    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    try {
+      processRecords(logger, records);
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
+
 
     return null;
   }

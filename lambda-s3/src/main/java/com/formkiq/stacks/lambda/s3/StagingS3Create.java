@@ -56,8 +56,6 @@ import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -202,10 +200,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private DocumentService service;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
-  /** SQS Error Queue. */
-  private String sqsErrorQueue;
-  /** {@link SqsService}. */
-  private SqsService sqsService;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
 
@@ -217,7 +211,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SnsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
@@ -229,15 +222,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param awsCredentials {@link AwsCredentials}
    * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3Builder {@link S3ConnectionBuilder}
-   * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
    * @throws Exception Exception
    */
   protected StagingS3Create(final Map<String, String> map, final AwsCredentials awsCredentials,
       final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3Builder,
-      final SqsConnectionBuilder sqsBuilder, final SsmConnectionBuilder ssmConnectionBuilder,
-      final SnsConnectionBuilder snsBuilder) {
+      final SsmConnectionBuilder ssmConnectionBuilder, final SnsConnectionBuilder snsBuilder) {
 
     this.region = Region.of(map.get("AWS_REGION"));
     this.credentials = awsCredentials;
@@ -256,7 +247,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
     this.s3 = new S3Service(s3Builder);
-    this.sqsService = new SqsService(sqsBuilder);
     this.ssmConnection = ssmConnectionBuilder;
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService =
@@ -264,7 +254,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.folderIndexProcesor = new FolderIndexProcessorImpl(dbBuilder, documentsTable);
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
-    this.sqsErrorQueue = map.get("SQS_ERROR_URL");
     this.appEnvironment = map.get("APP_ENVIRONMENT");
   }
 
@@ -460,30 +449,15 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String json = null;
     Date date = new Date();
 
-    try {
+    LambdaLogger logger = context.getLogger();
 
-      LambdaLogger logger = context.getLogger();
-
-      if ("true".equals(System.getenv("DEBUG"))) {
-        json = this.gson.toJson(map);
-        logger.log(json);
-      }
-
-      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      processRecords(logger, date, records);
-
-    } catch (Exception e) {
-      e.printStackTrace();
-
-      if (json == null) {
-        json = this.gson.toJson(map);
-      }
-
-      if (this.sqsErrorQueue != null) {
-
-        this.sqsService.sendMessage(this.sqsErrorQueue, json);
-      }
+    if ("true".equals(System.getenv("DEBUG"))) {
+      json = this.gson.toJson(map);
+      logger.log(json);
     }
+
+    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    processRecords(logger, date, records);
 
     return null;
   }

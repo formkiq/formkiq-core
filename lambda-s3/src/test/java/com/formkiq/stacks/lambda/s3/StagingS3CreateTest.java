@@ -141,8 +141,6 @@ public class StagingS3CreateTest implements DbKeys {
   private static DynamoDbHelper dbHelper;
   /** Documents S3 Bucket. */
   private static final String DOCUMENTS_BUCKET = "documentsbucket";
-  /** SQS Sns Queue. */
-  private static final String ERROR_SQS_QUEUE = "sqserror";
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcesor;
   /** {@link Gson}. */
@@ -182,12 +180,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static String snsSqsCreateQueueUrl;
   /** SQS Sns Delete QueueUrl. */
   private static String snsSqsDeleteQueueUrl;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsBuilder;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentEventUrl;
-  /** SQS Error Url. */
-  private static String sqsErrorUrl;
   /** {@link SqsService}. */
   private static SqsService sqsService;
   /** {@link SsmConnectionBuilder}. */
@@ -237,7 +231,7 @@ public class StagingS3CreateTest implements DbKeys {
     s3 = new S3Service(s3Builder);
     syncService = new DocumentSyncServiceDynamoDb(dbBuilder, DOCUMENT_SYNCS_TABLE);
 
-    sqsBuilder = TestServices.getSqsConnection(null);
+    SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsService(sqsBuilder);
 
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
@@ -313,10 +307,6 @@ public class StagingS3CreateTest implements DbKeys {
       snsSqsCreateQueueUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
-    if (!sqsService.exists(ERROR_SQS_QUEUE)) {
-      sqsErrorUrl = sqsService.createQueue(ERROR_SQS_QUEUE).queueUrl();
-    }
-
     snsService = new SnsService(TestServices.getSnsConnection(null));
 
     snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
@@ -382,7 +372,6 @@ public class StagingS3CreateTest implements DbKeys {
     this.env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
     this.env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
     this.env.put("SNS_CREATE_TOPIC", snsCreateTopic);
-    this.env.put("SQS_ERROR_URL", sqsErrorUrl);
     this.env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     this.env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     this.env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
@@ -398,7 +387,7 @@ public class StagingS3CreateTest implements DbKeys {
     s3.deleteAllFiles(STAGING_BUCKET);
     s3.deleteAllFiles(DOCUMENTS_BUCKET);
 
-    for (String queue : Arrays.asList(sqsErrorUrl, snsSqsCreateQueueUrl, snsSqsDeleteQueueUrl)) {
+    for (String queue : Arrays.asList(snsSqsCreateQueueUrl, snsSqsDeleteQueueUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
       while (response.messages().size() > 0) {
         for (Message msg : response.messages()) {
@@ -479,8 +468,8 @@ public class StagingS3CreateTest implements DbKeys {
    * @param map {@link Map}
    */
   private void handleRequest(final Map<String, Object> map) {
-    final StagingS3Create handler = new StagingS3Create(this.env, null, dbBuilder, s3Builder,
-        sqsBuilder, ssmBuilder, snsBuilder);
+    final StagingS3Create handler =
+        new StagingS3Create(this.env, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
 
     Void result = handler.handleRequest(map, this.context);
     assertNull(result);
@@ -1314,16 +1303,6 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Handle Error.
-   */
-  @Test
-  public void testHandleError() {
-    handleRequest(null);
-    ReceiveMessageResponse response = sqsService.receiveMessages(sqsErrorUrl);
-    assertEquals(1, response.messages().size());
-  }
-
-  /**
    * S3 Object Unknown Event Unit Test.
    *
    * @throws Exception Exception
@@ -1333,8 +1312,8 @@ public class StagingS3CreateTest implements DbKeys {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
-    final StagingS3Create handler = new StagingS3Create(this.env, null, dbBuilder, s3Builder,
-        sqsBuilder, ssmBuilder, snsBuilder);
+    final StagingS3Create handler =
+        new StagingS3Create(this.env, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
 
     // when
     Void result = handler.handleRequest(map, this.context);
@@ -1402,15 +1381,12 @@ public class StagingS3CreateTest implements DbKeys {
 
     final List<Message> create = sqsService.receiveMessages(snsSqsCreateQueueUrl).messages();
     final List<Message> delete = sqsService.receiveMessages(snsSqsDeleteQueueUrl).messages();
-    final List<Message> error = sqsService.receiveMessages(sqsErrorUrl).messages();
 
     assertEquals(createCount, create.size());
     assertEquals(deleteCount, delete.size());
-    assertEquals(errorCount, error.size());
 
     List<Message> list = new ArrayList<>(create);
     list.addAll(delete);
-    list.addAll(error);
 
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> maps =

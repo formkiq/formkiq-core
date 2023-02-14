@@ -204,23 +204,15 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    String json = null;
+    LambdaLogger logger = context.getLogger();
 
-    try {
-
-      LambdaLogger logger = context.getLogger();
-
-      if (this.debug) {
-        json = this.gson.toJson(map);
-        logger.log(json);
-      }
-
-      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      processRecords(logger, records);
-
-    } catch (Exception e) {
-      e.printStackTrace();
+    if (this.debug) {
+      String json = this.gson.toJson(map);
+      logger.log(json);
     }
+
+    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    processRecords(logger, records);
 
     return null;
   }

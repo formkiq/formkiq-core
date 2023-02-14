@@ -54,8 +54,6 @@ import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
@@ -161,10 +159,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private AwsServiceCache services;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
-  /** SQS Url to send errors to. */
-  private String sqsErrorUrl;
-  /** {@link SqsService}. */
-  private SqsService sqsService;
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -172,7 +166,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SqsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
         new SnsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
 
@@ -184,13 +177,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param dbBuilder {@link DynamoDbConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
    * @param ssmBuilder {@link SsmConnectionBuilder}
-   * @param sqsBuilder {@link SqsConnectionBuilder}
    * @param snsBuilder {@link SnsConnectionBuilder}
    */
   protected DocumentsS3Update(final Map<String, String> map, final AwsCredentials creds,
       final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3builder,
-      final SsmConnectionBuilder ssmBuilder, final SqsConnectionBuilder sqsBuilder,
-      final SnsConnectionBuilder snsBuilder) {
+      final SsmConnectionBuilder ssmBuilder, final SnsConnectionBuilder snsBuilder) {
 
     this.services = new AwsServiceCache().environment(map);
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
@@ -204,11 +195,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     DocumentVersionService versionService = dsExtension.loadService(serviceCache);
 
     this.service = new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"), versionService);
-    this.sqsErrorUrl = map.get("SQS_ERROR_URL");
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
-    this.sqsService = new SqsService(sqsBuilder);
     this.documentEventService = new DocumentEventServiceSns(snsBuilder);
     this.notificationService =
         new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
@@ -295,34 +284,34 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     LambdaLogger logger = context.getLogger();
 
-    try {
+    boolean debug = "true".equals(System.getenv("DEBUG"));
+    if (debug) {
+      String json = this.gson.toJson(map);
+      logger.log(json);
+    }
 
-      boolean debug = "true".equals(System.getenv("DEBUG"));
-      if (debug) {
-        String json = this.gson.toJson(map);
-        logger.log(json);
-      }
+    List<Map<String, Object>> list = processRecords(logger, map);
 
-      List<Map<String, Object>> list = processRecords(logger, map);
+    for (Map<String, Object> e : list) {
 
-      for (Map<String, Object> e : list) {
+      Object eventName = e.getOrDefault("eventName", null);
+      Object bucket = e.getOrDefault("s3bucket", null);
+      Object key = e.getOrDefault("s3key", null);
 
-        Object eventName = e.getOrDefault("eventName", null);
-        Object bucket = e.getOrDefault("s3bucket", null);
-        Object key = e.getOrDefault("s3key", null);
+      if (bucket != null && key != null) {
 
-        if (bucket != null && key != null) {
+        boolean create =
+            eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
 
-          boolean create =
-              eventName != null && eventName.toString().toLowerCase().contains("objectcreated");
+        boolean remove =
+            eventName != null && eventName.toString().toLowerCase().contains("objectremove");
 
-          boolean remove =
-              eventName != null && eventName.toString().toLowerCase().contains("objectremove");
+        if (debug) {
+          logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
+              bucket, key));
+        }
 
-          if (debug) {
-            logger.log(String.format("processing event %s for file %s in bucket %s", eventName,
-                bucket, key));
-          }
+        try {
 
           if (remove) {
 
@@ -331,13 +320,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           } else {
             processS3File(logger, create, bucket.toString(), key.toString(), debug);
           }
+
+        } catch (IOException | InterruptedException ex) {
+          throw new RuntimeException(ex);
         }
       }
-
-    } catch (IOException | InterruptedException | RuntimeException e) {
-
-      e.printStackTrace();
-      sendToDlq(map);
     }
 
     return null;
@@ -357,7 +344,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @throws FileNotFoundException FileNotFoundException
    */
   private Map<String, Object> processEvent(final LambdaLogger logger,
-      final Map<String, Object> event) throws FileNotFoundException {
+      final Map<String, Object> event) {
 
     Map<String, Object> map = new HashMap<>();
     String eventName = event.get("eventName").toString();
@@ -381,7 +368,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    */
   @SuppressWarnings("unchecked")
   private List<Map<String, Object>> processRecords(final LambdaLogger logger,
-      final List<Map<String, Object>> records) throws FileNotFoundException {
+      final List<Map<String, Object>> records) {
 
     List<Map<String, Object>> list = new ArrayList<>();
 
@@ -414,7 +401,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    */
   @SuppressWarnings("unchecked")
   private List<Map<String, Object>> processRecords(final LambdaLogger logger,
-      final Map<String, Object> map) throws FileNotFoundException {
+      final Map<String, Object> map) {
 
     List<Map<String, Object>> list = new ArrayList<>();
 
@@ -595,13 +582,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     if (CREATE.equals(eventType)) {
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
       this.notificationService.publishNextActionEvent(actions, siteId, documentId);
-    }
-  }
-
-  private void sendToDlq(final Map<String, Object> map) {
-    String json = this.gson.toJson(map);
-    if (this.sqsErrorUrl != null) {
-      this.sqsService.sendMessage(this.sqsErrorUrl, json);
     }
   }
 }
