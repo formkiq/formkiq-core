@@ -186,7 +186,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
 
     String typeSenseHost =
-        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiEndpoint");
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/TypesenseEndpoint");
     String typeSenseApiKey =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
 

@@ -98,7 +98,14 @@ Resources:
     Properties:
       ApiId: 
         Ref: WebSocketApi
-      
+
+  StageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/APIWebsocketAccessLogs"
+        
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -109,6 +116,12 @@ Resources:
         Ref: Deployment
       ApiId: 
         Ref: WebSocketApi
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - StageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -193,7 +206,14 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-          
+
+  ApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${ApiFunction}"
+      RetentionInDays: 90
+      
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:

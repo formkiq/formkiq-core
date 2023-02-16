@@ -76,7 +76,14 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-        
+
+  EmailNotifyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${EmailNotify}"
+      RetentionInDays: 90
+      
   EmailNotify:
     Type: AWS::Serverless::Function
     DependsOn:

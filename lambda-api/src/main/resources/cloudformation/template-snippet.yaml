@@ -124,7 +124,21 @@ Conditions:
       - Condition: HasTypesenseApiKey
       
 Resources:        
-        
+
+  DocumentsApiRequestsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${DocumentsApiRequests}"
+      RetentionInDays: 90
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      
   DocumentsApiRequests:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -197,6 +211,20 @@ Resources:
         Ref: DocumentsApiRequests
       Principal: apigateway.amazonaws.com
 
+  DocumentsStageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/APIDocumentsHttpAccessLogs"
+      
+  IamDocumentsStageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/APIDocumentsIamAccessLogs"
+      
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -206,6 +234,12 @@ Resources:
       Description: 
         Fn::Sub: "Documents API ${AppEnvironment}"
       StageName: "$default"
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - DocumentsStageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
     
   IamDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
@@ -216,7 +250,31 @@ Resources:
       Description: 
         Fn::Sub: "Documents IAM API ${AppEnvironment}"
       StageName: "$default"
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - IamDocumentsStageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
+
+  DocumentsHttpApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ID for the API endpoint that uses Cognito authorization"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpId"
+      Type: String
+      Value: 
+        Ref: DocumentsHttpApi
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -363,6 +421,7 @@ Resources:
               - sns:Publish
               Resource:
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -372,6 +431,23 @@ Resources:
       Type: String
       Value: 
         Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentsIamApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ID for the API endpoint that uses IAM authorization"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamId"
+      Type: String
+      Value: 
+        Ref: DocumentsIamApi
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"

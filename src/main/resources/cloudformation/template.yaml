@@ -459,6 +459,19 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
+
+  Monitoring:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - TypeSenseService
+      - CoreStorage
+      - CoreApi
+      - Cognito
+    Properties:
+      Location: ./monitoring.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
           
 Outputs:
   AppEnvironment:

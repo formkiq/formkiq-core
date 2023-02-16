@@ -160,7 +160,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/OcrBucket", BUCKET_NAME);
 
     String typeSenseHost = "http://localhost:" + TypeSenseExtension.getMappedPort();
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiEndpoint",
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
         typeSenseHost);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
 

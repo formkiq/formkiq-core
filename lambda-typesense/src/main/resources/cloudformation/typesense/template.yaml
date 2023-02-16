@@ -99,6 +99,13 @@ Conditions:
       - Condition: CreateResources
 
 Resources:
+
+  TypesenseProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${TypesenseProcessor}"
+      RetentionInDays: 90
       
   TypesenseProcessor:
     Type: AWS::Serverless::Function
@@ -170,7 +177,7 @@ Resources:
     Properties:
       Description: "Typesense API Endpoint"
       Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/typesense/ApiEndpoint"
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/TypesenseEndpoint"
       Type: String
       Value:
         Fn::If:
@@ -178,6 +185,29 @@ Resources:
         - Fn::GetAtt:
           - ApiGateway
           - ApiEndpoint
+        - ""
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  TypesenseApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Condition: CreateResources
+    Properties:
+      Description: "Typesense API ID"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/TypesenseApiId"
+      Type: String
+      Value:
+        Fn::If:
+        - CreateResources
+        - Fn::GetAtt:
+          - ApiGateway
+          - ApiId
         - ""
       Tags:
         Application: 
@@ -466,6 +496,7 @@ Resources:
       ProtocolType: HTTP
       Name:
         Fn::Sub: "${AWS::StackName} Typesense - ${AppEnvironment}"
+      Description: "FormKiQ Typesense API"
 
   Integration:
     Type: AWS::ApiGatewayV2::Integration
@@ -485,6 +516,13 @@ Resources:
           - Arn
       PayloadFormatVersion: "1.0"
 
+  StageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/APITypeSenseAccessLogs"
+        
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     Condition: CreateResources
@@ -493,6 +531,12 @@ Resources:
         Ref: ApiGateway
       StageName: $default
       AutoDeploy: true
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - StageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
   Route:
     Type: AWS::ApiGatewayV2::Route

@@ -199,6 +199,30 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}"
 
+  DocumentActionsProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda function to process Document Actions requests"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/DocumentActionsProcessor"
+      Type: String
+      Value: 
+        Ref: DocumentActionsProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentActionsProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${DocumentActionsProcessor}"
+      RetentionInDays: 90
+      
   DocumentActionsProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -247,7 +271,14 @@ Resources:
               - DocumentActionsQueue
               - Arn
             BatchSize: 10          
-          
+
+  StagingS3CreateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${StagingS3Create}"
+      RetentionInDays: 90
+      
   StagingS3Create:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -325,7 +356,14 @@ Resources:
         - ''
         - - 'arn:aws:s3:::'
           - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
-              
+
+  DocumentsS3UpdateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${DocumentsS3Update}"
+      RetentionInDays: 90
+
   DocumentsS3Update:
     Type: AWS::Serverless::Function
     DependsOn:
