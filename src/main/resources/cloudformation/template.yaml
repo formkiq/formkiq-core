@@ -459,7 +459,24 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-
+          
+  CognitoApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito API ID"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/CognitoApiId"
+      Type: String
+      Value:
+        Fn::GetAtt: 
+        - Cognito
+        - Outputs.HttpApi
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   Monitoring:
     Type: AWS::Serverless::Application
     DependsOn:
