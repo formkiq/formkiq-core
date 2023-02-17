@@ -75,13 +75,7 @@ Resources:
       VpcId:
         Ref: Vpc
       InternetGatewayId:
-        Ref: InternetGateway 
-        
-  EcsServiceLinkedRole:
-    Type: "AWS::IAM::ServiceLinkedRole"
-    Properties:
-      AWSServiceName: "ecs.amazonaws.com"
-      Description: "Role to enable Amazon ECS to manage your cluster."
+        Ref: InternetGateway
       
   CloudMapNamespace:
     Type: AWS::ServiceDiscovery::PrivateDnsNamespace
