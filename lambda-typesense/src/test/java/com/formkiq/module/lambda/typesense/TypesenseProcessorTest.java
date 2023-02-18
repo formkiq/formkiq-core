@@ -308,4 +308,28 @@ class TypesenseProcessorTest {
       assertNotNull(syncs.getResults().get(1).getSyncDate());
     }
   }
+
+  /**
+   * Attempt to insert subdocument, should skip.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest06() throws Exception {
+    // given
+    String siteId = null;
+    String documentId = "0a5f8534-4c27-4fb3-b50f-09015dd96927";
+
+    Map<String, Object> map = loadRequest("/insert_subdocument.json", null, null);
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    List<String> documents = service.searchFulltext(siteId, documentId, MAX);
+    assertEquals(0, documents.size());
+
+    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    assertEquals(0, syncs.getResults().size());
+  }
 }

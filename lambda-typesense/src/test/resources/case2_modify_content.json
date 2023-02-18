@@ -78,7 +78,7 @@
                 "SizeBytes": 775,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-12-25T04:46:44.073"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:1111111111111111:table/formkiq-core-dev-documents/stream/2022-12-25T04:46:44.073"
         }
     ]
 }

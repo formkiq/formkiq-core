@@ -115,6 +115,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
     String message = added ? DocumentSyncService.MESSAGE_ADDED_METADATA
         : DocumentSyncService.MESSAGE_UPDATED_METADATA;
+
     this.syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status,
         syncType, userId, message);
   }
@@ -332,11 +333,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
+  @SuppressWarnings("unchecked")
   private void writeToIndex(final LambdaLogger logger, final String siteId, final String documentId,
       final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
       throws IOException {
 
-    boolean isDocument = data.get(SK).toString().contains("document");
+    Map<String, String> map = (Map<String, String>) data.get(SK);
+    boolean isDocument = map.containsKey("S") && map.get("S").equals("document");
 
     removeDynamodbKeys(data);
 

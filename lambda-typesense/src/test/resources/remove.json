@@ -43,7 +43,7 @@
                 "SizeBytes": 334,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:1111111111111111:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
         },
         {
             "eventID": "eeeec93d4e3bc9db6ff3ea33554b7eb3",
@@ -103,7 +103,7 @@
                 "SizeBytes": 516,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:1111111111111111:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
         },
         {
             "eventID": "1821122b25d0848830ef1ece23f99fc5",
@@ -163,7 +163,7 @@
                 "SizeBytes": 452,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:1111111111111111:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
         }
     ]
 }
