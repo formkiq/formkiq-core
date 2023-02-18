@@ -273,6 +273,8 @@ Resources:
           - Effect: Allow
             Action:
             - dynamodb:PutItem
+            - dynamodb:Query
+            - dynamodb:DeleteItem
             Resource:
             - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
             
