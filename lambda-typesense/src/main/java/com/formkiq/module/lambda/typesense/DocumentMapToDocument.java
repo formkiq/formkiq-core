@@ -68,9 +68,12 @@ public class DocumentMapToDocument implements Function<Map<String, Object>, Map<
 
     metadata.forEach(m -> {
       Map<String, Object> values = (Map<String, Object>) data.get(m);
-      String value = values.get("S").toString();
-      // document.add(new StringField(m, value, Field.Store.YES));
-      document.put(m, value);
+
+      if (values.containsKey("S")) {
+        String value = values.get("S").toString();
+        // document.add(new StringField(m, value, Field.Store.YES));
+        document.put(m, value);
+      }
     });
 
     return document;
