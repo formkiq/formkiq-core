@@ -157,16 +157,14 @@ Resources:
 
   TypesenseProcessorParameter:
     Type: AWS::SSM::Parameter
+    Condition: CreateResources
     Properties:
       Description: "Lambda for processing records for Typesense"
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/lambda/TypesenseProcessor"
       Type: String
       Value:
-        Fn::If:
-        - CreateResources
-        - Ref: TypesenseProcessor
-        - ""
+        Ref: TypesenseProcessor
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -177,18 +175,16 @@ Resources:
 
   TypesenseApiEndpointParameter:
     Type: AWS::SSM::Parameter
+    Condition: CreateResources
     Properties:
       Description: "Typesense API Endpoint"
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/api/TypesenseEndpoint"
       Type: String
       Value:
-        Fn::If:
-        - CreateResources
-        - Fn::GetAtt:
+        Fn::GetAtt:
           - ApiGateway
           - ApiEndpoint
-        - ""
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
