@@ -38,6 +38,7 @@ Parameters:
   TypesenseApiKey:
     Type: String
     Description: TypeSense API Key
+    AllowedPattern: ".+"
     
   TypesenseMemory:
     Type: String
@@ -47,7 +48,8 @@ Parameters:
 
   VpcStackName:
     Type: String
-    Description: FormKiQ VPC Stack Name 
+    Description: FormKiQ VPC Stack Name
+    AllowedPattern: ".+"
 
   ECSCluster:
     Type: String
@@ -156,14 +158,16 @@ Resources:
 
   TypesenseProcessorParameter:
     Type: AWS::SSM::Parameter
-    Condition: CreateResources
     Properties:
       Description: "Lambda for processing records for Typesense"
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/lambda/TypesenseProcessor"
       Type: String
-      Value: 
-        Ref: TypesenseProcessor
+      Value:
+        Fn::If:
+        - CreateResources
+        - Ref: TypesenseProcessor
+        - ""
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -174,7 +178,6 @@ Resources:
 
   TypesenseApiEndpointParameter:
     Type: AWS::SSM::Parameter
-    Condition: CreateResources
     Properties:
       Description: "Typesense API Endpoint"
       Name: 
