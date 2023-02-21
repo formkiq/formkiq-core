@@ -102,6 +102,7 @@ Resources:
 
   TypesenseProcessorLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: CreateResources
     Properties:
       LogGroupName: 
         Fn::Sub: "/${AWS::StackName}/${TypesenseProcessor}"
