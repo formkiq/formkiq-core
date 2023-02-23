@@ -88,6 +88,10 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
         DynamicObject config = configService.get(siteId);
         config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+
+        boolean write = authorizer.getWriteSiteIds().contains(siteId);
+        config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
+        
         return config;
       }).collect(Collectors.toList());
 

@@ -2470,7 +2470,7 @@ Resources:
                   type: "string"
                   description: "Searches in an index"
                   enum:
-                    - folder                  
+                    - folder
                 indexFilterBeginsWith:
                   type: "string"
                   description: "Returns index records that begins with a particular substring"
@@ -3233,6 +3233,12 @@ Resources:
                 siteId:
                   type: "string"
                   description: "Site Identifier"
+                permission:
+                  type: "string"
+                  description: "SiteId permission level"
+                  enum:
+                    - READ_WRITE
+                    - READ_ONLY
                 uploadEmail:
                   type: "string"
                   description: "SiteId document upload email address"
