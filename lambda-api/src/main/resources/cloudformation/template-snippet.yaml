@@ -104,8 +104,20 @@ Parameters:
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name 
+
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
     
 Conditions:
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: CertificateStackName
+        - ''
+        
   HasVpcStackName:
     Fn::Not:
       - Fn::Equals: 
@@ -282,8 +294,12 @@ Resources:
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
-      Value: 
-        Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Value:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -300,7 +316,11 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsPublicHttpUrl"
       Type: String
       Value: 
-        Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -430,7 +450,11 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
       Value: 
-        Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -635,8 +659,16 @@ Outputs:
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value: 
-      Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Fn::If:
+        - HasCertificateStackName
+        - Fn::ImportValue:
+            Fn::Sub: '${CertificateStackName}-IamApiDomain'
+        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"    
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
-    Value: 
-      Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Value:
+      Fn::If:
+        - HasCertificateStackName
+        - Fn::ImportValue:
+            Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+        - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
