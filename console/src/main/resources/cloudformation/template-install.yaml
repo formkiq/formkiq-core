@@ -86,6 +86,19 @@ Parameters:
     Type: String
     Default: "cognito"
     
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
+
+Conditions:
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: CertificateStackName
+        - ''
+        
 Resources:
 
   ConsoleInstallerParameter:
@@ -248,8 +261,20 @@ Resources:
   ConsoleInstallerRef:
     Type: Custom::ConsoleInstallerRef
     Properties:
-      Nonce: 
+      Nonce:
         Ref: ConsoleVersion
+      HttpApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - ''
+      IamApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - ''
       ServiceToken:
         Fn::GetAtt:
         - ConsoleInstaller
