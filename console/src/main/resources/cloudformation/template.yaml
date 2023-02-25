@@ -190,7 +190,7 @@ Resources:
                   Fn::Sub: '${CertificateStackName}-ConsoleDomain'
           - Ref: "AWS::NoValue"
         ViewerCertificate:
-          ACMCertificateArn:
+          AcmCertificateArn:
             Fn::If:
             - HasCertificateStackName
             - Fn::ImportValue:
