@@ -214,6 +214,14 @@ Resources:
           Fn::GetAtt:
           - Cognito
           - Outputs.Domain
+        HostedZoneId:
+          Fn::GetAtt:
+          - CoreConsole
+          - Outputs.HostedZoneId
+        CloudFrontDistributionDomainName: 
+          Fn::GetAtt:
+          - CoreConsole
+          - Outputs.CloudFrontDistributionDomainName                       
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 

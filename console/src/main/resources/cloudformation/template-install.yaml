@@ -91,12 +91,28 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
+  HostedZoneId:
+    Description: "Route53 Hosted Zone Id in which to add A record"
+    Type: String
+    Default: ""
+    
+  CloudFrontDistributionDomainName:
+    Description: The cloudfront domain name of the resource
+    Type: String
+    Default: ""
+    
 Conditions:
 
   HasCertificateStackName:
     Fn::Not:
       - Fn::Equals: 
         - Ref: CertificateStackName
+        - ''
+
+  HasHostedZoneId:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: HostedZoneId
         - ''
         
 Resources:
@@ -279,3 +295,19 @@ Resources:
         Fn::GetAtt:
         - ConsoleInstaller
         - Arn
+        
+  CloudFrontDistributionRecordSet:
+    Condition: HasHostedZoneId
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: 
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-ConsoleDomain'        
+      Type: A
+      HostedZoneId:
+        Ref: HostedZoneId
+      AliasTarget:
+        HostedZoneId: 
+          Ref: HostedZoneId
+        DNSName:
+          Ref: CloudFrontDistributionDomainName

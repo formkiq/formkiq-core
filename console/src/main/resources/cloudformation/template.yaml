@@ -37,15 +37,6 @@ Conditions:
       - Fn::Equals: 
         - Ref: CertificateStackName
         - ''
-
-  HasHostedZoneId: 
-    Fn::And:
-    - Condition: HasCertificateStackName
-    - Fn::Not:
-        - Fn::Equals: 
-          - Fn::ImportValue:
-              Fn::Sub: '${CertificateStackName}-HostedZoneId'
-          - ''
                   
 Resources:
 
@@ -164,26 +155,6 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-
-  CloudFrontDistributionRecordSet:
-    Condition: HasHostedZoneId
-    Type: AWS::Route53::RecordSet
-    Properties:
-      Name: 
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-ConsoleDomain'        
-      Type: A
-      HostedZoneId: 
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-HostedZoneId'
-      AliasTarget:
-        HostedZoneId: 
-          Fn::ImportValue:
-            Fn::Sub: '${CertificateStackName}-HostedZoneId'
-        DNSName: 
-          Fn::GetAtt: 
-          - CloudFrontDistribution
-          - DomainName
           
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -332,3 +303,17 @@ Outputs:
   ConsoleVersion:
     Value:
       Ref: ConsoleVersion
+      
+  HostedZoneId:
+    Value:
+      Fn::If:
+      - HasCertificateStackName
+      - Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-HostedZoneId'
+      - ""
+      
+  CloudFrontDistributionDomainName:
+    Value:
+      Fn::GetAtt:
+      - CloudFrontDistribution
+      - DomainName
