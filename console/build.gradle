@@ -64,7 +64,12 @@ task assembleTemplate {
 	
 	doLast {
 		copy {
-		  from layout.buildDirectory.file("src/main/resources/cloudformation/template*"), layout.projectDirectory.file("${buildDir}/console-installer.zip")
+		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+		  include "template*"
+	      into "${buildDir}/distributions/formkiq-core/sam/console"
+	    }
+	    copy {
+		  from layout.projectDirectory.file("${buildDir}/console-installer.zip")
 	      into "${buildDir}/distributions/formkiq-core/sam/console"
 	    }
 	}
