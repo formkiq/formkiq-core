@@ -204,7 +204,7 @@ Resources:
           CloudFrontDefaultCertificate:
             Fn::If:
             - HasCertificateStackName
-            - 'false'
+            - Ref: "AWS::NoValue"
             - 'true'
         Enabled: true
         HttpVersion: http2
