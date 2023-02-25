@@ -308,7 +308,6 @@ Resources:
               Fn::Sub: '${CertificateStackName}-ConsoleDomain'
           Type: A
           AliasTarget:
-            HostedZoneId: 
-              Ref: HostedZoneId
+            HostedZoneId: "Z2FDTNDATAQYW2"
             DNSName: 
               Ref: CloudFrontDistributionDomainName
