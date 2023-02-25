@@ -104,12 +104,12 @@ task assembleTemplate {
 	def sha256 = randomtext.digest('SHA-256')
 
 	doLast {
-		exec {
-			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/api"
-		}
-		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/lambda-api-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/api/"
-		}
+	
+		copy {
+		  from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/api"
+	    }
+
 		// build SAM distribution
 		exec {
 			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
@@ -147,16 +147,6 @@ task assembleOpenApiTemplate {
 				commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../docs/openapi/${fileName}.yaml -g asciidoc -o ${buildDir}/${fileName}"
 			}
 		}
-		/*
-		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
-		}
-		exec {
-			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../docs/openapi/openapi-iam.yaml"
-		}
-		exec {
-			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-iam.yaml -g asciidoc -o ${buildDir}/openapi-iam"
-		}*/
 	}
 }
 

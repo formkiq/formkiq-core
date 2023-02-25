@@ -61,16 +61,12 @@ task assembleTemplate {
     dependsOn buildZip
 	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
 	outputs.dir("${buildDir}/distributions")
+	
 	doLast {
-		exec {
-			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/console"
-		}
-		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/template* ${buildDir}/distributions/formkiq-core/sam/console/"
-		}
-		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/console-installer.zip ${buildDir}/distributions/formkiq-core/sam/console/"
-		}
+		copy {
+		  from layout.buildDirectory.file("src/main/resources/cloudformation/template*"), layout.projectDirectory.file("${buildDir}/console-installer.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/console"
+	    }
 	}
 }
 

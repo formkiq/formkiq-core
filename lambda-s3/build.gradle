@@ -93,12 +93,12 @@ task assembleTemplate {
 	def sha256 = randomtext.digest('SHA-256')
 
 	doLast {
-		exec {
-			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/storage && mkdir -p ${buildDir}/distributions/formkiq-core/sar/storage"
-		}
-		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/lambda-s3-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/storage/"
-		}
+		
+		copy {
+		  from layout.buildDirectory.file("${buildDir}/lambda-s3-graalvm.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/storage"
+	    }
+	    
 		exec {
 			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
 		}
