@@ -188,14 +188,14 @@ Resources:
               - ","
               - Fn::ImportValue:
                   Fn::Sub: '${CertificateStackName}-ConsoleDomain'
-          - AWS::NoValue
+          - Ref: "AWS::NoValue"
         ViewerCertificate:
           ACMCertificateArn:
             Fn::If:
             - HasCertificateStackName
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-ConsoleCertificateArn'
-            - AWS::NoValue
+            - Ref: "AWS::NoValue"
           CloudFrontDefaultCertificate:
             Fn::If:
             - HasCertificateStackName
