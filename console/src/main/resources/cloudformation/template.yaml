@@ -196,6 +196,11 @@ Resources:
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-ConsoleCertificateArn'
             - Ref: "AWS::NoValue"
+          SslSupportMethod:
+            Fn::If:
+            - HasCertificateStackName
+            - sni-only
+            - Ref: "AWS::NoValue"
           CloudFrontDefaultCertificate:
             Fn::If:
             - HasCertificateStackName
