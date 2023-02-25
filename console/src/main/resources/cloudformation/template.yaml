@@ -170,7 +170,8 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       Name: 
-        Ref: ConsoleDomain
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-ConsoleDomain'        
       Type: A
       HostedZoneId: 
         Fn::ImportValue:
