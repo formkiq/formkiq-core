@@ -91,7 +91,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
         boolean write = authorizer.getWriteSiteIds().contains(siteId);
         config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
-        
+
         return config;
       }).collect(Collectors.toList());
 

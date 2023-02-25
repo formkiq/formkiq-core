@@ -295,19 +295,20 @@ Resources:
         Fn::GetAtt:
         - ConsoleInstaller
         - Arn
-        
+
   CloudFrontDistributionRecordSet:
     Condition: HasHostedZoneId
-    Type: AWS::Route53::RecordSet
+    Type: 'AWS::Route53::RecordSetGroup'
     Properties:
-      Name: 
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-ConsoleDomain'        
-      Type: A
-      HostedZoneId:
+      HostedZoneId: 
         Ref: HostedZoneId
-      AliasTarget:
-        HostedZoneId: 
-          Ref: HostedZoneId
-        DNSName:
-          Ref: CloudFrontDistributionDomainName
+      RecordSets:
+        - Name:
+            Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+          Type: A
+          AliasTarget:
+            HostedZoneId: 
+              Ref: HostedZoneId
+            DNSName: 
+              Ref: CloudFrontDistributionDomainName
