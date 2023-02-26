@@ -261,7 +261,7 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: '${CertificateStackName}-HttpApiDomain'
       ApiId: 
-        Ref: DocumentsApiRequests
+        Ref: DocumentsHttpApi
       Stage: 
         Ref: DocumentsStage
 
