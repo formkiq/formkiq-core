@@ -234,14 +234,21 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/console/Url"
       Type: String
       Value:
-        Fn::Join: 
-          - ""
-          - 
-            - 'https://'
-            - Fn::GetAtt:
-              - CloudFrontDistribution
-              - DomainName
-
+        Fn::If:
+        - HasCertificateStackName
+        - Fn::Join: 
+            - ""
+            - 
+              - 'https://'
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+        - Fn::Join: 
+            - ""
+            - 
+              - 'https://'
+              - Fn::GetAtt:
+                - CloudFrontDistribution
+                - DomainName
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -288,7 +295,15 @@ Outputs:
   ConsoleUrl:
     Description: Console URL
     Value:
-      Fn::Join: 
+      Fn::If:
+      - HasCertificateStackName
+      - Fn::Join: 
+          - ""
+          - 
+            - 'https://'
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+      - Fn::Join: 
           - ""
           - 
             - 'https://'
