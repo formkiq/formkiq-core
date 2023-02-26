@@ -252,7 +252,19 @@ Resources:
           - DocumentsStageAccessLogs
           - Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
-    
+
+  DocumentsStageMapping:
+    Condition: HasCertificateStackName
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    Properties:
+      DomainName:
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+      ApiId: 
+        Ref: DocumentsApiRequests
+      Stage: 
+        Ref: DocumentsStage
+
   IamDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -269,6 +281,17 @@ Resources:
           - Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
+  IamDocumentsStageMapping:
+    Condition: HasCertificateStackName
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    Properties:
+      DomainName:
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-IamApiDomain'
+      ApiId: 
+        Ref: DocumentsIamApi
+      Stage: 
+        Ref: IamDocumentsStage
 
   DocumentsHttpApiIdParameter:
     Type: AWS::SSM::Parameter
