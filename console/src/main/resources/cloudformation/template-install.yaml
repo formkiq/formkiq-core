@@ -283,13 +283,13 @@ Resources:
         Fn::If:
           - HasCertificateStackName
           - Fn::ImportValue:
-              Fn::Sub: 'https://${CertificateStackName}-HttpApiDomain'
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
           - ''
       IamApiUrl:
         Fn::If:
           - HasCertificateStackName
           - Fn::ImportValue:
-              Fn::Sub: 'https://${CertificateStackName}-IamApiDomain'
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
           - ''
       ServiceToken:
         Fn::GetAtt:
