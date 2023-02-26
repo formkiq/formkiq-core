@@ -259,7 +259,7 @@ Resources:
     Properties:
       DomainName:
         Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          Fn::Sub: 'https://${CertificateStackName}-HttpApiDomain'
       ApiId: 
         Ref: DocumentsApiRequests
       Stage: 
@@ -287,7 +287,7 @@ Resources:
     Properties:
       DomainName:
         Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          Fn::Sub: 'https://${CertificateStackName}-IamApiDomain'
       ApiId: 
         Ref: DocumentsIamApi
       Stage: 
@@ -321,7 +321,7 @@ Resources:
         Fn::If:
           - HasCertificateStackName
           - Fn::ImportValue:
-              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+              Fn::Sub: 'https://${CertificateStackName}-HttpApiDomain'
           - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
@@ -342,7 +342,7 @@ Resources:
         Fn::If:
           - HasCertificateStackName
           - Fn::ImportValue:
-              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+              Fn::Sub: 'https://${CertificateStackName}-HttpApiDomain'
           - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
@@ -476,7 +476,7 @@ Resources:
         Fn::If:
           - HasCertificateStackName
           - Fn::ImportValue:
-              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+              Fn::Sub: 'https://${CertificateStackName}-IamApiDomain'
           - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
@@ -685,7 +685,7 @@ Outputs:
       Fn::If:
         - HasCertificateStackName
         - Fn::ImportValue:
-            Fn::Sub: '${CertificateStackName}-IamApiDomain'
+            Fn::Sub: 'https://${CertificateStackName}-IamApiDomain'
         - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"    
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
@@ -693,5 +693,5 @@ Outputs:
       Fn::If:
         - HasCertificateStackName
         - Fn::ImportValue:
-            Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+            Fn::Sub: 'https://${CertificateStackName}-HttpApiDomain'
         - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
