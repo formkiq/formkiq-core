@@ -55,3 +55,11 @@ jobs:
         sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-ap-south-1 --template-file template.yaml --region ap-south-1 --output-template-file template-${formKiQVersion}.yaml
         aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-ap-south-1/${formKiQVersion}/template.yaml
         aws s3 cp vpc.yaml s3://formkiq-core-distribution-ap-south-1/${formKiQVersion}/vpc.yaml
+        
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-us-west-2 --template-file template.yaml --region us-west-2 --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-us-west-2/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-us-west-2/${formKiQVersion}/vpc.yaml
+        
+        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-sa-east-1 --template-file template.yaml --region sa-east-1 --output-template-file template-${formKiQVersion}.yaml
+        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-sa-east-1/${formKiQVersion}/template.yaml
+        aws s3 cp vpc.yaml s3://formkiq-core-distribution-sa-east-1/${formKiQVersion}/vpc.yaml
