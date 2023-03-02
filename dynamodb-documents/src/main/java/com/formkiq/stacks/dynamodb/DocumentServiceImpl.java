@@ -996,9 +996,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @return boolean
    */
   private boolean isDocumentUserTagged(final List<DynamicObject> tags) {
-    return tags != null
-        ? tags.stream().filter(t -> !SYSTEM_DEFINED_TAGS.contains(t.getString("key"))).count() > 0
-        : false;
+    return tags != null ? tags.stream().filter(t -> {
+      String key = t.getString("key");
+      return key != null && !SYSTEM_DEFINED_TAGS.contains(key);
+    }).count() > 0 : false;
   }
 
   @Override
