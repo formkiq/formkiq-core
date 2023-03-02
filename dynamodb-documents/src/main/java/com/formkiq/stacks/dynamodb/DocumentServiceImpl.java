@@ -1432,7 +1432,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     boolean docexists = exists(siteId, doc.getDocumentId());
     List<DynamicObject> doctags = doc.getList("tags");
-    List<DocumentTag> tags = doctags.stream().map(t -> {
+
+    List<DocumentTag> tags = doctags.stream().filter(t -> t.containsKey("key")).map(t -> {
       DynamicObjectToDocumentTag transform = new DynamicObjectToDocumentTag(this.df);
       DocumentTag tag = transform.apply(t);
       tag.setInsertedDate(date);
