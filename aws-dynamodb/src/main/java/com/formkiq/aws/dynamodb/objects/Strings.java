@@ -52,4 +52,14 @@ public class Strings {
     String name = pos > -1 ? path.substring(pos + 1) : path;
     return name;
   }
+
+  /**
+   * Is {@link String} empty.
+   * 
+   * @param cs {@link CharSequence}
+   * @return boolean
+   */
+  public static boolean isEmpty(final CharSequence cs) {
+    return cs == null || cs.length() == 0;
+  }
 }

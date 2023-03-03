@@ -50,10 +50,15 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -101,6 +106,7 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -112,12 +118,14 @@ import software.amazon.awssdk.regions.Region;
             @ReflectableField(name = "values")}),
     @ReflectableClass(className = UpdateFulltext.class, allPublicConstructors = true,
         fields = {@ReflectableField(name = "content"), @ReflectableField(name = "contentUrls")})})
-public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void> {
+public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
 
   /** Default Maximum for Typesense Content. */
   private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link ActionsService}. */
   private ActionsService actionsService;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService dbService;
   /** S3 Documents Bucket. */
   private String documentsBucket;
   /** {@link DocumentService}. */
@@ -178,6 +186,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     this.documentService =
         new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"), versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
 
@@ -307,6 +316,55 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private int getCharacterMax(final Action action) {
     Map<String, String> parameters = notNull(action.parameters());
     return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
+  }
+
+  /**
+   * Get Content from {@link Action}.
+   * 
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @return {@link String}
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private String getContent(final Action action, final List<String> contentUrls)
+      throws URISyntaxException, IOException, InterruptedException {
+
+    StringBuilder sb = getContentUrls(contentUrls);
+
+    int characterMax = getCharacterMax(action);
+
+    String content =
+        characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
+            : sb.toString();
+
+    return content;
+  }
+
+  /**
+   * Get Content from external urls.
+   * 
+   * @param contentUrls {@link List} {@link String}
+   * @return {@link StringBuilder}
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private StringBuilder getContentUrls(final List<String> contentUrls)
+      throws URISyntaxException, IOException, InterruptedException {
+
+    StringBuilder sb = new StringBuilder();
+
+    for (String contentUrl : contentUrls) {
+      HttpRequest req =
+          HttpRequest.newBuilder(new URI(contentUrl)).timeout(Duration.ofMinutes(1)).build();
+      HttpResponse<String> response =
+          HttpClient.newBuilder().build().send(req, BodyHandlers.ofString());
+      sb.append(response.body());
+    }
+
+    return sb;
   }
 
   /**
@@ -598,33 +656,32 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final List<String> contentUrls) throws IOException {
 
     try {
-      StringBuilder sb = new StringBuilder();
 
-      for (String contentUrl : contentUrls) {
-        HttpRequest req =
-            HttpRequest.newBuilder(new URI(contentUrl)).timeout(Duration.ofMinutes(1)).build();
-        HttpResponse<String> response =
-            HttpClient.newBuilder().build().send(req, BodyHandlers.ofString());
-        sb.append(response.body());
-      }
+      Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+      Map<String, AttributeValue> data = this.dbService.get(keys.get(PK), keys.get(SK));
 
-      int characterMax = getCharacterMax(action);
+      Map<String, Object> document = new DocumentMapToDocument().apply(data);
+      document = new DocumentToFulltextDocument().apply(document);
 
-      String content =
-          characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
-              : sb.toString();
+      StringBuilder sb =
+          document.containsKey("text") ? new StringBuilder(document.get("text").toString())
+              : new StringBuilder();
 
-      HttpResponse<String> response =
-          this.typesense.updateDocument(siteId, documentId, Map.of("content", content));
+      String content = getContent(action, contentUrls);
+      sb.append(" ");
+      sb.append(content);
+      document.put("text", sb.toString());
+
+      HttpResponse<String> response = this.typesense.updateDocument(siteId, documentId, document);
 
       if (!is2XX(response)) {
-        response = this.typesense.addDocument(siteId, documentId, Map.of("content", content));
+        response = this.typesense.addDocument(siteId, documentId, document);
 
         if (is404(response)) {
           response = this.typesense.addCollection(siteId);
 
           if (is2XX(response)) {
-            response = this.typesense.addDocument(siteId, documentId, Map.of("content", content));
+            response = this.typesense.addDocument(siteId, documentId, document);
           }
 
           if (!is2XX(response)) {

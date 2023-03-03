@@ -1801,8 +1801,8 @@ public class DocumentServiceImplTest implements DbKeys {
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
           UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
           Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
-      doc.put("tags", Arrays.asList(Map.of("documentId", doc.getDocumentId(), "insertedDate", now,
-          "userId", username)));
+      doc.put("tags", Arrays.asList(
+          Map.of("documentId", doc.getDocumentId(), "insertedDate", now, "userId", username)));
 
       // when
       DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);

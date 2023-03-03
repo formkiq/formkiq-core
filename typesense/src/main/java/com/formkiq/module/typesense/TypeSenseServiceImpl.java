@@ -177,9 +177,8 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     String site = getCollectionName(siteId);
 
-    String url =
-        String.format("%s/collections/%s/documents/search?q=%s&query_by=text,content&per_page=%s",
-            this.host, encode(site), encode(text), "" + maxResults);
+    String url = String.format("%s/collections/%s/documents/search?q=%s&query_by=text&per_page=%s",
+        this.host, encode(site), encode(text), "" + maxResults);
 
     HttpHeaders headers = getHeader();
 

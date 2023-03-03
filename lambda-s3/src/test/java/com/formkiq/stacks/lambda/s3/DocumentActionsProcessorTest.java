@@ -536,7 +536,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Map<String, String> body = gson.fromJson(response.body(), Map.class);
       assertEquals(documentId, body.get("id"));
-      assertEquals(content, body.get("content"));
+      assertEquals(documentId + " joe " + content, body.get("text"));
     }
   }
 }
