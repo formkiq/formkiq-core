@@ -578,3 +578,10 @@ Outputs:
       Fn::GetAtt: 
       - CoreStorage
       - Outputs.DocumentsStageS3Bucket
+      
+  TypesenseApiEndpoint:
+    Description: Typesense API endpoint
+    Value:
+      Fn::GetAtt:
+      - TypeSenseService
+      - Outputs.TypesenseApiEndpoint
