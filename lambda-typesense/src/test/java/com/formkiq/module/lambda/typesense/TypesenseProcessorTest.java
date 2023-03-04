@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -213,7 +214,7 @@ class TypesenseProcessorTest {
       assertEquals(documentId, documents.get(0));
 
       // given
-      map = loadRequest("/remove.json", null, null);
+      map = loadRequest("/remove01.json", null, null);
 
       // when
       processor.handleRequest(map, this.context);
@@ -331,5 +332,30 @@ class TypesenseProcessorTest {
 
     PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
     assertEquals(0, syncs.getResults().size());
+  }
+
+  /**
+   * Test Delete records with siteid.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest07() throws Exception {
+    // given
+    String siteId = "demo";
+    String documentId = "0004df7f-a5f9-450d-89f4-b60cd7bdcbb7";
+
+    service.addCollection(siteId);
+    service.addDocument(siteId, documentId, Map.of("data", "some data"));
+    Map<String, Object> map = loadRequest("/remove02.json", null, null);
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    HttpResponse<String> response = service.getDocument(siteId, documentId);
+    assertEquals("404", String.valueOf(response.statusCode()));
+    assertEquals("{\"message\": \"Could not find a document with id: " + documentId + "\"}",
+        response.body());
   }
 }

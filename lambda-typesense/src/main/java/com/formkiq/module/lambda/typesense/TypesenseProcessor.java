@@ -238,7 +238,9 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     Map<String, Object> oldImage =
         dynamodb.containsKey("OldImage") ? toMap(dynamodb.get("OldImage")) : Collections.emptyMap();
 
-    String siteId = newImage.containsKey(PK) ? getSiteId(getField(newImage, oldImage, PK)) : null;
+    String siteId = newImage.containsKey(PK) || oldImage.containsKey(PK)
+        ? getSiteId(getField(newImage, oldImage, PK))
+        : null;
     String documentId = getField(newImage, oldImage, "documentId");
 
     if (documentId != null) {
