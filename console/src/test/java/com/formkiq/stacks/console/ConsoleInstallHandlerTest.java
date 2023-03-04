@@ -122,7 +122,7 @@ public class ConsoleInstallHandlerTest {
     map.put("API_WEBSOCKET_URL", "wss://me.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("BRAND", "24hourcharts");
     map.put("ALLOW_ADMIN_CREATE_USER_ONLY", "false");
-    map.put("COGNITO_HOSTED_UI", "https://test2622653865277.auth.us-east-2.amazoncognito.com");
+    map.put("COGNITO_HOSTED_UI", "https://test2111111111111111.auth.us-east-2.amazoncognito.com");
     map.put("USER_AUTHENTICATION", "cognito");
     map.put("COGNITO_CONFIG_BUCKET", CONSOLE_BUCKET);
     map.put("DOMAIN", "dev");
@@ -377,7 +377,7 @@ public class ConsoleInstallHandlerTest {
         + "  \"clientId\": \"7223423m2pfgf34qnfokb2po2l\",%n" + "  \"consoleVersion\": \"0.1\",%n"
         + "  \"brand\": \"24hourcharts\",%n" + "  \"userAuthentication\": \"cognito\",%n"
         + "  \"authApi\": \"https://auth.execute-api.us-east-1.amazonaws.com/prod/\",%n"
-        + "  \"cognitoHostedUi\": \"https://test2622653865277.auth.us-east-2.amazoncognito.com\"%n"
+        + "  \"cognitoHostedUi\": \"https://test2111111111111111.auth.us-east-2.amazoncognito.com\"%n"
         + "}");
 
     assertTrue(this.logger.containsString("writing Cognito config: " + config));

@@ -64,7 +64,7 @@
                 "SizeBytes": 521,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-enterprise-demo-documents/stream/2023-02-09T17:02:11.979"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:111111111111111:table/formkiq-enterprise-demo-documents/stream/2023-02-09T17:02:11.979"
         },
         {
             "eventID": "dffab922eb26cdfe3966ca8c41246ae0",
@@ -124,7 +124,7 @@
                 "SizeBytes": 453,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-2:622653865277:table/formkiq-enterprise-demo-documents/stream/2023-02-09T17:02:11.979"
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:111111111111111:table/formkiq-enterprise-demo-documents/stream/2023-02-09T17:02:11.979"
         }
     ]
 }

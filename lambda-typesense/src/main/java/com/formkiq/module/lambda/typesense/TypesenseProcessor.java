@@ -220,6 +220,29 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     return null;
   }
 
+  @SuppressWarnings("unchecked")
+  private boolean isDocumentSk(final Map<String, Object> data) {
+    Map<String, String> map = (Map<String, String>) data.get(SK);
+    boolean isDocument = map.containsKey("S") && map.get("S").equals("document");
+    return isDocument;
+  }
+
+  private boolean isS3VersionChanged(final String eventName, final Map<String, Object> oldImage,
+      final Map<String, Object> newImage) {
+
+    boolean changed = false;
+
+    if ("MODIFY".equalsIgnoreCase(eventName)) {
+
+      String oldS3 = getField(oldImage, oldImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
+      String newS3 = getField(newImage, newImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
+
+      changed = (oldS3 == null && newS3 != null) || (oldS3 != null && !oldS3.equals(newS3));
+    }
+
+    return changed;
+  }
+
   /**
    * Process Record.
    * 
@@ -259,8 +282,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
 
-          this.typeSenseService.deleteDocument(siteId, documentId);
-          deleteSyncs(siteId, documentId);
+          boolean isDocument = isDocumentSk(oldImage);
+          if (isDocument) {
+            this.typeSenseService.deleteDocument(siteId, documentId);
+            deleteSyncs(siteId, documentId);
+          }
 
         } else {
           logger.log("skipping event " + eventName + " for document " + siteId + " " + documentId);
@@ -273,22 +299,6 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     } else {
       logger.log("skipping event " + eventName);
     }
-  }
-
-  private boolean isS3VersionChanged(final String eventName, final Map<String, Object> oldImage,
-      final Map<String, Object> newImage) {
-
-    boolean changed = false;
-
-    if ("MODIFY".equalsIgnoreCase(eventName)) {
-
-      String oldS3 = getField(oldImage, oldImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
-      String newS3 = getField(newImage, newImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
-
-      changed = (oldS3 == null && newS3 != null) || (oldS3 != null && !oldS3.equals(newS3));
-    }
-
-    return changed;
   }
 
   /**
@@ -337,13 +347,11 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   private void writeToIndex(final LambdaLogger logger, final String siteId, final String documentId,
       final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
       throws IOException {
 
-    Map<String, String> map = (Map<String, String>) data.get(SK);
-    boolean isDocument = map.containsKey("S") && map.get("S").equals("document");
+    boolean isDocument = isDocumentSk(data);
 
     removeDynamodbKeys(data);
 

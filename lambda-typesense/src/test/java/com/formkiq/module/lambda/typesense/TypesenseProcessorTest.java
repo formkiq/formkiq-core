@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.module.lambda.typesense;
 
@@ -345,6 +342,14 @@ class TypesenseProcessorTest {
     String siteId = "demo";
     String documentId = "0004df7f-a5f9-450d-89f4-b60cd7bdcbb7";
 
+    DocumentSyncStatus status = DocumentSyncStatus.COMPLETE;
+    DocumentSyncType syncType = DocumentSyncType.CONTENT;
+    String message = DocumentSyncService.MESSAGE_ADDED_METADATA;
+
+    syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status, syncType,
+        "joe", message);
+    assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
+
     service.addCollection(siteId);
     service.addDocument(siteId, documentId, Map.of("data", "some data"));
     Map<String, Object> map = loadRequest("/remove02.json", null, null);
@@ -357,5 +362,39 @@ class TypesenseProcessorTest {
     assertEquals("404", String.valueOf(response.statusCode()));
     assertEquals("{\"message\": \"Could not find a document with id: " + documentId + "\"}",
         response.body());
+    assertEquals(0, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
+  }
+
+  /**
+   * Test Delete not top level document record with siteid. Record should NOT be deleted unless top
+   * level 'document'.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest08() throws Exception {
+    // given
+    String siteId = "demo";
+    String documentId = "be123811-268b-4da6-9f28-d89d3e492a03";
+
+    DocumentSyncStatus status = DocumentSyncStatus.COMPLETE;
+    DocumentSyncType syncType = DocumentSyncType.CONTENT;
+    String message = DocumentSyncService.MESSAGE_ADDED_METADATA;
+
+    syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status, syncType,
+        "joe", message);
+    assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
+
+    service.addCollection(siteId);
+    service.addDocument(siteId, documentId, Map.of("data", "some data"));
+    Map<String, Object> map = loadRequest("/remove03.json", null, null);
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    HttpResponse<String> response = service.getDocument(siteId, documentId);
+    assertEquals("200", String.valueOf(response.statusCode()));
+    assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
   }
 }
