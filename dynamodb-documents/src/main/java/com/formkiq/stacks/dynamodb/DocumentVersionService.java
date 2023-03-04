@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -47,6 +48,15 @@ public interface DocumentVersionService {
    */
   void addDocumentVersionAttributes(Map<String, AttributeValue> previous,
       Map<String, AttributeValue> current);
+
+  /**
+   * Delete all document versions.
+   * 
+   * @param client {@link DynamoDbClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void deleteAllVersionIds(DynamoDbClient client, String siteId, String documentId);
 
   /**
    * Get DynamoDB Documents Versions Table Name.

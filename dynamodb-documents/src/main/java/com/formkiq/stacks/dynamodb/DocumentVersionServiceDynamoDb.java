@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.DbKeys.TAG_DELIMINATOR;
@@ -30,12 +31,15 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.graalvm.annotations.Reflectable;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
  * 
@@ -45,6 +49,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Reflectable
 public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
+  /** The Default maximum results returned. */
+  private static final int MAX_RESULTS = 100;
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** DynamoDB Document Versions Table Name. */
@@ -66,6 +72,31 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
       current.put(VERSION_ATTRIBUTE, AttributeValue.fromS(nextVersion));
     }
+  }
+
+  @Override
+  public void deleteAllVersionIds(final DynamoDbClient client, final String siteId,
+      final String documentId) {
+
+    Map<String, AttributeValue> startkey = null;
+    String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
+
+    String documentVersionsTable = getDocumentVersionsTableName();
+    DynamoDbService db = new DynamoDbServiceImpl(client, documentVersionsTable);
+
+    do {
+
+      QueryResponse response = db.query(AttributeValue.fromS(pk), startkey, MAX_RESULTS);
+
+      List<Map<String, AttributeValue>> results = response.items();
+
+      for (Map<String, AttributeValue> map : results) {
+        db.deleteItem(map.get(PK), map.get(SK));
+      }
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
   }
 
   @Override

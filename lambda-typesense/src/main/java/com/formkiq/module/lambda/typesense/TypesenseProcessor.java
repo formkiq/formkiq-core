@@ -314,6 +314,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
   /**
    * Remove Document from TypeSense.
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param oldImage {@link Map}

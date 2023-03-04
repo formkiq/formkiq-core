@@ -26,7 +26,6 @@ package com.formkiq.aws.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -121,15 +120,16 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> query(final AttributeValue pk) {
+  public QueryResponse query(final AttributeValue pk,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
     String expression = PK + " = :pk";
     Map<String, AttributeValue> values = Map.of(":pk", pk);
     QueryRequest q =
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE).build();
+            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
+            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
 
-    QueryResponse result = this.dbClient.query(q);
-    return result.items();
+    return this.dbClient.query(q);
   }
 
   @Override

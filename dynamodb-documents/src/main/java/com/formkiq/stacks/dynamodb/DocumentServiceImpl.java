@@ -218,6 +218,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> startkey = null;
 
+    this.versionsService.deleteAllVersionIds(null, siteId, documentId);
+
     DocumentItem item = findDocument(siteId, documentId);
 
     deleteFolderIndex(siteId, item);
