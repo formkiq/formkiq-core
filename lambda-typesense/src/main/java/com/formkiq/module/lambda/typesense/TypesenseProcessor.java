@@ -282,11 +282,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
 
-          boolean isDocument = isDocumentSk(oldImage);
-          if (isDocument) {
-            this.typeSenseService.deleteDocument(siteId, documentId);
-            deleteSyncs(siteId, documentId);
-          }
+          removeDocument(siteId, documentId, oldImage);
 
         } else {
           logger.log("skipping event " + eventName + " for document " + siteId + " " + documentId);
@@ -313,6 +309,22 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       if (record.containsKey("eventName")) {
         processRecord(logger, record);
       }
+    }
+  }
+
+  /**
+   * Remove Document from TypeSense.
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param oldImage {@link Map}
+   * @throws IOException IOException
+   */
+  private void removeDocument(final String siteId, final String documentId,
+      final Map<String, Object> oldImage) throws IOException {
+    boolean isDocument = isDocumentSk(oldImage);
+    if (isDocument) {
+      this.typeSenseService.deleteDocument(siteId, documentId);
+      deleteSyncs(siteId, documentId);
     }
   }
 
