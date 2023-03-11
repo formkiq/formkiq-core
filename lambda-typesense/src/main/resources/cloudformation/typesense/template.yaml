@@ -48,7 +48,6 @@ Parameters:
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name
-    AllowedPattern: ".+"
 
   ECSCluster:
     Type: String
