@@ -32,12 +32,23 @@ public class SearchMetaCriteria {
   /** Search Tag Value Equals. */
   @Reflectable
   private String eq;
-  /** Folder Key. */
+  /**
+   * Folder Key.
+   * 
+   * @deprecated replaced with indexType = 'folder'
+   */
+  @Deprecated
   @Reflectable
   private String folder;
+  /** Begins With Filter. */
+  @Reflectable
+  private String indexFilterBeginsWith;
   /** Index Key. */
   @Reflectable
   private String indexType;
+  /** Document Path. */
+  @Reflectable
+  private String path;
 
   /** constructor. */
   public SearchMetaCriteria() {}
@@ -83,6 +94,26 @@ public class SearchMetaCriteria {
   }
 
   /**
+   * Get Index 'Begins With' filter.
+   * 
+   * @return {@link String}
+   */
+  public String indexFilterBeginsWith() {
+    return this.indexFilterBeginsWith;
+  }
+
+  /**
+   * Set Index 'Begins With' filter.
+   * 
+   * @param beginsWith {@link String}
+   * @return {@link SearchMetaCriteria}
+   */
+  public SearchMetaCriteria indexFilterBeginsWith(final String beginsWith) {
+    this.indexFilterBeginsWith = beginsWith;
+    return this;
+  }
+
+  /**
    * Get Index Type.
    * 
    * @return {@link String}
@@ -99,6 +130,26 @@ public class SearchMetaCriteria {
    */
   public SearchMetaCriteria indexType(final String index) {
     this.indexType = index;
+    return this;
+  }
+
+  /**
+   * Get Path.
+   *
+   * @return {@link String}
+   */
+  public String path() {
+    return this.path;
+  }
+
+  /**
+   * Set Path.
+   *
+   * @param s {@link String}
+   * @return {@link SearchMetaCriteria}
+   */
+  public SearchMetaCriteria path(final String s) {
+    this.path = s;
     return this;
   }
 }

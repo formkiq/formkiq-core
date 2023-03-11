@@ -22,7 +22,7 @@
         "limit": "10"
     },
     "requestContext": {
-        "accountId": "622653865277",
+        "accountId": "1111111111111111",
         "apiId": "dj4hy0sbb0",
         "authorizer": {
             "jwt": {

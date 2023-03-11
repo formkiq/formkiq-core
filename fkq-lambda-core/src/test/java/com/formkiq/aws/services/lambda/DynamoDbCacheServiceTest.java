@@ -54,7 +54,7 @@ public class DynamoDbCacheServiceTest {
   @BeforeEach
   public void before() throws Exception {
     this.service =
-        new DynamoDbCacheService(DynamoDbTestServices.getDynamoDbConnection(null), cacheTable);
+        new DynamoDbCacheService(DynamoDbTestServices.getDynamoDbConnection(), cacheTable);
   }
 
   /**

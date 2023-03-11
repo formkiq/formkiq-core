@@ -118,7 +118,7 @@ public class AttributeValueToDocumentItem
     }
 
     item.setVersion(getString(map.get("version")));
-    item.setS3version(getString(map.get("s3version")));
+    item.setS3version(getString(map.get(DocumentVersionService.S3VERSION_ATTRIBUTE)));
 
     if (map.containsKey("tagSchemaId")) {
       item.setTagSchemaId(map.get("tagSchemaId").s());

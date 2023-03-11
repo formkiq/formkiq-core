@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -40,12 +41,15 @@ import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.aws.services.lambda.services.ConfigServiceExtension;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
+import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
+import com.formkiq.module.actions.services.ActionsNotificationService;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -58,6 +62,7 @@ import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentVersionsKeyRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsActionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
@@ -67,6 +72,8 @@ import com.formkiq.stacks.api.handler.DocumentsIdUploadRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOcrRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsOptionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsSyncsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsSyncsServiceRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.EsignatureDocusignConfigRequestHandler;
 import com.formkiq.stacks.api.handler.EsignatureDocusignDocumentIdRequestHandler;
@@ -88,18 +95,20 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
-import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentCountServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -133,6 +142,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());
+    addRequestHandler(new DocumentVersionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
     addRequestHandler(new DocumentsActionsRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
@@ -146,6 +156,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentsUploadRequestHandler());
     addRequestHandler(new DocumentsIdUploadRequestHandler());
     addRequestHandler(new DocumentsOcrRequestHandler());
+    addRequestHandler(new DocumentsSyncsRequestHandler());
+    addRequestHandler(new DocumentsSyncsServiceRequestHandler());
     addRequestHandler(new DocumentsFulltextRequestHandler());
     addRequestHandler(new TagSchemasRequestHandler());
     addRequestHandler(new TagSchemasIdRequestHandler());
@@ -168,26 +180,47 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    * Setup Api Request Handlers.
    *
    * @param map {@link Map}
-   * @param creds {@link AwsCredentials}
-   * @param db {@link DynamoDbConnectionBuilder}
-   * @param s3 {@link S3ConnectionBuilder}
-   * @param ssm {@link SsmConnectionBuilder}
-   * @param sqs {@link SqsConnectionBuilder}
+   * @param region {@link Region}
+   * @param credentialsProvider {@link AwsCredentialsProvider}
+   * @param awsServiceEndpoints {@link Map} {@link URI}
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    */
-  public static void configureHandler(final Map<String, String> map, final AwsCredentials creds,
-      final DynamoDbConnectionBuilder db, final S3ConnectionBuilder s3,
-      final SsmConnectionBuilder ssm, final SqsConnectionBuilder sqs,
+  public static void configureHandler(final Map<String, String> map, final Region region,
+      final AwsCredentialsProvider credentialsProvider, final Map<String, URI> awsServiceEndpoints,
       final DocumentTagSchemaPlugin schemaEvents) {
 
-    AwsServiceCache.register(AwsCredentials.class, new ClassServiceExtension<>(creds));
+    DynamoDbConnectionBuilder db =
+        new DynamoDbConnectionBuilder().setRegion(region).setCredentials(credentialsProvider)
+            .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(db));
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
+    SsmConnectionBuilder ssm = new SsmConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("ssm"));
     AwsServiceCache.register(SsmConnectionBuilder.class,
         new ClassServiceExtension<SsmConnectionBuilder>(ssm));
+
+    SqsConnectionBuilder sqs = new SqsConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sqs"));
     AwsServiceCache.register(SqsConnectionBuilder.class,
         new ClassServiceExtension<SqsConnectionBuilder>(sqs));
+
+    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
+    if (credentialsProvider != null) {
+      AwsServiceCache.register(AwsCredentials.class,
+          new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
+    }
+
+    SnsConnectionBuilder sns = new SnsConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
+
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension(sns));
+
+    S3ConnectionBuilder s3 = new S3ConnectionBuilder().setRegion(region)
+        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
+
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
@@ -200,9 +233,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
-
-    Region region = Region.of(map.get("AWS_REGION"));
-    AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
+    AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
 
     awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 

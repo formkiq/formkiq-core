@@ -65,6 +65,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
@@ -99,7 +100,7 @@ public class DocumentServiceImplTest implements DbKeys {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
     searchService =
@@ -1677,7 +1678,7 @@ public class DocumentServiceImplTest implements DbKeys {
       GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
           .tableName(DOCUMENTS_TABLE).build();
 
-      try (DynamoDbClient dbClient = DynamoDbTestServices.getDynamoDbConnection(null).build()) {
+      try (DynamoDbClient dbClient = DynamoDbTestServices.getDynamoDbConnection().build()) {
 
         Map<String, AttributeValue> result = dbClient.getItem(r).item();
         assertEquals(ttl, result.get("TimeToLive").n());
@@ -1782,6 +1783,48 @@ public class DocumentServiceImplTest implements DbKeys {
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("path", tags.getResults().get(0).getKey());
+    }
+  }
+
+  /**
+   * Test Save {@link DocumentItem} with null {@link DocumentTag}.
+   */
+  @Test
+  public void testSaveDocumentItemWithTag09() {
+    final int year = Calendar.getInstance().get(Calendar.YEAR);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String content = "This is a test";
+      String username = UUID.randomUUID() + "@formkiq.com";
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId",
+          UUID.randomUUID().toString(), "userId", username, "insertedDate", new Date(), "content",
+          Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
+      doc.put("tags", Arrays.asList(
+          Map.of("documentId", doc.getDocumentId(), "insertedDate", now, "userId", username)));
+
+      // when
+      DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
+
+      // then
+      item = service.findDocument(siteId, item.getDocumentId());
+      assertNotNull(item);
+
+      ZoneId timeZone = ZoneId.systemDefault();
+      LocalDate lastModifiedDate =
+          item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
+      assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
+
+      PaginationResults<DocumentTag> tags =
+          service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
+      assertEquals(1, tags.getResults().size());
+      assertEquals("untagged", tags.getResults().get(0).getKey());
+      assertEquals("true", tags.getResults().get(0).getValue());
+      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(0).getType());
+      assertEquals(username, tags.getResults().get(0).getUserId());
+      assertEquals(item.getDocumentId(), tags.getResults().get(0).getDocumentId());
+      assertNotNull(tags.getResults().get(0).getInsertedDate());
     }
   }
 

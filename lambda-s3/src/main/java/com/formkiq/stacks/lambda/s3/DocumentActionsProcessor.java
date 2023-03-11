@@ -23,15 +23,20 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.http.HttpResponseStatus.is2XX;
+import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,12 +50,16 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -73,16 +82,19 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.SetDocumentFulltext;
+import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
 import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
-import com.formkiq.stacks.client.requests.SetDocumentFulltextRequest;
+import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
 import com.formkiq.stacks.common.formats.MimeType;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -94,18 +106,26 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
 @ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
     DocumentVersionServiceNoVersioning.class})
-@ReflectableClasses({@ReflectableClass(className = UpdateFulltextTag.class,
-    allPublicConstructors = true, fields = {@ReflectableField(name = "key"),
-        @ReflectableField(name = "value"), @ReflectableField(name = "values")})})
-public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void> {
+@ReflectableClasses({
+    @ReflectableClass(className = UpdateFulltextTag.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
+            @ReflectableField(name = "values")}),
+    @ReflectableClass(className = UpdateFulltext.class, allPublicConstructors = true,
+        fields = {@ReflectableField(name = "content"), @ReflectableField(name = "contentUrls")})})
+public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
 
+  /** Default Maximum for Typesense Content. */
+  private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link ActionsService}. */
   private ActionsService actionsService;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService dbService;
   /** S3 Documents Bucket. */
   private String documentsBucket;
   /** {@link DocumentService}. */
@@ -124,6 +144,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private String ocrBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache serviceCache;
+  /** {@link TypeSenseService}. */
+  private TypeSenseService typesense;
 
   /**
    * constructor.
@@ -154,20 +178,29 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
-    AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
+    this.serviceCache = new AwsServiceCache().environment(map);
     DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
-    DocumentVersionService versionService = dsExtension.loadService(serviceCache);
+    DocumentVersionService versionService = dsExtension.loadService(this.serviceCache);
 
     this.s3Service = new S3Service(s3);
     this.documentService =
         new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"), versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
+    this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;
     SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
+
+    String typeSenseHost =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/TypesenseEndpoint");
+    String typeSenseApiKey =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
+
+    this.typesense =
+        new TypeSenseServiceImpl(typeSenseHost, typeSenseApiKey, awsRegion, awsCredentials);
 
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
@@ -195,13 +228,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private String buildWebhookBody(final String siteId, final String documentId,
       final List<Action> actions) {
 
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    DocumentItem result = this.documentService.findDocument(siteId, documentId);
+    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
 
-    List<Map<String, String>> documents = new ArrayList<>();
-    Map<String, String> map = new HashMap<>();
-    map.put("siteId", site);
-    map.put("documentId", documentId);
-    documents.add(map);
+    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    item.put("siteId", site);
+
+    URL s3Url = getS3Url(siteId, documentId, item);
+    item.put("url", s3Url);
+
+    List<DynamicDocumentItem> documents = new ArrayList<>();
+    documents.add(item);
 
     Optional<Action> antiVirus = actions.stream()
         .filter(
@@ -209,9 +246,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         .findFirst();
 
     if (antiVirus.isPresent()) {
-
-      DocumentItem item = this.documentService.findDocument(siteId, documentId);
-      map.put("filename", item.getPath());
 
       Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
           Arrays.asList(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
@@ -223,10 +257,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       }
 
       String status = values.getOrDefault("CLAMAV_SCAN_STATUS", "ERROR");
-      map.put("status", status);
+      item.put("status", status);
 
       String timestamp = values.getOrDefault("CLAMAV_SCAN_TIMESTAMP", "");
-      map.put("timestamp", timestamp);
+      item.put("timestamp", timestamp);
     }
 
     return this.gson.toJson(Map.of("documents", documents));
@@ -279,6 +313,60 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return urls;
   }
 
+  private int getCharacterMax(final Action action) {
+    Map<String, String> parameters = notNull(action.parameters());
+    return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
+  }
+
+  /**
+   * Get Content from {@link Action}.
+   * 
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @return {@link String}
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private String getContent(final Action action, final List<String> contentUrls)
+      throws URISyntaxException, IOException, InterruptedException {
+
+    StringBuilder sb = getContentUrls(contentUrls);
+
+    int characterMax = getCharacterMax(action);
+
+    String content =
+        characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
+            : sb.toString();
+
+    return content;
+  }
+
+  /**
+   * Get Content from external urls.
+   * 
+   * @param contentUrls {@link List} {@link String}
+   * @return {@link StringBuilder}
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private StringBuilder getContentUrls(final List<String> contentUrls)
+      throws URISyntaxException, IOException, InterruptedException {
+
+    StringBuilder sb = new StringBuilder();
+
+    for (String contentUrl : contentUrls) {
+      HttpRequest req =
+          HttpRequest.newBuilder(new URI(contentUrl)).timeout(Duration.ofMinutes(1)).build();
+      HttpResponse<String> response =
+          HttpClient.newBuilder().build().send(req, BodyHandlers.ofString());
+      sb.append(response.body());
+    }
+
+    return sb;
+  }
+
   /**
    * Get ParseTypes from {@link Action} parameters.
    * 
@@ -302,27 +390,41 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return ocrParseTypes;
   }
 
+  /**
+   * Get Document S3 Url.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param item {@link DocumentItem}
+   * @return {@link URL}
+   */
+  private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
+    Duration duration = Duration.ofDays(1);
+    PresignGetUrlConfig config =
+        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
+    String s3key = createS3Key(siteId, documentId);
+    return this.s3Service.presignGetUrl(this.documentsBucket, s3key, duration, null, config);
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    String json = null;
+    LambdaLogger logger = context.getLogger();
 
-    try {
-
-      LambdaLogger logger = context.getLogger();
-
-      if ("true".equals(System.getenv("DEBUG"))) {
-        json = this.gson.toJson(map);
-        logger.log(json);
-      }
-
-      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      processRecords(logger, records);
-
-    } catch (Exception e) {
-      e.printStackTrace();
+    if ("true".equals(System.getenv("DEBUG"))) {
+      String json = this.gson.toJson(map);
+      logger.log(json);
     }
+
+    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    try {
+      processRecords(logger, records);
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
+
 
     return null;
   }
@@ -339,6 +441,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    */
   private void processAction(final LambdaLogger logger, final String siteId,
       final String documentId, final Action action) throws IOException, InterruptedException {
+
+    logger.log(String.format("processing action %s", action.type()));
 
     if (ActionType.OCR.equals(action.type())) {
 
@@ -357,23 +461,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
       List<String> contentUrls = findContentUrls(siteId, item);
 
-      final int maxTags = 100;
-      PaginationResults<DocumentTag> docTags =
-          this.documentService.findDocumentTags(siteId, documentId, null, maxTags);
+      boolean moduleFulltext = this.serviceCache.hasModule("fulltext");
 
-      List<UpdateFulltextTag> tags =
-          docTags.getResults().stream().filter(t -> DocumentTagType.USERDEFINED.equals(t.getType()))
-              .map(t -> new UpdateFulltextTag().key(t.getKey()).value(t.getValue())
-                  .values(t.getValues()))
-              .collect(Collectors.toList());
+      if (moduleFulltext) {
+        updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
+      } else {
+        updateTypesense(siteId, documentId, action, contentUrls);
+      }
 
-      SetDocumentFulltext fulltext =
-          new SetDocumentFulltext().contentUrls(contentUrls).path(item.getPath()).tags(tags);
+      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
+          ActionType.FULLTEXT, ActionStatus.COMPLETE);
 
-      SetDocumentFulltextRequest req =
-          new SetDocumentFulltextRequest().siteId(siteId).documentId(documentId).document(fulltext);
-
-      this.formkiqClient.setDocumentFulltext(req);
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
@@ -385,6 +484,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       sendWebhook(siteId, documentId, action);
     }
+
+    logger.log(String.format("Updating Action Status to %s", action.status()));
   }
 
   /**
@@ -423,6 +524,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           e.printStackTrace();
           status = ActionStatus.FAILED;
           action.status(status);
+
+          logger.log(String.format("Updating Action Status to %s", action.status()));
 
           this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
         }
@@ -508,6 +611,86 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       }
 
     } catch (URISyntaxException e) {
+      throw new IOException(e);
+    }
+  }
+
+  /**
+   * Update Document Content to Opensearch.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void updateOpensearchFulltext(final LambdaLogger logger, final String siteId,
+      final String documentId, final Action action, final List<String> contentUrls)
+      throws IOException, InterruptedException {
+
+    UpdateFulltext fulltext = new UpdateFulltext().contentUrls(contentUrls);
+
+    UpdateDocumentFulltextRequest req = new UpdateDocumentFulltextRequest().siteId(siteId)
+        .documentId(documentId).document(fulltext);
+
+    boolean updateDocumentFulltext = this.formkiqClient.updateDocumentFulltext(req);
+    if (updateDocumentFulltext) {
+      logger.log(String.format("successfully processed action %s", action.type()));
+    } else {
+      throw new IOException("unable to update Document Fulltext");
+    }
+  }
+
+  /**
+   * Update Typesense Content.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @throws IOException IOException
+   */
+  private void updateTypesense(final String siteId, final String documentId, final Action action,
+      final List<String> contentUrls) throws IOException {
+
+    try {
+
+      Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+      Map<String, AttributeValue> data = this.dbService.get(keys.get(PK), keys.get(SK));
+
+      Map<String, Object> document = new DocumentMapToDocument().apply(data);
+      document = new DocumentToFulltextDocument().apply(document);
+
+      StringBuilder sb =
+          document.containsKey("text") ? new StringBuilder(document.get("text").toString())
+              : new StringBuilder();
+
+      String content = getContent(action, contentUrls);
+      sb.append(" ");
+      sb.append(content);
+      document.put("text", sb.toString());
+
+      HttpResponse<String> response = this.typesense.updateDocument(siteId, documentId, document);
+
+      if (!is2XX(response)) {
+        response = this.typesense.addDocument(siteId, documentId, document);
+
+        if (is404(response)) {
+          response = this.typesense.addCollection(siteId);
+
+          if (is2XX(response)) {
+            response = this.typesense.addDocument(siteId, documentId, document);
+          }
+
+          if (!is2XX(response)) {
+            throw new IOException(response.body());
+          }
+        }
+      }
+
+    } catch (URISyntaxException | InterruptedException e) {
       throw new IOException(e);
     }
   }

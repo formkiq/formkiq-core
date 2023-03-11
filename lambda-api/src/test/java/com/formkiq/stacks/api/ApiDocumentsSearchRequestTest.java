@@ -27,7 +27,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -38,20 +37,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.lambda.typesense.DocumentMapToDocument;
-import com.formkiq.module.lambda.typesense.DocumentToFulltextDocument;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentSearchTag;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TypeSenseExtension;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -68,7 +68,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
 
   private void saveDocument(final String siteId, final String documentId, final String path)
-      throws IOException {
+      throws Exception {
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
     item.setPath(path);
@@ -79,9 +79,9 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
     document = this.fulltext.apply(document);
 
-    TypesenseProcessor processor =
-        new TypesenseProcessor(getMap(), AwsBasicCredentials.create("asd", path));
-    processor.addOrUpdate(siteId, item.getDocumentId(), document);
+    TypesenseProcessor processor = new TypesenseProcessor(getMap(),
+        DynamoDbTestServices.getDynamoDbConnection(), AwsBasicCredentials.create("asd", path));
+    processor.addOrUpdate(siteId, item.getDocumentId(), document, item.getUserId(), false);
   }
 
   /**
@@ -600,7 +600,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * /search meta data.
+   * /search meta 'folder' data.
    *
    * @throws Exception an error has occurred
    */
@@ -654,13 +654,83 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Text Fulltext search.
+   * /search meta 'folder' data & folders only.
    *
    * @throws Exception an error has occurred
    */
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleSearchRequest14() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String username = "joe";
+
+      for (String path : Arrays.asList("a/b/test.txt", "a/c/test.txt", "a/test.txt")) {
+        String documentId = UUID.randomUUID().toString();
+        DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
+        document.setPath(path);
+        getDocumentService().saveDocument(siteId, document, null);
+      }
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      QueryRequest q = new QueryRequest().query(new SearchQuery()
+          .meta(new SearchMetaCriteria().indexType("folder").eq("a").indexFilterBeginsWith("ff#")));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(2, documents.size());
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+
+      assertEquals("b", documents.get(0).get("path"));
+      assertEquals("true", documents.get(0).get("folder").toString());
+      assertNotNull(documents.get(0).get("documentId"));
+
+      assertEquals("c", documents.get(1).get("path"));
+      assertEquals("true", documents.get(1).get("folder").toString());
+      assertNotNull(documents.get(1).get("documentId"));
+
+      // given
+      q = new QueryRequest().query(new SearchQuery().meta(
+          new SearchMetaCriteria().indexType("folder").eq("a/").indexFilterBeginsWith("fi#")));
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      response = handleRequest(event);
+
+      // then
+      m = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+
+      assertEquals("a/test.txt", documents.get(0).get("path"));
+      assertNull(documents.get(0).get("folder"));
+      assertNotNull(documents.get(0).get("documentId"));
+    }
+  }
+
+  /**
+   * Text Fulltext search.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest15() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String documentId = UUID.randomUUID().toString();
@@ -705,7 +775,7 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandleSearchRequest15() throws Exception {
+  public void testHandleSearchRequest16() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       final String text = UUID.randomUUID().toString();
@@ -731,6 +801,49 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * /search meta path.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleSearchRequest17() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date now = new Date();
+      String username = "joe";
+      String path = "something/path.txt";
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
+      document.setPath(path);
+      getDocumentService().saveDocument(siteId, document, null);
+
+      QueryRequest q =
+          new QueryRequest().query(new SearchQuery().meta(new SearchMetaCriteria().path(path)));
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-search01.json");
+      addParameter(event, "siteId", siteId);
+      event.setIsBase64Encoded(Boolean.FALSE);
+      event.setBody(GsonUtil.getInstance().toJson(q));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m0 = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m0.get("statusCode")));
+      DynamicObject resp0 = new DynamicObject(fromJson(m0.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp0.getList("documents");
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+      assertEquals(documentId, documents.get(0).get("documentId"));
     }
   }
 }

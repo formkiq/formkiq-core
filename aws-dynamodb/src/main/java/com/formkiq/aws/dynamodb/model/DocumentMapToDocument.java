@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambda.typesense;
+package com.formkiq.aws.dynamodb.model;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
 import java.util.Arrays;
@@ -30,33 +30,45 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import software.amazon.awssdk.utils.StringUtils;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
  * {@link Function} for converting {@link Map} to {@link Map}.
  *
  */
-public class DocumentMapToDocument implements Function<Map<String, Object>, Map<String, Object>> {
+public class DocumentMapToDocument
+    implements Function<Map<String, ? extends Object>, Map<String, Object>> {
 
   /** Fields to Process. */
   private static final List<String> FIELDS = Arrays.asList("documentId", "path", "userId");
 
   @SuppressWarnings("unchecked")
   @Override
-  public Map<String, Object> apply(final Map<String, Object> data) {
+  public Map<String, Object> apply(final Map<String, ? extends Object> data) {
 
     Map<String, Object> document = new HashMap<>();
 
     for (String field : FIELDS) {
 
-      if (data.containsKey(field)) {
+      Object ob = data.get(field);
 
-        Map<String, Object> values = (Map<String, Object>) data.get(field);
-        String value = values.get("S").toString();
+      if (ob != null) {
 
-        if (!StringUtils.isEmpty(value)) {
-          // document.add(new StringField(field, value, Field.Store.YES));
+        String value = null;
+
+        if (ob instanceof AttributeValue) {
+
+          AttributeValue av = (AttributeValue) ob;
+          value = av.s();
+
+        } else {
+          Map<String, Object> values = (Map<String, Object>) data.get(field);
+          value = values.get("S").toString();
+        }
+
+        if (!Strings.isEmpty(value)) {
           document.put(field, value);
         }
       }
@@ -68,12 +80,13 @@ public class DocumentMapToDocument implements Function<Map<String, Object>, Map<
 
     metadata.forEach(m -> {
       Map<String, Object> values = (Map<String, Object>) data.get(m);
-      String value = values.get("S").toString();
-      // document.add(new StringField(m, value, Field.Store.YES));
-      document.put(m, value);
+
+      if (values.containsKey("S")) {
+        String value = values.get("S").toString();
+        document.put(m, value);
+      }
     });
 
     return document;
   }
-
 }

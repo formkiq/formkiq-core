@@ -65,12 +65,26 @@ Parameters:
     Description: (optional) Random string of characters for https://typesense.org API access 
     Default: ""
 
+  TypesenseMemory:
+    Type: String
+    Description: The amount of memory used by Typesense (GB). (Suggested to be 2-3 times the size of your data)
+    Default: "1024"
+    AllowedValues: ["1024", "2048", "3072", "4096", "5120", "6144", "7168", "8192", "16384", "32768"]
+    
   CapacityProvider:
     Description: AWS Fargate capacity provider to use, either the FARGATE or FARGATE_SPOT 
     Default: "FARGATE_SPOT"
     Type: String
     AllowedValues: ["FARGATE_SPOT", "FARGATE"]
     
+Conditions:
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
 Resources:
 
   EditionParameter:
@@ -200,6 +214,14 @@ Resources:
           Fn::GetAtt:
           - Cognito
           - Outputs.Domain
+        HostedZoneId:
+          Fn::GetAtt:
+          - CoreConsole
+          - Outputs.HostedZoneId
+        CloudFrontDistributionDomainName: 
+          Fn::GetAtt:
+          - CoreConsole
+          - Outputs.CloudFrontDistributionDomainName                       
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -311,7 +333,8 @@ Resources:
           Fn::GetAtt:
           - TypeSenseService
           - Outputs.TypesenseApiEndpoint
-          
+        VpcStackName:
+          Ref: VpcStackName
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -418,6 +441,8 @@ Resources:
           Ref: VpcStackName
         ECSCluster:
           Ref: ECSCluster
+        TypesenseMemory:
+          Ref: TypesenseMemory
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -425,6 +450,54 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
+  TypesenseApiKeyParameter:
+    Type: AWS::SSM::Parameter
+    Condition: HasTypesenseApiKey
+    Properties:
+      Description: "Typesense API Key"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/typesense/ApiKey"
+      Type: String
+      Value:      
+        Ref: TypesenseApiKey
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ Core"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  CognitoApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Cognito API ID"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/CognitoApiId"
+      Type: String
+      Value:
+        Fn::GetAtt: 
+        - Cognito
+        - Outputs.HttpApi
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  Monitoring:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - TypeSenseService
+      - CoreStorage
+      - CoreApi
+      - Cognito
+    Properties:
+      Location: ./monitoring.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+          
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod
@@ -505,3 +578,10 @@ Outputs:
       Fn::GetAtt: 
       - CoreStorage
       - Outputs.DocumentsStageS3Bucket
+      
+  TypesenseApiEndpoint:
+    Description: Typesense API endpoint
+    Value:
+      Fn::GetAtt:
+      - TypeSenseService
+      - Outputs.TypesenseApiEndpoint

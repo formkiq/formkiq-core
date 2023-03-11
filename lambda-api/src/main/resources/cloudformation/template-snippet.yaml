@@ -100,9 +100,57 @@ Parameters:
   TypesenseApiEndpoint:
     Type: String
     Description: TypeSense API Endpoint
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
+    
+Conditions:
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: CertificateStackName
+        - ''
         
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
+  CreateTypesenseResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypesenseApiKey
+      
 Resources:        
-        
+
+  DocumentsApiRequestsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${DocumentsApiRequests}"
+      RetentionInDays: 90
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      
   DocumentsApiRequests:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -130,6 +178,8 @@ Resources:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
           STAGE_DOCUMENTS_S3_BUCKET: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+          SNS_DOCUMENT_EVENT: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
           ENABLE_PUBLIC_URLS: 
             Fn::Sub: "${EnablePublicUrls}"
           FORMKIQ_TYPE: 
@@ -139,10 +189,17 @@ Resources:
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
           TYPESENSE_HOST:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
             Ref: TypesenseApiKey
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
       Role: 
         Fn::GetAtt:
         - DocumentsApiRequestsRole
@@ -166,6 +223,20 @@ Resources:
         Ref: DocumentsApiRequests
       Principal: apigateway.amazonaws.com
 
+  DocumentsStageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/APIDocumentsHttpAccessLogs"
+      
+  IamDocumentsStageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/APIDocumentsIamAccessLogs"
+      
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -175,7 +246,25 @@ Resources:
       Description: 
         Fn::Sub: "Documents API ${AppEnvironment}"
       StageName: "$default"
-    
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - DocumentsStageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
+
+  DocumentsStageMapping:
+    Condition: HasCertificateStackName
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    Properties:
+      DomainName:
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+      ApiId: 
+        Ref: DocumentsHttpApi
+      Stage: 
+        Ref: DocumentsStage
+
   IamDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -185,7 +274,42 @@ Resources:
       Description: 
         Fn::Sub: "Documents IAM API ${AppEnvironment}"
       StageName: "$default"
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - IamDocumentsStageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
+  IamDocumentsStageMapping:
+    Condition: HasCertificateStackName
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    Properties:
+      DomainName:
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-IamApiDomain'
+      ApiId: 
+        Ref: DocumentsIamApi
+      Stage: 
+        Ref: IamDocumentsStage
+
+  DocumentsHttpApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ID for the API endpoint that uses Cognito authorization"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpId"
+      Type: String
+      Value: 
+        Ref: DocumentsHttpApi
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -193,8 +317,15 @@ Resources:
       Name: 
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
-      Value: 
-        Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Value:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::Join:
+            - ''
+            - - 'https://'
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -211,7 +342,14 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsPublicHttpUrl"
       Type: String
       Value: 
-        Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::Join:
+            - ''
+            - - 'https://'
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -262,6 +400,7 @@ Resources:
               - s3:GetObjectVersion
               - s3:PutObject
               - s3:DeleteObject
+              - s3:DeleteObjectVersion
               - s3:ListBucket
               - s3:ListBucketVersions
               Resource:
@@ -319,7 +458,19 @@ Resources:
               Resource:
               - Fn::Sub: "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
-              
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              Resource:
+              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            - Effect: Allow
+              Action:
+              - sns:Publish
+              Resource:
+              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -328,7 +479,31 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
       Value: 
-        Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::Join:
+            - ''
+            - - 'https://'
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentsIamApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ID for the API endpoint that uses IAM authorization"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamId"
+      Type: String
+      Value: 
+        Ref: DocumentsIamApi
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -516,8 +691,22 @@ Outputs:
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value: 
-      Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Fn::If:
+        - HasCertificateStackName
+        - Fn::Join:
+          - ''
+          - - 'https://'
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-IamApiDomain'
+        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"    
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
-    Value: 
-      Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Value:
+      Fn::If:
+        - HasCertificateStackName
+        - Fn::Join:
+          - ''
+          - - 'https://'
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+        - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

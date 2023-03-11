@@ -66,7 +66,7 @@ public class WebhooksServiceImplTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.db = DynamoDbTestServices.getDynamoDbConnection(null);
+    this.db = DynamoDbTestServices.getDynamoDbConnection();
     this.service = new WebhooksServiceImpl(this.db, "Documents");
   }
 

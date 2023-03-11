@@ -62,7 +62,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -146,8 +145,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static String snsDocumentEvent;
   /** {@link SnsService}. */
   private static SnsService snsService;
-  /** {@link SqsConnectionBuilder}. */
-  private static SqsConnectionBuilder sqsBuilder;
   /** SQS Sns Create QueueUrl. */
   private static String sqsDocumentEventUrl;
   /** {@link SqsService}. */
@@ -178,8 +175,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public static void beforeClass() throws URISyntaxException, InterruptedException, IOException {
 
     s3Builder = TestServices.getS3Connection(null);
-    sqsBuilder = TestServices.getSqsConnection(null);
-    dbBuilder = DynamoDbTestServices.getDynamoDbConnection(null);
+    dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
     db = dbBuilder.build();
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     snsBuilder = TestServices.getSnsConnection(null);
@@ -191,6 +187,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
     }
 
+    SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsService(sqsBuilder);
 
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
@@ -355,8 +352,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     Map<String, String> map = new HashMap<>();
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    map.put("SQS_ERROR_URL",
-        TestServices.getEndpointOverride(Service.SQS).toString() + "/queue/" + ERROR_SQS_QUEUE);
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     map.put("AWS_REGION", AWS_REGION.id());
     map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
@@ -366,8 +361,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
-    this.handler =
-        new DocumentsS3Update(map, null, dbBuilder, s3Builder, ssmBuilder, sqsBuilder, snsBuilder);
+    this.handler = new DocumentsS3Update(map, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
 
     for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);
@@ -489,17 +483,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int count = 2;
+      final int count = 1;
       assertEquals(count, tags.getResults().size());
 
       int i = 0;
-      assertEquals("path", tags.getResults().get(i).getKey());
-      assertEquals("test.txt", tags.getResults().get(i).getValue());
-      assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i).getType());
-      assertEquals("joe", tags.getResults().get(i).getUserId());
-      assertNotNull(tags.getResults().get(i++).getInsertedDate());
-
       assertEquals("untagged", tags.getResults().get(i).getKey());
       assertEquals("true", tags.getResults().get(i).getValue());
       assertEquals(BUCKET_KEY, tags.getResults().get(i).getDocumentId());
@@ -560,13 +547,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
-      final int size = 4;
+      final int size = 3;
       int i = 0;
       assertEquals(size, tags.getResults().size());
       assertEquals("CLAMAV_SCAN_STATUS", tags.getResults().get(i).getKey());
       assertEquals("GOOD", tags.getResults().get(i).getValue());
-      assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i++).getType());
-      assertEquals("path", tags.getResults().get(i).getKey());
       assertEquals(DocumentTagType.SYSTEMDEFINED, tags.getResults().get(i++).getType());
       assertEquals("person", tags.getResults().get(i).getKey());
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i++).getType());
@@ -672,13 +657,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
         assertNull(m.get(GSI1_PK));
       }
 
-      final int count = 2;
+      final int count = 1;
       int i = 0;
       assertEquals(count, tags.getResults().size());
-      assertDocumentTagEquals(new DocumentTag().setKey("path").setValue("test.txt")
-          .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
-          tags.getResults().get(i++));
-
       assertDocumentTagEquals(new DocumentTag().setKey("untagged").setValue("true")
           .setDocumentId(BUCKET_KEY).setType(DocumentTagType.SYSTEMDEFINED).setUserId("joe"),
           tags.getResults().get(i++));
@@ -968,10 +949,15 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
+      try {
+        handleRequest(siteId, BUCKET_KEY, map);
+      } catch (Exception e) {
+        // then
+        assertTrue(e.getMessage().contains("Unable to delete document"));
 
-      // then
-      assertNotNull(item);
+        DocumentItem item = service.findDocument(siteId, doc.getDocumentId());
+        assertNotNull(item);
+      }
     }
   }
 

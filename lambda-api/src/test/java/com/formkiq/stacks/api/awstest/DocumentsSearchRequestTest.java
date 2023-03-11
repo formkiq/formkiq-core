@@ -83,7 +83,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch01() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      addDocumentWithoutFile(client, null);
+      addDocumentWithoutFile(client, null, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
       // when
@@ -135,7 +135,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch03() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
           .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
       // when
@@ -161,7 +161,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch04() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      addDocumentWithoutFile(client, null);
+      addDocumentWithoutFile(client, null, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))
               .documentIds(Arrays.asList(UUID.randomUUID().toString())));
@@ -183,7 +183,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch05() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
@@ -227,7 +227,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch06() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
       client.addDocumentTag(tagRequest);
@@ -269,7 +269,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     // given
     for (FormKiqClientV1 client : getFormKiqClients()) {
       String tagKey = UUID.randomUUID().toString();
-      String documentId = addDocumentWithoutFile(client, null);
+      String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
       client.addDocumentTag(tagRequest);
@@ -313,7 +313,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     final int limit = 100;
     for (FormKiqClientV1 client : getFormKiqClients()) {
 
-      String documentId = addDocumentWithoutFile(client, path);
+      String documentId = addDocumentWithoutFile(client, siteId, path);
       SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)
           .query(new DocumentSearchQuery().text(text)).limit(limit);
 

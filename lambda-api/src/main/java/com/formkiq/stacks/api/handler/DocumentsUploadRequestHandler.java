@@ -26,8 +26,6 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,7 +98,6 @@ public class DocumentsUploadRequestHandler
       final DynamicDocumentItem item)
       throws UnsupportedEncodingException, BadException, ValidationException {
 
-    String path = item.getPath();
     Date date = item.getInsertedDate();
     String documentId = item.getDocumentId();
     String username = item.getUserId();
@@ -116,14 +113,6 @@ public class DocumentsUploadRequestHandler
           DocumentTagType.SYSTEMDEFINED));
     }
 
-    if (path != null) {
-
-      path = URLDecoder.decode(path, StandardCharsets.UTF_8.toString());
-
-      tags.add(
-          new DocumentTag(documentId, "path", path, date, username, DocumentTagType.SYSTEMDEFINED));
-    }
-
     validateTagSchema(awsservice, siteId, item, username, tags);
 
     String urlstring = generatePresignedUrl(event, awsservice, logger, siteId, documentId);
@@ -136,7 +125,7 @@ public class DocumentsUploadRequestHandler
       DocumentService service = awsservice.getExtension(DocumentService.class);
       logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
 
-      SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(false);
+      SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
       service.saveDocument(siteId, item, tags, options);
 
       if (item.containsKey("actions")) {
@@ -263,6 +252,11 @@ public class DocumentsUploadRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/upload";
+  }
+
+  @Override
+  public boolean isReadonly(final String method) {
+    return false;
   }
 
   @Override

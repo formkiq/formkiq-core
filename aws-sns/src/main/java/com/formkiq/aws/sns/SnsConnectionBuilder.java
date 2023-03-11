@@ -24,7 +24,6 @@
 package com.formkiq.aws.sns;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -96,12 +95,11 @@ public class SnsConnectionBuilder {
   /**
    * Set Endpoint Override.
    * 
-   * @param uri {@link String}
+   * @param uri {@link URI}
    * @return {@link SnsConnectionBuilder}
-   * @throws URISyntaxException URISyntaxException
    */
-  public SnsConnectionBuilder setEndpointOverride(final String uri) throws URISyntaxException {
-    this.builder = this.builder.endpointOverride(new URI(uri));
+  public SnsConnectionBuilder setEndpointOverride(final URI uri) {
+    this.builder = this.builder.endpointOverride(uri);
     return this;
   }
 

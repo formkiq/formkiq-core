@@ -168,7 +168,8 @@ public class AwsResourceTest {
               page.locator("input:has-text(\"Sign In\")").click();
             });
 
-            page.waitForSelector("button:has-text(\"Create new\")");
+            page.waitForSelector("button:has-text(\"New\")");
+            page.waitForSelector("text=Documents & Folders");
           }
         }
       }
@@ -185,7 +186,7 @@ public class AwsResourceTest {
     final String consoleBucket =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console");
 
-    S3ObjectMetadata resp = s3.getObjectMetadata(consoleBucket, version + "/index.html");
+    S3ObjectMetadata resp = s3.getObjectMetadata(consoleBucket, version + "/index.html", null);
     assertTrue(resp.isObjectExists());
 
     assertTrue(s3.exists(consoleBucket));
@@ -196,7 +197,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v3.0.0",
+    assertEquals("v3.1.0",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));

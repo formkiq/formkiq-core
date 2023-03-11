@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -62,8 +63,11 @@ import com.formkiq.stacks.client.models.AddDocumentResponse;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.models.Document;
 import com.formkiq.stacks.client.models.DocumentMetadata;
+import com.formkiq.stacks.client.models.DocumentSearchMetadata;
+import com.formkiq.stacks.client.models.DocumentSearchQuery;
 import com.formkiq.stacks.client.models.DocumentTags;
 import com.formkiq.stacks.client.models.DocumentWithChildren;
+import com.formkiq.stacks.client.models.Documents;
 import com.formkiq.stacks.client.models.UpdateDocument;
 import com.formkiq.stacks.client.requests.AddDocumentRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
@@ -71,6 +75,7 @@ import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.GetDocumentsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
+import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
 import com.formkiq.stacks.common.formats.MimeType;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -390,13 +395,14 @@ public class DocumentsRequestTest extends AbstractApiTest {
       // when - fetch document
       while (true) {
         map = fetchDocument(client, documentId);
-        if (map.containsKey("contentType")) {
+        if (map.containsKey("contentType") && map.get("contentLength") != null) {
           assertTrue(map.get("contentType").toString().startsWith("text/plain"));
           break;
         }
 
         Thread.sleep(ONE_SECOND);
       }
+      assertEquals("9.0", map.get("contentLength").toString());
 
       // given
       UpdateDocument updateDocument = new UpdateDocument()
@@ -414,7 +420,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
         map = fetchDocument(client, documentId);
 
         if (map.containsKey("contentLength")
-            && "application/pdf".equals(map.get("contentType").toString())) {
+            && "application/pdf".equals(map.get("contentType").toString())
+            && !"9.0".equals(map.get("contentLength").toString())) {
           assertEquals("application/pdf", map.get("contentType").toString());
           assertNotNull(map.get("contentLength"));
           break;
@@ -423,27 +430,34 @@ public class DocumentsRequestTest extends AbstractApiTest {
         Thread.sleep(ONE_SECOND);
       }
 
-      // given
-      DeleteDocumentRequest delRequest = new DeleteDocumentRequest().documentId(documentId);
-      GetDocumentRequest getRequest = new GetDocumentRequest().documentId(documentId);
+      assertNotEquals("9.0", map.get("contentLength").toString());
 
-      // when - delete document
-      response = client.deleteDocumentAsHttpResponse(delRequest);
-      assertEquals(STATUS_OK, response.statusCode());
-      assertRequestCorsHeaders(response.headers());
+      testPost01Delete(client, documentId);
+    }
+  }
 
-      while (true) {
-        // when - fetch document
-        response = client.getDocumentAsHttpResponse(getRequest);
-        // then
-        if (STATUS_NOT_FOUND == response.statusCode()) {
-          assertEquals(STATUS_NOT_FOUND, response.statusCode());
-          assertRequestCorsHeaders(response.headers());
-          break;
-        }
+  private void testPost01Delete(final FormKiqClientV1 client, final String documentId)
+      throws IOException, InterruptedException {
+    // given
+    DeleteDocumentRequest delRequest = new DeleteDocumentRequest().documentId(documentId);
+    GetDocumentRequest getRequest = new GetDocumentRequest().documentId(documentId);
 
-        Thread.sleep(ONE_SECOND);
+    // when - delete document
+    HttpResponse<String> response = client.deleteDocumentAsHttpResponse(delRequest);
+    assertEquals(STATUS_OK, response.statusCode());
+    assertRequestCorsHeaders(response.headers());
+
+    while (true) {
+      // when - fetch document
+      response = client.getDocumentAsHttpResponse(getRequest);
+      // then
+      if (STATUS_NOT_FOUND == response.statusCode()) {
+        assertEquals(STATUS_NOT_FOUND, response.statusCode());
+        assertRequestCorsHeaders(response.headers());
+        break;
       }
+
+      Thread.sleep(ONE_SECOND);
     }
   }
 
@@ -666,13 +680,16 @@ public class DocumentsRequestTest extends AbstractApiTest {
         final DocumentWithChildren documentc = getDocument(client, documentId, true);
         DocumentTags tags = getDocumentTags(client, documentId);
 
-        assertEquals(2, tags.tags().size());
+        // then
+        assertEquals(1, tags.tags().size());
         assertEquals("formName", tags.tags().get(0).key());
         assertEquals("Job Application Form", tags.tags().get(0).value());
-        assertEquals("path", tags.tags().get(1).key());
-        assertEquals(documentId, tags.tags().get(1).value());
 
-        // then
+        Documents search = client.search(new SearchDocumentsRequest()
+            .query(new DocumentSearchQuery().meta(new DocumentSearchMetadata().path(documentId))));
+        assertEquals(1, search.documents().size());
+        assertEquals(documentId, search.documents().get(0).documentId());
+
         assertNotNull(documentc);
         assertEquals(1, documentc.documents().size());
         assertEquals(response.documents().get(0).documentId(),
@@ -800,8 +817,6 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
       DocumentTags tags =
           client.getDocumentTags(new GetDocumentTagsRequest().documentId(documentId));
-      assertEquals("newpath.txt",
-          tags.tags().stream().filter(t -> t.key().equals("path")).findAny().get().value());
       assertEquals("555",
           tags.tags().stream().filter(t -> t.key().equals("person")).findAny().get().value());
       assertEquals("thing",

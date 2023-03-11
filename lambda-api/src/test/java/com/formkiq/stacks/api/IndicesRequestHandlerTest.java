@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
@@ -40,6 +41,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -171,13 +173,63 @@ public class IndicesRequestHandlerTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /indices/{type}/{key} request, invalid type.
+   * POST /indices/{type}/{key} request, TAGS type.
    *
    * @throws Exception an error has occurred
    */
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDelete04() throws Exception {
+
+    DocumentService ds = getAwsServices().getExtension(DocumentService.class);
+    DocumentSearchService dss = getAwsServices().getExtension(DocumentSearchService.class);
+
+    String indexType = "tags";
+    SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().indexType(indexType));
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      DocumentItem item = new DocumentItemDynamoDb(UUID.randomUUID().toString(), new Date(), "joe");
+      String tagKey = "category";
+      String tagValue = "person";
+      DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
+      ds.saveDocument(siteId, item, Arrays.asList(tag));
+
+      PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(1, results.getResults().size());
+
+      String indexKey = "category";
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-delete-indices.json");
+      addParameter(event, "siteId", siteId);
+      event.setPathParameters(Map.of("indexType", indexType, "indexKey", indexKey));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"Folder deleted\"}", m.get("body"));
+
+      results = dss.search(siteId, q, null, MAX_RESULTS);
+      assertEquals(0, results.getResults().size());
+    }
+  }
+
+
+  /**
+   * POST /indices/{type}/{key} request, invalid type.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleDelete05() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

@@ -299,7 +299,7 @@ public abstract class AbstractAwsTest {
       throws InterruptedException {
 
     while (true) {
-      S3ObjectMetadata meta = getS3Service().getObjectMetadata(getDocumentsbucketname(), key);
+      S3ObjectMetadata meta = getS3Service().getObjectMetadata(getDocumentsbucketname(), key, null);
       if (meta.isObjectExists()) {
         assertEquals(contentType, meta.getContentType());
         break;

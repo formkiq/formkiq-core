@@ -382,20 +382,21 @@ public abstract class AbstractApiTest {
    * Add "file" but this just creates DynamoDB record and not the S3 file.
    * 
    * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
    * @param path {@link String}
    * @return {@link String}
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  protected String addDocumentWithoutFile(final FormKiqClientV1 client, final String path)
-      throws IOException, URISyntaxException, InterruptedException {
+  protected String addDocumentWithoutFile(final FormKiqClientV1 client, final String siteId,
+      final String path) throws IOException, URISyntaxException, InterruptedException {
     // given
     final int status = 200;
     final String content = "sample content";
     String p = path != null ? URLEncoder.encode(path, StandardCharsets.UTF_8) : null;
     GetDocumentUploadRequest request =
-        new GetDocumentUploadRequest().path(p).contentLength(content.length());
+        new GetDocumentUploadRequest().siteId(siteId).path(p).contentLength(content.length());
 
     // when
     HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);

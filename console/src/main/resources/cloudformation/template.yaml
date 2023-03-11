@@ -17,7 +17,7 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v3.0.0
+    Default: v3.1.0
     
   FormKiQType:
     Description: The type of FormKiQ installation
@@ -25,6 +25,19 @@ Parameters:
     Type: String
     AllowedValues: ["core", "enterprise"]
 
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
+
+Conditions:
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: CertificateStackName
+        - ''
+                  
 Resources:
 
   Console:
@@ -142,7 +155,7 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-
+          
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -168,6 +181,31 @@ Resources:
           TargetOriginId: s3origin
           ViewerProtocolPolicy: redirect-to-https
         DefaultRootObject: index.html
+        Aliases:
+          Fn::If:
+          - HasCertificateStackName
+          - Fn::Split:
+              - ","
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+          - Ref: "AWS::NoValue"
+        ViewerCertificate:
+          AcmCertificateArn:
+            Fn::If:
+            - HasCertificateStackName
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-ConsoleCertificateArn'
+            - Ref: "AWS::NoValue"
+          SslSupportMethod:
+            Fn::If:
+            - HasCertificateStackName
+            - sni-only
+            - Ref: "AWS::NoValue"
+          CloudFrontDefaultCertificate:
+            Fn::If:
+            - HasCertificateStackName
+            - Ref: "AWS::NoValue"
+            - 'true'
         Enabled: true
         HttpVersion: http2
         CustomErrorResponses:
@@ -196,14 +234,21 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/console/Url"
       Type: String
       Value:
-        Fn::Join: 
-          - ""
-          - 
-            - 'https://'
-            - Fn::GetAtt:
-              - CloudFrontDistribution
-              - DomainName
-
+        Fn::If:
+        - HasCertificateStackName
+        - Fn::Join: 
+            - ""
+            - 
+              - 'https://'
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+        - Fn::Join: 
+            - ""
+            - 
+              - 'https://'
+              - Fn::GetAtt:
+                - CloudFrontDistribution
+                - DomainName
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -250,7 +295,15 @@ Outputs:
   ConsoleUrl:
     Description: Console URL
     Value:
-      Fn::Join: 
+      Fn::If:
+      - HasCertificateStackName
+      - Fn::Join: 
+          - ""
+          - 
+            - 'https://'
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+      - Fn::Join: 
           - ""
           - 
             - 'https://'
@@ -265,3 +318,17 @@ Outputs:
   ConsoleVersion:
     Value:
       Ref: ConsoleVersion
+      
+  HostedZoneId:
+    Value:
+      Fn::If:
+      - HasCertificateStackName
+      - Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-HostedZoneId'
+      - ""
+      
+  CloudFrontDistributionDomainName:
+    Value:
+      Fn::GetAtt:
+      - CloudFrontDistribution
+      - DomainName

@@ -24,7 +24,6 @@
 package com.formkiq.aws.dynamodb;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -100,12 +99,11 @@ public class DynamoDbConnectionBuilder {
   /**
    * Set Endpoint Override.
    * 
-   * @param uri {@link String}
+   * @param uri {@link URI}
    * @return {@link DynamoDbConnectionBuilder}
-   * @throws URISyntaxException URISyntaxException
    */
-  public DynamoDbConnectionBuilder setEndpointOverride(final String uri) throws URISyntaxException {
-    this.builder = this.builder.endpointOverride(new URI(uri));
+  public DynamoDbConnectionBuilder setEndpointOverride(final URI uri) {
+    this.builder = this.builder.endpointOverride(uri);
     return this;
   }
 

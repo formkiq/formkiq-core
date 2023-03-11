@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Monitoring
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    AllowedPattern: ".+"
+    
+Resources:
+
+  ApplicationDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: 
+        Fn::Sub: "${AWS::StackName}-dashboard"
+      DashboardBody: 
+        Fn::Sub: '{"widgets":[{"height":6,"width":6,"y":6,"x":0,"type":"metric","properties":{"metrics":[["AWS/Lambda","Invocations","FunctionName","{{resolve:ssm:/formkiq/${AppEnvironment}/lambda/DocumentsApiRequests}}"],[".","Errors",".","."],[".","Throttles",".","."],[".","Duration",".",".",{"stat":"Average"}],[".","ConcurrentExecutions",".",".",{"stat":"Maximum"}]],"view":"timeSeries","region":"${AWS::Region}","stacked":false,"title":"Documents Api","period":60,"stat":"Sum"}},{"height":6,"width":6,"y":6,"x":12,"type":"metric","properties":{"metrics":[["AWS/Lambda","Invocations","FunctionName","{{resolve:ssm:/formkiq/${AppEnvironment}/lambda/DocumentsUpdateObject}}"],[".","Errors",".","."],[".","Throttles",".","."],[".","Duration",".",".",{"stat":"Average"}],[".","ConcurrentExecutions",".",".",{"stat":"Maximum"}]],"view":"timeSeries","region":"${AWS::Region}","stacked":false,"title":"Documents Content Update","period":60,"stat":"Sum"}},{"height":6,"width":6,"y":6,"x":18,"type":"metric","properties":{"metrics":[["AWS/Lambda","Invocations","FunctionName","{{resolve:ssm:/formkiq/${AppEnvironment}/lambda/StagingCreateObject}}"],[".","Errors",".","."],[".","Throttles",".","."],[".","Duration",".",".",{"stat":"Average"}],[".","ConcurrentExecutions",".",".",{"stat":"Maximum"}]],"view":"timeSeries","region":"${AWS::Region}","stacked":false,"title":"Add Documents","period":60,"stat":"Sum"}},{"height":6,"width":6,"y":6,"x":6,"type":"metric","properties":{"metrics":[["AWS/Lambda","Invocations","FunctionName","{{resolve:ssm:/formkiq/${AppEnvironment}/lambda/DocumentActionsProcessor}}"],[".","Errors",".","."],[".","Throttles",".","."],[".","Duration",".",".",{"stat":"Average"}],[".","ConcurrentExecutions",".",".",{"stat":"Maximum"}]],"view":"timeSeries","region":"${AWS::Region}","stacked":false,"title":"Document Actions","period":60,"stat":"Sum"}},{"height":6,"width":6,"y":12,"x":0,"type":"metric","properties":{"metrics":[["AWS/ApiGateway","4xx","ApiId","{{resolve:ssm:/formkiq/${AppEnvironment}/api/DocumentsHttpId}}",{"yAxis":"right"}],[".","5xx",".",".",{"yAxis":"right"}],[".","DataProcessed",".",".",{"yAxis":"left"}],[".","Count",".",".",{"label":"Count","yAxis":"right"}],[".","IntegrationLatency",".",".",{"stat":"Average"}],[".","Latency",".",".",{"stat":"Average"}]],"view":"timeSeries","stacked":false,"region":"${AWS::Region}","period":60,"stat":"Sum","title":"Document Http API"}},{"height":6,"width":24,"y":0,"x":0,"type":"metric","properties":{"metrics":[["AWS/Lambda","Invocations","FunctionName","{{resolve:ssm:/formkiq/${AppEnvironment}/lambda/StagingCreateObject}}",{"label":"Processed Documents"}],["AWS/Lambda","Invocations","FunctionName","{{resolve:ssm:/formkiq/${AppEnvironment}/lambda/DocumentsApiRequests}}",{"label":"API Requests"}]],"view":"timeSeries","stacked":false,"title":"Document Metrics","region":"${AWS::Region}","period":60,"stat":"Sum"}},{"height":6,"width":6,"y":12,"x":6,"type":"metric","properties":{"metrics":[["AWS/ApiGateway","4xx","ApiId","{{resolve:ssm:/formkiq/${AppEnvironment}/api/DocumentsIamId}}",{"yAxis":"right"}],[".","5xx",".",".",{"yAxis":"right"}],[".","DataProcessed",".",".",{"yAxis":"left"}],[".","Count",".",".",{"label":"Count","yAxis":"right"}],[".","IntegrationLatency",".",".",{"stat":"Average"}],[".","Latency",".",".",{"stat":"Average"}]],"view":"timeSeries","stacked":false,"region":"${AWS::Region}","period":60,"stat":"Sum","title":"Document IAM API"}},{"height":6,"width":6,"y":12,"x":12,"type":"metric","properties":{"metrics":[["AWS/ApiGateway","4xx","ApiId","{{resolve:ssm:/formkiq/${AppEnvironment}/api/CognitoApiId}}",{"yAxis":"right"}],[".","5xx",".",".",{"yAxis":"right"}],[".","DataProcessed",".",".",{"yAxis":"left"}],[".","Count",".",".",{"label":"Count","yAxis":"right"}],[".","IntegrationLatency",".",".",{"stat":"Average"}],[".","Latency",".",".",{"stat":"Average"}]],"view":"timeSeries","stacked":false,"region":"${AWS::Region}","period":60,"stat":"Sum","title":"Cognito API"}}]}'        
+          
+Outputs:
+
+  DashboardURL:
+    Description: "Dashboard URL"
+    Value: 
+      Fn::Sub: "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${ApplicationDashboard}"

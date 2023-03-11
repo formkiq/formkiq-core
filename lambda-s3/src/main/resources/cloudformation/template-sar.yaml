@@ -199,6 +199,30 @@ Resources:
           Value: 
             Fn::Sub: "${AWS::StackName}"
 
+  DocumentActionsProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda function to process Document Actions requests"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/DocumentActionsProcessor"
+      Type: String
+      Value: 
+        Ref: DocumentActionsProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentActionsProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${DocumentActionsProcessor}"
+      RetentionInDays: 90
+      
   DocumentActionsProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -225,6 +249,8 @@ Resources:
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Ref: DocumentSyncs
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -245,7 +271,14 @@ Resources:
               - DocumentActionsQueue
               - Arn
             BatchSize: 10          
-          
+
+  StagingS3CreateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${StagingS3Create}"
+      RetentionInDays: 90
+      
   StagingS3Create:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -274,6 +307,8 @@ Resources:
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Ref: DocumentSyncs
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -321,7 +356,14 @@ Resources:
         - ''
         - - 'arn:aws:s3:::'
           - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
-              
+
+  DocumentsS3UpdateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/${AWS::StackName}/${DocumentsS3Update}"
+      RetentionInDays: 90
+
   DocumentsS3Update:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -348,6 +390,8 @@ Resources:
           FormKiQType:
             Ref: FormKiQType
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
+          DOCUMENT_SYNC_TABLE: 
+            Ref: DocumentSyncs
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -623,6 +667,11 @@ Resources:
             - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
           - Effect: Allow
             Action:
+            - dynamodb:PutItem
+            Resource:
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
+          - Effect: Allow
+            Action:
             - sqs:ReceiveMessage
             - sqs:DeleteMessage
             - sqs:GetQueueAttributes
@@ -813,12 +862,65 @@ Resources:
         - 
           AttributeName: "SK"
           AttributeType: "S"
+          
+  DocumentSyncs:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documentsyncs"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+
+  DocumentSyncsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Document Sync table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName"
+      Type: String
+      Value: 
+        Ref: DocumentSyncs
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
 Outputs:
 
   DocumentsTableName:
     Value:
       Ref: Documents
 
+  DocumentSyncsTableName:
+    Value:
+      Ref: DocumentSyncs
+      
   CacheTableName:
     Value:
       Ref: Cache

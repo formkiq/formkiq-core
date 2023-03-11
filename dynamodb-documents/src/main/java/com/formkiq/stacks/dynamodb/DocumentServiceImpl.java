@@ -55,6 +55,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
@@ -98,8 +99,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private String documentTableName;
   /** {@link FolderIndexProcessor}. */
   private FolderIndexProcessor folderIndexProcessor;
-  /** {@link GlobalIndexWriter}. */
-  private GlobalIndexWriter indexWriter = new GlobalIndexWriter();
+  /** {@link GlobalIndexService}. */
+  private GlobalIndexService indexWriter;
   /** Last Short Date. */
   private String lastShortDate = null;
   /** {@link DocumentVersionService}. */
@@ -122,6 +123,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
@@ -175,7 +177,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
 
-      this.indexWriter.writeTagIndex(this.documentTableName, this.dbClient, siteId, tagKeys);
+      this.indexWriter.writeTagIndex(siteId, tagKeys);
     }
   }
 
@@ -215,6 +217,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final String documentId) {
 
     Map<String, AttributeValue> startkey = null;
+
+    this.versionsService.deleteAllVersionIds(this.dbClient, siteId, documentId);
 
     DocumentItem item = findDocument(siteId, documentId);
 
@@ -937,7 +941,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addS(pkvalues, "path",
         isEmpty(document.getPath()) ? document.getDocumentId() : document.getPath());
     addS(pkvalues, "version", document.getVersion());
-    addS(pkvalues, "s3version", document.getS3version());
+    addS(pkvalues, DocumentVersionService.S3VERSION_ATTRIBUTE, document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
 
 
@@ -994,9 +998,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @return boolean
    */
   private boolean isDocumentUserTagged(final List<DynamicObject> tags) {
-    return tags != null
-        ? tags.stream().filter(t -> !SYSTEM_DEFINED_TAGS.contains(t.getString("key"))).count() > 0
-        : false;
+    return tags != null ? tags.stream().filter(t -> {
+      String key = t.getString("key");
+      return key != null && !SYSTEM_DEFINED_TAGS.contains(key);
+    }).count() > 0 : false;
   }
 
   @Override
@@ -1343,7 +1348,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
       List<String> tagKeys =
           notNull(tags).stream().map(t -> t.getKey()).collect(Collectors.toList());
-      this.indexWriter.writeTagIndex(this.documentTableName, this.dbClient, siteId, tagKeys);
+      this.indexWriter.writeTagIndex(siteId, tagKeys);
 
       if (options.saveDocumentDate()) {
         saveDocumentDate(document);
@@ -1429,7 +1434,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     boolean docexists = exists(siteId, doc.getDocumentId());
     List<DynamicObject> doctags = doc.getList("tags");
-    List<DocumentTag> tags = doctags.stream().map(t -> {
+
+    List<DocumentTag> tags = doctags.stream().filter(t -> t.containsKey("key")).map(t -> {
       DynamicObjectToDocumentTag transform = new DynamicObjectToDocumentTag(this.df);
       DocumentTag tag = transform.apply(t);
       tag.setInsertedDate(date);
@@ -1440,13 +1446,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!docexists && tags.isEmpty()) {
       tags.add(
           new DocumentTag(null, "untagged", "true", date, username, DocumentTagType.SYSTEMDEFINED));
-    }
-
-    if (doc.getPath() != null) {
-      if (tags.stream().filter(t -> t.getKey().equals("path")).findAny().isEmpty()) {
-        tags.add(new DocumentTag(null, "path", doc.getPath(), date, username,
-            DocumentTagType.SYSTEMDEFINED));
-      }
     }
 
     return tags;

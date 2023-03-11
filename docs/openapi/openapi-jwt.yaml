@@ -13,7 +13,7 @@
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: FormKiQ HTTP API
-          version: 1.9.0
+          version: 1.10.0
         paths:
           /version:
             get:
@@ -289,6 +289,16 @@
                             tags:
                             - key: type
                               value: subdocument1
+                      Document_with_Webhook:
+                        value:
+                          path: test.txt
+                          contentType: text/plain
+                          isBase64: false
+                          content: This is sample data file
+                          actions:
+                          - type: webhook
+                            parameters:
+                              url: <callback_url>
               responses:
                 "201":
                   description: 201 CREATED
@@ -464,6 +474,22 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/versions/{versionKey}:
+            delete:
+              operationId: DeleteDocumentVersion
+              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/versionKeyPath'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
               security:
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
@@ -1299,6 +1325,34 @@
               - AuthorizationCognito: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+          /documents/{documentId}/syncs:
+            get:
+              operationId: GetDocumentSyncs
+              description: Retrieve the document syncs with external services status
+              tags:
+              - Document Synchronization
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentSyncResponse'
+              security:
+              - AuthorizationCognito: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -1737,9 +1791,10 @@
           /indices/search:
             post:
               operationId: IndexSearch
-              description: Perform a search on a index; this is currently only available for folder indices
+              description: Perform a search on a index; this is currently available for both folder and tag indices
               tags:
               - Folder Index
+              - Tag Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
@@ -1930,6 +1985,13 @@
                     type: string
               content: {}
           parameters:
+            versionKeyPath:
+              name: versionKey
+              in: path
+              description: Version Key
+              required: true
+              schema:
+                type: string
             versionKeyParam:
               name: versionKey
               in: query
@@ -2394,16 +2456,22 @@
                   items:
                     type: string
             DocumentSearchItemMeta:
-              required:
-              - folder
               type: object
               properties:
                 folder:
                   type: string
                   description: Searches for a folder
+                path:
+                  type: string
+                  description: Searches for a Path of document
                 indexType:
                   type: string
                   description: Searches in an index
+                  enum:
+                  - folder
+                indexFilterBeginsWith:
+                  type: string
+                  description: Returns index records that begins with a particular substring
             DocumentSearchItemTag:
               required:
               - key
@@ -2701,6 +2769,61 @@
                   description: User who added document
                 tags:
                   type: object
+                metadata:
+                  type: object
+            GetDocumentSyncResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                syncs:
+                  $ref: '#/components/schemas/GetDocumentSyncs'
+            GetDocumentSyncs:
+              type: array
+              description: List of document syncs
+              items:
+                $ref: '#/components/schemas/GetDocumentSync'
+            GetDocumentSync:
+              type: object
+              properties:
+                service:
+                  type: string
+                  description: To which service the data was synced
+                  enum:
+                  - TYPESENSE
+                  - OPENSEARCH
+                status:
+                  type: string
+                  description: The status of the sync
+                  enum:
+                  - COMPLETE
+                  - FAILED
+                type:
+                  type: string
+                  description: The type of the sync
+                  enum:
+                  - METADATA
+                  - TAG
+                syncDate:
+                  type: string
+                  format: date-time
+                  description: Timestamp of synchronization
+                userId:
+                  type: string
+                  description: User who added document
+                message:
+                  type: string
+                  description: Document sync message
+            AddDocumentSyncRequest:
+              type: object
+              properties:
+                service:
+                  type: string
+                  description: To which service to sync the data to
+                  enum:
+                  - TYPESENSE
+                  - OPENSEARCH
             DocumentSearchResponse:
               type: object
               properties:
@@ -2987,6 +3110,8 @@
                   description: Path or Name of document
                 tags:
                   $ref: '#/components/schemas/AddDocumentTags'
+                metadata:
+                  $ref: '#/components/schemas/AddDocumentMetadatas'
             UpdateDocumentFulltextRequest:
               type: object
               properties:
@@ -3036,13 +3161,16 @@
               properties:
                 ocrParseTypes:
                   type: string
-                  description: OCR Parse types - TEXT, FORMS, TABLES
+                  description: 'OCR: Parse types - TEXT, FORMS, TABLES'
                 addPdfDetectedCharactersAsText:
                   type: boolean
-                  description: OCR action for the rewriting of the PDF document, converting any image text to searchable text
+                  description: 'OCR: For the rewriting of the PDF document, converting any image text to searchable text'
                 url:
                   type: string
-                  description: Webhook action for the callback URL
+                  description: 'Webhook: Callback URL'
+                characterMax:
+                  type: string
+                  description: 'Fulltext: Maximum number of characters (-1 unlimited, Typesense defaults to 2048 characters)'
             AddDocumentOcrRequest:
               type: object
               example:
@@ -3103,6 +3231,12 @@
                 siteId:
                   type: string
                   description: Site Identifier
+                permission:
+                  type: string
+                  description: SiteId permission level
+                  enum:
+                  - READ_WRITE
+                  - READ_ONLY
                 uploadEmail:
                   type: string
                   description: SiteId document upload email address

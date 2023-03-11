@@ -184,7 +184,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
-      assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key).isObjectExists());
+      assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key, null).isObjectExists());
     }
   }
 
@@ -872,7 +872,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       assertNotNull(UUID.fromString(resp.getString("documentId")));
 
-      assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
+      assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key, null).isObjectExists());
       String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
       DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
       assertTrue(obj.hasString("documentId"));
@@ -1044,7 +1044,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     assertNotNull(UUID.fromString(resp.getString("documentId")));
 
-    assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
+    assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key, null).isObjectExists());
   }
 
   /**
@@ -1209,7 +1209,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals("application/octet-stream", verifyS3.getString("contentType"));
 
       assertEquals("application/octet-stream",
-          getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).getContentType());
+          getS3().getObjectMetadata(STAGE_BUCKET_NAME, key, null).getContentType());
     }
   }
 
@@ -1416,7 +1416,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   private DynamicObject verifyS3(final String key, final boolean hasContent, final String userId)
       throws Exception {
-    assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key).isObjectExists());
+    assertTrue(getS3().getObjectMetadata(STAGE_BUCKET_NAME, key, null).isObjectExists());
     String content = getS3().getContentAsString(STAGE_BUCKET_NAME, key, null);
     DynamicObject obj = new DynamicObject(fromJson(content, Map.class));
 

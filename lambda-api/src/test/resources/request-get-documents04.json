@@ -82,7 +82,7 @@
         "httpMethod": "GET",
         "identity": {
             "cognitoIdentityPoolId": null,
-            "accountId": "622653865277",
+            "accountId": "1111111111111111",
             "cognitoIdentityId": null,
             "caller": "AIDAI576HTOBFSGWZOWMC",
             "sourceIp": "184.75.214.18",
@@ -90,7 +90,7 @@
             "accessKey": "AKIAJKVZ4QYZEOC5SDDA",
             "cognitoAuthenticationType": null,
             "cognitoAuthenticationProvider": null,
-            "userArn": "arn:aws:iam::622653865277:user/mike",
+            "userArn": "arn:aws:iam::1111111111111111:user/mike",
             "userAgent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
             "user": "AIDAI576HTOBFSGWZOWMC"
         },

@@ -86,6 +86,35 @@ Parameters:
     Type: String
     Default: "cognito"
     
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
+
+  HostedZoneId:
+    Description: "Route53 Hosted Zone Id in which to add A record"
+    Type: String
+    Default: ""
+    
+  CloudFrontDistributionDomainName:
+    Description: The cloudfront domain name of the resource
+    Type: String
+    Default: ""
+    
+Conditions:
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: CertificateStackName
+        - ''
+
+  HasHostedZoneId:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: HostedZoneId
+        - ''
+        
 Resources:
 
   ConsoleInstallerParameter:
@@ -248,9 +277,37 @@ Resources:
   ConsoleInstallerRef:
     Type: Custom::ConsoleInstallerRef
     Properties:
-      Nonce: 
+      Nonce:
         Ref: ConsoleVersion
+      HttpApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - ''
+      IamApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - ''
       ServiceToken:
         Fn::GetAtt:
         - ConsoleInstaller
         - Arn
+
+  CloudFrontDistributionRecordSet:
+    Condition: HasHostedZoneId
+    Type: 'AWS::Route53::RecordSetGroup'
+    Properties:
+      HostedZoneId: 
+        Ref: HostedZoneId
+      RecordSets:
+        - Name:
+            Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+          Type: A
+          AliasTarget:
+            HostedZoneId: "Z2FDTNDATAQYW2"
+            DNSName: 
+              Ref: CloudFrontDistributionDomainName

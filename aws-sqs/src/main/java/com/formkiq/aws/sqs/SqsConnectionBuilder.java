@@ -24,7 +24,6 @@
 package com.formkiq.aws.sqs;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -96,12 +95,11 @@ public class SqsConnectionBuilder {
   /**
    * Set Endpoint Override.
    * 
-   * @param uri {@link String}
+   * @param uri {@link URI}
    * @return {@link SqsConnectionBuilder}
-   * @throws URISyntaxException URISyntaxException
    */
-  public SqsConnectionBuilder setEndpointOverride(final String uri) throws URISyntaxException {
-    this.builder = this.builder.endpointOverride(new URI(uri));
+  public SqsConnectionBuilder setEndpointOverride(final URI uri) {
+    this.builder = this.builder.endpointOverride(uri);
     return this;
   }
 

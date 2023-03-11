@@ -63,6 +63,7 @@ public class SitesRequestTest extends AbstractApiTest {
     // then
     assertEquals(1, sites.sites().size());
     assertNotNull(sites.sites().get(0).siteId());
+    assertEquals("READ_WRITE", sites.sites().get(0).permission());
     assertTrue(sites.sites().get(0).uploadEmail().endsWith("@tryformkiq.com"));
   }
 

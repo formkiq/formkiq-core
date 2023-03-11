@@ -1,8 +1,9 @@
-rootProject.name = 'formkiq-core'
-
-/*pluginManagement {
+/*
+pluginManagement {
     includeBuild '../graalvm-native-plugin'
 }*/
+
+rootProject.name = 'formkiq-core'
 
 include 'console'
 include 'aws-cognito'

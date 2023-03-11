@@ -64,15 +64,15 @@
         ]
     },
     "requestContext": {
-        "accountId": "622653865277",
+        "accountId": "1111111111111111",
         "apiId": "i77rbvi8ni",
         "authorizer": {
             "claims": {
                 "aud": "1her82urlbkujat6iecou74pf2",
                 "auth_time": "1585709212",
                 "cognito:groups": "[Admins]",
-                "cognito:preferred_role": "arn:aws:iam::622653865277:role/formkiq-docstack-dev-Documen-CognitoAdminGroupRole-GS73EUFJ00J2",
-                "cognito:roles": "[arn:aws:iam::622653865277:role/formkiq-docstack-dev-Documen-CognitoAdminGroupRole-GS73EUFJ00J2]",
+                "cognito:preferred_role": "arn:aws:iam::1111111111111111:role/formkiq-docstack-dev-Documen-CognitoAdminGroupRole-GS73EUFJ00J2",
+                "cognito:roles": "[arn:aws:iam::1111111111111111:role/formkiq-docstack-dev-Documen-CognitoAdminGroupRole-GS73EUFJ00J2]",
                 "cognito:username": "test@formkiq.com",
                 "email": "test@formkiq.com",
                 "email_verified": "true",

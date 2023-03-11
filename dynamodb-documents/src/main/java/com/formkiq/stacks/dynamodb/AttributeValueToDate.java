@@ -61,18 +61,18 @@ public class AttributeValueToDate implements Function<Map<String, AttributeValue
   @Override
   public Date apply(final Map<String, AttributeValue> map) {
 
-    Date date;
+    Date date = null;
     if (map.containsKey(this.key)) {
+
       String dateString = map.get(this.key).s();
 
-      try {
-        date = this.df.parse(dateString);
-      } catch (ParseException e) {
-        date = null;
+      if (dateString != null) {
+        try {
+          date = this.df.parse(dateString);
+        } catch (ParseException e) {
+          // ignore
+        }
       }
-
-    } else {
-      date = null;
     }
 
     return date;

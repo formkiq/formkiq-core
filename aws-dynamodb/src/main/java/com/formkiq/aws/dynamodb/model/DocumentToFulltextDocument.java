@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambda.typesense;
+package com.formkiq.aws.dynamodb.model;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
 import java.util.Arrays;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import software.amazon.awssdk.utils.StringUtils;
+import com.formkiq.aws.dynamodb.objects.Strings;
 
 /**
  * 
@@ -44,7 +44,6 @@ public class DocumentToFulltextDocument
 
     String text = buildText(document);
     document.put("text", text);
-    // document.add(new TextField("text", text, Field.Store.NO));
 
     return document;
   }
@@ -60,7 +59,7 @@ public class DocumentToFulltextDocument
 
     for (String key : Arrays.asList("path", "userId")) {
       Object val = document.get(key);
-      if (val != null && !StringUtils.isEmpty(val.toString())) {
+      if (val != null && !Strings.isEmpty(val.toString())) {
         sb.append(val + " ");
       }
     }

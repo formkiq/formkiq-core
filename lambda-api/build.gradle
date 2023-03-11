@@ -12,36 +12,37 @@ dependencies {
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
+	implementation project(':aws-sns')
 	implementation project(':aws-dynamodb')
 	implementation project(':dynamodb-documents')
 	implementation project(':actions')
 	implementation project(':typesense')
 	implementation project(':http-sigv4')
 	
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.1'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10'
     
     implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
-    implementation group: 'com.formkiq.stacks', name: 'client', version:'1.9.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.2'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
 	
+    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.10.0-SNAPSHOT'
 	testImplementation project(':aws-cognito')
 	testImplementation project(':aws-iam')
 	testImplementation project(':aws-sts')
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.17.252'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.17.252'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.19.2'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.19.2'
 	
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
     testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.1'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.3'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.3'
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.307'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.370'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.14.0'
 }
 
@@ -51,12 +52,11 @@ compileJava {
 
 nativeImage {
 	outputFileName = "server"
-	javaVersion = "java11"
-	imageVersion = "21.3.0"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
     enableHttp = true
     enableHttps = true
-    enableDocker = true
+    enableStatic = true
 	reflectionConfig = "$buildDir/classes/java/main/META-INF/graal/reflect.json"
 	systemProperty = ["java.net.preferIPv4Stack=true"]
 }
@@ -104,12 +104,12 @@ task assembleTemplate {
 	def sha256 = randomtext.digest('SHA-256')
 
 	doLast {
-		exec {
-			commandLine "bash", "-c", "mkdir -p ${buildDir}/distributions/formkiq-core/sam/api && mkdir -p ${buildDir}/distributions/formkiq-core/sar/api"
-		}
-		exec {
-			commandLine "bash", "-c", "cp ${buildDir}/lambda-api-graalvm.zip ${buildDir}/distributions/formkiq-core/sam/api/"
-		}
+	
+		copy {
+		  from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/api"
+	    }
+
 		// build SAM distribution
 		exec {
 			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
@@ -147,16 +147,6 @@ task assembleOpenApiTemplate {
 				commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../docs/openapi/${fileName}.yaml -g asciidoc -o ${buildDir}/${fileName}"
 			}
 		}
-		/*
-		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
-		}
-		exec {
-			commandLine "bash", "-c", "tail -n +6 ${buildDir}/openapi-iam.yaml > ${buildDir}/../../docs/openapi/openapi-iam.yaml"
-		}
-		exec {
-			commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../openapi-iam.yaml -g asciidoc -o ${buildDir}/openapi-iam"
-		}*/
 	}
 }
 

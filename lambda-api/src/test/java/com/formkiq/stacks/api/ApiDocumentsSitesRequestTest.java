@@ -82,6 +82,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
+    assertEquals("READ_WRITE", sites.get(0).get("permission"));
     assertNotNull(sites.get(0).get("uploadEmail"));
 
     String uploadEmail = sites.get(0).getString("uploadEmail");
@@ -97,6 +98,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
         getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
 
     assertEquals("finance", sites.get(1).get("siteId"));
+    assertEquals("READ_WRITE", sites.get(1).get("permission"));
     assertNotNull(sites.get(1).get("uploadEmail"));
     uploadEmail = sites.get(1).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
@@ -139,9 +141,11 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
+    assertEquals("READ_WRITE", sites.get(0).get("permission"));
     assertNull(sites.get(0).get("uploadEmail"));
 
     assertEquals("finance", sites.get(1).get("siteId"));
+    assertEquals("READ_WRITE", sites.get(1).get("permission"));
     assertNull(sites.get(1).get("uploadEmail"));
   }
 
@@ -179,12 +183,14 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
+    assertEquals("READ_ONLY", sites.get(0).get("permission"));
     assertNull(sites.get(0).get("uploadEmail"));
 
     assertNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT,
         sites.get(0).get("siteId"))));
 
     assertEquals("finance", sites.get(1).get("siteId"));
+    assertEquals("READ_WRITE", sites.get(1).get("permission"));
     assertNotNull(sites.get(1).get("uploadEmail"));
     String uploadEmail = sites.get(1).getString("uploadEmail");
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
@@ -225,6 +231,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
     assertEquals(1, resp.getList("sites").size());
     assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
+    assertEquals("READ_WRITE", resp.getList("sites").get(0).getString("permission"));
     assertEquals("5", resp.getList("sites").get(0).getString(MAX_DOCUMENTS));
     assertEquals("10", resp.getList("sites").get(0).getString(MAX_WEBHOOKS));
   }

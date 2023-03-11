@@ -1,0 +1,130 @@
+{
+    "Records": [
+        {
+            "eventID": "3e8d28d3c139eb9fa3ec78942fea1395",
+            "eventName": "REMOVE",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-2",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1677891472,
+                "Keys": {
+                    "SK": {
+                        "S": "document"
+                    },
+                    "PK": {
+                        "S": "demo/docs#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    }
+                },
+                "OldImage": {
+                    "lastModifiedDate": {
+                        "S": "2023-02-17T20:04:20+0000"
+                    },
+                    "inserteddate": {
+                        "S": "2023-02-14T19:43:52+0000"
+                    },
+                    "userId": {
+                        "S": "fk-cli"
+                    },
+                    "version": {
+                        "S": "3"
+                    },
+                    "path": {
+                        "S": "Misc/Dr. Kometevsky's Day - Fritz Leiber.txt"
+                    },
+                    "GSI1PK": {
+                        "S": "demo/docts#2023-02-14"
+                    },
+                    "s3version": {
+                        "S": "wq3Q_U1kYHesRgpZguwLmTqO2Vs3W9Zu"
+                    },
+                    "GSI1SK": {
+                        "S": "2023-02-14T19:43:52+0000#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "SK": {
+                        "S": "document"
+                    },
+                    "checksum": {
+                        "S": "\"fc7517e32197d008ab700394282fe6e1\""
+                    },
+                    "contentLength": {
+                        "N": "61459"
+                    },
+                    "documentId": {
+                        "S": "0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "PK": {
+                        "S": "demo/docs#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "contentType": {
+                        "S": "text/plain"
+                    }
+                },
+                "SequenceNumber": "108101300000000005141504560",
+                "SizeBytes": 521,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:111111111111111:table/formkiq-enterprise-demo-documents/stream/2023-02-09T17:02:11.979"
+        },
+        {
+            "eventID": "dffab922eb26cdfe3966ca8c41246ae0",
+            "eventName": "REMOVE",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-2",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1677891472,
+                "Keys": {
+                    "SK": {
+                        "S": "tags#untagged"
+                    },
+                    "PK": {
+                        "S": "demo/docs#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    }
+                },
+                "OldImage": {
+                    "GSI1PK": {
+                        "S": "demo/tag#untagged#true"
+                    },
+                    "GSI2SK": {
+                        "S": "true#2023-02-14T19:43:52+0000#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "tagValue": {
+                        "S": "true"
+                    },
+                    "GSI1SK": {
+                        "S": "2023-02-14T19:43:52+0000#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "inserteddate": {
+                        "S": "2023-02-14T19:43:52+0000"
+                    },
+                    "SK": {
+                        "S": "tags#untagged"
+                    },
+                    "documentId": {
+                        "S": "0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "GSI2PK": {
+                        "S": "demo/tag#untagged"
+                    },
+                    "PK": {
+                        "S": "demo/docs#0004df7f-a5f9-450d-89f4-b60cd7bdcbb7"
+                    },
+                    "tagKey": {
+                        "S": "untagged"
+                    },
+                    "type": {
+                        "S": "SYSTEMDEFINED"
+                    },
+                    "userId": {
+                        "S": "fk-cli"
+                    }
+                },
+                "SequenceNumber": "108101400000000005141504561",
+                "SizeBytes": 453,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:111111111111111:table/formkiq-enterprise-demo-documents/stream/2023-02-09T17:02:11.979"
+        }
+    ]
+}

@@ -21,6 +21,7 @@
 			<allow pkg="java.util" />
 				
 			<allow pkg="com.formkiq.module.typesense" />
+			<allow pkg="com.formkiq.stacks.dynamodb" />
 			
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="com.formkiq.module.typesense" />

@@ -50,6 +50,8 @@ import software.amazon.awssdk.regions.Region;
  */
 public class TypeSenseServiceImpl implements TypeSenseService {
 
+  /** {@link Map}. */
+  private Map<String, String> additionalHeaders = Collections.emptyMap();
   /** {@link String}. */
   private String apiKey;
   /** {@link String}. */
@@ -58,8 +60,6 @@ public class TypeSenseServiceImpl implements TypeSenseService {
   private JsonService json = new JsonServiceGson();
   /** {@link HttpService}. */
   private HttpService service;
-  /** {@link Map}. */
-  private Map<String, String> additionalHeaders = Collections.emptyMap();
 
   /**
    * constructor.
@@ -77,7 +77,6 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     }
 
     this.service = new HttpServiceSigv4(region, awsCredentials);
-    // this.service = new HttpServiceJdk11();
     this.host = hostAddress;
     this.apiKey = typeSenseApiKey;
   }
@@ -145,6 +144,20 @@ public class TypeSenseServiceImpl implements TypeSenseService {
    */
   private String getCollectionName(final String siteId) {
     return siteId != null ? siteId : "default";
+  }
+
+  @Override
+  public HttpResponse<String> getDocument(final String siteId, final String documentId)
+      throws IOException {
+    String site = getCollectionName(siteId);
+    String url =
+        String.format("%s/collections/%s/documents/%s", this.host, encode(site), documentId);
+
+    HttpHeaders headers = getHeader();
+
+    HttpResponse<String> response = this.service.get(url, Optional.of(headers));
+
+    return response;
   }
 
   private HttpHeaders getHeader() {

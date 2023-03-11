@@ -42,6 +42,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
@@ -73,7 +74,6 @@ import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
-import com.formkiq.stacks.dynamodb.PaginationResult;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -184,10 +184,10 @@ public class DocumentIdRequestHandler
       S3Service s3Service = awsservice.getExtension(S3Service.class);
 
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key);
+      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
 
       if (md.isObjectExists()) {
-        s3Service.deleteObject(documentBucket, s3Key);
+        s3Service.deleteObject(documentBucket, s3Key, null);
 
       } else {
 

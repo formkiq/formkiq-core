@@ -64,8 +64,12 @@ public class ApiGatewayRequestEventBuilder {
    * @return {@link ApiGatewayRequestEventBuilder}
    */
   public ApiGatewayRequestEventBuilder group(final String group) {
-    this.context.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
-    this.event.setRequestContext(this.context);
+
+    if (group != null) {
+      this.context.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
+      this.event.setRequestContext(this.context);
+    }
+
     return this;
   }
 

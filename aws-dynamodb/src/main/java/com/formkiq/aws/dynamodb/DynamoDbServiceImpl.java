@@ -26,7 +26,6 @@ package com.formkiq.aws.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -54,6 +53,21 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   /**
    * constructor.
    * 
+   * @param client {@link DynamoDbClient}
+   * @param dynamoDbTableName {@link String}
+   */
+  public DynamoDbServiceImpl(final DynamoDbClient client, final String dynamoDbTableName) {
+    if (dynamoDbTableName == null) {
+      throw new IllegalArgumentException("Table name is null");
+    }
+
+    this.dbClient = client;
+    this.tableName = dynamoDbTableName;
+  }
+
+  /**
+   * constructor.
+   * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param dynamoDbTableName {@link String}
    */
@@ -64,21 +78,6 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     }
 
     this.dbClient = connection.build();
-    this.tableName = dynamoDbTableName;
-  }
-
-  /**
-   * constructor.
-   * 
-   * @param client {@link DynamoDbClient}
-   * @param dynamoDbTableName {@link String}
-   */
-  public DynamoDbServiceImpl(final DynamoDbClient client, final String dynamoDbTableName) {
-    if (dynamoDbTableName == null) {
-      throw new IllegalArgumentException("Table name is null");
-    }
-
-    this.dbClient = client;
     this.tableName = dynamoDbTableName;
   }
 
@@ -121,15 +120,34 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> query(final AttributeValue pk) {
+  public QueryResponse query(final AttributeValue pk,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
     String expression = PK + " = :pk";
     Map<String, AttributeValue> values = Map.of(":pk", pk);
     QueryRequest q =
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE).build();
+            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
+            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
 
-    QueryResponse result = this.dbClient.query(q);
-    return result.items();
+    return this.dbClient.query(q);
+  }
+
+  @Override
+  public QueryResponse queryBeginsWith(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
+      final int limit) {
+
+    String expression = PK + " = :pk and begins_with(" + SK + ",:sk)";
+
+    Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
+
+    QueryRequest q = QueryRequest.builder().tableName(this.tableName)
+        .keyConditionExpression(expression).expressionAttributeValues(values)
+        .scanIndexForward(Boolean.FALSE).projectionExpression(config.projectionExpression())
+        .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+
+    QueryResponse response = this.dbClient.query(q);
+    return response;
   }
 
   @Override

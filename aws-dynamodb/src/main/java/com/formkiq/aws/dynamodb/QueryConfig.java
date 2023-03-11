@@ -21,50 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import java.util.List;
-import java.util.Map;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
+package com.formkiq.aws.dynamodb;
 
 /**
- * Pagination Result for a DynamoDB Query.
+ * 
+ * DynamoDB Query Config.
  *
- * @param <T> Type of Result.
  */
-public class PaginationResult<T> {
+public class QueryConfig {
 
-  /** Object. */
-  private T result;
-  /** Last Evaluated DynamoDB Key. */
-  private PaginationMapToken token;
+  /** Projection Expression. */
+  private String projectionExpression;
 
   /**
    * constructor.
-   *
-   * @param obj {@link Object}
-   * @param pagination {@link PaginationMapToken}
    */
-  public PaginationResult(final T obj, final PaginationMapToken pagination) {
-    this.result = obj;
-    this.token = pagination;
+  public QueryConfig() {
+
   }
 
   /**
-   * Get Result.
-   *
-   * @return {@link List}
+   * Get Projection Expression.
+   * 
+   * @return {@link String}
    */
-  public T getResult() {
-    return this.result;
+  public String projectionExpression() {
+    return this.projectionExpression;
   }
 
   /**
-   * Get Last Evaluated Key.
-   *
-   * @return {@link Map}
+   * Set Projection Expression.
+   * 
+   * @param projection {@link String}
+   * @return {@link QueryConfig}
    */
-  public PaginationMapToken getToken() {
-    return this.token;
+  public QueryConfig projectionExpression(final String projection) {
+    this.projectionExpression = projection;
+    return this;
   }
 }

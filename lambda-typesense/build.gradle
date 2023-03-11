@@ -7,22 +7,23 @@ dependencies {
  	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.2.0'
  
 	implementation project(':aws-dynamodb')
+	implementation project(':dynamodb-documents')
 	implementation project(':typesense')
 	implementation project(':http')
 	
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.1'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
     implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.2'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
 	testImplementation project(':fkq-test-utils')
 
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.3'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.3'
-    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.3'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
 }
 
 compileJava {
@@ -31,12 +32,11 @@ compileJava {
 
 nativeImage { 
 	outputFileName = "server"
-	javaVersion = "java11"
-	imageVersion = "21.3.0"
+	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
 	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
     enableHttp = true
     enableHttps = true
-    enableDocker = true
+    enableStatic = true
 	reflectionConfig = "$buildDir/classes/java/main/META-INF/graal/reflect.json"
 	systemProperty = ["java.net.preferIPv4Stack=true"]
 }

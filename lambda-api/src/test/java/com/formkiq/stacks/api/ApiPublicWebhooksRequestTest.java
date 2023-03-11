@@ -516,7 +516,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       verifyHeaders(m, "200.0");
 
       String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-      S3ObjectMetadata om = getS3().getObjectMetadata(STAGE_BUCKET_NAME, s3key);
+      S3ObjectMetadata om = getS3().getObjectMetadata(STAGE_BUCKET_NAME, s3key, null);
       assertFalse(om.isObjectExists());
     }
   }
@@ -609,6 +609,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
     }
 
-    getS3().deleteObject(STAGE_BUCKET_NAME, key);
+    getS3().deleteObject(STAGE_BUCKET_NAME, key, null);
   }
 }

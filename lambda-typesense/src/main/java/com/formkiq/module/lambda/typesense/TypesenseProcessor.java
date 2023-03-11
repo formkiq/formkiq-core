@@ -42,9 +42,18 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -62,6 +71,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+  /** {@link DocumentSyncService}. */
+  private DocumentSyncService syncService;
   /** {@link TypeSenseService}. */
   private TypeSenseService typeSenseService;
 
@@ -70,22 +81,45 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * 
    */
   public TypesenseProcessor() {
-    this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials());
+    this(System.getenv(),
+        new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        EnvironmentVariableCredentialsProvider.create().resolveCredentials());
   }
 
   /**
    * constructor.
    *
    * @param map {@link Map}
+   * @param dbConnection {@link DynamoDbConnectionBuilder}
    * @param credentials {@link AwsCredentials}
    */
-  public TypesenseProcessor(final Map<String, String> map, final AwsCredentials credentials) {
+  public TypesenseProcessor(final Map<String, String> map,
+      final DynamoDbConnectionBuilder dbConnection, final AwsCredentials credentials) {
 
     Region region = Region.of(map.get("AWS_REGION"));
 
     this.typeSenseService = new TypeSenseServiceImpl(map.get("TYPESENSE_HOST"),
         map.get("TYPESENSE_API_KEY"), region, credentials);
+    this.syncService =
+        new DocumentSyncServiceDynamoDb(dbConnection, map.get("DOCUMENT_SYNC_TABLE"));
     this.debug = "true".equals(map.get("DEBUG"));
+  }
+
+  private void addDocumentSync(final HttpResponse<String> response, final String siteId,
+      final String documentId, final String userId, final boolean s3VersionChanged,
+      final boolean added) {
+
+    DocumentSyncStatus status =
+        is2XX(response) ? DocumentSyncStatus.COMPLETE : DocumentSyncStatus.FAILED;
+
+    DocumentSyncType syncType =
+        s3VersionChanged ? DocumentSyncType.CONTENT : DocumentSyncType.METADATA;
+
+    String message = added ? DocumentSyncService.MESSAGE_ADDED_METADATA
+        : DocumentSyncService.MESSAGE_UPDATED_METADATA;
+
+    this.syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status,
+        syncType, userId, message);
   }
 
   /**
@@ -94,10 +128,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param data {@link Map}
+   * @param userId {@link String}
+   * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
   public void addOrUpdate(final String siteId, final String documentId,
-      final Map<String, Object> data) throws IOException {
+      final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
+      throws IOException {
 
     HttpResponse<String> response = this.typeSenseService.addDocument(siteId, documentId, data);
 
@@ -106,21 +143,40 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       if (is404(response)) {
 
         response = this.typeSenseService.addCollection(siteId);
+
         if (!is2XX(response)) {
           throw new IOException(response.body());
         }
 
         response = this.typeSenseService.addDocument(siteId, documentId, data);
+        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
+
         if (!is2XX(response)) {
           throw new IOException(response.body());
         }
 
       } else if (is409(response) || is429(response)) {
-        this.typeSenseService.updateDocument(siteId, documentId, data);
+
+        response = this.typeSenseService.updateDocument(siteId, documentId, data);
+        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, false);
+
       } else {
         throw new IOException(response.body());
       }
+
+    } else {
+      addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
     }
+  }
+
+  /**
+   * Delete Syncs.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  private void deleteSyncs(final String siteId, final String documentId) {
+    this.syncService.deleteAll(siteId, documentId);
   }
 
   /**
@@ -128,47 +184,63 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * 
    * @param newImage {@link Map}
    * @param oldImage {@link Map}
+   * @param fieldName {@link String}
    * @return {@link String}
    */
   @SuppressWarnings("unchecked")
-  private String getDocumentId(final Map<String, Object> newImage,
-      final Map<String, Object> oldImage) {
-    Map<String, String> documentId =
-        newImage.containsKey("documentId") ? (Map<String, String>) newImage.get("documentId")
+  private String getField(final Map<String, Object> newImage, final Map<String, Object> oldImage,
+      final String fieldName) {
+
+    Map<String, String> field =
+        newImage.containsKey(fieldName) ? (Map<String, String>) newImage.get(fieldName)
             : Collections.emptyMap();
 
-    if (documentId.isEmpty()) {
-      documentId =
-          oldImage.containsKey("documentId") ? (Map<String, String>) oldImage.get("documentId")
-              : Collections.emptyMap();
+    if (field.isEmpty()) {
+      field = oldImage.containsKey(fieldName) ? (Map<String, String>) oldImage.get(fieldName)
+          : Collections.emptyMap();
     }
 
-    return documentId.get("S");
+    return field.get("S");
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    String json = null;
+    LambdaLogger logger = context.getLogger();
 
-    try {
-
-      LambdaLogger logger = context.getLogger();
-
-      if (this.debug) {
-        json = this.gson.toJson(map);
-        logger.log(json);
-      }
-
-      List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
-      processRecords(logger, records);
-
-    } catch (Exception e) {
-      e.printStackTrace();
+    if (this.debug) {
+      String json = this.gson.toJson(map);
+      logger.log(json);
     }
 
+    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    processRecords(logger, records);
+
     return null;
+  }
+
+  @SuppressWarnings("unchecked")
+  private boolean isDocumentSk(final Map<String, Object> data) {
+    Map<String, String> map = (Map<String, String>) data.get(SK);
+    boolean isDocument = map.containsKey("S") && map.get("S").equals("document");
+    return isDocument;
+  }
+
+  private boolean isS3VersionChanged(final String eventName, final Map<String, Object> oldImage,
+      final Map<String, Object> newImage) {
+
+    boolean changed = false;
+
+    if ("MODIFY".equalsIgnoreCase(eventName)) {
+
+      String oldS3 = getField(oldImage, oldImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
+      String newS3 = getField(newImage, newImage, DocumentVersionService.S3VERSION_ATTRIBUTE);
+
+      changed = (oldS3 == null && newS3 != null) || (oldS3 != null && !oldS3.equals(newS3));
+    }
+
+    return changed;
   }
 
   /**
@@ -189,8 +261,10 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     Map<String, Object> oldImage =
         dynamodb.containsKey("OldImage") ? toMap(dynamodb.get("OldImage")) : Collections.emptyMap();
 
-    String siteId = newImage.containsKey(PK) ? getSiteId(newImage.get(PK).toString()) : null;
-    String documentId = getDocumentId(newImage, oldImage);
+    String siteId = newImage.containsKey(PK) || oldImage.containsKey(PK)
+        ? getSiteId(getField(newImage, oldImage, PK))
+        : null;
+    String documentId = getField(newImage, oldImage, "documentId");
 
     if (documentId != null) {
 
@@ -200,11 +274,15 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
           logger
               .log("processing event " + eventName + " for document " + siteId + " " + documentId);
-          writeToIndex(logger, siteId, documentId, newImage);
+
+          boolean s3VersionChanged = isS3VersionChanged(eventName, oldImage, newImage);
+
+          String userId = getField(newImage, oldImage, "userId");
+          writeToIndex(logger, siteId, documentId, newImage, userId, s3VersionChanged);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
 
-          this.typeSenseService.deleteDocument(siteId, documentId);
+          removeDocument(siteId, documentId, oldImage);
 
         } else {
           logger.log("skipping event " + eventName + " for document " + siteId + " " + documentId);
@@ -235,6 +313,23 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   }
 
   /**
+   * Remove Document from TypeSense.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param oldImage {@link Map}
+   * @throws IOException IOException
+   */
+  private void removeDocument(final String siteId, final String documentId,
+      final Map<String, Object> oldImage) throws IOException {
+    boolean isDocument = isDocumentSk(oldImage);
+    if (isDocument) {
+      this.typeSenseService.deleteDocument(siteId, documentId);
+      deleteSyncs(siteId, documentId);
+    }
+  }
+
+  /**
    * Remove DynamoDb Keys.
    * 
    * @param map {@link Map}
@@ -261,31 +356,29 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param data {@link Map}
+   * @param userId {@link String}
+   * @param s3VersionChanged boolean
    * @throws IOException IOException
    */
   private void writeToIndex(final LambdaLogger logger, final String siteId, final String documentId,
-      final Map<String, Object> data) throws IOException {
+      final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
+      throws IOException {
 
-    if (this.debug) {
-      logger.log("writing to index: " + data);
-    }
-
-    boolean isDocument = data.get(SK).toString().contains("document");
-    // boolean isTag = data.get(SK).toString().contains("tags" + TAG_DELIMINATOR);
+    boolean isDocument = isDocumentSk(data);
 
     removeDynamodbKeys(data);
 
     if (isDocument) {
+
+      if (this.debug) {
+        logger.log("writing to index: " + data);
+      }
+
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
       document = this.fulltext.apply(document);
-      addOrUpdate(siteId, documentId, document);
+      addOrUpdate(siteId, documentId, document, userId, s3VersionChanged);
     } else if (this.debug) {
       logger.log("skipping dynamodb record");
     }
-
-    // if (isTag) {
-    // Document document = new DocumentTagMapToDocument().apply(data);
-    // addOrUpdate(siteId, document);
-    // }
   }
 }

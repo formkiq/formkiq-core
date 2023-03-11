@@ -72,7 +72,7 @@ class FolderIndexProcessorTest implements DbKeys {
 
   @BeforeAll
   static void beforeAll() throws URISyntaxException {
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection(null);
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
 
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,

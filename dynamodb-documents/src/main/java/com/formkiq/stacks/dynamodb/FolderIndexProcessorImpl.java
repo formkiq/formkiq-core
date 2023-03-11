@@ -160,7 +160,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     } catch (TransactionCanceledException e) {
       if (!e.cancellationReasons().isEmpty()) {
         CancellationReason cr = e.cancellationReasons().get(0);
-        uuid = cr.item().get("documentId").s();
+        if (cr.item() != null && cr.item().containsKey("documentId")) {
+          uuid = cr.item().get("documentId").s();
+        } else {
+          throw e;
+        }
       } else {
         throw e;
       }
