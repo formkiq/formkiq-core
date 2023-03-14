@@ -281,6 +281,10 @@ Resources:
     Condition: CreateResources
     Properties:
       Enabled: True
+      BatchSize: 1
+      FilterCriteria:
+        Filters:
+          - Pattern: '{"dynamodb": {"Keys": {"SK": { "S": ["document"] }}}}'      
       EventSourceArn:
         Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn}}"
       FunctionName:
