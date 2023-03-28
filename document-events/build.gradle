@@ -4,8 +4,8 @@ description = "FormKiQ Document Events"
 dependencies {
   implementation project(':aws-sns')
 	
-  implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
-  implementation group: 'com.google.code.gson', name: 'gson', version: '2.10'
+  implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+  implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
   
   testImplementation project(':fkq-test-utils')
   testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'

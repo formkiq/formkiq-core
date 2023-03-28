@@ -2,8 +2,8 @@
 description = "AWS SNS"
 
 dependencies {
-    api 'software.amazon.awssdk:sns:2.19.2'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.19.2'
+    api 'software.amazon.awssdk:sns:2.20.33'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.33'
 	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

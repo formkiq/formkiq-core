@@ -61,7 +61,6 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
-import com.formkiq.graalvm.annotations.ReflectableClasses;
 import com.formkiq.graalvm.annotations.ReflectableField;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
@@ -104,14 +103,13 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentMetadata.class,
     DocumentTagType.class, AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
     DocumentVersionServiceNoVersioning.class})
-@ReflectableClasses({
-    @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
-        fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")}),
-    @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
-        fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")}),
-    @ReflectableClass(className = AddDocumentTag.class, allPublicConstructors = true,
-        fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
-            @ReflectableField(name = "values")})})
+@ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
+    fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")})
+@ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
+    fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")})
+@ReflectableClass(className = AddDocumentTag.class, allPublicConstructors = true,
+    fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
+        @ReflectableField(name = "values")})
 public class StagingS3Create implements RequestHandler<Map<String, Object>, Void> {
 
   /** Extension for FormKiQ config file. */

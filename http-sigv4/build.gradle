@@ -3,6 +3,6 @@ description = "Http Sigv4"
 
 dependencies {
   api project(':http')
-  implementation group: 'software.amazon.awssdk', name: 'http-client-spi', version: '2.19.2'
-  api group: 'software.amazon.awssdk', name: 'auth', version: '2.19.2'
+  implementation group: 'software.amazon.awssdk', name: 'http-client-spi', version: '2.20.33'
+  api group: 'software.amazon.awssdk', name: 'auth', version: '2.20.33'
 }

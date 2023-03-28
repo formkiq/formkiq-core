@@ -69,7 +69,6 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
-import com.formkiq.graalvm.annotations.ReflectableClasses;
 import com.formkiq.graalvm.annotations.ReflectableField;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
@@ -112,12 +111,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Reflectable
 @ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
     DocumentVersionServiceNoVersioning.class})
-@ReflectableClasses({
-    @ReflectableClass(className = UpdateFulltextTag.class, allPublicConstructors = true,
-        fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
-            @ReflectableField(name = "values")}),
-    @ReflectableClass(className = UpdateFulltext.class, allPublicConstructors = true,
-        fields = {@ReflectableField(name = "content"), @ReflectableField(name = "contentUrls")})})
+@ReflectableClass(className = UpdateFulltextTag.class, allPublicConstructors = true,
+    fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
+        @ReflectableField(name = "values")})
+@ReflectableClass(className = UpdateFulltext.class, allPublicConstructors = true,
+    fields = {@ReflectableField(name = "content"), @ReflectableField(name = "contentUrls")})
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
 
   /** Default Maximum for Typesense Content. */
