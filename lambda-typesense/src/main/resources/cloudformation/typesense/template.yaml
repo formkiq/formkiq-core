@@ -243,6 +243,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       
   TypesenseLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
