@@ -4,7 +4,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: #@ "FormKiQ Core " + data.values.version or assert.fail("missing version")
-    
+
+Global:
+  Api:
+    TracingEnabled: true
+        
 Parameters:
 
   AdminEmail:

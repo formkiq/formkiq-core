@@ -164,6 +164,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-api-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:

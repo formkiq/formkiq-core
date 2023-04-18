@@ -236,6 +236,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
@@ -292,6 +293,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
@@ -377,6 +379,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
