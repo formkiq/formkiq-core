@@ -141,7 +141,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${DocumentsApiRequests}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsApiRequests}"
       RetentionInDays: 90
       Tags:
         - Key: "Application"
@@ -229,14 +229,14 @@ Resources:
     Properties:
       RetentionInDays: 90
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/APIDocumentsHttpAccessLogs"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsHttpAccessLogs"
       
   IamDocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 90
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/APIDocumentsIamAccessLogs"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsIamAccessLogs"
       
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage

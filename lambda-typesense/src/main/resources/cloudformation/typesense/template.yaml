@@ -105,7 +105,7 @@ Resources:
     Condition: CreateResources
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${TypesenseProcessor}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${TypesenseProcessor}"
       RetentionInDays: 90
       
   TypesenseProcessor:
@@ -526,7 +526,7 @@ Resources:
     Properties:
       RetentionInDays: 90
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/APITypeSenseAccessLogs"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APITypeSenseAccessLogs"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage

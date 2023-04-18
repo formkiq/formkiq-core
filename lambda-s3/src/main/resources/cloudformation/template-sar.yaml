@@ -220,7 +220,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${DocumentActionsProcessor}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentActionsProcessor}"
       RetentionInDays: 90
       
   DocumentActionsProcessor:
@@ -277,7 +277,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${StagingS3Create}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${StagingS3Create}"
       RetentionInDays: 90
       
   StagingS3Create:
@@ -363,7 +363,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${DocumentsS3Update}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsS3Update}"
       RetentionInDays: 90
 
   DocumentsS3Update:

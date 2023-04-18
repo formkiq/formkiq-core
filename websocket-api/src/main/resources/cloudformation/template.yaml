@@ -104,7 +104,7 @@ Resources:
     Properties:
       RetentionInDays: 90
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/APIWebsocketAccessLogs"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIWebsocketAccessLogs"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
@@ -211,7 +211,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${ApiFunction}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${ApiFunction}"
       RetentionInDays: 90
       
   ApiFunction:
