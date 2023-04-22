@@ -171,6 +171,7 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
+          ENABLE_AWS_X_RAY: true
           DOCUMENTS_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           CACHE_TABLE: 

@@ -193,7 +193,7 @@ public interface ApiGatewayRequestEventUtil {
    * @return {@link String}
    */
   @SuppressWarnings("unchecked")
-  default String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
+  static String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
 
     String username = null;
 
@@ -230,7 +230,7 @@ public interface ApiGatewayRequestEventUtil {
     return username;
   }
 
-  private String getCallingCognitoUsernameFromClaims(Map<String, Object> claims) {
+  private static String getCallingCognitoUsernameFromClaims(final Map<String, Object> claims) {
     String username = null;
     if (claims.containsKey("email")) {
       username = claims.get("email").toString();

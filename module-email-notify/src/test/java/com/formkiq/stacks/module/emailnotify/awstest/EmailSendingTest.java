@@ -112,13 +112,15 @@ public class EmailSendingTest {
     Region awsregion = Region.of(System.getProperty("testregion"));
     String awsprofile = System.getProperty("testprofile");
 
+    final boolean enableAwsXray = false;
     final SqsConnectionBuilder sqsConnection =
-        new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new SqsConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
     final SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
-    snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new SsmConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
+    snsBuilder =
+        new SnsConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
     final S3ConnectionBuilder s3Builder =
-        new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new S3ConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
     s3Service = new S3Service(s3Builder);
     sqsService = new SqsService(sqsConnection);

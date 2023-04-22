@@ -82,11 +82,11 @@ public class AwsResourceTest {
     appenvironment = System.getProperty("testappenvironment");
 
     SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(region);
+        new SsmConnectionBuilder(false).setCredentials(awsprofile).setRegion(region);
     ssmService = new SsmServiceImpl(ssmBuilder);
 
     final S3ConnectionBuilder s3Builder =
-        new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(region);
+        new S3ConnectionBuilder(false).setCredentials(awsprofile).setRegion(region);
     s3 = new S3Service(s3Builder);
 
     FkqCognitoService cognito = new FkqCognitoService(awsprofile, region, appenvironment);

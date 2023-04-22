@@ -244,7 +244,8 @@ Resources:
             Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false  
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true  
           FormKiQType:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
@@ -304,6 +305,7 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
+          ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
@@ -388,6 +390,7 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
+          ENABLE_AWS_X_RAY: true
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
           FormKiQType:

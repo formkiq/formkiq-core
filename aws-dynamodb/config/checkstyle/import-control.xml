@@ -19,6 +19,7 @@
 		<allow pkg="software.amazon.awssdk.core.client.config" />
 		<allow pkg="software.amazon.awssdk.regions" />
 		<allow pkg="software.amazon.awssdk.services.dynamodb" />
+		<allow pkg="com.amazonaws.xray.interceptors" />
 
 	</subpackage>
 	

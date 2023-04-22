@@ -41,6 +41,6 @@ public class FkqS3Service extends S3Service {
    * @param awsRegion {@link Region}
    */
   public FkqS3Service(final String awsProfile, final Region awsRegion) {
-    super(new S3ConnectionBuilder().setCredentials(awsProfile).setRegion(awsRegion));
+    super(new S3ConnectionBuilder(false).setCredentials(awsProfile).setRegion(awsRegion));
   }
 }

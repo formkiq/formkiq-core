@@ -76,7 +76,7 @@ public class SsmServiceCacheTest {
     localstack.start();
 
     SsmConnectionBuilder connection =
-        new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+        new SsmConnectionBuilder(false).setCredentials(cred).setRegion(Region.US_EAST_1)
             .setEndpointOverride(new URI(localstack.getEndpointOverride(Service.SSM).toString()));
 
     cache = new SsmServiceCache(connection, 1, TimeUnit.SECONDS);

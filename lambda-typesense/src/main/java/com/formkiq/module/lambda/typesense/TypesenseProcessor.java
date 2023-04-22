@@ -82,7 +82,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    */
   public TypesenseProcessor() {
     this(System.getenv(),
-        new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.of(System.getenv("AWS_REGION"))),
         EnvironmentVariableCredentialsProvider.create().resolveCredentials());
   }
 

@@ -59,8 +59,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /** constructor. */
   public ConsoleInstallHandler() {
-    this(System.getenv(), new S3ConnectionBuilder().setRegion(Region.US_EAST_1),
-        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("REGION"))));
+    this(System.getenv(),
+        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.US_EAST_1),
+        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.of(System.getenv("REGION"))));
   }
 
   /**

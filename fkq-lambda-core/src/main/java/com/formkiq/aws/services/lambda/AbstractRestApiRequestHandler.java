@@ -43,6 +43,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
@@ -229,6 +230,29 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     }
 
     ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
+
+    if (!awsservice.debug()) {
+
+      ApiGatewayRequestContext requestContext =
+          event.getRequestContext() != null ? event.getRequestContext()
+              : new ApiGatewayRequestContext();
+
+      Map<String, Object> identity =
+          requestContext.getIdentity() != null ? requestContext.getIdentity() : Map.of();
+
+      String s = String.format(
+          "{\"requestId\": \"%s\",\"ip\": \"%s\",\"requestTime\": \"%s\",\"httpMethod\": \"%s\","
+              + "\"routeKey\": \"%s\",\"pathParameters\": %s,"
+              + "\"protocol\": \"%s\",\"user\":\"%s\",\"queryParameters\":%s}",
+          requestContext.getRequestId(), identity.get("sourceIp"), requestContext.getRequestTime(),
+          event.getHttpMethod(), event.getHttpMethod() + " " + event.getResource(),
+          "{" + toStringFromMap(event.getPathParameters()) + "}", requestContext.getProtocol(),
+          ApiGatewayRequestEventUtil.getCallingCognitoUsername(event),
+          "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
+
+      logger.log(s);
+    }
+
     return event;
   }
 
@@ -455,6 +479,13 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           break;
       }
     }
+  }
+
+  private String toStringFromMap(final Map<String, String> map) {
+    return map != null
+        ? map.entrySet().stream().map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
+            .collect(Collectors.joining(","))
+        : "";
   }
 
   /**

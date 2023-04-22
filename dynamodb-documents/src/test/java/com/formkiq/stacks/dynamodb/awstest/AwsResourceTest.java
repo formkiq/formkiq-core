@@ -64,11 +64,11 @@ public class AwsResourceTest {
     awsregion = Region.of(System.getProperty("testregion"));
 
     final SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new SsmConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
     ssmService = new SsmServiceImpl(ssmBuilder);
 
-    dynamoDB =
-        new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion).build();
+    dynamoDB = new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion)
+        .build();
   }
 
   /**

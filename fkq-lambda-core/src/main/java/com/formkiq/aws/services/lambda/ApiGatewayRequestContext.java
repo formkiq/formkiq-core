@@ -39,6 +39,12 @@ public class ApiGatewayRequestContext {
   private String domainName;
   /** {@link Map} of Identity. */
   private Map<String, Object> identity;
+  /** Protocol. */
+  private String protocol;
+  /** Request Id. */
+  private String requestId;
+  /** Request Time. */
+  private String requestTime;
 
   /**
    * constructor.
@@ -73,6 +79,33 @@ public class ApiGatewayRequestContext {
   }
 
   /**
+   * Get Protocol.
+   * 
+   * @return {@link String}
+   */
+  public String getProtocol() {
+    return this.protocol;
+  }
+
+  /**
+   * Get Request Id.
+   * 
+   * @return {@link String}
+   */
+  public String getRequestId() {
+    return this.requestId;
+  }
+
+  /**
+   * Get Request Time.
+   * 
+   * @return {@link String}
+   */
+  public String getRequestTime() {
+    return this.requestTime;
+  }
+
+  /**
    * Set Authorizer.
    * 
    * @param map {@link Map}
@@ -97,5 +130,32 @@ public class ApiGatewayRequestContext {
    */
   public void setIdentity(final Map<String, Object> map) {
     this.identity = map;
+  }
+
+  /**
+   * Set Procotol.
+   * 
+   * @param requestProtocol {@link String}
+   */
+  public void setProtocol(final String requestProtocol) {
+    this.protocol = requestProtocol;
+  }
+
+  /**
+   * Set Request Id.
+   * 
+   * @param id {@link String}
+   */
+  public void setRequestId(final String id) {
+    this.requestId = id;
+  }
+
+  /**
+   * Set Request Time.
+   * 
+   * @param time {@link String}
+   */
+  public void setRequestTime(final String time) {
+    this.requestTime = time;
   }
 }

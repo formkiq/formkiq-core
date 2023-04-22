@@ -163,10 +163,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /** constructor. */
   public DocumentsS3Update() {
     this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
-        new DynamoDbConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SsmConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SnsConnectionBuilder().setRegion(Region.of(System.getenv("AWS_REGION"))));
+        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new SsmConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.of(System.getenv("AWS_REGION"))),
+        new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
+            .setRegion(Region.of(System.getenv("AWS_REGION"))));
   }
 
   /**

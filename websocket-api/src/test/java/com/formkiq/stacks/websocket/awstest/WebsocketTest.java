@@ -139,12 +139,12 @@ public class WebsocketTest {
     String app = System.getProperty("testappenvironment");
 
     SqsConnectionBuilder sqsConnection =
-        new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new SqsConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
 
     sqsService = new SqsService(sqsConnection);
 
     SsmConnectionBuilder ssmBuilder =
-        new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new SsmConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
 
     SsmService ssmService = new SsmServiceImpl(ssmBuilder);
 
@@ -179,7 +179,8 @@ public class WebsocketTest {
 
     webconnectionsTable =
         ssmService.getParameterValue("/formkiq/" + app + "/dynamodb/WebConnectionsTableName");
-    dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    dbConnection =
+        new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
   }
 
   /** {@link HttpClient}. */

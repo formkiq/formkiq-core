@@ -284,7 +284,7 @@ public abstract class AbstractApiTest {
    */
   private static void loadSsmParameterVariables(final String awsprofile) {
 
-    ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    ssmBuilder = new SsmConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
     ssmService = new SsmServiceImpl(ssmBuilder);
 
     rootHttpUrl =
@@ -370,7 +370,7 @@ public abstract class AbstractApiTest {
           .getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
 
       dbConnection =
-          new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+          new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
       configService = new ConfigServiceImpl(dbConnection, documentsTable);
     }
   }

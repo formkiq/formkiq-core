@@ -189,18 +189,20 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
       final AwsCredentialsProvider credentialsProvider, final Map<String, URI> awsServiceEndpoints,
       final DocumentTagSchemaPlugin schemaEvents) {
 
-    DynamoDbConnectionBuilder db =
-        new DynamoDbConnectionBuilder().setRegion(region).setCredentials(credentialsProvider)
-            .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
+    final boolean enableAwsXray = "true".equals(map.get("ENABLE_AWS_X_RAY"));
+
+    DynamoDbConnectionBuilder db = new DynamoDbConnectionBuilder(enableAwsXray).setRegion(region)
+        .setCredentials(credentialsProvider)
+        .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(db));
 
-    SsmConnectionBuilder ssm = new SsmConnectionBuilder().setRegion(region)
+    SsmConnectionBuilder ssm = new SsmConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("ssm"));
     AwsServiceCache.register(SsmConnectionBuilder.class,
         new ClassServiceExtension<SsmConnectionBuilder>(ssm));
 
-    SqsConnectionBuilder sqs = new SqsConnectionBuilder().setRegion(region)
+    SqsConnectionBuilder sqs = new SqsConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sqs"));
     AwsServiceCache.register(SqsConnectionBuilder.class,
         new ClassServiceExtension<SqsConnectionBuilder>(sqs));
@@ -212,13 +214,13 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
           new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
     }
 
-    SnsConnectionBuilder sns = new SnsConnectionBuilder().setRegion(region)
+    SnsConnectionBuilder sns = new SnsConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
 
     AwsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension(sns));
 
-    S3ConnectionBuilder s3 = new S3ConnectionBuilder().setRegion(region)
+    S3ConnectionBuilder s3 = new S3ConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
 
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());

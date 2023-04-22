@@ -101,14 +101,18 @@ public abstract class AbstractAwsTest {
     String awsprofile = System.getProperty("testprofile");
     appenvironment = System.getProperty("testappenvironment");
 
-    sqsBuilder = new SqsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    boolean enableAwsXray = false;
+    sqsBuilder =
+        new SqsConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
-    ssmBuilder = new SsmConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    ssmBuilder =
+        new SsmConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
     final S3ConnectionBuilder s3Builder =
-        new S3ConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+        new S3ConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
-    snsBuilder = new SnsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    snsBuilder =
+        new SnsConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
     sqsService = new SqsService(sqsBuilder);
     s3Service = new S3Service(s3Builder);
@@ -128,7 +132,8 @@ public abstract class AbstractAwsTest {
     String documentsTable =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
 
-    dbConnection = new DynamoDbConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
+    dbConnection =
+        new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
     documentService = new DocumentServiceImpl(dbConnection, documentsTable,
         new DocumentVersionServiceNoVersioning());
     searchService =

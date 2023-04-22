@@ -129,7 +129,8 @@ Resources:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false  
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
           DOCUMENT_SYNC_TABLE: 

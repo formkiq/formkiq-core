@@ -82,7 +82,7 @@ public class ConsoleInstallHandlerTest {
 
     localStackInstance.start();
 
-    s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+    s3Connection = new S3ConnectionBuilder(false).setCredentials(cred).setRegion(Region.US_EAST_1)
         .setEndpointOverride(
             new URI(localStackInstance.getEndpointOverride(Service.S3).toString()));
 
