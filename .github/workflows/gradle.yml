@@ -44,7 +44,7 @@ jobs:
         alias openapi-generator=openapi-generator-cli
         openapi-generator --version
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v2
+      uses: gradle/gradle-build-action@2.4.2
     - name: Execute Gradle build
       run: ./gradlew build --info
     - name: Set AWS credentials
