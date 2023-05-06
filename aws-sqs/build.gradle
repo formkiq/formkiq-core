@@ -2,6 +2,12 @@
 description = "AWS SQS"
 
 dependencies {
+
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0-SNAPSHOT'
+	
+	implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+
     api 'software.amazon.awssdk:sqs:2.20.33'
     implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.33'
 	implementation project(':aws-xray')
@@ -12,7 +18,8 @@ dependencies {
    		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
 	}
 	
-	testImplementation group: 'junit', name: 'junit', version:'4.+'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+	//testImplementation group: 'junit', name: 'junit', version:'4.+'
 }
 
 test {

@@ -1,0 +1,105 @@
+description = "FormKiQ Core - Lambda OCR Tesseract"
+
+def tesseract_version = "5.3.1"
+def moduleName = "formkiq-module-lambda-ocr-tesseract"
+
+dependencies {
+
+	implementation project(':actions')
+	implementation project(':aws-s3')
+	implementation project(':aws-sqs')
+	implementation project(':aws-sns')
+	implementation project(':aws-dynamodb')
+	implementation project(':ocr')
+	implementation project(':fkq-lambda-services')
+	implementation("net.sourceforge.tess4j:tess4j:5.7.0")
+	implementation("org.slf4j:slf4j-simple:2.0.6")
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+	implementation group: 'net.java.dev.jna', name: 'jna', version: '5.13.0'
+	
+	
+	testImplementation project(':fkq-test-utils')
+
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
+}
+
+task buildZip(type: Zip) {
+	dependsOn check
+	archiveFileName = "${moduleName}.zip"
+    destinationDirectory = file("${buildDir}")
+    from compileJava
+    from processResources              
+    into('lib') {
+        from configurations.runtimeClasspath
+    }           
+}
+
+test {
+  failFast = true
+  exclude 'com/formkiq/module/lambda/ocr/tesseract/awstest/**'
+  useJUnitPlatform()
+}
+
+task testaws(type: Test) {
+  description = 'Runs AWS integration tests.'
+  outputs.upToDateWhen {false}
+  include 'com/formkiq/module/lambda/ocr/tesseract/awstest/**'    
+}
+
+task downloadZipFile(type: Download) {
+    src 'https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.1/tesseract-al2-x86.zip'
+    dest new File(buildDir, 'tesseract-al2-x86.zip')
+}
+
+task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
+    from zipTree(downloadZipFile.dest)
+    into new File(buildDir, 'tesseract')
+}
+
+task updateTesseractFiles(type: Delete) {
+	dependsOn downloadAndUnzipFile
+	def directory = file("${buildDir}/tesseract/tesseract/share/tessdata/")
+    
+    doLast {
+    	file("${buildDir}/tesseract/lib/libtesseract.so.5").renameTo(file("${buildDir}/tesseract/lib/libtesseract.so"))
+        directory.eachFile { file ->
+            if (file.name != "eng.traineddata" && file.name != "osd.traineddata") {
+                file.delete()
+            }
+        }
+    }
+}
+
+task buildTesseractLayer(type: Zip) {
+	dependsOn updateTesseractFiles
+    from "${buildDir}/tesseract"
+    archiveFileName.set("layer-tesseract-5.3.1.zip")
+    destinationDir file("$buildDir")
+}
+
+task assembleTemplate {
+  dependsOn buildZip, buildTesseractLayer  
+  outputs.upToDateWhen { false }
+  
+	doLast {
+		copy {
+		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+		  include "template*"
+	      into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	    }
+	    copy {
+		  from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	    }
+	    copy {
+		  from layout.projectDirectory.file("${buildDir}/layer-tesseract-${tesseract_version}.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	    }
+	}
+}
+
+build.dependsOn assembleTemplate

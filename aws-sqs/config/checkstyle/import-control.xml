@@ -18,6 +18,8 @@
 		<allow pkg="com.amazonaws.xray.interceptors" />
 		<allow pkg="software.amazon.awssdk.core.client.config" />
 		
+		<allow pkg="com.formkiq.graalvm.annotations" />
+		<allow pkg="com.google.gson.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 	</subpackage>
 	

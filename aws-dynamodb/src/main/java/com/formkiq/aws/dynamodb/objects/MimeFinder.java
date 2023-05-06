@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.common.formats;
+package com.formkiq.aws.dynamodb.objects;
 
-import static com.formkiq.stacks.common.formats.MimeType.MIME_DOCX;
-import static com.formkiq.stacks.common.formats.MimeType.MIME_HTML;
-import static com.formkiq.stacks.common.formats.MimeType.MIME_JPEG;
-import static com.formkiq.stacks.common.formats.MimeType.MIME_JSON;
-import static com.formkiq.stacks.common.formats.MimeType.MIME_PDF;
-import static com.formkiq.stacks.common.formats.MimeType.MIME_PNG;
+import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_DOCX;
+import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_HTML;
+import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_JPEG;
+import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_JSON;
+import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_PDF;
+import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_PNG;
 import java.util.Set;
 
 /**

@@ -52,6 +52,7 @@ import java.util.function.BiPredicate;
 import org.junit.AfterClass;
 import org.junit.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -77,7 +78,6 @@ import com.formkiq.stacks.client.requests.GetDocumentsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
 import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentRequest;
-import com.formkiq.stacks.common.formats.MimeType;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 

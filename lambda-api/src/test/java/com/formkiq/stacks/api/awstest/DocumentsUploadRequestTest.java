@@ -41,6 +41,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddLargeDocument;
 import com.formkiq.stacks.client.models.DocumentContent;
@@ -48,7 +49,6 @@ import com.formkiq.stacks.client.models.DocumentTag;
 import com.formkiq.stacks.client.requests.AddLargeDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
-import com.formkiq.stacks.common.formats.MimeType;
 
 /**
  * GET, OPTIONS /documents/upload tests.

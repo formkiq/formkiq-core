@@ -1,0 +1,22 @@
+
+description = "Ocr"
+
+dependencies {
+
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0-SNAPSHOT'
+	
+	implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+	
+	implementation project(':actions')
+	implementation project(':aws-dynamodb')
+	implementation project(':dynamodb-documents')
+	implementation project(':aws-s3')
+	implementation project(':aws-sqs')
+	implementation project(':fkq-lambda-services')
+	implementation project(':fkq-lambda-core')
+	implementation project(':fkq-plugins')
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+	
+	implementation group: 'com.itextpdf', name: 'kernel', version: '7.2.5'
+}

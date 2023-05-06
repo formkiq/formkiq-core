@@ -21,59 +21,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.common.formats;
+package com.formkiq.module.ocr;
+
+import java.util.Collections;
+import java.util.List;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Supported Conversion Formats.
+ * 
+ * OCR Request.
  *
  */
-public enum MimeType {
+@Reflectable
+public class OcrRequest {
 
-  /** text/html. */
-  MIME_HTML("text/html"),
-  /** application/vnd.openxmlformats-officedocument.wordprocessingml.document. */
-  MIME_DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-  /** application/pdf. */
-  MIME_PDF("application/pdf"),
-  /** image/png. */
-  MIME_PNG("image/png"),
-  /** image/jpeg. */
-  MIME_JPEG("image/jpeg"),
-  /** application/json. */
-  MIME_JSON("application/json"),
-  /** Unknown Mime. */
-  MIME_UNKNOWN("UNKNOWN");
-
-  /** Content Type. */
-  private String contentType;
+  /** Add Pdf Detected Characeters as Text. */
+  private boolean addPdfDetectedCharactersAsText = false;
+  /** Parse Types. */
+  private List<String> parseTypes;
 
   /**
    * constructor.
-   * 
-   * @param type {@link String}
    */
-  MimeType(final String type) {
-    this.contentType = type;
+  public OcrRequest() {
+
   }
 
   /**
-   * Get Content Type.
+   * Get Parse Types.
    * 
-   * @return {@link String}
+   * @return {@link List} {@link String}
    */
-  public String getContentType() {
-    return this.contentType;
+  public List<String> getParseTypes() {
+    return this.parseTypes != null ? Collections.unmodifiableList(this.parseTypes) : null;
   }
 
   /**
-   * Is Content Type plain text.
+   * Is AddPdfDetectedCharactersAsText.
    * 
-   * @param contentType {@link String}
    * @return boolean
    */
-  public static boolean isPlainText(final String contentType) {
-    return contentType != null
-        && (contentType.startsWith("text/") || "application/json".equals(contentType)
-            || "application/x-www-form-urlencoded".equals(contentType));
+  public boolean isAddPdfDetectedCharactersAsText() {
+    return this.addPdfDetectedCharactersAsText;
+  }
+
+  /**
+   * Set AddPdfDetectedCharactersAsText.
+   * 
+   * @param bool boolean
+   */
+  public void setAddPdfDetectedCharactersAsText(final boolean bool) {
+    this.addPdfDetectedCharactersAsText = bool;
+  }
+
+  /**
+   * Set Parse Types.
+   * 
+   * @param types {@link List} {@link String}
+   */
+  public void setParseTypes(final List<String> types) {
+    this.parseTypes = types != null ? Collections.unmodifiableList(types) : null;
   }
 }

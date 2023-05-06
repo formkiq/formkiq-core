@@ -40,7 +40,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
 
   /**
-   * DELETE /documents/{documentId}/ocr request.
+   * DELETE /documents/{documentId}/ocr request. TODO Save OCR, the verify deleted.
    *
    * @throws Exception an error has occurred
    */
@@ -62,7 +62,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
@@ -89,7 +89,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals("404.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
@@ -117,7 +117,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals("404.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }
@@ -144,7 +144,7 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
+      assertEquals("404.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     }
   }

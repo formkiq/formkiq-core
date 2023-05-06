@@ -31,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,7 +125,33 @@ public class FkqDocumentService {
     return client.addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument()
         .path(path).content(content).contentType(contentType).tags(tags).actions(actions)))
         .documentId();
+  }
 
+  /**
+   * Add Document with Actions.
+   * 
+   * @param client {@link FormKiqClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param content {@link String}
+   * @param contentType {@link String}
+   * @param actions {@link List} {@link AddDocumentAction}
+   * @param tags {@link List} {@link DocumentTag}
+   * @return {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  public static String addDocumentWithActions(final FormKiqClient client, final String siteId,
+      final String path, final byte[] content, final String contentType,
+      final List<AddDocumentAction> actions, final List<AddDocumentTag> tags)
+      throws IOException, InterruptedException {
+
+    String base64 = Base64.getEncoder().encodeToString(content);
+
+    return client
+        .addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument().path(path)
+            .contentAsBase64(base64).contentType(contentType).tags(tags).actions(actions)))
+        .documentId();
   }
 
   /**

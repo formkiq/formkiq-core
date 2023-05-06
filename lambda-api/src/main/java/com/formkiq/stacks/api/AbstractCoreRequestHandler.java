@@ -54,6 +54,8 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.ocr.DocumentOcrService;
+import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
@@ -236,6 +238,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
 
     awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 

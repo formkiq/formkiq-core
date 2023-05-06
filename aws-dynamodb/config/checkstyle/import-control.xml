@@ -21,6 +21,9 @@
 		<allow pkg="software.amazon.awssdk.services.dynamodb" />
 		<allow pkg="com.amazonaws.xray.interceptors" />
 
+		<subpackage name="objects">
+			<allow pkg="java.time" />
+		</subpackage>
 	</subpackage>
 	
 </import-control>

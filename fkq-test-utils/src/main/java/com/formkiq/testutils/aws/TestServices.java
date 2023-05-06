@@ -83,6 +83,8 @@ public final class TestServices {
   private static SsmConnectionBuilder ssmConnection;
   /** {@link String}. */
   public static final String STAGE_BUCKET_NAME = "stagebucket";
+  /** {@link String}. */
+  public static final String OCR_BUCKET_NAME = "ocrbucket";
 
   /**
    * Get Local Stack Endpoint.

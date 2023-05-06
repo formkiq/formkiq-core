@@ -25,6 +25,7 @@ package com.formkiq.testutils.aws;
 
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
+import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -52,6 +53,10 @@ public class LocalStackExtension
 
     if (!s3service.exists(STAGE_BUCKET_NAME)) {
       s3service.createBucket(STAGE_BUCKET_NAME);
+    }
+
+    if (!s3service.exists(OCR_BUCKET_NAME)) {
+      s3service.createBucket(OCR_BUCKET_NAME);
     }
 
     new SsmServiceImpl(TestServices.getSsmConnection(null))

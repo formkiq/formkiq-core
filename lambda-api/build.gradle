@@ -17,6 +17,7 @@ dependencies {
 	implementation project(':dynamodb-documents')
 	implementation project(':actions')
 	implementation project(':typesense')
+	implementation project(':ocr')
 	implementation project(':http-sigv4')
 	
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
@@ -27,7 +28,7 @@ dependencies {
     
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
-    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.10.0'
+    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.0-SNAPSHOT'
 	testImplementation project(':aws-cognito')
 	testImplementation project(':aws-iam')
 	testImplementation project(':aws-sts')
@@ -97,7 +98,7 @@ task buildJava11Zip(type: Zip) {
 
 task assembleTemplate {
 	dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template-snippet.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
 	
 	def randomtext = ('0'..'z').shuffled().take(10).join();
@@ -107,12 +108,13 @@ task assembleTemplate {
 	
 		copy {
 		  from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
+		  from layout.buildDirectory.file("${buildDir}/layer-tesseract-5.3.1.zip")
 	      into "${buildDir}/distributions/formkiq-core/sam/api"
 	    }
 
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }

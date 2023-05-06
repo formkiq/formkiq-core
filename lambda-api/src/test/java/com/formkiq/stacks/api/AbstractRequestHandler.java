@@ -30,6 +30,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
+import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
 import static org.junit.Assert.assertEquals;
@@ -214,6 +215,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("CACHE_TABLE", CACHE_TABLE);
     this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
+    this.map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
     this.map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     this.map.put("AWS_REGION", AWS_REGION.toString());
     this.map.put("DEBUG", "true");

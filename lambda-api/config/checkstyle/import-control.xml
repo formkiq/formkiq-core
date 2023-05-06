@@ -43,7 +43,7 @@
 		
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			<allow pkg="com.amazonaws.xray" />
-			
+			<allow pkg="com.formkiq.module.ocr" />
 			<allow pkg="software.amazon.awssdk" />
 			
 			<allow pkg="com.formkiq.aws.dynamodb" />
@@ -79,8 +79,9 @@
 			
 			<subpackage name="handler">
 				
-				<allow pkg="com.formkiq.module.typesense" />
 				<allow pkg="com.formkiq.aws.services.lambda" />
+				<allow pkg="com.formkiq.module.typesense" />
+				<allow pkg="com.formkiq.module.ocr" />
 				<allow pkg="com.formkiq.stacks.api" />
 				<allow pkg="com.formkiq.stacks.common.formats" />
 				<allow pkg="com.formkiq.stacks.common.objects" />

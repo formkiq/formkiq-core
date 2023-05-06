@@ -118,6 +118,7 @@ task buildDistribution(type: Copy) {
     from 'lambda-api/build/distributions/formkiq-core'
     from 'lambda-s3/build/distributions/formkiq-core'
     from 'lambda-typesense/build/distributions/formkiq-module-lambda-typesense'
+    from 'lambda-ocr-tesseract/build/distributions/formkiq-core'
     from 'module-email-notify/build/distributions/formkiq-core'
     from 'websocket-api/build/distributions/formkiq-core'
     into "${buildDir}/distributions/formkiq-core"

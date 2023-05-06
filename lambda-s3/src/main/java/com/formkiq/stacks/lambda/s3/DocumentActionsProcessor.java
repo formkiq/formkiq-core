@@ -60,6 +60,7 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -92,7 +93,6 @@ import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
 import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
-import com.formkiq.stacks.common.formats.MimeType;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -145,7 +145,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /** {@link AwsServiceCache}. */
   private AwsServiceCache serviceCache;
   /** {@link TypeSenseService}. */
-  private TypeSenseService typesense;
+  private TypeSenseService typesense = null;
 
   /**
    * constructor.
@@ -201,8 +201,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     String typeSenseApiKey =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
 
-    this.typesense =
-        new TypeSenseServiceImpl(typeSenseHost, typeSenseApiKey, awsRegion, awsCredentials);
+    if (typeSenseHost != null && typeSenseApiKey != null) {
+      this.typesense =
+          new TypeSenseServiceImpl(typeSenseHost, typeSenseApiKey, awsRegion, awsCredentials);
+    }
 
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
@@ -460,6 +462,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
+      ActionStatus status = ActionStatus.COMPLETE;
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
       List<String> contentUrls = findContentUrls(siteId, item);
 
@@ -467,14 +470,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (moduleFulltext) {
         updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
-      } else {
+      } else if (this.typesense != null) {
         updateTypesense(siteId, documentId, action, contentUrls);
+      } else {
+        status = ActionStatus.FAILED;
       }
 
-      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
-          ActionType.FULLTEXT, ActionStatus.COMPLETE);
+      List<Action> updatedActions =
+          this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
 
-      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      if (ActionStatus.COMPLETE.equals(status)) {
+        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      }
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 

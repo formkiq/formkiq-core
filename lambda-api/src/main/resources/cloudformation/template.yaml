@@ -197,6 +197,12 @@ Resources:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
             Ref: TypesenseApiKey
+          OCR_S3_BUCKET:
+            Ref: OcrBucket
+          OCR_SQS_QUEUE_URL:
+            Fn::GetAtt: 
+            - OcrQueue
+            - QueueUrl
           MODULE_typesense:
             Fn::If:
             - CreateTypesenseResources
@@ -224,7 +230,7 @@ Resources:
       FunctionName: 
         Ref: DocumentsApiRequests
       Principal: apigateway.amazonaws.com
-
+      
   DocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -473,6 +479,26 @@ Resources:
               - sns:Publish
               Resource:
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:PutObject              
+              Resource:
+                Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: OcrBucket
+                  - "/*"
+            - Effect: Allow
+              Action:
+              - s3:ListBucket
+              Resource:
+                Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: OcrBucket
 
   DocumentsIamApiUrlParameter:
     Type: AWS::SSM::Parameter

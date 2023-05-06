@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.module">
+	
+	<subpackage name="lambda">
+	
+		<subpackage name="ocr">
+		
+			<subpackage name="tesseract">
+				
+				<allow pkg="java.io" />
+				<allow pkg="java.nio.charset" />
+				<allow pkg="java.util" />
+				<allow pkg="com.amazonaws.services.lambda.runtime" />
+				<allow pkg="com.formkiq.aws.dynamodb" />
+				<allow pkg="com.formkiq.graalvm.annotations" />
+				<allow pkg="com.google.gson" />
+
+				<allow pkg="com.formkiq.aws.s3" />
+				<allow pkg="com.formkiq.aws.sns" />
+				<allow pkg="com.formkiq.aws.sqs" />
+
+				<allow pkg="com.formkiq.module.actions" />
+				<allow pkg="com.formkiq.module.actions.services" />
+				<allow pkg="com.formkiq.module.lambdaservices" />
+				<allow pkg="com.formkiq.module.ocr" />
+
+				<allow pkg="net.sourceforge.tess4j" />
+
+				<allow pkg="software.amazon.awssdk.auth.credentials" />
+				<allow pkg="software.amazon.awssdk.regions" />
+				<allow pkg="software.amazon.awssdk.utils" />
+				<allow pkg="software.amazon.awssdk.services.s3.model" />
+				
+			</subpackage>
+			
+		</subpackage>
+	</subpackage>
+	
+</import-control>

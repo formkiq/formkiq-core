@@ -75,6 +75,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

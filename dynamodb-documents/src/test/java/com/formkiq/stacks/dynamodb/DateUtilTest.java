@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import org.junit.Before;
 import org.junit.Test;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 /**
  * Unit Tests for {@link DateUtil}.
