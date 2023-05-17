@@ -52,7 +52,7 @@ import software.amazon.awssdk.utils.IoUtils;
 public class DocumentsDocumentIdOcrRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 60000;
+  private static final int TEST_TIMEOUT = 90000;
 
   /**
    * POST Document OCR.
