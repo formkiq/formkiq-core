@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,21 +36,15 @@ import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 /** Implementation of the {@link ConfigService}. */
 public class ConfigServiceImpl implements ConfigService, DbKeys {
 
-  /** {@link DynamoDbClient}. */
-  private DynamoDbClient dbClient;
-  /** Documents Table Name. */
-  private String documentTableName;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
 
   /**
    * constructor.
@@ -63,16 +58,14 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       throw new IllegalArgumentException("Table name is null");
     }
 
-    this.dbClient = connection.build();
-    this.documentTableName = documentsTable;
+    this.db = new DynamoDbServiceImpl(connection, documentsTable);
   }
 
   @Override
   public void delete(final String siteId) {
     String s = siteId != null ? siteId : DEFAULT_SITE_ID;
     Map<String, AttributeValue> keys = keysGeneric(null, PREFIX_CONFIG, s);
-    this.dbClient.deleteItem(
-        DeleteItemRequest.builder().tableName(this.documentTableName).key(keys).build());
+    this.db.deleteItem(keys.get(PK), keys.get(SK));
   }
 
   @Override
@@ -87,17 +80,9 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       keys.add(keysGeneric(null, PREFIX_CONFIG, DEFAULT_SITE_ID));
     }
 
-    Map<String, KeysAndAttributes> items =
-        Map.of(this.documentTableName, KeysAndAttributes.builder().keys(keys).build());
-
-    BatchGetItemResponse response =
-        this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
-
-    AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
+    List<Map<String, AttributeValue>> list = this.db.getBatch(keys);
 
     Optional<Map<String, AttributeValue>> map = Optional.empty();
-    List<Map<String, AttributeValue>> list = response.responses().get(this.documentTableName);
-
     if (!list.isEmpty()) {
       map = list.stream().filter(s -> s.get(SK).s().equals(siteId)).findFirst();
       if (map.isEmpty()) {
@@ -105,6 +90,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       }
     }
 
+    AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
     return !map.isEmpty() ? transform.apply(map.get()) : new DynamicObject(Map.of());
   }
 
@@ -117,7 +103,14 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
       item.put(e.getKey(), AttributeValue.builder().s(e.getValue().toString()).build());
     }
 
-    this.dbClient
-        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(item).build());
+    if (this.db.exists(item.get(PK), item.get(SK))) {
+      HashMap<String, AttributeValue> fields = new HashMap<>(item);
+      fields.remove(PK);
+      fields.remove(SK);
+
+      this.db.updateFields(item.get(PK), item.get(SK), fields);
+    } else {
+      this.db.putItem(item);
+    }
   }
 }

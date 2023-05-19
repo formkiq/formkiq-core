@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -46,10 +47,24 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 /** Unit Tests for request /sites. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
+public class SitesRequestTest extends AbstractRequestHandler {
 
   /** Email Pattern. */
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
+
+  /**
+   * Get /esignature/docusign/config request.
+   * 
+   * @param siteId {@link String}
+   * @param group {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getRequest(final String siteId, final String group) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
+        .resource("/sites").path("/sites").group(group).user("joesmith")
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    return event;
+  }
 
   /**
    * Get /sites with SES support.
@@ -61,7 +76,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   public void testHandleGetSites01() throws Exception {
     // given
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
+    ApiGatewayRequestEvent event = getRequest(null, "default Admins finance");
 
     // when
     String response = handleRequest(event);
@@ -120,7 +135,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   public void testHandleGetSites02() throws Exception {
     // given
     removeSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain");
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
+    ApiGatewayRequestEvent event = getRequest(null, "default Admins finance");
 
     // when
     String response = handleRequest(event);
@@ -161,8 +176,7 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     removeSsmParameter(
         String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
-    setCognitoGroup(event, "default_read finance");
+    ApiGatewayRequestEvent event = getRequest(null, "default_read finance");
 
     // when
     String response = handleRequest(event);
@@ -212,8 +226,8 @@ public class ApiDocumentsSitesRequestTest extends AbstractRequestHandler {
   public void testHandleGetSites04() throws Exception {
     // given
     String siteId = "finance";
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-sites01.json");
-    setCognitoGroup(event, siteId);
+    ApiGatewayRequestEvent event = getRequest(siteId, siteId);
+
     ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 

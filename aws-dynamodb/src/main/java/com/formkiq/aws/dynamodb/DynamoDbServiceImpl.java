@@ -25,14 +25,19 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -101,6 +106,20 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
     return this.dbClient.getItem(GetItemRequest.builder().tableName(this.tableName).key(key)
         .consistentRead(Boolean.TRUE).build()).item();
+  }
+
+  @Override
+  public List<Map<String, AttributeValue>> getBatch(
+      final Collection<Map<String, AttributeValue>> keys) {
+
+    Map<String, KeysAndAttributes> items =
+        Map.of(this.tableName, KeysAndAttributes.builder().keys(keys).build());
+
+    BatchGetItemResponse response =
+        this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+
+    List<Map<String, AttributeValue>> list = response.responses().get(this.tableName);
+    return list;
   }
 
   @Override

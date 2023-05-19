@@ -58,6 +58,7 @@ import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
+import com.formkiq.stacks.api.handler.ConfigsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
@@ -143,6 +144,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new ConfigsRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentVersionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
