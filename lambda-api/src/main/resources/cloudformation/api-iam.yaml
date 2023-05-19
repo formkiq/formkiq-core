@@ -32,7 +32,7 @@ Resources:
               operationId: GetVersion
               description: Return the version of FormKiQ
               tags:
-              - Miscellaneous
+              - System Management
               responses:
                 '200':
                   description: "200 OK"
@@ -59,7 +59,7 @@ Resources:
               operationId: GetSites
               description: Returns the list of sites that the user has access to
               tags:
-              - Miscellaneous
+              - System Management
               responses:
                 '200':
                   description: "200 OK"
@@ -77,6 +77,71 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/GetSitesRequest"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /configs:
+            get:
+              operationId: GetConfigs
+              description: Returns the list of sites that the user has access to
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetConfigsRequest"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            patch:
+              operationId: UpdateConfig
+              description: Update the System Management configuration
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetConfigRequest'
+                    examples:
+                      ChatGPT_APIKEY:
+                        value:
+                          key: chatGptApiKey
+                          value: ABC
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetConfigResponse'
               security:
               - sigv4: []
               x-amazon-apigateway-integration:
@@ -3217,6 +3282,40 @@ Resources:
                   description: "List of installed modules"
                   items:
                     type: "string"
+            SetConfigRequest:
+              required:
+              - "key"
+              - "value"
+              type: "object"
+              properties:
+                value:
+                  type: "string"
+                  description: "Config value"
+                key:
+                  type: "string"
+                  description: "Config key"
+            SetConfigResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            GetConfigsRequest:
+              type: object
+              properties:
+                sites:
+                  $ref: "#/components/schemas/Configs"
+            Configs:
+              type: "array"
+              description: "List of configs"
+              items:
+                $ref: "#/components/schemas/Config"
+            Config:
+              type: "object"
+              properties:
+                chatGptApiKey:
+                  type: "string"
+                  description: "ChatGPT API Key"
             GetSitesRequest:
               type: object
               properties:
