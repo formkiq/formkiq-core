@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENTS;
-import static com.formkiq.aws.services.lambda.services.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.io.IOException;

@@ -253,6 +253,7 @@ Resources:
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          CHATGPT_API_COMPLETIONS_URL: "https://api.openai.com/v1/completions"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole

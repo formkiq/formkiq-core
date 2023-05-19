@@ -36,8 +36,8 @@ import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
-import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ConfigService;
 
 /** {@link ApiGatewayRequestHandler} for "/configs". */
 public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {

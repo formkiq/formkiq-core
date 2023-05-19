@@ -36,7 +36,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +51,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -60,14 +60,15 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
+import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.formkiq.graalvm.annotations.ReflectableField;
@@ -82,6 +83,7 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -89,13 +91,14 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.UpdateFulltext;
 import com.formkiq.stacks.client.models.UpdateFulltextTag;
 import com.formkiq.stacks.client.requests.AddDocumentOcrRequest;
-import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.formkiq.stacks.client.requests.OcrParseType;
 import com.formkiq.stacks.client.requests.SetDocumentAntivirusRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentFulltextRequest;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
@@ -138,8 +141,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private Gson gson = new GsonBuilder().create();
   /** {@link ActionsNotificationService}. */
   private ActionsNotificationService notificationService;
-  /** Ocr Bucket. */
-  private String ocrBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
   /** {@link AwsServiceCache}. */
@@ -180,13 +181,22 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
-    this.serviceCache = new AwsServiceCache().environment(map);
-    DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
-    DocumentVersionService versionService = dsExtension.loadService(this.serviceCache);
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbBuilder));
+    AwsServiceCache.register(SsmConnectionBuilder.class,
+        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
+    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
+    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    AwsServiceCache.register(FormKiqClientV1.class,
+        new FormKiQClientV1Extension(awsRegion, awsCredentials));
 
-    this.s3Service = new S3Service(s3);
-    this.documentService =
-        new DocumentServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"), versionService);
+    this.serviceCache = new AwsServiceCache().environment(map);
+
+    this.s3Service = this.serviceCache.getExtension(S3Service.class);
+    this.documentService = this.serviceCache.getExtension(DocumentService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
@@ -210,7 +220,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
     this.documentsBucket =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
-    this.ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
+    String ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
+
+    map.put("DOCUMENTS_S3_BUCKET", ocrBucket);
+    map.put("OCR_S3_BUCKET", this.documentsBucket);
+    this.serviceCache.environment(map);
 
     this.fkqConnection = new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
 
@@ -270,53 +284,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return this.gson.toJson(Map.of("documents", documents));
   }
 
-  /**
-   * Find Content Url.
-   * 
-   * @param siteId {@link String}
-   * @param item {@link DocumentItem}
-   * @return {@link List} {@link String}
-   * @throws InterruptedException InterruptedException
-   * @throws IOException IOException
-   */
-  @SuppressWarnings("unchecked")
-  private List<String> findContentUrls(final String siteId, final DocumentItem item)
-      throws IOException, InterruptedException {
-
-    List<String> urls = null;
-    String documentId = item.getDocumentId();
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-
-    if (MimeType.isPlainText(item.getContentType())) {
-
-      PresignGetUrlConfig config = new PresignGetUrlConfig()
-          .contentDispositionByPath(item.getPath(), false).contentType(item.getContentType());
-
-      String bucket =
-          MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
-
-      String url =
-          this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null, config).toString();
-      urls = Arrays.asList(url);
-
-    } else {
-
-      GetDocumentOcrRequest req = new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
-
-      req.addQueryParameter("contentUrl", "true");
-      req.addQueryParameter("text", "true");
-
-      HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
-      Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
-
-      if (map != null && map.containsKey("contentUrls")) {
-        urls = (List<String>) map.get("contentUrls");
-      }
-    }
-
-    return urls;
-  }
-
   private int getCharacterMax(final Action action) {
     Map<String, String> parameters = notNull(action.parameters());
     return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
@@ -325,6 +292,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Get Content from {@link Action}.
    * 
+   * @param dcFunc {@link DocumentContentFunction}
    * @param action {@link Action}
    * @param contentUrls {@link List} {@link String}
    * @return {@link String}
@@ -332,10 +300,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private String getContent(final Action action, final List<String> contentUrls)
-      throws URISyntaxException, IOException, InterruptedException {
+  private String getContent(final DocumentContentFunction dcFunc, final Action action,
+      final List<String> contentUrls) throws URISyntaxException, IOException, InterruptedException {
 
-    StringBuilder sb = getContentUrls(contentUrls);
+    StringBuilder sb = dcFunc.getContentUrls(contentUrls);
 
     int characterMax = getCharacterMax(action);
 
@@ -344,31 +312,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
             : sb.toString();
 
     return content;
-  }
-
-  /**
-   * Get Content from external urls.
-   * 
-   * @param contentUrls {@link List} {@link String}
-   * @return {@link StringBuilder}
-   * @throws URISyntaxException URISyntaxException
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private StringBuilder getContentUrls(final List<String> contentUrls)
-      throws URISyntaxException, IOException, InterruptedException {
-
-    StringBuilder sb = new StringBuilder();
-
-    for (String contentUrl : contentUrls) {
-      HttpRequest req =
-          HttpRequest.newBuilder(new URI(contentUrl)).timeout(Duration.ofMinutes(1)).build();
-      HttpResponse<String> response =
-          HttpClient.newBuilder().build().send(req, BodyHandlers.ofString());
-      sb.append(response.body());
-    }
-
-    return sb;
   }
 
   /**
@@ -414,6 +357,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
+    // TODO log request
+
     LambdaLogger logger = context.getLogger();
 
     if ("true".equals(System.getenv("DEBUG"))) {
@@ -428,7 +373,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       e.printStackTrace();
       throw new RuntimeException(e);
     }
-
 
     return null;
   }
@@ -448,7 +392,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     logger.log(String.format("processing action %s", action.type()));
 
-    if (ActionType.OCR.equals(action.type())) {
+    if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
+
+      DocumentTaggingAction dtAction = new DocumentTaggingAction(this.serviceCache);
+      dtAction.run(siteId, documentId, action);
+
+      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
+          action.type(), ActionStatus.COMPLETE);
+
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+
+    } else if (ActionType.OCR.equals(action.type())) {
 
       List<OcrParseType> parseTypes = getOcrParseTypes(action);
       Map<String, String> parameters =
@@ -464,14 +418,16 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       ActionStatus status = ActionStatus.COMPLETE;
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
-      List<String> contentUrls = findContentUrls(siteId, item);
+
+      DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
+      List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
 
       boolean moduleFulltext = this.serviceCache.hasModule("fulltext");
 
       if (moduleFulltext) {
         updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
       } else if (this.typesense != null) {
-        updateTypesense(siteId, documentId, action, contentUrls);
+        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
       } else {
         status = ActionStatus.FAILED;
       }
@@ -655,14 +611,16 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Update Typesense Content.
    * 
+   * @param dcFunc {@link DocumentContentFunction}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @param contentUrls {@link List} {@link String}
    * @throws IOException IOException
    */
-  private void updateTypesense(final String siteId, final String documentId, final Action action,
-      final List<String> contentUrls) throws IOException {
+  private void updateTypesense(final DocumentContentFunction dcFunc, final String siteId,
+      final String documentId, final Action action, final List<String> contentUrls)
+      throws IOException {
 
     try {
 
@@ -676,7 +634,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           document.containsKey("text") ? new StringBuilder(document.get("text").toString())
               : new StringBuilder();
 
-      String content = getContent(action, contentUrls);
+      String content = getContent(dcFunc, action, contentUrls);
       sb.append(" ");
       sb.append(content);
       document.put("text", sb.toString());

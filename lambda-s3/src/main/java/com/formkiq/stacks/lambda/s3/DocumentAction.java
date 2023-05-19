@@ -21,47 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.stacks.lambda.s3;
 
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import java.io.IOException;
+import com.formkiq.module.actions.Action;
 
 /**
- * Interface for providing restrictions around Document.
+ * 
+ * Document Action interface.
  *
  */
-public interface DocumentsRestrictions {
+public interface DocumentAction {
 
   /**
-   * Whether Restriction is being enforced.
+   * Run Action.
    * 
-   * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param value {@link String}
-   * @param objs {@link Object}
-   * @return boolean
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   * @throws IOException IOException
    */
-  boolean enforced(AwsServiceCache awsservice, String siteId, String value, Object... objs);
-
-  /**
-   * Get Value.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  default String getValue(final AwsServiceCache awsservice, final String siteId, final String key) {
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-    return configService.get(siteId).getString(key);
-  }
-
-  /**
-   * Get Value.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @return {@link String}
-   */
-  String getValue(AwsServiceCache awsservice, String siteId);
+  void run(String siteId, String documentId, Action action) throws IOException;
 }

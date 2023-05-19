@@ -21,44 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
+package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
-/** Config Service. */
-public interface ConfigService {
+/**
+ * 
+ * {@link AwsServiceExtension} for {@link ConfigService}.
+ *
+ */
+public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
 
-  /** Document Time To Live Key. */
-  String DOCUMENT_TIME_TO_LIVE = "DocumentTimeToLive";
-  /** Max Webhooks Key. */
-  String MAX_WEBHOOKS = "MaxWebhooks";
-  /** Max Documents Key. */
-  String MAX_DOCUMENTS = "MaxDocuments";
-  /** Max Document Size. */
-  String MAX_DOCUMENT_SIZE_BYTES = "MaxContentLengthBytes";
-  /** Webhook Time To Live Key. */
-  String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
+  /** {@link ConfigService}. */
+  private ConfigService service;
 
   /**
-   * Delete Config.
-   * 
-   * @param siteId {@link String}
+   * constructor.
    */
-  void delete(String siteId);
+  public ConfigServiceExtension() {}
 
-  /**
-   * Get Config.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @return {@link DynamicObject}
-   */
-  DynamicObject get(String siteId);
+  @Override
+  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new ConfigServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    }
 
-  /**
-   * Save Config.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param obj {@link DynamicObject}
-   */
-  void save(String siteId, DynamicObject obj);
+    return this.service;
+  }
 }

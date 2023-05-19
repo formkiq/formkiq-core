@@ -21,36 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda.services;
+package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.aws.dynamodb.DynamicObject;
 
-/**
- * 
- * {@link AwsServiceExtension} for {@link ConfigService}.
- *
- */
-public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
+/** Config Service. */
+public interface ConfigService {
 
-  /** {@link ConfigService}. */
-  private ConfigService service;
+  /** ChatGpt Api Key. */
+  String CHATGPT_API_KEY = "ChatGptApiKey";
+  /** Document Time To Live Key. */
+  String DOCUMENT_TIME_TO_LIVE = "DocumentTimeToLive";
+  /** Max Document Size. */
+  String MAX_DOCUMENT_SIZE_BYTES = "MaxContentLengthBytes";
+  /** Max Documents Key. */
+  String MAX_DOCUMENTS = "MaxDocuments";
+  /** Max Webhooks Key. */
+  String MAX_WEBHOOKS = "MaxWebhooks";
+  /** Webhook Time To Live Key. */
+  String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
 
   /**
-   * constructor.
+   * Delete Config.
+   * 
+   * @param siteId {@link String}
    */
-  public ConfigServiceExtension() {}
+  void delete(String siteId);
 
-  @Override
-  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new ConfigServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
-    }
+  /**
+   * Get Config.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @return {@link DynamicObject}
+   */
+  DynamicObject get(String siteId);
 
-    return this.service;
-  }
+  /**
+   * Save Config.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param obj {@link DynamicObject}
+   */
+  void save(String siteId, DynamicObject obj);
 }

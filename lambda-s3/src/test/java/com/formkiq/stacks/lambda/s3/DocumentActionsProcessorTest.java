@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
@@ -54,7 +56,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -70,11 +74,14 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.lambda.s3.util.FileUtils;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -100,14 +107,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
   /** {@link RequestRecordExpectationResponseCallback}. */
   private static RequestRecordExpectationResponseCallback callback =
       new RequestRecordExpectationResponseCallback();
+  /** {@link ConfigService}. */
+  private static ConfigService configService;
   /** {@link AwsBasicCredentials}. */
   private static AwsBasicCredentials credentials = AwsBasicCredentials.create("asd", "asd");
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
-
   /** {@link DocumentService}. */
   private static DocumentService documentService;
-
   /** {@link Gson}. */
   private static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
@@ -165,14 +172,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
 
     typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, credentials);
+
+    configService = new ConfigServiceImpl(dbBuilder, DOCUMENTS_TABLE);
   }
 
   /**
    * Create Mock Server.
+   * 
+   * @throws IOException IOException
    */
-  private static void createMockServer() {
+  private static void createMockServer() throws IOException {
 
     mockServer = startClientAndServer(Integer.valueOf(PORT));
+
+    final int status = 200;
+    String text = FileUtils.loadFile(mockServer, "/chatgpt/response1.json");
+    mockServer.when(request().withMethod("POST").withPath("/chatgpt")).respond(
+        org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
 
     mockServer.when(request().withMethod("PATCH")).respond(callback);
     mockServer.when(request().withMethod("POST")).respond(callback);
@@ -187,6 +203,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     env.put("MODULE_" + module, "true");
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/chatgpt");
 
     processor = new DocumentActionsProcessor(env, Region.US_EAST_1, credentials, dbBuilder,
         TestServices.getS3Connection(null), TestServices.getSsmConnection(null),
@@ -207,6 +224,126 @@ public class DocumentActionsProcessorTest implements DbKeys {
     callback.reset();
 
     initProcessor("fulltext");
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action missing GptKey.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      assertEquals(ActionStatus.FAILED,
+          actionsService.getActions(siteId, documentId).get(0).status());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction02() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      final int expectedSize = 5;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      PaginationResults<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Document Type", tags.getResults().get(i).getKey());
+      assertEquals("Memorandum", tags.getResults().get(i++).getValue());
+
+      assertEquals("Location", tags.getResults().get(i).getKey());
+      assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
+
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("Great Auk Enterprises", tags.getResults().get(i++).getValue());
+
+      assertEquals("Person", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat,Aaron Thomas",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("Subject", tags.getResults().get(i).getKey());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging invalid engine.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction03() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+              "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      assertEquals(ActionStatus.FAILED,
+          actionsService.getActions(siteId, documentId).get(0).status());
+    }
   }
 
   /**

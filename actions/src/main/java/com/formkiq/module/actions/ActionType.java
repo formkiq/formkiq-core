@@ -31,6 +31,8 @@ package com.formkiq.module.actions;
 public enum ActionType {
   /** AntiVirus. */
   ANTIVIRUS,
+  /** Document Tagging. */
+  DOCUMENTTAGGING,
   /** Full Text. */
   FULLTEXT,
   /** OCR. */
