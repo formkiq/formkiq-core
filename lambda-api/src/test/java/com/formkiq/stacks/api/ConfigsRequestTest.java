@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.Assert.assertEquals;
 import java.util.Map;
 import java.util.UUID;
@@ -85,10 +86,9 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     String group = "Admins";
 
     ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(siteId, new DynamicObject(Map.of("somekey", "somevalue")));
+    config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
-    String body =
-        GsonUtil.getInstance().toJson(Map.of("key", "anotherkey", "value", "anothervalue"));
+    String body = GsonUtil.getInstance().toJson(Map.of("chatGptApiKey", "anothervalue"));
     ApiGatewayRequestEvent eventPatch = patchRequest(siteId, group, body);
 
     ApiGatewayRequestEvent eventGet = getRequest(siteId, group);
@@ -105,9 +105,8 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     verifyResponse(mget);
 
     DynamicObject resp = new DynamicObject(fromJson(mget.get("body"), Map.class));
-    assertEquals(2, resp.size());
-    assertEquals("somevalue", resp.getString("somekey"));
-    assertEquals("anothervalue", resp.getString("anotherkey"));
+    assertEquals(1, resp.size());
+    assertEquals("anothervalue", resp.getString("chatGptApiKey"));
   }
 
   /**
@@ -150,7 +149,7 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     String group = "Admins";
 
     ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(null, new DynamicObject(Map.of("somekey", "somevalue")));
+    config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
 
     ApiGatewayRequestEvent event = getRequest(siteId, group);
 
@@ -164,7 +163,7 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
 
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
     assertEquals(1, resp.size());
-    assertEquals("somevalue", resp.getString("somekey"));
+    assertEquals("somevalue", resp.getString("chatGptApiKey"));
   }
 
   /**
@@ -180,8 +179,8 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     String group = "Admins";
 
     ConfigService config = getAwsServices().getExtension(ConfigService.class);
-    config.save(null, new DynamicObject(Map.of("somekey", "somevalue")));
-    config.save(siteId, new DynamicObject(Map.of("anotherkey", "anothervalue")));
+    config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
+    config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "anothervalue")));
 
     ApiGatewayRequestEvent event = getRequest(siteId, group);
 
@@ -195,7 +194,7 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
 
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
     assertEquals(1, resp.size());
-    assertEquals("anothervalue", resp.getString("anotherkey"));
+    assertEquals("anothervalue", resp.getString("chatGptApiKey"));
   }
 
   /**
@@ -210,8 +209,7 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     String siteId = null;
     String group = "Admins";
 
-    String body =
-        GsonUtil.getInstance().toJson(Map.of("key", "anotherkey", "value", "anothervalue"));
+    String body = GsonUtil.getInstance().toJson(Map.of("chatGptApiKey", "anotherkey"));
     ApiGatewayRequestEvent eventPatch = patchRequest(siteId, group, body);
 
     ApiGatewayRequestEvent eventGet = getRequest(siteId, group);
@@ -229,7 +227,7 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
 
     DynamicObject resp = new DynamicObject(fromJson(mget.get("body"), Map.class));
     assertEquals(1, resp.size());
-    assertEquals("anothervalue", resp.getString("anotherkey"));
+    assertEquals("anotherkey", resp.getString("chatGptApiKey"));
   }
 
   /**

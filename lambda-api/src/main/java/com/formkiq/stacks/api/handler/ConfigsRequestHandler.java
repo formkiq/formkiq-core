@@ -24,9 +24,10 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -34,7 +35,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -75,10 +75,10 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     DynamicObject obj = configService.get(siteId);
-    obj.remove(DbKeys.PK);
-    obj.remove(DbKeys.SK);
+    Map<String, Object> map = new HashMap<>();
+    map.put("chatGptApiKey", obj.getOrDefault(CHATGPT_API_KEY, ""));
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(obj));
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
   @Override
@@ -95,14 +95,14 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     String siteId = authorizer.getSiteId();
 
     Map<String, String> body = fromBodyToObject(logger, event, Map.class);
-    if (!body.containsKey("key") && !body.containsKey("value")) {
-      throw new BadException("'key' and 'value' are required");
+
+    Map<String, Object> map = new HashMap<>();
+    if (body.containsKey("chatGptApiKey")) {
+      map.put(CHATGPT_API_KEY, body.get("chatGptApiKey"));
     }
 
-    String key = body.get("key");
-    String value = body.get("value");
     ConfigService configService = awsservice.getExtension(ConfigService.class);
-    configService.save(siteId, new DynamicObject(Map.of(key, value)));
+    configService.save(siteId, new DynamicObject(map));
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("message", "Config saved")));

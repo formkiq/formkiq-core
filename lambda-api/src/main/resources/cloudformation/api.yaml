@@ -124,10 +124,9 @@ Resources:
                     schema:
                       $ref: '#/components/schemas/SetConfigRequest'
                     examples:
-                      ChatGPT_APIKEY:
+                      Config:
                         value:
-                          key: chatGptApiKey
-                          value: ABC
+                          chatGptApiKey: ABC
               responses:
                 '200':
                   description: 200 OK
@@ -3283,17 +3282,11 @@ Resources:
                   items:
                     type: "string"
             SetConfigRequest:
-              required:
-              - "key"
-              - "value"
               type: "object"
               properties:
-                value:
+                chatGptApiKey:
                   type: "string"
-                  description: "Config value"
-                key:
-                  type: "string"
-                  description: "Config key"
+                  description: "ChatGPT Api Key"
             SetConfigResponse:
               type: object
               properties:
