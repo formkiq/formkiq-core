@@ -25,7 +25,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.Configs;
+import com.formkiq.stacks.client.models.Config;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 /**
@@ -55,7 +55,7 @@ public class ConfigsRequestTest extends AbstractApiTest {
     FormKiqClientV1 client = clients.get(0);
 
     // when
-    Configs c = client.getConfigs();
+    Config c = client.getConfigs();
 
     // then
     assertEquals("", c.chatGptApiKey());

@@ -222,9 +222,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
     String ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
 
-    map.put("DOCUMENTS_S3_BUCKET", ocrBucket);
-    map.put("OCR_S3_BUCKET", this.documentsBucket);
-    this.serviceCache.environment(map);
+    Map<String, String> newmap = new HashMap<>(map);
+    newmap.put("DOCUMENTS_S3_BUCKET", ocrBucket);
+    newmap.put("OCR_S3_BUCKET", this.documentsBucket);
+    this.serviceCache.environment(newmap);
 
     this.fkqConnection = new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
 
@@ -527,6 +528,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         if (map.containsKey("Message")) {
           DocumentEvent event =
               this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
+
+          String s = String.format(
+              "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
+                  + "\"type\": \"%s\",\"userId\": %s,"
+                  + "\"contentType\": \"%s\",\"path\":\"%s\",\"content\":%s}",
+              event.siteId(), event.documentId(), event.s3key(), event.s3bucket(), event.type(),
+              event.userId(), event.contentType(), event.path(), event.content());
+
+          logger.log(s);
           processEvent(logger, event);
         }
       }
