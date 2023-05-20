@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -160,12 +161,12 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   @Override
-  public void run(final String siteId, final String documentId, final Action action)
-      throws IOException {
+  public void run(final LambdaLogger logger, final String siteId, final String documentId,
+      final Action action) throws IOException {
 
     String engine = action.parameters().get("engine");
     if (engine != null && "chatgpt".equals(engine.toLowerCase())) {
-      runChatGpt(siteId, documentId, action);
+      runChatGpt(logger, siteId, documentId, action);
     } else {
       throw new IOException("Unknown engine: " + engine);
     }
@@ -174,13 +175,14 @@ public class DocumentTaggingAction implements DocumentAction {
   /**
    * Run ChatGpt Document Tagging.
    * 
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @throws IOException IOException
    */
-  private void runChatGpt(final String siteId, final String documentId, final Action action)
-      throws IOException {
+  private void runChatGpt(final LambdaLogger logger, final String siteId, final String documentId,
+      final Action action) throws IOException {
     DynamicObject configs = this.configsService.get(siteId);
     String chatGptApiKey = configs.getString(CHATGPT_API_KEY);
 
@@ -203,6 +205,8 @@ public class DocumentTaggingAction implements DocumentAction {
 
     String url = this.serviceCache.environment("CHATGPT_API_COMPLETIONS_URL");
     HttpResponse<String> response = this.http.post(url, headers, this.gson.toJson(payload));
+    logger.log(String.format("{\"engine\":\"%s\",\"statusCode\":\"%s\",\"body\":\"%s\"}", "chatgpt",
+        String.valueOf(response.statusCode()), response.body()));
 
     if (is2XX(response)) {
       parseChatGptResponse(siteId, documentId, response);

@@ -396,7 +396,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
 
       DocumentTaggingAction dtAction = new DocumentTaggingAction(this.serviceCache);
-      dtAction.run(siteId, documentId, action);
+      dtAction.run(logger, siteId, documentId, action);
 
       List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
           action.type(), ActionStatus.COMPLETE);
