@@ -167,6 +167,12 @@ Resources:
             - dynamodb:UpdateItem
             Resource:
             - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          - Effect: Allow
+            Action:
+            - sns:Publish
+            Resource:
+            - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+
             
   TesseractLambdaRole:
     Type: AWS::IAM::Role
