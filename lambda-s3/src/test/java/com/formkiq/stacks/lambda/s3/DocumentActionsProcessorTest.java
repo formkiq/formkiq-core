@@ -277,6 +277,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
+      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
+          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions =
           Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",

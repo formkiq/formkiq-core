@@ -101,8 +101,7 @@ public class DocumentTaggingAction implements DocumentAction {
       throw new IOException("missing 'tags' parameter");
     }
 
-    DocumentItem item =
-        this.serviceCache.getExtension(DocumentService.class).findDocument(siteId, documentId);
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     DocumentContentFunction docContentFucn = new DocumentContentFunction(this.serviceCache);
     List<String> contentUrls = docContentFucn.getContentUrls(siteId, item);
@@ -157,6 +156,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
     if (!tags.isEmpty()) {
       this.documentService.addTags(siteId, documentId, tags, null);
+      this.documentService.deleteDocumentTag(siteId, documentId, "untagged");
     }
   }
 
