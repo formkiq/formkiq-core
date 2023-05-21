@@ -25,7 +25,7 @@ Resources:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: "FormKiQ IAM API"
-          version: "1.10.0"
+          version: "1.11.0"
         paths:
           /version:
             get:

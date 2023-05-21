@@ -186,9 +186,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer = startClientAndServer(Integer.valueOf(PORT));
 
     final int status = 200;
-    String text = FileUtils.loadFile(mockServer, "/chatgpt/response1.json");
-    mockServer.when(request().withMethod("POST").withPath("/chatgpt")).respond(
-        org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
+
+    String text1 = FileUtils.loadFile(mockServer, "/chatgpt/response1.json");
+    mockServer.when(request().withMethod("POST").withPath("/chatgpt1")).respond(
+        org.mockserver.model.HttpResponse.response(text1).withStatusCode(Integer.valueOf(status)));
+
+    String text2 = FileUtils.loadFile(mockServer, "/chatgpt/response2.json");
+    mockServer.when(request().withMethod("POST").withPath("/chatgpt2")).respond(
+        org.mockserver.model.HttpResponse.response(text2).withStatusCode(Integer.valueOf(status)));
 
     mockServer.when(request().withMethod("PATCH")).respond(callback);
     mockServer.when(request().withMethod("POST")).respond(callback);
@@ -196,14 +201,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("GET")).respond(callback);
   }
 
-  private static void initProcessor(final String module) throws URISyntaxException {
+  private static void initProcessor(final String module, final String chatgptUrl)
+      throws URISyntaxException {
     Map<String, String> env = new HashMap<>();
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     env.put("MODULE_" + module, "true");
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/chatgpt");
+    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
 
     processor = new DocumentActionsProcessor(env, Region.US_EAST_1, credentials, dbBuilder,
         TestServices.getS3Connection(null), TestServices.getSsmConnection(null),
@@ -223,7 +229,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     this.context = new LambdaContextRecorder();
     callback.reset();
 
-    initProcessor("fulltext");
+    initProcessor("fulltext", "chatgpt1");
   }
 
   /**
@@ -345,6 +351,77 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       assertEquals(ActionStatus.FAILED,
           actionsService.getActions(siteId, documentId).get(0).status());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action with a non JSON repsonse from ChatGPT.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction04() throws Exception {
+
+    initProcessor("fulltext", "chatgpt2");
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
+          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      final int expectedSize = 6;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      PaginationResults<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Document Type", tags.getResults().get(i).getKey());
+      assertEquals("Receipt", tags.getResults().get(i++).getValue());
+
+      assertEquals("Location", tags.getResults().get(i).getKey());
+      assertEquals("New York, NY 12240; Cambutdigo, MA 12210",
+          tags.getResults().get(i++).getValue());
+
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("East Repair Inc.", tags.getResults().get(i++).getValue());
+
+      assertEquals("Person", tags.getResults().get(i).getKey());
+      assertEquals("Job Smith", tags.getResults().get(i++).getValue());
+
+      assertEquals("Sentiment", tags.getResults().get(i).getKey());
+      assertEquals("None", tags.getResults().get(i++).getValue());
+
+      assertEquals("Subject", tags.getResults().get(i).getKey());
+      assertEquals("Receipt", tags.getResults().get(i++).getValue());
     }
   }
 
@@ -637,7 +714,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandle07() throws IOException, URISyntaxException {
-    initProcessor("typesense");
+    initProcessor("typesense", "chatgpt1");
 
     String content = "this is some data";
 

@@ -28,6 +28,7 @@ import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -51,6 +52,7 @@ import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * 
@@ -135,7 +137,7 @@ public class DocumentTaggingAction implements DocumentAction {
     for (Map<String, Object> choice : choices) {
 
       String text = choice.get("text").toString();
-      Map<String, List<String>> data = this.gson.fromJson(text, Map.class);
+      Map<String, List<String>> data = parseGptText(text);
 
       for (Entry<String, List<String>> e : data.entrySet()) {
 
@@ -158,6 +160,35 @@ public class DocumentTaggingAction implements DocumentAction {
       this.documentService.addTags(siteId, documentId, tags, null);
       this.documentService.deleteDocumentTag(siteId, documentId, "untagged");
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, List<String>> parseGptText(final String text) {
+
+    Map<String, List<String>> data = new HashMap<>();
+
+    try {
+      data = this.gson.fromJson(text, Map.class);
+    } catch (JsonSyntaxException e) {
+
+      String[] strs = text.split("\n");
+
+      for (String s : strs) {
+
+        int pos = s.indexOf(":");
+
+        if (pos > -1) {
+          String key = s.substring(0, pos).trim();
+          String value = s.substring(pos + 1).trim();
+
+          if (!key.isEmpty() && !value.isEmpty()) {
+            data.put(key, Arrays.asList(value));
+          }
+        }
+      }
+    }
+
+    return data;
   }
 
   @Override

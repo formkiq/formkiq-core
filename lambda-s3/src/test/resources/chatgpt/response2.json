@@ -1,0 +1,21 @@
+{
+    "id": "cmpl-7IU7G5A8SPa6N35I1R0o5hjmVpfjM",
+    "object": "text_completion",
+    "created": 1684640026,
+    "model": "text-davinci-003",
+    "choices":
+    [
+        {
+            "text": "\n\nOrganization: East Repair Inc. \nLocation: New York, NY 12240; Cambutdigo, MA 12210 \nPerson: Job Smith \nSubject: Receipt \nSentiment: None \nDocument Type: Receipt",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage":
+    {
+        "prompt_tokens": 224,
+        "completion_tokens": 53,
+        "total_tokens": 277
+    }
+}
