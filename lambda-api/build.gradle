@@ -114,23 +114,23 @@ task assembleTemplate {
 
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }
 
 task assembleOpenApiTemplate {
-	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml")
+	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml")
 	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
 	
 	doLast {
 	
 		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
+			commandLine "bash", "-c", "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
 		}
 		
 		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
+			commandLine "bash", "-c", "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
 		}
 		
 		for (fileName in ["openapi-jwt", "openapi-iam"]) {

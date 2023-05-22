@@ -6,7 +6,7 @@
             url: https://formkiq.com
             email: support@formkiq.com
           x-logo:
-            url: https://docs.formkiq.com/docs/1.9.0/_images/formkiq-logo.png
+            url: https://docs.formkiq.com/docs/latest/_images/formkiq-logo.png
             backgroundColor: '#FFFFFF'
             altText: FormKiQ Logo
           license:

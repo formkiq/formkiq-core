@@ -1,5 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
 #@ load("@ytt:overlay", "overlay")
-
 #@overlay/match by=overlay.all
 ---
 Resources:
@@ -18,14 +19,14 @@ Resources:
             url: https://formkiq.com
             email: support@formkiq.com
           x-logo:
-            url: https://docs.formkiq.com/docs/1.9.0/_images/formkiq-logo.png
+            url: https://docs.formkiq.com/docs/latest/_images/formkiq-logo.png
             backgroundColor: "#FFFFFF"
             altText: "FormKiQ Logo"
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: "FormKiQ HTTP API"
-          version: "1.11.0"
+          version: #@ data.values.version or assert.fail("missing version")
         paths:
           /version:
             get:
