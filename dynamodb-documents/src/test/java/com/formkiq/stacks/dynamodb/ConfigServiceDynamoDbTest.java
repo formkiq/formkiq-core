@@ -42,10 +42,10 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 
 /**
- * Unit Tests for {@link ConfigServiceImpl}.
+ * Unit Tests for {@link ConfigServiceDynamoDb}.
  */
 @ExtendWith(DynamoDbExtension.class)
-public class ConfigServiceImplTest {
+public class ConfigServiceDynamoDbTest {
 
   /** {@link ConfigService}. */
   private ConfigService service;
@@ -57,7 +57,8 @@ public class ConfigServiceImplTest {
    */
   @BeforeEach
   public void before() throws Exception {
-    this.service = new ConfigServiceImpl(DynamoDbTestServices.getDynamoDbConnection(), "Documents");
+    this.service =
+        new ConfigServiceDynamoDb(DynamoDbTestServices.getDynamoDbConnection(), "Documents");
   }
 
   /**

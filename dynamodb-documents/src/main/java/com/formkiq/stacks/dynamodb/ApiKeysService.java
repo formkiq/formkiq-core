@@ -23,34 +23,55 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import java.util.List;
+import com.formkiq.aws.dynamodb.DynamicObject;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link ConfigService}.
+ * API Key Service.
  *
  */
-public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
-
-  /** {@link ConfigService}. */
-  private ConfigService service;
+public interface ApiKeysService {
 
   /**
-   * constructor.
+   * Create API Key.
+   * 
+   * @param siteId {@link String}
+   * @param name {@link String}
+   * @return {@link String}
    */
-  public ConfigServiceExtension() {}
+  String createApiKey(String siteId, String name);
 
-  @Override
-  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
-    }
+  /**
+   * Delete Api Key.
+   * 
+   * @param siteId {@link String}
+   * @param apiKey {@link String}
+   */
+  void deleteApiKey(String siteId, String apiKey);
 
-    return this.service;
-  }
+  /**
+   * Is Api Key Valid.
+   * 
+   * @param siteId {@link String}
+   * @param apiKey {@link String}
+   * @return boolean
+   */
+  boolean isApiKeyValid(String siteId, String apiKey);
+
+  /**
+   * Get List of API Keys.
+   * 
+   * @param siteId {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<DynamicObject> list(String siteId);
+
+  /**
+   * Mask Api Key.
+   * 
+   * @param apiKey {@link String}
+   * @return {@link String}
+   */
+  String mask(String apiKey);
 }

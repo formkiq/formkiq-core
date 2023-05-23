@@ -28,6 +28,7 @@
 		<allow pkg="java.lang.reflect" />
 		<allow pkg="java.net" />
 		<allow pkg="java.nio.charset" />
+		<allow pkg="java.security" />
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />

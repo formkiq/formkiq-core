@@ -60,7 +60,7 @@ import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
+import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
@@ -371,7 +371,7 @@ public abstract class AbstractApiTest {
 
       dbConnection =
           new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
-      configService = new ConfigServiceImpl(dbConnection, documentsTable);
+      configService = new ConfigServiceDynamoDb(dbConnection, documentsTable);
     }
   }
 

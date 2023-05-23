@@ -75,7 +75,7 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.ConfigService;
-import com.formkiq.stacks.dynamodb.ConfigServiceImpl;
+import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
@@ -173,7 +173,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, credentials);
 
-    configService = new ConfigServiceImpl(dbBuilder, DOCUMENTS_TABLE);
+    configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
   }
 
   /**

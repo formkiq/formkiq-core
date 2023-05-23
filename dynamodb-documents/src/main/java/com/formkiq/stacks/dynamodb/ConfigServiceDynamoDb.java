@@ -41,7 +41,7 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Implementation of the {@link ConfigService}. */
-public class ConfigServiceImpl implements ConfigService, DbKeys {
+public class ConfigServiceDynamoDb implements ConfigService, DbKeys {
 
   /** {@link DynamoDbService}. */
   private DynamoDbService db;
@@ -52,7 +52,7 @@ public class ConfigServiceImpl implements ConfigService, DbKeys {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    */
-  public ConfigServiceImpl(final DynamoDbConnectionBuilder connection,
+  public ConfigServiceDynamoDb(final DynamoDbConnectionBuilder connection,
       final String documentsTable) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");

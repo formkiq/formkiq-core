@@ -24,8 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -38,16 +37,22 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ApiKeysService;
 
-/** {@link ApiGatewayRequestHandler} for "/configs". */
-public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+/** {@link ApiGatewayRequestHandler} for "/configs/apiKey". */
+public class ApiKeysRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public ConfigsRequestHandler() {}
+  public ApiKeysRequestHandler() {}
+
+  @Override
+  public void beforeDelete(final LambdaLogger logger, final ApiGatewayRequestEvent event,
+      final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
+    checkPermissions(authorizer);
+  }
 
   @Override
   public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
@@ -56,7 +61,7 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   }
 
   @Override
-  public void beforePatch(final LambdaLogger logger, final ApiGatewayRequestEvent event,
+  public void beforePost(final LambdaLogger logger, final ApiGatewayRequestEvent event,
       final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
     checkPermissions(authorizer);
   }
@@ -68,46 +73,55 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   }
 
   @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorizer.getSiteId();
+    String apiKey = event.getQueryStringParameter("apiKey");
+
+    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
+    apiKeysService.deleteApiKey(siteId, apiKey);
+
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("message", "ApiKey deleted")));
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorizer.getSiteId();
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
 
-    DynamicObject obj = configService.get(siteId);
-    Map<String, Object> map = new HashMap<>();
-    map.put("chatGptApiKey", obj.getOrDefault(CHATGPT_API_KEY, ""));
+    List<DynamicObject> list = apiKeysService.list(siteId);
 
+    Map<String, Object> map = Map.of("apiKeys", list);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
   @Override
   public String getRequestUrl() {
-    return "/configs";
+    return "/configs/apiKey";
   }
 
   @SuppressWarnings("unchecked")
   @Override
-  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorizer.getSiteId();
 
+    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     Map<String, String> body = fromBodyToObject(logger, event, Map.class);
+    String name = body.get("name");
 
-    Map<String, Object> map = new HashMap<>();
-    if (body.containsKey("chatGptApiKey")) {
-      map.put(CHATGPT_API_KEY, body.get("chatGptApiKey"));
-    }
-
-    if (!map.isEmpty()) {
-      ConfigService configService = awsservice.getExtension(ConfigService.class);
-      configService.save(siteId, new DynamicObject(map));
-
+    if (name != null) {
+      String apiKey = apiKeysService.createApiKey(siteId, name);
       return new ApiRequestHandlerResponse(SC_OK,
-          new ApiMapResponse(Map.of("message", "Config saved")));
+          new ApiMapResponse(Map.of("name", name, "apiKey", apiKey)));
     }
 
     throw new BadException("missing required body parameters");

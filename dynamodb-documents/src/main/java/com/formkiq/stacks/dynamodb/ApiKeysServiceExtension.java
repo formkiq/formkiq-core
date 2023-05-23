@@ -29,26 +29,26 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link ConfigService}.
+ * {@link AwsServiceExtension} for {@link ApiKeysService}.
  *
  */
-public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
+public class ApiKeysServiceExtension implements AwsServiceExtension<ApiKeysService> {
 
-  /** {@link ConfigService}. */
-  private ConfigService service;
+  /** {@link ApiKeysService}. */
+  private ApiKeysService service;
 
   /**
    * constructor.
    */
-  public ConfigServiceExtension() {}
+  public ApiKeysServiceExtension() {}
 
   @Override
-  public ConfigService loadService(final AwsServiceCache awsServiceCache) {
+  public ApiKeysService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
       this.service =
-          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+          new ApiKeysServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
 
     return this.service;
