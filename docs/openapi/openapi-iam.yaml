@@ -133,6 +133,97 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /configs/apiKey:
+            get:
+              operationId: GetApiKeys
+              description: Returns the list of ApiKeys
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetApiKeysResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: ÅddApiKey
+              description: Adds a new API Key
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddApiKeyRequest'
+                    examples:
+                      AddApiKey:
+                        value:
+                          name: My API Key
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddApiKeyResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /configs/apiKey/{apiKey}:
+            delete:
+              operationId: DeleteApiKey
+              description: Adds a new API Key
+              tags:
+              - System Management
+              parameters:
+              - $ref: '#/components/parameters/apiKeyParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteApiKeyResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /tagSchemas:
             get:
               operationId: GetTagSchemas
@@ -2099,6 +2190,13 @@
               schema:
                 type: string
                 default: "10"
+            apiKeyParam:
+              name: apiKey
+              in: path
+              description: API Key
+              required: true
+              schema:
+                type: string
             documentIdParam:
               name: documentId
               in: path
@@ -3291,6 +3389,47 @@
                 message:
                   type: string
                   description: Result message
+            AddApiKeyRequest:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of API Key
+            AddApiKeyResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            DeleteApiKeyResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
+            GetApiKeysResponse:
+              type: object
+              properties:
+                apiKeys:
+                  $ref: '#/components/schemas/ApiKeys'
+            ApiKeys:
+              type: array
+              description: List of ApiKeys
+              items:
+                $ref: '#/components/schemas/ApiKey'
+            ApiKey:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of API Key
+                apiKey:
+                  type: string
+                  description: API Key value
+                insertedDate:
+                  type: string
+                  format: date-time
+                  description: Inserted Timestamp
             GetConfigsRequest:
               type: object
               properties:

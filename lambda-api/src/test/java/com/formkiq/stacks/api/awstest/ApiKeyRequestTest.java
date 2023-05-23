@@ -24,70 +24,89 @@
 package com.formkiq.stacks.api.awstest;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.Config;
+import com.formkiq.stacks.client.models.ApiKeys;
+import com.formkiq.stacks.client.requests.AddApiKeyRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 /**
  * Process Urls.
  * <p>
- * GET /configs tests
+ * GET /configs/apiKey integration tests
  * </p>
  *
  */
-public class ConfigsRequestTest extends AbstractApiTest {
+public class ApiKeyRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20000;
 
   /**
-   * Test GET /configs.
+   * Test GET /configs/apiKey.
    * 
    * @throws Exception Exception
    */
   @Test(timeout = TEST_TIMEOUT)
-  public void testConfigs01() throws Exception {
+  public void testApiKey01() throws Exception {
+    // given
+    String name = "My API";
 
     List<FormKiqClientV1> clients = getFormKiqClients();
     assertEquals(2, clients.size());
 
-    // given
-    FormKiqClientV1 client = clients.get(0);
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    // when
-    Config c = client.getConfigs();
+      FormKiqClientV1 client = clients.get(0);
+      AddApiKeyRequest req = new AddApiKeyRequest().siteId(siteId).name(name);
 
-    // then
-    assertNotNull(c.chatGptApiKey());
+      // when
+      client.addApiKey(req);
 
-    // given
-    client = clients.get(1);
+      // then
+      ApiKeys apiKeys = client.getApiKeys();
+      assertFalse(apiKeys.apiKeys().isEmpty());
 
-    // when
-    HttpResponse<String> response = client.getConfigsAsHttpResponse();
+      // given
+      client = clients.get(1);
 
-    // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+      // when
+      HttpResponse<String> response = client.getApiKeysAsHttpResponse();
+
+      // then
+      assertEquals("401", String.valueOf(response.statusCode()));
+      assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+    }
   }
 
   /**
-   * Test GET /configs as readuser user.
+   * Test GET /configs/apiKey as readuser user.
    * 
    * @throws Exception Exception
    */
   @Test(timeout = TEST_TIMEOUT)
-  public void testConfigs02() throws Exception {
+  public void testApiKey02() throws Exception {
     // given
     AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
     FormKiqClientV1 client = createHttpClient(token);
 
     // when
-    HttpResponse<String> response = client.getConfigsAsHttpResponse();
+    HttpResponse<String> response = client.getApiKeysAsHttpResponse();
+
+    // then
+    assertEquals("401", String.valueOf(response.statusCode()));
+    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+
+    // given
+    AddApiKeyRequest req = new AddApiKeyRequest().name("test");
+
+    // when
+    response = client.addApiKeyAsHttpResponse(req);
 
     // then
     assertEquals("401", String.valueOf(response.statusCode()));

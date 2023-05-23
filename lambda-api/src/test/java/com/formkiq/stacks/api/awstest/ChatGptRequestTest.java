@@ -52,7 +52,7 @@ import software.amazon.awssdk.utils.IoUtils;
 public class ChatGptRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 90000;
+  private static final int TEST_TIMEOUT = 120000;
 
   @BeforeClass
   public static void beforeClass() throws IOException {

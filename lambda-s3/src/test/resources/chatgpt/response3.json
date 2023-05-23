@@ -1,0 +1,21 @@
+{
+    "id": "cmpl-7JPQbaNp7fwGfmTv2pSs2q29O5wou",
+    "object": "text_completion",
+    "created": 1684860333,
+    "model": "text-davinci-003",
+    "choices":
+    [
+        {
+            "text": "\n\n{ \n    \"organization\": \"East Repair Inc.\", \n    \"location\": [\"New York, NY 12240\", \"Cambutdigo, MA 12210\"], \n    \"person\": \"Job Smith\", \n    \"subject\": [\"Frontend eaar brake cabies\", \"New set of podal arms\", \"Labor shrs 500\"], \n    \"sentiment\": null, \n    \"document type\": \"Receipt\" \n}",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage":
+    {
+        "prompt_tokens": 224,
+        "completion_tokens": 104,
+        "total_tokens": 328
+    }
+}

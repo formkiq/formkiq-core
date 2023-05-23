@@ -30,11 +30,13 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -98,10 +100,7 @@ public class DocumentTaggingAction implements DocumentAction {
   private String createChatGptPrompt(final String siteId, final String documentId,
       final Action action) throws IOException {
 
-    String tags = action.parameters().get("tags");
-    if (Strings.isEmpty(tags)) {
-      throw new IOException("missing 'tags' parameter");
-    }
+    String tags = getTags(action);
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
@@ -125,9 +124,23 @@ public class DocumentTaggingAction implements DocumentAction {
     return prompt;
   }
 
+  private String getTags(final Action action) throws IOException {
+    String tags = action.parameters().get("tags");
+    if (Strings.isEmpty(tags)) {
+      throw new IOException("missing 'tags' parameter");
+    }
+    return tags;
+  }
+
+  private List<String> getTagsAsList(final Action action) throws IOException {
+    return Arrays.asList(getTags(action).split(","));
+  }
+
   @SuppressWarnings("unchecked")
   private void parseChatGptResponse(final String siteId, final String documentId,
-      final HttpResponse<String> response) {
+      final Action action, final HttpResponse<String> response) throws IOException {
+
+    List<String> paramTags = getTagsAsList(action);
 
     Map<String, Object> responseMap = this.gson.fromJson(response.body(), Map.class);
     List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
@@ -137,18 +150,29 @@ public class DocumentTaggingAction implements DocumentAction {
     for (Map<String, Object> choice : choices) {
 
       String text = choice.get("text").toString();
-      Map<String, List<String>> data = parseGptText(text);
+      Map<String, Object> data = parseGptText(paramTags, text);
 
-      for (Entry<String, List<String>> e : data.entrySet()) {
+      for (Entry<String, Object> e : data.entrySet()) {
 
-        if (!e.getValue().isEmpty()) {
+        List<Object> list = Collections.emptyList();
 
-          DocumentTag tag = new DocumentTag(documentId, e.getKey(), e.getValue(), new Date(),
-              "System", DocumentTagType.USERDEFINED);
+        Object obj = e.getValue();
+        if (obj != null) {
+          if (obj instanceof Collection) {
+            list = (List<Object>) obj;
+          } else {
+            list = Arrays.asList(obj.toString());
+          }
+        }
 
-          if (e.getValue().size() == 1) {
-            tag.setValue(e.getValue().get(0));
-            tag.setValues(null);
+        if (!list.isEmpty()) {
+
+          DocumentTag tag = new DocumentTag(documentId, e.getKey(), list.get(0).toString(),
+              new Date(), "System", DocumentTagType.USERDEFINED);
+
+          if (list.size() > 1) {
+            tag.setValue(null);
+            tag.setValues(list.stream().map(i -> i.toString()).collect(Collectors.toList()));
           }
 
           tags.add(tag);
@@ -163,9 +187,12 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, List<String>> parseGptText(final String text) {
+  private Map<String, Object> parseGptText(final List<String> tags, final String text) {
 
-    Map<String, List<String>> data = new HashMap<>();
+    Map<String, String> tagMap = tags.stream().filter(t -> !t.toLowerCase().equals(t))
+        .collect(Collectors.toMap(String::toLowerCase, s -> s));
+
+    Map<String, Object> data = new HashMap<>();
 
     try {
       data = this.gson.fromJson(text, Map.class);
@@ -178,7 +205,7 @@ public class DocumentTaggingAction implements DocumentAction {
         int pos = s.indexOf(":");
 
         if (pos > -1) {
-          String key = s.substring(0, pos).trim();
+          String key = s.substring(0, pos).trim().toLowerCase();
           String value = s.substring(pos + 1).trim();
 
           if (!key.isEmpty() && !value.isEmpty()) {
@@ -186,6 +213,12 @@ public class DocumentTaggingAction implements DocumentAction {
           }
         }
       }
+    }
+
+    for (Map.Entry<String, String> e : tagMap.entrySet()) {
+      Object object = data.get(e.getKey());
+      data.put(e.getValue(), object);
+      data.remove(e.getKey());
     }
 
     return data;
@@ -214,6 +247,7 @@ public class DocumentTaggingAction implements DocumentAction {
    */
   private void runChatGpt(final LambdaLogger logger, final String siteId, final String documentId,
       final Action action) throws IOException {
+
     DynamicObject configs = this.configsService.get(siteId);
     String chatGptApiKey = configs.getString(CHATGPT_API_KEY);
 
@@ -240,7 +274,7 @@ public class DocumentTaggingAction implements DocumentAction {
         String.valueOf(response.statusCode()), response.body()));
 
     if (is2XX(response)) {
-      parseChatGptResponse(siteId, documentId, response);
+      parseChatGptResponse(siteId, documentId, action, response);
     } else {
       throw new IOException("ChatGpt status " + response.statusCode());
     }
