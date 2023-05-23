@@ -3793,17 +3793,6 @@ Resources:
                   description: "Message response"
           securitySchemes:
             ApiAuthorization:
-              type: oauth2
-              flows: {}
-              x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: "${CognitoUserPoolClient}"
-                identitySource: "$request.header.Authorization"
-            sigv4:
               type: "apiKey"
               name: "Authorization"
               in: "header"
