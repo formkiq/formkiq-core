@@ -98,7 +98,7 @@ task buildJava11Zip(type: Zip) {
 
 task assembleTemplate {
 	dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-ocr.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-ocr.yaml", "src/main/resources/cloudformation/template-apikey.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
 	
 	def randomtext = ('0'..'z').shuffled().take(10).join();
@@ -114,7 +114,7 @@ task assembleTemplate {
 
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+			commandLine "bash", "-c", "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/template-apikey.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-apikey.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }
