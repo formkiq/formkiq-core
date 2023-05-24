@@ -1,0 +1,88 @@
+description = "FormKiQ Core - API Key Authorizer"
+
+def moduleName = "formkiq-module-lambda-authorizer-apikey"
+
+dependencies {
+
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.3.0'
+	
+	implementation project(':aws-dynamodb')
+	implementation project(':dynamodb-documents')
+	implementation project(':fkq-lambda-services')
+	
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+
+    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+	
+	testImplementation project(':fkq-test-utils')
+
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+    testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
+    testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
+}
+
+compileJava {
+    options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage {
+	outputFileName = "server"
+	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
+    enableHttp = true
+    enableHttps = true
+    enableStatic = true
+	systemProperty = ["java.net.preferIPv4Stack=true"]
+}
+
+test {
+  failFast = true
+  exclude 'com/formkiq/module/lambda/ocr/tesseract/awstest/**'
+  useJUnitPlatform()
+}
+
+task testaws(type: Test) {
+  description = 'Runs AWS integration tests.'
+  outputs.upToDateWhen {false}
+  include 'com/formkiq/module/lambda/authorizer/apikey/awstest/**'    
+}
+
+task buildZip(type: Zip) {
+	dependsOn test, graalvmNativeImage
+	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
+  	outputs.file("${buildDir}/lambda-api-graalvm.zip")
+    
+	archiveFileName = "lambda-api-graalvm.zip"
+    destinationDirectory = file("${buildDir}")
+    from("${project.projectDir}/runtime") {
+        include 'bootstrap'
+    }
+    from("${buildDir}/graalvm") {
+        include 'server'
+    }
+}
+
+task buildJava11Zip(type: Zip) {
+    from compileJava
+    into('lib') {
+        from configurations.default
+    }           
+}
+
+task assembleTemplate {
+  dependsOn buildZip
+  outputs.upToDateWhen { false }
+  
+	doLast {
+	    copy {
+		  from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
+	      into "${buildDir}/distributions/formkiq-core/sam/api"
+	    }
+	}
+}
+
+build.dependsOn assembleTemplate

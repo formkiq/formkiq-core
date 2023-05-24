@@ -112,6 +112,7 @@ task testaws {
 
 task buildDistribution(type: Copy) {
 	dependsOn subprojects.build
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	outputs.upToDateWhen {false}
 
     from 'console/build/distributions/formkiq-core'
@@ -121,6 +122,7 @@ task buildDistribution(type: Copy) {
     from 'lambda-ocr-tesseract/build/distributions/formkiq-core'
     from 'module-email-notify/build/distributions/formkiq-core'
     from 'websocket-api/build/distributions/formkiq-core'
+    from 'lambda-apikey-authorizer/build/distributions/formkiq-core'
     into "${buildDir}/distributions/formkiq-core"
 }
 

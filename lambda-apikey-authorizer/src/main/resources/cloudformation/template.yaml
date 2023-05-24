@@ -1,0 +1,201 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - Tesseract
+    
+Parameters:
+    
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 1024
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 600
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Default: "core"
+    Type: String
+    AllowedValues: ["core", "enterprise"]
+    
+Resources:
+
+  TesseractProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${TesseractProcessor}"
+      RetentionInDays: 90
+
+  TesseractLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: Lambda Layer containing Tesseract binary
+      LayerName: 
+        Fn::Sub: "${AWS::StackName}-${AppEnvironment}-tesseract-layer"
+      ContentUri: ./layer-tesseract-5.3.1.zip
+      
+  TesseractProcessor:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - TesseractLambdaRolePolicy
+    Properties:
+      Handler: com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor
+      Description: Lambda function to convert document to Tesseract
+      Runtime: java11
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      Layers: 
+      - Ref: TesseractLayer
+      CodeUri: ./formkiq-module-lambda-ocr-tesseract.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      ReservedConcurrentExecutions: 1
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true
+          FormKiQType:
+            Ref: FormKiQType
+          DOCUMENTS_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          OCR_S3_BUCKET:
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+          SNS_DOCUMENT_EVENT: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+      Role: 
+        Fn::GetAtt:
+        - TesseractLambdaRole
+        - Arn
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+      Events:
+        OcrSQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/OcrQueueArn}}"
+            BatchSize: 1
+
+  TesseractProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for processing records for Tesseract"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/TesseractProcessor"
+      Type: String
+      Value:
+        Ref: TesseractProcessor
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  TesseractLambdaRolePolicy: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: Tesseract-lambdarole
+      Roles: 
+        - 
+          Ref: "TesseractLambdaRole"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+            Resource:
+              Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/OcrQueueArn}}"
+          - Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:Query
+            - dynamodb:UpdateItem
+            Resource:
+            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          - Effect: Allow
+            Action:
+            - sns:Publish
+            Resource:
+            - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+
+            
+  TesseractLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
