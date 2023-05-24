@@ -151,36 +151,12 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       final Context context) throws IOException {
 
     LambdaLogger logger = context.getLogger();
-    logger.log("Loading tesseract");
-    // try {
-    // Native.load("tesseract", TessAPI.class);
-    // logger.log("Loaded library!!");
-    // } catch (RuntimeException e) {
-    // e.printStackTrace();
-    // logger.log("error: " + e.getMessage());
-    // }
 
     String json = IoUtils.toUtf8String(input);
 
     if (this.awsServices.debug()) {
       logger.log(json);
     }
-
-    // logger.log("------------------------");
-    // for (Map.Entry<String, String> e : System.getenv().entrySet()) {
-    // logger.log("SYSTEM ENV: " + e.getKey() + " " + e.getValue());
-    // }
-    //
-    // logger.log("------------------------");
-    // for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
-    // logger.log("SYSTEM PROP: " + e.getKey() + " " + e.getValue());
-    // }
-    // logger.log("------------------------");
-    //
-    // String[] paths = System.getenv("LD_LIBRARY_PATH").split(":");
-    // for (String path : paths) {
-    // logger.log(path + ": " + listFilesUsingJavaIO(path));
-    // }
 
     SqsMessageRecords records = this.gson.fromJson(json, SqsMessageRecords.class);
 
@@ -192,8 +168,6 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       processRecord(logger, ocrService, sqsMessage);
 
     });
-
-    // return null;
   }
 
   private void processRecord(final LambdaLogger logger, final DocumentOcrService ocrService,
@@ -254,9 +228,4 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       actionsService.updateActionStatus(siteId, documentId, ActionType.OCR, ActionStatus.FAILED);
     }
   }
-
-  // private Set<String> listFilesUsingJavaIO(final String dir) {
-  // return Stream.of(new File(dir).listFiles()).filter(file -> !file.isDirectory())
-  // .map(File::getName).collect(Collectors.toSet());
-  // }
 }
