@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -88,24 +89,50 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     return this.awsServices;
   }
 
+  @SuppressWarnings("unchecked")
+  private String getIdentitySource(final Map<String, Object> map) {
+    List<String> identitySource = (List<String>) map.get("identitySource");
+    return !identitySource.isEmpty() ? identitySource.get(0) : null;
+  }
+
+  @SuppressWarnings("unchecked")
+  private String getSiteId(final Map<String, Object> map) {
+
+    String siteId = null;
+
+    if (map.containsKey("queryStringParameters")) {
+      Map<String, String> queryParams = (Map<String, String>) map.get("queryStringParameters");
+      siteId = queryParams.containsKey("siteId") ? queryParams.get("siteId") : siteId;
+    }
+
+    return siteId;
+  }
+
+  @SuppressWarnings("unchecked")
   @Override
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
 
     LambdaLogger logger = context.getLogger();
+    ApiKeysService apiKeys = this.awsServices.getExtension(ApiKeysService.class);
 
     String json = IoUtils.toUtf8String(input);
 
-    // if (this.awsServices.debug()) {
-    logger.log(json);
-    // }
+    if (this.awsServices.debug()) {
+      logger.log(json);
+    }
 
-    boolean isAuthorized = false;
-    Map<String, Object> map = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
+    Map<String, Object> map = this.gson.fromJson(json, Map.class);
+
+    String apiKey = getIdentitySource(map);
+    String siteId = getSiteId(map);
+
+    boolean isAuthorized = apiKeys.isApiKeyValid(siteId, apiKey);
+    Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
         Map.of("exampleKey", "exampleValue"));
 
     OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
-    writer.write(this.gson.toJson(map));
+    writer.write(this.gson.toJson(response));
     writer.close();
   }
 }

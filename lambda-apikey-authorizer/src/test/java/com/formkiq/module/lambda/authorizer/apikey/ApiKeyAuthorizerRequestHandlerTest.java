@@ -24,11 +24,14 @@
 package com.formkiq.module.lambda.authorizer.apikey;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +44,6 @@ import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
-import com.formkiq.testutils.aws.LocalStackExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -51,15 +53,14 @@ import com.google.gson.GsonBuilder;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 class ApiKeyAuthorizerRequestHandlerTest {
 
-  /** {@link ApiKeyAuthorizerRequestHandler}. */
-  private static ApiKeyAuthorizerRequestHandler processor;
   /** {@link ApiKeysService}. */
   private static ApiKeysService apiKeysService;
   /** {@link Gson}. */
   private static final Gson GSON = new GsonBuilder().create();
+  /** {@link ApiKeyAuthorizerRequestHandler}. */
+  private static ApiKeyAuthorizerRequestHandler processor;
 
   @BeforeAll
   public static void beforeAll() throws Exception {
@@ -76,33 +77,97 @@ class ApiKeyAuthorizerRequestHandlerTest {
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
 
+  private InputStream getInput(final String siteId, final String apiKey) {
+    Map<String, String> queryParameters = siteId != null ? Map.of("siteId", siteId) : Map.of();
+    List<String> identitySource = apiKey != null ? Arrays.asList(apiKey) : Collections.emptyList();
+    String json = GSON.toJson(Map.of("type", "REQUEST", "identitySource", identitySource,
+        "queryStringParameters", queryParameters));
+
+    InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+    return is;
+  }
+
   /**
-   * Test S3 File doesn't exist.
+   * Test Invalid API Key.
    * 
    * @throws Exception Exception
    */
+  @SuppressWarnings("unchecked")
   @Test
   void testHandleRequest01() throws Exception {
     // given
-    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+    for (String siteId : Arrays.asList(null, "default", UUID.randomUUID().toString())) {
+
+      String apiKey = UUID.randomUUID().toString();
+
+      try (InputStream is = getInput(siteId, apiKey)) {
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        // when
+        processor.handleRequest(is, os, this.context);
+
+        // then
+        String response = new String(os.toByteArray(), "UTF-8");
+        Map<String, Object> map = GSON.fromJson(response, Map.class);
+        assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+      }
+    }
+  }
+
+  /**
+   * Test VALID API Key.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHandleRequest02() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      apiKeysService.createApiKey(siteId, name);
+      String apiKey = apiKeysService.createApiKey(siteId, name);
 
-      // SqsMessageRecord record = new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId,
-      // "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_JPEG)));
-      // SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+      try (InputStream is = getInput(siteId, apiKey)) {
 
-      String json = GSON.toJson(Map.of());
-      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
+        // when
+        processor.handleRequest(is, os, this.context);
 
-      // when
-      processor.handleRequest(is, os, this.context);
+        // then
+        String response = new String(os.toByteArray(), "UTF-8");
+        Map<String, Object> map = GSON.fromJson(response, Map.class);
+        assertEquals(Boolean.TRUE, map.get("isAuthorized"));
+      }
+    }
+  }
 
-      // then
+  /**
+   * Test missing API Key.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHandleRequest03() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      try (InputStream is = getInput(siteId, null)) {
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        // when
+        processor.handleRequest(is, os, this.context);
+
+        // then
+        String response = new String(os.toByteArray(), "UTF-8");
+        Map<String, Object> map = GSON.fromJson(response, Map.class);
+        assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+      }
     }
   }
 }
