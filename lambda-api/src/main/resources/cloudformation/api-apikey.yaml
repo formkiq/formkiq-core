@@ -3798,7 +3798,7 @@ Resources:
               in: "header"
               x-amazon-apigateway-authtype: "Custom API Key"
               x-amazon-apigateway-authorizer:
-                identitySource: method.request.header.Authorization
+                identitySource: $request.header.Authorization
                 authorizerUri: 
                   Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations"
                 authorizerResultTtlInSeconds: 300
