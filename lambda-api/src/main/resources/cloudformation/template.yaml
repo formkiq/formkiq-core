@@ -245,6 +245,13 @@ Resources:
       RetentionInDays: 90
       LogGroupName: 
         Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsIamAccessLogs"
+
+  KeyDocumentsStageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      LogGroupName: 
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIDocumentsKeyAccessLogs"
       
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
