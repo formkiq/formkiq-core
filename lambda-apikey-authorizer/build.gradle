@@ -54,9 +54,9 @@ task testaws(type: Test) {
 task buildZip(type: Zip) {
 	dependsOn test, graalvmNativeImage
 	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
-  	outputs.file("${buildDir}/lambda-api-graalvm.zip")
+  	outputs.file("${buildDir}/${moduleName}.zip")
     
-	archiveFileName = "lambda-api-graalvm.zip"
+	archiveFileName = "${moduleName}.zip"
     destinationDirectory = file("${buildDir}")
     from("${project.projectDir}/runtime") {
         include 'bootstrap'
