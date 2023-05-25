@@ -25,6 +25,7 @@ package com.formkiq.module.lambda.authorizer.apikey;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -96,8 +97,10 @@ class ApiKeyAuthorizerRequestHandlerTest {
       String json = GSON.toJson(Map.of());
       InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
 
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+
       // when
-      processor.handleRequest(is, null, this.context);
+      processor.handleRequest(is, os, this.context);
 
       // then
     }

@@ -26,6 +26,7 @@ package com.formkiq.module.lambda.authorizer.apikey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -36,6 +37,8 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -44,6 +47,8 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
 
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsServices;
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
   /**
    * constructor.
@@ -89,8 +94,16 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
 
     String json = IoUtils.toUtf8String(input);
 
-    if (this.awsServices.debug()) {
-      logger.log(json);
-    }
+    // if (this.awsServices.debug()) {
+    logger.log(json);
+    // }
+
+    boolean isAuthorized = false;
+    Map<String, Object> map = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
+        Map.of("exampleKey", "exampleValue"));
+
+    OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+    writer.write(this.gson.toJson(map));
+    writer.close();
   }
 }
