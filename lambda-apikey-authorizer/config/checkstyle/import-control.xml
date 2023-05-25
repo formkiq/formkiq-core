@@ -16,6 +16,7 @@
 				
 				<allow pkg="com.google.gson" />
 				
+				<allow pkg="com.formkiq.graalvm.annotations" />
 				<allow pkg="com.amazonaws.services.lambda.runtime" />
 				<allow pkg="com.formkiq.aws.dynamodb" />
 				<allow pkg="com.formkiq.module.lambdaservices" />

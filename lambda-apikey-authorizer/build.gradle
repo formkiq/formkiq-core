@@ -4,7 +4,7 @@ def moduleName = "formkiq-module-lambda-authorizer-apikey"
 
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.3.0'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0-SNAPSHOT'
 	
 	implementation project(':aws-dynamodb')
 	implementation project(':dynamodb-documents')
