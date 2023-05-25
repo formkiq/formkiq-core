@@ -224,6 +224,7 @@ Resources:
     Type: "AWS::Lambda::Permission"
     DependsOn:
     - DocumentsIamApi
+    - DocumentsKeyApi
     - DocumentsApiRequests
     Properties:
       Action: lambda:InvokeFunction
@@ -300,6 +301,34 @@ Resources:
         Ref: DocumentsIamApi
       Stage: 
         Ref: IamDocumentsStage
+
+  KeyDocumentsStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: 
+        Ref: DocumentsKeyApi
+      AutoDeploy: true
+      Description: 
+        Fn::Sub: "Documents API Key ${AppEnvironment}"
+      StageName: "$default"
+      AccessLogSettings:
+        DestinationArn: 
+          Fn::GetAtt: 
+          - KeyDocumentsStageAccessLogs
+          - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
+
+  KeyDocumentsStageMapping:
+    Condition: HasCertificateStackName
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    Properties:
+      DomainName:
+        Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-KeyApiDomain'
+      ApiId: 
+        Ref: DocumentsKeyApi
+      Stage: 
+        Ref: KeyDocumentsStage
 
   DocumentsHttpApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -540,6 +569,47 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
+          
+  DocumentsKeyApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The URL for the API endpoint that uses API Key authorization"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsKeyUrl"
+      Type: String
+      Value: 
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::Join:
+            - ''
+            - - 'https://'
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  DocumentsKeyApiIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ID for the API endpoint that uses API Key authorization"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsKeyId"
+      Type: String
+      Value: 
+        Ref: DocumentsKeyApi
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
         
   DocumentsApiRequestsParameter:
     Type: AWS::SSM::Parameter
@@ -727,7 +797,18 @@ Outputs:
           - - 'https://'
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-IamApiDomain'
-        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"    
+        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+  DocumentsKeyApiUrl:
+    Description: "The endpoint url for the Key API"
+    Value: 
+      Fn::If:
+        - HasCertificateStackName
+        - Fn::Join:
+          - ''
+          - - 'https://'
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-KeyApiDomain'
+        - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"    
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
     Value:

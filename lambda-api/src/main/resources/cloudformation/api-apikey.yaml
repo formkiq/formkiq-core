@@ -6,7 +6,7 @@
 Resources:
 
   #@overlay/match missing_ok=True
-  DocumentsApiKeyApi:
+  DocumentsKeyApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Body:

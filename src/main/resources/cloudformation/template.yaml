@@ -519,6 +519,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreApi
       - Outputs.DocumentsIamApiUrl
+  KeyApiUrl:
+    Description: "The URL for the API endpoint that uses API Key authorization"
+    Value: 
+      Fn::GetAtt: 
+      - CoreApi
+      - Outputs.DocumentsKeyApiUrl
   HttpApiUrl:
     Description: "The URL for the API endpoint that uses Cognito authorization"
     Value: 
