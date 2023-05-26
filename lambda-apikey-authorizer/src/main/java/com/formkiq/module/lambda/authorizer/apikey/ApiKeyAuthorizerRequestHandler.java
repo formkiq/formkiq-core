@@ -138,9 +138,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
 
     log(logger, map, isAuthorized);
     Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
-        Map.of("mytest", "myresult", "claims2",
-            Map.of("cognito:groups", group, "cognito:username", apiKeyName), "claims",
-            Map.of("cognito:groups", group, "cognito:username", apiKeyName)));
+        Map.of("apiKeyClaims", Map.of("cognito:groups", group, "cognito:username", apiKeyName)));
 
     OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
     writer.write(this.gson.toJson(response));

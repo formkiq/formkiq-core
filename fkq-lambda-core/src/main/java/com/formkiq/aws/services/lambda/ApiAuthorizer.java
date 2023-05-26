@@ -105,7 +105,6 @@ public class ApiAuthorizer {
    * @param userAuthentication {@link ApiAuthorizerType}
    * @return {@link List} {@link String}
    */
-  @SuppressWarnings("unchecked")
   private List<String> getCognitoGroups(final ApiAuthorizerType userAuthentication) {
 
     List<String> groups = Collections.emptyList();
@@ -117,16 +116,14 @@ public class ApiAuthorizer {
 
       Map<String, Object> authorizer = requestContext.getAuthorizer();
 
-      if (authorizer != null && authorizer.containsKey("claims")) {
+      Map<String, Object> claims = getAuthorizerClaims(authorizer);
 
-        Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
-        if (claims.containsKey("cognito:groups")) {
-          Object obj = claims.get("cognito:groups");
-          if (obj != null) {
-            String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
-            groups = new ArrayList<>(Arrays.asList(s.split(" ")));
-            groups.removeIf(g -> g.length() == 0);
-          }
+      if (claims.containsKey("cognito:groups")) {
+        Object obj = claims.get("cognito:groups");
+        if (obj != null) {
+          String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
+          groups = new ArrayList<>(Arrays.asList(s.split(" ")));
+          groups.removeIf(g -> g.length() == 0);
         }
       }
     }
@@ -140,6 +137,18 @@ public class ApiAuthorizer {
     }
 
     return groups;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
+    Map<String, Object> claims = Collections.emptyMap();
+
+    if (authorizer != null && authorizer.containsKey("claims")) {
+      claims = (Map<String, Object>) authorizer.get("claims");
+    } else if (authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
+    }
+    return claims;
   }
 
   /**
