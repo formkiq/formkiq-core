@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -128,11 +129,31 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     String siteId = getSiteId(map);
 
     boolean isAuthorized = apiKeys.isApiKeyValid(siteId, apiKey);
+    log(logger, map, isAuthorized);
     Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
         Map.of("exampleKey", "exampleValue"));
 
     OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
     writer.write(this.gson.toJson(response));
     writer.close();
+  }
+
+  @SuppressWarnings("unchecked")
+  private void log(final LambdaLogger logger, final Map<String, Object> map,
+      final boolean isAuthorized) {
+
+    String siteId = getSiteId(map);
+    Map<String, Object> requestContext = (Map<String, Object>) map.get("requestContext");
+    Map<String, String> http =
+        map.containsKey("http") ? (Map<String, String>) map.get("http") : Collections.emptyMap();
+
+    String s = String.format(
+        "{\"requestId\": \"%s\",\"ip\": \"%s\",\"requestTime\": \"%s\",\"httpMethod\": \"%s\","
+            + "\"routeKey\": \"%s\","
+            + "\"protocol\": \"%s\",\"siteId\":\"%s\",\"isAuthorized\":\"%s\"}",
+        map.get("requestId"), http.get("sourceIp"), requestContext.get("time"), http.get("method"),
+        map.get("routeKey"), requestContext.get("protocol"), siteId, String.valueOf(isAuthorized));
+
+    logger.log(s);
   }
 }
