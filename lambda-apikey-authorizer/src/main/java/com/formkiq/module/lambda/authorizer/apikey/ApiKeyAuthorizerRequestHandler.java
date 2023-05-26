@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.authorizer.apikey;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,6 +35,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -99,7 +101,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
   @SuppressWarnings("unchecked")
   private String getSiteId(final Map<String, Object> map) {
 
-    String siteId = null;
+    String siteId = DEFAULT_SITE_ID;
 
     if (map.containsKey("queryStringParameters")) {
       Map<String, String> queryParams = (Map<String, String>) map.get("queryStringParameters");
@@ -128,10 +130,15 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     String apiKey = getIdentitySource(map);
     String siteId = getSiteId(map);
 
-    boolean isAuthorized = apiKeys.isApiKeyValid(siteId, apiKey);
+    DynamicObject obj = apiKeys.get(siteId, apiKey);
+    boolean isAuthorized = apiKey != null && apiKey.equals(obj.getOrDefault("apiKey", ""));
+
+    String apiKeyName = (String) obj.getOrDefault("name", "");
+    String group = isAuthorized ? "[" + siteId + "]" : "[]";
+
     log(logger, map, isAuthorized);
     Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
-        Map.of("exampleKey", "exampleValue"));
+        Map.of("claims", Map.of("cognito:groups", group, "cognito:username", apiKeyName)));
 
     OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
     writer.write(this.gson.toJson(response));
@@ -143,7 +150,9 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
       final boolean isAuthorized) {
 
     String siteId = getSiteId(map);
-    Map<String, Object> requestContext = (Map<String, Object>) map.get("requestContext");
+    Map<String, Object> requestContext =
+        map.containsKey("requestContext") ? (Map<String, Object>) map.get("requestContext")
+            : Collections.emptyMap();
     Map<String, String> http =
         map.containsKey("http") ? (Map<String, String>) map.get("http") : Collections.emptyMap();
 

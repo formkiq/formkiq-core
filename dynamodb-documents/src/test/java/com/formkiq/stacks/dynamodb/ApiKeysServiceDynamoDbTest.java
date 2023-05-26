@@ -83,17 +83,17 @@ public class ApiKeysServiceDynamoDbTest {
       assertTrue(keys.contains(this.service.mask(apiKey0)));
       assertTrue(keys.contains(this.service.mask(apiKey1)));
 
-      assertTrue(this.service.isApiKeyValid(siteId, apiKey0));
-      assertTrue(this.service.isApiKeyValid(siteId, apiKey1));
-      assertFalse(this.service.isApiKeyValid(siteId, UUID.randomUUID().toString()));
+      assertFalse(this.service.get(siteId, apiKey0).isEmpty());
+      assertFalse(this.service.get(siteId, apiKey1).isEmpty());
+      assertTrue(this.service.get(siteId, UUID.randomUUID().toString()).isEmpty());
 
       // when
       this.service.deleteApiKey(siteId, this.service.mask(apiKey0));
       this.service.deleteApiKey(siteId, this.service.mask(apiKey1));
 
       // then
-      assertFalse(this.service.isApiKeyValid(siteId, apiKey0));
-      assertFalse(this.service.isApiKeyValid(siteId, apiKey1));
+      assertTrue(this.service.get(siteId, apiKey0).isEmpty());
+      assertTrue(this.service.get(siteId, apiKey1).isEmpty());
     }
   }
 }

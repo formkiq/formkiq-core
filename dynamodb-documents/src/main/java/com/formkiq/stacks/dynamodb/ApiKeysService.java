@@ -51,13 +51,13 @@ public interface ApiKeysService {
   void deleteApiKey(String siteId, String apiKey);
 
   /**
-   * Is Api Key Valid.
+   * Get Api Key.
    * 
    * @param siteId {@link String}
    * @param apiKey {@link String}
    * @return boolean
    */
-  boolean isApiKeyValid(String siteId, String apiKey);
+  DynamicObject get(String siteId, String apiKey);
 
   /**
    * Get List of API Keys.

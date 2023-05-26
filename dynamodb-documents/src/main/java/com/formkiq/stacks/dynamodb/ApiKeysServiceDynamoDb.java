@@ -124,14 +124,15 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
   }
 
-  private Map<String, AttributeValue> getKeys(final String siteId, final String apiKey) {
-    return keysGeneric(siteId, PREFIX_API_KEYS, PREFIX_API_KEY + apiKey);
+  @Override
+  public DynamicObject get(final String siteId, final String apiKey) {
+    Map<String, AttributeValue> keys = getKeys(siteId, apiKey);
+    Map<String, AttributeValue> map = this.db.get(keys.get(PK), keys.get(SK));
+    return new AttributeValueToDynamicObject().apply(map);
   }
 
-  @Override
-  public boolean isApiKeyValid(final String siteId, final String apiKey) {
-    Map<String, AttributeValue> keys = getKeys(siteId, apiKey);
-    return this.db.exists(keys.get(PK), keys.get(SK));
+  private Map<String, AttributeValue> getKeys(final String siteId, final String apiKey) {
+    return keysGeneric(siteId, PREFIX_API_KEYS, PREFIX_API_KEY + apiKey);
   }
 
   @Override
