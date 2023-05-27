@@ -74,7 +74,7 @@ public class SitesRequestTest extends AbstractApiTest {
    */
   @Test // (timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       HttpResponse<String> response = client.optionsSites();
       assertEquals(HTTP_STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());

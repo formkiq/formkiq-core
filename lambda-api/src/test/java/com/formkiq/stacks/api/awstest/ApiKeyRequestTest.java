@@ -56,9 +56,10 @@ public class ApiKeyRequestTest extends AbstractApiTest {
   public void testApiKey01() throws Exception {
     // given
     String name = "My API";
+    final int expected = 3;
 
-    List<FormKiqClientV1> clients = getFormKiqClients();
-    assertEquals(2, clients.size());
+    List<FormKiqClientV1> clients = getFormKiqClients(null);
+    assertEquals(expected, clients.size());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -73,14 +74,15 @@ public class ApiKeyRequestTest extends AbstractApiTest {
       assertFalse(apiKeys.apiKeys().isEmpty());
 
       // given
-      client = clients.get(1);
+      for (FormKiqClientV1 c : Arrays.asList(clients.get(1), clients.get(2))) {
 
-      // when
-      HttpResponse<String> response = client.getApiKeysAsHttpResponse();
+        // when
+        HttpResponse<String> response = c.getApiKeysAsHttpResponse();
 
-      // then
-      assertEquals("401", String.valueOf(response.statusCode()));
-      assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+        // then
+        assertEquals("401", String.valueOf(response.statusCode()));
+        assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+      }
     }
   }
 

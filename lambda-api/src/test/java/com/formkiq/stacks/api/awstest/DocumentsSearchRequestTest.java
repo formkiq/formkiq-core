@@ -59,7 +59,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsRawSearch01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
@@ -82,7 +82,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch01() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       addDocumentWithoutFile(client, null, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
@@ -107,7 +107,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch02() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String next = "3aa3a255-6a67-4d05-8e67-f7a22b827433";
       SearchDocumentsRequest req = new SearchDocumentsRequest()
@@ -134,7 +134,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch03() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       String documentId = addDocumentWithoutFile(client, null, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
           .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
@@ -160,7 +160,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch04() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       addDocumentWithoutFile(client, null, null);
       SearchDocumentsRequest req = new SearchDocumentsRequest()
           .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))
@@ -182,7 +182,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch05() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
@@ -226,7 +226,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch06() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest tagRequest =
           new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
@@ -267,7 +267,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsSearch07() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       String tagKey = UUID.randomUUID().toString();
       String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest tagRequest =
@@ -311,7 +311,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     String path = "some/thing/else/My Documents.pdf";
     String text = "My Documents";
     final int limit = 100;
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
       String documentId = addDocumentWithoutFile(client, siteId, path);
       SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)

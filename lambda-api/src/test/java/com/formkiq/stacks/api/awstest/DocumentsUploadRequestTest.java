@@ -122,7 +122,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String content = "<html><body>test content</body></html>";
       GetDocumentUploadRequest request =
@@ -165,7 +165,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
     // given
     getConfigService().save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(SITEID0)) {
 
       GetDocumentUploadRequest request = new GetDocumentUploadRequest().siteId(SITEID0);
 
@@ -193,7 +193,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
     GetDocumentUploadRequest request =
         new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(SITEID0)) {
 
       // when
       HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
@@ -220,7 +220,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
     GetDocumentUploadRequest request =
         new GetDocumentUploadRequest().siteId(SITEID0).contentLength(contentLength);
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(SITEID0)) {
 
       // when
       HttpResponse<String> response = client.getDocumentUploadAsHttpResponse(request);
@@ -245,10 +245,10 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
         new GetDocumentUploadRequest().siteId(SITEID1).contentLength(1);
 
     HttpResponse<String> response =
-        getFormKiqClients().get(0).getDocumentUploadAsHttpResponse(request);
+        getFormKiqClients(SITEID1).get(0).getDocumentUploadAsHttpResponse(request);
     assertEquals(STATUS_OK, response.statusCode());
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(SITEID1)) {
 
       // when
       response = client.getDocumentUploadAsHttpResponse(request);
@@ -267,7 +267,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       // when
       HttpResponse<String> response = client.optionsDocumentUpload();
@@ -284,7 +284,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPost01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       DocumentTag tag0 = new DocumentTag().key("test").value("this");
       AddLargeDocumentRequest request =

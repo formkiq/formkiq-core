@@ -76,7 +76,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       assertEquals(STATUS_NO_CONTENT, client.optionsWebhooks().statusCode());
       assertEquals(STATUS_NO_CONTENT,
           client.optionsWebhooks(new OptionsWebhookRequest().webhookId("1")).statusCode());
@@ -90,7 +90,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPublicWebhooks01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
       String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;
@@ -198,7 +198,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPublicWebhooks04() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String id = client.addWebhook(new AddWebhookRequest().name("paypal").enabled("private")).id();
       String urlpath = getRootHttpUrl() + "/public/webhooks/" + id;

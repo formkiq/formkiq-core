@@ -79,12 +79,12 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
 
     String formkiqType = null;
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
-      // given
-      Version version = client.getVersion();
-      formkiqType = version.type();
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
 
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        Version version = client.getVersion();
+        formkiqType = version.type();
 
         String path = UUID.randomUUID().toString();
         String documentId = addDocumentWithoutFile(client, siteId, path);

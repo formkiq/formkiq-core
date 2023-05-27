@@ -62,10 +62,9 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testAddOcr01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
-
-      // given
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
 
         byte[] content = toBytes("/ocr/receipt.png");
         String documentId = addDocument(client, siteId, "receipt.png", content, "image/png");
@@ -91,10 +90,9 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testAddOcr02() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
-
-      // given
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
 
         byte[] content = toBytes("/ocr/receipt.png");
         String documentId = addDocument(client, siteId, "receipt.png", content, "image/png");

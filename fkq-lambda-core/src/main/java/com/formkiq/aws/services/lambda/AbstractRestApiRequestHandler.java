@@ -231,27 +231,24 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
 
-    if (!awsservice.debug()) {
+    ApiGatewayRequestContext requestContext =
+        event.getRequestContext() != null ? event.getRequestContext()
+            : new ApiGatewayRequestContext();
 
-      ApiGatewayRequestContext requestContext =
-          event.getRequestContext() != null ? event.getRequestContext()
-              : new ApiGatewayRequestContext();
+    Map<String, Object> identity =
+        requestContext.getIdentity() != null ? requestContext.getIdentity() : Map.of();
 
-      Map<String, Object> identity =
-          requestContext.getIdentity() != null ? requestContext.getIdentity() : Map.of();
+    String s = String.format(
+        "{\"requestId\": \"%s\",\"ip\": \"%s\",\"requestTime\": \"%s\",\"httpMethod\": \"%s\","
+            + "\"routeKey\": \"%s\",\"pathParameters\": %s,"
+            + "\"protocol\": \"%s\",\"user\":\"%s\",\"queryParameters\":%s}",
+        requestContext.getRequestId(), identity.get("sourceIp"), requestContext.getRequestTime(),
+        event.getHttpMethod(), event.getHttpMethod() + " " + event.getResource(),
+        "{" + toStringFromMap(event.getPathParameters()) + "}", requestContext.getProtocol(),
+        ApiGatewayRequestEventUtil.getCallingCognitoUsername(event),
+        "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
 
-      String s = String.format(
-          "{\"requestId\": \"%s\",\"ip\": \"%s\",\"requestTime\": \"%s\",\"httpMethod\": \"%s\","
-              + "\"routeKey\": \"%s\",\"pathParameters\": %s,"
-              + "\"protocol\": \"%s\",\"user\":\"%s\",\"queryParameters\":%s}",
-          requestContext.getRequestId(), identity.get("sourceIp"), requestContext.getRequestTime(),
-          event.getHttpMethod(), event.getHttpMethod() + " " + event.getResource(),
-          "{" + toStringFromMap(event.getPathParameters()) + "}", requestContext.getProtocol(),
-          ApiGatewayRequestEventUtil.getCallingCognitoUsername(event),
-          "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
-
-      logger.log(s);
-    }
+    logger.log(s);
 
     return event;
   }

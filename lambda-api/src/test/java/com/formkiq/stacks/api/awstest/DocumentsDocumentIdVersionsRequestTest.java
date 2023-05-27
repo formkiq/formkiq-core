@@ -47,7 +47,7 @@ public class DocumentsDocumentIdVersionsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String documentId = UUID.randomUUID().toString();
       OptionsDocumentVersionsRequest req =

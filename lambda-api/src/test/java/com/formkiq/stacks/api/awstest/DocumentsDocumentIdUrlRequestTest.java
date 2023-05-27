@@ -57,7 +57,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
       Thread.sleep(SLEEP * 2);
@@ -73,7 +73,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String documentId = UUID.randomUUID().toString();
       OptionsDocumentUploadRequest req = new OptionsDocumentUploadRequest().documentId(documentId);

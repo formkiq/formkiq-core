@@ -88,8 +88,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsTags01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
-
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest request =
@@ -141,7 +140,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsTags02() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -194,7 +193,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsTags03() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -271,7 +270,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsTags04() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -349,7 +348,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsTags05() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -410,7 +409,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testDocumentsTags06() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -479,8 +478,10 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   private void verifyUserId(final Map<String, Object> map) {
     if ("testadminuser@formkiq.com".equals(map.get("userId"))) {
       assertEquals("testadminuser@formkiq.com", map.get("userId"));
-    } else {
+    } else if (map.get("userId").toString().contains(":user/")) {
       assertTrue(map.get("userId").toString().contains(":user/"));
+    } else {
+      assertEquals("My API Key", map.get("userId"));
     }
   }
 }

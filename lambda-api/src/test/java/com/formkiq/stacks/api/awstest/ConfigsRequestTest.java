@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -52,10 +53,11 @@ public class ConfigsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testConfigs01() throws Exception {
 
-    List<FormKiqClientV1> clients = getFormKiqClients();
-    assertEquals(2, clients.size());
-
     // given
+    final int expected = 3;
+    List<FormKiqClientV1> clients = getFormKiqClients(null);
+    assertEquals(expected, clients.size());
+
     FormKiqClientV1 client = clients.get(0);
 
     // when
@@ -65,14 +67,15 @@ public class ConfigsRequestTest extends AbstractApiTest {
     assertNotNull(c.chatGptApiKey());
 
     // given
-    client = clients.get(1);
+    for (FormKiqClientV1 fc : Arrays.asList(clients.get(1), clients.get(2))) {
 
-    // when
-    HttpResponse<String> response = client.getConfigsAsHttpResponse();
+      // when
+      HttpResponse<String> response = fc.getConfigsAsHttpResponse();
 
-    // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+      // then
+      assertEquals("401", String.valueOf(response.statusCode()));
+      assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+    }
   }
 
   /**

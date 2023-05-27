@@ -107,7 +107,7 @@ public class AwsResourceTest extends AbstractApiTest {
     final int day = 15;
     LocalDate localDate = LocalDate.of(year, month, day);
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
       GetDocumentsRequest request = new GetDocumentsRequest().date(date).tz("+0500");
@@ -134,7 +134,7 @@ public class AwsResourceTest extends AbstractApiTest {
   @SuppressWarnings("unchecked")
   @Test(timeout = TEST_TIMEOUT)
   public void testPresignedUrl01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       final String documentId = addDocumentWithoutFile(client, null, null);
 

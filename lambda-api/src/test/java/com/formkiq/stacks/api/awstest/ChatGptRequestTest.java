@@ -62,7 +62,7 @@ public class ChatGptRequestTest extends AbstractApiTest {
       throw new IOException("key not set");
     }
 
-    FormKiqClientV1 client = getFormKiqClients().get(0);
+    FormKiqClientV1 client = getFormKiqClients(null).get(0);
     Config config = new Config();
     config.chatGptApiKey(System.getProperty("chatGptApiKey"));
     try {
@@ -80,10 +80,10 @@ public class ChatGptRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testOcrAndChatGpt01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      // given
-      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
 
         byte[] content = toBytes("/ocr/receipt.png");
         String documentId = addDocument(client, siteId, "receipt.png", content, "image/png");

@@ -51,7 +51,7 @@ public class VersionRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testVersion01() throws Exception {
     // given
-    for (FormKiqClientV1 c : getFormKiqClients()) {
+    for (FormKiqClientV1 c : getFormKiqClients(null)) {
       assertNotNull(c.getVersion().version());
       assertNotNull(c.getVersion().type());
     }
@@ -64,7 +64,7 @@ public class VersionRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       HttpResponse<String> response = client.optionsVersion();
       assertEquals(HTTP_STATUS_NO_CONTENT, response.statusCode());
       assertPreflightedCorsHeaders(response.headers());

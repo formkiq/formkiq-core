@@ -174,7 +174,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testDelete01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String documentId = UUID.randomUUID().toString();
       DeleteDocumentRequest request = new DeleteDocumentRequest().documentId(documentId);
@@ -195,7 +195,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       GetDocumentsRequest request = new GetDocumentsRequest().date(new Date());
       // when
@@ -339,7 +339,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String documentId = UUID.randomUUID().toString();
       OptionsDocumentRequest req = new OptionsDocumentRequest().documentId(documentId);
@@ -360,7 +360,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions02() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       // when
       HttpResponse<String> response = client.optionsDocuments();
@@ -378,7 +378,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPost01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       AddDocument post =
           new AddDocument().contentType("text/plain").content("test data", StandardCharsets.UTF_8);
@@ -611,12 +611,12 @@ public class DocumentsRequestTest extends AbstractApiTest {
     post.contentType("application/pdf");
     AddDocumentRequest req = new AddDocumentRequest().document(post).siteId(SITEID1);
 
-    FormKiqClientV1 c = getFormKiqClients().get(0);
+    FormKiqClientV1 c = getFormKiqClients(SITEID1).get(0);
 
     HttpResponse<String> response = c.addDocumentAsHttpResponse(req);
     assertEquals(STATUS_CREATED, response.statusCode());
 
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(SITEID1)) {
       // when
       response = client.addDocumentAsHttpResponse(req);
 
@@ -637,7 +637,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     for (boolean enablePublicEndpoint : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
-      for (FormKiqClientV1 client : getFormKiqClients()) {
+      for (FormKiqClientV1 client : getFormKiqClients(null)) {
         // given
         AddDocument post = new AddDocument()
             .tags(Arrays.asList(new AddDocumentTag().key("formName").value("Job Application Form")))
@@ -717,7 +717,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test(timeout = TEST_TIMEOUT)
   public void testPost08() throws Exception {
     // given
-    FormKiqClientV1 client = getFormKiqClients().get(0);
+    FormKiqClientV1 client = getFormKiqClients(null).get(0);
     String url = getRootHttpUrl() + "/documents";
 
     Map<String, List<String>> headers =
@@ -763,7 +763,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPost09() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       AddDocument post = new AddDocument().path("something.txt").contentType("text/plain")
           .content("test data", StandardCharsets.UTF_8)
@@ -834,7 +834,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // given
     String content = "test data";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      for (FormKiqClientV1 client : getFormKiqClients()) {
+      for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
 
         AddDocument post =
             new AddDocument().contentType("text/plain").content(content, StandardCharsets.UTF_8)

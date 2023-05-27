@@ -39,6 +39,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.BeforeClass;
@@ -59,6 +60,8 @@ import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.formkiq.stacks.dynamodb.ApiKeysService;
+import com.formkiq.stacks.dynamodb.ApiKeysServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -85,8 +88,12 @@ public abstract class AbstractApiTest {
   private static CognitoService adminCognitoService;
   /** {@link AuthenticationResultTypes}. */
   private static AuthenticationResultType adminToken;
+  /** FormKiQ KEY API Client. */
+  private static Map<String, FormKiqClientV1> apiClient = new HashMap<>();
   /** Api Gateway Invoke Group. */
   private static String apiGatewayInvokeGroup;
+  /** {@link ConfigService}. */
+  private static ApiKeysService apiKeysService;
   /** App Environment Name. */
   private static String appenvironment;
   /** AWS Region. */
@@ -113,6 +120,8 @@ public abstract class AbstractApiTest {
   private static FormKiqClientV1 restClient;
   /** API Root Http Url. */
   private static String rootHttpUrl;
+  /** Key API Root Url. */
+  private static String rootKeyUrl;
   /** API Root Rest Url. */
   private static String rootRestUrl;
   /** {@link SsmConnectionBuilder}. */
@@ -223,6 +232,29 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Add API Key.
+   * 
+   * @param siteId {@link String}
+   * @return {@link FormKiqClientV1}
+   */
+  private static FormKiqClientV1 getApiKeyClient(final String siteId) {
+
+    String site = siteId != null ? siteId : DEFAULT_SITE_ID;
+    if (!apiClient.containsKey(site)) {
+      String apiKey = apiKeysService.createApiKey(siteId, "My API Key");
+
+      FormKiqClientConnection connection = new FormKiqClientConnection(rootKeyUrl)
+          .cognitoIdToken(apiKey).header("Origin", Arrays.asList("http://localhost"))
+          .header("Access-Control-Request-Method", Arrays.asList("GET"));
+
+      FormKiqClientV1 client = new FormKiqClientV1(connection);
+      apiClient.put(site, client);
+    }
+
+    return apiClient.get(site);
+  }
+
+  /**
    * Get App Environment.
    * 
    * @return {@link String}
@@ -243,10 +275,12 @@ public abstract class AbstractApiTest {
   /**
    * Get FormKiq Clients.
    * 
+   * @param siteId {@link String}
+   * 
    * @return {@link List} {@link FormKiqClient}
    */
-  public static List<FormKiqClientV1> getFormKiqClients() {
-    return Arrays.asList(httpClient, restClient);
+  public static List<FormKiqClientV1> getFormKiqClients(final String siteId) {
+    return Arrays.asList(httpClient, restClient, getApiKeyClient(siteId));
   }
 
   /**
@@ -292,6 +326,9 @@ public abstract class AbstractApiTest {
 
     rootRestUrl =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsIamUrl");
+
+    rootKeyUrl =
+        ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsKeyUrl");
 
     cognitoUserPoolId =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/cognito/UserPoolId");
@@ -372,6 +409,7 @@ public abstract class AbstractApiTest {
       dbConnection =
           new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
       configService = new ConfigServiceDynamoDb(dbConnection, documentsTable);
+      apiKeysService = new ApiKeysServiceDynamoDb(dbConnection, documentsTable);
     }
   }
 

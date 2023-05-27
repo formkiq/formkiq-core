@@ -57,7 +57,7 @@ public class WebhookTagsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       OptionsWebhookTagsRequest req =
           new OptionsWebhookTagsRequest().webhookId(UUID.randomUUID().toString());
       assertEquals(STATUS_NO_CONTENT, client.optionsWebhookTags(req).statusCode());
@@ -71,7 +71,7 @@ public class WebhookTagsRequestTest extends AbstractApiTest {
    */
   @Test(timeout = TEST_TIMEOUT)
   public void testPublicWebhooks01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients()) {
+    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
       String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
 
