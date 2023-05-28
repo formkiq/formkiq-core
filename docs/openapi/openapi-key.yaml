@@ -1,6 +1,6 @@
         openapi: 3.0.1
         info:
-          title: FormKiQ HTTP API
+          title: FormKiQ KEY API
           contact:
             name: FormKiQ
             url: https://formkiq.com
@@ -12,7 +12,7 @@
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
-          description: FormKiQ HTTP API
+          description: FormKiQ Api Key
           version: 1.11.0
         paths:
           /version:
@@ -3800,21 +3800,18 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: oauth2
-              flows: {}
-              x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: ${CognitoUserPoolClient}
-                identitySource: $request.header.Authorization
-            sigv4:
               type: apiKey
               name: Authorization
               in: header
-              x-amazon-apigateway-authtype: awsSigv4
+              x-amazon-apigateway-authtype: Custom API Key
+              x-amazon-apigateway-authorizer:
+                identitySource: $request.header.Authorization
+                authorizerUri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                authorizerResultTtlInSeconds: 300
+                authorizerPayloadFormatVersion: "2.0"
+                enableSimpleResponses: true
+                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

@@ -3319,6 +3319,7 @@ Resources:
                     - FULLTEXT
                     - ANTIVIRUS
                     - WEBHOOK
+                    - DOCUMENTTAGGING
                 parameters:
                   $ref: "#/components/schemas/AddActionParameters"
             AddActionParameters:
@@ -3336,6 +3337,15 @@ Resources:
                 characterMax:
                   type: "string"
                   description: "Fulltext: Maximum number of characters (-1 unlimited, Typesense defaults to 2048 characters)"
+                engine:
+                  type: "string"
+                  description: "DocumentTagging: Engine to use for document tagging generation"
+                  enum:
+                    - chatgpt
+                tags:
+                  description: "DocumentTagging: List of Tags to generate tags for"
+                  items:
+                    type: "string"
             AddDocumentOcrRequest:
               type: object
               example:

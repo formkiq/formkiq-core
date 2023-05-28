@@ -120,7 +120,7 @@ task assembleTemplate {
 }
 
 task assembleOpenApiTemplate {
-	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml")
+	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml", "src/main/resources/cloudformation/api-key-variables.yaml")
 	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
 	
 	doLast {
@@ -133,7 +133,11 @@ task assembleOpenApiTemplate {
 			commandLine "bash", "-c", "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
 		}
 		
-		for (fileName in ["openapi-jwt", "openapi-iam"]) {
+		exec {
+			commandLine "bash", "-c", "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-apikey.yaml -f src/main/resources/cloudformation/api-key-variables.yaml > ${buildDir}/openapi-key.yaml"
+		}
+		
+		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
 		
 			def lines = new File("${buildDir}/${fileName}.yaml").readLines()
 			for (int i = 0; i < 5; i++) {
