@@ -104,9 +104,13 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     Map<String, String> mget = GsonUtil.getInstance().fromJson(responseGet, Map.class);
     verifyResponse(mget);
 
+    final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(mget.get("body"), Map.class));
-    assertEquals(1, resp.size());
+    assertEquals(expected, resp.size());
     assertEquals("anothervalue", resp.getString("chatGptApiKey"));
+    assertEquals("", resp.getString("maxContentLengthBytes"));
+    assertEquals("", resp.getString("maxDocuments"));
+    assertEquals("", resp.getString("maxWebhooks"));
   }
 
   /**
@@ -161,9 +165,13 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
 
     verifyResponse(m);
 
+    final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-    assertEquals(1, resp.size());
+    assertEquals(expected, resp.size());
     assertEquals("somevalue", resp.getString("chatGptApiKey"));
+    assertEquals("", resp.getString("maxContentLengthBytes"));
+    assertEquals("", resp.getString("maxDocuments"));
+    assertEquals("", resp.getString("maxWebhooks"));
   }
 
   /**
@@ -192,9 +200,13 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
 
     verifyResponse(m);
 
+    final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-    assertEquals(1, resp.size());
+    assertEquals(expected, resp.size());
     assertEquals("anothervalue", resp.getString("chatGptApiKey"));
+    assertEquals("", resp.getString("maxContentLengthBytes"));
+    assertEquals("", resp.getString("maxDocuments"));
+    assertEquals("", resp.getString("maxWebhooks"));
   }
 
   /**
@@ -209,7 +221,8 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     String siteId = null;
     String group = "Admins";
 
-    String body = GsonUtil.getInstance().toJson(Map.of("chatGptApiKey", "anotherkey"));
+    String body = GsonUtil.getInstance().toJson(Map.of("chatGptApiKey", "anotherkey",
+        "maxContentLengthBytes", "1000000", "maxDocuments", "1000", "maxWebhooks", "5"));
     ApiGatewayRequestEvent eventPatch = patchRequest(siteId, group, body);
 
     ApiGatewayRequestEvent eventGet = getRequest(siteId, group);
@@ -225,9 +238,13 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
     Map<String, String> mget = GsonUtil.getInstance().fromJson(responseGet, Map.class);
     verifyResponse(mget);
 
+    final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(mget.get("body"), Map.class));
-    assertEquals(1, resp.size());
+    assertEquals(expected, resp.size());
     assertEquals("anotherkey", resp.getString("chatGptApiKey"));
+    assertEquals("1000000", resp.getString("maxContentLengthBytes"));
+    assertEquals("1000", resp.getString("maxDocuments"));
+    assertEquals("5", resp.getString("maxWebhooks"));
   }
 
   /**

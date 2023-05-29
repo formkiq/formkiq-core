@@ -25,6 +25,9 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
+import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -78,6 +81,9 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     DynamicObject obj = configService.get(siteId);
     Map<String, Object> map = new HashMap<>();
     map.put("chatGptApiKey", obj.getOrDefault(CHATGPT_API_KEY, ""));
+    map.put("maxContentLengthBytes", obj.getOrDefault(MAX_DOCUMENT_SIZE_BYTES, ""));
+    map.put("maxDocuments", obj.getOrDefault(MAX_DOCUMENTS, ""));
+    map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -98,9 +104,10 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     Map<String, String> body = fromBodyToObject(logger, event, Map.class);
 
     Map<String, Object> map = new HashMap<>();
-    if (body.containsKey("chatGptApiKey")) {
-      map.put(CHATGPT_API_KEY, body.get("chatGptApiKey"));
-    }
+    put(map, body, CHATGPT_API_KEY, "chatGptApiKey");
+    put(map, body, MAX_DOCUMENT_SIZE_BYTES, "maxContentLengthBytes");
+    put(map, body, MAX_DOCUMENTS, "maxDocuments");
+    put(map, body, MAX_WEBHOOKS, "maxWebhooks");
 
     if (!map.isEmpty()) {
       ConfigService configService = awsservice.getExtension(ConfigService.class);
@@ -111,5 +118,12 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     }
 
     throw new BadException("missing required body parameters");
+  }
+
+  private void put(final Map<String, Object> map, final Map<String, String> body,
+      final String mapKey, final String bodyKey) {
+    if (body.containsKey(bodyKey)) {
+      map.put(mapKey, body.get(bodyKey));
+    }
   }
 }

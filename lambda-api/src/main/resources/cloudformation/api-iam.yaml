@@ -127,7 +127,10 @@ Resources:
                     examples:
                       Config:
                         value:
-                          chatGptApiKey: ABC
+                          chatGptApiKey: "ABC"
+                          maxContentLengthBytes: "1000000"
+                          maxDocuments: "1000"
+                          maxWebhooks: "10"
               responses:
                 '200':
                   description: 200 OK
@@ -3397,6 +3400,15 @@ Resources:
                 chatGptApiKey:
                   type: "string"
                   description: "ChatGPT Api Key"
+                maxContentLengthBytes:
+                  type: "string"
+                  description: "Set Maximum Document Content Length in Bytes"
+                maxDocuments:
+                  type: "string"
+                  description: "Set Maximum number of Documents allowed"
+                maxWebhooks:
+                  type: "string"
+                  description: "Set Maximum number of Webhooks allowed"
             SetConfigResponse:
               type: object
               properties:
@@ -3460,6 +3472,15 @@ Resources:
                 chatGptApiKey:
                   type: "string"
                   description: "ChatGPT API Key"
+                maxContentLengthBytes:
+                  type: "string"
+                  description: "Set Maximum Document Content Length in Bytes"
+                maxDocuments:
+                  type: "string"
+                  description: "Set Maximum number of Documents allowed"
+                maxWebhooks:
+                  type: "string"
+                  description: "Set Maximum number of Webhooks allowed"
             GetSitesRequest:
               type: object
               properties:
