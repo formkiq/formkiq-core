@@ -61,7 +61,7 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Get /configs/apiKey request.
+   * Get /configs/apiKeys request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -69,7 +69,7 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
    */
   private ApiGatewayRequestEvent getRequest(final String siteId, final String group) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
-        .resource("/configs/apiKey").path("/configs/apiKey").group(group).user("joesmith")
+        .resource("/configs/apiKeys").path("/configs/apiKeys").group(group).user("joesmith")
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
   }

@@ -133,7 +133,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configs/apiKey:
+          /configs/apiKeys:
             get:
               operationId: GetApiKeys
               description: Returns the list of ApiKeys
@@ -162,6 +162,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /configs/apiKey:
             post:
               operationId: ÅddApiKey
               description: Adds a new API Key
