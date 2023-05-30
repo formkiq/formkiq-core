@@ -36,12 +36,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentAction;
-import com.formkiq.stacks.client.models.Config;
+import com.formkiq.stacks.client.models.Configuration;
 import com.formkiq.stacks.client.models.DocumentActionType;
 import com.formkiq.stacks.client.models.DocumentTags;
 import com.formkiq.stacks.client.requests.AddDocumentActionRequest;
 import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
-import com.formkiq.stacks.client.requests.UpdateConfigsRequest;
+import com.formkiq.stacks.client.requests.UpdateConfigurationRequest;
 import software.amazon.awssdk.utils.IoUtils;
 
 /**
@@ -63,10 +63,10 @@ public class ChatGptRequestTest extends AbstractApiTest {
     }
 
     FormKiqClientV1 client = getFormKiqClients(null).get(0);
-    Config config = new Config();
+    Configuration config = new Configuration();
     config.chatGptApiKey(System.getProperty("chatGptApiKey"));
     try {
-      client.updateConfigs(new UpdateConfigsRequest().config(config));
+      client.updateConfiguration(new UpdateConfigurationRequest().config(config));
     } catch (InterruptedException e) {
       throw new IOException(e);
     }

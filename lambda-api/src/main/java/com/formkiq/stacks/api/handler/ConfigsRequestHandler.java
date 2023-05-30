@@ -43,7 +43,7 @@ import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 
-/** {@link ApiGatewayRequestHandler} for "/configs". */
+/** {@link ApiGatewayRequestHandler} for "/configuration". */
 public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
@@ -90,7 +90,7 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
   @Override
   public String getRequestUrl() {
-    return "/configs";
+    return "/configuration";
   }
 
   @SuppressWarnings("unchecked")

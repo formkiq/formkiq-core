@@ -30,13 +30,13 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.Config;
+import com.formkiq.stacks.client.models.Configuration;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 /**
  * Process Urls.
  * <p>
- * GET /configs tests
+ * GET /configuration tests
  * </p>
  *
  */
@@ -46,7 +46,7 @@ public class ConfigsRequestTest extends AbstractApiTest {
   private static final int TEST_TIMEOUT = 20000;
 
   /**
-   * Test GET /configs.
+   * Test GET /configuration.
    * 
    * @throws Exception Exception
    */
@@ -61,7 +61,7 @@ public class ConfigsRequestTest extends AbstractApiTest {
     FormKiqClientV1 client = clients.get(0);
 
     // when
-    Config c = client.getConfigs();
+    Configuration c = client.getConfiguration();
 
     // then
     assertNotNull(c.chatGptApiKey());
@@ -70,7 +70,7 @@ public class ConfigsRequestTest extends AbstractApiTest {
     for (FormKiqClientV1 fc : Arrays.asList(clients.get(1), clients.get(2))) {
 
       // when
-      HttpResponse<String> response = fc.getConfigsAsHttpResponse();
+      HttpResponse<String> response = fc.getConfigurationAsHttpResponse();
 
       // then
       assertEquals("401", String.valueOf(response.statusCode()));
@@ -79,7 +79,7 @@ public class ConfigsRequestTest extends AbstractApiTest {
   }
 
   /**
-   * Test GET /configs as readuser user.
+   * Test GET /configuration as readuser user.
    * 
    * @throws Exception Exception
    */
@@ -90,7 +90,7 @@ public class ConfigsRequestTest extends AbstractApiTest {
     FormKiqClientV1 client = createHttpClient(token);
 
     // when
-    HttpResponse<String> response = client.getConfigsAsHttpResponse();
+    HttpResponse<String> response = client.getConfigurationAsHttpResponse();
 
     // then
     assertEquals("401", String.valueOf(response.statusCode()));

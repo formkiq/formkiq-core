@@ -43,7 +43,7 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ConfigsRequestTest extends AbstractRequestHandler {
 
   /**
-   * Get /configs request.
+   * Get /configuration request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -51,13 +51,13 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
    */
   private ApiGatewayRequestEvent getRequest(final String siteId, final String group) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
-        .resource("/configs").path("/configs").group(group).user("joesmith")
+        .resource("/configuration").path("/configuration").group(group).user("joesmith")
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
   }
 
   /**
-   * Patch /configs request.
+   * Patch /configuration request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -67,7 +67,7 @@ public class ConfigsRequestTest extends AbstractRequestHandler {
   private ApiGatewayRequestEvent patchRequest(final String siteId, final String group,
       final String body) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("patch")
-        .resource("/configs").path("/configs").group(group).user("joesmith")
+        .resource("/configuration").path("/configuration").group(group).user("joesmith")
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
     return event;
   }

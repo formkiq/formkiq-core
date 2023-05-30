@@ -69,7 +69,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /configs:
+          /configuration:
             get:
               operationId: GetConfigs
               description: Returns the list of sites that the user has access to
@@ -93,7 +93,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetConfigsRequest'
+                        $ref: '#/components/schemas/GetConfigurationResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3453,17 +3453,7 @@
                   type: string
                   format: date-time
                   description: Inserted Timestamp
-            GetConfigsRequest:
-              type: object
-              properties:
-                sites:
-                  $ref: '#/components/schemas/Configs'
-            Configs:
-              type: array
-              description: List of configs
-              items:
-                $ref: '#/components/schemas/Config'
-            Config:
+            GetConfigurationResponse:
               type: object
               properties:
                 chatGptApiKey:
