@@ -38,7 +38,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
 /**
  * Process Urls.
  * <p>
- * GET /configs/apiKey integration tests
+ * GET /configuration/apiKeys integration tests
  * </p>
  *
  */
@@ -48,7 +48,7 @@ public class ApiKeyRequestTest extends AbstractApiTest {
   private static final int TEST_TIMEOUT = 20000;
 
   /**
-   * Test GET /configs/apiKey.
+   * Test GET /configuration/apiKeys.
    * 
    * @throws Exception Exception
    */
@@ -87,7 +87,7 @@ public class ApiKeyRequestTest extends AbstractApiTest {
   }
 
   /**
-   * Test GET /configs/apiKey as readuser user.
+   * Test GET /configuration/apiKeys as readuser user.
    * 
    * @throws Exception Exception
    */

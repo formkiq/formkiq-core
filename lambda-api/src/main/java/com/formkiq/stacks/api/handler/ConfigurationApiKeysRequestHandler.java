@@ -34,19 +34,20 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 
-/** {@link ApiGatewayRequestHandler} for "/configs/apiKeys". */
-public class ConfigApiKeysRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/configuration/apiKeys". */
+public class ConfigurationApiKeysRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public ConfigApiKeysRequestHandler() {}
+  public ConfigurationApiKeysRequestHandler() {}
 
   @Override
   public void beforeDelete(final LambdaLogger logger, final ApiGatewayRequestEvent event,
@@ -73,6 +74,21 @@ public class ConfigApiKeysRequestHandler
   }
 
   @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorizer.getSiteId();
+    String apiKey = event.getQueryStringParameter("apiKey");
+
+    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
+    apiKeysService.deleteApiKey(siteId, apiKey);
+
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("message", "ApiKey deleted")));
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
@@ -88,6 +104,27 @@ public class ConfigApiKeysRequestHandler
 
   @Override
   public String getRequestUrl() {
-    return "/configs/apiKeys";
+    return "/configuration/apiKeys";
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorizer.getSiteId();
+
+    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
+    Map<String, String> body = fromBodyToObject(logger, event, Map.class);
+    String name = body.get("name");
+
+    if (name != null) {
+      String apiKey = apiKeysService.createApiKey(siteId, name);
+      return new ApiRequestHandlerResponse(SC_OK,
+          new ApiMapResponse(Map.of("name", name, "apiKey", apiKey)));
+    }
+
+    throw new BadException("missing required body parameters");
   }
 }

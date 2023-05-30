@@ -38,13 +38,13 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
-/** Unit Tests for request /sites. */
+/** Unit Tests for request /configuration/apiKeys. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class ApiKeysRequestTest extends AbstractRequestHandler {
+public class ConfigurationApiKeysRequestTest extends AbstractRequestHandler {
 
   /**
-   * DELETE /configs/apiKey request.
+   * DELETE /configuration/apiKeys request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -54,14 +54,14 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
   private ApiGatewayRequestEvent deleteRequest(final String siteId, final String group,
       final String apiKey) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("delete")
-        .resource("/configs/apiKey").path("/configs/apiKey").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null)
+        .resource("/configuration/apiKeys").path("/configuration/apiKeys").group(group)
+        .user("joesmith").queryParameters(siteId != null ? Map.of("siteId", siteId) : null)
         .queryParameters(Map.of("apiKey", apiKey)).build();
     return event;
   }
 
   /**
-   * Get /configs/apiKeys request.
+   * Get /configuration/apiKeys request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -69,13 +69,13 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
    */
   private ApiGatewayRequestEvent getRequest(final String siteId, final String group) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
-        .resource("/configs/apiKeys").path("/configs/apiKeys").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+        .resource("/configuration/apiKeys").path("/configuration/apiKeys").group(group)
+        .user("joesmith").queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
   }
 
   /**
-   * POST /configs/apiKey request.
+   * POST /configuration/apiKeys request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -84,14 +84,15 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
    */
   private ApiGatewayRequestEvent postRequest(final String siteId, final String group,
       final String body) {
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("post")
-        .resource("/configs/apiKey").path("/configs/apiKey").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
+    ApiGatewayRequestEvent event =
+        new ApiGatewayRequestEventBuilder().method("post").resource("/configuration/apiKeys")
+            .path("/configuration/apiKeys").group(group).user("joesmith")
+            .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
     return event;
   }
 
   /**
-   * Delete /configs/apiKey default as User.
+   * Delete /configuration/apiKeys default as User.
    *
    * @throws Exception an error has occurred
    */
@@ -118,7 +119,7 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /configs/apiKey default as User.
+   * POST /configuration/apiKeys default as User.
    *
    * @throws Exception an error has occurred
    */
@@ -146,7 +147,7 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Get/POST/DELETE /configs/apiKey default as Admin.
+   * Get/POST/DELETE /configuration/apiKeys default as Admin.
    *
    * @throws Exception an error has occurred
    */
@@ -212,7 +213,7 @@ public class ApiKeysRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Get /configs/apiKey default as User.
+   * Get /configuration/apiKeys default as User.
    *
    * @throws Exception an error has occurred
    */
