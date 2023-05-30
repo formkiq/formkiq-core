@@ -149,11 +149,25 @@ task assembleOpenApiTemplate {
 			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
 			file.text = lines.join(System.lineSeparator())
 			
-			exec {
-				commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../docs/openapi/${fileName}.yaml -g asciidoc -o ${buildDir}/${fileName}"
-			}
+			javaexec { 
+    			main="-jar";
+    			args = [
+            		"${buildDir}/openapi-generator-cli-6.6.0.jar",
+            		"generate",
+            		"-i", "${buildDir}/../../docs/openapi/${fileName}.yaml",
+            		"-g", "asciidoc", 
+            		"-o", "${buildDir}/${fileName}"
+           		]
+  			} 
 		}
 	}
+}
+
+task downloadOpenApiGenerator(type: Download) {
+	dependsOn check
+    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/6.6.0/openapi-generator-cli-6.6.0.jar"
+    dest buildDir
+    overwrite false
 }
 
 task downloadAwsCognito(type: Download) {
