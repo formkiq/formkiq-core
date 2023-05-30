@@ -120,6 +120,7 @@ task assembleTemplate {
 }
 
 task assembleOpenApiTemplate {
+    dependsOn downloadOpenApiGenerator
 	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml", "src/main/resources/cloudformation/api-key-variables.yaml")
 	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
 	
