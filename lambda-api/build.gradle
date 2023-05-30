@@ -119,6 +119,13 @@ task assembleTemplate {
 	}
 }
 
+task downloadOpenApiGenerator(type: Download) {
+	dependsOn check
+    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/6.6.0/openapi-generator-cli-6.6.0.jar"
+    dest buildDir
+    overwrite false
+}
+
 task assembleOpenApiTemplate {
     dependsOn downloadOpenApiGenerator
 	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml", "src/main/resources/cloudformation/api-key-variables.yaml")
@@ -162,13 +169,6 @@ task assembleOpenApiTemplate {
   			} 
 		}
 	}
-}
-
-task downloadOpenApiGenerator(type: Download) {
-	dependsOn check
-    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/6.6.0/openapi-generator-cli-6.6.0.jar"
-    dest buildDir
-    overwrite false
 }
 
 task downloadAwsCognito(type: Download) {
