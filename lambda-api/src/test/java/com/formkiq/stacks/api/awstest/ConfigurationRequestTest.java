@@ -58,24 +58,24 @@ public class ConfigurationRequestTest extends AbstractApiTest {
     List<FormKiqClientV1> clients = getFormKiqClients(null);
     assertEquals(expected, clients.size());
 
-    FormKiqClientV1 client = clients.get(0);
-
-    // when
-    Configuration c = client.getConfiguration();
-
-    // then
-    assertNotNull(c.chatGptApiKey());
-
-    // given
-    for (FormKiqClientV1 fc : Arrays.asList(clients.get(1), clients.get(2))) {
+    for (FormKiqClientV1 client : Arrays.asList(clients.get(0), clients.get(1))) {
 
       // when
-      HttpResponse<String> response = fc.getConfigurationAsHttpResponse();
+      Configuration c = client.getConfiguration();
 
       // then
-      assertEquals("401", String.valueOf(response.statusCode()));
-      assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+      assertNotNull(c.chatGptApiKey());
     }
+
+    // given
+    FormKiqClientV1 fc = clients.get(2);
+
+    // when
+    HttpResponse<String> response = fc.getConfigurationAsHttpResponse();
+
+    // then
+    assertEquals("401", String.valueOf(response.statusCode()));
+    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
   }
 
   /**

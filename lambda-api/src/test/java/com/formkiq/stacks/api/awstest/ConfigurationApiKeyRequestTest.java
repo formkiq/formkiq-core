@@ -63,26 +63,26 @@ public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      FormKiqClientV1 client = clients.get(0);
-      AddApiKeyRequest req = new AddApiKeyRequest().siteId(siteId).name(name);
-
-      // when
-      client.addApiKey(req);
-
-      // then
-      ApiKeys apiKeys = client.getApiKeys();
-      assertFalse(apiKeys.apiKeys().isEmpty());
-
-      // given
-      for (FormKiqClientV1 c : Arrays.asList(clients.get(1), clients.get(2))) {
+      for (FormKiqClientV1 client : Arrays.asList(clients.get(0), clients.get(1))) {
+        AddApiKeyRequest req = new AddApiKeyRequest().siteId(siteId).name(name);
 
         // when
-        HttpResponse<String> response = c.getApiKeysAsHttpResponse();
+        client.addApiKey(req);
 
         // then
-        assertEquals("401", String.valueOf(response.statusCode()));
-        assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+        ApiKeys apiKeys = client.getApiKeys();
+        assertFalse(apiKeys.apiKeys().isEmpty());
       }
+
+      // given
+      FormKiqClientV1 c = clients.get(2);
+
+      // when
+      HttpResponse<String> response = c.getApiKeysAsHttpResponse();
+
+      // then
+      assertEquals("401", String.valueOf(response.statusCode()));
+      assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
     }
   }
 
