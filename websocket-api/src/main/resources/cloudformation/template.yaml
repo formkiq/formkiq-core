@@ -218,7 +218,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs18.x
       Timeout: 600
       MemorySize: 512
       Description: Lambda function that processes Web-socket requests
