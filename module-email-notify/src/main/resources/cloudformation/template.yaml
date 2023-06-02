@@ -90,7 +90,7 @@ Resources:
     - EmailNotifyRole
     Properties:
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs18.x
       Timeout: 60
       MemorySize: 256
       CodeUri: ./module-email-notify.zip
