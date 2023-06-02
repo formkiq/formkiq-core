@@ -68,7 +68,7 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   private void checkPermissions(final ApiAuthorizer authorizer) throws UnauthorizedException {
-    if (!authorizer.isUserAdmin()) {
+    if (!authorizer.isUserAdmin() && !authorizer.isCallerIamUser()) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }

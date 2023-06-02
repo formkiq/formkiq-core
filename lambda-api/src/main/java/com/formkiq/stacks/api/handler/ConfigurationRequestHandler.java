@@ -44,13 +44,14 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 
 /** {@link ApiGatewayRequestHandler} for "/configuration". */
-public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+public class ConfigurationRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public ConfigsRequestHandler() {}
+  public ConfigurationRequestHandler() {}
 
   @Override
   public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
@@ -65,7 +66,7 @@ public class ConfigsRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   }
 
   private void checkPermissions(final ApiAuthorizer authorizer) throws UnauthorizedException {
-    if (!authorizer.isUserAdmin()) {
+    if (!authorizer.isUserAdmin() && !authorizer.isCallerIamUser()) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }

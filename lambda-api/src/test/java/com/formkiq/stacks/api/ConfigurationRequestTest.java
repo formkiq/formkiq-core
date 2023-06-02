@@ -37,10 +37,10 @@ import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
-/** Unit Tests for request /sites. */
+/** Unit Tests for request /configuration. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class ConfigsRequestTest extends AbstractRequestHandler {
+public class ConfigurationRequestTest extends AbstractRequestHandler {
 
   /**
    * Get /configuration request.
