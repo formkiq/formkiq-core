@@ -11,6 +11,16 @@ plugins {
 
 def moduleName = "formkiq-core"
 
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
+
 repositories { mavenCentral() }
 
 allprojects {
@@ -129,14 +139,13 @@ task assembleTemplate {
     dependsOn buildDistribution
   	outputs.upToDateWhen { false }
 	doLast {
+		copy {
+		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+		  include "*"
+	      into "${buildDir}/distributions/formkiq-core/sam"
+	    }
 		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/* ${buildDir}/distributions/formkiq-core/sam/"
-		}
-		exec {
-			commandLine "bash", "-c", "ytt --data-value version=${project.version} -f ${buildDir}/distributions/formkiq-core/sam/template.yaml --output-files ${buildDir}/distributions/formkiq-core/sam"
-		}
-		exec {
-			commandLine "bash", "-c", "cp src/main/resources/cloudformation/module-*.yaml ${buildDir}/distributions/formkiq-core/sam/"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/distributions/formkiq-core/sam/template.yaml --output-files ${buildDir}/distributions/formkiq-core/sam"
 		}	
 	}
 }

@@ -1,6 +1,15 @@
 description = "FormKiQ Core - Lambda TypeSense"
 
 def moduleName = "formkiq-module-lambda-typesense"
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
 
 dependencies {
 
@@ -91,7 +100,7 @@ task assembleTemplate {
 	
   	doLast {
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/${moduleName}/sam/typesense/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/${moduleName}/sam/typesense/template.yaml"
 		}
 	}
 }

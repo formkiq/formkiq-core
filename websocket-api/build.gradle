@@ -1,5 +1,15 @@
 description = "FormKiQ Core - WebSocket"
 
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
+
 jar.enabled = false
 
 dependencies {
@@ -34,7 +44,7 @@ task npmInstall(type:Exec) {
   outputs.files("${buildDir}/resources/main/js/websocket-api.zip")
   dependsOn processResources, compileTestJava, checkstyleTest, spotbugsTest
   workingDir "${buildDir}/resources/main/js"
-  commandLine "bash", "-c", "npm install ; npm run pack"
+  commandLine getCmd(), getCmdParam(), "npm install ; npm run pack"
 }
 
 jar.dependsOn npmInstall
@@ -45,7 +55,7 @@ task npmtest {
   outputs.dir("${buildDir}/resources/main/js/coverage")
   doLast {
     exec {
-      commandLine "bash", "-c", "cd build/resources/main/js ; npm test"
+      commandLine getCmd(), getCmdParam(), "cd build/resources/main/js ; npm test"
     }
   }
 }
@@ -68,23 +78,23 @@ task updateLambda {
 	dependsOn assembleTemplate
 	doLast {
 		exec {
-			commandLine "bash", "-c", "aws lambda list-functions --region ${testregion} --profile ${testprofile} | jq -r '.Functions[] | .FunctionName' | grep formkiq-core-${testappenvironment} | grep 'Websocket' | xargs -I{} aws lambda update-function-code --function-name {} --zip-file fileb://${buildDir}/websocket-api.zip --region ${testregion} --profile ${testprofile}"
+			commandLine getCmd(), getCmdParam(), "aws lambda list-functions --region ${testregion} --profile ${testprofile} | jq -r '.Functions[] | .FunctionName' | grep formkiq-core-${testappenvironment} | grep 'Websocket' | xargs -I{} aws lambda update-function-code --function-name {} --zip-file fileb://${buildDir}/websocket-api.zip --region ${testregion} --profile ${testprofile}"
 		}
 	}
 }
 
 ext.macroLocalStackStart = {
 	exec {
-	  commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml up -d"
+	  commandLine getCmd(), getCmdParam(), "docker-compose  -f ./docker-compose.yml up -d"
 	}
 	exec {
-	  commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh 4568"
+	  commandLine getCmd(), getCmdParam(), "${project.rootDir}/wait-for-localstack.sh 4568"
 	}
 }
   
 ext.macroDockerComposeDown = {
     exec {
-      commandLine "bash", "-c", "docker-compose  -f ${project.rootDir}/docker-compose.yml down"
+      commandLine getCmd(), getCmdParam(), "docker-compose  -f ${project.rootDir}/docker-compose.yml down"
     }
 }
 

@@ -2904,6 +2904,9 @@
                   type: string
                   format: uuid
                   description: Document Identifier
+                contentLength:
+                  type: integer
+                  description: Document size
                 createdBy:
                   type: string
                   description: User who added document
@@ -2932,6 +2935,9 @@
                 createdBy:
                   type: string
                   description: User who added document
+                contentLength:
+                  type: integer
+                  description: Document size
                 tags:
                   type: object
                 metadata:

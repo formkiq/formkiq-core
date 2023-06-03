@@ -1,5 +1,15 @@
 description = "FormKiQ Core - Lambda S3 to Dynamodb"
 
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
+
 dependencies {
 
  	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.3.0'
@@ -100,7 +110,7 @@ task assembleTemplate {
 	    }
 	    
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
 		}
 	}
 }
