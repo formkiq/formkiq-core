@@ -55,7 +55,8 @@ task npmtest {
   outputs.dir("${buildDir}/resources/main/js/coverage")
   doLast {
     exec {
-      commandLine getCmd(), getCmdParam(), "cd build/resources/main/js ; npm test"
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm test"
     }
   }
 }
