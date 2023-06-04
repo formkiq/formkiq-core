@@ -191,8 +191,11 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
         throw new IOException("unsupported Content-Type: " + contentType);
       }
 
+      String tmpDirectory =
+          new File("/tmp").exists() ? "/tmp/" : System.getProperty("java.io.tmpdir") + "\\";
       String documentS3Key = createS3Key(siteId, documentId);
-      File file = new File("/tmp/" + documentS3Key.replaceAll("/", "_") + "." + mt.getExtension());
+      File file =
+          new File(tmpDirectory + documentS3Key.replaceAll("/", "_") + "." + mt.getExtension());
 
       try (InputStream is =
           this.s3Service.getContentAsInputStream(this.documentsBucket, documentS3Key)) {
