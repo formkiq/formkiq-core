@@ -1,3 +1,4 @@
+import org.apache.tools.ant.taskdefs.condition.Os
 description = "FormKiQ Core - WebSocket"
 
 def getCmd() {
@@ -39,24 +40,35 @@ task testaws(type: Test) {
   include 'com/formkiq/stacks/websocket/awstest/**'    
 }
 
-task npmInstall(type:Exec) {
+task npmInstall {
   inputs.files("src/main/resources/js")
   outputs.files("${buildDir}/resources/main/js/websocket-api.zip")
   dependsOn processResources, compileTestJava, checkstyleTest, spotbugsTest
-  workingDir "${buildDir}/resources/main/js"
-  commandLine getCmd(), getCmdParam(), "npm install ; npm run pack"
+  
+  doLast {
+	  
+	  exec {
+	    workingDir "${buildDir}/resources/main/js"
+		commandLine getCmd(), getCmdParam(), "npm install"
+	  }
+	  
+	  exec {
+	    workingDir "${buildDir}/resources/main/js"
+		commandLine getCmd(), getCmdParam(), "npm run pack"
+	  }
+  }
 }
 
 jar.dependsOn npmInstall
 
 task npmtest {
+  onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
   dependsOn npmInstall, jar
   inputs.files("src/main/resources/js")
   outputs.dir("${buildDir}/resources/main/js/coverage")
   doLast {
     exec {
-      workingDir "${buildDir}/resources/main/js"
-      commandLine getCmd(), getCmdParam(), "npm test"
+      commandLine getCmd(), getCmdParam(), "cd build/resources/main/js ; npm test"
     }
   }
 }
