@@ -89,7 +89,6 @@ task assembleTemplate {
 }
 
 ext.macroLocalStackStart = {
-    onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
 	exec {
 	  commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml up -d"
 	}
@@ -99,7 +98,6 @@ ext.macroLocalStackStart = {
 }
   
 ext.macroDockerComposeDown = {
-    onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
     exec {
       commandLine "bash", "-c", "docker-compose  -f ./docker-compose.yml down"
     }
