@@ -302,6 +302,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       Object bucket = e.getOrDefault("s3bucket", null);
       Object key = e.getOrDefault("s3key", null);
 
+      String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
+          eventName, bucket, key);
+      logger.log(s);
+
       if (bucket != null && key != null) {
 
         boolean create =
@@ -438,39 +442,44 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private void processS3Delete(final LambdaLogger logger, final String bucket, final String key)
       throws IOException, InterruptedException {
 
-    String siteId = getSiteId(key.toString());
-    String documentId = resetDatabaseKey(siteId, key.toString());
+    if (!this.s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
 
-    String msg = String.format("Removing %s from bucket %s.", key, bucket);
-    logger.log(msg);
+      String siteId = getSiteId(key.toString());
+      String documentId = resetDatabaseKey(siteId, key.toString());
 
-    boolean moduleOcr = this.services.hasModule("ocr");
-    boolean moduleFulltext = this.services.hasModule("fulltext");
+      String msg = String.format("Removing %s from bucket %s.", key, bucket);
+      logger.log(msg);
 
-    if (moduleOcr || moduleFulltext) {
-      FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
+      boolean moduleOcr = this.services.hasModule("ocr");
+      boolean moduleFulltext = this.services.hasModule("fulltext");
 
-      if (moduleOcr) {
-        HttpResponse<String> deleteDocumentHttpResponse = fkClient.deleteDocumentOcrAsHttpResponse(
-            new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
-        checkResponse("ocr", siteId, documentId, deleteDocumentHttpResponse);
+      if (moduleOcr || moduleFulltext) {
+        FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
+
+        if (moduleOcr) {
+          HttpResponse<String> deleteDocumentHttpResponse =
+              fkClient.deleteDocumentOcrAsHttpResponse(
+                  new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
+          checkResponse("ocr", siteId, documentId, deleteDocumentHttpResponse);
+        }
+
+        if (moduleFulltext) {
+          HttpResponse<String> deleteDocumentFulltext =
+              fkClient.deleteDocumentFulltextAsHttpResponse(
+                  new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
+          checkResponse("fulltext", siteId, documentId, deleteDocumentFulltext);
+        }
       }
 
-      if (moduleFulltext) {
-        HttpResponse<String> deleteDocumentFulltext = fkClient.deleteDocumentFulltextAsHttpResponse(
-            new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
-        checkResponse("fulltext", siteId, documentId, deleteDocumentFulltext);
-      }
+      this.service.deleteDocument(siteId, documentId);
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
+
+      DocumentEvent event =
+          buildDocumentEvent(DELETE, siteId, doc, bucket, key, doc.getContentType());
+
+      sendSnsMessage(logger, event, doc.getContentType(), bucket, key, null);
     }
-
-    this.service.deleteDocument(siteId, documentId);
-
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
-
-    DocumentEvent event =
-        buildDocumentEvent(DELETE, siteId, doc, bucket, key, doc.getContentType());
-
-    sendSnsMessage(logger, event, doc.getContentType(), bucket, key, null);
   }
 
   /**
