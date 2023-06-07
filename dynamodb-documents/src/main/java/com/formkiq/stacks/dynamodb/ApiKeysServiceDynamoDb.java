@@ -23,8 +23,10 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -94,19 +96,24 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   }
 
   @Override
-  public String createApiKey(final String siteId, final String name) {
+  public String createApiKey(final String siteId, final String name, final String userId) {
+
+    String site = siteId != null ? siteId : DEFAULT_SITE_ID;
     String apiKey = generateRandomString(API_KEY_LENGTH);
-    Map<String, AttributeValue> keys = getKeys(siteId, apiKey);
+    Map<String, AttributeValue> keys = getKeys(apiKey);
     keys.put("apiKey", AttributeValue.fromS(apiKey));
     keys.put("name", AttributeValue.fromS(name));
+    keys.put("siteIds", AttributeValue.fromL(Arrays.asList(AttributeValue.fromS(site))));
     keys.put("insertedDate", AttributeValue.fromS(this.df.format(new Date())));
+    keys.put("userId", AttributeValue.fromS(userId));
     this.db.putItem(keys);
     return apiKey;
   }
 
   @Override
-  public void deleteApiKey(final String siteId, final String apiKey) {
-    Map<String, AttributeValue> keys = getKeys(siteId, apiKey);
+  public void deleteApiKey(final String apiKey) {
+
+    Map<String, AttributeValue> keys = getKeys(apiKey);
 
     QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
 
@@ -125,19 +132,19 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   }
 
   @Override
-  public DynamicObject get(final String siteId, final String apiKey) {
-    Map<String, AttributeValue> keys = getKeys(siteId, apiKey);
+  public DynamicObject get(final String apiKey) {
+    Map<String, AttributeValue> keys = getKeys(apiKey);
     Map<String, AttributeValue> map = this.db.get(keys.get(PK), keys.get(SK));
     return new AttributeValueToDynamicObject().apply(map);
   }
 
-  private Map<String, AttributeValue> getKeys(final String siteId, final String apiKey) {
-    return keysGeneric(siteId, PREFIX_API_KEYS, PREFIX_API_KEY + apiKey);
+  private Map<String, AttributeValue> getKeys(final String apiKey) {
+    return keysGeneric(null, PREFIX_API_KEYS, PREFIX_API_KEY + mask(apiKey));
   }
 
   @Override
-  public List<DynamicObject> list(final String siteId) {
-    Map<String, AttributeValue> keys = getKeys(siteId, "");
+  public List<DynamicObject> list() {
+    Map<String, AttributeValue> keys = getKeys("");
     QueryResponse response = this.db.query(keys.get(PK), null, LIMIT);
 
     List<DynamicObject> list =
@@ -154,7 +161,7 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
   @Override
   public String mask(final String apiKey) {
-    return apiKey.subSequence(0, MASK) + "****************"
-        + apiKey.substring(apiKey.length() - MASK / 2);
+    return apiKey != null && apiKey.length() == API_KEY_LENGTH ? apiKey.subSequence(0, MASK)
+        + "****************" + apiKey.substring(apiKey.length() - MASK / 2) : apiKey;
   }
 }

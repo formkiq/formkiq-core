@@ -607,8 +607,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Delete Document Request - S3 File not exists.
-   * S3 Main document file was deleted.
+   * Delete Document Request - S3 File not exists. S3 Main document file was deleted.
    *
    * @throws Exception Exception
    */
@@ -643,7 +642,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, DELETE, false, true);
     }
   }
-  
+
   /**
    * Create Document Request on child document.
    *

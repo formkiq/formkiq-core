@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.List;
 import java.util.Map;
@@ -79,11 +80,10 @@ public class ConfigurationApiKeysRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
     String apiKey = event.getQueryStringParameter("apiKey");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    apiKeysService.deleteApiKey(siteId, apiKey);
+    apiKeysService.deleteApiKey(apiKey);
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMapResponse(Map.of("message", "ApiKey deleted")));
@@ -94,10 +94,9 @@ public class ConfigurationApiKeysRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
 
-    List<DynamicObject> list = apiKeysService.list(siteId);
+    List<DynamicObject> list = apiKeysService.list();
 
     Map<String, Object> map = Map.of("apiKeys", list);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
@@ -121,7 +120,10 @@ public class ConfigurationApiKeysRequestHandler
     String name = body.get("name");
 
     if (name != null) {
-      String apiKey = apiKeysService.createApiKey(siteId, name);
+
+      String userId = getCallingCognitoUsername(event);
+      String apiKey = apiKeysService.createApiKey(siteId, name, userId);
+
       return new ApiRequestHandlerResponse(SC_OK,
           new ApiMapResponse(Map.of("name", name, "apiKey", apiKey)));
     }

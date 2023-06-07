@@ -24,8 +24,10 @@
 package com.formkiq.aws.dynamodb;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -41,10 +43,20 @@ public class AttributeValueToDynamicObject
     DynamicObject o = new DynamicObject(new HashMap<>());
 
     for (Map.Entry<String, AttributeValue> e : map.entrySet()) {
-      String s = e.getValue().s();
-      String n = e.getValue().n();
-      String v = s == null && n != null ? n : s;
-      o.put(e.getKey(), v);
+
+      if (e.getValue().hasL()) {
+
+        List<String> values =
+            e.getValue().l().stream().map(s -> s.s()).collect(Collectors.toList());
+        o.put(e.getKey(), values);
+
+      } else {
+
+        String s = e.getValue().s();
+        String n = e.getValue().n();
+        String v = s == null && n != null ? n : s;
+        o.put(e.getKey(), v);
+      }
     }
 
     return o;

@@ -66,16 +66,17 @@ public class ApiKeysServiceDynamoDbTest {
   @Test
   public void testCreateApiKey01() throws Exception {
     // given
+    String userId = "joe";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       // when
-      String apiKey0 = this.service.createApiKey(siteId, "test1");
-      String apiKey1 = this.service.createApiKey(siteId, "test2");
+      String apiKey0 = this.service.createApiKey(siteId, "test1", userId);
+      String apiKey1 = this.service.createApiKey(siteId, "test2", userId);
 
       // then
       assertNotEquals(apiKey0, apiKey1);
 
-      List<DynamicObject> list = this.service.list(siteId);
+      List<DynamicObject> list = this.service.list();
       List<String> keys =
           list.stream().map(i -> i.getString("apiKey")).collect(Collectors.toList());
 
@@ -83,17 +84,17 @@ public class ApiKeysServiceDynamoDbTest {
       assertTrue(keys.contains(this.service.mask(apiKey0)));
       assertTrue(keys.contains(this.service.mask(apiKey1)));
 
-      assertFalse(this.service.get(siteId, apiKey0).isEmpty());
-      assertFalse(this.service.get(siteId, apiKey1).isEmpty());
-      assertTrue(this.service.get(siteId, UUID.randomUUID().toString()).isEmpty());
+      assertFalse(this.service.get(apiKey0).isEmpty());
+      assertFalse(this.service.get(apiKey1).isEmpty());
+      assertTrue(this.service.get(UUID.randomUUID().toString()).isEmpty());
 
       // when
-      this.service.deleteApiKey(siteId, this.service.mask(apiKey0));
-      this.service.deleteApiKey(siteId, this.service.mask(apiKey1));
+      this.service.deleteApiKey(this.service.mask(apiKey0));
+      this.service.deleteApiKey(this.service.mask(apiKey1));
 
       // then
-      assertTrue(this.service.get(siteId, apiKey0).isEmpty());
-      assertTrue(this.service.get(siteId, apiKey1).isEmpty());
+      assertTrue(this.service.get(apiKey0).isEmpty());
+      assertTrue(this.service.get(apiKey1).isEmpty());
     }
   }
 }

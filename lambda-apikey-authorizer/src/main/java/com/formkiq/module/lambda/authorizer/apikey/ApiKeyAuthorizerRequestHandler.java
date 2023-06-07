@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.lambda.authorizer.apikey;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -99,19 +98,6 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
   }
 
   @SuppressWarnings("unchecked")
-  private String getSiteId(final Map<String, Object> map) {
-
-    String siteId = DEFAULT_SITE_ID;
-
-    if (map.containsKey("queryStringParameters")) {
-      Map<String, String> queryParams = (Map<String, String>) map.get("queryStringParameters");
-      siteId = queryParams.containsKey("siteId") ? queryParams.get("siteId") : siteId;
-    }
-
-    return siteId;
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
@@ -128,15 +114,15 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     Map<String, Object> map = this.gson.fromJson(json, Map.class);
 
     String apiKey = getIdentitySource(map);
-    String siteId = getSiteId(map);
 
-    DynamicObject obj = apiKeys.get(siteId, apiKey);
+    DynamicObject obj = apiKeys.get(apiKey);
+    List<String> siteIds = obj.getStringList("siteIds");
     boolean isAuthorized = apiKey != null && apiKey.equals(obj.getOrDefault("apiKey", ""));
 
     String apiKeyName = (String) obj.getOrDefault("name", "");
-    String group = isAuthorized ? "[" + siteId + "]" : "[]";
+    String group = isAuthorized ? "[" + String.join(",", siteIds) + "]" : "[]";
 
-    log(logger, map, isAuthorized);
+    log(logger, map, isAuthorized, group);
     Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
         Map.of("apiKeyClaims", Map.of("cognito:groups", group, "cognito:username", apiKeyName)));
 
@@ -147,9 +133,8 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
 
   @SuppressWarnings("unchecked")
   private void log(final LambdaLogger logger, final Map<String, Object> map,
-      final boolean isAuthorized) {
+      final boolean isAuthorized, final String group) {
 
-    String siteId = getSiteId(map);
     Map<String, Object> requestContext =
         map.containsKey("requestContext") ? (Map<String, Object>) map.get("requestContext")
             : Collections.emptyMap();
@@ -161,7 +146,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
             + "\"routeKey\": \"%s\","
             + "\"protocol\": \"%s\",\"siteId\":\"%s\",\"isAuthorized\":\"%s\"}",
         map.get("requestId"), http.get("sourceIp"), requestContext.get("time"), http.get("method"),
-        map.get("routeKey"), requestContext.get("protocol"), siteId, String.valueOf(isAuthorized));
+        map.get("routeKey"), requestContext.get("protocol"), group, String.valueOf(isAuthorized));
 
     logger.log(s);
   }

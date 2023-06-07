@@ -38,34 +38,32 @@ public interface ApiKeysService {
    * 
    * @param siteId {@link String}
    * @param name {@link String}
+   * @param userId {@link String}
    * @return {@link String}
    */
-  String createApiKey(String siteId, String name);
+  String createApiKey(String siteId, String name, String userId);
 
   /**
    * Delete Api Key.
    * 
-   * @param siteId {@link String}
    * @param apiKey {@link String}
    */
-  void deleteApiKey(String siteId, String apiKey);
+  void deleteApiKey(String apiKey);
 
   /**
    * Get Api Key.
    * 
-   * @param siteId {@link String}
    * @param apiKey {@link String}
    * @return boolean
    */
-  DynamicObject get(String siteId, String apiKey);
+  DynamicObject get(String apiKey);
 
   /**
    * Get List of API Keys.
    * 
-   * @param siteId {@link String}
    * @return {@link List} {@link String}
    */
-  List<DynamicObject> list(String siteId);
+  List<DynamicObject> list();
 
   /**
    * Mask Api Key.

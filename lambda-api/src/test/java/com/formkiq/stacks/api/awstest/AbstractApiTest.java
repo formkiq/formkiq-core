@@ -241,7 +241,7 @@ public abstract class AbstractApiTest {
 
     String site = siteId != null ? siteId : DEFAULT_SITE_ID;
     if (!apiClient.containsKey(site)) {
-      String apiKey = apiKeysService.createApiKey(siteId, "My API Key");
+      String apiKey = apiKeysService.createApiKey(siteId, "My API Key", "testuser");
 
       FormKiqClientConnection connection = new FormKiqClientConnection(rootKeyUrl)
           .cognitoIdToken(apiKey).header("Origin", Arrays.asList("http://localhost"))
