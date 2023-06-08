@@ -1,6 +1,20 @@
 
 description = "DocumentStore Dynamodb"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 dependencies {
 
 	implementation project(':aws-dynamodb')
@@ -44,12 +58,10 @@ build.dependsOn createZip
 
 test {
   failFast = true
-  useJUnitPlatform()
-  exclude 'com/formkiq/stacks/dynamodb/awstest/**' 
+  useJUnitPlatform() 
 }
 
-task testaws(type: Test) {
-	outputs.upToDateWhen {false}
-    description = 'Runs AWS integration tests.'
-    include 'com/formkiq/stacks/dynamodb/awstest/**'
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
 }

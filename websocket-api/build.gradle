@@ -1,6 +1,20 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 description = "FormKiQ Core - WebSocket"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 def getCmd() {
     String os = System.getProperty("os.name").toLowerCase()
     return os.contains("win") ? "cmd" : "bash"
@@ -30,14 +44,12 @@ dependencies {
 }
 
 test {
-  failFast = true
-  exclude 'com/formkiq/stacks/websocket/awstest/**' 
+  failFast = true 
 }
 
-task testaws(type: Test) {
-  description = 'Runs AWS integration tests.'
-  outputs.upToDateWhen {false}
-  include 'com/formkiq/stacks/websocket/awstest/**'    
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
 }
 
 task npmInstall {

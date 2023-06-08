@@ -2,6 +2,20 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 description = "FormKiQ Core - Email Notify Module"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 def getCmd() {
     String os = System.getProperty("os.name").toLowerCase()
     return os.contains("win") ? "cmd" : "bash"
@@ -15,23 +29,23 @@ def getCmdParam() {
 jar.enabled = false
 
 dependencies {
+	testImplementation project(':aws-cognito')
     testImplementation project(':aws-s3')
     testImplementation project(':aws-sqs')
     testImplementation project(':aws-ssm')
     testImplementation project(':aws-sns')
     testImplementation group: 'junit', name: 'junit', version:'4.+'
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.10.0'
 }
 
 test {
-  failFast = true
-  exclude 'com/formkiq/stacks/module/emailnotify/awstest/**' 
+  failFast = true 
 }
 
-task testaws(type: Test) {
-  description = 'Runs AWS integration tests.'
-  outputs.upToDateWhen {false}
-  include 'com/formkiq/stacks/module/emailnotify/awstest/**'    
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
 }
 
 task npmInstall {

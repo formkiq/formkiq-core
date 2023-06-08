@@ -12,3 +12,4 @@ node_modules
 *.tmp
 !console/src/test/resources/test.zip
 websocket-api/src/coverage
+.settings

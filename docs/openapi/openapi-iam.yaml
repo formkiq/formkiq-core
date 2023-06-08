@@ -3454,6 +3454,12 @@
                 apiKey:
                   type: string
                   description: API Key value
+                userId:
+                  type: string
+                siteIds:
+                  type: array
+                  items:
+                    type: string
                 insertedDate:
                   type: string
                   format: date-time

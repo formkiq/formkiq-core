@@ -58,13 +58,13 @@ public class ChatGptRequestTest extends AbstractApiTest {
   public static void beforeClass() throws IOException {
     AbstractApiTest.beforeClass();
 
-    if (System.getProperty("chatGptApiKey") == null) {
+    if (System.getProperty("testchatgptapikey") == null) {
       throw new IOException("key not set");
     }
 
     FormKiqClientV1 client = getFormKiqClients(null).get(0);
     Configuration config = new Configuration();
-    config.chatGptApiKey(System.getProperty("chatGptApiKey"));
+    config.chatGptApiKey(System.getProperty("testchatgptapikey"));
     try {
       client.updateConfiguration(new UpdateConfigurationRequest().config(config));
     } catch (InterruptedException e) {
@@ -107,6 +107,7 @@ public class ChatGptRequestTest extends AbstractApiTest {
         assertTrue(
             tags.tags().stream().filter(r -> r.key().equals("untagged")).findFirst().isEmpty());
 
+        tags.tags().forEach(t -> System.out.println("ADS: " + t.key() + " " + t.value()));
         assertTrue(tags.tags().stream().filter(r -> r.key().toLowerCase().equals("person"))
             .findFirst().isPresent());
       }

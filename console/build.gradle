@@ -1,6 +1,20 @@
 	
 description = "FormKiQ Core - Console"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 dependencies {
 
 	implementation project(':aws-s3')
@@ -47,14 +61,12 @@ task buildUnzip(type: Copy) {
 
 test {
   failFast = true
-  exclude 'com/formkiq/stacks/console/awstest/**'
   useJUnitPlatform()
 }
 
-task testaws(type: Test) {
-  description = 'Runs AWS integration tests.'
-  include 'com/formkiq/stacks/console/awstest/**'
-  outputs.upToDateWhen {false}    
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
 }
 
 task assembleTemplate {

@@ -71,6 +71,7 @@ subprojects {
     systemProperties['testregion'] = project.getProperty('testregion')
     systemProperties['testprofile'] = project.getProperty('testprofile')
     systemProperties['testappenvironment'] = project.getProperty('testappenvironment')
+    systemProperties['testchatgptapikey'] = project.getProperty('testchatgptapikey')
   }
 
   spotbugs {
@@ -112,12 +113,6 @@ subprojects {
 }
 
 description = "FormKiQ Core"
-
-task testaws {
-  dependsOn subprojects.collect { subproject ->
-    subproject.tasks.matching { it.name == "testaws" }
-  }
-}
 
 task buildDistribution(type: Copy) {
 	dependsOn subprojects.build

@@ -1,6 +1,20 @@
 
 description = "Lambda API to Dynamodb"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 def getCmd() {
     String os = System.getProperty("os.name").toLowerCase()
     return os.contains("win") ? "cmd" : "bash"
@@ -74,14 +88,12 @@ nativeImage {
 
 test {
   failFast = true
-  useJUnitPlatform()
-  exclude 'com/formkiq/stacks/api/awstest/**'  
+  useJUnitPlatform()  
 }
 
-task testaws(type: Test) {
-  description = 'Runs AWS integration tests.'
-  include 'com/formkiq/stacks/api/awstest/**'
-  outputs.upToDateWhen {false}
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
 }
 
 task buildZip(type: Zip) {
