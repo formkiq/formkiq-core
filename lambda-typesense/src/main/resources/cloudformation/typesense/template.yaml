@@ -124,7 +124,6 @@ Resources:
       CodeUri: ./formkiq-module-lambda-typesense-graalvm.zip
       Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
-      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           APP_ENVIRONMENT: 
