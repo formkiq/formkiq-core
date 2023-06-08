@@ -252,12 +252,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
   @Override
   public String getS3Key(final String siteId, final String documentId, final String jobId) {
-    String s3key = SiteIdKeyGenerator.createS3Key(siteId, documentId) + "/";
-
-    if (jobId != null) {
-      s3key += jobId + "/";
-    }
-
+    String s3key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
     return s3key;
   }
 

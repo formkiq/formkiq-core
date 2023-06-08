@@ -532,6 +532,8 @@ Resources:
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - ApiGateway
     Condition: CreateResources
     Properties:
       ApiId: 

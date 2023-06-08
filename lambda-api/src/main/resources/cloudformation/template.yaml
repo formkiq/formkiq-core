@@ -255,6 +255,8 @@ Resources:
       
   DocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - DocumentsHttpApi
     Properties:
       ApiId: 
         Ref: DocumentsHttpApi
@@ -283,6 +285,8 @@ Resources:
 
   IamDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - DocumentsIamApi
     Properties:
       ApiId: 
         Ref: DocumentsIamApi
@@ -311,6 +315,8 @@ Resources:
 
   KeyDocumentsStage:
     Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - DocumentsKeyApi
     Properties:
       ApiId: 
         Ref: DocumentsKeyApi

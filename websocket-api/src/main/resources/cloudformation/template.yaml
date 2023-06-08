@@ -108,6 +108,8 @@ Resources:
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - WebSocketApi
     Properties:
       StageName: 
         Ref: StageName

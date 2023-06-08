@@ -118,8 +118,7 @@ public class DocumentTaggingAction implements DocumentAction {
       text = text.substring(0, CHAT_GPT_MAX_LENGTH);
     }
 
-    String prompt = "Extract the tags " + tags
-        + " from the text below and return in a JSON key/list.\n\n" + text;
+    String prompt = "Extract the tags " + tags + " from the text below in JSON format.\n\n" + text;
 
     return prompt;
   }
