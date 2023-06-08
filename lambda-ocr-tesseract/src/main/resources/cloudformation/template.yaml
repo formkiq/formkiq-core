@@ -64,7 +64,6 @@ Resources:
       CodeUri: ./formkiq-module-lambda-ocr-tesseract.zip
       Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
-      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           APP_ENVIRONMENT: 
