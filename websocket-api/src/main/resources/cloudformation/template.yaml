@@ -98,13 +98,6 @@ Resources:
     Properties:
       ApiId: 
         Ref: WebSocketApi
-
-  StageAccessLogs:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 90
-      LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIWebsocketAccessLogs"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
@@ -118,12 +111,6 @@ Resources:
         Ref: Deployment
       ApiId: 
         Ref: WebSocketApi
-      AccessLogSettings:
-        DestinationArn: 
-          Fn::GetAtt: 
-          - StageAccessLogs
-          - Arn
-        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
