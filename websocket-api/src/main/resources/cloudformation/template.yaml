@@ -205,6 +205,8 @@ Resources:
       
   ApiFunction:
     Type: AWS::Serverless::Function
+    DependsOn:
+    - ApiFunctionRole
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
