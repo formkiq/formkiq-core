@@ -47,6 +47,7 @@ test {
 task integrationTest(type: Test) {
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
+    useJUnitPlatform()
 }
 
 task npmInstall {
