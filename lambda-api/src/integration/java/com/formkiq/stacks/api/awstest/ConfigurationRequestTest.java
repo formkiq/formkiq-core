@@ -23,12 +23,14 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Configuration;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
@@ -50,7 +52,8 @@ public class ConfigurationRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testConfigs01() throws Exception {
 
     // given
@@ -83,7 +86,8 @@ public class ConfigurationRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testConfigs02() throws Exception {
     // given
     AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);

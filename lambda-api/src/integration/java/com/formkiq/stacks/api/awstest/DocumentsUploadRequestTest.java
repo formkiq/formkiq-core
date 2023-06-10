@@ -25,8 +25,8 @@ package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -37,9 +37,11 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -75,7 +77,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   /**
    * After Class.
    */
-  @AfterClass
+  @AfterAll
   public static void afterClass() {
     getConfigService().delete(SITEID0);
     getConfigService().delete(SITEID1);
@@ -109,7 +111,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   /**
    * before.
    */
-  @Before
+  @BeforeEach
   public void before() {
     getConfigService().delete(SITEID0);
     getConfigService().delete(SITEID1);
@@ -120,7 +122,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
@@ -160,7 +163,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet02() throws Exception {
     // given
     getConfigService().save(SITEID0, new DynamicObject(Map.of(MAX_DOCUMENT_SIZE_BYTES, "5")));
@@ -184,7 +188,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet03() throws Exception {
     // given
     final int contentLength = 100;
@@ -210,7 +215,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet04() throws Exception {
     // given
     final int contentLength = 5;
@@ -236,7 +242,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet05() throws Exception {
     // given
     getConfigService().save(SITEID1, new DynamicObject(Map.of(MAX_DOCUMENTS, "1")));
@@ -265,7 +272,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
@@ -282,7 +290,8 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPost01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given

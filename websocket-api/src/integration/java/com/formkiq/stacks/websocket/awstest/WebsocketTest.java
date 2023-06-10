@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.websocket.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,8 +37,10 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.Map;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -131,7 +133,7 @@ public class WebsocketTest {
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException, URISyntaxException {
 
     Region awsregion = Region.of(System.getProperty("testregion"));
@@ -277,7 +279,8 @@ public class WebsocketTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TIMEOUT)
   public void testConnectValidAuthentication01() throws Exception {
 
     for (Boolean useHeader : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
@@ -344,7 +347,8 @@ public class WebsocketTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TIMEOUT)
   public void testWebNotify01() throws Exception {
     // given
     final int sleep = 500;

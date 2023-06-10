@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

@@ -23,18 +23,20 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.HttpService;
 import com.formkiq.stacks.client.HttpServiceJava;
@@ -74,7 +76,8 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       assertEquals(STATUS_NO_CONTENT, client.optionsWebhooks().statusCode());
@@ -88,7 +91,8 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPublicWebhooks01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
@@ -136,7 +140,8 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPublicWebhooks02() throws Exception {
     // given
     String urlpath = getRootHttpUrl() + "/public/webhooks";
@@ -166,7 +171,8 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPublicWebhooks03() throws Exception {
     // given
     String urlpath = getRootHttpUrl() + "/public/webhooks/asdffgdfg";
@@ -196,7 +202,8 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPublicWebhooks04() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given

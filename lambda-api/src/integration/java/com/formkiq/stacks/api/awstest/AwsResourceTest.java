@@ -23,10 +23,11 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
@@ -40,7 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -65,7 +67,8 @@ public class AwsResourceTest extends AbstractApiTest {
   /**
    * Test Having Admin add new user to group.
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAdminAddUserToGroup() {
     // given
     String email = UUID.randomUUID() + "@formkiq.com";
@@ -99,7 +102,8 @@ public class AwsResourceTest extends AbstractApiTest {
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testApiDocuments01() throws IOException, URISyntaxException, InterruptedException {
     // given
     final int year = 2019;
@@ -132,7 +136,8 @@ public class AwsResourceTest extends AbstractApiTest {
    * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPresignedUrl01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
@@ -175,7 +180,8 @@ public class AwsResourceTest extends AbstractApiTest {
   /**
    * Test SSM Parameter Store.
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testSsmParameters() {
     assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl")
         .endsWith(getAwsRegion() + ".amazonaws.com"));
@@ -194,24 +200,39 @@ public class AwsResourceTest extends AbstractApiTest {
   /**
    * Test Having User try and add itself to the admin group. Should fail.
    */
-  @Test(expected = NotAuthorizedException.class)
+  @Test
   public void testUserAddSelfToAdmin() {
-    getAdminCognitoService().getCredentials(login(USER_EMAIL, USER_PASSWORD));
+    try {
+      getAdminCognitoService().getCredentials(login(USER_EMAIL, USER_PASSWORD));
+      fail();
+    } catch (NotAuthorizedException e) {
+      assertTrue(true);
+    }
   }
 
   /**
    * Test Having User try and add itself to the admin group. Should fail.
    */
-  @Test(expected = NotAuthorizedException.class)
+  @Test
   public void testFinanceUserAddSelfToAdmin() {
-    getAdminCognitoService().getCredentials(login(FINANCE_EMAIL, USER_PASSWORD));
+    try {
+      getAdminCognitoService().getCredentials(login(FINANCE_EMAIL, USER_PASSWORD));
+      fail();
+    } catch (NotAuthorizedException e) {
+      assertTrue(true);
+    }
   }
 
   /**
    * Test Having User try and add itself to the admin group. Should fail.
    */
-  @Test(expected = NotAuthorizedException.class)
+  @Test
   public void testReadonlyUserAddSelfToAdmin() {
-    getAdminCognitoService().getCredentials(login(READONLY_EMAIL, USER_PASSWORD));
+    try {
+      getAdminCognitoService().getCredentials(login(READONLY_EMAIL, USER_PASSWORD));
+      fail();
+    } catch (NotAuthorizedException e) {
+      assertTrue(true);
+    }
   }
 }

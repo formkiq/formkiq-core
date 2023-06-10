@@ -23,9 +23,9 @@
  */
 package com.formkiq.stacks.lambda.s3.awstest;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.IOException;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -94,7 +94,7 @@ public abstract class AbstractAwsTest {
    * 
    * @throws IOException IOException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException {
 
     awsregion = Region.of(System.getProperty("testregion"));

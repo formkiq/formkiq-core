@@ -23,16 +23,17 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Document;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
@@ -57,7 +58,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsRawSearch01() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
@@ -79,7 +81,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch01() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -105,7 +108,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch02() throws Exception {
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
@@ -131,7 +135,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch03() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -157,7 +162,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch04() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -179,7 +185,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch05() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -223,7 +230,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch06() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -264,7 +272,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch07() throws Exception {
     // given
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -304,7 +313,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch08() throws Exception {
     // given
     String siteId = null;

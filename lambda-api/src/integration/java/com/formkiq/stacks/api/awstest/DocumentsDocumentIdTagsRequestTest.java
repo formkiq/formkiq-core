@@ -23,17 +23,19 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
@@ -85,7 +87,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags01() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -137,7 +140,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags02() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -190,7 +194,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags03() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -267,7 +272,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags04() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -345,7 +351,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags05() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
@@ -406,7 +413,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags06() throws Exception {
 
     for (FormKiqClientV1 client : getFormKiqClients(null)) {

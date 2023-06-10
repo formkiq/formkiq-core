@@ -23,8 +23,9 @@
  */
 package com.formkiq.stacks.console;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -33,15 +34,18 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -74,7 +78,7 @@ public class ConsoleInstallHandlerTest {
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -108,7 +112,7 @@ public class ConsoleInstallHandlerTest {
   private LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
 
   /** before. */
-  @Before
+  @BeforeEach
   public void before() {
 
     Map<String, String> map = new HashMap<>();

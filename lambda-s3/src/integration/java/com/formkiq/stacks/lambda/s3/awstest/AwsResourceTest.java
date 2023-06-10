@@ -25,11 +25,11 @@ package com.formkiq.stacks.lambda.s3.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -48,8 +48,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -186,7 +188,8 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT * 2)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT * 2)
   public void testAddDeleteFile01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();
@@ -234,7 +237,8 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddDeleteFile02() throws Exception {
     // given
     final Long contentLength = Long.valueOf(36);
@@ -270,7 +274,8 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddDeleteFile03() throws Exception {
     // given
     final int statusCode = 200;
@@ -323,7 +328,8 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddDeleteFile04() throws Exception {
     // given
     String key = UUID.randomUUID().toString();
@@ -459,7 +465,8 @@ public class AwsResourceTest extends AbstractAwsTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testUpdateStagingFile01() throws Exception {
     // given
     final String siteId = DEFAULT_SITE_ID;

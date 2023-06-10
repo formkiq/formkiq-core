@@ -25,8 +25,8 @@ package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,7 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -170,7 +170,7 @@ public abstract class AbstractApiTest {
    * 
    * @throws IOException IOException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException {
 
     awsregion = Region.of(System.getProperty("testregion"));

@@ -32,8 +32,10 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentAction;
 import com.formkiq.stacks.client.models.Configuration;
@@ -54,7 +56,7 @@ public class ChatGptRequestTest extends AbstractApiTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 120000;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException {
     AbstractApiTest.beforeClass();
 
@@ -77,7 +79,8 @@ public class ChatGptRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TEST_TIMEOUT)
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testOcrAndChatGpt01() throws Exception {
 
     // given
@@ -107,7 +110,6 @@ public class ChatGptRequestTest extends AbstractApiTest {
         assertTrue(
             tags.tags().stream().filter(r -> r.key().equals("untagged")).findFirst().isEmpty());
 
-        tags.tags().forEach(t -> System.out.println("ADS: " + t.key() + " " + t.value()));
         assertTrue(tags.tags().stream().filter(r -> r.key().toLowerCase().equals("person"))
             .findFirst().isPresent());
       }

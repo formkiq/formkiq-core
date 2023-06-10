@@ -23,17 +23,19 @@
  */
 package com.formkiq.stacks.module.emailnotify.awstest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
@@ -106,7 +108,7 @@ public class EmailSendingTest {
    * 
    * @throws IOException IOException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException {
 
     Region awsregion = Region.of(System.getProperty("testregion"));
@@ -177,8 +179,9 @@ public class EmailSendingTest {
    * 
    * @throws Exception Exception
    */
-  @Test(timeout = TIMEOUT)
-  @Ignore
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TIMEOUT)
+  @Disabled
   public void testSendingEmail01() throws Exception {
     // given
     String key = UUID.randomUUID().toString();
