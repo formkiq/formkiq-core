@@ -285,6 +285,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return this.gson.toJson(Map.of("documents", documents));
   }
 
+  private void debug(final LambdaLogger logger, final String siteId, final DocumentItem item) {
+    if (isDebug()) {
+      String s = String.format(
+          "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
+              + "\"s3Version\": \"%s\",\"userId\": %s," + "\"contentType\": \"%s\"}",
+          siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
+          item.getContentType());
+
+      logger.log(s);
+    }
+  }
+
   private int getCharacterMax(final Action action) {
     Map<String, String> parameters = notNull(action.parameters());
     return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
@@ -358,11 +370,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
-    // TODO log request
-
     LambdaLogger logger = context.getLogger();
 
-    if ("true".equals(System.getenv("DEBUG"))) {
+    if (isDebug()) {
       String json = this.gson.toJson(map);
       logger.log(json);
     }
@@ -378,6 +388,30 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     return null;
   }
 
+  private boolean isDebug() {
+    return "true".equals(System.getenv("DEBUG"));
+  }
+
+  /**
+   * Log Start of {@link Action}.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param type {@link String}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   */
+  private void logAction(final LambdaLogger logger, final String type, final String siteId,
+      final String documentId, final Action action) {
+
+    String s = String.format(
+        "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"action\":\"%s\","
+            + "\"userId\":\"%s\",\"parameters\": \"%s\"}",
+        type, siteId, documentId, action.type(), action.userId(), action.parameters());
+
+    logger.log(s);
+  }
+
   /**
    * Process Action.
    * 
@@ -391,7 +425,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void processAction(final LambdaLogger logger, final String siteId,
       final String documentId, final Action action) throws IOException, InterruptedException {
 
-    logger.log(String.format("processing action %s", action.type()));
+    logAction(logger, "action start", siteId, documentId, action);
 
     if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
 
@@ -401,6 +435,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
           action.type(), ActionStatus.COMPLETE);
 
+      action.status(ActionStatus.COMPLETE);
       this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
 
     } else if (ActionType.OCR.equals(action.type())) {
@@ -419,6 +454,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       ActionStatus status = ActionStatus.COMPLETE;
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
+      debug(logger, siteId, item);
 
       DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
       List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
@@ -440,6 +476,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
       }
 
+      action.status(status);
+
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
       SetDocumentAntivirusRequest req =
@@ -451,7 +489,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       sendWebhook(siteId, documentId, action);
     }
 
-    logger.log(String.format("Updating Action Status to %s", action.status()));
+    logAction(logger, "action complete", siteId, documentId, action);
   }
 
   /**
@@ -484,6 +522,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
 
         try {
+
           processAction(logger, siteId, documentId, action);
 
         } catch (Exception e) {
@@ -580,6 +619,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
             ActionType.WEBHOOK, ActionStatus.COMPLETE);
 
         this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+
+        action.status(ActionStatus.COMPLETE);
 
       } else {
         throw new IOException(url + " response status code " + statusCode);

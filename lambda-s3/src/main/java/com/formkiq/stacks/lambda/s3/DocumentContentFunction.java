@@ -97,11 +97,8 @@ public class DocumentContentFunction {
       PresignGetUrlConfig config = new PresignGetUrlConfig()
           .contentDispositionByPath(item.getPath(), false).contentType(item.getContentType());
 
-      String bucket =
-          MimeType.isPlainText(item.getContentType()) ? this.documentsBucket : this.ocrBucket;
-
-      String url =
-          this.s3Service.presignGetUrl(bucket, s3Key, Duration.ofHours(1), null, config).toString();
+      String url = this.s3Service
+          .presignGetUrl(this.documentsBucket, s3Key, Duration.ofHours(1), null, config).toString();
       urls = Arrays.asList(url);
 
     } else {
