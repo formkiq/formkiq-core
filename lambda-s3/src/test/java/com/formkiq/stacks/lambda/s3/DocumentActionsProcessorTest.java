@@ -163,8 +163,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
 
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/DocumentsS3Bucket", BUCKET_NAME);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/s3/OcrBucket", BUCKET_NAME);
 
     String typeSenseHost = "http://localhost:" + TypeSenseExtension.getMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
@@ -205,6 +203,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     env.put("MODULE_" + module, "true");
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);

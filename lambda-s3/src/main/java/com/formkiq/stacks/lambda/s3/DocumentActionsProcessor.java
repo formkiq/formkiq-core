@@ -128,8 +128,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private ActionsService actionsService;
   /** {@link DynamoDbService}. */
   private DynamoDbService dbService;
-  /** S3 Documents Bucket. */
-  private String documentsBucket;
   /** {@link DocumentService}. */
   private DocumentService documentService;
   /** IAM Documents Url. */
@@ -220,14 +218,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
-    this.documentsBucket =
-        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/DocumentsS3Bucket");
-    String ocrBucket = ssmService.getParameterValue("/formkiq/" + appEnvironment + "/s3/OcrBucket");
-
-    Map<String, String> newmap = new HashMap<>(map);
-    newmap.put("DOCUMENTS_S3_BUCKET", ocrBucket);
-    newmap.put("OCR_S3_BUCKET", this.documentsBucket);
-    this.serviceCache.environment(newmap);
 
     this.fkqConnection = new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
 
@@ -361,11 +351,13 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @return {@link URL}
    */
   private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
+
+    String documentsBucket = this.serviceCache.environment("DOCUMENTS_S3_BUCKET");
     Duration duration = Duration.ofDays(1);
     PresignGetUrlConfig config =
         new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
     String s3key = createS3Key(siteId, documentId);
-    return this.s3Service.presignGetUrl(this.documentsBucket, s3key, duration, null, config);
+    return this.s3Service.presignGetUrl(documentsBucket, s3key, duration, null, config);
   }
 
   @SuppressWarnings("unchecked")
