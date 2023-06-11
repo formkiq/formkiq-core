@@ -290,7 +290,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (isDebug()) {
       String s = String.format(
           "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
-              + "\"s3Version\": \"%s\",\"userId\": %s," + "\"contentType\": \"%s\"}",
+              + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
           siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
           item.getContentType());
 
@@ -407,7 +407,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     String s = String.format(
         "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"actionType\":\"%s\","
-            + "\"actionType\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
+            + "\"actionStatus\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
         type, siteId, documentId, action.type(), action.status(), action.userId(),
         action.parameters());
 
