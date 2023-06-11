@@ -60,6 +60,7 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -458,6 +459,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentItem item = this.documentService.findDocument(siteId, documentId);
       debug(logger, siteId, item);
 
+      logger.log("contenttype: " + item.getContentType());
+      logger.log("MIMETYPE: " + MimeType.isPlainText(item.getContentType()));
       DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
       List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
 
