@@ -241,6 +241,8 @@ Resources:
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENTS_TABLE: 
             Ref: Documents
           APP_ENVIRONMENT: 
