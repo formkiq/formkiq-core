@@ -193,7 +193,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     AwsServiceCache.register(FormKiqClientV1.class,
         new FormKiQClientV1Extension(awsRegion, awsCredentials));
 
-    this.serviceCache = new AwsServiceCache().environment(map);
+    this.serviceCache =
+        new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
     this.s3Service = this.serviceCache.getExtension(S3Service.class);
     this.documentService = this.serviceCache.getExtension(DocumentService.class);
@@ -389,7 +390,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   }
 
   private boolean isDebug() {
-    return "true".equals(System.getenv("DEBUG"));
+    return this.serviceCache.debug();
   }
 
   /**
@@ -405,9 +406,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final String documentId, final Action action) {
 
     String s = String.format(
-        "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"action\":\"%s\","
-            + "\"userId\":\"%s\",\"parameters\": \"%s\"}",
-        type, siteId, documentId, action.type(), action.userId(), action.parameters());
+        "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"actionType\":\"%s\","
+            + "\"actionType\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
+        type, siteId, documentId, action.type(), action.status(), action.userId(),
+        action.parameters());
 
     logger.log(s);
   }
@@ -515,9 +517,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         Action action = o.get();
         ActionStatus status = ActionStatus.RUNNING;
-
-        logger.log(String.format("Processing SiteId %s Document %s on action %s", siteId,
-            documentId, action.type()));
 
         this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
 
