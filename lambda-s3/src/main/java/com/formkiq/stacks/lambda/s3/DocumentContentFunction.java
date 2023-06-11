@@ -59,8 +59,6 @@ public class DocumentContentFunction {
   private FormKiqClientV1 formkiqClient;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-  /** Ocr Bucket. */
-  private String ocrBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
 
@@ -73,7 +71,6 @@ public class DocumentContentFunction {
     this.s3Service = serviceCache.getExtension(S3Service.class);
     this.formkiqClient = serviceCache.getExtension(FormKiqClientV1.class);
     this.documentsBucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
-    this.ocrBucket = serviceCache.environment("OCR_S3_BUCKET");
   }
 
   /**
