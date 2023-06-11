@@ -461,6 +461,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       logger.log("contenttype: " + item.getContentType());
       logger.log("MIMETYPE: " + MimeType.isPlainText(item.getContentType()));
+      logger.log("DOCUMENTS_S3_BUCKET: " + this.serviceCache.environment("DOCUMENTS_S3_BUCKET"));
       DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
       List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
 
