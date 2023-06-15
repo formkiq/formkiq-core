@@ -192,8 +192,7 @@ public interface ApiGatewayRequestEventUtil {
    * @param event {@link ApiGatewayRequestEvent}.
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
-  default String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
+  static String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
 
     String username = null;
 
@@ -217,20 +216,18 @@ public interface ApiGatewayRequestEventUtil {
         }
       }
 
-      if (authorizer != null && authorizer.containsKey("claims")) {
+      Map<String, Object> claims = ApiAuthorizer.getAuthorizerClaims(authorizer);
 
-        Map<String, Object> claims = (Map<String, Object>) authorizer.get("claims");
-        String u = getCallingCognitoUsernameFromClaims(claims);
-        if (u != null) {
-          username = u;
-        }
+      String u = getCallingCognitoUsernameFromClaims(claims);
+      if (u != null) {
+        username = u;
       }
     }
 
     return username;
   }
 
-  private String getCallingCognitoUsernameFromClaims(Map<String, Object> claims) {
+  private static String getCallingCognitoUsernameFromClaims(final Map<String, Object> claims) {
     String username = null;
     if (claims.containsKey("email")) {
       username = claims.get("email").toString();

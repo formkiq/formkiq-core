@@ -34,11 +34,11 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
@@ -569,7 +569,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Delete Document Request - core.
+   * Delete Document Request - S3 File exists (deleting version document).
    *
    * @throws Exception Exception
    */
@@ -602,6 +602,42 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      assertNotNull(item);
+    }
+  }
+
+  /**
+   * Delete Document Request - S3 File not exists. S3 Main document file was deleted.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  public void testHandleRequest04() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      this.logger.reset();
+
+      String key = createDatabaseKey(siteId, BUCKET_KEY);
+      final Map<String, Object> map =
+          loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      doc.setInsertedDate(new Date());
+      doc.setDocumentId(BUCKET_KEY);
+      doc.setPath("test.txt");
+
+      DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
+          "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
+      doc.put("tags", Arrays.asList(tag));
+
+      service.saveDocumentItemWithTag(siteId, doc);
+
+      // when
+      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
+
+      // then
       assertNull(item);
       assertPublishSnsMessage(siteId, sqsDocumentEventUrl, DELETE, false, true);
     }
@@ -614,7 +650,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest04() throws Exception {
+  public void testHandleRequest05() throws Exception {
 
     String documentId = UUID.randomUUID().toString();
 
@@ -683,7 +719,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest05() throws Exception {
+  public void testHandleRequest06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       this.logger.reset();
@@ -735,7 +771,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest06() throws Exception {
+  public void testHandleRequest07() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -770,7 +806,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest07() throws Exception {
+  public void testHandleRequest08() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -806,7 +842,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest08() throws Exception {
+  public void testHandleRequest09() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -842,7 +878,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest09() throws Exception {
+  public void testHandleRequest10() throws Exception {
     String ttl = "1612061365";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -892,7 +928,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest10() throws Exception {
+  public void testHandleRequest11() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -929,7 +965,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest11() throws Exception {
+  public void testHandleRequest12() throws Exception {
 
     createMockServer(DocumentsS3Update.SERVER_ERROR);
     this.modules = Arrays.asList("ocr", "fulltext");
@@ -968,7 +1004,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest12() throws Exception {
+  public void testHandleRequest13() throws Exception {
 
     createMockServer(OK);
     this.modules = Arrays.asList("ocr", "fulltext");
@@ -1002,7 +1038,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   @Test
   @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
-  public void testHandleRequest13() throws Exception {
+  public void testHandleRequest14() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

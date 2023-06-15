@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC "-//Puppy Crawl//DTD Import Control 1.1//EN" "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.module">
+
+	<subpackage name="ocr">
+
+		<allow pkg="java.io" />
+		<allow pkg="java.nio.charset" />
+		<allow pkg="java.time" />
+		<allow pkg="java.text" />
+
+		<allow pkg="java.util" />
+		<allow pkg="com.google.gson" />
+
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.aws.s3" />
+		<allow pkg="com.formkiq.aws.services.lambda" />
+		<allow pkg="com.formkiq.module.ocr" />
+		<allow pkg="com.formkiq.module.actions" />
+		<allow pkg="com.formkiq.stacks.dynamodb" />
+		<allow pkg="com.formkiq.graalvm.annotations" />
+		<allow pkg="com.formkiq.module.lambdaservices" />
+		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+		<allow pkg="software.amazon.awssdk.services.s3.model" />
+
+		<allow pkg="com.formkiq.aws.sqs" />
+		<allow pkg="com.formkiq.module.ocr.pdf" />
+		<allow pkg="com.itextpdf.kernel.pdf" />
+
+		<subpackage name="pdf">
+			<allow pkg="com.itextpdf.kernel.utils" />
+		</subpackage>
+	</subpackage>
+
+</import-control>

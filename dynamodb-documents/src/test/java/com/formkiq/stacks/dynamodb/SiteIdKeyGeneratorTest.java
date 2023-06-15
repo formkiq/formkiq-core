@@ -29,10 +29,10 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getDocumentId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 
 /**

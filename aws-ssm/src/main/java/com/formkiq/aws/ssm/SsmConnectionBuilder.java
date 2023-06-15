@@ -24,9 +24,12 @@
 package com.formkiq.aws.ssm;
 
 import java.net.URI;
+import com.amazonaws.xray.interceptors.TracingInterceptor;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration.Builder;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ssm.SsmClient;
@@ -46,12 +49,21 @@ public class SsmConnectionBuilder {
 
   /**
    * constructor.
+   * 
+   * @param enableAwsXray Enable Aws X-Ray
    */
-  public SsmConnectionBuilder() {
+  public SsmConnectionBuilder(final boolean enableAwsXray) {
     System.setProperty("software.amazon.awssdk.http.service.impl",
         "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService");
 
-    this.builder = SsmClient.builder().httpClientBuilder(UrlConnectionHttpClient.builder())
+    Builder clientConfig = ClientOverrideConfiguration.builder();
+
+    if (enableAwsXray) {
+      clientConfig.addExecutionInterceptor(new TracingInterceptor());
+    }
+
+    this.builder = SsmClient.builder().overrideConfiguration(clientConfig.build())
+        .httpClientBuilder(UrlConnectionHttpClient.builder())
         .credentialsProvider(EnvironmentVariableCredentialsProvider.create());
   }
 

@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: #@ "FormKiQ Core " + data.values.version or assert.fail("missing version")
-    
+        
 Parameters:
 
   AdminEmail:
@@ -497,7 +497,17 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-          
+
+  TesseractOcr:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreApi
+    Properties:
+      Location: ocr-tesseract/template.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+                    
 Outputs:
   AppEnvironment:
     Description: Unique Application Environment Identifier, IE dev/staging/prod
@@ -509,6 +519,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreApi
       - Outputs.DocumentsIamApiUrl
+  KeyApiUrl:
+    Description: "The URL for the API endpoint that uses API Key authorization"
+    Value: 
+      Fn::GetAtt: 
+      - CoreApi
+      - Outputs.DocumentsKeyApiUrl
   HttpApiUrl:
     Description: "The URL for the API endpoint that uses Cognito authorization"
     Value: 

@@ -105,7 +105,7 @@ Resources:
     Condition: CreateResources
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${TypesenseProcessor}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${TypesenseProcessor}"
       RetentionInDays: 90
       
   TypesenseProcessor:
@@ -122,13 +122,14 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./formkiq-module-lambda-typesense-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
-      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false  
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
           DOCUMENT_SYNC_TABLE: 
@@ -242,6 +243,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       
   TypesenseLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -525,10 +527,12 @@ Resources:
     Properties:
       RetentionInDays: 90
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/APITypeSenseAccessLogs"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APITypeSenseAccessLogs"
         
   Stage:
     Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - ApiGateway
     Condition: CreateResources
     Properties:
       ApiId: 

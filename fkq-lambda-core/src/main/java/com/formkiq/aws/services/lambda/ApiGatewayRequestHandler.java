@@ -81,9 +81,10 @@ public interface ApiGatewayRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param awsServices {@link AwsServiceCache}
+   * @throws Exception Exception
    */
   default void beforeDelete(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, AwsServiceCache awsServices) {
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
@@ -95,9 +96,10 @@ public interface ApiGatewayRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param awsServices {@link AwsServiceCache}
+   * @throws Exception Exception
    */
   default void beforeGet(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, AwsServiceCache awsServices) {
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
@@ -108,9 +110,10 @@ public interface ApiGatewayRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param awsServices {@link AwsServiceCache}
+   * @throws Exception Exception
    */
   default void beforeHead(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, AwsServiceCache awsServices) {
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
@@ -121,9 +124,10 @@ public interface ApiGatewayRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param awsServices {@link AwsServiceCache}
+   * @throws Exception Exception
    */
   default void beforePatch(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, AwsServiceCache awsServices) {
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
@@ -134,9 +138,10 @@ public interface ApiGatewayRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param awsServices {@link AwsServiceCache}
+   * @throws Exception Exception
    */
   default void beforePost(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, AwsServiceCache awsServices) {
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
 
@@ -147,9 +152,10 @@ public interface ApiGatewayRequestHandler {
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorizer {@link ApiAuthorizer}
    * @param awsServices {@link AwsServiceCache}
+   * @throws Exception Exception
    */
   default void beforePut(LambdaLogger logger, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, AwsServiceCache awsServices) {
+      ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
 

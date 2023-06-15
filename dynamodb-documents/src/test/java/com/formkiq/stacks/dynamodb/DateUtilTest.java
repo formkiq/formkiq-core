@@ -23,13 +23,14 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 /**
  * Unit Tests for {@link DateUtil}.
@@ -43,7 +44,7 @@ public class DateUtilTest {
   /**
    * before.
    */
-  @Before
+  @BeforeEach
   public void before() {
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
   }

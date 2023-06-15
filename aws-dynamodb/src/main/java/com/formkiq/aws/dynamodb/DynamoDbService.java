@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -59,6 +61,14 @@ public interface DynamoDbService {
    * @return {@link Map}
    */
   Map<String, AttributeValue> get(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Batch Get a number of Keys.
+   * 
+   * @param keys {@link Collection}
+   * @return {@link List}
+   */
+  List<Map<String, AttributeValue>> getBatch(Collection<Map<String, AttributeValue>> keys);
 
   /**
    * Put DynamoDb Record.

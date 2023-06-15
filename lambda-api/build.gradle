@@ -1,9 +1,33 @@
 
 description = "Lambda API to Dynamodb"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
+
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.2.0'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.3.0'
 	
 	implementation project(':fkq-lambda-services')
 	implementation project(':fkq-lambda-core')
@@ -17,33 +41,33 @@ dependencies {
 	implementation project(':dynamodb-documents')
 	implementation project(':actions')
 	implementation project(':typesense')
+	implementation project(':ocr')
 	implementation project(':http-sigv4')
 	
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     
     implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
-    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
-    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.10.0-SNAPSHOT'
+    testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.0'
 	testImplementation project(':aws-cognito')
 	testImplementation project(':aws-iam')
 	testImplementation project(':aws-sts')
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.19.2'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.19.2'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.20.33'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.20.33'
 	
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.1'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.370'
-	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.14.0'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.436'
+	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 
 compileJava {
@@ -63,14 +87,13 @@ nativeImage {
 
 test {
   failFast = true
-  useJUnitPlatform()
-  exclude 'com/formkiq/stacks/api/awstest/**'  
+  useJUnitPlatform()  
 }
 
-task testaws(type: Test) {
-  description = 'Runs AWS integration tests.'
-  include 'com/formkiq/stacks/api/awstest/**'
-  outputs.upToDateWhen {false}
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+    useJUnitPlatform()
 }
 
 task buildZip(type: Zip) {
@@ -97,7 +120,7 @@ task buildJava11Zip(type: Zip) {
 
 task assembleTemplate {
 	dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template-snippet.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml")
+	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-ocr.yaml", "src/main/resources/cloudformation/template-apikey.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-apikey.yaml")
 	outputs.dir("${buildDir}/distributions/formkiq-core")
 	
 	def randomtext = ('0'..'z').shuffled().take(10).join();
@@ -107,31 +130,44 @@ task assembleTemplate {
 	
 		copy {
 		  from layout.buildDirectory.file("${buildDir}/lambda-api-graalvm.zip")
+		  from layout.buildDirectory.file("${buildDir}/layer-tesseract-5.3.1.zip")
 	      into "${buildDir}/distributions/formkiq-core/sam/api"
 	    }
 
 		// build SAM distribution
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-snippet.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} --data-value version=${project.version} -f src/main/resources/cloudformation/template.yaml -f src/main/resources/cloudformation/template-ocr.yaml -f src/main/resources/cloudformation/template-apikey.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-apikey.yaml > ${buildDir}/distributions/formkiq-core/sam/api/template.yaml"
 		}
 	}
 }
 
+task downloadOpenApiGenerator(type: Download) {
+	dependsOn check
+    src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/6.6.0/openapi-generator-cli-6.6.0.jar"
+    dest buildDir
+    overwrite false
+}
+
 task assembleOpenApiTemplate {
-	inputs.files("src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml")
+    dependsOn downloadOpenApiGenerator
+	inputs.files("src/main/resources/cloudformation/resources.yaml", "src/main/resources/cloudformation/api.yaml", "src/main/resources/cloudformation/api-iam.yaml", "src/main/resources/cloudformation/api-variables.yaml", "src/main/resources/cloudformation/api-iam-variables.yaml", "src/main/resources/cloudformation/api-key-variables.yaml")
 	outputs.files("${project.projectDir}/openapi-jwt.yaml", "${project.projectDir}/openapi-iam.yaml")
 	
 	doLast {
 	
 		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api.yaml -f src/main/resources/cloudformation/api-variables.yaml > ${buildDir}/openapi-jwt.yaml"
 		}
 		
 		exec {
-			commandLine "bash", "-c", "ytt -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-iam.yaml -f src/main/resources/cloudformation/api-iam-variables.yaml > ${buildDir}/openapi-iam.yaml"
 		}
 		
-		for (fileName in ["openapi-jwt", "openapi-iam"]) {
+		exec {
+			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f src/main/resources/cloudformation/resources.yaml -f src/main/resources/cloudformation/api-apikey.yaml -f src/main/resources/cloudformation/api-key-variables.yaml > ${buildDir}/openapi-key.yaml"
+		}
+		
+		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
 		
 			def lines = new File("${buildDir}/${fileName}.yaml").readLines()
 			for (int i = 0; i < 5; i++) {
@@ -143,9 +179,16 @@ task assembleOpenApiTemplate {
 			def file = new File("${buildDir}/../../docs/openapi/${fileName}.yaml")
 			file.text = lines.join(System.lineSeparator())
 			
-			exec {
-				commandLine "bash", "-c", "openapi-generator generate -i ${buildDir}/../../docs/openapi/${fileName}.yaml -g asciidoc -o ${buildDir}/${fileName}"
-			}
+			javaexec { 
+    			main="-jar";
+    			args = [
+            		"${buildDir}/openapi-generator-cli-6.6.0.jar",
+            		"generate",
+            		"-i", "${buildDir}/../../docs/openapi/${fileName}.yaml",
+            		"-g", "asciidoc", 
+            		"-o", "${buildDir}/${fileName}"
+           		]
+  			} 
 		}
 	}
 }

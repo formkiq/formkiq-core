@@ -24,10 +24,10 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -210,7 +210,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
     assertEquals(documentId, resp.get("documentId"));
     assertEquals(userId, resp.get("userId"));
-    assertNotNull(documentId, resp.get("insertedDate"));
+    assertNotNull(resp.get("insertedDate"));
     assertEquals(DEFAULT_SITE_ID, resp.get("siteId"));
     assertNull(resp.get("next"));
     assertNull(resp.get("previous"));
@@ -264,7 +264,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     assertEquals(1, children.size());
 
     assertEquals(documentId1, children.get(0).get("documentId"));
-    assertNotNull(userId, children.get(0).get("userId"));
+    assertEquals(userId, children.get(0).get("userId"));
     assertNotNull(children.get(0).get("belongsToDocumentId"));
     assertNotNull(children.get(0).get("insertedDate"));
     assertNull(children.get(0).get("siteId"));

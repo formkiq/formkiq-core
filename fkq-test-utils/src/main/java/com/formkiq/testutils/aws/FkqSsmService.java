@@ -48,7 +48,8 @@ public class FkqSsmService implements SsmService {
    * @param awsRegion {@link Region}
    */
   public FkqSsmService(final String awsProfile, final Region awsRegion) {
-    this.ssmBuilder = new SsmConnectionBuilder().setCredentials(awsProfile).setRegion(awsRegion);
+    this.ssmBuilder =
+        new SsmConnectionBuilder(false).setCredentials(awsProfile).setRegion(awsRegion);
     this.service = new SsmServiceImpl(this.ssmBuilder);
   }
 

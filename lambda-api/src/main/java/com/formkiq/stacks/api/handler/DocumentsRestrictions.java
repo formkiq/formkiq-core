@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.services.lambda.services.ConfigService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ConfigService;
 
 /**
  * Interface for providing restrictions around Document.

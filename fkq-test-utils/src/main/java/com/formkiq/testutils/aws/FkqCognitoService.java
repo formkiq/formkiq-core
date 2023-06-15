@@ -51,6 +51,8 @@ public class FkqCognitoService {
   private String rootHttpUrl;
   /** FormKiQ IAM Api Url. */
   private String rootRestUrl;
+  /** FormKiQ Key Api Url. */
+  private String rootKeyUrl;
 
   /**
    * constructor.
@@ -71,6 +73,9 @@ public class FkqCognitoService {
 
     this.rootRestUrl =
         this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+
+    this.rootKeyUrl =
+        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsKeyUrl");
 
     String cognitoUserPoolId =
         this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolId");
@@ -123,6 +128,19 @@ public class FkqCognitoService {
   public FormKiqClientV1 getFormKiqClient(final AuthenticationResultType token) {
     FormKiqClientConnection connection = new FormKiqClientConnection(this.rootHttpUrl)
         .cognitoIdToken(token.idToken()).header("Origin", Arrays.asList("http://localhost"))
+        .header("Access-Control-Request-Method", Arrays.asList("GET"));
+    return new FormKiqClientV1(connection);
+  }
+
+  /**
+   * Get FormKiQ Key API Url.
+   * 
+   * @param apiKey {@link String}
+   * @return {@link FormKiqClientV1}
+   */
+  public FormKiqClientV1 getFormKiqClient(final String apiKey) {
+    FormKiqClientConnection connection = new FormKiqClientConnection(this.rootKeyUrl)
+        .cognitoIdToken(apiKey).header("Origin", Arrays.asList("http://localhost"))
         .header("Access-Control-Request-Method", Arrays.asList("GET"));
     return new FormKiqClientV1(connection);
   }

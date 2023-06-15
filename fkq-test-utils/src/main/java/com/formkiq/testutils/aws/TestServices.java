@@ -83,6 +83,8 @@ public final class TestServices {
   private static SsmConnectionBuilder ssmConnection;
   /** {@link String}. */
   public static final String STAGE_BUCKET_NAME = "stagebucket";
+  /** {@link String}. */
+  public static final String OCR_BUCKET_NAME = "ocrbucket";
 
   /**
    * Get Local Stack Endpoint.
@@ -146,7 +148,7 @@ public final class TestServices {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-      s3Connection = new S3ConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
+      s3Connection = new S3ConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
           .setEndpointOverride(getEndpoint(Service.S3, endpointOverride));
     }
 
@@ -167,7 +169,7 @@ public final class TestServices {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-      snsConnection = new SnsConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
+      snsConnection = new SnsConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
           .setEndpointOverride(getEndpoint(Service.SNS, endpointOverride));
     }
 
@@ -188,7 +190,7 @@ public final class TestServices {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-      sqsConnection = new SqsConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
+      sqsConnection = new SqsConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
           .setEndpointOverride(getEndpoint(Service.SQS, endpointOverride));
     }
 
@@ -260,7 +262,7 @@ public final class TestServices {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-      ssmConnection = new SsmConnectionBuilder().setCredentials(cred).setRegion(AWS_REGION)
+      ssmConnection = new SsmConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
           .setEndpointOverride(getEndpoint(Service.SSM, endpointOverride));
     }
 

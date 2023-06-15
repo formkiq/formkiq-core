@@ -6,6 +6,5 @@ dependencies {
 
 test {
   failFast = true
-  useJUnitPlatform()
-  exclude 'com/formkiq/module/lambdaservices/awstest/**'  
+  useJUnitPlatform()  
 }

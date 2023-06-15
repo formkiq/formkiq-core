@@ -22,6 +22,8 @@
 		<allow pkg="software.amazon.awssdk.services.s3" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		
+		<allow pkg="com.amazonaws.xray.interceptors" />
+		
 		<allow pkg="com.formkiq.module.lambdaservices" />
 	</subpackage>
 	

@@ -1,25 +1,38 @@
 
 description = "DocumentStore Dynamodb"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 dependencies {
 
 	implementation project(':aws-dynamodb')
 	implementation project(':fkq-plugins')
 	implementation project(':fkq-validation')
 	implementation project(':fkq-lambda-services')
-    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
 	testImplementation project(':aws-ssm')
 	testImplementation project(':fkq-test-utils')
-	testImplementation 'org.slf4j:slf4j-api:2.0.6'
+	testImplementation 'org.slf4j:slf4j-api:2.0.7'
 	testImplementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.1'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.370'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.436'
 	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'
@@ -44,12 +57,11 @@ build.dependsOn createZip
 
 test {
   failFast = true
-  useJUnitPlatform()
-  exclude 'com/formkiq/stacks/dynamodb/awstest/**' 
+  useJUnitPlatform() 
 }
 
-task testaws(type: Test) {
-	outputs.upToDateWhen {false}
-    description = 'Runs AWS integration tests.'
-    include 'com/formkiq/stacks/dynamodb/awstest/**'
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+    useJUnitPlatform()
 }

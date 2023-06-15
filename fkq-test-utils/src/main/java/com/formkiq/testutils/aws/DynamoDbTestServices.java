@@ -63,7 +63,7 @@ public final class DynamoDbTestServices {
       AwsCredentialsProvider cred =
           StaticCredentialsProvider.create(AwsBasicCredentials.create("ACCESSKEY", "SECRETKEY"));
 
-      dbConnection = new DynamoDbConnectionBuilder().setRegion(AWS_REGION).setCredentials(cred)
+      dbConnection = new DynamoDbConnectionBuilder(false).setRegion(AWS_REGION).setCredentials(cred)
           .setEndpointOverride(getEndpoint());
     }
 

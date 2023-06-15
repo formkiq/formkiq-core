@@ -23,17 +23,17 @@
  */
 package com.formkiq.aws.ssm;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
@@ -67,7 +67,7 @@ public class SsmServiceCacheTest {
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    */
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() throws IOException, URISyntaxException, InterruptedException {
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
@@ -76,7 +76,7 @@ public class SsmServiceCacheTest {
     localstack.start();
 
     SsmConnectionBuilder connection =
-        new SsmConnectionBuilder().setCredentials(cred).setRegion(Region.US_EAST_1)
+        new SsmConnectionBuilder(false).setCredentials(cred).setRegion(Region.US_EAST_1)
             .setEndpointOverride(new URI(localstack.getEndpointOverride(Service.SSM).toString()));
 
     cache = new SsmServiceCache(connection, 1, TimeUnit.SECONDS);
@@ -85,7 +85,7 @@ public class SsmServiceCacheTest {
   /**
    * AfterClass.
    */
-  @AfterClass
+  @AfterAll
   public static void afterClass() {
     localstack.stop();
   }

@@ -70,6 +70,12 @@ public interface DbKeys {
   /** Config Partition Key Prefix. */
   String PREFIX_CONFIG = "configs" + TAG_DELIMINATOR;
 
+  /** API Keys Partition Key Prefix. */
+  String PREFIX_API_KEYS = "apikeys" + TAG_DELIMINATOR;
+
+  /** API Key Partition Key Prefix. */
+  String PREFIX_API_KEY = "apikey" + TAG_DELIMINATOR;
+
   /** Documents Partition Key Prefix. */
   String PREFIX_DOCS = "docs" + TAG_DELIMINATOR;
 

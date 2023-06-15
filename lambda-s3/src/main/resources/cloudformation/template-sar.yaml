@@ -220,13 +220,14 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${DocumentActionsProcessor}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentActionsProcessor}"
       RetentionInDays: 90
       
   DocumentActionsProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
     - S3LambdaRolePolicy
+    - S3LambdaRole
     Properties:
       Handler: com.formkiq.stacks.lambda.s3.DocumentActionsProcessor
       Description: Lambda function to process Document Actions requests
@@ -236,14 +237,18 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENTS_TABLE: 
             Ref: Documents
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
-          DEBUG: false  
+          DEBUG: false
+          ENABLE_AWS_X_RAY: true  
           FormKiQType:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
@@ -251,6 +256,7 @@ Resources:
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          CHATGPT_API_COMPLETIONS_URL: "https://api.openai.com/v1/completions"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -276,13 +282,14 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${StagingS3Create}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${StagingS3Create}"
       RetentionInDays: 90
       
   StagingS3Create:
     Type: AWS::Serverless::Function
     DependsOn:
     - S3LambdaRolePolicy
+    - S3LambdaRole
     Properties:
       Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
       Description: Lambda function that processes document written to the Staging S3 Bucket
@@ -292,6 +299,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
@@ -302,6 +310,7 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
+          ENABLE_AWS_X_RAY: true
           FormKiQType:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
@@ -361,13 +370,14 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/${AWS::StackName}/${DocumentsS3Update}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${DocumentsS3Update}"
       RetentionInDays: 90
 
   DocumentsS3Update:
     Type: AWS::Serverless::Function
     DependsOn:
     - S3LambdaRolePolicy
+    - S3LambdaRole
     Properties:    
       Handler: com.formkiq.stacks.lambda.s3.DocumentsS3Update
       Description: Lambda function that processes document written to the Documents S3 Bucket
@@ -377,6 +387,7 @@ Resources:
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
+      Tracing: Active
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
@@ -385,6 +396,7 @@ Resources:
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
+          ENABLE_AWS_X_RAY: true
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
           FormKiQType:
@@ -602,6 +614,8 @@ Resources:
           Action:
           - sts:AssumeRole
       Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       
   S3LambdaRolePolicy: 
     Type: "AWS::IAM::Policy"

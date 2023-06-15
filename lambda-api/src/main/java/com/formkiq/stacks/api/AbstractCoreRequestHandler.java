@@ -38,8 +38,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
-import com.formkiq.aws.services.lambda.services.ConfigService;
-import com.formkiq.aws.services.lambda.services.ConfigServiceExtension;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
@@ -54,8 +52,12 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.ocr.DocumentOcrService;
+import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
+import com.formkiq.stacks.api.handler.ConfigurationRequestHandler;
+import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
@@ -95,6 +97,10 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
+import com.formkiq.stacks.dynamodb.ApiKeysService;
+import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentCountServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -141,6 +147,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new ConfigurationApiKeysRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentVersionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
@@ -189,18 +197,20 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
       final AwsCredentialsProvider credentialsProvider, final Map<String, URI> awsServiceEndpoints,
       final DocumentTagSchemaPlugin schemaEvents) {
 
-    DynamoDbConnectionBuilder db =
-        new DynamoDbConnectionBuilder().setRegion(region).setCredentials(credentialsProvider)
-            .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
+    final boolean enableAwsXray = "true".equals(map.get("ENABLE_AWS_X_RAY"));
+
+    DynamoDbConnectionBuilder db = new DynamoDbConnectionBuilder(enableAwsXray).setRegion(region)
+        .setCredentials(credentialsProvider)
+        .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(db));
 
-    SsmConnectionBuilder ssm = new SsmConnectionBuilder().setRegion(region)
+    SsmConnectionBuilder ssm = new SsmConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("ssm"));
     AwsServiceCache.register(SsmConnectionBuilder.class,
         new ClassServiceExtension<SsmConnectionBuilder>(ssm));
 
-    SqsConnectionBuilder sqs = new SqsConnectionBuilder().setRegion(region)
+    SqsConnectionBuilder sqs = new SqsConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sqs"));
     AwsServiceCache.register(SqsConnectionBuilder.class,
         new ClassServiceExtension<SqsConnectionBuilder>(sqs));
@@ -212,13 +222,13 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
           new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
     }
 
-    SnsConnectionBuilder sns = new SnsConnectionBuilder().setRegion(region)
+    SnsConnectionBuilder sns = new SnsConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
 
     AwsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension(sns));
 
-    S3ConnectionBuilder s3 = new S3ConnectionBuilder().setRegion(region)
+    S3ConnectionBuilder s3 = new S3ConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
 
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
@@ -233,7 +243,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    AwsServiceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
 
     awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 

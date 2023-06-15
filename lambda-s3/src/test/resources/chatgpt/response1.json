@@ -1,0 +1,22 @@
+{
+    "id": "cmpl-7HOmfBlUrif1MEDOLEFEtJ44A9iGq",
+    "object": "text_completion",
+    "created": 1684381201,
+    "model": "text-davinci-003",
+    "choices":
+    [
+        {
+            "text": "\n\n{\n    \"Organization\": [\"Great Auk Enterprises\"],\n    \"Location\": [\"YellowBelly Brewery Pub, St. Johns, NL\"],\n    \"Person\": [\"Thomas Bewick\", \"Ketill Ketilsson\", \"Farley Mowat\", \"Aaron Thomas\"], \n    \"Subject\": [\"MINUTES OF A MEETING OF DIRECTORS\"], \n    \"Sentiment\": [], \n    \"Document Type\": [\"Memorandum\"] \n}",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage":
+    {
+        "prompt_tokens": 255,
+        "completion_tokens": 106,
+        "total_tokens": 361
+    }
+}
+

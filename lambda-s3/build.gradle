@@ -1,8 +1,32 @@
 description = "FormKiQ Core - Lambda S3 to Dynamodb"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
+def getCmd() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+    String os = System.getProperty("os.name").toLowerCase()
+    return os.contains("win") ? "/c" : "-c"
+}
+
 dependencies {
 
- 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.2.0'
+ 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.3.0'
  
 	implementation project(':aws-s3')
 	implementation project(':aws-sns')
@@ -17,29 +41,27 @@ dependencies {
 	implementation project(':http')
 	
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     
 	implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
-    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.1.0'
-	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.10.0-SNAPSHOT'
+    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+	implementation group: 'com.formkiq.stacks', name: 'client', version:'1.10.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
+	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
 	testImplementation project(':aws-sqs')	
 	testImplementation project(':fkq-test-utils')
-    testImplementation group: 'junit', name: 'junit', version:'4.+'
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
 
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.19.2'
-	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.19.2'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.33'
+	testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.33'
 
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version:'5.9.1'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.17.6'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
     testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.370'
-	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.14.0'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.436'
+	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 
 compileJava {
@@ -59,14 +81,13 @@ nativeImage {
 
 test {
   failFast = true
-  exclude 'com/formkiq/stacks/lambda/s3/awstest/**'
   useJUnitPlatform()
 }
 
-task testaws(type: Test) {
-  description = 'Runs AWS integration tests.'
-  outputs.upToDateWhen {false}
-  include 'com/formkiq/stacks/lambda/s3/awstest/**'    
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+    useJUnitPlatform()
 }
 
 task buildZip(type: Zip) {
@@ -100,7 +121,7 @@ task assembleTemplate {
 	    }
 	    
 		exec {
-			commandLine "bash", "-c", "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
 		}
 	}
 }
