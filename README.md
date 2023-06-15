@@ -27,6 +27,12 @@
 
 ### Features
 
+<div align="center" style="margin: 30px;">
+<br />
+<img src="https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/images/formkiq_architecture.png" style="width:600px;" align="center" />
+<br /><br /><br />
+</div>
+
 ✅ API-First Full Featured Document Management API
 
 ✅ Easy Integration with Existing Applications
