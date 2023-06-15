@@ -13,7 +13,7 @@
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: 'Formkiq API: Document Management Platform API using API Key(s) Authentication'
-          version: 1.11.1
+          version: 1.12.0
         paths:
           /version:
             get:
