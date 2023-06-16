@@ -1,9 +1,13 @@
-version: "3"
+version: '3.8'
 services:
   dynamodb:
-    image: amazon/dynamodb-local:1.13.5
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
     ports:
-      - 8000:8000
+      - "8000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
   localstack:
     image: localstack/localstack:0.12.2
     ports:
@@ -18,4 +22,3 @@ services:
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
-   

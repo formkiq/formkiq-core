@@ -535,7 +535,6 @@ public abstract class AbstractRequestHandler {
     this.map.put(key, value);
   }
 
-
   /**
    * Set Path Parameter.
    * 
@@ -553,6 +552,7 @@ public abstract class AbstractRequestHandler {
     pathmap.put(parameter, value);
     event.setPathParameters(pathmap);
   }
+
 
   /**
    * Set Cognito Group.
@@ -595,6 +595,16 @@ public abstract class AbstractRequestHandler {
       this.mockServer.stop();
     }
     this.mockServer = null;
+  }
+
+  /**
+   * Convert Object to JSON.
+   * 
+   * @param obj {@link Object}
+   * @return {@link String}
+   */
+  protected String toJson(final Object obj) {
+    return GsonUtil.getInstance().toJson(obj);
   }
 
   /**

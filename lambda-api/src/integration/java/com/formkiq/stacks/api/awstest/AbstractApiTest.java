@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
@@ -110,6 +111,10 @@ public abstract class AbstractApiTest {
   private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
+  /** {@link List} {@link FormKiqClientV1}. */
+  private static List<FormKiqClientV1> formkiqClientDefault;
+  /** {@link List} {@link FormKiqClientV1}. */
+  private static List<FormKiqClientV1> formkiqClientSiteId;
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
   /** 1 Second. */
@@ -124,6 +129,8 @@ public abstract class AbstractApiTest {
   private static String rootKeyUrl;
   /** API Root Rest Url. */
   private static String rootRestUrl;
+  /** SiteId. */
+  protected static final String SITE_ID = UUID.randomUUID().toString();
   /** {@link SsmConnectionBuilder}. */
   private static SsmConnectionBuilder ssmBuilder;
   /** {@link SsmService}. */
@@ -211,6 +218,9 @@ public abstract class AbstractApiTest {
 
     setupCognito();
     setupConfigService(awsprofile);
+
+    formkiqClientDefault = Arrays.asList(httpClient, restClient, getApiKeyClient(null));
+    formkiqClientSiteId = Arrays.asList(httpClient, restClient, getApiKeyClient(SITE_ID));
   }
 
   /**
@@ -281,6 +291,24 @@ public abstract class AbstractApiTest {
    */
   public static List<FormKiqClientV1> getFormKiqClients(final String siteId) {
     return Arrays.asList(httpClient, restClient, getApiKeyClient(siteId));
+  }
+
+  /**
+   * Get Default Clients.
+   * 
+   * @return {@link List} {@link FormKiqClientV1}
+   */
+  public static List<FormKiqClientV1> getFormKiqDefaultClients() {
+    return formkiqClientDefault;
+  }
+
+  /**
+   * Get Clients for SiteId.
+   * 
+   * @return {@link List} {@link FormKiqClientV1}
+   */
+  public static List<FormKiqClientV1> getFormKiqSiteIdClients() {
+    return formkiqClientSiteId;
   }
 
   /**
