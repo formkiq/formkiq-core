@@ -45,12 +45,9 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -62,7 +59,6 @@ import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.formkiq.graalvm.annotations.ReflectableField;
-import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -77,16 +73,13 @@ import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
 import com.google.gson.Gson;
@@ -100,9 +93,10 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
-@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentMetadata.class,
-    DocumentTagType.class, AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
-    DocumentVersionServiceNoVersioning.class})
+// @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class,
+// DocumentMetadata.class,
+// DocumentTagType.class, AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
+// DocumentVersionServiceNoVersioning.class})
 @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
     fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")})
 @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,

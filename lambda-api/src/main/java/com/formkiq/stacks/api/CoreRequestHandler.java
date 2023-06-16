@@ -25,44 +25,13 @@ package com.formkiq.stacks.api;
 
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
-import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.dynamodb.model.SearchResponseFields;
-import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
-import com.formkiq.aws.services.lambda.ApiPagination;
-import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.graalvm.annotations.ReflectableImport;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentTags;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.stacks.dynamodb.Preset;
-import com.formkiq.stacks.dynamodb.PresetTag;
-import com.formkiq.validation.ValidationErrorImpl;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
 @Reflectable
-@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
-    DocumentMetadata.class, DocumentTags.class, PaginationMapToken.class, SearchQuery.class,
-    SearchTagCriteria.class, SearchMetaCriteria.class, SearchResponseFields.class, PresetTag.class,
-    Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class, DocumentEvent.class,
-    ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
-    ApiPagination.class, Action.class, ValidationErrorImpl.class,
-    DocumentVersionServiceDynamoDb.class, DocumentVersionServiceNoVersioning.class})
 public class CoreRequestHandler extends AbstractCoreRequestHandler {
 
   static {

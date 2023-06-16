@@ -2,6 +2,8 @@
 description = "FormKiQ Document Events"
 
 dependencies {
+
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
   implementation project(':aws-sns')
 	
   implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
