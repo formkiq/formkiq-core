@@ -49,6 +49,7 @@ import com.formkiq.stacks.client.requests.AddDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentActionsRequest;
 import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
+import com.formkiq.stacks.client.requests.GetDocumentTagsKeyRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -119,11 +120,15 @@ public class FkqDocumentService {
    * @throws InterruptedException InterruptedException
    */
   public static String addDocumentWithActions(final FormKiqClient client, final String siteId,
-      final String path, final String content, final String contentType,
+      final String path, final byte[] content, final String contentType,
       final List<AddDocumentAction> actions, final List<AddDocumentTag> tags)
       throws IOException, InterruptedException {
-    return client.addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument()
-        .path(path).content(content).contentType(contentType).tags(tags).actions(actions)))
+
+    String base64 = Base64.getEncoder().encodeToString(content);
+
+    return client
+        .addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument().path(path)
+            .contentAsBase64(base64).contentType(contentType).tags(tags).actions(actions)))
         .documentId();
   }
 
@@ -142,15 +147,11 @@ public class FkqDocumentService {
    * @throws InterruptedException InterruptedException
    */
   public static String addDocumentWithActions(final FormKiqClient client, final String siteId,
-      final String path, final byte[] content, final String contentType,
+      final String path, final String content, final String contentType,
       final List<AddDocumentAction> actions, final List<AddDocumentTag> tags)
       throws IOException, InterruptedException {
-
-    String base64 = Base64.getEncoder().encodeToString(content);
-
-    return client
-        .addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument().path(path)
-            .contentAsBase64(base64).contentType(contentType).tags(tags).actions(actions)))
+    return client.addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument()
+        .path(path).content(content).contentType(contentType).tags(tags).actions(actions)))
         .documentId();
   }
 
@@ -251,6 +252,41 @@ public class FkqDocumentService {
 
       TimeUnit.SECONDS.sleep(1);
     }
+  }
+
+  /**
+   * Wait For Document Content.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param tagKey {@link String}
+   * @return {@link DocumentTag}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static DocumentTag waitForDocumentTag(final FormKiqClientV1 client, final String siteId,
+      final String documentId, final String tagKey)
+      throws IOException, InterruptedException, URISyntaxException {
+
+    DocumentTag tags = null;
+    GetDocumentTagsKeyRequest tagReq =
+        new GetDocumentTagsKeyRequest().siteId(siteId).documentId(documentId).tagKey(tagKey);
+
+    while (true) {
+
+      try {
+        tags = client.getDocumentTag(tagReq);
+        break;
+      } catch (IOException e) {
+        // tag not found
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+
+    return tags;
   }
 
   /**

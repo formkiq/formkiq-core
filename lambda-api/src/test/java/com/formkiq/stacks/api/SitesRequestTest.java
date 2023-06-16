@@ -53,7 +53,7 @@ public class SitesRequestTest extends AbstractRequestHandler {
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
 
   /**
-   * Get /esignature/docusign/config request.
+   * Get /sites request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}

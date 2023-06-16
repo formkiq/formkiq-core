@@ -148,6 +148,31 @@ public class DocumentTagsRequestHandler
   }
 
   @Override
+  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    final String siteId = authorizer.getSiteId();
+    final String documentId = event.getPathParameters().get("documentId");
+
+    DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
+
+    validate(tags);
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+
+    validateDocumentExists(documentService, siteId, documentId);
+
+    updateTagsMetadata(event, tags);
+
+    validateTags(tags);
+
+    documentService.addTags(siteId, documentId, tags.getTags(), null);
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMessageResponse("Updated Tags"));
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
@@ -162,7 +187,7 @@ public class DocumentTagsRequestHandler
     boolean tagsValid = isValid(tags);
 
     if (!tagValid && !tagsValid) {
-      throw new BadException("invalid json body");
+      throw new BadException("invalid JSON body");
     }
 
     if (tagsValid) {
@@ -175,28 +200,16 @@ public class DocumentTagsRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    final DocumentItem item = validateDocumentExists(documentService, siteId, documentId);
 
     if (!tagsValid) {
       tags = new DocumentTags();
       tags.setTags(Arrays.asList(tag));
     }
 
-    String userId = getCallingCognitoUsername(event);
+    String userId = updateTagsMetadata(event, tags);
 
-    tags.getTags().forEach(t -> {
-      t.setType(DocumentTagType.USERDEFINED);
-      t.setInsertedDate(new Date());
-      t.setUserId(userId);
-    });
-
-    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tags);
-    if (!tagErrors.isEmpty()) {
-      throw new ValidationException(tagErrors);
-    }
+    validateTags(tags);
 
     documentService.deleteDocumentTag(siteId, documentId, "untagged");
 
@@ -211,6 +224,32 @@ public class DocumentTagsRequestHandler
         : new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
 
     return new ApiRequestHandlerResponse(SC_CREATED, resp);
+  }
+
+  @Override
+  public ApiRequestHandlerResponse put(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    final String siteId = authorizer.getSiteId();
+    final String documentId = event.getPathParameters().get("documentId");
+
+    DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
+
+    validate(tags);
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+
+    validateDocumentExists(documentService, siteId, documentId);
+
+    documentService.deleteDocumentTags(siteId, documentId);
+    updateTagsMetadata(event, tags);
+
+    validateTags(tags);
+
+    documentService.addTags(siteId, documentId, tags.getTags(), null);
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMessageResponse("Set Tags"));
   }
 
   /**
@@ -239,5 +278,70 @@ public class DocumentTagsRequestHandler
       throw new ValidationException(errors);
     }
     return newTags;
+  }
+
+  /**
+   * Update {@link DocumentTags} metadata.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param tags {@link DocumentTags}
+   * @return {@link String}
+   */
+  private String updateTagsMetadata(final ApiGatewayRequestEvent event, final DocumentTags tags) {
+
+    String userId = getCallingCognitoUsername(event);
+
+    tags.getTags().forEach(t -> {
+      t.setType(DocumentTagType.USERDEFINED);
+      t.setInsertedDate(new Date());
+      t.setUserId(userId);
+    });
+    return userId;
+  }
+
+  /**
+   * Validate {@link DocumentTags}.
+   * 
+   * @param tags {@link DocumentTags}
+   * @throws BadException BadException
+   */
+  private void validate(final DocumentTags tags) throws BadException {
+    boolean tagsValid = isValid(tags);
+
+    if (!tagsValid) {
+      throw new BadException("invalid JSON body");
+    }
+  }
+
+  /**
+   * Validate Document Exists.
+   * 
+   * @param documentService {@link DocumentService}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link DocumentItem}
+   * @throws NotFoundException NotFoundException
+   */
+  private DocumentItem validateDocumentExists(final DocumentService documentService,
+      final String siteId, final String documentId) throws NotFoundException {
+    DocumentItem item = documentService.findDocument(siteId, documentId);
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
+
+    return item;
+  }
+
+  /**
+   * Validate {@link DocumentTags}.
+   * 
+   * @param tags {@link DocumentTags}
+   * @throws ValidationException ValidationException
+   */
+  private void validateTags(final DocumentTags tags) throws ValidationException {
+    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tags);
+    if (!tagErrors.isEmpty()) {
+      throw new ValidationException(tagErrors);
+    }
   }
 }

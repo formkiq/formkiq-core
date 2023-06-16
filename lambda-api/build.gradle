@@ -15,6 +15,10 @@ configurations {
     integrationRuntime.extendsFrom testRuntime
 }
 
+tasks.processIntegrationResources {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
 def getCmd() {
     String os = System.getProperty("os.name").toLowerCase()
     return os.contains("win") ? "cmd" : "bash"
