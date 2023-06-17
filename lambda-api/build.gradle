@@ -174,7 +174,7 @@ task assembleOpenApiTemplate {
 		for (fileName in ["openapi-jwt", "openapi-iam", "openapi-key"]) {
 		
 			def lines = new File("${buildDir}/${fileName}.yaml").readLines()
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 6; i++) {
 			  lines.removeAt(0);
 			  lines.removeAt(lines.size - 1);
 			}
