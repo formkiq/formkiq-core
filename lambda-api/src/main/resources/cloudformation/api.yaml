@@ -9,6 +9,7 @@ Resources:
   DocumentsHttpApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
+      FailOnWarnings: true
       Body:
         openapi: "3.0.1"
         info:
@@ -730,8 +731,8 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              operationId: AddDocumentTag
-              description: Add a single tag to a document; this endpoint also accepts a different body parameter for adding multiple tags in a single request
+              operationId: AddDocumentTags
+              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
               tags:
               - Document Tags
               parameters:
@@ -742,7 +743,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/AddDocumentTagRequest'
+                      $ref: '#/components/schemas/AddDocumentTagsRequest'
                     examples:
                       Add_Key_Only_Tag:
                         value:
@@ -776,6 +777,21 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/AddDocumentTagsRequest'
+                    examples:
+                      Add_Key_Only_Tag:
+                        value:
+                          tags:
+                            - key: category 
+                      Add_Key_and_Value_Tag:
+                        value:
+                          tags:
+                            - key: category 
+                              value: sample
+                      Add_Key_and_Values_Tag:
+                        value:
+                          tags:
+                            - key: players 
+                              values: ["111", "222"]
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -797,6 +813,21 @@ Resources:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/AddDocumentTagsRequest'
+                    examples:
+                      Add_Key_Only_Tag:
+                        value:
+                          tags:
+                            - key: category 
+                      Add_Key_and_Value_Tag:
+                        value:
+                          tags:
+                            - key: category 
+                              value: sample
+                      Add_Key_and_Values_Tag:
+                        value:
+                          tags:
+                            - key: players 
+                              values: ["111", "222"]
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -804,28 +835,6 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /documents/{documentId}/tags#:
-            post:
-              operationId: AddDocumentTags
-              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
-              tags:
-              - Document Tags
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddDocumentTagsRequest'
-              responses:
-                '201':
-                  $ref: '#/components/responses/200Cors'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/tags/{tagKey}:
             get:
               operationId: GetDocumentTag
@@ -3031,15 +3040,6 @@ Resources:
                 message:
                   type: string
                   description: Document sync message
-            AddDocumentSyncRequest:
-              type: "object"
-              properties:
-                service:
-                  type: "string"
-                  description: "To which service to sync the data to"
-                  enum:
-                    - TYPESENSE
-                    - OPENSEARCH
             DocumentSearchResponse:
               type: "object"
               properties:
@@ -3878,11 +3878,6 @@ Resources:
                   audience:
                   - Fn::Sub: "${CognitoUserPoolClient}"
                 identitySource: "$request.header.Authorization"
-            sigv4:
-              type: "apiKey"
-              name: "Authorization"
-              in: "header"
-              x-amazon-apigateway-authtype: "awsSigv4"
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
