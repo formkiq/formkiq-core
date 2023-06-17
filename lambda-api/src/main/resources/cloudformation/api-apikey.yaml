@@ -9,6 +9,7 @@ Resources:
   DocumentsKeyApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
+      FailOnWarnings: "true"
       Body:
         openapi: "3.0.1"
         info:
