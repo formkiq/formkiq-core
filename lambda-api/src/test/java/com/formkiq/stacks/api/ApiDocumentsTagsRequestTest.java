@@ -852,7 +852,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item,
-          Arrays.asList(new DocumentTag(item.getDocumentId(), tagKey0, "asdd", new Date(), "joe")));
+          Arrays.asList(new DocumentTag(item.getDocumentId(), tagKey0, "asdd", new Date(), "joe"),
+              new DocumentTag(item.getDocumentId(), "othertag", "asdd", new Date(), "joe")));
 
       List<Map<String, String>> tags = Arrays.asList(Map.of("key", tagKey0, "value", tagValue0),
           Map.of("key", tagKey1, "value", tagValue1));
@@ -867,16 +868,22 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
           + "{\\\"message\\\":\\\"Updated Tags\\\"}\",\"statusCode\":200}";
       assertEquals(expected, response);
 
+      int i = 0;
+      final int expectedCount = 3;
       PaginationResults<DocumentTag> results =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertEquals(2, results.getResults().size());
-      assertEquals(tagKey0, results.getResults().get(0).getKey());
-      assertEquals(tagValue0, results.getResults().get(0).getValue());
-      assertEquals("joesmith", results.getResults().get(0).getUserId());
+      assertEquals(expectedCount, results.getResults().size());
+      assertEquals(tagKey0, results.getResults().get(i).getKey());
+      assertEquals(tagValue0, results.getResults().get(i).getValue());
+      assertEquals("joesmith", results.getResults().get(i++).getUserId());
 
-      assertEquals(tagKey1, results.getResults().get(1).getKey());
-      assertEquals(tagValue1, results.getResults().get(1).getValue());
-      assertEquals("joesmith", results.getResults().get(0).getUserId());
+      assertEquals("othertag", results.getResults().get(i).getKey());
+      assertEquals("asdd", results.getResults().get(i).getValue());
+      assertEquals("joe", results.getResults().get(i++).getUserId());
+
+      assertEquals(tagKey1, results.getResults().get(i).getKey());
+      assertEquals(tagValue1, results.getResults().get(i).getValue());
+      assertEquals("joesmith", results.getResults().get(i++).getUserId());
     }
   }
 
