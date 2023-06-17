@@ -755,28 +755,6 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /documents/{documentId}/tags#:
-            post:
-              operationId: AddDocumentTags
-              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
-              tags:
-              - Document Tags
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddDocumentTagsRequest'
-              responses:
-                "201":
-                  $ref: '#/components/responses/200Cors'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
             patch:
               operationId: UpdateDocumentTags
               description: Updates multiple tags to a document; this endpoint also accepts a different body parameter for updating a single tag
@@ -819,6 +797,28 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/tags#:
+            post:
+              operationId: AddDocumentTags
+              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
+              tags:
+              - Document Tags
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentTagsRequest'
+              responses:
+                "201":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /documents/{documentId}/tags/{tagKey}:
             get:
               operationId: GetDocumentTag
