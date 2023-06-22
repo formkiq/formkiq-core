@@ -111,6 +111,8 @@ public abstract class AbstractApiTest {
   private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
+  /** Cognito Permissions User Email. */
+  protected static final String ACME_EMAIL = "acme@formkiq.com";
   /** {@link List} {@link FormKiqClientV1}. */
   private static List<FormKiqClientV1> formkiqClientDefault;
   /** {@link List} {@link FormKiqClientV1}. */
@@ -148,15 +150,16 @@ public abstract class AbstractApiTest {
    * Add User and/or Login Cognito.
    * 
    * @param username {@link String}
-   * @param groupName {@link String}
+   * @param groupNames {@link List} {@link String}
    */
-  private static void addAndLoginCognito(final String username, final String groupName) {
+  private static void addAndLoginCognito(final String username, final List<String> groupNames) {
     if (!adminCognitoService.isUserExists(username)) {
 
       adminCognitoService.addUser(username, TEMP_USER_PASSWORD);
       adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
-      if (groupName != null) {
+      for (String groupName : groupNames) {
+        System.out.println("SUER: " + username + " " + groupName);
         if (!groupName.startsWith(DEFAULT_SITE_ID)) {
           adminCognitoService.addGroup(groupName);
         }
@@ -179,6 +182,10 @@ public abstract class AbstractApiTest {
    */
   @BeforeAll
   public static void beforeClass() throws IOException {
+
+    System.setProperty("testregion", "us-east-2");
+    System.setProperty("testprofile", "formkiqtest");
+    System.setProperty("testappenvironment", "test");
 
     awsregion = Region.of(System.getProperty("testregion"));
 
@@ -417,9 +424,10 @@ public abstract class AbstractApiTest {
       adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
     }
 
-    addAndLoginCognito(USER_EMAIL, DEFAULT_SITE_ID);
-    addAndLoginCognito(FINANCE_EMAIL, "finance");
-    addAndLoginCognito(READONLY_EMAIL, "default_read");
+    addAndLoginCognito(USER_EMAIL, Arrays.asList(DEFAULT_SITE_ID));
+    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
+    addAndLoginCognito(READONLY_EMAIL, Arrays.asList("default_read"));
+    addAndLoginCognito(ACME_EMAIL, Arrays.asList("acme", "accounting"));
 
     adminToken = login(ADMIN_EMAIL, USER_PASSWORD);
     FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)
