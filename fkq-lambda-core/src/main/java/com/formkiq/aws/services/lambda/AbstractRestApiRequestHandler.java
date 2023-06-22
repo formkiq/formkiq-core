@@ -367,10 +367,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
       final OutputStream output) throws IOException {
 
-    ApiAuthorizer authorizer = new ApiAuthorizer(event, authorizerType);
 
     try {
 
+      ApiAuthorizer authorizer = new ApiAuthorizer(event, authorizerType);
       ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorizer);
       processResponse(authorizer, event, object);
       buildResponse(logger, awsServices, output, object.getStatus(), object.getHeaders(),

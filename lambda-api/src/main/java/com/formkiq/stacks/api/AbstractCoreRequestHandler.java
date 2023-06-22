@@ -93,6 +93,7 @@ import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
+import com.formkiq.stacks.api.handler.UsersMeRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
@@ -147,6 +148,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new UsersMeRequestHandler());
     addRequestHandler(new ConfigurationRequestHandler());
     addRequestHandler(new ConfigurationApiKeysRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());

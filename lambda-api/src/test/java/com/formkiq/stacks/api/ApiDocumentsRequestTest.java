@@ -638,11 +638,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetDocuments11() throws Exception {
     // given
-    String siteId = null;
+    String siteId = "default";
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents03.json");
     addParameter(event, "siteId", siteId);
-    setCognitoGroup(event, "Finance", "Bleh");
+    setCognitoGroup(event, "Finance Bleh");
 
     // when
     String response = handleRequest(event);
@@ -652,12 +652,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-    List<DynamicObject> documents = resp.getList("documents");
-    assertEquals(0, documents.size());
+    assertEquals("{\"message\":\"fkq access denied (groups: Finance,Bleh)\"}", m.get("body"));
   }
 
   /**
