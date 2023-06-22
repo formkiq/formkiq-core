@@ -159,7 +159,6 @@ public abstract class AbstractApiTest {
       adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
       for (String groupName : groupNames) {
-        System.out.println("SUER: " + username + " " + groupName);
         if (!groupName.startsWith(DEFAULT_SITE_ID)) {
           adminCognitoService.addGroup(groupName);
         }
@@ -182,10 +181,6 @@ public abstract class AbstractApiTest {
    */
   @BeforeAll
   public static void beforeClass() throws IOException {
-
-    System.setProperty("testregion", "us-east-2");
-    System.setProperty("testprofile", "formkiqtest");
-    System.setProperty("testappenvironment", "test");
 
     awsregion = Region.of(System.getProperty("testregion"));
 
