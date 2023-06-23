@@ -312,7 +312,6 @@ public class PublicWebhooksRequestHandler
       final DynamicObject item, final String siteId) {
 
     String s = GSON.toJson(item);
-
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
     String stages3bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
@@ -320,6 +319,6 @@ public class PublicWebhooksRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-    s3.putObject(stages3bucket, key, bytes, item.getString("contentType"));
+    s3.putObject(stages3bucket, key, bytes, "application/json");
   }
 }

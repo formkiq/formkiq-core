@@ -116,9 +116,10 @@ public abstract class AbstractRequestHandler {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
+    String queueSqsArn = sqsService.getQueueArn(sqsDocumentEventUrl);
     SnsService snsService = new SnsService(TestServices.getSnsConnection(null));
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", queueSqsArn);
   }
 
   /** {@link CoreAwsServiceCache}. */

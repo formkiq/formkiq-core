@@ -52,7 +52,7 @@ public class SsmServiceCacheTest {
 
   /** LocalStack {@link DockerImageName}. */
   private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:0.12.2");
+      DockerImageName.parse("localstack/localstack:2.1");
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack =
       new LocalStackContainer(localStackImage).withServices(Service.SSM);

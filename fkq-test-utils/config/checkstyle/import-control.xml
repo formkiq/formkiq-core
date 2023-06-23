@@ -19,6 +19,7 @@
 		<allow pkg="com.formkiq.testutils.aws" />
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
+		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		<allow pkg="org.junit.jupiter.api.extension" />
 		<allow pkg="org.testcontainers.containers" />

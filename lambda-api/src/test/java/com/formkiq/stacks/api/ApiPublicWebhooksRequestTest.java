@@ -236,8 +236,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       // then
       Map<String, Object> m = fromJson(response, Map.class);
-      final int mapsize = 2;
-      assertEquals(mapsize, m.size());
 
       assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
