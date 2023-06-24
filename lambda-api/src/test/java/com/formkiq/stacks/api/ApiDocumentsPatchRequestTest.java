@@ -325,6 +325,41 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * PATCH /documents with invalid TAG.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePatchDocuments08() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // given
+      String userId = "jsmith";
+      String documentId = UUID.randomUUID().toString();
+
+      getDocumentService().saveDocument(siteId,
+          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody("{\"tags\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"value\":\"Bacon\"}]}");
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals(
+          "{\"errors\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"error\":\"unallowed tag key\"}]}",
+          String.valueOf(m.get("body")));
+    }
+  }
+
+  /**
    * Asserts 200 response.
    *
    * @param siteId {@link String}

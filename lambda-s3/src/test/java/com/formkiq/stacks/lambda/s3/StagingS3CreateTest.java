@@ -243,7 +243,9 @@ public class StagingS3CreateTest implements DbKeys {
 
     snsService = new SnsService(snsBuilder);
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     createResources();
 

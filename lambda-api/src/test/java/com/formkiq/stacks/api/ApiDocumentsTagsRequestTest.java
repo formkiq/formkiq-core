@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.getSqsWebsocketQueueUrl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -40,10 +42,16 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
@@ -53,8 +61,11 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentTagToAttributeValueMap;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
@@ -64,6 +75,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 10000L;
+
+  /** {@link SimpleDateFormat} in ISO Standard format. */
+  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
   /**
    * any method /document/{documentId}/tags request.
@@ -1619,6 +1633,51 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals("active", tags.getResults().get(0).getValue());
       assertNull(tags.getResults().get(0).getValues());
       assertEquals("joesmith", tags.getResults().get(0).getUserId());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/tags/{tagKey} invalid Tag.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutTags07() throws Exception {
+
+    DynamoDbConnectionBuilder db = getAwsServices().getExtension(DynamoDbConnectionBuilder.class);
+    try (DynamoDbClient client = db.build()) {
+
+      DynamoDbService ds = new DynamoDbServiceImpl(client, DOCUMENTS_TABLE);
+
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+        String userId = "jsmith";
+
+        getDocumentService().saveDocument(siteId,
+            new DocumentItemDynamoDb(documentId, new Date(), userId), null);
+
+        DocumentTagToAttributeValueMap mapper =
+            new DocumentTagToAttributeValueMap(this.df, DbKeys.PREFIX_DOCS, siteId, documentId);
+
+        String tagKey = "CLAMAV_SCAN_STATUS";
+        DocumentTag tag = new DocumentTag(null, tagKey, "abc", new Date(), userId);
+
+        List<Map<String, AttributeValue>> apply = mapper.apply(tag);
+        ds.putItem(apply.get(0));
+
+        ApiGatewayRequestEvent event = putDocumentsTags(siteId, documentId, tagKey, siteId,
+            "ewogICJ2YWx1ZSI6ICJhY3RpdmUiCn0=", true);
+
+        // when
+        DynamicObject o = handleRequestDynamic(event);
+
+        // then
+        assertEquals("400.0", o.getString("statusCode"));
+        assertEquals(
+            "{\"errors\":[{\"key\":\"CLAMAV_SCAN_STATUS\",\"error\":\"unallowed tag key\"}]}",
+            o.getString("body"));
+      }
     }
   }
 }

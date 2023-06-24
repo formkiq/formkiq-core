@@ -208,7 +208,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsService = new SnsService(snsBuilder);
 
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
     if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {

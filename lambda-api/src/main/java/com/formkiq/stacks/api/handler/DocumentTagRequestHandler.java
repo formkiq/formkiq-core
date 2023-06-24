@@ -47,6 +47,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -210,11 +211,28 @@ public class DocumentTagRequestHandler
 
     tags.addAll(newTags);
 
+    validateTags(tags);
+
     documentService.addTags(siteId, documentId, tags, null);
 
     ApiResponse resp =
         new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  /**
+   * Validate {@link DocumentTag}.
+   * 
+   * @param tags {@link List} {@link DocumentTag}
+   * @throws ValidationException ValidationException
+   */
+  private void validateTags(final List<DocumentTag> tags) throws ValidationException {
+    DocumentTagValidator validate = new DocumentTagValidatorImpl();
+    Collection<ValidationError> errors = validate.validate(tags);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 }

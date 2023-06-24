@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -57,6 +58,8 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentTagValidator;
+import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.validation.ValidationError;
@@ -270,9 +273,30 @@ public class DocumentsUploadRequestHandler
     item.setUserId(getCallingCognitoUsername(event));
     item.setInsertedDate(new Date());
 
+    List<DynamicObject> tags = item.getList("tags");
+    validateTags(tags);
+
     String siteId = authorizer.getSiteId();
     return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
         item);
+  }
+
+  /**
+   * Validate Document Tags.
+   * 
+   * @param tags {@link List} {@link DynamicObject}
+   * @throws ValidationException ValidationException
+   */
+  private void validateTags(final List<DynamicObject> tags) throws ValidationException {
+
+    List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
+
+    DocumentTagValidator validator = new DocumentTagValidatorImpl();
+    Collection<ValidationError> errors = validator.validateKeys(tagKeys);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 
   /**
