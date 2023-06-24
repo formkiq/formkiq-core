@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -71,6 +71,8 @@ import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
+import com.formkiq.stacks.dynamodb.DocumentTagValidator;
+import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
@@ -360,6 +362,8 @@ public class DocumentIdRequestHandler
           + item.getString("contentType"));
 
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
+      validateTags(item);
+
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
       Map<String, String> uploadUrls =
@@ -469,6 +473,25 @@ public class DocumentIdRequestHandler
     }
 
     return maxDocumentCount;
+  }
+
+  /**
+   * Validate Document Tags.
+   * 
+   * @param item {@link DynamicDocumentItem}
+   * @throws ValidationException ValidationException
+   */
+  private void validateTags(final DynamicDocumentItem item) throws ValidationException {
+
+    List<DynamicObject> tags = item.getList("tags");
+    List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
+
+    DocumentTagValidator validator = new DocumentTagValidatorImpl();
+    Collection<ValidationError> errors = validator.validateKeys(tagKeys);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 
   /**

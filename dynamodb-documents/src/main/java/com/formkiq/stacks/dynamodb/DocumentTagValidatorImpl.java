@@ -43,18 +43,8 @@ public class DocumentTagValidatorImpl implements DocumentTagValidator {
 
   @Override
   public Collection<ValidationError> validate(final Collection<DocumentTag> tags) {
-
-    List<ValidationError> errors = Collections.emptyList();
-    List<DocumentTag> invalidTags = notNull(tags).stream()
-        .filter(tag -> SYSTEM_DEFINED_TAGS.contains(tag.getKey())).collect(Collectors.toList());
-
-    if (!invalidTags.isEmpty()) {
-      errors = invalidTags.stream()
-          .map(tag -> new ValidationErrorImpl().key(tag.getKey()).error("unallowed tag key"))
-          .collect(Collectors.toList());
-    }
-
-    return errors;
+    List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
+    return validateKeys(tagKeys);
   }
 
   @Override
@@ -65,5 +55,20 @@ public class DocumentTagValidatorImpl implements DocumentTagValidator {
   @Override
   public Collection<ValidationError> validate(final DocumentTags tags) {
     return validate(tags.getTags());
+  }
+
+  @Override
+  public Collection<ValidationError> validateKeys(final Collection<String> tagKeys) {
+    List<ValidationError> errors = Collections.emptyList();
+    List<String> invalidTags = notNull(tagKeys).stream()
+        .filter(tag -> SYSTEM_DEFINED_TAGS.contains(tag)).collect(Collectors.toList());
+
+    if (!invalidTags.isEmpty()) {
+      errors = invalidTags.stream()
+          .map(tagKey -> new ValidationErrorImpl().key(tagKey).error("unallowed tag key"))
+          .collect(Collectors.toList());
+    }
+
+    return errors;
   }
 }
