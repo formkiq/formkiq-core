@@ -116,9 +116,10 @@ public abstract class AbstractRequestHandler {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
+    String queueSqsArn = sqsService.getQueueArn(sqsDocumentEventUrl);
     SnsService snsService = new SnsService(TestServices.getSnsConnection(null));
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", queueSqsArn);
   }
 
   /** {@link CoreAwsServiceCache}. */
@@ -455,14 +456,26 @@ public abstract class AbstractRequestHandler {
    * @return {@link DynamicObject}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   public DynamicObject handleRequest(final String file, final String siteId, final String username,
       final String cognitoGroups) throws IOException {
 
     ApiGatewayRequestEvent event = createRequest(file, siteId, username, cognitoGroups);
 
-    String response = handleRequest(event);
+    return handleRequestDynamic(event);
+  }
 
+  /**
+   * Handle Request.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   * @throws IOException IOException
+   */
+  @SuppressWarnings("unchecked")
+  protected DynamicObject handleRequestDynamic(final ApiGatewayRequestEvent event)
+      throws IOException {
+
+    String response = handleRequest(event);
     return new DynamicObject(fromJson(response, Map.class));
   }
 

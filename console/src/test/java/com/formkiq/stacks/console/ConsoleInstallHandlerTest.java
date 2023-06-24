@@ -62,7 +62,7 @@ public class ConsoleInstallHandlerTest {
 
   /** LocalStack {@link DockerImageName}. */
   private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:0.12.2");
+      DockerImageName.parse("localstack/localstack:2.1");
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localStackInstance =
       new LocalStackContainer(localStackImage).withServices(Service.S3);

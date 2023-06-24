@@ -23,8 +23,6 @@
  */
 package com.formkiq.aws.sqs;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.AddPermissionRequest;
 import software.amazon.awssdk.services.sqs.model.AddPermissionResponse;
@@ -76,21 +74,21 @@ public class SqsService {
   /**
    * Create SQS Queue.
    * 
-   * @param queueName {@link String}
-   * @return {@link CreateQueueResponse}
-   */
-  public CreateQueueResponse createQueue(final String queueName) {
-    return createQueue(CreateQueueRequest.builder().queueName(queueName).build());
-  }
-
-  /**
-   * Create SQS Queue.
-   * 
    * @param request {@link CreateQueueRequest}
    * @return {@link CreateQueueResponse}
    */
   public CreateQueueResponse createQueue(final CreateQueueRequest request) {
     return this.sqsClient.createQueue(request);
+  }
+
+  /**
+   * Create SQS Queue.
+   * 
+   * @param queueName {@link String}
+   * @return {@link CreateQueueResponse}
+   */
+  public CreateQueueResponse createQueue(final String queueName) {
+    return createQueue(CreateQueueRequest.builder().queueName(queueName).build());
   }
 
   /**
@@ -127,37 +125,16 @@ public class SqsService {
   }
 
   /**
-   * Get Queue Arn from queueUrl.
-   * 
-   * @param queueUrl {@link String}
-   * @return {@link String}
-   */
-  public static String getQueueArn(final String queueUrl) {
-    String queueName = "";
-    String region = "";
-    String account = "";
-
-    Pattern pattern = Pattern.compile("^(https://)(\\w+)\\.([^\\.]+)[^/]+/([^/]+)/(.*)$");
-    Matcher m = pattern.matcher(queueUrl);
-
-    if (m.find()) {
-      region = m.group(m.groupCount() - 2);
-      account = m.group(m.groupCount() - 1);
-      queueName = m.group(m.groupCount());
-    }
-
-    return String.format("arn:aws:sqs:%s:%s:%s", region, account, queueName);
-  }
-
-  /**
-   * Get SQS Queue Attributes.
+   * Get SQS Queue Arn.
    * 
    * @param queueUrl {@link String}
    * @return {@link GetQueueAttributesResponse}
    */
-  public GetQueueAttributesResponse getQueueAttributes(final String queueUrl) {
+  public String getQueueArn(final String queueUrl) {
     return this.sqsClient
-        .getQueueAttributes(GetQueueAttributesRequest.builder().queueUrl(queueUrl).build());
+        .getQueueAttributes(GetQueueAttributesRequest.builder()
+            .attributeNamesWithStrings("QueueArn").queueUrl(queueUrl).build())
+        .attributesAsStrings().get("QueueArn");
   }
 
   /**
