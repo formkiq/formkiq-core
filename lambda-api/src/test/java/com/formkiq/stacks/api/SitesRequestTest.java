@@ -176,7 +176,7 @@ public class SitesRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     removeSsmParameter(
         String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
-    ApiGatewayRequestEvent event = getRequest(null, "default_read finance");
+    ApiGatewayRequestEvent event = getRequest("default", "default_read finance");
 
     // when
     String response = handleRequest(event);

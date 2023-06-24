@@ -42,7 +42,7 @@ class ApiAuthorizerTest {
    * Basic 'default'/SiteId access.
    */
   @Test
-  void testApiAuthorizer01() {
+  void testApiAuthorizer01() throws Exception {
     // given
     for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
         ApiAuthorizerType.SAML)) {
@@ -79,7 +79,7 @@ class ApiAuthorizerTest {
    * Basic 'default_read' access.
    */
   @Test
-  void testApiAuthorizer02() {
+  void testApiAuthorizer02() throws Exception {
     // given
     for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
         ApiAuthorizerType.SAML)) {
@@ -115,7 +115,7 @@ class ApiAuthorizerTest {
    * Basic 'Admin' access.
    */
   @Test
-  void testApiAuthorizer03() {
+  void testApiAuthorizer03() throws Exception {
     // given
     for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
         ApiAuthorizerType.SAML)) {
@@ -153,7 +153,7 @@ class ApiAuthorizerTest {
    * Basic 'admin' access.
    */
   @Test
-  void testApiAuthorizer04() {
+  void testApiAuthorizer04() throws Exception {
     // given
     for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
         ApiAuthorizerType.SAML)) {

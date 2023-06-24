@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
 
 /**
  * API Authorizer.
@@ -42,6 +44,21 @@ public class ApiAuthorizer {
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
   private static final String COGNITO_READ_SUFFIX = "_read";
+
+  @SuppressWarnings("unchecked")
+  static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
+    Map<String, Object> claims = Collections.emptyMap();
+
+    if (authorizer != null && authorizer.containsKey("claims")) {
+      claims = (Map<String, Object>) authorizer.get("claims");
+    }
+
+    if (claims == null && authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
+    }
+
+    return claims;
+  }
 
   /** {@link ApiAuthorizerType}. */
   private ApiAuthorizerType authentication;
@@ -57,11 +74,11 @@ public class ApiAuthorizer {
 
   /** Is User Write Access. */
   private boolean isUserWriteAccess = false;
-
   /** Request SiteId. */
   private String siteId = null;
   /** {@link List} SiteIds. */
   private List<String> siteIds = Collections.emptyList();
+
   /** Calling User Arn. */
   private String userArn = null;
 
@@ -70,9 +87,10 @@ public class ApiAuthorizer {
    * 
    * @param requestEvent {@link ApiGatewayRequestEvent}
    * @param userAuthentication {@link ApiAuthorizerType}
+   * @throws ValidationException ValidationException
    */
   public ApiAuthorizer(final ApiGatewayRequestEvent requestEvent,
-      final ApiAuthorizerType userAuthentication) {
+      final ApiAuthorizerType userAuthentication) throws ValidationException {
 
     this.event = requestEvent;
     this.authentication = userAuthentication;
@@ -139,21 +157,6 @@ public class ApiAuthorizer {
     return groups;
   }
 
-  @SuppressWarnings("unchecked")
-  static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
-    Map<String, Object> claims = Collections.emptyMap();
-
-    if (authorizer != null && authorizer.containsKey("claims")) {
-      claims = (Map<String, Object>) authorizer.get("claims");
-    }
-
-    if (claims == null && authorizer != null && authorizer.containsKey("apiKeyClaims")) {
-      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
-    }
-
-    return claims;
-  }
-
   /**
    * Get the List of Possible SiteIds for User.
    * 
@@ -202,8 +205,9 @@ public class ApiAuthorizer {
    * Set siteId in {@link ApiGatewayRequestEvent}, if user is in only 1 CognitoGroup.
    * 
    * @return {@link String}
+   * @throws ValidationException ValidationException
    */
-  private String getSiteIdFromQuery() {
+  private String getSiteIdFromQuery() throws ValidationException {
 
     String site = null;
 
@@ -212,6 +216,9 @@ public class ApiAuthorizer {
         || isIamCaller()) {
       site = siteIdParam;
     } else if (siteIdParam == null && !this.siteIds.isEmpty()) {
+
+      validateSingleSiteId();
+
       site = this.siteIds.get(0);
     }
 
@@ -329,5 +336,17 @@ public class ApiAuthorizer {
    */
   public boolean isUserWriteAccess() {
     return this.isUserWriteAccess;
+  }
+
+  /**
+   * Validate only 1 SiteId.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  private void validateSingleSiteId() throws ValidationException {
+    if (this.siteIds.size() > 1) {
+      throw new ValidationException(Arrays.asList(new ValidationErrorImpl().key("siteId")
+          .error("parameter required - multiple siteIds found")));
+    }
   }
 }
