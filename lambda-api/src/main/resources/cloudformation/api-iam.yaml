@@ -2803,6 +2803,26 @@ Resources:
                   $ref: "#/components/schemas/AddActions"
                 documents:
                   $ref: "#/components/schemas/AddChildDocumentRequest"
+                permissions:
+                  $ref: "#/components/schemas/AddPermissions"
+            AddPermissions:
+              type: "object"
+              properties:
+                read:
+                  type: "array"
+                  description: "List of Groups with Read permission"
+                  items:
+                    type: "string"
+                write:
+                  type: "array"
+                  description: "List of Groups with Write permission"
+                  items:
+                    type: "string"
+                delete:
+                  type: "array"
+                  description: "List of Groups with Delete permission"
+                  items:
+                    type: "string"
             AddDocumentTagsRequest:
               type: "object"
               description: "Add List of document tags"
