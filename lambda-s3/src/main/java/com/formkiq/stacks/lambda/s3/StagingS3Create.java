@@ -29,6 +29,8 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -44,6 +46,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -74,6 +78,7 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentPermission;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -82,21 +87,19 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.PermissionType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
-// @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class,
-// DocumentMetadata.class,
-// DocumentTagType.class, AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
-// DocumentVersionServiceNoVersioning.class})
 @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
     fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")})
 @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
@@ -170,6 +173,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String appEnvironment;
   /** {@link AwsCredentials}. */
   private AwsCredentials credentials;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
   /** {@link String}. */
   private String documentsBucket;
   /** IAM Documents Url. */
@@ -178,8 +183,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private FolderIndexProcessor folderIndexProcesor;
   /** {@link FormKiqClient}. */
   private FormKiqClientV1 formkiqClient = null;
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService syncService = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link ActionsNotificationService}. */
@@ -194,6 +197,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
+  /** {@link DocumentSyncService}. */
+  private DocumentSyncService syncService = null;
 
   /**
    * constructor.
@@ -240,6 +245,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     DocumentSyncServiceExtension syncExtension = new DocumentSyncServiceExtension();
     this.syncService = syncExtension.loadService(serviceCache);
 
+    this.db = new DynamoDbServiceImpl(dbBuilder, documentsTable);
     this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
     this.s3 = new S3Service(s3Builder);
@@ -330,48 +336,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     saveDocumentSync(siteId, doc, existingDocument);
 
-    saveActions(siteId, doc);
+    saveDocumentActions(siteId, doc);
+
+    saveDocumentPermissions(siteId, doc);
 
     return doc;
-  }
-
-  /**
-   * Save Document Sync.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @param existingDocument {@link DocumentItem}
-   */
-  private void saveDocumentSync(final String siteId, final DynamicDocumentItem doc,
-      final DocumentItem existingDocument) {
-    String agent = doc.getString("agent");
-
-    if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
-      String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
-          : DocumentSyncService.MESSAGE_ADDED_CONTENT;
-      this.syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, doc.getUserId(), message);
-    }
-  }
-
-  /**
-   * Save Actions.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   */
-  private void saveActions(final String siteId, final DynamicDocumentItem doc) {
-    if (doc.containsKey("actions")) {
-
-      this.actionsService.deleteActions(siteId, doc.getDocumentId());
-
-      DynamicObjectToAction transform = new DynamicObjectToAction();
-      List<DynamicObject> list = doc.getList("actions");
-      List<Action> actions =
-          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
-
-      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
-    }
   }
 
   /**
@@ -436,6 +405,31 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
 
     return documentId;
+  }
+
+  private List<DocumentPermission> getPermissions(final DynamicDocumentItem doc) {
+    List<DocumentPermission> list = new ArrayList<>();
+    DynamicObject permissions = doc.getMap("permissions");
+
+    for (String type : Arrays.asList("group")) {
+
+      if (permissions.containsKey(type)) {
+
+        DynamicObject groups = permissions.getMap(type);
+        String documentId = doc.getDocumentId();
+        for (String key : Arrays.asList("read", "write", "delete")) {
+          List<String> groupMembers = groups.getStringList(key);
+
+          for (String member : groupMembers) {
+            DocumentPermission dp = new DocumentPermission().documentId(documentId).name(member)
+                .type(PermissionType.valueOf(key.toUpperCase() + "_" + type.toUpperCase()))
+                .userId(doc.getUserId());
+            list.add(dp);
+          }
+        }
+      }
+    }
+    return list;
   }
 
   @SuppressWarnings("unchecked")
@@ -647,6 +641,64 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
           e.printStackTrace();
         }
       }
+    }
+  }
+
+  /**
+   * Save Actions.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   */
+  private void saveDocumentActions(final String siteId, final DynamicDocumentItem doc) {
+    if (doc.containsKey("actions")) {
+
+      this.actionsService.deleteActions(siteId, doc.getDocumentId());
+
+      DynamicObjectToAction transform = new DynamicObjectToAction();
+      List<DynamicObject> list = doc.getList("actions");
+      List<Action> actions =
+          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
+
+      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
+    }
+  }
+
+  /**
+   * Save Document Permissions.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   */
+  private void saveDocumentPermissions(final String siteId, final DynamicDocumentItem doc) {
+
+    if (doc.containsKey("permissions")) {
+
+      List<DocumentPermission> list = getPermissions(doc);
+
+      List<Map<String, AttributeValue>> attributes =
+          list.stream().map(p -> p.getAttributes(siteId)).collect(Collectors.toList());
+
+      this.db.putItems(attributes);
+    }
+  }
+
+  /**
+   * Save Document Sync.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   * @param existingDocument {@link DocumentItem}
+   */
+  private void saveDocumentSync(final String siteId, final DynamicDocumentItem doc,
+      final DocumentItem existingDocument) {
+    String agent = doc.getString("agent");
+
+    if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
+      String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
+          : DocumentSyncService.MESSAGE_ADDED_CONTENT;
+      this.syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, doc.getUserId(), message);
     }
   }
 

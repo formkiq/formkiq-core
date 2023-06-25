@@ -2808,6 +2808,11 @@ Resources:
             AddPermissions:
               type: "object"
               properties:
+                group:
+                  $ref: "#/components/schemas/AddGroupPermissions"
+            AddGroupPermissions:
+              type: "object"
+              properties:
                 read:
                   type: "array"
                   description: "List of Groups with Read permission"

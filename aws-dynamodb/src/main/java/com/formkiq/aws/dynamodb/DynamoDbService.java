@@ -73,9 +73,16 @@ public interface DynamoDbService {
   /**
    * Put DynamoDb Record.
    * 
-   * @param attr {@link Map}
+   * @param attr {@link Map} {@link AttributeValue}
    */
   void putItem(Map<String, AttributeValue> attr);
+
+  /**
+   * Put DynamoDb Records.
+   * 
+   * @param attrs {@link List} {@link Map} {@link AttributeValue}
+   */
+  void putItems(List<Map<String, AttributeValue>> attrs);
 
   /**
    * Query DynamoDB Records.

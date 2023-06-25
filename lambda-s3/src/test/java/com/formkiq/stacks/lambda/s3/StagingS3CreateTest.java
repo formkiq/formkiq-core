@@ -76,6 +76,8 @@ import org.mockserver.model.Parameter;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
@@ -104,6 +106,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentPermission;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -111,6 +114,7 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.PermissionType;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -135,6 +139,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static ActionsService actionsService;
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbBuilder;
   /** {@link DynamoDbHelper}. */
@@ -146,6 +152,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
+
   /** Register LocalStack extension. */
   @RegisterExtension
   static LocalStackExtension localStack = new LocalStackExtension();
@@ -155,7 +162,6 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** Port to run Test server. */
   private static final int PORT = 8888;
-
   /** {@link S3Service}. */
   private static S3Service s3;
   /** {@link S3ConnectionBuilder}. */
@@ -190,7 +196,6 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String STAGING_BUCKET = "example-bucket";
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService;
-
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -225,6 +230,7 @@ public class StagingS3CreateTest implements DbKeys {
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
+    db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
 
@@ -529,14 +535,6 @@ public class StagingS3CreateTest implements DbKeys {
           service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
       int tagcount = hasTags ? docitem.getList("tags").size() : 1;
       assertEquals(tagcount, tags.size());
-      // assertEquals(1, tags.size());
-
-      // DocumentTag ptag = findTag(tags, "path");
-      // assertEquals(destDocumentId, ptag.getDocumentId());
-      // assertEquals(docitem.getPath(), ptag.getValue());
-      // assertNotNull(ptag.getInsertedDate());
-      // assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
-      // assertEquals(docitem.getUserId(), ptag.getUserId());
 
       if (hasTags) {
 
@@ -1301,6 +1299,35 @@ public class StagingS3CreateTest implements DbKeys {
       DocumentMetadata md = itr.next();
       assertEquals("category", md.getKey());
       assertEquals("person", md.getValue());
+    }
+  }
+
+  /**
+   * Test .fkb64 file with Permissions.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testFkB64Extension16() throws IOException {
+
+    // given
+    DynamicDocumentItem item = createDocumentItem();
+
+    item.put("permissions", Map.of("group", Map.of("read", Arrays.asList("finance"), "write",
+        Arrays.asList("system_admin"), "delete", Arrays.asList("system_admin"))));
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      // when
+      processFkB64File(siteId, item, null);
+
+      // then
+      DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
+      assertNotNull(doc);
+
+      DocumentPermission p = new DocumentPermission().documentId(item.getDocumentId())
+          .name("finance").type(PermissionType.READ_GROUP);
+      assertTrue(db.exists(AttributeValue.fromS(p.pk(siteId)), AttributeValue.fromS(p.sk())));
     }
   }
 

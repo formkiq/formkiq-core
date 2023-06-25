@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
@@ -42,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
  * 
@@ -136,6 +138,18 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   private void putItem(final String dynamoDbTable, final Map<String, AttributeValue> attributes) {
     this.dbClient
         .putItem(PutItemRequest.builder().tableName(dynamoDbTable).item(attributes).build());
+  }
+
+  @Override
+  public void putItems(final List<Map<String, AttributeValue>> attrs) {
+
+    if (!attrs.isEmpty()) {
+      Map<String, Collection<WriteRequest>> items =
+          new AttributeValuesToWriteRequests(this.tableName).apply(attrs);
+
+      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
+      this.dbClient.batchWriteItem(batch);
+    }
   }
 
   @Override
