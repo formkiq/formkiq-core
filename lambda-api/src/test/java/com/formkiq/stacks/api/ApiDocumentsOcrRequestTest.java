@@ -25,12 +25,16 @@ package com.formkiq.stacks.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -49,10 +53,14 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
   public void testHandleDeleteDocumentOcr01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      String documentId = "1";
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      getAwsServices().getExtension(DocumentService.class).saveDocument(siteId, item, null);
+
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
       event.setHttpMethod("DELETE");
       addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", "1");
+      setPathParameter(event, "documentId", documentId);
 
       // when
       String response = handleRequest(event);

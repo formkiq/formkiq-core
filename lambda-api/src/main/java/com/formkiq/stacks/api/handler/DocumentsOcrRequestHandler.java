@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
@@ -98,6 +99,8 @@ public class DocumentsOcrRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
+    verifyDocument(awsservice, event, siteId, documentId);
+
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.delete(siteId, documentId);
 
@@ -112,6 +115,8 @@ public class DocumentsOcrRequestHandler
     ApiResponseStatus status = SC_OK;
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
+
+    verifyDocument(awsservice, event, siteId, documentId);
 
     final boolean contentUrl = event.getQueryStringParameters() != null
         && event.getQueryStringParameters().containsKey("contentUrl");
@@ -242,10 +247,7 @@ public class DocumentsOcrRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    DocumentService ds = awsservice.getExtension(DocumentService.class);
-    if (!ds.exists(siteId, documentId)) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    verifyDocument(awsservice, event, siteId, documentId);
 
     OcrRequest request = fromBodyToObject(logger, event, OcrRequest.class);
     String userId = getCallingCognitoUsername(event);
@@ -256,15 +258,15 @@ public class DocumentsOcrRequestHandler
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
-
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
+
+    verifyDocument(awsservice, event, siteId, documentId);
 
     String userId = getCallingCognitoUsername(event);
 
@@ -279,6 +281,14 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.set(awsservice, siteId, documentId, userId, content, contentType);
 
+    ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private void verifyDocument(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
+      final String siteId, final String documentId) throws NotFoundException {
+    DocumentService ds = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = ds.findDocument(siteId, documentId);
+    verifyDocumentPermissions(awsservice, event, documentId, item);
   }
 }

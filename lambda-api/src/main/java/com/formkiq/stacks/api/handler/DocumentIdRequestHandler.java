@@ -182,6 +182,10 @@ public class DocumentIdRequestHandler
 
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = service.findDocument(siteId, documentId);
+    verifyDocumentPermissions(awsservice, event, documentId, item);
+
     try {
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
@@ -194,7 +198,6 @@ public class DocumentIdRequestHandler
 
       } else {
 
-        DocumentService service = awsservice.getExtension(DocumentService.class);
         if (!service.deleteDocument(siteId, documentId)) {
           throw new NotFoundException("Document " + documentId + " not found.");
         }
@@ -285,11 +288,9 @@ public class DocumentIdRequestHandler
 
     PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
         token != null ? token.getStartkey() : null, limit);
-    DocumentItem result = presult.getResult();
 
-    if (result == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    DocumentItem result = presult.getResult();
+    verifyDocumentPermissions(awsservice, event, documentId, result);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, presult.getToken(), limit);
@@ -327,7 +328,7 @@ public class DocumentIdRequestHandler
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
-      validatePatch(awsservice, siteId, documentId, item);
+      validatePatch(awsservice, event, siteId, documentId, item);
     } else {
       updateContentType(event, item);
     }
@@ -425,20 +426,20 @@ public class DocumentIdRequestHandler
    * Validate Patch Request.
    * 
    * @param awsservice {@link AwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
    * @throws NotFoundException NotFoundException
    * @throws ValidationException ValidationException
    */
-  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final DocumentItem doc)
+  private void validatePatch(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
+      final String siteId, final String documentId, final DocumentItem doc)
       throws NotFoundException, ValidationException {
+
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    verifyDocumentPermissions(awsservice, event, documentId, item);
 
     Collection<DocumentMetadata> metadata =
         item.getMetadata() != null ? new ArrayList<>(item.getMetadata()) : new ArrayList<>();

@@ -26,18 +26,22 @@ package com.formkiq.stacks.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -50,11 +54,15 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
   /** {@link ActionsService}. */
   private ActionsService service;
 
+  /** {@link DocumentService}. */
+  private DocumentService documentService;
+
   @Override
   @BeforeEach
   public void before() throws Exception {
     super.before();
     this.service = getAwsServices().getExtension(ActionsService.class);
+    this.documentService = getAwsServices().getExtension(DocumentService.class);
   }
 
   /**
@@ -69,6 +77,10 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
       this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
@@ -108,6 +120,10 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
       this.service.saveActions(siteId, documentId,
           Arrays.asList(new Action().status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
@@ -171,6 +187,9 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
 
       Map<String, Object> body =
           Map.of("actions", Arrays.asList(Map.of("parameters", Map.of("ocrParseTypes", "text"))));

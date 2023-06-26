@@ -67,9 +67,7 @@ public class DocumentTagValueRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem item = documentService.findDocument(siteId, documentId);
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    verifyDocumentPermissions(awsservice, event, documentId, item);
 
     DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
     Collection<ValidationError> errors =

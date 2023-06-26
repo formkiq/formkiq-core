@@ -574,9 +574,12 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String tagname = "category";
       String tagvalue = UUID.randomUUID().toString();
 
-      DocumentTag item = new DocumentTag(documentId, tagname, tagvalue, date, userId);
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      getDocumentService().saveDocument(siteId, item, null);
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(item), null);
+      DocumentTag tag = new DocumentTag(documentId, tagname, tagvalue, date, userId);
+
+      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags00.json");
@@ -621,6 +624,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       Date now = new Date();
       String userId = "jsmith";
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      getDocumentService().saveDocument(siteId, item, null);
 
       DocumentTag item0 = new DocumentTag(documentId, "category0", "person", now, userId);
       DocumentTag item1 = new DocumentTag(documentId, "category1", "thing", now, userId);
@@ -673,6 +679,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String userId = "jsmith";
       String documentId = UUID.randomUUID().toString();
 
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      getDocumentService().saveDocument(siteId, item, null);
+
       DocumentTag item0 = new DocumentTag(documentId, "category0", null, now, userId);
       item0.setValues(Arrays.asList("abc", "xyz"));
       DocumentTag item1 = new DocumentTag(documentId, "category1", null, now, userId);
@@ -714,6 +723,28 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * GET /documents/{documentId}/tags/{tagKey} request. Document not found.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetTags00() throws Exception {
+    // given
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+    final String expected = "{" + getHeaders()
+        + ",\"body\":\"{\\\"message\\\":\\\"Document 188 not found.\\\"}\",\"statusCode\":404}";
+
+    final InputStream in = toStream("/request-get-documents-documentid-tags01.json");
+
+    // when
+    getHandler().handleRequest(in, outstream, getMockContext());
+
+    // then
+    assertEquals(expected, new String(outstream.toByteArray(), "UTF-8"));
+    in.close();
+  }
+
+  /**
    * GET /documents/{documentId}/tags/{tagKey} request. Tag not found.
    *
    * @throws Exception an error has occurred
@@ -724,6 +755,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
     final String expected = "{" + getHeaders()
         + ",\"body\":\"{\\\"message\\\":\\\"Tag category not found.\\\"}\",\"statusCode\":404}";
+
+    String siteId = null;
+    DocumentItem item = new DocumentItemDynamoDb("188", new Date(), "joe");
+    getDocumentService().saveDocument(siteId, item, null);
 
     final InputStream in = toStream("/request-get-documents-documentid-tags01.json");
 

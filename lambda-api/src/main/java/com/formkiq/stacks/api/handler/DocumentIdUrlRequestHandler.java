@@ -44,7 +44,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
@@ -73,10 +72,7 @@ public class DocumentIdUrlRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = documentService.findDocument(siteId, documentId);
-
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    verifyDocumentPermissions(awsservice, event, documentId, item);
 
     String versionKey = getParameter(event, "versionKey");
     if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {

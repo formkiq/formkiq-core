@@ -85,6 +85,7 @@ public class DocumentTagsRequestHandler
 
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
+    verifyDocument(awsservice, event, siteId, documentId);
 
     PaginationResults<DocumentTag> results =
         documentService.findDocumentTags(siteId, documentId, ptoken, limit);
@@ -158,15 +159,13 @@ public class DocumentTagsRequestHandler
     DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
 
     validate(tags);
-
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    validateDocumentExists(documentService, siteId, documentId);
+    verifyDocument(awsservice, event, siteId, documentId);
 
     updateTagsMetadata(event, tags);
 
     validateTags(tags);
 
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.addTags(siteId, documentId, tags.getTags(), null);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMessageResponse("Updated Tags"));
@@ -198,10 +197,6 @@ public class DocumentTagsRequestHandler
       }
     }
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    final DocumentItem item = validateDocumentExists(documentService, siteId, documentId);
-
     if (!tagsValid) {
       tags = new DocumentTags();
       tags.setTags(Arrays.asList(tag));
@@ -211,6 +206,8 @@ public class DocumentTagsRequestHandler
 
     validateTags(tags);
 
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = verifyDocument(awsservice, event, siteId, documentId);
     documentService.deleteDocumentTag(siteId, documentId, "untagged");
 
     Collection<DocumentTag> newTags = tagSchemaValidation(awsservice, siteId, tags, item, userId);
@@ -238,10 +235,9 @@ public class DocumentTagsRequestHandler
 
     validate(tags);
 
+    verifyDocument(awsservice, event, siteId, documentId);
+
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    validateDocumentExists(documentService, siteId, documentId);
-
     documentService.deleteDocumentTags(siteId, documentId);
     updateTagsMetadata(event, tags);
 
@@ -314,25 +310,6 @@ public class DocumentTagsRequestHandler
   }
 
   /**
-   * Validate Document Exists.
-   * 
-   * @param documentService {@link DocumentService}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link DocumentItem}
-   * @throws NotFoundException NotFoundException
-   */
-  private DocumentItem validateDocumentExists(final DocumentService documentService,
-      final String siteId, final String documentId) throws NotFoundException {
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
-
-    return item;
-  }
-
-  /**
    * Validate {@link DocumentTags}.
    * 
    * @param tags {@link DocumentTags}
@@ -343,5 +320,14 @@ public class DocumentTagsRequestHandler
     if (!tagErrors.isEmpty()) {
       throw new ValidationException(tagErrors);
     }
+  }
+
+  private DocumentItem verifyDocument(final AwsServiceCache awsservice,
+      final ApiGatewayRequestEvent event, final String siteId, final String documentId)
+      throws NotFoundException {
+    DocumentService ds = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = ds.findDocument(siteId, documentId);
+    verifyDocumentPermissions(awsservice, event, documentId, item);
+    return item;
   }
 }

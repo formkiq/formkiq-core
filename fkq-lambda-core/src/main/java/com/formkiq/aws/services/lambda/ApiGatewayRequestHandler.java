@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
@@ -33,46 +34,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
  *
  */
 public interface ApiGatewayRequestHandler {
-
-  /**
-   * Is caller Authorized to continue.
-   * 
-   * @param awsServiceCache {@link AwsServiceCache}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorizer {@link ApiAuthorizer}
-   * @param method {@link String}
-   * @return boolean
-   */
-  default boolean isAuthorized(AwsServiceCache awsServiceCache, ApiGatewayRequestEvent event,
-      ApiAuthorizer authorizer, String method) {
-    return "options".equals(method) || hasAccess(method, event.getPath(), authorizer);
-  }
-
-  /**
-   * Whether {@link ApiGatewayRequestEvent} has access.
-   * 
-   * @param method {@link String}
-   * @param path {@link String}
-   * @param authorizer {@link ApiAuthorizer}
-   * @return boolean
-   */
-  default boolean hasAccess(String method, String path, ApiAuthorizer authorizer) {
-
-    boolean access = false;
-
-    if (authorizer.isCallerAssumeRole() || authorizer.isCallerIamUser() || authorizer.isUserAdmin()
-        || path.startsWith("/public/")) {
-
-      access = true;
-
-    } else if ((isReadonly(method) && authorizer.isUserReadAccess())
-        || authorizer.isUserWriteAccess()) {
-
-      access = true;
-    }
-
-    return access;
-  }
 
   /**
    * Called Before "delete" method is called.
@@ -87,7 +48,6 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
-
 
   /**
    * Called Before "get" method is called.
@@ -116,6 +76,7 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     // empty
   }
+
 
   /**
    * Called Before "patch" method is called.
@@ -203,6 +164,32 @@ public interface ApiGatewayRequestHandler {
   String getRequestUrl();
 
   /**
+   * Whether {@link ApiGatewayRequestEvent} has access.
+   * 
+   * @param method {@link String}
+   * @param path {@link String}
+   * @param authorizer {@link ApiAuthorizer}
+   * @return boolean
+   */
+  default boolean hasAccess(String method, String path, ApiAuthorizer authorizer) {
+
+    boolean access = false;
+
+    if (authorizer.isCallerAssumeRole() || authorizer.isCallerIamUser() || authorizer.isUserAdmin()
+        || path.startsWith("/public/")) {
+
+      access = true;
+
+    } else if ((isReadonly(method) && authorizer.isUserReadAccess())
+        || authorizer.isUserWriteAccess()) {
+
+      access = true;
+    }
+
+    return access;
+  }
+
+  /**
    * Head Request Handler.
    *
    * @param logger {@link LambdaLogger}
@@ -218,6 +205,20 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
+  }
+
+  /**
+   * Is caller Authorized to continue.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param method {@link String}
+   * @return boolean
+   */
+  default boolean isAuthorized(AwsServiceCache awsServiceCache, ApiGatewayRequestEvent event,
+      ApiAuthorizer authorizer, String method) {
+    return "options".equals(method) || hasAccess(method, event.getPath(), authorizer);
   }
 
   /**
@@ -300,5 +301,21 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
+  }
+
+  /**
+   * Verify Document Permissions.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param documentId {@link String}
+   * @param item {@link DocumentItem}
+   * @throws NotFoundException NotFoundException
+   */
+  default void verifyDocumentPermissions(AwsServiceCache awsservice, ApiGatewayRequestEvent event,
+      final String documentId, final DocumentItem item) throws NotFoundException {
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
   }
 }

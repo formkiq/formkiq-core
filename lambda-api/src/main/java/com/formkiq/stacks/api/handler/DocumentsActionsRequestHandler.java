@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -46,6 +47,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
@@ -66,11 +68,13 @@ public class DocumentsActionsRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    List<Map<String, Object>> list = new ArrayList<>();
+    DocumentItem item = getDocument(awsservice, siteId, documentId);
+    verifyDocumentPermissions(awsservice, event, documentId, item);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
 
+    List<Map<String, Object>> list = new ArrayList<>();
     for (Action action : actions) {
       Map<String, Object> map = new HashMap<>();
       map.put("userId", action.userId());
@@ -83,6 +87,13 @@ public class DocumentsActionsRequestHandler
     ApiMapResponse resp = new ApiMapResponse();
     resp.setMap(Map.of("actions", list));
     return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
+      final String documentId) {
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = documentService.findDocument(siteId, documentId);
+    return item;
   }
 
   @Override
@@ -99,6 +110,9 @@ public class DocumentsActionsRequestHandler
     String siteId = authorizer.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
     String userId = getCallingCognitoUsername(event);
+
+    DocumentItem item = getDocument(awsservice, siteId, documentId);
+    verifyDocumentPermissions(awsservice, event, documentId, item);
 
     Map<String, Object> body = fromBodyToMap(logger, event);
 

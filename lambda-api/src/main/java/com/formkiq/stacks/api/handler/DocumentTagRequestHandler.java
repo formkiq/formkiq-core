@@ -80,9 +80,7 @@ public class DocumentTagRequestHandler
     }
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
-    if (document == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    verifyDocumentPermissions(awsservice, event, documentId, document);
 
     List<String> tags = Arrays.asList(tagKey);
 
@@ -110,6 +108,8 @@ public class DocumentTagRequestHandler
     String siteId = authorizer.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = documentService.findDocument(siteId, documentId);
+    verifyDocumentPermissions(awsservice, event, documentId, item);
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
 
@@ -175,9 +175,7 @@ public class DocumentTagRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
-    if (document == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    verifyDocumentPermissions(awsservice, event, documentId, document);
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (tag == null) {

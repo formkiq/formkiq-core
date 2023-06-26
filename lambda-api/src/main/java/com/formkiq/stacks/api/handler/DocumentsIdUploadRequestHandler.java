@@ -46,7 +46,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
@@ -170,12 +169,8 @@ public class DocumentsIdUploadRequestHandler
       documentId = map.get("documentId");
 
       item = service.findDocument(siteId, documentId);
-
+      verifyDocumentPermissions(awsservice, event, documentId, item);
       documentExists = item != null;
-
-      if (!documentExists) {
-        throw new NotFoundException("Document " + documentId + " not found.");
-      }
 
     } else if (query != null && query.containsKey("path")) {
 
