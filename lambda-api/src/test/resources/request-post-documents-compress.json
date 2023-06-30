@@ -1,0 +1,136 @@
+{
+  "resource": "/documents/compress",
+  "path": "/documents/compress",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept": "*/*",
+    "Accept-Encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "CloudFront-Forwarded-Proto": "https",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "CloudFront-Viewer-Country": "CA",
+    "Host": "xc38c278ak.execute-api.us-east-1.amazonaws.com",
+    "Postman-Token": "ea228c9e-bf7c-4775-91e5-91777f7b9bf7",
+    "User-Agent": "PostmanRuntime/7.4.0",
+    "Via": "1.1 d0e9493afe30356ba9d74f759fd26f53.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "EJN6YpC2orKliRAtsoOO34atS_XFJ8OaMg0JT5a3t7_-m53ORiXOpQ==",
+    "X-Amzn-Trace-Id": "Root=1-5c258d5b-cf4cfa5a29636c7f4f05d801",
+    "X-Forwarded-For": "50.71.176.213, 70.132.57.147",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept": [
+      "*/*"
+    ],
+    "Accept-Encoding": [
+      "gzip, deflate"
+    ],
+    "cache-control": [
+      "no-cache"
+    ],
+    "CloudFront-Forwarded-Proto": [
+      "https"
+    ],
+    "CloudFront-Is-Desktop-Viewer": [
+      "true"
+    ],
+    "CloudFront-Is-Mobile-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-SmartTV-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-Tablet-Viewer": [
+      "false"
+    ],
+    "CloudFront-Viewer-Country": [
+      "CA"
+    ],
+    "Host": [
+      "xc38c278ak.execute-api.us-east-1.amazonaws.com"
+    ],
+    "Postman-Token": [
+      "ea228c9e-bf7c-4775-91e5-91777f7b9bf7"
+    ],
+    "User-Agent": [
+      "PostmanRuntime/7.4.0"
+    ],
+    "Via": [
+      "1.1 d0e9493afe30356ba9d74f759fd26f53.cloudfront.net (CloudFront)"
+    ],
+    "X-Amz-Cf-Id": [
+      "EJN6YpC2orKliRAtsoOO34atS_XFJ8OaMg0JT5a3t7_-m53ORiXOpQ=="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-5c258d5b-cf4cfa5a29636c7f4f05d801"
+    ],
+    "X-Forwarded-For": [
+      "50.71.176.213, 70.132.57.147"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": {
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "lkhsvn",
+    "resourcePath": "/documents/compress",
+    "httpMethod": "POST",
+    "extendedRequestId": "SmMGTHUXoAMF55g=",
+    "requestTime": "28/Dec/2018:02:41:31 +0000",
+    "path": "/documents/compress",
+    "accountId": "228203493010",
+    "protocol": "HTTP/1.1",
+    "stage": "prod",
+    "domainPrefix": "xc38c278ak",
+    "requestTimeEpoch": 1545964891569,
+    "requestId": "157a12e1-0a4a-11e9-968b-f3d29ef457da",
+    "authorizer": {
+      "claims": {
+        "aud": "man2qihb20eumvr55pqcuvp6n",
+        "auth_time": "1594265826",
+        "cognito:groups": "[default Admins finance]",
+        "cognito:preferred_role": "arn:aws:iam::1111111111111111:role/formkiq-stacks-document-unittest-Do-AdminGroupRole-FD83ZGMKR6KP",
+        "cognito:roles": "[arn:aws:iam::1111111111111111:role/formkiq-stacks-document-unittest-Do-AdminGroupRole-FD83ZGMKR6KP]",
+        "cognito:username": "test@formkiq.com",
+        "email": "test@formkiq.com",
+        "email_verified": "true",
+        "event_id": "665f0717-4fbc-4511-912b-6cb6f566e1c0",
+        "exp": "1594269426",
+        "iat": "1594265826",
+        "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_3vWU0jnGp",
+        "sub": "9d7e8352-2142-4363-9a66-45a65daaa0de",
+        "token_use": "id"
+      },
+      "scopes": null
+    },
+
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "50.71.176.213",
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userAgent": "PostmanRuntime/7.4.0",
+      "user": null
+    },
+    "domainName": "xc38c278ak.execute-api.us-east-1.amazonaws.com",
+    "apiId": "xc38c278ak"
+  },
+  "body": "{\"siteId\":\"\",\"documentIds\":[\"doc-id-1\",\"doc-id-2\",\"doc-id-3\"]}",
+  "isBase64Encoded": false
+}
