@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
@@ -80,7 +82,7 @@ public class DocumentTagRequestHandler
     }
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, document);
+    throwIfNull(document, new DocumentNotFoundException(documentId));
 
     List<String> tags = Arrays.asList(tagKey);
 
@@ -109,7 +111,7 @@ public class DocumentTagRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = documentService.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
 
@@ -175,7 +177,7 @@ public class DocumentTagRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, document);
+    throwIfNull(document, new DocumentNotFoundException(documentId));
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (tag == null) {

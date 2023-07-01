@@ -24,7 +24,6 @@
 package com.formkiq.aws.services.lambda;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
@@ -301,21 +300,5 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorizer authorizer, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
-  }
-
-  /**
-   * Verify Document Permissions.
-   * 
-   * @param awsservice {@link AwsServiceCache}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param documentId {@link String}
-   * @param item {@link DocumentItem}
-   * @throws NotFoundException NotFoundException
-   */
-  default void verifyDocumentPermissions(AwsServiceCache awsservice, ApiGatewayRequestEvent event,
-      final String documentId, final DocumentItem item) throws NotFoundException {
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
   }
 }

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.net.URL;
@@ -46,6 +47,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
@@ -169,7 +171,8 @@ public class DocumentsIdUploadRequestHandler
       documentId = map.get("documentId");
 
       item = service.findDocument(siteId, documentId);
-      verifyDocumentPermissions(awsservice, event, documentId, item);
+      throwIfNull(item, new DocumentNotFoundException(documentId));
+
       documentExists = item != null;
 
     } else if (query != null && query.containsKey("path")) {

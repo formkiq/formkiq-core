@@ -136,13 +136,6 @@ public interface DocumentItem {
   String getVersion();
 
   /**
-   * Whether {@link DocumentItem} has permissions turned on.
-   * 
-   * @return boolean
-   */
-  boolean isPermissions();
-
-  /**
    * Sets Belongs To DocumentId.
    * 
    * @param documentId {@link String}

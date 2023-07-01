@@ -106,7 +106,6 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentPermission;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -114,7 +113,9 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.PermissionType;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermission;
+import com.formkiq.stacks.dynamodb.permissions.Permission;
+import com.formkiq.stacks.dynamodb.permissions.PermissionType;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -1326,7 +1327,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertNotNull(doc);
 
       DocumentPermission p = new DocumentPermission().documentId(item.getDocumentId())
-          .name("finance").type(PermissionType.READ_GROUP);
+          .name("finance").type(PermissionType.GROUP).permission(Permission.READ);
       assertTrue(db.exists(AttributeValue.fromS(p.pk(siteId)), AttributeValue.fromS(p.sk())));
     }
   }

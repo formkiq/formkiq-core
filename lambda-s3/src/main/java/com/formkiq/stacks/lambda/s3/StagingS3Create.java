@@ -46,8 +46,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -78,7 +76,6 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.DocumentPermission;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
@@ -87,13 +84,16 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.PermissionType;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermission;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionService;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionServiceExtension;
+import com.formkiq.stacks.dynamodb.permissions.Permission;
+import com.formkiq.stacks.dynamodb.permissions.PermissionType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
@@ -173,8 +173,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String appEnvironment;
   /** {@link AwsCredentials}. */
   private AwsCredentials credentials;
-  /** {@link DynamoDbService}. */
-  private DynamoDbService db;
   /** {@link String}. */
   private String documentsBucket;
   /** IAM Documents Url. */
@@ -193,6 +191,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private S3Service s3;
   /** {@link DocumentService}. */
   private DocumentService service;
+  /** {@link DocumentPermissionService}. */
+  private DocumentPermissionService permissionService;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
@@ -234,19 +234,21 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.region = Region.of(map.get("AWS_REGION"));
     this.credentials = awsCredentials;
 
-    String documentsTable = map.get("DOCUMENTS_TABLE");
-
     AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
+    AwsServiceCache.register(DocumentPermissionService.class,
+        new DocumentPermissionServiceExtension());
     DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
     DocumentVersionService versionService = dsExtension.loadService(serviceCache);
 
     DocumentSyncServiceExtension syncExtension = new DocumentSyncServiceExtension();
     this.syncService = syncExtension.loadService(serviceCache);
 
-    this.db = new DynamoDbServiceImpl(dbBuilder, documentsTable);
+    String documentsTable = map.get("DOCUMENTS_TABLE");
+
     this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
+    this.permissionService = serviceCache.getExtension(DocumentPermissionService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
     this.s3 = new S3Service(s3Builder);
     this.ssmConnection = ssmConnectionBuilder;
@@ -415,15 +417,18 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       if (permissions.containsKey(type)) {
 
+        PermissionType permissionType = PermissionType.valueOf(type.toUpperCase());
+
         DynamicObject groups = permissions.getMap(type);
         String documentId = doc.getDocumentId();
         for (String key : Arrays.asList("read", "write", "delete")) {
           List<String> groupMembers = groups.getStringList(key);
 
+          Permission permission = Permission.valueOf(key.toUpperCase());
+
           for (String member : groupMembers) {
             DocumentPermission dp = new DocumentPermission().documentId(documentId).name(member)
-                .type(PermissionType.valueOf(key.toUpperCase() + "_" + type.toUpperCase()))
-                .userId(doc.getUserId());
+                .type(permissionType).permission(permission).userId(doc.getUserId());
             list.add(dp);
           }
         }
@@ -675,11 +680,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (doc.containsKey("permissions")) {
 
       List<DocumentPermission> list = getPermissions(doc);
-
-      List<Map<String, AttributeValue>> attributes =
-          list.stream().map(p -> p.getAttributes(siteId)).collect(Collectors.toList());
-
-      this.db.putItems(attributes);
+      this.permissionService.save(siteId, list);
     }
   }
 

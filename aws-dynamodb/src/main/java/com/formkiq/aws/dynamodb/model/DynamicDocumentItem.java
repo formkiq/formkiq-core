@@ -225,9 +225,4 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   public void setVersion(final String version) {
     put("version", version);
   }
-
-  @Override
-  public boolean isPermissions() {
-    return false;
-  }
 }

@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
@@ -63,6 +64,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -184,7 +186,7 @@ public class DocumentIdRequestHandler
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
     DocumentItem item = service.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     try {
 
@@ -289,18 +291,18 @@ public class DocumentIdRequestHandler
     PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
         token != null ? token.getStartkey() : null, limit);
 
-    DocumentItem result = presult.getResult();
-    verifyDocumentPermissions(awsservice, event, documentId, result);
+    DocumentItem item = presult.getResult();
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, presult.getToken(), limit);
 
-    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
-    item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    item.put("previous", current.getPrevious());
-    item.put("next", current.hasNext() ? current.getNext() : null);
+    DynamicDocumentItem ditem = new DocumentItemToDynamicDocumentItem().apply(item);
+    ditem.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    ditem.put("previous", current.getPrevious());
+    ditem.put("next", current.hasNext() ? current.getNext() : null);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(ditem));
   }
 
   @Override
@@ -430,16 +432,14 @@ public class DocumentIdRequestHandler
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
-   * @throws NotFoundException NotFoundException
-   * @throws ValidationException ValidationException
+   * @throws Exception Exception
    */
   private void validatePatch(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
-      final String siteId, final String documentId, final DocumentItem doc)
-      throws NotFoundException, ValidationException {
+      final String siteId, final String documentId, final DocumentItem doc) throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     Collection<DocumentMetadata> metadata =
         item.getMetadata() != null ? new ArrayList<>(item.getMetadata()) : new ArrayList<>();

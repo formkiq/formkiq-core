@@ -55,6 +55,7 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.DocumentAuthorizationHandler;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
@@ -428,12 +429,47 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     String resource = event.getResource();
     ApiGatewayRequestHandler handler = findRequestHandler(urlMap, method, resource);
 
-    if (!handler.isAuthorized(getAwsServices(), event, authorizer, method)) {
+    if (!isAuthorized(event, authorizer, method, handler)) {
       String s = String.format("fkq access denied (%s)", authorizer.accessSummary());
       throw new ForbiddenException(s);
     }
 
     return callHandlerMethod(logger, method, event, authorizer, handler);
+  }
+
+  /**
+   * Is {@link ApiGatewayRequestEvent} caller authorized.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorizer {@link ApiAuthorizer}
+   * @param method {@link String}
+   * @param handler {@link ApiGatewayRequestHandler}
+   * @return boolean
+   */
+  private boolean isAuthorized(final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final String method, final ApiGatewayRequestHandler handler) {
+
+    boolean authorized = handler.isAuthorized(getAwsServices(), event, authorizer, method);
+
+    if (authorized && event.getResource().startsWith("/documents/{documentId}")) {
+
+      String siteId = authorizer.getSiteId();
+      String documentId = event.getPathParameters().get("documentId");
+
+      String permission = "write";
+      if ("get".equals(method)) {
+        permission = "read";
+      } else if ("delete".equals(method)) {
+        permission = "delete";
+      }
+
+      DocumentAuthorizationHandler authorizationHandler =
+          getAwsServices().getExtension(DocumentAuthorizationHandler.class);
+      authorized = authorizationHandler.isAuthorized(getAwsServices(), authorizer.getSiteIds(),
+          siteId, documentId, permission);
+    }
+
+    return authorized;
   }
 
   /**

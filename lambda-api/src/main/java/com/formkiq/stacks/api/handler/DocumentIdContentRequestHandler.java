@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.net.URL;
 import java.time.Duration;
@@ -41,6 +42,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -66,7 +68,7 @@ public class DocumentIdContentRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem item = documentService.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +37,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
@@ -67,7 +69,7 @@ public class DocumentTagValueRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem item = documentService.findDocument(siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     DocumentTagSchemaPlugin plugin = awsservice.getExtension(DocumentTagSchemaPlugin.class);
     Collection<ValidationError> errors =

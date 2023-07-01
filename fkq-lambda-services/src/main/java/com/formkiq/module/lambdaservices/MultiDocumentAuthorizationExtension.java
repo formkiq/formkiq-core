@@ -21,18 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.module.lambdaservices;
+
+import java.util.List;
 
 /**
  * 
- * Type of Document Permissions.
+ * {@link AwsServiceExtension} implementation of {@link DocumentAuthorizationHandler}.
  *
  */
-public enum PermissionType {
-  /** Delete Group Permission. */
-  DELETE_GROUP,
-  /** Read Group Permission. */
-  READ_GROUP,
-  /** Write Group Permission. */
-  WRITE_GROUP;
+public class MultiDocumentAuthorizationExtension
+    implements AwsServiceExtension<DocumentAuthorizationHandler> {
+
+  /** {@link MultiDocumentAuthorizationHandler}. */
+  private MultiDocumentAuthorizationHandler handler;
+
+  /**
+   * constructor.
+   * 
+   * @param authorizationHandlers {@link List} {@link DocumentAuthorizationHandler}
+   */
+  public MultiDocumentAuthorizationExtension(
+      final List<DocumentAuthorizationHandler> authorizationHandlers) {
+    this.handler = new MultiDocumentAuthorizationHandler(authorizationHandlers);
+  }
+
+  @Override
+  public DocumentAuthorizationHandler loadService(final AwsServiceCache awsServiceCache) {
+    return this.handler;
+  }
 }

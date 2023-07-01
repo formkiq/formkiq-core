@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -69,7 +71,7 @@ public class DocumentsActionsRequestHandler
     String documentId = event.getPathParameters().get("documentId");
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
@@ -112,7 +114,7 @@ public class DocumentsActionsRequestHandler
     String userId = getCallingCognitoUsername(event);
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
-    verifyDocumentPermissions(awsservice, event, documentId, item);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     Map<String, Object> body = fromBodyToMap(logger, event);
 

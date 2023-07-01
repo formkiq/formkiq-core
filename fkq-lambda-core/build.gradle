@@ -8,7 +8,6 @@ dependencies {
 	implementation project(':aws-ssm')
 	implementation project(':aws-dynamodb')
 	implementation project(':fkq-plugins')
-	implementation project(':actions')
 	implementation project(':fkq-lambda-services')
     implementation project(':fkq-validation')
 	

@@ -249,9 +249,4 @@ public class DocumentItemDynamoDb implements DocumentItem {
   public String toString() {
     return "documentId=" + this.documentId + ",inserteddate=" + this.insertedDate;
   }
-
-  @Override
-  public boolean isPermissions() {
-    return false;
-  }
 }

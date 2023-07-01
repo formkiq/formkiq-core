@@ -21,25 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
-
-import java.util.Collection;
+package com.formkiq.stacks.dynamodb.permissions;
 
 /**
  * 
- * {@link DocumentPermission} Service.
+ * Type of Document Permissions.
  *
  */
-public interface DocumentPermissionService {
-
-  /**
-   * Get Document Permissions by Group.
-   * 
-   * @param groups {@link Collection} {@link String}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link Collection} {@link PermissionType}
-   */
-  Collection<PermissionType> getPermissions(Collection<String> groups, String siteId,
-      String documentId);
+public enum Permission {
+  /** Deny Permission. */
+  DENY,
+  /** Delete Permission. */
+  DELETE,
+  /** Read Permission. */
+  READ,
+  /** Write Permission. */
+  WRITE;
 }

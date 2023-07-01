@@ -21,36 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.permissions;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.module.lambdaservices.DocumentAuthorizationHandler;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link DocumentPermissionService}.
+ * Document Permission implementation of {@link DocumentAuthorizationHandler}.
  *
  */
-public class DocumentPermissionServiceExtension
-    implements AwsServiceExtension<DocumentPermissionService> {
-
-  /** {@link DocumentPermissionService}. */
-  private DocumentPermissionService service;
-
-  /**
-   * constructor.
-   */
-  public DocumentPermissionServiceExtension() {}
+public class DocumentPermissionsAuthorizationHandler implements DocumentAuthorizationHandler {
 
   @Override
-  public DocumentPermissionService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
+  public boolean isAuthorized(final AwsServiceCache awsservice, final Collection<String> roleNames,
+      final String siteId, final String documentId, final String permission) {
 
-      this.service = null;
-      // new DocumentSearchServiceImpl(connection, documentService,
-      // awsServiceCache.environment("DOCUMENTS_TABLE"), documentTagSchemaPlugin);
+    boolean authorized = false;
+    DocumentPermissionService permissionService =
+        awsservice.getExtension(DocumentPermissionService.class);
+
+    boolean hasDocumentPermissions = permissionService.hasDocumentPermissions(siteId, documentId);
+
+    if (hasDocumentPermissions) {
+
+      Collection<Permission> types =
+          permissionService.getPermissions(roleNames, siteId, documentId);
+      Collection<String> typesNames =
+          types.stream().map(t -> t.name().toLowerCase()).collect(Collectors.toList());
+
+      authorized = typesNames.contains(permission);
+
+    } else {
+      authorized = true;
     }
 
-    return this.service;
+    return authorized;
   }
+
 }

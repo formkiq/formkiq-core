@@ -69,6 +69,7 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionService;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
@@ -313,6 +314,15 @@ public abstract class AbstractRequestHandler {
    */
   public CoreAwsServiceCache getAwsServices() {
     return this.awsServices;
+  }
+
+  /**
+   * Get {@link DocumentPermissionService}.
+   *
+   * @return {@link DocumentPermissionService}
+   */
+  public DocumentPermissionService getDocumentPermissionService() {
+    return this.awsServices.getExtension(DocumentPermissionService.class);
   }
 
   /**

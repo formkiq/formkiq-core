@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermission;
+import com.formkiq.stacks.dynamodb.permissions.Permission;
+import com.formkiq.stacks.dynamodb.permissions.PermissionType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 class DocumentPermissionTest {
@@ -37,27 +40,29 @@ class DocumentPermissionTest {
     // given
     String documentId = UUID.randomUUID().toString();
     String name = "finance";
-    PermissionType type = PermissionType.DELETE_GROUP;
+    Permission permission = Permission.DELETE;
+    PermissionType type = PermissionType.GROUP;
 
     // when
-    DocumentPermission p =
-        new DocumentPermission().documentId(documentId).name(name).type(type).userId("joe");
+    DocumentPermission p = new DocumentPermission().documentId(documentId).name(name).type(type)
+        .permission(permission).userId("joe");
 
     // then
     assertEquals("docs#" + documentId, p.pk(null));
-    assertEquals("permission#DELETE_GROUP#finance", p.sk());
+    assertEquals("permission#GROUP_DELETE#finance", p.sk());
 
     assertEquals("123/docs#" + documentId, p.pk("123"));
-    assertEquals("permission#DELETE_GROUP#finance", p.sk());
+    assertEquals("permission#GROUP_DELETE#finance", p.sk());
 
-    final int expected = 6;
+    final int expected = 7;
     Map<String, AttributeValue> attributes = p.getAttributes(null);
     assertEquals(expected, attributes.size());
     assertEquals("docs#" + documentId, attributes.get(DbKeys.PK).s());
-    assertEquals("permission#DELETE_GROUP#finance", attributes.get(DbKeys.SK).s());
+    assertEquals("permission#GROUP_DELETE#finance", attributes.get(DbKeys.SK).s());
     assertEquals(documentId, attributes.get("documentId").s());
-    assertEquals("DELETE_GROUP", attributes.get("type").s());
+    assertEquals("GROUP", attributes.get("type").s());
     assertEquals("finance", attributes.get("name").s());
     assertEquals("joe", attributes.get("userId").s());
+    assertEquals("DELETE", attributes.get("permission").s());
   }
 }

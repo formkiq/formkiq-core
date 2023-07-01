@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.stacks.dynamodb.permissions;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import java.util.Map;
@@ -44,6 +44,9 @@ public class DocumentPermission implements DynamodbRecord {
   /** Name of Permission. */
   @Reflectable
   private String name;
+  /** Type of Permission. */
+  @Reflectable
+  private Permission permission;
   /** Type of Permission. */
   @Reflectable
   private PermissionType type;
@@ -83,7 +86,8 @@ public class DocumentPermission implements DynamodbRecord {
 
     return Map.of(DbKeys.PK, AttributeValue.fromS(pk(siteId)), DbKeys.SK,
         AttributeValue.fromS(sk()), "documentId", AttributeValue.fromS(this.documentId), "name",
-        AttributeValue.fromS(this.name), "type", AttributeValue.fromS(this.type.name()), "userId",
+        AttributeValue.fromS(this.name), "type", AttributeValue.fromS(this.type.name()),
+        "permission", AttributeValue.fromS(this.permission.name()), "userId",
         AttributeValue.fromS(this.userId));
   }
 
@@ -107,6 +111,26 @@ public class DocumentPermission implements DynamodbRecord {
     return this;
   }
 
+  /**
+   * Get Document {@link Permission}.
+   * 
+   * @return {@link Permission}a
+   */
+  public Permission permission() {
+    return this.permission;
+  }
+
+  /**
+   * Set Document {@link Permission}.
+   * 
+   * @param documentPermission {@link Permission}
+   * @return {@link DocumentPermission}
+   */
+  public DocumentPermission permission(final Permission documentPermission) {
+    this.permission = documentPermission;
+    return this;
+  }
+
   @Override
   public String pk(final String siteId) {
     String pk = "docs#" + this.documentId;
@@ -115,7 +139,7 @@ public class DocumentPermission implements DynamodbRecord {
 
   @Override
   public String sk() {
-    return "permission#" + this.type.name() + "#" + this.name;
+    return "permission#" + this.type.name() + "_" + this.permission.name() + "#" + this.name;
   }
 
   /**

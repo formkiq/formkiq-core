@@ -45,9 +45,13 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.permissions.DocumentPermission;
+import com.formkiq.stacks.dynamodb.permissions.Permission;
+import com.formkiq.stacks.dynamodb.permissions.PermissionType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -268,6 +272,97 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     assertNotNull(children.get(0).get("belongsToDocumentId"));
     assertNotNull(children.get(0).get("insertedDate"));
     assertNull(children.get(0).get("siteId"));
+  }
+
+  /**
+   * GET /documents/{documentId} request.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param group {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getDocumentsRequest(final String siteId, final String documentId,
+      final String group) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("GET")
+        .resource("/documents/{documentId}").path("/documents/" + documentId).group(group)
+        .user("joesmith").pathParameters(Map.of("documentId", documentId))
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    return event;
+  }
+
+  /**
+   * Get Document Request, Document without READ_GROUP permissions.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetRequest07() throws Exception {
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String userId = "jsmith";
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentPermissionService().save(siteId,
+          Arrays.asList(new DocumentPermission().documentId(documentId).name("finance")
+              .type(PermissionType.GROUP).permission(Permission.WRITE).userId(userId)));
+
+      ApiGatewayRequestEvent event = getDocumentsRequest(siteId, documentId, "default finance");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("403.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertEquals("{\"message\":\"fkq access denied (groups: default,finance)\"}", m.get("body"));
+    }
+  }
+
+  /**
+   * Get Document Request, Document with READ_GROUP permissions.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetRequest08() throws Exception {
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      String documentId = UUID.randomUUID().toString();
+      String userId = "jsmith";
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentPermissionService().save(siteId,
+          Arrays.asList(new DocumentPermission().documentId(documentId).name("finance")
+              .type(PermissionType.GROUP).permission(Permission.READ).userId(userId)));
+
+      ApiGatewayRequestEvent event = getDocumentsRequest(siteId, documentId, siteId + " finance");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      assertEquals(documentId, resp.getString("documentId"));
+      assertEquals(userId, resp.getString("userId"));
+    }
   }
 
   /**
