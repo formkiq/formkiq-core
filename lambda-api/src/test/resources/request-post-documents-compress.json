@@ -115,7 +115,6 @@
       },
       "scopes": null
     },
-
     "identity": {
       "cognitoIdentityPoolId": null,
       "accountId": null,
@@ -131,6 +130,6 @@
     "domainName": "xc38c278ak.execute-api.us-east-1.amazonaws.com",
     "apiId": "xc38c278ak"
   },
-  "body": "{\"siteId\":\"\",\"documentIds\":[\"doc-id-1\",\"doc-id-2\",\"doc-id-3\"]}",
+  "body": "{\"documentIds\":[\"doc-id-1\",\"doc-id-2\",\"doc-id-3\"]}",
   "isBase64Encoded": false
 }
