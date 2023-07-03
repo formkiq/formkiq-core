@@ -1011,12 +1011,13 @@
             post:
               operationId: CompressDocuments
               parameters:
-                - $ref: '#/components/parameters/siteIdParam'
-                - name: documentIds
-                  in: query
-                  description: Documents to compress
-                  schema:
-                    type: array
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/CompressDocumentsRequest'
               description: Compress documents into a ZIP
               security:
                 - ApiAuthorization: [ ]
@@ -2592,6 +2593,16 @@
                       belongsToDocumentId:
                         type: string
                         description: Parent Document Identifier
+            CompressDocumentsRequest:
+              type: object
+              required:
+              - documentIds
+              properties:
+                documentIds:
+                  type: array
+                  description: Documents to compress
+                  items:
+                    type: string
             CompressDocumentsResponse:
               type: object
               properties:
