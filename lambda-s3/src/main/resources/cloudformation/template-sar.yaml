@@ -111,6 +111,12 @@ Resources:
             Fn::GetAtt:
             - StagingS3Create
             - Arn
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpiryRule
+            Prefix: tempfiles/
+            Status: Enabled
+            ExpirationInDays: 1
       Tags:
         - Key: "Application"
           Value: 
