@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -64,10 +63,10 @@ public class DocumentsActionsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
@@ -106,12 +105,12 @@ public class DocumentsActionsRequestHandler
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));

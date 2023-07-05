@@ -24,7 +24,6 @@
 package com.formkiq.module.ocr;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.module.ocr.DocumentOcrService.PREFIX_TEMP_FILES;
@@ -40,7 +39,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -98,11 +97,11 @@ public class DocumentsOcrRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     ApiMapResponse resp = new ApiMapResponse();
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
@@ -115,11 +114,11 @@ public class DocumentsOcrRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     ApiResponseStatus status = SC_OK;
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
@@ -246,17 +245,17 @@ public class DocumentsOcrRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     ApiMapResponse resp = new ApiMapResponse();
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
 
     OcrRequest request = fromBodyToObject(logger, event, OcrRequest.class);
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.convert(logger, awsservice, request, siteId, documentId, userId);
@@ -267,15 +266,15 @@ public class DocumentsOcrRequestHandler
 
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     verifyDocument(awsservice, event, siteId, documentId);
 
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     Map<String, Object> map = fromBodyToMap(logger, event);
     String contentType = (String) map.get("contentType");

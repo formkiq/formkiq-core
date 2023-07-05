@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.Arrays;
@@ -37,7 +36,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -59,10 +58,10 @@ public class WebhooksTagsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
@@ -92,7 +91,7 @@ public class WebhooksTagsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
     DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
@@ -101,12 +100,12 @@ public class WebhooksTagsRequestHandler
       throw new BadException("invalid json body");
     }
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
 
     tag.setType(DocumentTagType.USERDEFINED);
     tag.setInsertedDate(new Date());
-    tag.setUserId(getCallingCognitoUsername(event));
+    tag.setUserId(authorization.username());
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 

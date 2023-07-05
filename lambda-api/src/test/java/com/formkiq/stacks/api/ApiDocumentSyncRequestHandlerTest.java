@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -64,11 +65,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
    * @return {@link ApiGatewayRequestEvent}
    */
   private ApiGatewayRequestEvent getRequest(final String siteId, final String documentId) {
-    ApiGatewayRequestEvent event =
-        new ApiGatewayRequestEventBuilder().method("get").resource("/documents/{documentId}/syncs")
-            .path("/documents/" + documentId + "/syncs").group(siteId != null ? siteId : null)
-            .user("joesmith").pathParameters(Map.of("documentId", documentId))
-            .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
+        .resource("/documents/{documentId}/syncs").path("/documents/" + documentId + "/syncs")
+        .group(siteId != null ? siteId : DEFAULT_SITE_ID).user("joesmith")
+        .pathParameters(Map.of("documentId", documentId))
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
   }
 
@@ -106,7 +107,6 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));

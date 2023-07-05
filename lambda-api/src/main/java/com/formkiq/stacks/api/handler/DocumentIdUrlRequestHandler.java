@@ -40,7 +40,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -65,11 +65,11 @@ public class DocumentIdUrlRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     boolean inline = "true".equals(getParameter(event, "inline"));
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -85,7 +85,7 @@ public class DocumentIdUrlRequestHandler
     DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
-    URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId, inline);
+    URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
@@ -122,7 +122,7 @@ public class DocumentIdUrlRequestHandler
    * Get S3 URL.
    * 
    * @param logger {@link LambdaLogger}
-   * @param authorizer {@link ApiAuthorizer}
+   * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
    * @param item {@link DocumentItem}
@@ -130,7 +130,7 @@ public class DocumentIdUrlRequestHandler
    * @param inline boolean
    * @return {@link URL}
    */
-  private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
+  private URL getS3Url(final LambdaLogger logger, final ApiAuthorization authorization,
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
       final String versionId, final boolean inline) {
 
@@ -138,7 +138,7 @@ public class DocumentIdUrlRequestHandler
 
     URL url = null;
     String contentType = getContentType(event);
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     int hours = getDurationHours(event);
     Duration duration = Duration.ofHours(hours);
 

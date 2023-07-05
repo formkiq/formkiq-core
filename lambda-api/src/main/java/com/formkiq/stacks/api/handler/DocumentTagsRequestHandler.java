@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -73,7 +72,7 @@ public class DocumentTagsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -84,7 +83,7 @@ public class DocumentTagsRequestHandler
 
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, event, siteId, documentId);
 
@@ -151,10 +150,10 @@ public class DocumentTagsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorizer.getSiteId();
+    final String siteId = authorization.siteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
@@ -162,7 +161,7 @@ public class DocumentTagsRequestHandler
     validate(tags);
     verifyDocument(awsservice, event, siteId, documentId);
 
-    updateTagsMetadata(event, tags);
+    updateTagsMetadata(event, authorization, tags);
 
     validateTags(tags);
 
@@ -174,10 +173,10 @@ public class DocumentTagsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorizer.getSiteId();
+    final String siteId = authorization.siteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
@@ -203,7 +202,7 @@ public class DocumentTagsRequestHandler
       tags.setTags(Arrays.asList(tag));
     }
 
-    String userId = updateTagsMetadata(event, tags);
+    String userId = updateTagsMetadata(event, authorization, tags);
 
     validateTags(tags);
 
@@ -226,10 +225,10 @@ public class DocumentTagsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    final String siteId = authorizer.getSiteId();
+    final String siteId = authorization.siteId();
     final String documentId = event.getPathParameters().get("documentId");
 
     DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
@@ -240,7 +239,7 @@ public class DocumentTagsRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.deleteDocumentTags(siteId, documentId);
-    updateTagsMetadata(event, tags);
+    updateTagsMetadata(event, authorization, tags);
 
     validateTags(tags);
 
@@ -281,12 +280,14 @@ public class DocumentTagsRequestHandler
    * Update {@link DocumentTags} metadata.
    * 
    * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
    * @param tags {@link DocumentTags}
    * @return {@link String}
    */
-  private String updateTagsMetadata(final ApiGatewayRequestEvent event, final DocumentTags tags) {
+  private String updateTagsMetadata(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final DocumentTags tags) {
 
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     tags.getTags().forEach(t -> {
       t.setType(DocumentTagType.USERDEFINED);

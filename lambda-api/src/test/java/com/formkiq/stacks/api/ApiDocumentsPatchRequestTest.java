@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api;
 
@@ -46,9 +49,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermission;
-import com.formkiq.stacks.dynamodb.permissions.Permission;
-import com.formkiq.stacks.dynamodb.permissions.PermissionType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -199,7 +199,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       assertEquals("403.0", String.valueOf(m.get("statusCode")));
 
-      assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}", m.get("body"));
+      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}", m.get("body"));
 
       assertTrue(getLogger()
           .containsString("response: {\"headers\":{\"Access-Control-Allow-Origin\":\"*\","
@@ -207,7 +207,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
               + "\"Access-Control-Allow-Headers\":\"Content-Type,X-Amz-Date,Authorization,"
               + "X-Api-Key\",\"Content-Type\":\"application/json\"},"
               + "\"body\":\"{\\\"message\\\":\\\""
-              + "fkq access denied (groups: default_read)\\\"}\"," + "\"statusCode\":403}"));
+              + "fkq access denied (groups: default (READ))\\\"}\"," + "\"statusCode\":403}"));
     }
   }
 
@@ -436,53 +436,5 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     assertNotNull(resp.getMessage());
     assertNull(resp.getNext());
     assertNull(resp.getPrevious());
-  }
-
-  /**
-   * PATCH /documents/{documentId} Marker group, READ/WRITE access.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePatchDocuments09() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      // given
-      String userId = "jsmith";
-      String documentId = UUID.randomUUID().toString();
-      String body = "{\"contentType\":\"application/pdf\",\"path\":\"/documents/test2.txt\"}";
-
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
-      getDocumentPermissionService().save(siteId,
-          Arrays.asList(
-              new DocumentPermission().documentId(documentId).name("finance")
-                  .permission(Permission.WRITE).type(PermissionType.GROUP).userId("joe"),
-              new DocumentPermission().documentId(documentId).name("marker")
-                  .permission(Permission.READ).type(PermissionType.GROUP).userId("joe")));
-
-      ApiGatewayRequestEvent event = patchDocumentsRequest(siteId != null ? siteId : "default",
-          documentId, siteId != null ? siteId + " marker" : "default marker", body);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("403.0", String.valueOf(m.get("statusCode")));
-      assertTrue(String.valueOf(m.get("body")).contains("fkq access denied"));
-
-      // given
-      event = patchDocumentsRequest(siteId != null ? siteId : "default", documentId,
-          siteId != null ? siteId + " finance" : "default finance", body);
-
-      // when
-      response = handleRequest(event);
-
-      // then
-      m = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    }
   }
 }

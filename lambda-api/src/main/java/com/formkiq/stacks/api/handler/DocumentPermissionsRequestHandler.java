@@ -21,20 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.permissions;
+package com.formkiq.stacks.api.handler;
 
-/**
- * 
- * Type of Document Permissions.
- *
- */
-public enum Permission {
-  /** Deny Permission. */
-  DENY,
-  /** Delete Permission. */
-  DELETE,
-  /** Read Permission. */
-  READ,
-  /** Write Permission. */
-  WRITE;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/permissions". */
+public class DocumentPermissionsRequestHandler extends AbstractPaymentRequiredRequestHandler {
+  @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/permissions";
+  }
 }

@@ -35,12 +35,13 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -271,7 +272,7 @@ public class PublicWebhooksRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = getParameter(event, "siteId");
@@ -320,5 +321,12 @@ public class PublicWebhooksRequestHandler
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
     s3.putObject(stages3bucket, key, bytes, "application/json");
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiAuthorization authorization) {
+    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
+    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 }

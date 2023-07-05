@@ -32,7 +32,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSync;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -57,7 +57,7 @@ public class DocumentsSyncsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -66,7 +66,7 @@ public class DocumentsSyncsRequestHandler
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
     verifyDocument(awsservice, event, siteId, documentId);
 

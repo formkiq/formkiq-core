@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -53,7 +52,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -111,16 +110,17 @@ public class DocumentIdRequestHandler
    * 
    * @param event {@link ApiGatewayRequestEvent}
    * @param awsservice {@link AwsServiceCache}
+   * @param authorization {@link ApiAuthorization}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param item {@link DynamicObject}
    * @param documents {@link List} {@link DynamicObject}
    */
   private void addFieldsToObject(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId, final String documentId,
-      final DynamicObject item, final List<DynamicObject> documents) {
+      final AwsServiceCache awsservice, final ApiAuthorization authorization, final String siteId,
+      final String documentId, final DynamicObject item, final List<DynamicObject> documents) {
 
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     item.put("documentId", documentId);
     item.put("userId", userId);
@@ -174,12 +174,12 @@ public class DocumentIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
@@ -275,10 +275,10 @@ public class DocumentIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     int limit = getLimit(logger, event);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -317,13 +317,13 @@ public class DocumentIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     boolean isUpdate = event.getHttpMethod().equalsIgnoreCase("patch")
         && event.getPathParameters().containsKey("documentId");
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = UUID.randomUUID().toString();
 
     DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
@@ -358,7 +358,7 @@ public class DocumentIdRequestHandler
       }
 
     } else {
-      addFieldsToObject(event, awsservice, siteId, documentId, item, documents);
+      addFieldsToObject(event, awsservice, authorization, siteId, documentId, item, documents);
       item.put("documents", documents);
 
       logger.log("setting userId: " + item.getString("userId") + " contentType: "

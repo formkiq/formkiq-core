@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
@@ -100,7 +101,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
-      addParameter(event, "siteId", siteId);
+      addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
       String response = handleRequest(event);
 
@@ -126,7 +127,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       verifyUrl(siteId, id, result);
 
       event = toRequestEvent("/request-get-webhooks01.json");
-      addParameter(event, "siteId", siteId);
+      addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
       // when
       response = handleRequest(event);
@@ -172,6 +173,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         "http://localhost:8080");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
     String ttl = "90000";
+    event.setQueryStringParameters(Map.of("siteId", "default"));
     event.setBody("{\"name\":\"john smith\",\"ttl\":\"" + ttl + "\"}");
 
     // when
@@ -253,7 +255,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
-      addParameter(event, "siteId", siteId);
+      addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
       event.setBody(
           "{\"name\":\"joe smith\",\"tags\":" + "[{\"key\":\"category\",\"value\":\"person\"},"
@@ -375,7 +377,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
 
         for (int i = 0; i <= 2; i++) {
           ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
-          addParameter(event, "siteId", siteId);
+          addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
           event.setBody("{\"name\":\"john smith\"}");
 
           // when
@@ -399,17 +401,20 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
-    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsPublicHttpUrl",
         "http://localhost:8080");
 
     ApiGatewayRequestEvent eventPost = toRequestEvent("/request-post-webhooks01.json");
     eventPost.setBody("{\"name\":\"john smith\"}");
-
-    ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks01.json");
+    addParameter(eventPost, "siteId", DEFAULT_SITE_ID);
 
     String siteId = null;
     String ttl = "87400";
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-get-webhooks01.json");
+    addParameter(event, "siteId", DEFAULT_SITE_ID);
+
+    ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     configService.save(siteId, new DynamicObject(Map.of(WEBHOOK_TIME_TO_LIVE, ttl)));
 
     // when
@@ -467,6 +472,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
         "http://localhost:8080");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks01.json");
     event.setBody("{\"name\":\"john smith\",\"enabled\":\"private\"}");
+    addParameter(event, "siteId", DEFAULT_SITE_ID);
 
     // when
     String response = handleRequest(event);

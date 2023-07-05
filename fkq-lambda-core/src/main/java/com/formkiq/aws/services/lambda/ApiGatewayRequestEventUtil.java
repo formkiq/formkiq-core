@@ -187,59 +187,6 @@ public interface ApiGatewayRequestEventUtil {
   }
 
   /**
-   * Get the calling Cognito Username.
-   *
-   * @param event {@link ApiGatewayRequestEvent}.
-   * @return {@link String}
-   */
-  static String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
-
-    String username = null;
-
-    ApiGatewayRequestContext requestContext = event.getRequestContext();
-
-    if (requestContext != null) {
-
-      Map<String, Object> authorizer = requestContext.getAuthorizer();
-      Map<String, Object> identity = requestContext.getIdentity();
-
-      if (identity != null) {
-
-        Object user = identity.getOrDefault("user", null);
-        if (user != null) {
-          username = user.toString();
-        }
-
-        Object userArn = identity.getOrDefault("userArn", null);
-        if (userArn != null && userArn.toString().contains(":user/")) {
-          username = userArn.toString();
-        }
-      }
-
-      Map<String, Object> claims = ApiAuthorizer.getAuthorizerClaims(authorizer);
-
-      String u = getCallingCognitoUsernameFromClaims(claims);
-      if (u != null) {
-        username = u;
-      }
-    }
-
-    return username;
-  }
-
-  private static String getCallingCognitoUsernameFromClaims(final Map<String, Object> claims) {
-    String username = null;
-    if (claims.containsKey("email")) {
-      username = claims.get("email").toString();
-    } else if (claims.containsKey("username")) {
-      username = claims.get("username").toString();
-    } else if (claims.containsKey("cognito:username")) {
-      username = claims.get("cognito:username").toString();
-    }
-    return username;
-  }
-
-  /**
    * Get ContentType from {@link ApiGatewayRequestEvent}.
    * 
    * @param event {@link ApiGatewayRequestEvent}

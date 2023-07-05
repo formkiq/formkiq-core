@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +34,7 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -66,10 +65,10 @@ public class DocumentTagRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
@@ -102,12 +101,12 @@ public class DocumentTagRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
     String tagKey = event.getPathParameters().get("tagKey");
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = documentService.findDocument(siteId, documentId);
@@ -157,7 +156,7 @@ public class DocumentTagRequestHandler
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     Map<String, String> map = event.getPathParameters();
@@ -172,7 +171,7 @@ public class DocumentTagRequestHandler
       throw new BadException("request body is invalid");
     }
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
@@ -190,7 +189,7 @@ public class DocumentTagRequestHandler
     }
 
     Date now = new Date();
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     tag = new DocumentTag(null, tagKey, value, now, userId);
     if (values != null) {

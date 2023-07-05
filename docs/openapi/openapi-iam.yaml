@@ -685,6 +685,86 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/permissions:
+            get:
+              operationId: GetDocumentPermissions
+              description: Get a listing of document permissions; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Permissions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentPermissionsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddDocumentPermission
+              description: Creates a new document permission; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Permissions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentPermission'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /documents/{documentId}/permissions/{permissionKey}:
+            delete:
+              operationId: DeleteDocumentPermissions
+              description: Delete a specific document permission
+              tags:
+              - Document Permissions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/permissionKeyParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/content:
             get:
               operationId: GetDocumentContent
@@ -2294,6 +2374,13 @@
               required: true
               schema:
                 type: string
+            permissionKeyParam:
+              name: permissionKey
+              in: path
+              description: Permission Identifier
+              required: true
+              schema:
+                type: string
             tagSchemaIdParam:
               name: tagSchemaId
               in: path
@@ -2453,6 +2540,43 @@
                   description: Next page of results token
                 versions:
                   $ref: '#/components/schemas/DocumentItemVersions'
+            GetDocumentPermissionsResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                permissions:
+                  $ref: '#/components/schemas/DocumentPermissions'
+            DocumentPermissions:
+              type: array
+              description: List of document permissions
+              items:
+                $ref: '#/components/schemas/DocumentPermission'
+            DocumentPermission:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name/Owner of Permission
+                type:
+                  type: string
+                  enum:
+                  - GROUP
+                  description: Type of Permission
+                permission:
+                  type: string
+                  enum:
+                  - READ
+                  - WRITE
+                  - DELETE
+                  description: Permission
+                userId:
+                  type: string
+                  description: User who added permission
+                permissionKey:
+                  type: string
+                  description: Document Permission Identifier
             GetDocumentTagsResponse:
               type: object
               properties:
@@ -2802,6 +2926,11 @@
                   $ref: '#/components/schemas/AddActions'
                 documents:
                   $ref: '#/components/schemas/AddChildDocumentRequest'
+                permissions:
+                  $ref: '#/components/schemas/AddPermissions'
+            AddDocumentPermission:
+              type: object
+              properties:
                 permissions:
                   $ref: '#/components/schemas/AddPermissions'
             AddPermissions:
@@ -3491,12 +3620,27 @@
                 username:
                   type: string
                   description: Username of request caller
+                sites:
+                  $ref: '#/components/schemas/SitesByPermissions'
+            SitesByPermissions:
+              type: array
+              description: List of sites
+              items:
+                $ref: '#/components/schemas/SitesByPermission'
+            SitesByPermission:
+              type: object
+              properties:
                 siteId:
                   type: string
                   description: Site Identifier
                 permissions:
                   type: array
                   description: List of caller permissions
+                  enum:
+                  - ADMIN
+                  - DELETE
+                  - READ
+                  - WRITE
                   items:
                     type: string
             GetVersionRequest:

@@ -24,7 +24,9 @@
 package com.formkiq.stacks.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -33,7 +35,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import joptsimple.internal.Strings;
 
 /** Unit Tests for request /users/me. */
 @ExtendWith(LocalStackExtension.class)
@@ -78,9 +79,16 @@ public class UsersMeRequestHandlerTest extends AbstractRequestHandler {
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-    assertEquals("default", resp.getString("siteId"));
     assertEquals("joesmith", resp.getString("username"));
-    assertEquals("finance", Strings.join(resp.getStringList("groups"), ","));
+    List<DynamicObject> sites = resp.getList("sites");
+    assertEquals(2, sites.size());
+    assertEquals("default", sites.get(0).getString("siteId"));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        sites.get(0).getStringList("permissions").stream().collect(Collectors.joining(",")));
+
+    assertEquals("finance", sites.get(1).getString("siteId"));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        sites.get(1).getStringList("permissions").stream().collect(Collectors.joining(",")));
   }
 
   /**
@@ -93,7 +101,7 @@ public class UsersMeRequestHandlerTest extends AbstractRequestHandler {
   public void testHandleGetUsersMe02() throws Exception {
     // given
     createApiRequestHandler("saml");
-    String siteId = "formkiq_default Admins formkiq_finance";
+    String siteId = "formkiq_default formkiq_admins formkiq_finance";
     ApiGatewayRequestEvent event = getRequest(null, siteId);
 
     // when
@@ -108,34 +116,15 @@ public class UsersMeRequestHandlerTest extends AbstractRequestHandler {
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-    assertEquals("default", resp.getString("siteId"));
     assertEquals("joesmith", resp.getString("username"));
-    assertEquals("finance", Strings.join(resp.getStringList("groups"), ","));
-  }
+    List<DynamicObject> sites = resp.getList("sites");
+    assertEquals(2, sites.size());
+    assertEquals("default", sites.get(0).getString("siteId"));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        sites.get(0).getStringList("permissions").stream().collect(Collectors.joining(",")));
 
-  /**
-   * Get /users/me.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandleGetUsersMe03() throws Exception {
-    // given
-    String siteId = "acmeinc finance";
-    ApiGatewayRequestEvent event = getRequest(null, siteId);
-
-    // when
-    String response = handleRequest(event);
-
-    // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("400.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    assertEquals("{\"errors\":[{\"key\":\"siteId\","
-        + "\"error\":\"parameter required - multiple siteIds found\"}]}", m.get("body"));
+    assertEquals("finance", sites.get(1).getString("siteId"));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        sites.get(1).getStringList("permissions").stream().collect(Collectors.joining(",")));
   }
 }

@@ -128,7 +128,7 @@
         "event_id": "56df06d2-8026-11e9-abcc-339966f2508d",
         "token_use": "id",
         "auth_time": "1558923776",
-        "cognito:groups": "[CognitoUserGroup-VjfL7NuTloKz]",
+        "cognito:groups": "[default]",
         "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4dlHNdF5d",
         "cognito:username": "7b87c0e2-5f20-403b-bcc6-d35cb491d3b7@formkiq.com",
         "exp": "Mon May 27 03:22:56 UTC 2019",

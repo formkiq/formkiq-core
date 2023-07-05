@@ -21,45 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambdaservices;
+package com.formkiq.aws.services.lambda;
 
-import java.util.Collection;
 import java.util.List;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Implementation that supports multiple {@link DocumentAuthorizationHandler}. If any
- * {@link DocumentAuthorizationHandler} is not authorized, they will all fail.
+ * {@link AwsServiceExtension} implementation of {@link AuthorizationHandler}.
  *
  */
-public class MultiDocumentAuthorizationHandler implements DocumentAuthorizationHandler {
+public class MultiAuthorizationHandlerExtension
+    implements AwsServiceExtension<AuthorizationHandler> {
 
-  /** {@link List} {@link DocumentAuthorizationHandler}. */
-  private List<DocumentAuthorizationHandler> handlers;
+  /** {@link MultiAuthorizationHandlers}. */
+  private MultiAuthorizationHandlers handler;
 
   /**
    * constructor.
    * 
-   * @param authorizationHandlers {@link List} {@link DocumentAuthorizationHandler}
+   * @param authorizationHandlers {@link List} {@link AuthorizationHandler}
    */
-  public MultiDocumentAuthorizationHandler(
-      final List<DocumentAuthorizationHandler> authorizationHandlers) {
-    this.handlers = authorizationHandlers;
+  public MultiAuthorizationHandlerExtension(
+      final List<AuthorizationHandler> authorizationHandlers) {
+    this.handler = new MultiAuthorizationHandlers(authorizationHandlers);
   }
 
   @Override
-  public boolean isAuthorized(final AwsServiceCache awsservice, final Collection<String> roleNames,
-      final String siteId, final String documentId, final String permission) {
-
-    boolean authorized = false;
-
-    for (DocumentAuthorizationHandler handler : this.handlers) {
-      authorized = handler.isAuthorized(awsservice, roleNames, siteId, documentId, permission);
-      if (!authorized) {
-        break;
-      }
-    }
-
-    return authorized;
+  public AuthorizationHandler loadService(final AwsServiceCache awsServiceCache) {
+    return this.handler;
   }
 }

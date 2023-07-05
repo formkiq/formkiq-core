@@ -25,7 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_PAYMENT;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -45,7 +45,7 @@ public abstract class AbstractPaymentRequiredRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
@@ -53,7 +53,7 @@ public abstract class AbstractPaymentRequiredRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
@@ -61,7 +61,7 @@ public abstract class AbstractPaymentRequiredRequestHandler
 
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
@@ -69,7 +69,7 @@ public abstract class AbstractPaymentRequiredRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);
@@ -77,7 +77,7 @@ public abstract class AbstractPaymentRequiredRequestHandler
 
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
     ApiMapResponse resp = new ApiMapResponse();
     return new ApiRequestHandlerResponse(SC_PAYMENT, resp);

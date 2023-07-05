@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -53,8 +52,6 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
-import com.formkiq.module.lambdaservices.DocumentAuthorizationHandler;
-import com.formkiq.module.lambdaservices.MultiDocumentAuthorizationExtension;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
@@ -64,6 +61,8 @@ import com.formkiq.stacks.api.handler.ConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentPermissionsKeyRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentPermissionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
@@ -116,9 +115,6 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionService;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionServiceExtension;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionsAuthorizationHandler;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -158,6 +154,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new ConfigurationApiKeysRequestHandler());
     addRequestHandler(new DocumentVersionsRequestHandler());
     addRequestHandler(new DocumentVersionsKeyRequestHandler());
+    addRequestHandler(new DocumentPermissionsRequestHandler());
+    addRequestHandler(new DocumentPermissionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
     addRequestHandler(new DocumentsActionsRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
@@ -252,11 +250,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    AwsServiceCache.register(DocumentPermissionService.class,
-        new DocumentPermissionServiceExtension());
-    AwsServiceCache.register(DocumentAuthorizationHandler.class,
-        new MultiDocumentAuthorizationExtension(
-            Arrays.asList(new DocumentPermissionsAuthorizationHandler())));
 
     awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 

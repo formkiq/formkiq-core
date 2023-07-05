@@ -1058,7 +1058,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
             msgs.messages().get(0).body());
       } else {
         assertEquals(
-            "{\"documentId\":\"" + documentId
+            "{\"siteId\":\"default\",\"documentId\":\"" + documentId
                 + "\",\"message\":\"{\\\"key\\\": \\\"category\\\",\\\"value\\\": \\\"job\\\"}\"}",
             msgs.messages().get(0).body());
       }

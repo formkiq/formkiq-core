@@ -21,33 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambdaservices;
-
-import java.util.List;
+package com.formkiq.aws.services.lambda;
 
 /**
  * 
- * {@link AwsServiceExtension} implementation of {@link DocumentAuthorizationHandler}.
+ * Type of Document Permissions.
  *
  */
-public class MultiDocumentAuthorizationExtension
-    implements AwsServiceExtension<DocumentAuthorizationHandler> {
-
-  /** {@link MultiDocumentAuthorizationHandler}. */
-  private MultiDocumentAuthorizationHandler handler;
-
-  /**
-   * constructor.
-   * 
-   * @param authorizationHandlers {@link List} {@link DocumentAuthorizationHandler}
-   */
-  public MultiDocumentAuthorizationExtension(
-      final List<DocumentAuthorizationHandler> authorizationHandlers) {
-    this.handler = new MultiDocumentAuthorizationHandler(authorizationHandlers);
-  }
-
-  @Override
-  public DocumentAuthorizationHandler loadService(final AwsServiceCache awsServiceCache) {
-    return this.handler;
-  }
+public enum ApiPermission {
+  /** Admin Permission. */
+  ADMIN,
+  /** Delete Permission. */
+  DELETE,
+  /** Read Permission. */
+  READ,
+  /** Write Permission. */
+  WRITE;
 }

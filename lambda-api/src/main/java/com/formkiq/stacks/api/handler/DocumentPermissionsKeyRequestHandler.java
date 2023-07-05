@@ -21,42 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.permissions;
+package com.formkiq.stacks.api.handler;
 
-import java.util.Collection;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
-/**
- * 
- * {@link DocumentPermission} Service.
- *
- */
-public interface DocumentPermissionService {
-
-  /**
-   * Get Document Permissions by Group.
-   * 
-   * @param groups {@link Collection} {@link String}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link Collection} {@link Permission}
-   */
-  Collection<Permission> getPermissions(Collection<String> groups, String siteId,
-      String documentId);
-
-  /**
-   * Does Document have permissions.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return boolean
-   */
-  boolean hasDocumentPermissions(String siteId, String documentId);
-
-  /**
-   * Save {@link DocumentPermission}.
-   * 
-   * @param siteId {@link String}
-   * @param permissions {@link Collection} {@link DocumentPermission}
-   */
-  void save(String siteId, Collection<DocumentPermission> permissions);
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/versions/{versionKey}". */
+public class DocumentPermissionsKeyRequestHandler extends AbstractPaymentRequiredRequestHandler {
+  @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/permissions/{permissionKey}";
+  }
 }

@@ -21,44 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.permissions;
+package com.formkiq.aws.services.lambda;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.Optional;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.DocumentAuthorizationHandler;
 
 /**
  * 
- * Document Permission implementation of {@link DocumentAuthorizationHandler}.
+ * Document Authorization Handler.
  *
  */
-public class DocumentPermissionsAuthorizationHandler implements DocumentAuthorizationHandler {
+public interface AuthorizationHandler {
 
-  @Override
-  public boolean isAuthorized(final AwsServiceCache awsservice, final Collection<String> roleNames,
-      final String siteId, final String documentId, final String permission) {
-
-    boolean authorized = false;
-    DocumentPermissionService permissionService =
-        awsservice.getExtension(DocumentPermissionService.class);
-
-    boolean hasDocumentPermissions = permissionService.hasDocumentPermissions(siteId, documentId);
-
-    if (hasDocumentPermissions) {
-
-      Collection<Permission> types =
-          permissionService.getPermissions(roleNames, siteId, documentId);
-      Collection<String> typesNames =
-          types.stream().map(t -> t.name().toLowerCase()).collect(Collectors.toList());
-
-      authorized = typesNames.contains(permission);
-
-    } else {
-      authorized = true;
-    }
-
-    return authorized;
-  }
-
+  /**
+   * Is Authorized to access Document.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @return {@link Optional} {@link Boolean}
+   */
+  Optional<Boolean> isAuthorized(AwsServiceCache awsServices, ApiGatewayRequestEvent event,
+      ApiAuthorization authorization);
 }

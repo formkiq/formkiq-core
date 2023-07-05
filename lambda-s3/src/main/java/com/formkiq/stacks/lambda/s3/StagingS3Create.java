@@ -29,8 +29,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -84,11 +82,6 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermission;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionService;
-import com.formkiq.stacks.dynamodb.permissions.DocumentPermissionServiceExtension;
-import com.formkiq.stacks.dynamodb.permissions.Permission;
-import com.formkiq.stacks.dynamodb.permissions.PermissionType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -191,8 +184,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private S3Service s3;
   /** {@link DocumentService}. */
   private DocumentService service;
-  /** {@link DocumentPermissionService}. */
-  private DocumentPermissionService permissionService;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
@@ -237,8 +228,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
-    AwsServiceCache.register(DocumentPermissionService.class,
-        new DocumentPermissionServiceExtension());
     DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
     DocumentVersionService versionService = dsExtension.loadService(serviceCache);
 
@@ -248,7 +237,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String documentsTable = map.get("DOCUMENTS_TABLE");
 
     this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
-    this.permissionService = serviceCache.getExtension(DocumentPermissionService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
     this.s3 = new S3Service(s3Builder);
     this.ssmConnection = ssmConnectionBuilder;
@@ -340,8 +328,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     saveDocumentActions(siteId, doc);
 
-    saveDocumentPermissions(siteId, doc);
-
     return doc;
   }
 
@@ -407,34 +393,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
 
     return documentId;
-  }
-
-  private List<DocumentPermission> getPermissions(final DynamicDocumentItem doc) {
-    List<DocumentPermission> list = new ArrayList<>();
-    DynamicObject permissions = doc.getMap("permissions");
-
-    for (String type : Arrays.asList("group")) {
-
-      if (permissions.containsKey(type)) {
-
-        PermissionType permissionType = PermissionType.valueOf(type.toUpperCase());
-
-        DynamicObject groups = permissions.getMap(type);
-        String documentId = doc.getDocumentId();
-        for (String key : Arrays.asList("read", "write", "delete")) {
-          List<String> groupMembers = groups.getStringList(key);
-
-          Permission permission = Permission.valueOf(key.toUpperCase());
-
-          for (String member : groupMembers) {
-            DocumentPermission dp = new DocumentPermission().documentId(documentId).name(member)
-                .type(permissionType).permission(permission).userId(doc.getUserId());
-            list.add(dp);
-          }
-        }
-      }
-    }
-    return list;
   }
 
   @SuppressWarnings("unchecked")
@@ -666,21 +624,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
           list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
 
       this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
-    }
-  }
-
-  /**
-   * Save Document Permissions.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   */
-  private void saveDocumentPermissions(final String siteId, final DynamicDocumentItem doc) {
-
-    if (doc.containsKey("permissions")) {
-
-      List<DocumentPermission> list = getPermissions(doc);
-      this.permissionService.save(siteId, list);
     }
   }
 

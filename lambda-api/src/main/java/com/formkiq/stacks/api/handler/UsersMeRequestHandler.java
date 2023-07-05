@@ -23,15 +23,16 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -50,18 +51,23 @@ public class UsersMeRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId() != null ? authorizer.getSiteId() : DEFAULT_SITE_ID;
-    String userId = getCallingCognitoUsername(event);
-    List<String> permissions = new ArrayList<>(authorizer.getSiteIds());
-    permissions.remove(siteId);
+    String userId = authorization.username();
+
+    List<Map<String, Object>> sites = new ArrayList<>();
+
+    authorization.siteIds().forEach(s -> {
+      List<String> permissions =
+          authorization.permissions(s).stream().map(p -> p.name()).collect(Collectors.toList());
+      Collections.sort(permissions);
+      sites.add(Map.of("siteId", s, "permissions", permissions));
+    });
 
     Map<String, Object> map = new HashMap<>();
-    map.put("siteId", siteId);
     map.put("username", userId);
-    map.put("groups", permissions);
+    map.put("sites", sites);
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -69,5 +75,11 @@ public class UsersMeRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   @Override
   public String getRequestUrl() {
     return "/users/me";
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiAuthorization authorization) {
+    return !authorization.siteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 }
