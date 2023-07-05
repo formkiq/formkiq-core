@@ -44,6 +44,7 @@ import java.util.UUID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static java.util.Map.entry;
 
+/** {@link ApiGatewayRequestHandler} for "/documents/compress". */
 public class DocumentsCompressRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
@@ -82,8 +83,7 @@ public class DocumentsCompressRequestHandler
   private DynamicObject getS3TaskObject(final DynamicObject requestBodyObject,
       final String compressionId, final String downloadUrl) {
     final String documentIdsKey = "documentIds";
-    final Object documentIds = requestBodyObject.get(documentIdsKey); // Validate whether JSON
-    // array?
+    final Object documentIds = requestBodyObject.get(documentIdsKey);
     final String compressionIdKey = "compressionId";
     final String downloadUrlKey = "downloadUrl";
     return new DynamicObject(Map.ofEntries(entry(documentIdsKey, documentIds),
