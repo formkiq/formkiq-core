@@ -1019,10 +1019,8 @@
                     schema:
                       $ref: '#/components/schemas/CompressDocumentsRequest'
               description: Compress documents into a ZIP
-              security:
-                - ApiAuthorization: [ ]
               tags:
-                - Documents
+              - Documents
               responses:
                 "201":
                   description: 201 CREATED
@@ -1037,6 +1035,8 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/CompressDocumentsResponse'
+              security:
+              - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /search:

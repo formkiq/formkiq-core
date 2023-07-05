@@ -1012,6 +1012,38 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/compress:
+            post:
+              operationId: CompressDocuments
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/CompressDocumentsRequest'
+              description: Compress documents into a ZIP
+              tags:
+              - Documents
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/CompressDocumentsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /search:
             post:
               operationId: DocumentSearch
@@ -2564,6 +2596,25 @@ Resources:
                       belongsToDocumentId:
                         type: "string"
                         description: "Parent Document Identifier"
+            CompressDocumentsRequest:
+              type: "object"
+              required:
+              - "documentIds"
+              properties:
+                documentIds:
+                  type: "array"
+                  description: "Documents to compress"
+                  items:
+                    type: "string"
+            CompressDocumentsResponse:
+              type: "object"
+              properties:
+                compressionId:
+                  type: "string"
+                  description: "Compression id"
+                downloadUrl:
+                  type: "string"
+                  description: "Archive download URL"
             DocumentFulltextRequest:
               required:
               - "query"
