@@ -14,13 +14,15 @@ public class ApiHttpRequest {
   /** Http Group. */
   private String group;
   /** Http Method. */
-  private String method;
+  private String httpMethod;
+  /** Is Request Body Base64 Encoded. */
+  private Boolean isBase64Encoded;
   /** Http path. */
   private String path;
   /** {@link Map}. */
   private Map<String, String> pathParameters;
   /** {@link Map}. */
-  private Map<String, String> queryParameters;
+  private Map<String, String> queryStringParameters;
   /** Http Resource. */
   private String resource;
   /** Http Request user. */
@@ -76,18 +78,38 @@ public class ApiHttpRequest {
    * 
    * @return {@link String}
    */
-  public String method() {
-    return this.method;
+  public String httpMethod() {
+    return this.httpMethod;
   }
 
   /**
    * Set HTTP method.
    * 
-   * @param httpMethod {@link String}
+   * @param method {@link String}
    * @return {@link ApiHttpRequest}
    */
-  public ApiHttpRequest method(final String httpMethod) {
-    this.method = httpMethod;
+  public ApiHttpRequest httpMethod(final String method) {
+    this.httpMethod = method;
+    return this;
+  }
+
+  /**
+   * Is Request Base64 Encoded.
+   * 
+   * @return {@link Boolean}
+   */
+  public Boolean isBase64Encoded() {
+    return this.isBase64Encoded;
+  }
+
+  /**
+   * Set Request Base64 Encoded.
+   * 
+   * @param isBase64 {@link Boolean}
+   * @return {@link ApiHttpRequest}
+   */
+  public ApiHttpRequest isBase64Encoded(final Boolean isBase64) {
+    this.isBase64Encoded = isBase64;
     return this;
   }
 
@@ -137,7 +159,7 @@ public class ApiHttpRequest {
    * @return {@link Map}
    */
   public Map<String, String> queryParameters() {
-    return this.queryParameters;
+    return this.queryStringParameters;
   }
 
   /**
@@ -147,7 +169,7 @@ public class ApiHttpRequest {
    * @return {@link ApiHttpRequest}
    */
   public ApiHttpRequest queryParameters(final Map<String, String> parameters) {
-    this.queryParameters = parameters;
+    this.queryStringParameters = parameters;
     return this;
   }
 

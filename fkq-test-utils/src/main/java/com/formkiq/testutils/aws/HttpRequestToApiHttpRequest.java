@@ -51,7 +51,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
     String group = decoder.getGroups().stream().collect(Collectors.joining(" "));
 
-    return new ApiHttpRequest().method(httpRequest.getMethod().getValue()).resource(resource)
+    return new ApiHttpRequest().httpMethod(httpRequest.getMethod().getValue()).resource(resource)
         .path(path).pathParameters(pathParameters).queryParameters(queryParameters)
         .user(decoder.getUsername()).group(group).body(body);
   }
