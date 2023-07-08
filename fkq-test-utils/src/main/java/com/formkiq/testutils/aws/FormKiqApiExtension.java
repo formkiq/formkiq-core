@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.testutils.aws;
 
@@ -39,17 +42,27 @@ public class FormKiqApiExtension
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
   /** Port to run Test server. */
-  private static final int PORT = NUM_RAND.nextInt(8000 - 7000) + 7000;
+  private int port = -1;
 
   /** {@link ClientAndServer}. */
   private ClientAndServer formkiqServer;
 
+  /**
+   * constructor.
+   */
+  public FormKiqApiExtension() {
+    final int topPort = 8000;
+    final int bottomPort = 7000;
+    this.port = NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
+  }
+
   /** {@link ExpectationResponseCallback}. */
   private ExpectationResponseCallback responseCallback;
+
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    this.formkiqServer = startClientAndServer(Integer.valueOf(PORT));
+    this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
 
     this.formkiqServer.when(request()).respond(this.responseCallback);
   }
@@ -69,7 +82,7 @@ public class FormKiqApiExtension
    * @return {@link String}
    */
   public String getBasePath() {
-    return "http://localhost:" + PORT;
+    return "http://localhost:" + this.port;
   }
 
   /**
