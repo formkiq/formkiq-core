@@ -1,0 +1,94 @@
+package com.formkiq.testutils.aws;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.mockserver.mock.action.ExpectationResponseCallback;
+import org.mockserver.model.Header;
+import org.mockserver.model.Headers;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+/**
+ * 
+ * FormKiqApi implementation of {@link ExpectationResponseCallback}.
+ *
+ */
+public abstract class AbstractFormKiqApiResponseCallback implements ExpectationResponseCallback {
+
+  /** {@link Context}. */
+  private Context context = new LambdaContextRecorder();
+
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
+  /**
+   * Create {@link HttpResponse} from {@link String} response.
+   * 
+   * @param response {@link String}
+   * @return {@link HttpResponse}
+   */
+  @SuppressWarnings("unchecked")
+  private HttpResponse createResponse(final String response) {
+
+    Map<String, Object> map = this.gson.fromJson(response, Map.class);
+    Map<String, String> headerList = (Map<String, String>) map.get("headers");
+    List<Header> headers = headerList.entrySet().stream()
+        .map(e -> new Header(e.getKey(), Arrays.asList(e.getValue()))).collect(Collectors.toList());
+
+    int statusCode = ((Double) map.get("statusCode")).intValue();
+    return HttpResponse.response().withHeaders(new Headers(headers))
+        .withStatusCode(Integer.valueOf(statusCode)).withBody(map.get("body").toString());
+  }
+
+  /**
+   * Get {@link RequestStreamHandler}.
+   * 
+   * @return {@link RequestStreamHandler}
+   */
+  public abstract RequestStreamHandler getHandler();
+
+  /**
+   * Get Lambda {@link Map} environment.
+   * 
+   * @return {@link Map}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public abstract Map<String, String> getMapEnvironment() throws URISyntaxException;
+
+  /**
+   * Handle transforming {@link HttpRequest} to {@link HttpResponse}.
+   */
+  @Override
+  public HttpResponse handle(final HttpRequest httpRequest) throws Exception {
+
+    initHandler();
+
+    ApiHttpRequest event = new HttpRequestToApiHttpRequest().apply(httpRequest);
+
+    String s = this.gson.toJson(event);
+    InputStream is = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
+    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+
+    getHandler().handleRequest(is, outstream, this.context);
+
+    String response = new String(outstream.toByteArray(), "UTF-8");
+
+    return createResponse(response);
+  }
+
+  /**
+   * Initialize Handler.
+   */
+  public abstract void initHandler();
+}
