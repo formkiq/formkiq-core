@@ -11,10 +11,10 @@ public class ApiHttpRequest {
 
   /** Http Body. */
   private String body;
-  /** Http Group. */
-  private String group;
+
   /** Http Method. */
   private String httpMethod;
+
   /** Is Request Body Base64 Encoded. */
   private Boolean isBase64Encoded;
   /** Http path. */
@@ -23,11 +23,12 @@ public class ApiHttpRequest {
   private Map<String, String> pathParameters;
   /** {@link Map}. */
   private Map<String, String> queryStringParameters;
+  /** {@link Map}. */
+  private Map<String, Object> requestContext;
   /** Http Resource. */
   private String resource;
   /** Http Request user. */
   private String user;
-
   /**
    * constructor.
    */
@@ -54,22 +55,21 @@ public class ApiHttpRequest {
   }
 
   /**
-   * Get Http Group.
-   * 
-   * @return {@link String}
-   */
-  public String group() {
-    return this.group;
-  }
-
-  /**
    * Set Http Group.
    * 
-   * @param httpGroup {@link String}
+   * @param group {@link String}
    * @return {@link ApiHttpRequest}
    */
-  public ApiHttpRequest group(final String httpGroup) {
-    this.group = httpGroup;
+  public ApiHttpRequest group(final String group) {
+
+    this.requestContext =
+        Map.of("authorizer", Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
+    // if (group != null) {
+    // this.context.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
+    // this.event.setRequestContext(this.context);
+    // }
+
+    // this.group = httpGroup;
     return this;
   }
 
@@ -171,6 +171,15 @@ public class ApiHttpRequest {
   public ApiHttpRequest queryParameters(final Map<String, String> parameters) {
     this.queryStringParameters = parameters;
     return this;
+  }
+
+  /**
+   * Get Request Context.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, Object> requestContext() {
+    return this.requestContext;
   }
 
   /**
