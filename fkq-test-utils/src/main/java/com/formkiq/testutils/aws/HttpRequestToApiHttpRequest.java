@@ -23,11 +23,12 @@
  */
 package com.formkiq.testutils.aws;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.mockserver.model.HttpRequest;
@@ -39,19 +40,20 @@ import org.mockserver.model.HttpRequest;
  */
 public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHttpRequest> {
 
+  /** {@link Collection} {@link String}. */
+  private Collection<String> resourceUrls;
+  /** {@link List} {@link String}. */
+  private List<String[]> resourceSplits;
+
   /**
-   * Is {@link String} a {@link UUID}.
-   *
-   * @param s {@link String}
-   * @return boolean
+   * constructor.
+   * 
+   * @param resources {@link Collection} {@link String}
    */
-  private static boolean isUuid(final String s) {
-    try {
-      UUID.fromString(s);
-      return true;
-    } catch (IllegalArgumentException e) {
-      return false;
-    }
+  public HttpRequestToApiHttpRequest(final Collection<String> resources) {
+    this.resourceUrls = resources;
+    this.resourceSplits = resources.stream().filter(r -> r != null).map(r -> r.split("/"))
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -62,9 +64,9 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
     String path = httpRequest.getPath().getValue();
 
-    Map<String, String> pathParameters = generateResource(path);
-    String resource = pathParameters.get("resource");
-    pathParameters.remove("resource");
+    String resource = findResource(path);
+
+    Map<String, String> pathParameters = generatePathParameters(resource, path);
 
     String body = httpRequest.getBodyAsString();
 
@@ -79,34 +81,57 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         .user(decoder.getUsername()).group(group).body(body);
   }
 
+  private String findResource(final String path) {
+
+    Optional<String> o =
+        this.resourceUrls.stream().filter(r -> r != null && r.equals(path)).findAny();
+
+    if (o.isEmpty()) {
+
+      String[] s = path.split("/");
+      List<String[]> matches =
+          this.resourceSplits.stream().filter(r -> r.length == s.length).filter(r -> {
+
+            boolean match = false;
+
+            for (int i = 0; i < r.length; i++) {
+              match = r[i].equals(s[i]) || (r[i].startsWith("{") && r[i].endsWith("}"));
+              if (!match) {
+                break;
+              }
+            }
+
+            return match;
+          }).collect(Collectors.toList());
+
+      o = matches.size() == 1
+          ? Optional.of(Arrays.asList(matches.get(0)).stream().collect(Collectors.joining("/")))
+          : Optional.empty();
+    }
+
+    return o.orElse(null);
+  }
+
   /**
    * Generate {@link ApiGatewayRequestEvent} resource.
-   * 
+   *
+   * @param resource {@link String}
    * @param path {@link String}
    * @return {@link Map}
    */
-  private Map<String, String> generateResource(final String path) {
+  private Map<String, String> generatePathParameters(final String resource, final String path) {
 
     Map<String, String> map = new HashMap<>();
 
-    List<String> resource = new ArrayList<>();
-    String[] split = path.split("/");
+    String[] resources = resource.split("/");
+    String[] paths = path.split("/");
 
-    String last = null;
-    for (String s : split) {
-      if (last != null && isUuid(s)) {
-        String key = last.replaceAll("s$", "Id");
-        map.put(key, s);
-
-        resource.add(String.format("{%s}", key));
-      } else {
-        resource.add(s);
+    for (int i = 0; i < resources.length; i++) {
+      if (resources[i].startsWith("{") && resources[i].endsWith("}")) {
+        map.put(resources[i].substring(1, resources[i].length() - 1), paths[i]);
       }
-
-      last = s;
     }
 
-    map.put("resource", resource.stream().collect(Collectors.joining("/")));
     return map;
   }
 }

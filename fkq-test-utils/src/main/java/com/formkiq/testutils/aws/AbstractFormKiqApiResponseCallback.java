@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -90,6 +91,13 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
   public abstract Map<String, String> getMapEnvironment() throws URISyntaxException;
 
   /**
+   * Get Resource Urls.
+   * 
+   * @return {@link Collection} {@link String}
+   */
+  public abstract Collection<String> getResourceUrls();
+
+  /**
    * Handle transforming {@link HttpRequest} to {@link HttpResponse}.
    */
   @Override
@@ -97,7 +105,7 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
 
     initHandler();
 
-    ApiHttpRequest event = new HttpRequestToApiHttpRequest().apply(httpRequest);
+    ApiHttpRequest event = new HttpRequestToApiHttpRequest(getResourceUrls()).apply(httpRequest);
 
     String s = this.gson.toJson(event);
     InputStream is = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
