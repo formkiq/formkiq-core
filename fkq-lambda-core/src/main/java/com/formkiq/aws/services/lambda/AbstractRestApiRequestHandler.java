@@ -505,7 +505,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     try {
 
-      ApiAuthorization authorization = new ApiAuthorizationBuilder(authorizerType).build(event);
+      ApiAuthorizationInterceptor interceptor =
+          awsServices.getExtension(ApiAuthorizationInterceptor.class);
+
+      ApiAuthorization authorization =
+          new ApiAuthorizationBuilder(authorizerType).interceptors(interceptor).build(event);
       log(logger, event, authorization);
 
       ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorization);

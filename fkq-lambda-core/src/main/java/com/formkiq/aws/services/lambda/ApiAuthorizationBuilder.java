@@ -47,6 +47,8 @@ public class ApiAuthorizationBuilder {
 
   /** {@link ApiAuthorizerType}. */
   private ApiAuthorizerType authorizerType;
+  /** {@link List} {@link ApiAuthorizationInterceptor}. */
+  private ApiAuthorizationInterceptor interceptor = null;
 
   /**
    * constructor.
@@ -88,6 +90,10 @@ public class ApiAuthorizationBuilder {
               Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
         }
       }
+    }
+
+    if (this.interceptor != null) {
+      this.interceptor.update(authorization);
     }
 
     return authorization;
@@ -135,10 +141,6 @@ public class ApiAuthorizationBuilder {
       siteId = filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
     }
 
-    // if (siteId != null && siteId.endsWith(COGNITO_READ_SUFFIX)) {
-    // siteId = siteId.replace(COGNITO_READ_SUFFIX, "");
-    // }
-
     return siteId;
   }
 
@@ -150,47 +152,8 @@ public class ApiAuthorizationBuilder {
    */
   private Collection<String> getGroups(final ApiGatewayRequestEvent event) {
 
-    Collection<String> groups = new HashSet<>();
-
-    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
-
-    if (requestContext != null) {
-
-      Map<String, Object> authorizer = requestContext.getAuthorizer();
-
-      Map<String, Object> claims = getAuthorizerClaims(authorizer);
-
-      if (claims.containsKey("cognito:groups")) {
-        Object obj = claims.get("cognito:groups");
-        if (obj != null) {
-          String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
-          groups = new HashSet<>(Arrays.asList(s.split(" ")));
-          groups.removeIf(g -> g.length() == 0);
-        }
-      }
-    }
-
-    if (ApiAuthorizerType.SAML.equals(this.authorizerType)) {
-      groups = groups.stream().filter(g -> g.startsWith("formkiq_"))
-          .map(g -> g.replaceAll("^formkiq_", "")).collect(Collectors.toList());
-    }
-
-    String userRoleArn = getUserRoleArn(event);
-    if (isIamCaller(userRoleArn)) {
-      groups.add(COGNITO_ADMIN_GROUP);
-    }
-
-    if (groups.contains(COGNITO_ADMIN_GROUP)) {
-      String siteId = getQueryStringParameter(event, "siteId");
-      if (siteId != null) {
-        groups.add(siteId);
-      } else if (groups.size() < 2) {
-        groups.add(DEFAULT_SITE_ID);
-      }
-    }
-
+    Collection<String> groups = loadJwtGroups(event);
     return groups;
-
   }
 
   /**
@@ -273,6 +236,18 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
+   * Set {@link ApiAuthorizationInterceptor}.
+   * 
+   * @param apiAuthorizationInterceptor {@link ApiAuthorizationInterceptor}
+   * @return {@link ApiAuthorizationBuilder}
+   */
+  public ApiAuthorizationBuilder interceptors(
+      final ApiAuthorizationInterceptor apiAuthorizationInterceptor) {
+    this.interceptor = apiAuthorizationInterceptor;
+    return this;
+  }
+
+  /**
    * Is Admin Group in list.
    * 
    * @param groups {@link Collection} {@link String}
@@ -291,5 +266,48 @@ public class ApiAuthorizationBuilder {
    */
   private boolean isIamCaller(final String roleArn) {
     return roleArn != null && (roleArn.contains(":assumed-role/") || roleArn.contains(":user/"));
+  }
+
+  private Collection<String> loadJwtGroups(final ApiGatewayRequestEvent event) {
+
+    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
+
+    Collection<String> groups = new HashSet<>();
+
+    if (requestContext != null) {
+
+      Map<String, Object> authorizer = requestContext.getAuthorizer();
+
+      Map<String, Object> claims = getAuthorizerClaims(authorizer);
+
+      if (claims.containsKey("cognito:groups")) {
+        Object obj = claims.get("cognito:groups");
+        if (obj != null) {
+          String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
+          groups = new HashSet<>(Arrays.asList(s.split(" ")));
+          groups.removeIf(g -> g.length() == 0);
+        }
+      }
+    }
+
+    if (ApiAuthorizerType.SAML.equals(this.authorizerType)) {
+      groups = groups.stream().filter(g -> g.startsWith("formkiq_"))
+          .map(g -> g.replaceAll("^formkiq_", "")).collect(Collectors.toList());
+    }
+
+    String userRoleArn = getUserRoleArn(event);
+    if (isIamCaller(userRoleArn)) {
+      groups.add(COGNITO_ADMIN_GROUP);
+    }
+
+    if (groups.contains(COGNITO_ADMIN_GROUP)) {
+      String siteId = getQueryStringParameter(event, "siteId");
+      if (siteId != null) {
+        groups.add(siteId);
+      } else if (groups.size() < 2) {
+        groups.add(DEFAULT_SITE_ID);
+      }
+    }
+    return groups;
   }
 }

@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.aws;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -50,13 +51,17 @@ public class ApiHttpRequest {
   private Map<String, Object> requestContext;
   /** Http Resource. */
   private String resource;
-  /** Http Request user. */
-  private String user;
 
   /**
    * constructor.
    */
-  public ApiHttpRequest() {}
+  public ApiHttpRequest() {
+    this.requestContext = new HashMap<>();
+
+    Map<String, Object> authorizer = new HashMap<>();
+    authorizer.put("claims", new HashMap<>());
+    this.requestContext.put("authorizer", authorizer);
+  }
 
   /**
    * Get Http Body.
@@ -78,6 +83,12 @@ public class ApiHttpRequest {
     return this;
   }
 
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> getClaims() {
+    Map<String, Object> authorizer = (Map<String, Object>) this.requestContext.get("authorizer");
+    return (Map<String, Object>) authorizer.get("claims");
+  }
+
   /**
    * Set Http Group.
    * 
@@ -85,15 +96,7 @@ public class ApiHttpRequest {
    * @return {@link ApiHttpRequest}
    */
   public ApiHttpRequest group(final String group) {
-
-    this.requestContext =
-        Map.of("authorizer", Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
-    // if (group != null) {
-    // this.context.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
-    // this.event.setRequestContext(this.context);
-    // }
-
-    // this.group = httpGroup;
+    getClaims().put("cognito:groups", "[" + group + "]");
     return this;
   }
 
@@ -227,22 +230,13 @@ public class ApiHttpRequest {
   }
 
   /**
-   * Get Http User.
+   * Set Username.
    * 
-   * @return {@link String}
-   */
-  public String user() {
-    return this.user;
-  }
-
-  /**
-   * Set Http User.
-   * 
-   * @param httpUser {@link String}
+   * @param username {@link String}
    * @return {@link ApiHttpRequest}
    */
-  public ApiHttpRequest user(final String httpUser) {
-    this.user = httpUser;
+  public ApiHttpRequest user(final String username) {
+    getClaims().put("cognito:username", username);
     return this;
   }
 }
