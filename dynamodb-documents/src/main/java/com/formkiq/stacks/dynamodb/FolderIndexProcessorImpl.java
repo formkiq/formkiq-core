@@ -24,6 +24,8 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
@@ -395,6 +399,23 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
 
     return map;
+  }
+
+  @Override
+  public DynamicObject getIndex(final String siteId, final String indexKey, final boolean isFile) {
+
+    String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
+    int pos = index.indexOf(TAG_DELIMINATOR);
+    String parentId = index.substring(0, pos);
+    String path = index.substring(pos + 1);
+
+    String pk = getPk(siteId, parentId);
+    String sk = getSk(path, isFile);
+
+    Map<String, AttributeValue> attr =
+        this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+
+    return new AttributeValueToDynamicObject().apply(attr);
   }
 
   private String getPk(final String siteId, final String id) {

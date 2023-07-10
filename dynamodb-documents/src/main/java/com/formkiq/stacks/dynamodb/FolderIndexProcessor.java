@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
@@ -82,6 +83,16 @@ public interface FolderIndexProcessor {
    * @throws IOException IOException
    */
   Map<String, String> getIndex(String siteId, String path) throws IOException;
+
+  /**
+   * Get Folder / File Index.
+   * 
+   * @param siteId {@link String}
+   * @param indexKey {@link String}
+   * @param isFile boolean
+   * @return {@link DynamicObject}
+   */
+  DynamicObject getIndex(String siteId, String indexKey, boolean isFile);
 
   /**
    * Move Index from one to another.
