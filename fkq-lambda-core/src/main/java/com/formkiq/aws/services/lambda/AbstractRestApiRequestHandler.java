@@ -325,42 +325,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   public abstract void handleSqsRequest(LambdaLogger logger, AwsServiceCache awsServices,
       LambdaInputRecord record) throws IOException;
 
-  // /**
-  // * Is {@link ApiGatewayRequestEvent} caller authorized.
-  // *
-  // * @param event {@link ApiGatewayRequestEvent}
-  // * @param authorization {@link ApiAuthorization}
-  // * @param method {@link String}
-  // * @param handler {@link ApiGatewayRequestHandler}
-  // * @return boolean
-  // */
-  // private boolean isAuthorized(final ApiGatewayRequestEvent event,
-  // final ApiAuthorization authorization, final String method,
-  // final ApiGatewayRequestHandler handler) {
-  //
-  // boolean authorized = isAuthorized(getAwsServices(), event, authorization, method, handler);
-  //
-  // // if (authorized && event.getResource().startsWith("/documents/{documentId}")) {
-  // //
-  // // String siteId = authorization.siteId();
-  // // String documentId = event.getPathParameters().get("documentId");
-  // //
-  // // String permission = "write";
-  // // if ("get".equals(method)) {
-  // // permission = "read";
-  // // } else if ("delete".equals(method)) {
-  // // permission = "delete";
-  // // }
-  // //
-  // // DocumentAuthorizationHandler authorizationHandler =
-  // // getAwsServices().getExtension(DocumentAuthorizationHandler.class);
-  // // authorized = authorizationHandler.isAuthorized(getAwsServices(), authorization.siteIds(),
-  // // siteId, documentId, permission);
-  // // }
-  //
-  // return authorized;
-  // }
-
   /**
    * Whether {@link ApiGatewayRequestEvent} has access.
    * 
@@ -507,6 +471,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       ApiAuthorizationInterceptor interceptor =
           awsServices.getExtension(ApiAuthorizationInterceptor.class);
+
+      if (interceptor != null) {
+        interceptor.awsServiceCache(awsServices);
+      }
 
       ApiAuthorization authorization =
           new ApiAuthorizationBuilder(authorizerType).interceptors(interceptor).build(event);

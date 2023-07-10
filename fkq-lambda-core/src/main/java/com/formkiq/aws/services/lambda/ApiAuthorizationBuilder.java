@@ -65,8 +65,9 @@ public class ApiAuthorizationBuilder {
    * @param event {@link ApiGatewayRequestEvent}
    * 
    * @return {@link ApiAuthorization}
+   * @throws Exception Exception
    */
-  public ApiAuthorization build(final ApiGatewayRequestEvent event) {
+  public ApiAuthorization build(final ApiGatewayRequestEvent event) throws Exception {
 
     Collection<String> groups = getGroups(event);
     boolean admin = isAdmin(groups);
@@ -93,7 +94,7 @@ public class ApiAuthorizationBuilder {
     }
 
     if (this.interceptor != null) {
-      this.interceptor.update(authorization);
+      this.interceptor.update(event, authorization);
     }
 
     return authorization;

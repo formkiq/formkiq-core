@@ -84,6 +84,13 @@ public class ApiAuthorization {
   }
 
   /**
+   * Clear Permissions Map.
+   */
+  public void clearPermissions() {
+    this.permissionsBySiteId = new HashMap<>();
+  }
+
+  /**
    * Get {@link ApiPermission}.
    * 
    * @return {@link Collection} {@link ApiPermission}

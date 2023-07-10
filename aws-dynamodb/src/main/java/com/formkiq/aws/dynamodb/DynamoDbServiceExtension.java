@@ -21,30 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.aws.dynamodb;
 
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Interceptor to allow injecting extra actions into the {@link ApiAuthorization}.
+ * {@link AwsServiceExtension} for {@link DynamoDbService}.
  *
  */
-public interface ApiAuthorizationInterceptor {
+public class DynamoDbServiceExtension implements AwsServiceExtension<DynamoDbService> {
+
+  /** {@link DynamoDbService}. */
+  private DynamoDbService service;
 
   /**
-   * Sets {@link AwsServiceCache}.
-   * 
-   * @param awsServices {@link AwsServiceCache}
+   * constructor.
    */
-  void awsServiceCache(AwsServiceCache awsServices);
+  public DynamoDbServiceExtension() {}
 
-  /**
-   * Update {@link ApiAuthorization} object.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @throws Exception Exception
-   */
-  void update(ApiGatewayRequestEvent event, ApiAuthorization authorization) throws Exception;
+  @Override
+  public DynamoDbService loadService(final AwsServiceCache awsServiceCache) {
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+
+      this.service =
+          new DynamoDbServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    }
+
+    return this.service;
+  }
 }
