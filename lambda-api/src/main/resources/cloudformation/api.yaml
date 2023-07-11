@@ -2476,12 +2476,10 @@ Resources:
               type: "object"
               properties:
                 errors:
-                  $ref: "#/components/schemas/ValidationErrors"
-            ValidationErrors:
-              type: "array"
-              description: "List of errors"
-              items:
-                $ref: "#/components/schemas/ValidationError"
+                  type: "array"
+                  description: "List of errors"
+                  items:
+                    $ref: "#/components/schemas/ValidationError"
             ValidationError:
               type: "object"
               properties:
@@ -2533,12 +2531,10 @@ Resources:
                   type: "string"
                   description: "Previous page of results token"
                 values:
-                  $ref: "#/components/schemas/IndexSearchItems"
-            IndexSearchItems:
-              type: "array"
-              description: "List of search results"
-              items:
-                $ref: "#/components/schemas/IndexSearch"
+                  type: "array"
+                  description: "List of search results"
+                  items:
+                    $ref: "#/components/schemas/IndexSearch"
             IndexSearch:
               type: "object"
               properties:
@@ -2567,20 +2563,18 @@ Resources:
                   type: "string"
                   description: "Next page of results token"
                 versions:
-                  $ref: "#/components/schemas/DocumentItemVersions"
+                  type: "array"
+                  description: "List of document versions"
+                  items:
+                    $ref: "#/components/schemas/DocumentItemVersion"
             GetUserShares:
               type: "object"
               properties:
-                next:
-                  type: "string"
-                  description: "Next page of results token"
                 shares:
-                  $ref: "#/components/schemas/UserShares"
-            UserShares:
-              type: "array"
-              description: "List of user's shares"
-              items:
-                $ref: "#/components/schemas/UserShare"
+                  type: "array"
+                  description: "List of user's shares"
+                  items:
+                    $ref: "#/components/schemas/UserShare"
             UserShare:
               type: "object"
               properties:
@@ -2628,7 +2622,10 @@ Resources:
                   type: "string"
                   description: "Previous page of results token"
                 tags:
-                  $ref: "#/components/schemas/DocumentItemTags"
+                  type: "array"
+                  description: "List of tags"
+                  items:
+                    $ref: "#/components/schemas/GetDocumentTagResponse"
             SetDocumentVersionRequest:
               type: "object"
               properties:
@@ -2641,16 +2638,6 @@ Resources:
                 message:
                   type: "string"
                   description: "Response Message" 
-            DocumentItemTags:
-              type: "array"
-              description: "List of tags"
-              items:
-                $ref: "#/components/schemas/GetDocumentTagResponse"
-            DocumentItemVersions:
-              type: "array"
-              description: "List of document versions"
-              items:
-                $ref: "#/components/schemas/DocumentItemVersion"
             DocumentSearch:
               type: "object"
               description: "Document tag search criteria"
@@ -2702,13 +2689,11 @@ Resources:
                   type: "string"
                   description: "Url to upload document to"
                 documents:
-                  $ref: "#/components/schemas/AddChildDocumentsResponse"
-            AddChildDocumentsResponse:
-              type: "array"
-              description: "List of child documents"
-              items:
-                $ref: "#/components/schemas/AddChildDocumentResponse"
-            AddChildDocumentResponse:
+                  type: "array"
+                  description: "List of nested documents"
+                  items:
+                    $ref: "#/components/schemas/AddNestedDocumentResponse"
+            AddNestedDocumentResponse:
               type: "object"
               properties:
                 documentId:
@@ -2729,15 +2714,8 @@ Resources:
             GetDocumentResponse:
               required:
               - "documentId"
-              - "path"
               type: "object"
               properties:
-                next:
-                  type: "string"
-                  description: "Next page of results token"
-                previous:
-                  type: "string"
-                  description: "Previous page of results token"
                 siteId:
                   type: "string"
                   description: "Site Identifier"
@@ -2769,46 +2747,47 @@ Resources:
                 versionId:
                   type: "string"
                   description: "Document version"
+                documents:
+                  type: "array"
+                  description: "List of Nested documents"
+                  items:
+                    $ref: "#/components/schemas/Nesteddocument"
+            Nesteddocument:
+              required:
+              - "documentId"
+              type: "object"
+              properties:
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  description: "Last Modified Timestamp"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                documentId:
+                  type: "string"
+                  format: "uuid"
+                  description: "Document Identifier"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                contentLength:
+                  type: "integer"
+                  description: "Document size"
+                versionId:
+                  type: "string"
+                  description: "Document version"
                 belongsToDocumentId:
                   type: "string"
                   description: "Parent Document Identifier"
-                documents:
-                  type: "array"
-                  description: "List of related documents"
-                  items:
-                    type: "object"
-                    properties:
-                      path:
-                        type: "string"
-                        description: "Path or Name of document"
-                      insertedDate:
-                        type: "string"
-                        description: "Inserted Timestamp"
-                      lastModifiedDate:
-                        type: "string"
-                        description: "Last Modified Timestamp"
-                      checksum:
-                        type: "string"
-                        description: "Document checksum, changes when document file changes"
-                      documentId:
-                        type: "string"
-                        format: "uuid"
-                        description: "Document Identifier"
-                      contentType:
-                        type: "string"
-                        description: "Document Content-Type"
-                      userId:
-                        type: "string"
-                        description: "User who added document"
-                      contentLength:
-                        type: "integer"
-                        description: "Document size"
-                      versionId:
-                        type: "string"
-                        description: "Document version"
-                      belongsToDocumentId:
-                        type: "string"
-                        description: "Parent Document Identifier"
             DocumentFulltextRequest:
               required:
               - "query"
@@ -2830,12 +2809,10 @@ Resources:
                   type: "string"
                   description: "Full text search"
                 tags:
-                  $ref: "#/components/schemas/DocumentFulltextTags"
-            DocumentFulltextTags:
-              type: "array"
-              description: "List of search tags"
-              items:
-                $ref: "#/components/schemas/DocumentFulltextTag"
+                  type: "array"
+                  description: "List of search tags"
+                  items:
+                    $ref: "#/components/schemas/DocumentFulltextTag"
             DocumentFulltextTag:
               required:
               - "key"
@@ -2919,7 +2896,10 @@ Resources:
                   type: "string"
                   description: "Is webhook enabled"
                 tags:
-                  $ref: "#/components/schemas/AddDocumentTags"
+                  type: "array"
+                  description: "List of document tags"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentTagRequest"
             AddDocumentUploadRequest:
               required:
               - "content"
@@ -2932,9 +2912,15 @@ Resources:
                   type: "string"
                   description: "Path or Name of document"
                 tags:
-                  $ref: "#/components/schemas/AddDocumentTags"
+                  type: "array"
+                  description: "List of document tags"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentTagRequest"
                 actions:
-                  $ref: "#/components/schemas/AddActions"
+                  type: array
+                  description: "List of Actions"
+                  items:
+                    $ref: "#/components/schemas/AddAction"
             AddDocumentRequest:
               required:
               - "content"
@@ -2956,13 +2942,25 @@ Resources:
                   type: "string"
                   description: "Document content"
                 tags:
-                  $ref: "#/components/schemas/AddDocumentTags"
+                  type: "array"
+                  description: "List of document tags"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentTagRequest"
                 metadata:
-                  $ref: "#/components/schemas/AddDocumentMetadatas"
+                  type: "array"
+                  description: "List of document Metadata"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentMetadata"
                 actions:
-                  $ref: "#/components/schemas/AddActions"
+                  type: array
+                  description: "List of Actions"
+                  items:
+                    $ref: "#/components/schemas/AddAction"
                 documents:
-                  $ref: "#/components/schemas/AddChildDocumentRequest"
+                  type: "array"
+                  description: "List of nested documents"
+                  items:
+                    $ref: "#/components/schemas/AddNestedDocument"
                 permissions:
                   $ref: "#/components/schemas/AddPermissions"
             AddFolderShareRequest:
@@ -3004,12 +3002,10 @@ Resources:
               description: "Add List of document tags"
               properties:
                 tags:
-                  $ref: "#/components/schemas/AddDocumentTags"
-            AddDocumentMetadatas:
-              type: "array"
-              description: "List of document Metadata"
-              items:
-                $ref: "#/components/schemas/AddDocumentMetadata"
+                  type: "array"
+                  description: "List of document tags"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentTagRequest"
             AddDocumentMetadata:
               required:
               - "key"
@@ -3028,11 +3024,6 @@ Resources:
                   items:
                     type: "string"
                     description: "Metadata value"
-            AddDocumentTags:
-              type: "array"
-              description: "List of document tags"
-              items:
-                $ref: "#/components/schemas/AddDocumentTagRequest"
             AddDocumentTagRequest:
               required:
               - "key"
@@ -3051,12 +3042,7 @@ Resources:
                   items:
                     type: "string"
                     description: "Tag value"
-            AddChildDocumentRequest:
-              type: "array"
-              description: "List of child documents"
-              items:
-                $ref: "#/components/schemas/AddChildDocument"
-            AddChildDocument:
+            AddNestedDocument:
               required:
               - "content"
               type: "object"
@@ -3163,12 +3149,10 @@ Resources:
               type: "object"
               properties:
                 documents:
-                  $ref: "#/components/schemas/FulltextSearchItems"
-            FulltextSearchItems:
-              type: "array"
-              description: "List of search result documents"
-              items:
-                $ref: "#/components/schemas/FulltextSearchItem"
+                  type: "array"
+                  description: "List of search result documents"
+                  items:
+                    $ref: "#/components/schemas/FulltextSearchItem"
             FulltextSearchItem:
               type: "object"
               properties:
@@ -3229,12 +3213,10 @@ Resources:
                   type: "string"
                   description: "Next page of results token"
                 syncs:
-                  $ref: "#/components/schemas/GetDocumentSyncs"
-            GetDocumentSyncs:
-              type: "array"
-              description: "List of document syncs"
-              items:
-                $ref: "#/components/schemas/GetDocumentSync"
+                  type: "array"
+                  description: "List of document syncs"
+                  items:
+                    $ref: "#/components/schemas/GetDocumentSync"
             GetDocumentSync:
               type: "object"
               properties:
@@ -3275,12 +3257,10 @@ Resources:
                   type: "string"
                   description: "Previous page of results token"
                 documents:
-                  $ref: "#/components/schemas/SearchDocumentItems"
-            SearchDocumentItems:
-              type: "array"
-              description: "List of search result documents"
-              items:
-                $ref: "#/components/schemas/SearchDocumentItem"
+                  type: "array"
+                  description: "List of search result documents"
+                  items:
+                    $ref: "#/components/schemas/SearchDocumentItem"
             SearchDocumentItem:
               type: "object"
               properties:
@@ -3347,12 +3327,10 @@ Resources:
                   type: "string"
                   description: "Previous page of results token"
                 documents:
-                  $ref: "#/components/schemas/DocumentItemResults"
-            DocumentItemResults:
-              type: "array"
-              description: "List of documents"
-              items:
-                $ref: "#/components/schemas/DocumentItemResult"
+                  type: "array"
+                  description: "List of documents"
+                  items:
+                    $ref: "#/components/schemas/DocumentItemResult"
             DocumentItemResult:
               type: "object"
               properties:
@@ -3391,12 +3369,10 @@ Resources:
               type: "object"
               properties:
                 webhooks:
-                  $ref: "#/components/schemas/Webhooks"
-            Webhooks:
-              type: "array"
-              description: "List of webhooks"
-              items:
-                $ref: "#/components/schemas/GetWebhookResponse"
+                  type: "array"
+                  description: "List of webhooks"
+                  items:
+                    $ref: "#/components/schemas/GetWebhookResponse"
             GetWebhookResponse:
               type: "object"
               properties:
@@ -3429,12 +3405,10 @@ Resources:
                   type: "string"
                   description: "Previous page of results token"
                 tags:
-                  $ref: "#/components/schemas/WebhookTagsList"
-            WebhookTagsList:
-              type: "array"
-              description: "List of webhook tags"
-              items:
-                $ref: "#/components/schemas/WebhookTag"
+                  type: "array"
+                  description: "List of webhook tags"
+                  items:
+                    $ref: "#/components/schemas/WebhookTag"
             WebhookTag:
               required:
               - "key"
@@ -3463,12 +3437,10 @@ Resources:
               type: "object"
               properties:
                 actions:
-                  $ref: "#/components/schemas/DocumentActionList"
-            DocumentActionList:
-              type: "array"
-              description: "List of document actions"
-              items:
-                $ref: "#/components/schemas/DocumentAction"
+                  type: "array"
+                  description: "List of document actions"
+                  items:
+                    $ref: "#/components/schemas/DocumentAction"
             DocumentAction:
               type: object
               properties:
@@ -3545,9 +3517,16 @@ Resources:
                   type: "string"
                   description: "Path or Name of document"
                 tags:
-                  $ref: "#/components/schemas/AddDocumentTags"
+                  type: "array"
+                  description: "List of document tags"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentTagRequest"
                 metadata:
-                  $ref: "#/components/schemas/AddDocumentMetadatas"
+                  type: "array"
+                  description: "List of document Metadata"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentMetadata"
+
             UpdateDocumentFulltextRequest:
               type: object
               properties:
@@ -3558,7 +3537,10 @@ Resources:
                   type: "string"
                   description: "Document content"
                 tags:
-                  $ref: "#/components/schemas/AddDocumentTags"
+                  type: "array"
+                  description: "List of document tags"
+                  items:
+                    $ref: "#/components/schemas/AddDocumentTagRequest"
             SetAntivirusRequest:
               type: object
             SetAntivirusResponse:
@@ -3571,12 +3553,10 @@ Resources:
               type: object
               properties:
                 actions:
-                  $ref: "#/components/schemas/AddActions"
-            AddActions:
-              type: array
-              description: "List of Actions"
-              items:
-                $ref: "#/components/schemas/AddAction"
+                  type: array
+                  description: "List of Actions"
+                  items:
+                    $ref: "#/components/schemas/AddAction"
             AddAction:
               type: object
               required:
@@ -3654,12 +3634,10 @@ Resources:
                   type: "string"
                   description: "Username of request caller"
                 sites:
-                  $ref: "#/components/schemas/SitesByPermissions"
-            SitesByPermissions:
-              type: "array"
-              description: "List of sites"
-              items:
-                $ref: "#/components/schemas/SitesByPermission"
+                  type: "array"
+                  description: "List of sites"
+                  items:
+                    $ref: "#/components/schemas/SitesByPermission"
             SitesByPermission:
               type: "object"
               properties:
@@ -3733,12 +3711,10 @@ Resources:
               type: object
               properties:
                 apiKeys:
-                  $ref: "#/components/schemas/ApiKeys"
-            ApiKeys:
-              type: "array"
-              description: "List of ApiKeys"
-              items:
-                $ref: "#/components/schemas/ApiKey"
+                  type: "array"
+                  description: "List of ApiKeys"
+                  items:
+                    $ref: "#/components/schemas/ApiKey"
             ApiKey:
               type: "object"
               properties:
@@ -3776,12 +3752,10 @@ Resources:
               type: object
               properties:
                 sites:
-                  $ref: "#/components/schemas/Sites"
-            Sites:
-              type: "array"
-              description: "List of sites"
-              items:
-                $ref: "#/components/schemas/Site"
+                  type: "array"
+                  description: "List of sites"
+                  items:
+                    $ref: "#/components/schemas/Site"
             Site:
               type: "object"
               properties:
@@ -3808,12 +3782,10 @@ Resources:
               type: object
               properties:
                 errors:
-                  $ref: "#/components/schemas/ErrorsList"
-            ErrorsList:
-              type: "array"
-              description: "List of errors"
-              items:
-                $ref: "#/components/schemas/Error"
+                  type: "array"
+                  description: "List of errors"
+                  items:
+                    $ref: "#/components/schemas/Error"
             Error:
               type: "object"
               properties:
@@ -3827,16 +3799,14 @@ Resources:
               type: "object"
               properties:
                 schemas:
-                  $ref: "#/components/schemas/TagSchemas"
+                  type: "array"
+                  description: "List of Tag Schemas"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaSummary"
                 next:
                   type: "string"
                 previous:
                   type: "string"
-            TagSchemas:
-              type: "array"
-              description: "List of Tag Schemas"
-              items:
-                $ref: "#/components/schemas/TagSchemaSummary"
             AddTagSchemaRequest:
               type: "object"
               properties:
@@ -3890,26 +3860,28 @@ Resources:
                   type: "string"
                   description: "Inserted Timestamp"
                 tags:
-                  type: "object"
-                  properties:
-                    compositeKeys:
-                      type: "array"
-                      description: "List of Composite Keys"
-                      items:
-                        $ref: "#/components/schemas/TagSchemaCompositeKey"
-                    required:
-                      type: "array"
-                      description: "List of Required Tags"
-                      items:
-                        $ref: "#/components/schemas/TagSchemaRequired"
-                    optional:
-                      type: "array"
-                      description: "List of Optional Tags"
-                      items:
-                        $ref: "#/components/schemas/TagSchemaOptional"
-                    allowAdditionalTags:
-                      type: "boolean"
-                      default: true
+                  $ref: "#/components/schemas/TagSchemaTags"
+            TagSchemaTags:
+              type: "object"
+              properties:
+                compositeKeys:
+                  type: "array"
+                  description: "List of Composite Keys"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaCompositeKey"
+                required:
+                  type: "array"
+                  description: "List of Required Tags"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaRequired"
+                optional:
+                  type: "array"
+                  description: "List of Optional Tags"
+                  items:
+                    $ref: "#/components/schemas/TagSchemaOptional"
+                allowAdditionalTags:
+                  type: "boolean"
+                  default: true
             TagSchemaCompositeKey:
               type: "object"
               properties:
@@ -3962,37 +3934,43 @@ Resources:
               type: "object"
               properties:
                 config:
-                  type: "object"
-                  properties:
-                    onlyOfficeUrl:
-                      description: "URL of the ONLYOFFICE application"
-                      type: "string"                    
-                    token:
-                      description: "ONLYOFFICE security token"
-                      type: "string"
-                    documentType:
-                      description: "Type of document (https://api.onlyoffice.com/editors/config/)"
-                      type: "string"
-                    editorConfig:
-                      type: "object"
-                      properties:
-                        callbackUrl:
-                          type: "string"
-                    document:
-                      type: "object"
-                      properties:
-                        url:
-                          description: "Defines the absolute URL where the source viewed or edited document is stored"
-                          type: "string"
-                        title:
-                          description: "Defines the desired file name for the viewed or edited document"
-                          type: "string"
-                        key:
-                          description: "Defines the unique document identifier used by the service to recognize the document"
-                          type: "string"
-                        fileType:
-                          description: "Defines the type of the file for the source viewed or edited document"
-                          type: "string"
+                  $ref: "#/components/schemas/OnlyOfficeConfig"
+            OnlyOfficeConfig:
+              type: "object"
+              properties:
+                onlyOfficeUrl:
+                  description: "URL of the ONLYOFFICE application"
+                  type: "string"                    
+                token:
+                  description: "ONLYOFFICE security token"
+                  type: "string"
+                documentType:
+                  description: "Type of document (https://api.onlyoffice.com/editors/config/)"
+                  type: "string"
+                editorConfig:
+                  $ref: "#/components/schemas/OnlyOfficeEditorConfig"
+                document:
+                  $ref: "#/components/schemas/OnlyOfficeConfigDocument"
+            OnlyOfficeEditorConfig:
+              type: "object"
+              properties:
+                callbackUrl:
+                  type: "string"
+            OnlyOfficeConfigDocument:
+              type: "object"
+              properties:
+                url:
+                  description: "Defines the absolute URL where the source viewed or edited document is stored"
+                  type: "string"
+                title:
+                  description: "Defines the desired file name for the viewed or edited document"
+                  type: "string"
+                key:
+                  description: "Defines the unique document identifier used by the service to recognize the document"
+                  type: "string"
+                fileType:
+                  description: "Defines the type of the file for the source viewed or edited document"
+                  type: "string"
             OnlyOfficeDocumentSaveResponse:
               type: "object"
               properties:
@@ -4014,16 +3992,20 @@ Resources:
                   type: "boolean"
                   description: "Whether to enable developer mode"
                 signers:
-                  $ref: "#/components/schemas/EsignatureDocusignSigners"
+                  type: "array"
+                  description: "List of DocuSign Signers"
+                  items:
+                    $ref: "#/components/schemas/EsignatureDocusignSigner"
                 carbonCopies:
-                  $ref: "#/components/schemas/EsignatureDocusignCarbonCopies"
+                  type: "array"
+                  description: "List of DocuSign Carbon Copies"
+                  items:
+                    $ref: "#/components/schemas/EsignatureDocusignCarbonCopy"
                 recipientTabs:
-                  $ref: "#/components/schemas/EsignatureDocusignRecipientTabs"
-            EsignatureDocusignSigners:
-              type: "array"
-              description: "List of DocuSign Signers"
-              items:
-                $ref: "#/components/schemas/EsignatureDocusignSigner"
+                  type: "array"
+                  description: "List of DocuSign Recipient Tabs"
+                  items:
+                    $ref: "#/components/schemas/EsignatureDocusignRecipientTab"
             EsignatureDocusignSigner:
               type: "object"
               properties:
@@ -4033,11 +4015,6 @@ Resources:
                 email:
                   type: "string"
                   description: "Email of Signer"
-            EsignatureDocusignCarbonCopies:
-              type: "array"
-              description: "List of DocuSign Carbon Copies"
-              items:
-                $ref: "#/components/schemas/EsignatureDocusignCarbonCopy"
             EsignatureDocusignCarbonCopy:
               type: "object"
               properties:
@@ -4047,11 +4024,6 @@ Resources:
                 email:
                   type: "string"
                   description: "Email of Signer"
-            EsignatureDocusignRecipientTabs:
-              type: "array"
-              description: "List of DocuSign Recipient Tabs"
-              items:
-                $ref: "#/components/schemas/EsignatureDocusignRecipientTab"
             EsignatureDocusignRecipientTab:
               type: "object"
               properties:
