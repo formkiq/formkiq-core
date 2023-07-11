@@ -29,6 +29,9 @@ Resources:
           description: |-
             Formkiq API: Document Management Platform API using JWT Authentication
           version: #@ data.values.version or assert.fail("missing version")
+        servers:
+          - url: http://localhost
+            description: Local development server
         paths:
           /users/me:
             get:
@@ -255,8 +258,8 @@ Resources:
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/apiKeyParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/apiKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -271,132 +274,6 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DeleteApiKeyResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /tagSchemas:
-            get:
-              operationId: GetTagSchemas
-              description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
-              - name: "next"
-                in: "query"
-                description: "Next page of results token"
-                schema:
-                  type: "string"
-              - name: "previous"
-                in: "query"
-                description: "Previous page of results token"
-                schema:
-                  type: "string"
-              responses:
-                '200':
-                  description: "200 OK"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: "string"
-                    Access-Control-Allow-Methods:
-                      schema:
-                        type: "string"
-                    Access-Control-Allow-Headers:
-                      schema:
-                        type: "string"
-                  content:
-                    application/json:
-                      schema:
-                        "$ref": "#/components/schemas/GetTagSchemasRequest"
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            post:
-              operationId: AddTagSchema
-              description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddTagSchemaRequest'
-              responses:
-                '201':
-                  description: 201 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/TagSchemaPostResponse'
-                '400':
-                  description: 400 BAD REQUEST
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /tagSchemas/{tagSchemaId}:
-            get:
-              operationId: GetTagSchema
-              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/tagSchemaIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetTagSchemaRequest'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            delete:
-              operationId: DeleteTagSchema
-              description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/tagSchemaIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -528,8 +405,9 @@ Resources:
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -554,8 +432,8 @@ Resources:
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
@@ -601,174 +479,8 @@ Resources:
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /documents/{documentId}/versions:
-            get:
-              operationId: GetDocumentVersions
-              description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Versions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              - name: next
-                in: query
-                description: "Next page of results token"
-                schema:
-                  type: string
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetDocumentVersionsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              operationId: SetDocumentVersion
-              description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Versions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/SetDocumentVersionRequest'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/SetDocumentVersionResponse'
-                '400':
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /documents/{documentId}/versions/{versionKey}:
-            delete:
-              operationId: DeleteDocumentVersion
-              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Versions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/versionKeyPath'
-              responses:
-                '200':
-                  $ref: '#/components/responses/200Cors'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /documents/{documentId}/permissions:
-            get:
-              operationId: GetDocumentPermissions
-              description: Get a listing of document permissions; ONLY available with FormKiQ Enterprise
-              tags:
-              - Document Permissions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              - name: next
-                in: query
-                description: "Next page of results token"
-                schema:
-                  type: string
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetDocumentPermissionsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            post:
-              operationId: AddDocumentPermission
-              description: Creates a new document permission; ONLY available with FormKiQ Enterprise
-              tags:
-              - Document Permissions
-              parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddDocumentPermission'
-              responses:
-                '201':
-                  description: 201 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddDocumentResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /documents/{documentId}/permissions/{permissionKey}:
-            delete:
-              operationId: DeleteDocumentPermissions
-              description: Delete a specific document permission
-              tags:
-              - Document Permissions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/permissionKeyParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -784,8 +496,9 @@ Resources:
               - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/versionKeyParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -813,9 +526,10 @@ Resources:
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               - name: next
                 in: query
                 description: "Next page of results token"
@@ -850,8 +564,8 @@ Resources:
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
@@ -883,8 +597,8 @@ Resources:
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
@@ -919,8 +633,8 @@ Resources:
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
@@ -956,9 +670,10 @@ Resources:
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -983,9 +698,9 @@ Resources:
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
               requestBody:
                 required: true
                 content:
@@ -1005,9 +720,9 @@ Resources:
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1022,10 +737,11 @@ Resources:
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
               - $ref: '#/components/parameters/tagvalueParam'
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1040,10 +756,11 @@ Resources:
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/versionKeyParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               - name: "inline"
                 in: "query"
                 description: "Set the Content-Disposition to inline"
@@ -1063,7 +780,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentUrlRequest'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1096,7 +813,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentUrlRequest'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1152,10 +869,11 @@ Resources:
             get:
               operationId: GetDocumentIdUpload
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
               tags:
               - Documents
@@ -1172,7 +890,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentUrlRequest'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1319,6 +1037,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -1374,12 +1093,13 @@ Resources:
               operationId: GetDocumentOcr
               description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/contentUrlParam'
               - $ref: '#/components/parameters/textParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -1402,7 +1122,7 @@ Resources:
               operationId: AddDocumentOcr
               description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1434,7 +1154,7 @@ Resources:
               operationId: SetDocumentOcr
               description: Set a document's optical character recognition (OCR) result for a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1466,7 +1186,7 @@ Resources:
               operationId: DeleteDocumentOcr
               description: Delete a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1477,6 +1197,294 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
+          /documents/{documentId}/versions:
+            get:
+              operationId: GetDocumentVersions
+              description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              - name: next
+                in: query
+                description: "Next page of results token"
+                schema:
+                  type: string
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentVersionsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              operationId: SetDocumentVersion
+              description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentVersionRequest'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetDocumentVersionResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/versions/{versionKey}:
+            delete:
+              operationId: DeleteDocumentVersion
+              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/versionKeyPath'
+              - $ref: '#/components/parameters/shareKeyParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /shares/me:
+            get:
+              operationId: GetUserShares
+              description: Get a listing of user folder/document shares; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Shares
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetUserShares'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /shares/folders/{indexKey}:
+            post:
+              operationId: AddFolderShare
+              description: Creates a new folder share; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Shares
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexKeyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddFolderShareRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddFolderShareResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /documents/{documentId}/permissions/{permissionKey}:
+            delete:
+              operationId: DeleteDocumentPermissions
+              description: Delete a specific document permission
+              tags:
+              - Document Permissions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/permissionKeyParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /tagSchemas:
+            get:
+              operationId: GetTagSchemas
+              description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - name: "next"
+                in: "query"
+                description: "Next page of results token"
+                schema:
+                  type: "string"
+              - name: "previous"
+                in: "query"
+                description: "Previous page of results token"
+                schema:
+                  type: "string"
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetTagSchemasRequest"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddTagSchema
+              description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddTagSchemaRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/TagSchemaPostResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /tagSchemas/{tagSchemaId}:
+            get:
+              operationId: GetTagSchema
+              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetTagSchemaRequest'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              operationId: DeleteTagSchema
+              description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"                
           /documents/{documentId}/antivirus:                       
             put:
               operationId: SetAntivirus
@@ -1486,6 +1494,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: false
                 content:
@@ -1519,6 +1528,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -1625,7 +1635,8 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/tagkeyParam'              
+              - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1643,7 +1654,8 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/tagvalueParam'              
+              - $ref: '#/components/parameters/tagvalueParam' 
+              - $ref: '#/components/parameters/shareKeyParam'             
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1656,11 +1668,12 @@ Resources:
               operationId: GetDocumentSyncs
               description: Retrieve the document syncs with external services status
               tags:
-              - Document Synchronization
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -2339,6 +2352,13 @@ Resources:
               description: Web Hook Param
               schema:
                 type: string
+            shareKeyParam:
+              name: shareKey
+              in: query
+              description: Share Identifier
+              required: false
+              schema:
+                type: string
             siteIdParam:
               name: siteId
               in: query
@@ -2367,7 +2387,14 @@ Resources:
               description: API Key
               required: true
               schema:
-                type: string            
+                type: string
+            folderIdParam:
+              name: folderId
+              in: path
+              description: Folder Identifier
+              required: true
+              schema:
+                type: string
             documentIdParam:
               name: documentId
               in: path
@@ -2541,43 +2568,56 @@ Resources:
                   description: "Next page of results token"
                 versions:
                   $ref: "#/components/schemas/DocumentItemVersions"
-            GetDocumentPermissionsResponse:
+            GetUserShares:
               type: "object"
               properties:
                 next:
                   type: "string"
                   description: "Next page of results token"
-                permissions:
-                  $ref: "#/components/schemas/DocumentPermissions"
-            DocumentPermissions:
+                shares:
+                  $ref: "#/components/schemas/UserShares"
+            UserShares:
               type: "array"
-              description: "List of document permissions"
+              description: "List of user's shares"
               items:
-                $ref: "#/components/schemas/DocumentPermission"
-            DocumentPermission:
+                $ref: "#/components/schemas/UserShare"
+            UserShare:
               type: "object"
               properties:
-                name:
+                documentId:
                   type: "string"
-                  description: "Name/Owner of Permission"
+                  format: "uuid"
+                  description: "Document/Folder Identifier"
+                shareKey:
+                  type: "string"
+                  description: "Share Key Identifier"
                 type:
                   type: "string"
                   enum:
-                    - GROUP
-                  description: "Type of Permission"
-                permission:
+                    - FOLDER
+                    - FILE
+                  description: "Type of Document"
+                permissions:
+                  type: "array"
+                  description: "List of share permissions"
+                  items:
+                    type: "string"
+                    enum:
+                      - READ
+                      - WRITE
+                      - DELETE
+                name:
                   type: "string"
-                  enum:
-                    - READ
-                    - WRITE
-                    - DELETE
-                  description: "Permission"
+                  description: "Name of Share"
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
                 userId:
                   type: "string"
-                  description: "User who added permission"
-                permissionKey:
-                  type: "string"
-                  description: "Document Permission Identifier"
+                  description: "User who created share"
             GetDocumentTagsResponse:
               type: "object"
               properties:
@@ -2677,7 +2717,7 @@ Resources:
                 uploadUrl:
                   type: "string"
                   description: "Url to upload document to"
-            GetDocumentUrlRequest:
+            GetDocumentUrlResponse:
               type: "object"
               properties:
                 documentId:
@@ -2706,11 +2746,9 @@ Resources:
                   description: "Path or Name of document"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 lastModifiedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
@@ -2745,11 +2783,9 @@ Resources:
                         description: "Path or Name of document"
                       insertedDate:
                         type: "string"
-                        format: "date-time"
                         description: "Inserted Timestamp"
                       lastModifiedDate:
                         type: "string"
-                        format: "date-time"
                         description: "Last Modified Timestamp"
                       checksum:
                         type: "string"
@@ -2929,7 +2965,7 @@ Resources:
                   $ref: "#/components/schemas/AddChildDocumentRequest"
                 permissions:
                   $ref: "#/components/schemas/AddPermissions"
-            AddDocumentPermission:
+            AddFolderShareRequest:
               type: "object"
               properties:
                 permissions:
@@ -2937,9 +2973,9 @@ Resources:
             AddPermissions:
               type: "object"
               properties:
-                group:
-                  $ref: "#/components/schemas/AddGroupPermissions"
-            AddGroupPermissions:
+                groups:
+                  $ref: "#/components/schemas/AddPermission"
+            AddPermission:
               type: "object"
               properties:
                 read:
@@ -2957,6 +2993,12 @@ Resources:
                   description: "List of Groups with Delete permission"
                   items:
                     type: "string"
+            AddFolderShareResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "API Response message"
             AddDocumentTagsRequest:
               type: "object"
               description: "Add List of document tags"
@@ -3040,11 +3082,9 @@ Resources:
                   description: "Path or Name of document"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 lastModifiedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
@@ -3140,7 +3180,6 @@ Resources:
                   description: "Path or Name of document"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 documentId:
                   type: "string"
@@ -3168,7 +3207,6 @@ Resources:
                   description: "Path or Name of document"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 documentId:
                   type: "string"
@@ -3220,7 +3258,6 @@ Resources:
                     - TAG
                 syncDate:
                   type: "string"
-                  format: "date-time"
                   description: "Timestamp of synchronization"
                 userId:
                   type: "string"
@@ -3255,11 +3292,9 @@ Resources:
                   description: "Path or Name of document"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 lastModifiedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Last Modified Timestamp"
                 folder:
                   type: "boolean"
@@ -3329,11 +3364,9 @@ Resources:
                   description: "Path or Name of document"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 lastModifiedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Last Modified Timestamp"
                 checksum:
                   type: "string"
@@ -3378,7 +3411,6 @@ Resources:
                   description: "Webhook url"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 id:
                   type: "string"
@@ -3637,13 +3669,13 @@ Resources:
                 permissions:
                   type: array
                   description: "List of caller permissions"
-                  enum:
-                    - ADMIN
-                    - DELETE
-                    - READ
-                    - WRITE
                   items:
                     type: "string"
+                    enum:
+                      - ADMIN
+                      - DELETE
+                      - READ
+                      - WRITE
             GetVersionRequest:
               type: object
               properties:
@@ -3724,7 +3756,6 @@ Resources:
                     type: "string"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
             GetConfigurationResponse:
               type: object
@@ -3845,7 +3876,6 @@ Resources:
                   type: "string"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
             GetTagSchemaRequest:
               type: "object"
@@ -3858,7 +3888,6 @@ Resources:
                   type: "string"
                 insertedDate:
                   type: "string"
-                  format: "date-time"
                   description: "Inserted Timestamp"
                 tags:
                   type: "object"
@@ -4085,8 +4114,10 @@ Resources:
                   description: "Message response"
           securitySchemes:
             ApiAuthorization:
-              type: oauth2
-              flows: {}
+              type: http
+              scheme: bearer
+              bearerFormat: JWT
+              description: JWT authentication
               x-amazon-apigateway-authorizer:
                 type: jwt
                 jwtConfiguration:
