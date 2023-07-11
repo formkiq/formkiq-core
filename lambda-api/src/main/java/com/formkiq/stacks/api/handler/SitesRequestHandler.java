@@ -146,7 +146,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiAuthorization authorization) {
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     return !authorization.siteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 

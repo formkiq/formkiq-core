@@ -23,6 +23,8 @@
  */
 package com.formkiq.testutils.aws;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,10 +42,10 @@ import org.mockserver.model.HttpRequest;
  */
 public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHttpRequest> {
 
-  /** {@link Collection} {@link String}. */
-  private Collection<String> resourceUrls;
   /** {@link List} {@link String}. */
   private List<String[]> resourceSplits;
+  /** {@link Collection} {@link String}. */
+  private Collection<String> resourceUrls;
 
   /**
    * constructor.
@@ -71,14 +73,24 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     String body = httpRequest.getBodyAsString();
 
     Map<String, String> queryParameters =
-        httpRequest.getQueryStringParameterList().stream().collect(
-            Collectors.toMap(p -> p.getName().getValue(), p -> p.getValues().get(0).getValue()));
+        httpRequest.getQueryStringParameterList().stream().collect(Collectors.toMap(
+            p -> decode(p.getName().getValue()), p -> decode(p.getValues().get(0).getValue())));
 
     String group = decoder.getGroups().stream().collect(Collectors.joining(" "));
 
     return new ApiHttpRequest().httpMethod(httpRequest.getMethod().getValue()).resource(resource)
         .path(path).pathParameters(pathParameters).queryParameters(queryParameters)
         .user(decoder.getUsername()).group(group).body(body);
+  }
+
+  /**
+   * URL Decode {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  private String decode(final String s) {
+    return URLDecoder.decode(s, StandardCharsets.UTF_8);
   }
 
   private String findResource(final String path) {
@@ -128,7 +140,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
     for (int i = 0; i < resources.length; i++) {
       if (resources[i].startsWith("{") && resources[i].endsWith("}")) {
-        map.put(resources[i].substring(1, resources[i].length() - 1), paths[i]);
+        map.put(decode(resources[i].substring(1, resources[i].length() - 1)), decode(paths[i]));
       }
     }
 

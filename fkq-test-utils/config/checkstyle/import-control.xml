@@ -23,6 +23,10 @@
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		
+		<allow pkg="com.formkiq.client.api" />
+		<allow pkg="com.formkiq.client.invoker" />
+		<allow pkg="com.formkiq.client.model" />
+
 		<allow pkg="org.mockserver.mock.action" />
 		<allow pkg="org.mockserver.model" />
 		<allow pkg="org.mockserver.integration" />

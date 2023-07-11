@@ -112,7 +112,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiAuthorization authorization) {
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = authorization.permissions().contains(ApiPermission.READ);
     return Optional.of(Boolean.valueOf(access));
   }

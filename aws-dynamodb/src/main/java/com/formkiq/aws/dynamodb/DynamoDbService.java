@@ -41,8 +41,9 @@ public interface DynamoDbService {
    * 
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}
+   * @return boolean
    */
-  void deleteItem(AttributeValue pk, AttributeValue sk);
+  boolean deleteItem(AttributeValue pk, AttributeValue sk);
 
   /**
    * Whether Database Record Exists.

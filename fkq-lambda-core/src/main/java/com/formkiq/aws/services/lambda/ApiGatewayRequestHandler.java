@@ -186,11 +186,12 @@ public interface ApiGatewayRequestHandler {
    * 
    * @param awsServiceCache {@link AwsServiceCache}
    * @param method {@link String}
+   * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @return {@link Optional} {@link Boolean}
    */
   default Optional<Boolean> isAuthorized(AwsServiceCache awsServiceCache, String method,
-      ApiAuthorization authorization) {
+      ApiGatewayRequestEvent event, ApiAuthorization authorization) {
     return Optional.empty();
   }
 

@@ -339,7 +339,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     Collection<ApiPermission> permissions = authorization.permissions();
 
-    Optional<Boolean> hasAccess = handler.isAuthorized(getAwsServices(), method, authorization);
+    Optional<Boolean> hasAccess =
+        handler.isAuthorized(getAwsServices(), method, event, authorization);
 
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 

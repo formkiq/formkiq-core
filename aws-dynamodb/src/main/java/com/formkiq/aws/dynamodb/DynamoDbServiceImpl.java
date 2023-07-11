@@ -36,12 +36,14 @@ import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
@@ -89,10 +91,11 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public void deleteItem(final AttributeValue pk, final AttributeValue sk) {
+  public boolean deleteItem(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);
-    this.dbClient
-        .deleteItem(DeleteItemRequest.builder().tableName(this.tableName).key(sourceKey).build());
+    DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
+        .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+    return !response.attributes().isEmpty();
   }
 
   @Override

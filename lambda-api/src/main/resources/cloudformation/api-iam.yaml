@@ -356,7 +356,7 @@ Resources:
                           metadata:
                             - key: info 
                               value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                      Nested_Document:
+                      Child_Document:
                         value:
                           path: doc1.txt
                           contentType: text/plain
@@ -366,10 +366,10 @@ Resources:
                               value: document1
                           documents:
                             contentType: text/plain,
-                            content: This is sub document1 content,
+                            content: This is child document1 content,
                             tags:
                               - key: type
-                                value: subdocument1
+                                value: childdocument1
                       Document_with_Webhook:
                         value:
                           path: test.txt
@@ -1342,19 +1342,28 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /documents/{documentId}/permissions/{permissionKey}:
+          /shares/{shareKey}:
             delete:
-              operationId: DeleteDocumentPermissions
-              description: Delete a specific document permission
+              operationId: DeleteShare
+              description: Delete a specific document share; ONLY available with FormKiQ Enterprise
               tags:
-              - Document Permissions
+              - Document Shares
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/permissionKeyParam'
-              - $ref: '#/components/parameters/shareKeyParam'
+              - $ref: '#/components/parameters/shareKey'
               responses:
                 '200':
-                  $ref: '#/components/responses/200Cors'
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteShareResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2352,6 +2361,13 @@ Resources:
               description: Web Hook Param
               schema:
                 type: string
+            shareKey:
+              name: shareKey
+              in: path
+              description: Share Identifier
+              required: true
+              schema:
+                type: string
             shareKeyParam:
               name: shareKey
               in: query
@@ -2580,7 +2596,6 @@ Resources:
               properties:
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document/Folder Identifier"
                 shareKey:
                   type: "string"
@@ -2661,7 +2676,6 @@ Resources:
               properties:
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 siteId:
                   type: "string"
@@ -2671,7 +2685,6 @@ Resources:
               properties:
                 id:
                   type: "string"
-                  format: "uuid"
                 siteId:
                   type: "string"
                   description: "Site Identifier"
@@ -2680,7 +2693,6 @@ Resources:
               properties:
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 siteId:
                   type: "string"
@@ -2690,10 +2702,10 @@ Resources:
                   description: "Url to upload document to"
                 documents:
                   type: "array"
-                  description: "List of nested documents"
+                  description: "List of child documents"
                   items:
-                    $ref: "#/components/schemas/AddNestedDocumentResponse"
-            AddNestedDocumentResponse:
+                    $ref: "#/components/schemas/AddChildDocumentResponse"
+            AddChildDocumentResponse:
               type: "object"
               properties:
                 documentId:
@@ -2733,7 +2745,6 @@ Resources:
                   description: "Document checksum, changes when document file changes"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 contentType:
                   type: "string"
@@ -2749,10 +2760,10 @@ Resources:
                   description: "Document version"
                 documents:
                   type: "array"
-                  description: "List of Nested documents"
+                  description: "List of child documents"
                   items:
-                    $ref: "#/components/schemas/Nesteddocument"
-            Nesteddocument:
+                    $ref: "#/components/schemas/ChildDocument"
+            ChildDocument:
               required:
               - "documentId"
               type: "object"
@@ -2771,7 +2782,6 @@ Resources:
                   description: "Document checksum, changes when document file changes"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 contentType:
                   type: "string"
@@ -2958,9 +2968,9 @@ Resources:
                     $ref: "#/components/schemas/AddAction"
                 documents:
                   type: "array"
-                  description: "List of nested documents"
+                  description: "List of child documents"
                   items:
-                    $ref: "#/components/schemas/AddNestedDocument"
+                    $ref: "#/components/schemas/AddChildDocument"
                 permissions:
                   $ref: "#/components/schemas/AddPermissions"
             AddFolderShareRequest:
@@ -2992,6 +3002,26 @@ Resources:
                   items:
                     type: "string"
             AddFolderShareResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "API Response message"
+                shares:
+                  type: "array"
+                  description: "List of created shares"
+                  items:
+                    $ref: "#/components/schemas/AddFolderShare"
+            AddFolderShare:
+              type: "object"
+              properties:
+                shareKey:
+                  type: "string"
+                  description: "Share Key Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+            DeleteShareResponse:
               type: "object"
               properties:
                 message:
@@ -3042,7 +3072,7 @@ Resources:
                   items:
                     type: "string"
                     description: "Tag value"
-            AddNestedDocument:
+            AddChildDocument:
               required:
               - "content"
               type: "object"
@@ -3077,7 +3107,6 @@ Resources:
                   description: "Document checksum, changes when document file changes"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 contentType:
                   type: "string"
@@ -3167,7 +3196,6 @@ Resources:
                   description: "Inserted Timestamp"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 contentLength:
                   type: "integer"
@@ -3194,7 +3222,6 @@ Resources:
                   description: "Inserted Timestamp"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 createdBy:
                   type: "string"
@@ -3260,8 +3287,8 @@ Resources:
                   type: "array"
                   description: "List of search result documents"
                   items:
-                    $ref: "#/components/schemas/SearchDocumentItem"
-            SearchDocumentItem:
+                    $ref: "#/components/schemas/SearchResultDocument"
+            SearchResultDocument:
               type: "object"
               properties:
                 siteId:
@@ -3287,7 +3314,6 @@ Resources:
                   description: "Document checksum, changes when document file changes"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 contentType:
                   type: "string"
@@ -3351,7 +3377,6 @@ Resources:
                   description: "Document checksum, changes when document file changes"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
                 contentType:
                   type: "string"
@@ -3390,7 +3415,6 @@ Resources:
                   description: "Inserted Timestamp"
                 id:
                   type: "string"
-                  format: "uuid"
                   description: "Webhook Identifier"
                 userId:
                   type: "string"
@@ -3479,7 +3503,6 @@ Resources:
                   description: "User who requested the OCR"
                 documentId:
                   type: "string"
-                  format: "uuid"
                   description: "Document Identifier"
             AddDocumentActionsResponse:
               type: object
@@ -3776,7 +3799,6 @@ Resources:
               properties:
                 tagSchemaId:
                   type: "string"
-                  format: "uuid"
                   description: "Tag Schema Identifier"
             ErrorsResponse:
               type: object

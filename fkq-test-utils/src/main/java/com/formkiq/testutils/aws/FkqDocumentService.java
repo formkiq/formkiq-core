@@ -36,6 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocument;
@@ -68,6 +72,34 @@ public class FkqDocumentService {
   private static HttpClient http = HttpClient.newHttpClient();
   /** 200 OK. */
   private static final int STATUS_OK = 200;
+
+  /**
+   * Add "file" but this just creates DynamoDB record and the S3 file.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param content byte[]
+   * @param contentType {@link String}
+   * @return {@link String}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   * @throws ApiException ApiException
+   */
+  public static String addDocument(final ApiClient apiClient, final String siteId,
+      final String path, final byte[] content, final String contentType)
+      throws IOException, InterruptedException, URISyntaxException, ApiException {
+    // given
+    DocumentsApi api = new DocumentsApi(apiClient);
+    GetDocumentUrlResponse response =
+        api.getDocumentUpload(path, siteId, Integer.valueOf(content.length), null);
+    String s3url = response.getUrl();
+
+    http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)
+        .method("PUT", BodyPublishers.ofByteArray(content)).build(), BodyHandlers.ofString());
+    return response.getDocumentId();
+  }
 
   /**
    * Add "file" but this just creates DynamoDB record and not the S3 file.

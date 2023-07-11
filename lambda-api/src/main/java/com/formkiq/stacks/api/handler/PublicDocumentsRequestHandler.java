@@ -53,7 +53,7 @@ public class PublicDocumentsRequestHandler
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiAuthorization authorization) {
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
     boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
     return access ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
