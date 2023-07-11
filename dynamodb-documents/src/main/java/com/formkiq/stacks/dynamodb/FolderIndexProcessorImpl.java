@@ -442,6 +442,28 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return !response.items().isEmpty();
   }
 
+  @Override
+  public boolean isFolderIdInPath(final String siteId, final String path, final String folderId)
+      throws IOException {
+
+    boolean found = false;
+    String lastUuid = "";
+    String[] folders = tokens(path);
+
+    for (String folder : folders) {
+      String pk = getPk(siteId, lastUuid);
+      String sk = getSk(folder, false);
+      lastUuid = getFolderId(siteId, pk, sk, folder);
+
+      if (folderId.equals(lastUuid)) {
+        found = true;
+        break;
+      }
+    }
+
+    return found;
+  }
+
   /**
    * Move Directory from one to another.
    * 

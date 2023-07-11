@@ -95,6 +95,17 @@ public interface FolderIndexProcessor {
   DynamicObject getIndex(String siteId, String indexKey, boolean isFile);
 
   /**
+   * Is Folder in Path.
+   * 
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param folderId {@link String}
+   * @return boolean
+   * @throws IOException IOException
+   */
+  boolean isFolderIdInPath(String siteId, String path, String folderId) throws IOException;
+
+  /**
    * Move Index from one to another.
    * 
    * @param siteId {@link String}

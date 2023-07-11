@@ -105,9 +105,17 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
+    return get(new QueryConfig(), pk, sk);
+  }
+
+  @Override
+  public Map<String, AttributeValue> get(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue sk) {
     Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
     return this.dbClient.getItem(GetItemRequest.builder().tableName(this.tableName).key(key)
-        .consistentRead(Boolean.TRUE).build()).item();
+        .projectionExpression(config.projectionExpression())
+        .expressionAttributeNames(config.expressionAttributeNames()).consistentRead(Boolean.TRUE)
+        .build()).item();
   }
 
   @Override

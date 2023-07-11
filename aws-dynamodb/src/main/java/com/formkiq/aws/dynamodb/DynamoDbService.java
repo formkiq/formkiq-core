@@ -63,6 +63,16 @@ public interface DynamoDbService {
   Map<String, AttributeValue> get(AttributeValue pk, AttributeValue sk);
 
   /**
+   * Gets DynamoDB Record.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> get(QueryConfig config, AttributeValue pk, AttributeValue sk);
+
+  /**
    * Batch Get a number of Keys.
    * 
    * @param keys {@link Collection}
