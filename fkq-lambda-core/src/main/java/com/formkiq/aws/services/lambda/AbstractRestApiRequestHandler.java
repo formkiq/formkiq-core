@@ -333,9 +333,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @param authorization {@link ApiAuthorization}
    * @param handler {@link ApiGatewayRequestHandler}
    * @return boolean
+   * @throws Exception Exception
    */
   private boolean isAuthorized(final ApiGatewayRequestEvent event, final String method,
-      final ApiAuthorization authorization, final ApiGatewayRequestHandler handler) {
+      final ApiAuthorization authorization, final ApiGatewayRequestHandler handler)
+      throws Exception {
 
     Collection<ApiPermission> permissions = authorization.permissions();
 
@@ -380,10 +382,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @param method {@link String}
    * @param handler {@link ApiGatewayRequestHandler}
    * @return boolean
+   * @throws Exception Exception
    */
   private boolean isAuthorized(final AwsServiceCache awsServiceCache,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization, final String method,
-      final ApiGatewayRequestHandler handler) {
+      final ApiGatewayRequestHandler handler) throws Exception {
     return "options".equals(method) || isAuthorized(event, method, authorization, handler);
   }
 
