@@ -25,12 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -38,82 +34,47 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.GlobalIndexService;
 
-/** {@link ApiGatewayRequestHandler} for "/indices/{type}/{key}". */
-public class IndicesRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil, DbKeys {
-
-  /** {@link IndicesRequestHandler} URL. */
-  public static final String URL = "/indices/{indexType}/{indexKey}";
-
-  /** {@link GlobalIndexService}. */
-  private GlobalIndexService writer;
+/** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}". */
+public class FoldersIndexKeyRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public IndicesRequestHandler() {}
+  public FoldersIndexKeyRequestHandler() {}
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
+      final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.siteId();
-    String type = event.getPathParameters().get("indexType");
-    String indexKey =
-        URLDecoder.decode(event.getPathParameters().get("indexKey"), StandardCharsets.UTF_8);
+    FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
 
-    if ("folder".equals(type)) {
+    String indexKey = event.getPathParameters().get("indexKey");
 
-      int pos = indexKey.indexOf(TAG_DELIMINATOR);
-      if (pos > -1) {
+    try {
+      boolean deleted = indexProcessor.deleteEmptyDirectory(siteId, indexKey);
 
-        String parentId = indexKey.substring(0, pos);
-        String path = indexKey.substring(pos + 1);
-
-        FolderIndexProcessor ip = awsServices.getExtension(FolderIndexProcessor.class);
-
-        try {
-          ip.deleteEmptyDirectory(siteId, parentId, path);
-        } catch (IOException e) {
-          throw new BadException("Folder not empty");
-        }
-
-      } else {
-        throw new BadException("invalid indexKey");
+      if (!deleted) {
+        throw new NotFoundException("directory not found");
       }
 
-    } else if ("tags".equals(type)) {
+      ApiMapResponse resp = new ApiMapResponse(Map.of("message", "deleted folder"));
+      return new ApiRequestHandlerResponse(SC_OK, resp);
 
-      initIndexService(awsServices);
-      this.writer.deleteTagIndex(siteId, indexKey);
-
-    } else {
-      throw new BadException("invalid 'indexType' parameter");
-    }
-
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Folder deleted"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  private void initIndexService(final AwsServiceCache awsServiceCache) {
-
-    if (this.writer == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.writer =
-          new GlobalIndexService(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+    } catch (IOException e) {
+      throw new BadException(e.getMessage());
     }
   }
 
   @Override
   public String getRequestUrl() {
-    return URL;
+    return "/folders/{indexKey}";
   }
 }

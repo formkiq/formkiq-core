@@ -1284,6 +1284,99 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /folders:
+            get:
+              operationId: GetFolderDocuments
+              description: Get list of documents in a folder
+              tags:
+              - Folders
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexKeyQueryParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetFoldersResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
+            post:
+              operationId: AddFolder
+              description: Creates a new folder
+              tags:
+              - Folders
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddFolderRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddFolderResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /folders/{indexKey}:
+            delete:
+              operationId: DeleteFolder
+              description: Delete a specific folder; folder must be empty
+              tags:
+              - Folders
+              parameters:
+              - $ref: '#/components/parameters/indexKeyParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteFolderResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /shares/me:
             get:
               operationId: GetUserShares
@@ -2071,7 +2164,7 @@
               operationId: IndexFolderMove
               description: Perform an Folder Index Move
               tags:
-              - Folder Index
+              - Custom Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexTypeParam'
@@ -2110,7 +2203,7 @@
               operationId: DeleteIndex
               description: Perform a delete on the Folder Index
               tags:
-              - Folder Index
+              - Custom Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexKeyParam'
@@ -2140,7 +2233,7 @@
               operationId: IndexSearch
               description: Perform a search on a index; this is currently available for both folder and tag indices
               tags:
-              - Folder Index
+              - Custom Index
               - Tag Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -2472,6 +2565,13 @@
               required: false
               schema:
                 type: string
+            indexKeyQueryParam:
+              name: indexKey
+              in: query
+              description: Index Key Identifier
+              required: false
+              schema:
+                type: string
             indexKeyParam:
               name: indexKey
               in: path
@@ -2582,6 +2682,21 @@
                   description: List of document versions
                   items:
                     $ref: '#/components/schemas/DocumentItemVersion'
+            AddFolderRequest:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Path of Folder to create
+            AddFolderResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Response Message
+                indexKey:
+                  type: string
+                  description: Folder Index Key
             GetUserShares:
               type: object
               properties:
@@ -3020,6 +3135,12 @@
                 path:
                   type: string
                   description: Path or Name of document
+            DeleteFolderResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: API Response message
             DeleteShareResponse:
               type: object
               properties:
@@ -3273,6 +3394,20 @@
                 message:
                   type: string
                   description: Document sync message
+            GetFoldersResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                previous:
+                  type: string
+                  description: Previous page of results token
+                documents:
+                  type: array
+                  description: List of search result documents
+                  items:
+                    $ref: '#/components/schemas/SearchResultDocument'
             DocumentSearchResponse:
               type: object
               properties:
@@ -4106,18 +4241,18 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: http
-              scheme: bearer
-              bearerFormat: JWT
-              description: JWT authentication
+              type: apiKey
+              name: Authorization
+              in: header
+              x-amazon-apigateway-authtype: Custom API Key
               x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
+                authorizerUri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                authorizerResultTtlInSeconds: 300
+                authorizerPayloadFormatVersion: "2.0"
+                enableSimpleResponses: true
+                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

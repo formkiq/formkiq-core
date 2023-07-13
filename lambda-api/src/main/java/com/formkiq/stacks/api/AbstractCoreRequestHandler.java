@@ -82,6 +82,8 @@ import com.formkiq.stacks.api.handler.DocumentsSyncsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.EsignatureDocusignConfigRequestHandler;
 import com.formkiq.stacks.api.handler.EsignatureDocusignDocumentIdRequestHandler;
+import com.formkiq.stacks.api.handler.FoldersIndexKeyRequestHandler;
+import com.formkiq.stacks.api.handler.FoldersRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesFolderMoveRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesSearchRequestHandler;
@@ -160,6 +162,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentPermissionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
     addRequestHandler(new DocumentsActionsRequestHandler());
+    addRequestHandler(new FoldersRequestHandler());
+    addRequestHandler(new FoldersIndexKeyRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
     addRequestHandler(new DocumentTagRequestHandler());
     addRequestHandler(new DocumentIdUrlRequestHandler());

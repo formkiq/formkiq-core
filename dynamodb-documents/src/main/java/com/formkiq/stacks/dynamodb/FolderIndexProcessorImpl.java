@@ -135,8 +135,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @param userId {@link String}
    * @return {@link String}
    */
-  private String createFolder(final String siteId, final String pk, final String sk,
-      final String folder, final Date insertedDate, final String userId) {
+  private Map<String, AttributeValue> createFolder(final String siteId, final String pk,
+      final String sk, final String folder, final Date insertedDate, final String userId) {
 
     String uuid;
 
@@ -166,7 +166,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       if (!e.cancellationReasons().isEmpty()) {
         CancellationReason cr = e.cancellationReasons().get(0);
         if (cr.item() != null && cr.item().containsKey("documentId")) {
-          uuid = cr.item().get("documentId").s();
+          values = cr.item();
         } else {
           throw e;
         }
@@ -175,31 +175,69 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       }
     }
 
-    return uuid;
+    return values;
   }
 
-  private void createFolderPaths(final String siteId, final String[] folders,
+  private List<Map<String, String>> createFolderPaths(final String siteId, final String[] folders,
       final Date insertedDate, final String userId, final boolean allDirectories) {
 
     int i = 0;
     String lastUuid = "";
     int len = folders.length;
+    List<Map<String, String>> list = new ArrayList<>();
+
     for (String folder : folders) {
 
       String pk = getPk(siteId, lastUuid);
       String sk = getSk(folder, false);
 
       if (allDirectories || !isFileToken(folder, i, len)) {
-        lastUuid = createFolder(siteId, pk, sk, folder, insertedDate, userId);
+        Map<String, AttributeValue> attr =
+            createFolder(siteId, pk, sk, folder, insertedDate, userId);
+        lastUuid = attr.get("documentId").s();
+        list.add(Map.of("folder", folder, "indexKey", createIndexKey(attr)));
       }
 
       i++;
     }
+
+    return list;
   }
 
   @Override
-  public boolean deleteEmptyDirectory(final String siteId, final String parentId,
-      final String path) {
+  public List<Map<String, String>> createFolders(final String siteId, final String path,
+      final String userId) {
+    boolean allDirectories = true;
+    Date insertedDate = new Date();
+    String[] folders = tokens(path);
+    return createFolderPaths(siteId, folders, insertedDate, userId, allDirectories);
+  }
+
+  private String createIndexKey(final Map<String, AttributeValue> map) {
+    String parent = map.get(PK).s().substring(map.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1);
+    String path = map.get("path").s();
+    return parent + TAG_DELIMINATOR + path;
+  }
+
+  @Override
+  public boolean deleteEmptyDirectory(final String siteId, final String indexKey)
+      throws IOException {
+    boolean deleted = false;
+
+    int pos = indexKey.indexOf(TAG_DELIMINATOR);
+    if (pos != -1) {
+      String parentId = indexKey.substring(0, pos);
+      String path = indexKey.substring(pos + 1);
+
+      deleted = deleteEmptyDirectory(siteId, parentId, path);
+    }
+
+    return deleted;
+  }
+
+  @Override
+  public boolean deleteEmptyDirectory(final String siteId, final String parentId, final String path)
+      throws IOException {
 
     boolean deleted = false;
     String pk = getPk(siteId, parentId);
@@ -213,6 +251,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     if (!hasFiles(siteId, documentId)) {
       this.dynamoDb.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
       deleted = true;
+    } else {
+      throw new IOException("folder is not empty");
     }
 
     return deleted;
@@ -259,7 +299,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         String sk = getSk(folder, true);
         String docId = documentId;
         if (docId == null) {
-          docId = getFolderId(siteId, pk, sk, folder);
+          docId = getFolderId(pk, sk, folder);
         }
 
         uuids.put(folder, Map.of(PK, pk, SK, sk, "documentId", docId, "type", "file"));
@@ -268,7 +308,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
         String sk = getSk(folder, false);
 
-        lastUuid = getFolderId(siteId, pk, sk, folder);
+        lastUuid = getFolderId(pk, sk, folder);
         uuids.put(folder, Map.of(PK, pk, SK, sk, "documentId", lastUuid, "type", "folder"));
       }
 
@@ -364,15 +404,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   /**
    * Get Folder Id.
    * 
-   * @param siteId {@link String}
    * @param pk {@link String}
    * @param sk {@link String}
    * @param folder {@link String}
    * @return {@link String}
    * @throws IOException IOException
    */
-  private String getFolderId(final String siteId, final String pk, final String sk,
-      final String folder) throws IOException {
+  private String getFolderId(final String pk, final String sk, final String folder)
+      throws IOException {
 
     Map<String, AttributeValue> map =
         this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
@@ -404,18 +443,24 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   @Override
   public DynamicObject getIndex(final String siteId, final String indexKey, final boolean isFile) {
 
+    DynamicObject o = null;
     String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
+
     int pos = index.indexOf(TAG_DELIMINATOR);
-    String parentId = index.substring(0, pos);
-    String path = index.substring(pos + 1);
+    if (pos != -1) {
+      String parentId = index.substring(0, pos);
+      String path = index.substring(pos + 1);
 
-    String pk = getPk(siteId, parentId);
-    String sk = getSk(path, isFile);
+      String pk = getPk(siteId, parentId);
+      String sk = getSk(path, isFile);
 
-    Map<String, AttributeValue> attr =
-        this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+      Map<String, AttributeValue> attr =
+          this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
 
-    return new AttributeValueToDynamicObject().apply(attr);
+      o = new AttributeValueToDynamicObject().apply(attr);
+    }
+
+    return o;
   }
 
   private String getPk(final String siteId, final String id) {
@@ -453,7 +498,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     for (String folder : folders) {
       String pk = getPk(siteId, lastUuid);
       String sk = getSk(folder, false);
-      lastUuid = getFolderId(siteId, pk, sk, folder);
+      lastUuid = getFolderId(pk, sk, folder);
 
       if (folderId.equals(lastUuid)) {
         found = true;

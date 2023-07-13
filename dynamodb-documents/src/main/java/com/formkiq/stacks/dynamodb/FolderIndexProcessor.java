@@ -47,14 +47,35 @@ public interface FolderIndexProcessor {
   String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
   /**
+   * Create Folder Paths.
+   * 
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param userId {@link String}
+   * @return {@link List} {@link Map}
+   */
+  List<Map<String, String>> createFolders(String siteId, String path, String userId);
+
+  /**
+   * Delete Empty Directory.
+   * 
+   * @param siteId {@link String}
+   * @param indexKey {@link String}
+   * @return boolean
+   * @throws IOException IOException
+   */
+  boolean deleteEmptyDirectory(String siteId, String indexKey) throws IOException;
+
+  /**
    * Delete Empty Directory.
    * 
    * @param siteId {@link String}
    * @param parentId {@link String}
    * @param path {@link String}
    * @return boolean
+   * @throws IOException IOException
    */
-  boolean deleteEmptyDirectory(String siteId, String parentId, String path);
+  boolean deleteEmptyDirectory(String siteId, String parentId, String path) throws IOException;
 
   /**
    * Delete Index Path.
