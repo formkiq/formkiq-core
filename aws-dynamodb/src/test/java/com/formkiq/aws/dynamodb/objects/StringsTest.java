@@ -47,4 +47,13 @@ class StringsTest {
     assertEquals("test (something).txt",
         Strings.getFilename("/bleh/something/test (something).txt"));
   }
+
+  @Test
+  void replaceQuotes() {
+    assertEquals("text", Strings.removeQuotes("text"));
+    assertEquals("text", Strings.removeQuotes("\"text\""));
+    assertEquals("text", Strings.removeQuotes("\"text"));
+    assertEquals("text", Strings.removeQuotes("'text'"));
+    assertEquals("text", Strings.removeQuotes("\"text'"));
+  }
 }

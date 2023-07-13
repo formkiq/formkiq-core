@@ -62,4 +62,14 @@ public class Strings {
   public static boolean isEmpty(final CharSequence cs) {
     return cs == null || cs.length() == 0;
   }
+
+  /**
+   * Remove single/double quotes from {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String removeQuotes(final String s) {
+    return s.replaceAll("^['\"]|['\"]$", "");
+  }
 }
