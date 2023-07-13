@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.removeEndingPunctuation;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
@@ -222,10 +223,19 @@ public class DocumentTaggingAction implements DocumentAction {
 
         if (pos > -1) {
           String key = s.substring(0, pos).trim().toLowerCase();
-          String value = s.substring(pos + 1).trim();
+          String value = removeQuotes(removeEndingPunctuation(s.substring(pos + 1).trim()));
 
           if (!key.isEmpty() && !value.isEmpty()) {
-            data.put(key, Arrays.asList(value));
+
+            List<Object> list = getObjectAsJsonList(value);
+            if (list != null) {
+
+              List<String> slist = transformToStringList(list);
+              data.put(key, slist);
+
+            } else {
+              data.put(key, Arrays.asList(value));
+            }
           }
         }
       }
@@ -237,9 +247,48 @@ public class DocumentTaggingAction implements DocumentAction {
       data.remove(e.getKey());
     }
 
-    return data.entrySet().stream().filter(d -> d.getKey() != null && d.getValue() != null)
-        .collect(Collectors.toMap(d -> adjustKeyFromTags(tags, d.getKey()),
-            d -> removeQuotesFromObject(d.getValue())));
+    Map<String, Object> values =
+        data.entrySet().stream().filter(d -> d.getKey() != null && d.getValue() != null)
+            .collect(Collectors.toMap(d -> adjustKeyFromTags(tags, d.getKey()),
+                d -> removeQuotesFromObject(d.getValue())));
+
+    return tags.stream().filter(t -> values.containsKey(t))
+        .collect(Collectors.toMap(t -> t, t -> values.get(t)));
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<String> transformToStringList(final List<Object> objs) {
+
+    List<String> list = new ArrayList<>();
+
+    for (Object ob : objs) {
+
+      if (ob instanceof Map) {
+
+        for (Map.Entry<String, String> e : ((Map<String, String>) ob).entrySet()) {
+          list.add(e.getKey() + ": " + e.getValue());
+        }
+
+      } else {
+        list.add(ob.toString());
+      }
+    }
+
+    return list;
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Object> getObjectAsJsonList(final String s) {
+
+    List<Object> list;
+
+    try {
+      list = this.gson.fromJson(s, List.class);
+    } catch (JsonSyntaxException e) {
+      list = null;
+    }
+
+    return list;
   }
 
   @SuppressWarnings("unchecked")

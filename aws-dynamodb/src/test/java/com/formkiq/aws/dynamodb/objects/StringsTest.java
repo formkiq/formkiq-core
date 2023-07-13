@@ -56,4 +56,13 @@ class StringsTest {
     assertEquals("text", Strings.removeQuotes("'text'"));
     assertEquals("text", Strings.removeQuotes("\"text'"));
   }
+
+  @Test
+  void removeEndingPunctuation() {
+    assertEquals("text", Strings.removeEndingPunctuation("text"));
+    assertEquals("\"text\"", Strings.removeEndingPunctuation("\"text\","));
+    assertEquals("\"text", Strings.removeEndingPunctuation("\"text!"));
+    assertEquals("'text?'", Strings.removeEndingPunctuation("'text?'"));
+    assertEquals("\"text'", Strings.removeEndingPunctuation("\"text'"));
+  }
 }
