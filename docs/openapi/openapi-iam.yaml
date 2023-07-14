@@ -12,7 +12,7 @@
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
-          description: FormKiQ IAM API
+          description: 'Formkiq API: Document Management Platform API using AWS IAM Authentication'
           version: 1.11.1
         paths:
           /version:

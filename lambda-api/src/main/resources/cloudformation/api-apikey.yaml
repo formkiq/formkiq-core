@@ -25,7 +25,8 @@ Resources:
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
-          description: "FormKiQ Api Key"
+          description: |-
+            Formkiq API: Document Management Platform API using API Key(s) Authentication
           version: #@ data.values.version or assert.fail("missing version")
         paths:
           /version:
