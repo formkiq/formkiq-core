@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.HashMap;
 import java.util.List;
@@ -84,7 +85,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     SsmConnectionBuilder ssm = awsservice.getExtension(SsmConnectionBuilder.class);
     try (SsmClient ssmClient = ssm.build()) {
 
-      List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
+      List<DynamicObject> sites = authorization.siteIds().stream().map(siteId -> {
 
         DynamicObject config = new DynamicObject(new HashMap<>());
         config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -95,7 +96,7 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
         return config;
       }).collect(Collectors.toList());
 
-      updateUploadEmail(logger, awsservice, authorizer, sites);
+      updateUploadEmail(logger, awsservice, authorization, sites);
 
       return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("sites", sites)));
     }
