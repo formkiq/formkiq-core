@@ -39,10 +39,13 @@ import java.util.stream.Collectors;
  */
 public class ApiAuthorization {
 
+  /** {@link Object} Cache. */
+  private Map<String, Object> cache = new HashMap<>();
   /** Get Default SiteId. */
   private String defaultSiteId;
   /** {@link ApiPermission} by SiteId. */
   private Map<String, Collection<ApiPermission>> permissionsBySiteId = new HashMap<>();
+
   /** {@link String}. */
   private String username;
 
@@ -60,6 +63,16 @@ public class ApiAuthorization {
         .sorted(String::compareTo).collect(Collectors.joining(", "));
 
     return !sites.isEmpty() ? "groups: " + s : "no groups";
+  }
+
+  /**
+   * Add Object to Cache.
+   * 
+   * @param key {@link String}
+   * @param o {@link Object}
+   */
+  public void addCacheObject(final String key, final Object o) {
+    this.cache.put(key, o);
   }
 
   /**
@@ -88,6 +101,18 @@ public class ApiAuthorization {
    */
   public void clearPermissions() {
     this.permissionsBySiteId = new HashMap<>();
+  }
+
+  /**
+   * Get Object from Cache.
+   * 
+   * @param <T> Type of Object.
+   * @param key {@link String}
+   * @return {@link Object}
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getCacheObject(final String key) {
+    return (T) this.cache.get(key);
   }
 
   /**
