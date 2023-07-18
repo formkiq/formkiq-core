@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +41,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -82,24 +81,29 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    SsmConnectionBuilder ssm = awsservice.getExtension(SsmConnectionBuilder.class);
-    try (SsmClient ssmClient = ssm.build()) {
+    List<DynamicObject> sites = authorization.siteIds().stream().map(siteId -> {
 
-      List<DynamicObject> sites = authorization.siteIds().stream().map(siteId -> {
+      DynamicObject config = new DynamicObject(new HashMap<>());
+      config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
-        DynamicObject config = new DynamicObject(new HashMap<>());
-        config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+      boolean write = authorization.permissions(siteId).contains(ApiPermission.WRITE);
+      config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
 
-        boolean write = authorization.permissions(siteId).contains(ApiPermission.WRITE);
-        config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
+      List<String> permissions = authorization.permissions(siteId).stream().map(p -> p.name())
+          .collect(Collectors.toList());
+      Collections.sort(permissions);
 
-        return config;
-      }).collect(Collectors.toList());
+      config.put("permissions", permissions);
 
-      updateUploadEmail(logger, awsservice, authorization, sites);
+      return config;
+    }).collect(Collectors.toList());
 
-      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("sites", sites)));
-    }
+    updateUploadEmail(logger, awsservice, authorization, sites);
+
+    String userId = authorization.username();
+
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("username", userId, "sites", sites)));
   }
 
   /**

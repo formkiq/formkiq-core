@@ -95,15 +95,18 @@ public class SitesRequestTest extends AbstractRequestHandler {
 
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
+    assertEquals("joesmith", resp.getString("username"));
     assertNull(resp.getString("next"));
     assertNull(resp.getString("previous"));
 
     List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
-    final int expected = 3;
+    final int expected = 4;
     assertEquals(expected, sites.get(0).size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
     assertEquals("READ_WRITE", sites.get(0).get("permission"));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        String.join(",", sites.get(0).getStringList("permissions")));
     assertNotNull(sites.get(0).get("uploadEmail"));
 
     String uploadEmail = sites.get(0).getString("uploadEmail");
