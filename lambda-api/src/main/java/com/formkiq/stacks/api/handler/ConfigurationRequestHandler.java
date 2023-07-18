@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
@@ -47,17 +48,14 @@ import com.formkiq.stacks.dynamodb.ConfigService;
 public class ConfigurationRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** Mask Value, must be even number. */
+  private static final int MASK = 4;
+
   /**
    * constructor.
    *
    */
   public ConfigurationRequestHandler() {}
-
-  @Override
-  public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorizer);
-  }
 
   @Override
   public void beforePatch(final LambdaLogger logger, final ApiGatewayRequestEvent event,
@@ -71,6 +69,16 @@ public class ConfigurationRequestHandler
     }
   }
 
+  /**
+   * Mask {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  private String mask(final String s) {
+    return !isEmpty(s) ? s.subSequence(0, MASK) + "*******" + s.substring(s.length() - MASK) : s;
+  }
+
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
@@ -81,7 +89,7 @@ public class ConfigurationRequestHandler
 
     DynamicObject obj = configService.get(siteId);
     Map<String, Object> map = new HashMap<>();
-    map.put("chatGptApiKey", obj.getOrDefault(CHATGPT_API_KEY, ""));
+    map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString()));
     map.put("maxContentLengthBytes", obj.getOrDefault(MAX_DOCUMENT_SIZE_BYTES, ""));
     map.put("maxDocuments", obj.getOrDefault(MAX_DOCUMENTS, ""));
     map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));

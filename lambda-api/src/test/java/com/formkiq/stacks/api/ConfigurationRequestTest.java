@@ -107,7 +107,7 @@ public class ConfigurationRequestTest extends AbstractRequestHandler {
     final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(mget.get("body"), Map.class));
     assertEquals(expected, resp.size());
-    assertEquals("anothervalue", resp.getString("chatGptApiKey"));
+    assertEquals("anot*******alue", resp.getString("chatGptApiKey"));
     assertEquals("", resp.getString("maxContentLengthBytes"));
     assertEquals("", resp.getString("maxDocuments"));
     assertEquals("", resp.getString("maxWebhooks"));
@@ -124,6 +124,8 @@ public class ConfigurationRequestTest extends AbstractRequestHandler {
     // given
     String siteId = null;
     String group = "default";
+    ConfigService config = getAwsServices().getExtension(ConfigService.class);
+    config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
 
     ApiGatewayRequestEvent event = getRequest(siteId, group);
 
@@ -132,12 +134,15 @@ public class ConfigurationRequestTest extends AbstractRequestHandler {
 
     // then
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    verifyResponse(m);
 
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    assertEquals("{\"message\":\"user is unauthorized\"}", String.valueOf(m.get("body")));
+    final int expected = 4;
+    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertEquals(expected, resp.size());
+    assertEquals("some*******alue", resp.getString("chatGptApiKey"));
+    assertEquals("", resp.getString("maxContentLengthBytes"));
+    assertEquals("", resp.getString("maxDocuments"));
+    assertEquals("", resp.getString("maxWebhooks"));
   }
 
   /**
@@ -168,7 +173,7 @@ public class ConfigurationRequestTest extends AbstractRequestHandler {
     final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
     assertEquals(expected, resp.size());
-    assertEquals("somevalue", resp.getString("chatGptApiKey"));
+    assertEquals("some*******alue", resp.getString("chatGptApiKey"));
     assertEquals("", resp.getString("maxContentLengthBytes"));
     assertEquals("", resp.getString("maxDocuments"));
     assertEquals("", resp.getString("maxWebhooks"));
@@ -203,7 +208,7 @@ public class ConfigurationRequestTest extends AbstractRequestHandler {
     final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
     assertEquals(expected, resp.size());
-    assertEquals("anothervalue", resp.getString("chatGptApiKey"));
+    assertEquals("anot*******alue", resp.getString("chatGptApiKey"));
     assertEquals("", resp.getString("maxContentLengthBytes"));
     assertEquals("", resp.getString("maxDocuments"));
     assertEquals("", resp.getString("maxWebhooks"));
@@ -241,7 +246,7 @@ public class ConfigurationRequestTest extends AbstractRequestHandler {
     final int expected = 4;
     DynamicObject resp = new DynamicObject(fromJson(mget.get("body"), Map.class));
     assertEquals(expected, resp.size());
-    assertEquals("anotherkey", resp.getString("chatGptApiKey"));
+    assertEquals("anot*******rkey", resp.getString("chatGptApiKey"));
     assertEquals("1000000", resp.getString("maxContentLengthBytes"));
     assertEquals("1000", resp.getString("maxDocuments"));
     assertEquals("5", resp.getString("maxWebhooks"));

@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -40,7 +41,6 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
@@ -80,13 +80,12 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-
     SsmConnectionBuilder ssm = awsservice.getExtension(SsmConnectionBuilder.class);
     try (SsmClient ssmClient = ssm.build()) {
 
       List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
-        DynamicObject config = configService.get(siteId);
+
+        DynamicObject config = new DynamicObject(new HashMap<>());
         config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
         boolean write = authorizer.getWriteSiteIds().contains(siteId);
@@ -94,11 +93,6 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
         return config;
       }).collect(Collectors.toList());
-
-      sites.forEach(ob -> {
-        ob.remove("PK");
-        ob.remove("SK");
-      });
 
       updateUploadEmail(logger, awsservice, authorizer, sites);
 

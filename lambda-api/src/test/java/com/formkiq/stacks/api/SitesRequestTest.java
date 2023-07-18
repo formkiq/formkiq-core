@@ -75,8 +75,12 @@ public class SitesRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
+    String siteId = null;
+    ConfigService config = getAwsServices().getExtension(ConfigService.class);
+    config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
-    ApiGatewayRequestEvent event = getRequest(null, "default Admins finance");
+    ApiGatewayRequestEvent event = getRequest(siteId, "default Admins finance");
 
     // when
     String response = handleRequest(event);
@@ -96,6 +100,8 @@ public class SitesRequestTest extends AbstractRequestHandler {
 
     List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
+    final int expected = 3;
+    assertEquals(expected, sites.get(0).size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
     assertEquals("READ_WRITE", sites.get(0).get("permission"));
     assertNotNull(sites.get(0).get("uploadEmail"));
@@ -246,7 +252,5 @@ public class SitesRequestTest extends AbstractRequestHandler {
     assertEquals(1, resp.getList("sites").size());
     assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
     assertEquals("READ_WRITE", resp.getList("sites").get(0).getString("permission"));
-    assertEquals("5", resp.getList("sites").get(0).getString(MAX_DOCUMENTS));
-    assertEquals("10", resp.getList("sites").get(0).getString(MAX_WEBHOOKS));
   }
 }
