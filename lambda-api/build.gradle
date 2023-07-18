@@ -29,6 +29,7 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.3.0'
 	
+	implementation project(':document-events')
 	implementation project(':fkq-lambda-services')
 	implementation project(':fkq-lambda-core')
 	implementation project(':fkq-validation')

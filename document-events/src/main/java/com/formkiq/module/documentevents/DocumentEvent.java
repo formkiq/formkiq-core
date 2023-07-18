@@ -33,22 +33,31 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class DocumentEvent {
 
   /** Document SiteId. */
+  @Reflectable
   private String siteId;
   /** Document Id. */
+  @Reflectable
   private String documentId;
   /** S3 Key. */
+  @Reflectable
   private String s3key;
   /** S3 Bucket. */
+  @Reflectable
   private String s3bucket;
   /** Document Type. */
+  @Reflectable
   private String type;
   /** User Id. */
+  @Reflectable
   private String userId;
   /** Document Content. */
+  @Reflectable
   private String content;
   /** Document Content Type. */
+  @Reflectable
   private String contentType;
   /** Docuemnt Path. */
+  @Reflectable
   private String path;
 
   /**

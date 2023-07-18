@@ -42,6 +42,7 @@ import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.documentevents.DocumentEvent;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTags;
@@ -58,7 +59,7 @@ import software.amazon.awssdk.regions.Region;
 @ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTagType.class, DocumentTag.class,
     DocumentMetadata.class, DocumentTags.class, PaginationMapToken.class, SearchQuery.class,
     SearchTagCriteria.class, SearchMetaCriteria.class, SearchResponseFields.class, PresetTag.class,
-    Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class,
+    Preset.class, ApiGatewayRequestEvent.class, ApiMapResponse.class, DocumentEvent.class,
     ApiGatewayRequestContext.class, ApiMessageResponse.class, ApiResponseError.class,
     ApiPagination.class, Action.class, ValidationErrorImpl.class,
     DocumentVersionServiceDynamoDb.class, DocumentVersionServiceNoVersioning.class})
