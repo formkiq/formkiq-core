@@ -207,6 +207,28 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   /**
+   * Execute {@link ApiRequestHandlerResponseInterceptor}.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param awsServices {@link AwsServiceCache}
+   * @param authorization {@link ApiAuthorization}
+   * @param object {@link ApiRequestHandlerResponse}
+   * @throws Exception Exception
+   */
+  private void executeResponseInterceptor(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsServices, final ApiAuthorization authorization,
+      final ApiRequestHandlerResponse object) throws Exception {
+
+    ApiRequestHandlerResponseInterceptor responseInterceptor =
+        awsServices.getExtension(ApiRequestHandlerResponseInterceptor.class);
+
+    if (responseInterceptor != null) {
+      responseInterceptor.awsServiceCache(awsServices);
+      responseInterceptor.handle(event, authorization, object);
+    }
+  }
+
+  /**
    * Find Request Handler.
    * 
    * @param urlMap {@link Map}
@@ -485,7 +507,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       log(logger, event, authorization);
 
       ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorization);
-      processResponse(authorization, event, object);
+
+      executeResponseInterceptor(event, awsServices, authorization, object);
+
+      sendWebNotify(authorization, event, object);
+
       buildResponse(logger, awsServices, output, object.getStatus(), object.getHeaders(),
           object.getResponse());
 
@@ -562,7 +588,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @param resp {@link ApiRequestHandlerResponse}
    * @throws BadException BadException
    */
-  private void processResponse(final ApiAuthorization authorization,
+  private void sendWebNotify(final ApiAuthorization authorization,
       final ApiGatewayRequestEvent event, final ApiRequestHandlerResponse resp)
       throws BadException {
 
