@@ -163,7 +163,7 @@ public class DocumentTagRequestHandler
     final String documentId = map.get("documentId");
     final String tagKey = map.get("tagKey");
 
-    Map<String, Object> body = fromBodyToObject(logger, event, Map.class);
+    Map<String, Object> body = fromBodyToObject(event, Map.class);
     String value = body != null ? (String) body.getOrDefault("value", null) : null;
     List<String> values = body != null ? (List<String>) body.getOrDefault("values", null) : null;
 

@@ -60,7 +60,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    DynamicObject o = fromBodyToDynamicObject(logger, event);
+    DynamicObject o = fromBodyToDynamicObject(event);
     String path = o.getString("path");
     if (Strings.isEmpty(path)) {
       throw new BadException("missing 'path' parameters");

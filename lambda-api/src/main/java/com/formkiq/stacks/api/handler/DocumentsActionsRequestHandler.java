@@ -115,7 +115,7 @@ public class DocumentsActionsRequestHandler
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    Map<String, Object> body = fromBodyToMap(logger, event);
+    Map<String, Object> body = fromBodyToMap(event);
 
     List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
     List<Action> actions = toActions(list, userId);

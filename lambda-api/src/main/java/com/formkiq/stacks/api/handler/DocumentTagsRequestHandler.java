@@ -156,7 +156,7 @@ public class DocumentTagsRequestHandler
     final String siteId = authorization.siteId();
     final String documentId = event.getPathParameters().get("documentId");
 
-    DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
+    DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
 
     validate(tags);
     verifyDocument(awsservice, event, siteId, documentId);
@@ -179,8 +179,8 @@ public class DocumentTagsRequestHandler
     final String siteId = authorization.siteId();
     final String documentId = event.getPathParameters().get("documentId");
 
-    DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
-    DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
+    DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
+    DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
 
     boolean tagValid = isValid(tag);
     boolean tagsValid = isValid(tags);
@@ -231,7 +231,7 @@ public class DocumentTagsRequestHandler
     final String siteId = authorization.siteId();
     final String documentId = event.getPathParameters().get("documentId");
 
-    DocumentTags tags = fromBodyToObject(logger, event, DocumentTags.class);
+    DocumentTags tags = fromBodyToObject(event, DocumentTags.class);
 
     validate(tags);
 

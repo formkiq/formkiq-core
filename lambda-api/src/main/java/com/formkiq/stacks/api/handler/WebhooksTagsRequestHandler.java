@@ -94,7 +94,7 @@ public class WebhooksTagsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    DocumentTag tag = fromBodyToObject(logger, event, DocumentTag.class);
+    DocumentTag tag = fromBodyToObject(event, DocumentTag.class);
 
     if (tag.getKey() == null || tag.getKey().length() == 0) {
       throw new BadException("invalid json body");

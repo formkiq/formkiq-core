@@ -270,7 +270,7 @@ public class DocumentsUploadRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
     item.setDocumentId(UUID.randomUUID().toString());
     item.setUserId(authorization.username());
     item.setInsertedDate(new Date());

@@ -250,7 +250,7 @@ public class DocumentsOcrRequestHandler
 
     verifyDocument(awsservice, event, siteId, documentId);
 
-    OcrRequest request = fromBodyToObject(logger, event, OcrRequest.class);
+    OcrRequest request = fromBodyToObject(event, OcrRequest.class);
     String userId = authorization.username();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
@@ -271,7 +271,7 @@ public class DocumentsOcrRequestHandler
 
     String userId = authorization.username();
 
-    Map<String, Object> map = fromBodyToMap(logger, event);
+    Map<String, Object> map = fromBodyToMap(event);
     String contentType = (String) map.get("contentType");
     String content = (String) map.get("content");
 

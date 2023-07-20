@@ -160,7 +160,7 @@ public class WebhooksRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.siteId();
-    DynamicObject o = fromBodyToDynamicObject(logger, event);
+    DynamicObject o = fromBodyToDynamicObject(event);
 
     validatePost(logger, awsservice, siteId, o);
 

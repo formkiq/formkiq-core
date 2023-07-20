@@ -98,43 +98,43 @@ public interface ApiGatewayRequestEventUtil {
   /**
    * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link DynamicObject}.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link DynamicObject}
    * @throws BadException BadException
+   * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  default DynamicObject fromBodyToDynamicObject(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event) throws BadException {
-    return new DynamicObject(fromBodyToObject(logger, event, Map.class));
+  default DynamicObject fromBodyToDynamicObject(final ApiGatewayRequestEvent event)
+      throws BadException, IOException {
+    return new DynamicObject(fromBodyToObject(event, Map.class));
   }
 
   /**
    * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link Map}.
    *
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link Map}
    * @throws BadException BadException
+   * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  default Map<String, Object> fromBodyToMap(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event) throws BadException {
-    return fromBodyToObject(logger, event, Map.class);
+  default Map<String, Object> fromBodyToMap(final ApiGatewayRequestEvent event)
+      throws BadException, IOException {
+    return fromBodyToObject(event, Map.class);
   }
 
   /**
    * Get the Body from {@link ApiGatewayRequestEvent} and transform to Object.
    *
    * @param <T> Type of {@link Class}
-   * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
    * @param classOfT {@link Class}
    * @return T
    * @throws BadException BadException
+   * @throws IOException IOException
    */
-  default <T> T fromBodyToObject(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final Class<T> classOfT) throws BadException {
+  default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT)
+      throws BadException, IOException {
 
     String body = event.getBody();
     if (body == null) {
@@ -156,7 +156,7 @@ public interface ApiGatewayRequestEventUtil {
       try {
         reader.close();
       } catch (IOException e) {
-        logger.log("Cannot close DocumentItemJSON: " + e.getMessage());
+        throw e;
       }
     }
   }

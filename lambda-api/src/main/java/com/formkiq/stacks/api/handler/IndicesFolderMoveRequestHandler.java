@@ -73,12 +73,13 @@ public class IndicesFolderMoveRequestHandler
    * @return {@link ApiRequestHandlerResponse}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
+   * @throws IOException IOException
    */
   private ApiRequestHandlerResponse moveFolderIndex(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final AwsServiceCache awsServices, final String siteId,
-      final String userId) throws BadException, ValidationException {
+      final String userId) throws BadException, ValidationException, IOException {
 
-    Map<String, Object> body = fromBodyToMap(logger, event);
+    Map<String, Object> body = fromBodyToMap(event);
 
     Collection<ValidationError> errors = validation(body);
     if (!errors.isEmpty()) {

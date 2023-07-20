@@ -326,7 +326,7 @@ public class DocumentIdRequestHandler
     String siteId = authorization.siteId();
     String documentId = UUID.randomUUID().toString();
 
-    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");

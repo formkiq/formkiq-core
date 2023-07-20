@@ -128,7 +128,7 @@ public class WebhooksIdRequestHandler
       throw new NotFoundException("Webhook 'id' not found");
     }
 
-    DynamicObject obj = fromBodyToDynamicObject(logger, event);
+    DynamicObject obj = fromBodyToDynamicObject(event);
 
     Map<String, Object> map = new HashMap<>();
 

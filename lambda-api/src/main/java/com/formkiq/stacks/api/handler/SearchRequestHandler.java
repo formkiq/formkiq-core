@@ -160,7 +160,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     ApiRequestHandlerResponse response = null;
 
-    QueryRequest q = fromBodyToObject(logger, event, QueryRequest.class);
+    QueryRequest q = fromBodyToObject(event, QueryRequest.class);
 
     validatePost(q);
 

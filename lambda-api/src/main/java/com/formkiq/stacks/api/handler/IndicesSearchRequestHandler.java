@@ -85,7 +85,7 @@ public class IndicesSearchRequestHandler
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    Map<String, Object> body = fromBodyToObject(logger, event, Map.class);
+    Map<String, Object> body = fromBodyToObject(event, Map.class);
 
     validatePost(body);
 

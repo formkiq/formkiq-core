@@ -111,7 +111,7 @@ public class ConfigurationRequestHandler
 
     String siteId = authorization.siteId();
 
-    Map<String, String> body = fromBodyToObject(logger, event, Map.class);
+    Map<String, String> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();
     put(map, body, CHATGPT_API_KEY, "chatGptApiKey");

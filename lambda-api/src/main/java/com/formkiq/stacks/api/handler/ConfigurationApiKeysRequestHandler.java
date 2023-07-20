@@ -115,7 +115,7 @@ public class ConfigurationApiKeysRequestHandler
     String siteId = authorization.siteId();
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    Map<String, String> body = fromBodyToObject(logger, event, Map.class);
+    Map<String, String> body = fromBodyToObject(event, Map.class);
     String name = body.get("name");
 
     if (name != null) {
