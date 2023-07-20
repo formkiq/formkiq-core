@@ -303,6 +303,7 @@ Resources:
               - Documents
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
@@ -402,6 +403,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:

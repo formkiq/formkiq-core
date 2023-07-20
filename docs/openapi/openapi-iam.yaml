@@ -287,6 +287,7 @@
               - Documents
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
@@ -388,6 +389,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
