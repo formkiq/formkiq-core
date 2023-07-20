@@ -29,9 +29,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 /**
  * 
  * DynamoDB Keys.
+ * 
+ * @param <T> Type of DynamodbRecord
  *
  */
-public interface DynamodbRecord {
+public interface DynamodbRecord<T> {
 
   /**
    * Get {@link AttributeValue} {@link Map}.
@@ -42,6 +44,14 @@ public interface DynamodbRecord {
   Map<String, AttributeValue> getAttributes(String siteId);
 
   /**
+   * Transform {@link Map} {@link AttributeValue} to {@link Object}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @return {@link Object}
+   */
+  T getFromAttributes(Map<String, AttributeValue> attrs);
+
+  /**
    * Get DynamoDb PK.
    * 
    * @param siteId {@link String}
@@ -50,9 +60,36 @@ public interface DynamodbRecord {
   String pk(String siteId);
 
   /**
+   * GSI 1 PK.
+   * 
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  String pkGsi1(String siteId);
+
+  /**
    * Get DynamoDb SK.
    * 
    * @return {@link String}
    */
   String sk();
+
+  /**
+   * GSI 1 SK.
+   * 
+   * @return {@link String}
+   */
+  String skGsi1();
+
+  /**
+   * Convert {@link Map} {@link AttributeValue}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  default String ss(final Map<String, AttributeValue> attrs, final String key) {
+    AttributeValue av = attrs.get(key);
+    return av != null ? av.s() : null;
+  }
 }

@@ -91,6 +91,15 @@ public interface FolderIndexProcessor {
   List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
 
   /**
+   * Get Folder Index by documentId.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link FolderIndexRecord}
+   */
+  FolderIndexRecord getFolderByDocumentId(String siteId, String documentId);
+
+  /**
    * Generates DynamoDB {@link WriteRequest} for Index.
    * 
    * @param siteId {@link String}

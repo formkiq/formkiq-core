@@ -128,9 +128,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @param folder {@link String}
    * @param insertedDate {@link Date}
    * @param userId {@link String}
-   * @return {@link String}
+   * @return {@link FolderIndexRecord}
    */
-  private Map<String, AttributeValue> createFolder(final String siteId, final String parentId,
+  private FolderIndexRecord createFolder(final String siteId, final String parentId,
       final String folder, final Date insertedDate, final String userId) {
 
     String uuid;
@@ -156,6 +156,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         CancellationReason cr = e.cancellationReasons().get(0);
         if (cr.item() != null && cr.item().containsKey("documentId")) {
           values = cr.item();
+          record = record.getFromAttributes(values);
         } else {
           throw e;
         }
@@ -164,7 +165,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       }
     }
 
-    return values;
+    return record;
   }
 
   private List<Map<String, String>> createFolderPaths(final String siteId, final String[] folders,
@@ -178,10 +179,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     for (String folder : folders) {
 
       if (allDirectories || !isFileToken(folder, i, len)) {
-        Map<String, AttributeValue> attr =
-            createFolder(siteId, lastUuid, folder, insertedDate, userId);
-        lastUuid = attr.get("documentId").s();
-        list.add(Map.of("folder", folder, "indexKey", createIndexKey(attr)));
+
+        FolderIndexRecord record = createFolder(siteId, lastUuid, folder, insertedDate, userId);
+        record.parentId(lastUuid);
+
+        String indexKey = record.createIndexKey(siteId);
+        list.add(Map.of("folder", folder, "indexKey", indexKey));
+
+        lastUuid = record.documentId();
       }
 
       i++;
@@ -197,12 +202,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     Date insertedDate = new Date();
     String[] folders = tokens(path);
     return createFolderPaths(siteId, folders, insertedDate, userId, allDirectories);
-  }
-
-  private String createIndexKey(final Map<String, AttributeValue> map) {
-    String parent = map.get(PK).s().substring(map.get(PK).s().lastIndexOf(TAG_DELIMINATOR) + 1);
-    String path = map.get("path").s();
-    return parent + TAG_DELIMINATOR + path;
   }
 
   @Override
@@ -381,6 +380,27 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
 
     return list;
+  }
+
+  @Override
+  public FolderIndexRecord getFolderByDocumentId(final String siteId, final String documentId) {
+
+    FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
+    String pk = record.pkGsi1(siteId);
+    QueryResponse response = this.dynamoDb.queryIndex(GSI1, AttributeValue.fromS(pk), null, 1);
+
+    if (!response.items().isEmpty()) {
+
+      Map<String, AttributeValue> map = response.items().get(0);
+
+      Map<String, AttributeValue> attrs = this.dynamoDb.get(map.get(PK), map.get(SK));
+      record = record.getFromAttributes(attrs);
+
+    } else {
+      record = null;
+    }
+
+    return record;
   }
 
   /**

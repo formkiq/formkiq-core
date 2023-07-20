@@ -456,13 +456,47 @@ class FolderIndexProcessorTest implements DbKeys {
     assertNotNull(map.get("documentId"));
 
     if (hasDates) {
+      final int expected = 10;
+      assertEquals(expected, map.size());
       assertNotNull(map.get("inserteddate"));
       assertNotNull(map.get("lastModifiedDate"));
+      assertNotNull(map.get(GSI1_PK));
+      assertNotNull(map.get(GSI1_SK));
       assertEquals("joe", map.get("userId").s());
+      assertEquals("folder", map.get("type").s());
     } else {
+      final int expected = 5;
+      assertEquals(expected, map.size());
       assertNull(map.get("inserteddate"));
       assertNull(map.get("lastModifiedDate"));
       assertNull(map.get("userId"));
+      assertEquals("file", map.get("type").s());
+    }
+  }
+
+  @Test
+  void testGetFolderByDocumentId01() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("/a/test.pdf");
+
+      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
+      assertEquals(2, indexes.size());
+
+      // when
+      FolderIndexRecord folder =
+          index.getFolderByDocumentId(siteId, indexes.get(0).get("documentId").s());
+      FolderIndexRecord file =
+          index.getFolderByDocumentId(siteId, indexes.get(1).get("documentId").s());
+
+      // then
+      assertNull(file);
+      assertNotNull(folder);
+      assertEquals("a", folder.path());
+      assertEquals("folder", folder.type());
     }
   }
 }

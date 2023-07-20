@@ -119,6 +119,18 @@ public interface DynamoDbService {
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
+   * Query DynamoDB Index for Records.
+   * 
+   * @param indexName {@link String}
+   * @param pk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse queryIndex(String indexName, AttributeValue pk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
    * Update DynamoDB Record.
    * 
    * @param pk {@link String}

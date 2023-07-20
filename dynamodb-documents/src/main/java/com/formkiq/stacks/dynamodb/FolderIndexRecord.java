@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,7 +42,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  *
  */
 @Reflectable
-public class FolderIndexRecord implements DynamodbRecord, DbKeys {
+public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbKeys {
 
   /** Index File SK. */
   public static final String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
@@ -64,10 +66,27 @@ public class FolderIndexRecord implements DynamodbRecord, DbKeys {
   /** Folder Type. */
   @Reflectable
   private String type;
-  /** Creator of permission. */
+  /** Creator of record. */
   @Reflectable
   private String userId;
 
+  private void checkParentId() {
+    if (this.parentId == null) {
+      throw new IllegalArgumentException("'parentId' is required");
+    }
+  }
+
+  /**
+   * Create Index Key.
+   * 
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  public String createIndexKey(final String siteId) {
+    String pk = pk(siteId);
+    String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
+    return parent + TAG_DELIMINATOR + this.path;
+  }
 
   /**
    * Get DocumentId.
@@ -111,16 +130,40 @@ public class FolderIndexRecord implements DynamodbRecord, DbKeys {
       attrs.put("userId", AttributeValue.fromS(this.userId));
     }
 
+    if ("folder".equals(this.type)) {
+      attrs.put(GSI1_PK, AttributeValue.fromS(pkGsi1(siteId)));
+      attrs.put(GSI1_SK, AttributeValue.fromS(skGsi1()));
+    }
+
     return attrs;
   }
 
-  /**
-   * Get Document Type.
-   * 
-   * @return {@link String}
-   */
-  public String getType() {
-    return this.type;
+  @Override
+  public FolderIndexRecord getFromAttributes(final Map<String, AttributeValue> attrs) {
+
+    FolderIndexRecord record = new FolderIndexRecord().documentId(ss(attrs, "documentId"))
+        .path(ss(attrs, "path")).type(ss(attrs, "type")).userId(ss(attrs, "userId"));
+
+    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+
+    if (attrs.containsKey("inserteddate")) {
+      try {
+        record = record.insertedDate(df.parse(ss(attrs, "inserteddate")));
+      } catch (ParseException e) {
+        e.printStackTrace();
+        throw new IllegalArgumentException("invalid 'inserteddate'");
+      }
+    }
+
+    if (attrs.containsKey("lastModifiedDate")) {
+      try {
+        record = record.lastModifiedDate(df.parse(ss(attrs, "lastModifiedDate")));
+      } catch (ParseException e) {
+        throw new IllegalArgumentException("invalid 'lastModifiedDate'");
+      }
+    }
+
+    return record;
   }
 
   /**
@@ -205,11 +248,17 @@ public class FolderIndexRecord implements DynamodbRecord, DbKeys {
 
   @Override
   public String pk(final String siteId) {
-    if (this.parentId == null) {
-      throw new IllegalArgumentException("'parentId' is required");
-    }
+    checkParentId();
     return SiteIdKeyGenerator.createS3Key(siteId,
         GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + this.parentId);
+  }
+
+  @Override
+  public String pkGsi1(final String siteId) {
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+    return createDatabaseKey(siteId, "folder#" + this.documentId);
   }
 
   @Override
@@ -219,6 +268,20 @@ public class FolderIndexRecord implements DynamodbRecord, DbKeys {
     }
     String folder = this.path.toLowerCase();
     return "file".equals(this.type) ? INDEX_FILE_SK + folder : INDEX_FOLDER_SK + folder;
+  }
+
+  @Override
+  public String skGsi1() {
+    return createIndexKey(null);
+  }
+
+  /**
+   * Get Document Type.
+   * 
+   * @return {@link String}
+   */
+  public String type() {
+    return this.type;
   }
 
   /**
