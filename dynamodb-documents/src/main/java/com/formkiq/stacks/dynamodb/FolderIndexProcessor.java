@@ -26,7 +26,6 @@ package com.formkiq.stacks.dynamodb;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -41,10 +40,6 @@ public interface FolderIndexProcessor {
 
   /** Deliminator. */
   String DELIMINATOR = "/";
-  /** Index File SK. */
-  String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
-  /** Index Folder SK. */
-  String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
   /**
    * Create Folder Paths.

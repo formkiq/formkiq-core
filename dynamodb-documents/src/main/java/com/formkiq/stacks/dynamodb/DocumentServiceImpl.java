@@ -26,7 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.stacks.dynamodb.FolderIndexProcessor.INDEX_FILE_SK;
+import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FILE_SK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.text.ParseException;

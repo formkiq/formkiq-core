@@ -41,7 +41,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -103,9 +102,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
 
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
   /** Documents Table Name. */
   private String documentTableName;
   /** {@link DynamoDbService}. */
@@ -128,30 +124,23 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * Create Folder.
    * 
    * @param siteId {@link String}
-   * @param pk {@link String}
-   * @param sk {@link String}
+   * @param parentId {@link String}
    * @param folder {@link String}
    * @param insertedDate {@link Date}
    * @param userId {@link String}
    * @return {@link String}
    */
-  private Map<String, AttributeValue> createFolder(final String siteId, final String pk,
-      final String sk, final String folder, final Date insertedDate, final String userId) {
+  private Map<String, AttributeValue> createFolder(final String siteId, final String parentId,
+      final String folder, final Date insertedDate, final String userId) {
 
     String uuid;
 
     uuid = UUID.randomUUID().toString();
 
-    Map<String, AttributeValue> values = new HashMap<>(Map.of(PK,
-        AttributeValue.builder().s(pk).build(), SK, AttributeValue.builder().s(sk).build(),
-        "documentId", AttributeValue.builder().s(uuid).build()));
-
-    String fullInsertedDate = this.df.format(insertedDate);
-    addS(values, "inserteddate", fullInsertedDate);
-    addS(values, "lastModifiedDate", fullInsertedDate);
-    addS(values, "userId", userId);
-    addS(values, "path", folder);
-    addS(values, "type", "folder");
+    FolderIndexRecord record =
+        new FolderIndexRecord().parentId(parentId).documentId(uuid).insertedDate(insertedDate)
+            .lastModifiedDate(insertedDate).userId(userId).path(folder).type("folder");
+    Map<String, AttributeValue> values = new HashMap<>(record.getAttributes(siteId));
 
     String conditionExpression = "attribute_not_exists(" + PK + ")";
 
@@ -188,12 +177,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     for (String folder : folders) {
 
-      String pk = getPk(siteId, lastUuid);
-      String sk = getSk(folder, false);
-
       if (allDirectories || !isFileToken(folder, i, len)) {
         Map<String, AttributeValue> attr =
-            createFolder(siteId, pk, sk, folder, insertedDate, userId);
+            createFolder(siteId, lastUuid, folder, insertedDate, userId);
         lastUuid = attr.get("documentId").s();
         list.add(Map.of("folder", folder, "indexKey", createIndexKey(attr)));
       }
@@ -372,30 +358,26 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       }
     }
 
+    String parentId = "";
     for (String folder : folders) {
 
       Map<String, String> map = uuidMap.get(folder);
 
-      AttributeValue pk = AttributeValue.fromS(map.get(PK));
-      AttributeValue sk = AttributeValue.fromS(map.get(SK));
+      FolderIndexRecord record =
+          new FolderIndexRecord().type(map.get("type")).path(folder).parentId(parentId);
+
       String type = map.get("type");
 
-      Map<String, AttributeValue> values = new HashMap<>(Map.of(PK, pk, SK, sk));
-      values.put("path", AttributeValue.fromS(folder));
-      values.put("type", AttributeValue.fromS(type));
-
       if ("file".equals(type)) {
-        addS(values, "documentId", item.getDocumentId());
+        record = record.documentId(item.getDocumentId());
       } else {
-        String fullInsertedDate = this.df.format(insertedDate);
-        addS(values, "inserteddate", fullInsertedDate);
-        addS(values, "lastModifiedDate", fullInsertedDate);
-        addS(values, "userId", item.getUserId());
-        addS(values, "documentId", map.get("documentId"));
-
+        record = record.insertedDate(insertedDate).lastModifiedDate(insertedDate)
+            .userId(item.getUserId()).documentId(map.get("documentId"));
       }
 
-      list.add(values);
+      list.add(record.getAttributes(siteId));
+
+      parentId = map.get("documentId");
     }
 
     return list;
@@ -464,11 +446,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   private String getPk(final String siteId, final String id) {
-    return SiteIdKeyGenerator.createS3Key(siteId, GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + id);
+    return new FolderIndexRecord().parentId(id).pk(siteId);
   }
 
   private String getSk(final String folder, final boolean isFile) {
-    return isFile ? INDEX_FILE_SK + folder.toLowerCase() : INDEX_FOLDER_SK + folder.toLowerCase();
+    return new FolderIndexRecord().path(folder).type(isFile ? "file" : "folder").sk();
   }
 
   private boolean hasFiles(final String siteId, final String documentId) {
@@ -572,7 +554,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     // update LastModified Date on Directory
     if (targetPk != null && targetSk != null) {
-      String lastModifiedDate = this.df.format(new Date());
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+
+      String lastModifiedDate = df.format(new Date());
       this.dynamoDb.updateFields(AttributeValue.fromS(targetPk), AttributeValue.fromS(targetSk),
           Map.of("lastModifiedDate", AttributeValue.fromS(lastModifiedDate)));
     }
