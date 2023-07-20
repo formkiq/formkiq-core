@@ -207,24 +207,42 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   /**
+   * Execute Before Request Interceptor.
+   * 
+   * @param interceptor {@link ApiRequestHandlerInterceptor}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param awsServices {@link AwsServiceCache}
+   * @param authorization {@link ApiAuthorization}
+   * @throws Exception Exception
+   */
+  private void executeRequestInterceptor(final ApiRequestHandlerInterceptor interceptor,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
+      final ApiAuthorization authorization) throws Exception {
+
+    if (interceptor != null) {
+      interceptor.awsServiceCache(awsServices);
+      interceptor.beforeProcessRequest(event, authorization);
+    }
+  }
+
+  /**
    * Execute {@link ApiRequestHandlerResponseInterceptor}.
    * 
+   * @param interceptor {@link ApiRequestHandlerInterceptor}
    * @param event {@link ApiGatewayRequestEvent}
    * @param awsServices {@link AwsServiceCache}
    * @param authorization {@link ApiAuthorization}
    * @param object {@link ApiRequestHandlerResponse}
    * @throws Exception Exception
    */
-  private void executeResponseInterceptor(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsServices, final ApiAuthorization authorization,
-      final ApiRequestHandlerResponse object) throws Exception {
+  private void executeResponseInterceptor(final ApiRequestHandlerInterceptor interceptor,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsServices,
+      final ApiAuthorization authorization, final ApiRequestHandlerResponse object)
+      throws Exception {
 
-    ApiRequestHandlerResponseInterceptor responseInterceptor =
-        awsServices.getExtension(ApiRequestHandlerResponseInterceptor.class);
-
-    if (responseInterceptor != null) {
-      responseInterceptor.awsServiceCache(awsServices);
-      responseInterceptor.handle(event, authorization, object);
+    if (interceptor != null) {
+      interceptor.awsServiceCache(awsServices);
+      interceptor.afterProcessRequest(event, authorization, object);
     }
   }
 
@@ -506,9 +524,14 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           new ApiAuthorizationBuilder(authorizerType).interceptors(interceptor).build(event);
       log(logger, event, authorization);
 
+      ApiRequestHandlerInterceptor requestInterceptor =
+          awsServices.getExtension(ApiRequestHandlerInterceptor.class);
+
+      executeRequestInterceptor(requestInterceptor, event, awsServices, authorization);
+
       ApiRequestHandlerResponse object = processRequest(logger, getUrlMap(), event, authorization);
 
-      executeResponseInterceptor(event, awsServices, authorization, object);
+      executeResponseInterceptor(requestInterceptor, event, awsServices, authorization, object);
 
       sendWebNotify(authorization, event, object);
 

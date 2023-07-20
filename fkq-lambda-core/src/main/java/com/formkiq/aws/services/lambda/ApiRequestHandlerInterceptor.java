@@ -30,7 +30,18 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
  * Interceptor on the {@link ApiRequestHandlerResponse}.
  *
  */
-public interface ApiRequestHandlerResponseInterceptor {
+public interface ApiRequestHandlerInterceptor {
+
+  /**
+   * Handle / Modify API requests AFTER they are processed.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param response {@link ApiRequestHandlerResponse}
+   * @throws Exception Exception
+   */
+  void afterProcessRequest(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      ApiRequestHandlerResponse response) throws Exception;
 
   /**
    * Sets {@link AwsServiceCache}.
@@ -40,13 +51,12 @@ public interface ApiRequestHandlerResponseInterceptor {
   void awsServiceCache(AwsServiceCache awsServices);
 
   /**
-   * Update {@link ApiAuthorization} object.
+   * Handle / Modify API requests BEFORE they are processed.
    * 
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
-   * @param response {@link ApiRequestHandlerResponse}
    * @throws Exception Exception
    */
-  void handle(ApiGatewayRequestEvent event, ApiAuthorization authorization,
-      ApiRequestHandlerResponse response) throws Exception;
+  void beforeProcessRequest(ApiGatewayRequestEvent event, ApiAuthorization authorization)
+      throws Exception;
 }
