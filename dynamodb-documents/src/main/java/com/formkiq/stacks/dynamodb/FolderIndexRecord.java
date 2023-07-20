@@ -58,8 +58,9 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   /** Record modified date. */
   @Reflectable
   private Date lastModifiedDate;
-  /** Parent Id - never persisted!. */
-  private String parentId;
+  /** Parent Id. */
+  @Reflectable
+  private String parentDocumentId;
   /** Path. */
   @Reflectable
   private String path;
@@ -71,7 +72,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   private String userId;
 
   private void checkParentId() {
-    if (this.parentId == null) {
+    if (this.parentDocumentId == null) {
       throw new IllegalArgumentException("'parentId' is required");
     }
   }
@@ -118,6 +119,9 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
             AttributeValue.fromS(sk()), "documentId", AttributeValue.fromS(this.documentId), "path",
             AttributeValue.fromS(this.path), "type", AttributeValue.fromS(this.type)));
 
+    if (this.parentDocumentId != null) {
+      attrs.put("parentDocumentId", AttributeValue.fromS(this.parentDocumentId));
+    }
     if (this.insertedDate != null) {
       attrs.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
     }
@@ -142,7 +146,8 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public FolderIndexRecord getFromAttributes(final Map<String, AttributeValue> attrs) {
 
     FolderIndexRecord record = new FolderIndexRecord().documentId(ss(attrs, "documentId"))
-        .path(ss(attrs, "path")).type(ss(attrs, "type")).userId(ss(attrs, "userId"));
+        .path(ss(attrs, "path")).type(ss(attrs, "type")).userId(ss(attrs, "userId"))
+        .parentDocumentId(ss(attrs, "parentDocumentId"));
 
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
@@ -211,8 +216,8 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
    * 
    * @return {@link String}
    */
-  public String parentId() {
-    return this.parentId;
+  public String parentDocumentId() {
+    return this.parentDocumentId;
   }
 
   /**
@@ -221,8 +226,8 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
    * @param documentParentId {@link String}
    * @return {@link FolderIndexRecord}
    */
-  public FolderIndexRecord parentId(final String documentParentId) {
-    this.parentId = documentParentId;
+  public FolderIndexRecord parentDocumentId(final String documentParentId) {
+    this.parentDocumentId = documentParentId;
     return this;
   }
 
@@ -250,7 +255,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public String pk(final String siteId) {
     checkParentId();
     return SiteIdKeyGenerator.createS3Key(siteId,
-        GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + this.parentId);
+        GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + this.parentDocumentId);
   }
 
   @Override

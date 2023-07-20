@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -133,21 +134,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     String key = object.get("key").toString();
     return key;
-  }
-
-  /**
-   * Is {@link String} a {@link UUID}.
-   *
-   * @param s {@link String}
-   * @return boolean
-   */
-  private static boolean isUuid(final String s) {
-    try {
-      UUID.fromString(s);
-      return true;
-    } catch (IllegalArgumentException e) {
-      return false;
-    }
   }
 
   /**
