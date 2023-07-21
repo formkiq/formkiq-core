@@ -28,7 +28,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
@@ -436,7 +435,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   @Override
-  public Collection<FolderIndexRecord> getFoldersByDocumentId(final String siteId,
+  public List<FolderIndexRecord> getFoldersByDocumentId(final String siteId,
       final String documentId) {
 
     int i = 0;
@@ -464,7 +463,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       }
     }
 
-    Collection<FolderIndexRecord> list = new ArrayList<>();
+    List<FolderIndexRecord> list = new ArrayList<>();
     while (!queue.isEmpty()) {
       list.add(queue.removeLast());
     }
