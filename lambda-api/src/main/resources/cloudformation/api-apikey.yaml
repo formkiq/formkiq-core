@@ -770,6 +770,7 @@ Resources:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/contentLengthParam'
                 - $ref: '#/components/parameters/durationParam'
+                - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 '200':
                   description: 200 OK
@@ -796,6 +797,7 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
