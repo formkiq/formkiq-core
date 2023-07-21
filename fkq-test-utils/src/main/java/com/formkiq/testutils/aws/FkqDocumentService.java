@@ -81,6 +81,7 @@ public class FkqDocumentService {
    * @param path {@link String}
    * @param content byte[]
    * @param contentType {@link String}
+   * @param shareKey {@link String}
    * @return {@link String}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
@@ -88,12 +89,12 @@ public class FkqDocumentService {
    * @throws ApiException ApiException
    */
   public static String addDocument(final ApiClient apiClient, final String siteId,
-      final String path, final byte[] content, final String contentType)
+      final String path, final byte[] content, final String contentType, final String shareKey)
       throws IOException, InterruptedException, URISyntaxException, ApiException {
     // given
     DocumentsApi api = new DocumentsApi(apiClient);
     GetDocumentUrlResponse response =
-        api.getDocumentUpload(path, siteId, Integer.valueOf(content.length), null);
+        api.getDocumentUpload(path, siteId, Integer.valueOf(content.length), null, shareKey);
     String s3url = response.getUrl();
 
     http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)

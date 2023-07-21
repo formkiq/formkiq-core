@@ -100,7 +100,7 @@ public class FoldersRequestHandlerTest {
       for (String path : Arrays.asList("Chicago/sample1.txt", "Chicago/sample2.txt",
           "NewYork/sample1.txt")) {
         addDocument(this.client, siteId, path, content.getBytes(StandardCharsets.UTF_8),
-            "text/plain");
+            "text/plain", null);
       }
 
       // when
@@ -152,7 +152,7 @@ public class FoldersRequestHandlerTest {
       for (String path : Arrays.asList("Chicago/sample1.txt", "Chicago/sample2.txt",
           "NewYork/sample1.txt")) {
         addDocument(this.client, siteId, path, content.getBytes(StandardCharsets.UTF_8),
-            "text/plain");
+            "text/plain", null);
       }
 
       // when
@@ -182,7 +182,7 @@ public class FoldersRequestHandlerTest {
 
         for (int i = 0; i < count; i++) {
           addDocument(this.client, siteId, path + "/sample_" + i,
-              content.getBytes(StandardCharsets.UTF_8), "text/plain");
+              content.getBytes(StandardCharsets.UTF_8), "text/plain", null);
         }
       }
 
