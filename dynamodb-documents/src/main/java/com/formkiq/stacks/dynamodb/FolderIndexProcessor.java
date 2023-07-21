@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -98,6 +99,15 @@ public interface FolderIndexProcessor {
    * @return {@link FolderIndexRecord}
    */
   FolderIndexRecord getFolderByDocumentId(String siteId, String documentId);
+
+  /**
+   * Get Folders Index by documentId.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link Collection} {@link FolderIndexRecord}
+   */
+  Collection<FolderIndexRecord> getFoldersByDocumentId(String siteId, String documentId);
 
   /**
    * Generates DynamoDB {@link WriteRequest} for Index.

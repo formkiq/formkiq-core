@@ -34,10 +34,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,8 +66,8 @@ class FolderIndexProcessorTest implements DbKeys {
 
   /** {@link DynamoDbService}. */
   private static DynamoDbService dbService;
-  /** {@link FolderIndexProcessorImpl}. */
-  private static FolderIndexProcessorImpl index;
+  /** {@link FolderIndexProcessor}. */
+  private static FolderIndexProcessor index;
   /** {@link DocumentService}. */
   private static DocumentSearchService searchService;
   /** {@link DocumentService}. */
@@ -298,6 +300,58 @@ class FolderIndexProcessorTest implements DbKeys {
     }
   }
 
+  @Test
+  void testGetFolderByDocumentId01() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("/a/test.pdf");
+
+      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
+      assertEquals(2, indexes.size());
+
+      // when
+      FolderIndexRecord folder =
+          index.getFolderByDocumentId(siteId, indexes.get(0).get("documentId").s());
+      FolderIndexRecord file =
+          index.getFolderByDocumentId(siteId, indexes.get(1).get("documentId").s());
+
+      // then
+      assertNull(file);
+      assertNotNull(folder);
+      assertEquals("a", folder.path());
+      assertEquals("folder", folder.type());
+    }
+  }
+
+  @Test
+  void testGetFoldersByDocumentId01() {
+    // given
+    final int expected = 4;
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setPath("/a/b/c/test.pdf");
+
+      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
+      assertEquals(expected, indexes.size());
+
+      // when
+      Collection<FolderIndexRecord> folders =
+          index.getFoldersByDocumentId(siteId, indexes.get(2).get("documentId").s());
+
+      // then
+      final int expectedThen = 3;
+      assertEquals(expectedThen, folders.size());
+
+      String path = folders.stream().map(r -> r.path()).collect(Collectors.joining("/"));
+      assertEquals("a/b/c", path);
+    }
+  }
+
   /**
    * Move Directory to another directory.
    * 
@@ -483,32 +537,6 @@ class FolderIndexProcessorTest implements DbKeys {
       assertNull(map.get("lastModifiedDate"));
       assertNull(map.get("userId"));
       assertEquals("file", map.get("type").s());
-    }
-  }
-
-  @Test
-  void testGetFolderByDocumentId01() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("/a/test.pdf");
-
-      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
-      assertEquals(2, indexes.size());
-
-      // when
-      FolderIndexRecord folder =
-          index.getFolderByDocumentId(siteId, indexes.get(0).get("documentId").s());
-      FolderIndexRecord file =
-          index.getFolderByDocumentId(siteId, indexes.get(1).get("documentId").s());
-
-      // then
-      assertNull(file);
-      assertNotNull(folder);
-      assertEquals("a", folder.path());
-      assertEquals("folder", folder.type());
     }
   }
 }

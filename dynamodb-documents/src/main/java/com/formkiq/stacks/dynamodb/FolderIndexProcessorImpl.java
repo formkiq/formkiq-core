@@ -28,9 +28,12 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -430,6 +433,43 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(map);
 
     return record;
+  }
+
+  @Override
+  public Collection<FolderIndexRecord> getFoldersByDocumentId(final String siteId,
+      final String documentId) {
+
+    int i = 0;
+    final int maxLoop = 100;
+    boolean done = false;
+    String id = documentId;
+
+    Deque<FolderIndexRecord> queue = new LinkedList<>();
+
+    while (!done) {
+      FolderIndexRecord index = getFolderByDocumentId(siteId, id);
+
+      if (index != null) {
+
+        queue.add(index);
+        id = index.parentDocumentId();
+
+      } else {
+        done = true;
+      }
+
+      i++;
+      if (i > maxLoop) {
+        throw new RuntimeException("maximum iterations reached");
+      }
+    }
+
+    Collection<FolderIndexRecord> list = new ArrayList<>();
+    while (!queue.isEmpty()) {
+      list.add(queue.removeLast());
+    }
+
+    return list;
   }
 
   @Override
