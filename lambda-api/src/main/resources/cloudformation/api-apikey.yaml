@@ -2784,7 +2784,7 @@ Resources:
                 siteId:
                   type: "string"
                   description: "Site Identifier"
-                uploadUrl:
+                url:
                   type: "string"
                   description: "Url to upload document to"
                 documents:
