@@ -832,7 +832,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddDocumentResponse'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2784,7 +2784,7 @@ Resources:
                 siteId:
                   type: "string"
                   description: "Site Identifier"
-                url:
+                uploadUrl:
                   type: "string"
                   description: "Url to upload document to"
                 documents:

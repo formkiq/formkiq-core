@@ -828,7 +828,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddDocumentResponse'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
