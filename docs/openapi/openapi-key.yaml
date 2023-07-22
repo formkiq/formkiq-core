@@ -3679,17 +3679,30 @@
             UpdateDocumentFulltextRequest:
               type: object
               properties:
-                path:
+                contentType:
                   type: string
-                  description: Path or Name of document
+                  description: Document Content-Type
                 content:
                   type: string
                   description: Document content
+                contentUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: URL(s) which contain document content
+                path:
+                  type: string
+                  description: Path or Name of document
                 tags:
                   type: array
                   description: List of document tags
                   items:
                     $ref: '#/components/schemas/AddDocumentTagRequest'
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
             SetAntivirusRequest:
               type: object
             SetAntivirusResponse:
