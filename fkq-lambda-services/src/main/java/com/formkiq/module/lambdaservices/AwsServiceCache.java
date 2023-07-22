@@ -127,7 +127,7 @@ public class AwsServiceCache {
    */
   @SuppressWarnings("unchecked")
   public <T> T getExtension(final Class<T> clazz) {
-    return (T) EXTENSIONS.get(clazz).loadService(this);
+    return EXTENSIONS.containsKey(clazz) ? (T) EXTENSIONS.get(clazz).loadService(this) : null;
   }
 
   /**

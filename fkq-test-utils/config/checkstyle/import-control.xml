@@ -19,8 +19,19 @@
 		<allow pkg="com.formkiq.testutils.aws" />
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
+		<allow pkg="java.nio.charset" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
+		
+		<allow pkg="com.formkiq.client.api" />
+		<allow pkg="com.formkiq.client.invoker" />
+		<allow pkg="com.formkiq.client.model" />
+
+		<allow pkg="org.mockserver.mock.action" />
+		<allow pkg="org.mockserver.model" />
+		<allow pkg="org.mockserver.integration" />
+		<allow pkg="io.jsonwebtoken" />
+
 		<allow pkg="org.junit.jupiter.api.extension" />
 		<allow pkg="org.testcontainers.containers" />
 		<allow pkg="org.testcontainers.utility" />

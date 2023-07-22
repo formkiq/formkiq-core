@@ -88,4 +88,17 @@ public class Objects {
 
     return partitions;
   }
+
+  /**
+   * If {@link Object} is null throw {@link Exception}.
+   * 
+   * @param obj {@link Object}
+   * @param ex {@link Exception}
+   * @throws Exception Exception
+   */
+  public static void throwIfNull(final Object obj, final Exception ex) throws Exception {
+    if (obj == null) {
+      throw ex;
+    }
+  }
 }

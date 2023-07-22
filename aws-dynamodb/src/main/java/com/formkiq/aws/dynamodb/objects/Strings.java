@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.util.UUID;
+
 /**
  * 
  * {@link String} Helper.
@@ -64,13 +66,18 @@ public class Strings {
   }
 
   /**
-   * Remove single/double quotes from {@link String}.
-   * 
+   * Is {@link String} a {@link UUID}.
+   *
    * @param s {@link String}
-   * @return {@link String}
+   * @return boolean
    */
-  public static String removeQuotes(final String s) {
-    return s.replaceAll("^['\"]|['\"]$", "");
+  public static boolean isUuid(final String s) {
+    try {
+      UUID.fromString(s);
+      return true;
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
   }
 
   /**
@@ -81,5 +88,15 @@ public class Strings {
    */
   public static String removeEndingPunctuation(final String s) {
     return s.replaceAll("[!\\.,?]$", "");
+  }
+
+  /**
+   * Remove single/double quotes from {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String removeQuotes(final String s) {
+    return s.replaceAll("^['\"]|['\"]$", "");
   }
 }

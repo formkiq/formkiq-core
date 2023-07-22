@@ -33,11 +33,12 @@ import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
@@ -59,12 +60,12 @@ public class ConfigurationRequestHandler
 
   @Override
   public void beforePatch(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorizer);
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+    checkPermissions(authorization);
   }
 
-  private void checkPermissions(final ApiAuthorizer authorizer) throws UnauthorizedException {
-    if (!authorizer.isUserAdmin() && !authorizer.isCallerIamUser()) {
+  private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
+    if (!authorization.permissions().contains(ApiPermission.ADMIN)) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }
@@ -81,10 +82,10 @@ public class ConfigurationRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     DynamicObject obj = configService.get(siteId);
@@ -105,12 +106,12 @@ public class ConfigurationRequestHandler
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
 
-    Map<String, String> body = fromBodyToObject(logger, event, Map.class);
+    Map<String, String> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();
     put(map, body, CHATGPT_API_KEY, "chatGptApiKey");

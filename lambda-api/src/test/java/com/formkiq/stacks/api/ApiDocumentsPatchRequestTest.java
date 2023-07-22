@@ -45,6 +45,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -57,7 +58,25 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
   /**
-   * POST /documents request Base64 body.
+   * PATCH /documents/{documentId} request.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param group {@link String}
+   * @param body {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent patchDocumentsRequest(final String siteId, final String documentId,
+      final String group, final String body) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("PATCH")
+        .resource("/documents/{documentId}").path("/documents/" + documentId).group(group)
+        .user("joesmith").pathParameters(Map.of("documentId", documentId))
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
+    return event;
+  }
+
+  /**
+   * PATCH /documents/{documentId} request Base64 body.
    *
    * @throws Exception an error has occurred
    */
@@ -68,13 +87,13 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // given
       String userId = "jsmith";
       String documentId = UUID.randomUUID().toString();
+      String body = "{\"contentType\":\"application/pdf\",\"path\":\"/documents/test2.txt\"}";
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
+      ApiGatewayRequestEvent event =
+          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
 
       // when
       String response = handleRequest(event);
@@ -82,14 +101,13 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      assertTrue(getLogger()
-          .containsString("setting userId: 8a73dfef-26d3-43d8-87aa-b3ec358e43ba@formkiq.com "
-              + "contentType: application/pdf"));
+      assertTrue(
+          getLogger().containsString("setting userId: joesmith " + "contentType: application/pdf"));
     }
   }
 
   /**
-   * POST /documents request Base64 body. Document does not exist.
+   * PATCH /documents/{documentId} request Base64 body. Document does not exist.
    *
    * @throws Exception an error has occurred
    */
@@ -97,8 +115,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   public void testHandlePatchDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
+      String documentId = UUID.randomUUID().toString();
+      String body = "{\"contentType\":\"application/pdf\",\"path\":\"/documents/test2.txt\"}";
+      ApiGatewayRequestEvent event =
+          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
 
       // when
       String response = handleRequest(event);
@@ -109,7 +129,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /documents request non Base64 body.
+   * PATCH /documents/{documentId} request non Base64 body.
    *
    * @throws Exception an error has occurred
    */
@@ -153,7 +173,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * POST /documents request In Readonly.
+   * PATCH /documents/{documentId} request In Readonly.
    *
    * @throws Exception an error has occurred
    */
@@ -179,7 +199,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       assertEquals("403.0", String.valueOf(m.get("statusCode")));
 
-      assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}", m.get("body"));
+      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}", m.get("body"));
 
       assertTrue(getLogger()
           .containsString("response: {\"headers\":{\"Access-Control-Allow-Origin\":\"*\","
@@ -187,12 +207,12 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
               + "\"Access-Control-Allow-Headers\":\"Content-Type,X-Amz-Date,Authorization,"
               + "X-Api-Key\",\"Content-Type\":\"application/json\"},"
               + "\"body\":\"{\\\"message\\\":\\\""
-              + "fkq access denied (groups: default_read)\\\"}\"," + "\"statusCode\":403}"));
+              + "fkq access denied (groups: default (READ))\\\"}\"," + "\"statusCode\":403}"));
     }
   }
 
   /**
-   * PATCH /documents with TAG(s) only.
+   * PATCH /documents/{documentId} with TAG(s) only.
    *
    * @throws Exception an error has occurred
    */
@@ -208,11 +228,16 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
+      String body = "{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}";
+      ApiGatewayRequestEvent event =
+          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
+
+      // ApiGatewayRequestEvent event =
+      // toRequestEvent("/request-patch-documents-documentid01.json");
+      // addParameter(event, "siteId", siteId);
+      // setPathParameter(event, "documentId", documentId);
       event.setBody("{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}");
-      event.setIsBase64Encoded(Boolean.FALSE);
+      // event.setIsBase64Encoded(Boolean.FALSE);
 
       // when
       String response = handleRequest(event);
@@ -237,7 +262,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * PATCH /documents Metadata.
+   * PATCH /documents/{documentId} Metadata.
    *
    * @throws Exception an error has occurred
    */
@@ -255,12 +280,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
           new DocumentMetadata("playerId", "something")));
       getDocumentService().saveDocument(siteId, doc, null);
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      event.setBody("{\"metadata\":[{\"key\":\"person\",\"value\":\"category\"},"
-          + "{\"key\":\"playerId\",\"values\":[\"111\",\"222\"]}]}");
-      event.setIsBase64Encoded(Boolean.FALSE);
+      String body = "{\"metadata\":[{\"key\":\"person\",\"value\":\"category\"},"
+          + "{\"key\":\"playerId\",\"values\":[\"111\",\"222\"]}]}";
+      ApiGatewayRequestEvent event =
+          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
 
       // when
       String response = handleRequest(event);
@@ -283,7 +306,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * PATCH /documents Metadata too many metadata.
+   * PATCH /documents/{documentId} Metadata too many metadata.
    *
    * @throws Exception an error has occurred
    */
@@ -301,17 +324,16 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
           new DocumentMetadata("playerId", "something")));
       getDocumentService().saveDocument(siteId, doc, null);
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
       Map<String, Object> data = new HashMap<>();
       List<Map<String, Object>> metadata = new ArrayList<>();
       for (int i = 0; i < count; i++) {
         metadata.add(Map.of("key", "ad_" + i, "value", "some"));
       }
       data.put("metadata", metadata);
-      event.setBody(GsonUtil.getInstance().toJson(data));
-      event.setIsBase64Encoded(Boolean.FALSE);
+
+      String body = GsonUtil.getInstance().toJson(data);
+      ApiGatewayRequestEvent event =
+          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
 
       // when
       String response = handleRequest(event);
@@ -325,7 +347,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * PATCH /documents with invalid TAG.
+   * PATCH /documents/{documentId} with invalid TAG.
    *
    * @throws Exception an error has occurred
    */
@@ -341,11 +363,9 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      event.setBody("{\"tags\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"value\":\"Bacon\"}]}");
-      event.setIsBase64Encoded(Boolean.FALSE);
+      String body = "{\"tags\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"value\":\"Bacon\"}]}";
+      ApiGatewayRequestEvent event =
+          patchDocumentsRequest(siteId, documentId, siteId != null ? siteId : "default", body);
 
       // when
       String response = handleRequest(event);

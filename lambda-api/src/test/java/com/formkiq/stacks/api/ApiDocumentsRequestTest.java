@@ -167,11 +167,15 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      getDocumentService().saveDocument(siteId, item, null);
+
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
       getS3().putObject(BUCKET_NAME, s3Key, "testdata".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
-      addParameter(event, "siteId", siteId);
+      addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
       setPathParameter(event, "documentId", documentId);
 
       // when
@@ -205,7 +209,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNotNull(getDocumentService().findDocument(siteId, documentId));
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
-      addParameter(event, "siteId", siteId);
+      addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
       setPathParameter(event, "documentId", documentId);
 
       // when
@@ -568,7 +572,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied (groups: default)", resp.getMessage());
+    assertEquals("fkq access denied (no groups)", resp.getMessage());
   }
 
   /**
@@ -596,7 +600,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
     ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied (groups: default)", resp.getMessage());
+    assertEquals("fkq access denied (groups: default (READ,WRITE,DELETE))", resp.getMessage());
   }
 
   /**
@@ -655,7 +659,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("403.0", String.valueOf(m.get("statusCode")));
     assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    assertEquals("{\"message\":\"fkq access denied (groups: Finance,Bleh)\"}", m.get("body"));
+    assertEquals("{\"message\":\"fkq access denied "
+        + "(groups: Bleh (READ,WRITE,DELETE), Finance (READ,WRITE,DELETE))\"}", m.get("body"));
   }
 
   /**
@@ -1022,7 +1027,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     // then
     String expected = "{" + getHeaders() + ",\"body\":\""
-        + "{\\\"message\\\":\\\"fkq access denied (groups: default)\\\"}\",\"statusCode\":403}";
+        + "{\\\"message\\\":\\\"fkq access denied (no groups)\\\"}\",\"statusCode\":403}";
 
     assertEquals(expected, response);
   }

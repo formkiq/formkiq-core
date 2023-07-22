@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -43,10 +42,11 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
@@ -234,17 +234,17 @@ public class DocumentsUploadRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
     item.setInsertedDate(new Date());
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(getCallingCognitoUsername(event));
+    item.setUserId(authorization.username());
 
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
 
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
@@ -259,24 +259,26 @@ public class DocumentsUploadRequestHandler
   }
 
   @Override
-  public boolean isReadonly(final String method) {
-    return false;
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.permissions().contains(ApiPermission.WRITE);
+    return Optional.of(Boolean.valueOf(access));
   }
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(getCallingCognitoUsername(event));
+    item.setUserId(authorization.username());
     item.setInsertedDate(new Date());
 
     List<DynamicObject> tags = item.getList("tags");
     validateTags(tags);
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
         item);
   }
