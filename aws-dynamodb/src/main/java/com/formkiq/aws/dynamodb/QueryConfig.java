@@ -23,8 +23,6 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import java.util.Map;
-
 /**
  * 
  * DynamoDB Query Config.
@@ -32,8 +30,6 @@ import java.util.Map;
  */
 public class QueryConfig {
 
-  /** {@link Map}. */
-  private Map<String, String> expressionAttributeNames;
   /** Projection Expression. */
   private String projectionExpression;
 
@@ -42,26 +38,6 @@ public class QueryConfig {
    */
   public QueryConfig() {
 
-  }
-
-  /**
-   * Get Expression Attribute Names.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, String> expressionAttributeNames() {
-    return this.expressionAttributeNames;
-  }
-
-  /**
-   * Set Expression Attribute Names.
-   * 
-   * @param expressionAttributes {@link Map}
-   * @return {@link QueryConfig}
-   */
-  public QueryConfig expressionAttributeNames(final Map<String, String> expressionAttributes) {
-    this.expressionAttributeNames = expressionAttributes;
-    return this;
   }
 
   /**
@@ -83,5 +59,4 @@ public class QueryConfig {
     this.projectionExpression = projection;
     return this;
   }
-
 }

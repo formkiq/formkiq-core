@@ -35,13 +35,12 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -272,7 +271,7 @@ public class PublicWebhooksRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = getParameter(event, "siteId");
@@ -313,6 +312,7 @@ public class PublicWebhooksRequestHandler
       final DynamicObject item, final String siteId) {
 
     String s = GSON.toJson(item);
+
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
     String stages3bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
@@ -320,13 +320,6 @@ public class PublicWebhooksRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-    s3.putObject(stages3bucket, key, bytes, "application/json");
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
-    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
+    s3.putObject(stages3bucket, key, bytes, item.getString("contentType"));
   }
 }

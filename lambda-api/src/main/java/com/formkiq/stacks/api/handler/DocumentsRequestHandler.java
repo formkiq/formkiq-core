@@ -40,7 +40,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -75,7 +75,7 @@ public class DocumentsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -95,7 +95,7 @@ public class DocumentsRequestHandler
       logger.log("search for document using date: " + date);
     }
 
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
     final PaginationResults<DocumentItem> results =
         documentService.findDocumentsByDate(siteId, date, ptoken, limit);
 
@@ -123,9 +123,9 @@ public class DocumentsRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
-    return this.handler.patch(logger, event, authorization, awsservice);
+    return this.handler.patch(logger, event, authorizer, awsservice);
   }
 
   /**

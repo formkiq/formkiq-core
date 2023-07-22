@@ -26,7 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
@@ -40,26 +40,10 @@ public interface FolderIndexProcessor {
 
   /** Deliminator. */
   String DELIMINATOR = "/";
-
-  /**
-   * Create Folder Paths.
-   * 
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param userId {@link String}
-   * @return {@link List} {@link Map}
-   */
-  List<Map<String, String>> createFolders(String siteId, String path, String userId);
-
-  /**
-   * Delete Empty Directory.
-   * 
-   * @param siteId {@link String}
-   * @param indexKey {@link String}
-   * @return boolean
-   * @throws IOException IOException
-   */
-  boolean deleteEmptyDirectory(String siteId, String indexKey) throws IOException;
+  /** Index File SK. */
+  String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
+  /** Index Folder SK. */
+  String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
   /**
    * Delete Empty Directory.
@@ -68,9 +52,8 @@ public interface FolderIndexProcessor {
    * @param parentId {@link String}
    * @param path {@link String}
    * @return boolean
-   * @throws IOException IOException
    */
-  boolean deleteEmptyDirectory(String siteId, String parentId, String path) throws IOException;
+  boolean deleteEmptyDirectory(String siteId, String parentId, String path);
 
   /**
    * Delete Index Path.
@@ -91,24 +74,6 @@ public interface FolderIndexProcessor {
   List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
 
   /**
-   * Get Folder Index by documentId.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link FolderIndexRecord}
-   */
-  FolderIndexRecord getFolderByDocumentId(String siteId, String documentId);
-
-  /**
-   * Get Folders Index by documentId.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link List} {@link FolderIndexRecord}
-   */
-  List<FolderIndexRecord> getFoldersByDocumentId(String siteId, String documentId);
-
-  /**
    * Generates DynamoDB {@link WriteRequest} for Index.
    * 
    * @param siteId {@link String}
@@ -117,27 +82,6 @@ public interface FolderIndexProcessor {
    * @throws IOException IOException
    */
   Map<String, String> getIndex(String siteId, String path) throws IOException;
-
-  /**
-   * Get Folder / File Index.
-   * 
-   * @param siteId {@link String}
-   * @param indexKey {@link String}
-   * @param isFile boolean
-   * @return {@link DynamicObject}
-   */
-  DynamicObject getIndex(String siteId, String indexKey, boolean isFile);
-
-  /**
-   * Is Folder in Path.
-   * 
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param folderId {@link String}
-   * @return boolean
-   * @throws IOException IOException
-   */
-  boolean isFolderIdInPath(String siteId, String path, String folderId) throws IOException;
 
   /**
    * Move Index from one to another.

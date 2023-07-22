@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +34,7 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -42,13 +42,11 @@ import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -65,10 +63,10 @@ public class DocumentTagRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
     Map<String, String> map = event.getPathParameters();
     String documentId = map.get("documentId");
     String tagKey = map.get("tagKey");
@@ -81,7 +79,9 @@ public class DocumentTagRequestHandler
     }
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
-    throwIfNull(document, new DocumentNotFoundException(documentId));
+    if (document == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
 
     List<String> tags = Arrays.asList(tagKey);
 
@@ -101,16 +101,14 @@ public class DocumentTagRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
     String tagKey = event.getPathParameters().get("tagKey");
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = documentService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
 
@@ -156,14 +154,14 @@ public class DocumentTagRequestHandler
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     Map<String, String> map = event.getPathParameters();
     final String documentId = map.get("documentId");
     final String tagKey = map.get("tagKey");
 
-    Map<String, Object> body = fromBodyToObject(event, Map.class);
+    Map<String, Object> body = fromBodyToObject(logger, event, Map.class);
     String value = body != null ? (String) body.getOrDefault("value", null) : null;
     List<String> values = body != null ? (List<String>) body.getOrDefault("values", null) : null;
 
@@ -171,12 +169,14 @@ public class DocumentTagRequestHandler
       throw new BadException("request body is invalid");
     }
 
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentItem document = documentService.findDocument(siteId, documentId);
-    throwIfNull(document, new DocumentNotFoundException(documentId));
+    if (document == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
     if (tag == null) {
@@ -189,7 +189,7 @@ public class DocumentTagRequestHandler
     }
 
     Date now = new Date();
-    String userId = authorization.username();
+    String userId = getCallingCognitoUsername(event);
 
     tag = new DocumentTag(null, tagKey, value, now, userId);
     if (values != null) {
@@ -210,28 +210,11 @@ public class DocumentTagRequestHandler
 
     tags.addAll(newTags);
 
-    validateTags(tags);
-
     documentService.addTags(siteId, documentId, tags, null);
 
     ApiResponse resp =
         new ApiMessageResponse("Updated tag '" + tagKey + "' on document '" + documentId + "'.");
 
     return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  /**
-   * Validate {@link DocumentTag}.
-   * 
-   * @param tags {@link List} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   */
-  private void validateTags(final List<DocumentTag> tags) throws ValidationException {
-    DocumentTagValidator validate = new DocumentTagValidatorImpl();
-    Collection<ValidationError> errors = validate.validate(tags);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
   }
 }

@@ -49,7 +49,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -342,20 +341,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     return new PaginationResults<DynamicDocumentItem>(list, null);
   }
 
-  @Override
-  public PaginationResults<DynamicDocumentItem> findInFolder(final String siteId,
-      final String indexKey, final PaginationMapToken token, final int maxresults) {
-
-    DynamicObject o = this.folderIndexProcesor.getIndex(siteId, indexKey, false);
-
-    String value = GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR;
-    if (o != null) {
-      value += o.getString("documentId");
-    }
-
-    return searchByMeta(siteId, value, null, token, maxresults);
-  }
-
   private String getFolderMetaDataKey(final String siteId, final SearchMetaCriteria meta) {
     String eq = meta.eq();
 
@@ -464,12 +449,6 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final int maxresults) {
 
     String value = getMetaDataKey(siteId, meta);
-    return searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
-  }
-
-  private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
-      final String value, final String indexFilterBeginsWith, final PaginationMapToken token,
-      final int maxresults) {
 
     PaginationResults<DynamicDocumentItem> result = null;
 
@@ -479,15 +458,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
       values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, value)).build());
 
-      if (indexFilterBeginsWith != null) {
+      if (meta.indexFilterBeginsWith() != null) {
         expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
-        values.put(":sk", AttributeValue.builder().s(indexFilterBeginsWith).build());
+        values.put(":sk", AttributeValue.builder().s(meta.indexFilterBeginsWith()).build());
       }
 
       QueryRequest q =
           createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE);
 
-      result = searchForMetaDocuments(q, siteId);
+      result = searchForMetaDocuments(q, siteId, query);
 
     } else {
       result = new PaginationResults<>(Collections.emptyList(), null);
@@ -619,10 +598,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    *
    * @param q {@link QueryRequest}
    * @param siteId DynamoDB PK siteId
+   * @param query {@link SearchQuery}
    * @return {@link PaginationResults} {@link DocumentItemSearchResult}
    */
   private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
-      final String siteId) {
+      final String siteId, final SearchQuery query) {
 
     QueryResponse result = this.dbClient.query(q);
 

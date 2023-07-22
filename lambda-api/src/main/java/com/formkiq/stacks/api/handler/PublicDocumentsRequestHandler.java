@@ -25,9 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -51,17 +50,10 @@ public class PublicDocumentsRequestHandler
     return "/public/documents";
   }
 
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
-    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
-  }
-
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     Map<String, Object> auth = event.getRequestContext().getAuthorizer();
@@ -78,6 +70,6 @@ public class PublicDocumentsRequestHandler
 
     claims.put("cognito:username", "public");
 
-    return this.handler.post(logger, event, authorization, awsservice);
+    return this.handler.post(logger, event, authorizer, awsservice);
   }
 }

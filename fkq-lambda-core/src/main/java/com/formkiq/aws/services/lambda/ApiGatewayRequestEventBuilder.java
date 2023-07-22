@@ -32,10 +32,10 @@ import java.util.Map;
  */
 public class ApiGatewayRequestEventBuilder {
 
-  /** {@link ApiGatewayRequestContext}. */
-  private ApiGatewayRequestContext context = new ApiGatewayRequestContext();
   /** {@link ApiGatewayRequestEvent}. */
   private ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+  /** {@link ApiGatewayRequestContext}. */
+  private ApiGatewayRequestContext context = new ApiGatewayRequestContext();
 
   /**
    * Set Body.
@@ -45,19 +45,6 @@ public class ApiGatewayRequestEventBuilder {
    */
   public ApiGatewayRequestEventBuilder body(final String body) {
     this.event.setBody(body);
-    return this;
-  }
-
-  /**
-   * Set Body.
-   * 
-   * @param body {@link String}
-   * @param isBase64 boolean
-   * @return {@link ApiGatewayRequestEventBuilder}
-   */
-  public ApiGatewayRequestEventBuilder body(final String body, final boolean isBase64) {
-    this.event.setBody(body);
-    this.event.setIsBase64Encoded(Boolean.valueOf(isBase64));
     return this;
   }
 

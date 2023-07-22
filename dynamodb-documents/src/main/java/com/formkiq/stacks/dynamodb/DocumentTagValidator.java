@@ -55,12 +55,4 @@ public interface DocumentTagValidator {
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validate(DocumentTags tags);
-
-  /**
-   * Validate {@link DocumentTag} Keys.
-   * 
-   * @param tagKeys {@link DocumentTags}
-   * @return {@link Collection} {@link ValidationError}
-   */
-  Collection<ValidationError> validateKeys(Collection<String> tagKeys);
 }

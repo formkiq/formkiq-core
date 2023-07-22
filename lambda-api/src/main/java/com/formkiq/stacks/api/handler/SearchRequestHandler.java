@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -43,13 +42,12 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.objects.Objects;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
-import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
@@ -110,17 +108,15 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     return map;
   }
 
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.READ);
-    return Optional.of(Boolean.valueOf(access));
-  }
-
   private boolean isEnterpriseFeature(final AwsServiceCache serviceCache, final QueryRequest q) {
 
     return q.query().tag() == null && q.query().meta() == null && isEmpty(q.query().text())
         && !serviceCache.getExtension(DocumentTagSchemaPlugin.class).isActive();
+  }
+
+  @Override
+  public boolean isReadonly(final String method) {
+    return "post".equals(method) || "get".equals(method) || "head".equals(method);
   }
 
   /**
@@ -155,12 +151,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     ApiRequestHandlerResponse response = null;
 
-    QueryRequest q = fromBodyToObject(event, QueryRequest.class);
+    QueryRequest q = fromBodyToObject(logger, event, QueryRequest.class);
 
     validatePost(q);
 
@@ -190,7 +186,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         }
       }
 
-      String siteId = authorization.siteId();
+      String siteId = authorizer.getSiteId();
       DocumentSearchService documentSearchService =
           awsservice.getExtension(DocumentSearchService.class);
 

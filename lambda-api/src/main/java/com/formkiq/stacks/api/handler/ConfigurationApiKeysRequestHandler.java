@@ -23,17 +23,17 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
-import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
@@ -52,31 +52,32 @@ public class ConfigurationApiKeysRequestHandler
 
   @Override
   public void beforeDelete(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+      final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
+    checkPermissions(authorizer);
   }
 
   @Override
   public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+      final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
+    checkPermissions(authorizer);
   }
 
   @Override
   public void beforePost(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
+      final ApiAuthorizer authorizer, final AwsServiceCache awsServices) throws Exception {
+    checkPermissions(authorizer);
   }
 
-  private void checkPermissions(final ApiAuthorization authorization) throws UnauthorizedException {
-    if (!authorization.permissions().contains(ApiPermission.ADMIN)) {
+  private void checkPermissions(final ApiAuthorizer authorizer) throws UnauthorizedException {
+    if (!authorizer.isUserAdmin() && !authorizer.isCallerIamUser()
+        && !authorizer.isCallerAssumeRole()) {
       throw new UnauthorizedException("user is unauthorized");
     }
   }
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     String apiKey = event.getQueryStringParameter("apiKey");
@@ -90,7 +91,7 @@ public class ConfigurationApiKeysRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
@@ -109,18 +110,18 @@ public class ConfigurationApiKeysRequestHandler
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    Map<String, String> body = fromBodyToObject(event, Map.class);
+    Map<String, String> body = fromBodyToObject(logger, event, Map.class);
     String name = body.get("name");
 
     if (name != null) {
 
-      String userId = authorization.username();
+      String userId = getCallingCognitoUsername(event);
       String apiKey = apiKeysService.createApiKey(siteId, name, userId);
 
       return new ApiRequestHandlerResponse(SC_OK,

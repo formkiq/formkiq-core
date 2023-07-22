@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -41,6 +42,7 @@ import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for request /documents/{documentId}/url. */
 @ExtendWith(LocalStackExtension.class)
@@ -108,9 +110,13 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
         assertNull(resp.getPrevious());
 
         if (siteId != null) {
-          assertTrue(resp.getUrl().contains("/" + siteId + "/" + documentId));
+          assertTrue(
+              resp.getUrl().startsWith(TestServices.getEndpointOverride(Service.S3).toString()
+                  + "/testbucket/" + siteId + "/" + documentId));
         } else {
-          assertTrue(resp.getUrl().contains("/" + documentId));
+          assertTrue(
+              resp.getUrl().startsWith(TestServices.getEndpointOverride(Service.S3).toString()
+                  + "/testbucket/" + documentId));
         }
       }
     }
@@ -154,9 +160,11 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
       assertNull(resp.getPrevious());
 
       if (siteId != null) {
-        assertTrue(resp.getUrl().contains("/" + siteId + "/" + documentId));
+        assertTrue(resp.getUrl().startsWith(TestServices.getEndpointOverride(Service.S3).toString()
+            + "/testbucket/" + siteId + "/" + documentId));
       } else {
-        assertTrue(resp.getUrl().contains("/" + documentId));
+        assertTrue(resp.getUrl().startsWith(
+            TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + documentId));
       }
     }
   }

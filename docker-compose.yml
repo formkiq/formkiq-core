@@ -1,26 +1,21 @@
-version: '3.8'
+version: "3"
 services:
   dynamodb:
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
-    image: "amazon/dynamodb-local:latest"
+    image: amazon/dynamodb-local:1.13.5
     ports:
-      - "8000:8000"
-    volumes:
-      - "./docker/dynamodb:/home/dynamodblocal/data"
-    working_dir: /home/dynamodblocal
+      - 8000:8000
   localstack:
-    image: localstack/localstack:2.1
+    image: localstack/localstack:0.12.2
     ports:
-      - "127.0.0.1:4566:4566"            # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"  # ext services port range
-      - "127.0.0.1:53:53"                # DNS config
-      - "127.0.0.1:53:53/udp"            # DNS config
-      - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway
+      - "4566:4566"
+      - "4571:4571"
+      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     environment:
-      - DEBUG=1
-      - PERSISTENCE=${PERSISTENCE-}
+      - SERVICES=s3,sqs,ssm,sns
+      - DEBUG=${DEBUG- }
+      - DATA_DIR=${DATA_DIR- }
+      - PORT_WEB_UI=${PORT_WEB_UI- }
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - LS_LOG=trace
-    volumes:
-      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+   

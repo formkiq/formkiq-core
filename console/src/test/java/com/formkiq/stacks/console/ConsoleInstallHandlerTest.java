@@ -62,7 +62,7 @@ public class ConsoleInstallHandlerTest {
 
   /** LocalStack {@link DockerImageName}. */
   private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:2.1");
+      DockerImageName.parse("localstack/localstack:0.12.2");
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localStackInstance =
       new LocalStackContainer(localStackImage).withServices(Service.S3);
@@ -146,6 +146,17 @@ public class ConsoleInstallHandlerTest {
    * Create CloudFormation Input such as.
    *
    * @param requestType {@link String}
+   * 
+   *        <pre>
+   * { "RequestType": "Create",
+   * "ServiceToken": "arn:aws:lambda:...:function:route53Dependency",
+   * "ResponseURL": "https://cloudformation-custom-resource", "StackId":
+   * "arn:aws:cloudformation:eu-west-1:...", "RequestId":
+   * "afd8d7c5-9376-4013-8b3b-307517b8719e", "LogicalResourceId": "Route53",
+   * "ResourceType": "Custom::Route53Dependency", "ResourceProperties": {
+   * "ServiceToken": "arn:aws:lambda:...:function:route53Dependency",
+   * "DomainName": "example.com" } }
+   *        </pre>
    *
    * @return {@link Map}
    */

@@ -36,10 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocument;
@@ -53,7 +49,6 @@ import com.formkiq.stacks.client.requests.AddDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentActionsRequest;
 import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
-import com.formkiq.stacks.client.requests.GetDocumentTagsKeyRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -72,35 +67,6 @@ public class FkqDocumentService {
   private static HttpClient http = HttpClient.newHttpClient();
   /** 200 OK. */
   private static final int STATUS_OK = 200;
-
-  /**
-   * Add "file" but this just creates DynamoDB record and the S3 file.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param content byte[]
-   * @param contentType {@link String}
-   * @param shareKey {@link String}
-   * @return {@link String}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
-   * @throws ApiException ApiException
-   */
-  public static String addDocument(final ApiClient apiClient, final String siteId,
-      final String path, final byte[] content, final String contentType, final String shareKey)
-      throws IOException, InterruptedException, URISyntaxException, ApiException {
-    // given
-    DocumentsApi api = new DocumentsApi(apiClient);
-    GetDocumentUrlResponse response =
-        api.getDocumentUpload(path, siteId, Integer.valueOf(content.length), null, shareKey);
-    String s3url = response.getUrl();
-
-    http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)
-        .method("PUT", BodyPublishers.ofByteArray(content)).build(), BodyHandlers.ofString());
-    return response.getDocumentId();
-  }
 
   /**
    * Add "file" but this just creates DynamoDB record and not the S3 file.
@@ -153,15 +119,11 @@ public class FkqDocumentService {
    * @throws InterruptedException InterruptedException
    */
   public static String addDocumentWithActions(final FormKiqClient client, final String siteId,
-      final String path, final byte[] content, final String contentType,
+      final String path, final String content, final String contentType,
       final List<AddDocumentAction> actions, final List<AddDocumentTag> tags)
       throws IOException, InterruptedException {
-
-    String base64 = Base64.getEncoder().encodeToString(content);
-
-    return client
-        .addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument().path(path)
-            .contentAsBase64(base64).contentType(contentType).tags(tags).actions(actions)))
+    return client.addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument()
+        .path(path).content(content).contentType(contentType).tags(tags).actions(actions)))
         .documentId();
   }
 
@@ -180,11 +142,15 @@ public class FkqDocumentService {
    * @throws InterruptedException InterruptedException
    */
   public static String addDocumentWithActions(final FormKiqClient client, final String siteId,
-      final String path, final String content, final String contentType,
+      final String path, final byte[] content, final String contentType,
       final List<AddDocumentAction> actions, final List<AddDocumentTag> tags)
       throws IOException, InterruptedException {
-    return client.addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument()
-        .path(path).content(content).contentType(contentType).tags(tags).actions(actions)))
+
+    String base64 = Base64.getEncoder().encodeToString(content);
+
+    return client
+        .addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument().path(path)
+            .contentAsBase64(base64).contentType(contentType).tags(tags).actions(actions)))
         .documentId();
   }
 
@@ -285,41 +251,6 @@ public class FkqDocumentService {
 
       TimeUnit.SECONDS.sleep(1);
     }
-  }
-
-  /**
-   * Wait For Document Content.
-   * 
-   * @param client {@link FormKiqClientV1}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param tagKey {@link String}
-   * @return {@link DocumentTag}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
-   */
-  public static DocumentTag waitForDocumentTag(final FormKiqClientV1 client, final String siteId,
-      final String documentId, final String tagKey)
-      throws IOException, InterruptedException, URISyntaxException {
-
-    DocumentTag tags = null;
-    GetDocumentTagsKeyRequest tagReq =
-        new GetDocumentTagsKeyRequest().siteId(siteId).documentId(documentId).tagKey(tagKey);
-
-    while (true) {
-
-      try {
-        tags = client.getDocumentTag(tagReq);
-        break;
-      } catch (IOException e) {
-        // tag not found
-      }
-
-      TimeUnit.SECONDS.sleep(1);
-    }
-
-    return tags;
   }
 
   /**

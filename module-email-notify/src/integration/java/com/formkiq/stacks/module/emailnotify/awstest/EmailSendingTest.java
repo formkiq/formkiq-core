@@ -159,7 +159,7 @@ public class EmailSendingTest {
    * @return {@link String}
    */
   private String subscribeToSns(final String topicArn, final String queueUrl) {
-    String queueArn = sqsService.getQueueArn(queueUrl);
+    String queueArn = SqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","

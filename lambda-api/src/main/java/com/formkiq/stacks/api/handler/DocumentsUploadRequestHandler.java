@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -37,16 +38,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
@@ -58,8 +57,6 @@ import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentTagValidator;
-import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicObjectToDocumentTag;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.validation.ValidationError;
@@ -234,17 +231,17 @@ public class DocumentsUploadRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
     item.setInsertedDate(new Date());
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(authorization.username());
+    item.setUserId(getCallingCognitoUsername(event));
 
     Map<String, String> query = event.getQueryStringParameters();
 
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
 
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
@@ -259,46 +256,23 @@ public class DocumentsUploadRequestHandler
   }
 
   @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.permissions().contains(ApiPermission.WRITE);
-    return Optional.of(Boolean.valueOf(access));
+  public boolean isReadonly(final String method) {
+    return false;
   }
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
-    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
     item.setDocumentId(UUID.randomUUID().toString());
-    item.setUserId(authorization.username());
+    item.setUserId(getCallingCognitoUsername(event));
     item.setInsertedDate(new Date());
 
-    List<DynamicObject> tags = item.getList("tags");
-    validateTags(tags);
-
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
     return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
         item);
-  }
-
-  /**
-   * Validate Document Tags.
-   * 
-   * @param tags {@link List} {@link DynamicObject}
-   * @throws ValidationException ValidationException
-   */
-  private void validateTags(final List<DynamicObject> tags) throws ValidationException {
-
-    List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
-
-    DocumentTagValidator validator = new DocumentTagValidatorImpl();
-    Collection<ValidationError> errors = validator.validateKeys(tagKeys);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
   }
 
   /**

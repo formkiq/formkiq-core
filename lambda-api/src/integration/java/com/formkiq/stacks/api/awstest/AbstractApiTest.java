@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
@@ -111,12 +110,6 @@ public abstract class AbstractApiTest {
   private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
-  /** Cognito Permissions User Email. */
-  protected static final String ACME_EMAIL = "acme@formkiq.com";
-  /** {@link List} {@link FormKiqClientV1}. */
-  private static List<FormKiqClientV1> formkiqClientDefault;
-  /** {@link List} {@link FormKiqClientV1}. */
-  private static List<FormKiqClientV1> formkiqClientSiteId;
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
   /** 1 Second. */
@@ -131,8 +124,6 @@ public abstract class AbstractApiTest {
   private static String rootKeyUrl;
   /** API Root Rest Url. */
   private static String rootRestUrl;
-  /** SiteId. */
-  protected static final String SITE_ID = UUID.randomUUID().toString();
   /** {@link SsmConnectionBuilder}. */
   private static SsmConnectionBuilder ssmBuilder;
   /** {@link SsmService}. */
@@ -150,15 +141,15 @@ public abstract class AbstractApiTest {
    * Add User and/or Login Cognito.
    * 
    * @param username {@link String}
-   * @param groupNames {@link List} {@link String}
+   * @param groupName {@link String}
    */
-  private static void addAndLoginCognito(final String username, final List<String> groupNames) {
+  private static void addAndLoginCognito(final String username, final String groupName) {
     if (!adminCognitoService.isUserExists(username)) {
 
       adminCognitoService.addUser(username, TEMP_USER_PASSWORD);
       adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
-      for (String groupName : groupNames) {
+      if (groupName != null) {
         if (!groupName.startsWith(DEFAULT_SITE_ID)) {
           adminCognitoService.addGroup(groupName);
         }
@@ -220,9 +211,6 @@ public abstract class AbstractApiTest {
 
     setupCognito();
     setupConfigService(awsprofile);
-
-    formkiqClientDefault = Arrays.asList(httpClient, restClient, getApiKeyClient(null));
-    formkiqClientSiteId = Arrays.asList(httpClient, restClient, getApiKeyClient(SITE_ID));
   }
 
   /**
@@ -293,24 +281,6 @@ public abstract class AbstractApiTest {
    */
   public static List<FormKiqClientV1> getFormKiqClients(final String siteId) {
     return Arrays.asList(httpClient, restClient, getApiKeyClient(siteId));
-  }
-
-  /**
-   * Get Default Clients.
-   * 
-   * @return {@link List} {@link FormKiqClientV1}
-   */
-  public static List<FormKiqClientV1> getFormKiqDefaultClients() {
-    return formkiqClientDefault;
-  }
-
-  /**
-   * Get Clients for SiteId.
-   * 
-   * @return {@link List} {@link FormKiqClientV1}
-   */
-  public static List<FormKiqClientV1> getFormKiqSiteIdClients() {
-    return formkiqClientSiteId;
   }
 
   /**
@@ -419,10 +389,9 @@ public abstract class AbstractApiTest {
       adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
     }
 
-    addAndLoginCognito(USER_EMAIL, Arrays.asList(DEFAULT_SITE_ID));
-    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
-    addAndLoginCognito(READONLY_EMAIL, Arrays.asList("default_read"));
-    addAndLoginCognito(ACME_EMAIL, Arrays.asList("acme", "accounting"));
+    addAndLoginCognito(USER_EMAIL, DEFAULT_SITE_ID);
+    addAndLoginCognito(FINANCE_EMAIL, "finance");
+    addAndLoginCognito(READONLY_EMAIL, "default_read");
 
     adminToken = login(ADMIN_EMAIL, USER_PASSWORD);
     FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)

@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +66,7 @@ public class AttributeValueToGlobalMetaFolder
       String documentId = map.get("documentId").s();
       String path = map.get("path").s();
 
-      String key = parent + TAG_DELIMINATOR + path;
+      String key = URLEncoder.encode(parent + TAG_DELIMINATOR + path, StandardCharsets.UTF_8);
 
       result.put("path", path);
       result.put("documentId", documentId);
