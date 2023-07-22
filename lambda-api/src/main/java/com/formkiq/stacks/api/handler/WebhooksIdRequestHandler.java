@@ -32,7 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -51,10 +51,10 @@ public class WebhooksIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
@@ -70,10 +70,10 @@ public class WebhooksIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
@@ -114,10 +114,10 @@ public class WebhooksIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
 
     CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
@@ -128,7 +128,7 @@ public class WebhooksIdRequestHandler
       throw new NotFoundException("Webhook 'id' not found");
     }
 
-    DynamicObject obj = fromBodyToDynamicObject(logger, event);
+    DynamicObject obj = fromBodyToDynamicObject(event);
 
     Map<String, Object> map = new HashMap<>();
 

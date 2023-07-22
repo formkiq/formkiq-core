@@ -146,6 +146,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
+
   /** Register LocalStack extension. */
   @RegisterExtension
   static LocalStackExtension localStack = new LocalStackExtension();
@@ -155,7 +156,6 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** Port to run Test server. */
   private static final int PORT = 8888;
-
   /** {@link S3Service}. */
   private static S3Service s3;
   /** {@link S3ConnectionBuilder}. */
@@ -190,7 +190,6 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String STAGING_BUCKET = "example-bucket";
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService;
-
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -243,7 +242,9 @@ public class StagingS3CreateTest implements DbKeys {
 
     snsService = new SnsService(snsBuilder);
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     createResources();
 
@@ -527,14 +528,6 @@ public class StagingS3CreateTest implements DbKeys {
           service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
       int tagcount = hasTags ? docitem.getList("tags").size() : 1;
       assertEquals(tagcount, tags.size());
-      // assertEquals(1, tags.size());
-
-      // DocumentTag ptag = findTag(tags, "path");
-      // assertEquals(destDocumentId, ptag.getDocumentId());
-      // assertEquals(docitem.getPath(), ptag.getValue());
-      // assertNotNull(ptag.getInsertedDate());
-      // assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
-      // assertEquals(docitem.getUserId(), ptag.getUserId());
 
       if (hasTags) {
 

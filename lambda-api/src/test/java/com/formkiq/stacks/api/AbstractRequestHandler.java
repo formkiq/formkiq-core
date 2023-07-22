@@ -116,9 +116,10 @@ public abstract class AbstractRequestHandler {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
+    String queueSqsArn = sqsService.getQueueArn(sqsDocumentEventUrl);
     SnsService snsService = new SnsService(TestServices.getSnsConnection(null));
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", queueSqsArn);
   }
 
   /** {@link CoreAwsServiceCache}. */
@@ -207,29 +208,7 @@ public abstract class AbstractRequestHandler {
   @BeforeEach
   public void before() throws Exception {
 
-    this.map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
-    this.map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    this.map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    this.map.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    this.map.put("CACHE_TABLE", CACHE_TABLE);
-    this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
-    this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
-    this.map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
-    this.map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-    this.map.put("AWS_REGION", AWS_REGION.toString());
-    this.map.put("DEBUG", "true");
-    this.map.put("SQS_DOCUMENT_FORMATS",
-        TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
-    this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
-    this.map.put("FORMKIQ_TYPE", "core");
-    this.map.put("USER_AUTHENTICATION", "cognito");
-    this.map.put("WEBSOCKET_SQS_URL",
-        TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
-    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
-    this.map.put("TYPESENSE_API_KEY", API_KEY);
-
-    createApiRequestHandler(this.map);
+    createApiRequestHandler("cognito");
 
     this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
 
@@ -261,6 +240,33 @@ public abstract class AbstractRequestHandler {
 
     AbstractCoreRequestHandler.configureHandler(prop, AWS_REGION, credentialsProvider, endpoints,
         new DocumentTagSchemaPluginEmpty());
+  }
+
+  protected void createApiRequestHandler(final String userAuthentication)
+      throws URISyntaxException {
+    this.map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    this.map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
+    this.map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    this.map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    this.map.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
+    this.map.put("CACHE_TABLE", CACHE_TABLE);
+    this.map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
+    this.map.put("STAGE_DOCUMENTS_S3_BUCKET", STAGE_BUCKET_NAME);
+    this.map.put("OCR_S3_BUCKET", OCR_BUCKET_NAME);
+    this.map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    this.map.put("AWS_REGION", AWS_REGION.toString());
+    this.map.put("DEBUG", "true");
+    this.map.put("SQS_DOCUMENT_FORMATS",
+        TestServices.getSqsDocumentFormatsQueueUrl(TestServices.getSqsConnection(null)));
+    this.map.put("DISTRIBUTION_BUCKET", "formkiq-distribution-us-east-pro");
+    this.map.put("FORMKIQ_TYPE", "core");
+    this.map.put("USER_AUTHENTICATION", userAuthentication);
+    this.map.put("WEBSOCKET_SQS_URL",
+        TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
+    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
+    this.map.put("TYPESENSE_API_KEY", API_KEY);
+
+    createApiRequestHandler(this.map);
   }
 
   /**
@@ -455,14 +461,26 @@ public abstract class AbstractRequestHandler {
    * @return {@link DynamicObject}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   public DynamicObject handleRequest(final String file, final String siteId, final String username,
       final String cognitoGroups) throws IOException {
 
     ApiGatewayRequestEvent event = createRequest(file, siteId, username, cognitoGroups);
 
-    String response = handleRequest(event);
+    return handleRequestDynamic(event);
+  }
 
+  /**
+   * Handle Request.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   * @throws IOException IOException
+   */
+  @SuppressWarnings("unchecked")
+  protected DynamicObject handleRequestDynamic(final ApiGatewayRequestEvent event)
+      throws IOException {
+
+    String response = handleRequest(event);
     return new DynamicObject(fromJson(response, Map.class));
   }
 
@@ -535,7 +553,6 @@ public abstract class AbstractRequestHandler {
     this.map.put(key, value);
   }
 
-
   /**
    * Set Path Parameter.
    * 
@@ -553,6 +570,7 @@ public abstract class AbstractRequestHandler {
     pathmap.put(parameter, value);
     event.setPathParameters(pathmap);
   }
+
 
   /**
    * Set Cognito Group.
@@ -595,6 +613,16 @@ public abstract class AbstractRequestHandler {
       this.mockServer.stop();
     }
     this.mockServer = null;
+  }
+
+  /**
+   * Convert Object to JSON.
+   * 
+   * @param obj {@link Object}
+   * @return {@link String}
+   */
+  protected String toJson(final Object obj) {
+    return GsonUtil.getInstance().toJson(obj);
   }
 
   /**

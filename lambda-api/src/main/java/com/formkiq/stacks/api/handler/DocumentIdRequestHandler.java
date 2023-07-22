@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil.getCallingCognitoUsername;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -52,7 +52,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -63,6 +63,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -71,6 +72,8 @@ import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagToDynamicDocumentTag;
+import com.formkiq.stacks.dynamodb.DocumentTagValidator;
+import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
@@ -107,16 +110,17 @@ public class DocumentIdRequestHandler
    * 
    * @param event {@link ApiGatewayRequestEvent}
    * @param awsservice {@link AwsServiceCache}
+   * @param authorization {@link ApiAuthorization}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param item {@link DynamicObject}
    * @param documents {@link List} {@link DynamicObject}
    */
   private void addFieldsToObject(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId, final String documentId,
-      final DynamicObject item, final List<DynamicObject> documents) {
+      final AwsServiceCache awsservice, final ApiAuthorization authorization, final String siteId,
+      final String documentId, final DynamicObject item, final List<DynamicObject> documents) {
 
-    String userId = getCallingCognitoUsername(event);
+    String userId = authorization.username();
 
     item.put("documentId", documentId);
     item.put("userId", userId);
@@ -170,15 +174,19 @@ public class DocumentIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
     logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+    DocumentItem item = service.findDocument(siteId, documentId);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     try {
 
@@ -192,7 +200,6 @@ public class DocumentIdRequestHandler
 
       } else {
 
-        DocumentService service = awsservice.getExtension(DocumentService.class);
         if (!service.deleteDocument(siteId, documentId)) {
           throw new NotFoundException("Document " + documentId + " not found.");
         }
@@ -268,10 +275,10 @@ public class DocumentIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     int limit = getLimit(logger, event);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -283,21 +290,19 @@ public class DocumentIdRequestHandler
 
     PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
         token != null ? token.getStartkey() : null, limit);
-    DocumentItem result = presult.getResult();
 
-    if (result == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    DocumentItem item = presult.getResult();
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, presult.getToken(), limit);
 
-    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
-    item.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    item.put("previous", current.getPrevious());
-    item.put("next", current.hasNext() ? current.getNext() : null);
+    DynamicDocumentItem ditem = new DocumentItemToDynamicDocumentItem().apply(item);
+    ditem.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+    ditem.put("previous", current.getPrevious());
+    ditem.put("next", current.hasNext() ? current.getNext() : null);
 
-    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(item));
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(ditem));
   }
 
   @Override
@@ -312,20 +317,20 @@ public class DocumentIdRequestHandler
 
   @Override
   public ApiRequestHandlerResponse patch(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     boolean isUpdate = event.getHttpMethod().equalsIgnoreCase("patch")
         && event.getPathParameters().containsKey("documentId");
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String documentId = UUID.randomUUID().toString();
 
-    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(logger, event));
+    DynamicDocumentItem item = new DynamicDocumentItem(fromBodyToMap(event));
 
     if (isUpdate) {
       documentId = event.getPathParameters().get("documentId");
-      validatePatch(awsservice, siteId, documentId, item);
+      validatePatch(awsservice, event, siteId, documentId, item);
     } else {
       updateContentType(event, item);
     }
@@ -353,13 +358,15 @@ public class DocumentIdRequestHandler
       }
 
     } else {
-      addFieldsToObject(event, awsservice, siteId, documentId, item, documents);
+      addFieldsToObject(event, awsservice, authorization, siteId, documentId, item, documents);
       item.put("documents", documents);
 
       logger.log("setting userId: " + item.getString("userId") + " contentType: "
           + item.getString("contentType"));
 
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
+      validateTags(item);
+
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
       Map<String, String> uploadUrls =
@@ -421,20 +428,18 @@ public class DocumentIdRequestHandler
    * Validate Patch Request.
    * 
    * @param awsservice {@link AwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
-   * @throws NotFoundException NotFoundException
-   * @throws ValidationException ValidationException
+   * @throws Exception Exception
    */
-  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final DocumentItem doc)
-      throws NotFoundException, ValidationException {
+  private void validatePatch(final AwsServiceCache awsservice, final ApiGatewayRequestEvent event,
+      final String siteId, final String documentId, final DocumentItem doc) throws Exception {
+
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);
-    if (item == null) {
-      throw new NotFoundException("Document " + documentId + " not found.");
-    }
+    throwIfNull(item, new DocumentNotFoundException(documentId));
 
     Collection<DocumentMetadata> metadata =
         item.getMetadata() != null ? new ArrayList<>(item.getMetadata()) : new ArrayList<>();
@@ -469,6 +474,25 @@ public class DocumentIdRequestHandler
     }
 
     return maxDocumentCount;
+  }
+
+  /**
+   * Validate Document Tags.
+   * 
+   * @param item {@link DynamicDocumentItem}
+   * @throws ValidationException ValidationException
+   */
+  private void validateTags(final DynamicDocumentItem item) throws ValidationException {
+
+    List<DynamicObject> tags = item.getList("tags");
+    List<String> tagKeys = tags.stream().map(t -> t.getString("key")).collect(Collectors.toList());
+
+    DocumentTagValidator validator = new DocumentTagValidatorImpl();
+    Collection<ValidationError> errors = validator.validateKeys(tagKeys);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 
   /**

@@ -24,13 +24,14 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -59,10 +60,10 @@ public class IndicesRequestHandler
 
   @Override
   public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     String type = event.getPathParameters().get("indexType");
     String indexKey =
         URLDecoder.decode(event.getPathParameters().get("indexKey"), StandardCharsets.UTF_8);
@@ -76,7 +77,10 @@ public class IndicesRequestHandler
         String path = indexKey.substring(pos + 1);
 
         FolderIndexProcessor ip = awsServices.getExtension(FolderIndexProcessor.class);
-        if (!ip.deleteEmptyDirectory(siteId, parentId, path)) {
+
+        try {
+          ip.deleteEmptyDirectory(siteId, parentId, path);
+        } catch (IOException e) {
           throw new BadException("Folder not empty");
         }
 

@@ -13,7 +13,10 @@
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
           description: 'Formkiq API: Document Management Platform API using JWT Authentication'
-          version: 1.11.1
+          version: 1.12.0
+        servers:
+        - url: http://localhost
+          description: Local development server
         paths:
           /version:
             get:
@@ -207,8 +210,8 @@
               tags:
               - System Management
               parameters:
-              - $ref: '#/components/parameters/apiKeyParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/apiKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -223,132 +226,6 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DeleteApiKeyResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /tagSchemas:
-            get:
-              operationId: GetTagSchemas
-              description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/limitParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
-              - name: previous
-                in: query
-                description: Previous page of results token
-                schema:
-                  type: string
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                    Access-Control-Allow-Methods:
-                      schema:
-                        type: string
-                    Access-Control-Allow-Headers:
-                      schema:
-                        type: string
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetTagSchemasRequest'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-            post:
-              operationId: AddTagSchema
-              description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddTagSchemaRequest'
-              responses:
-                "201":
-                  description: 201 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/TagSchemaPostResponse'
-                "400":
-                  description: 400 BAD REQUEST
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /tagSchemas/{tagSchemaId}:
-            get:
-              operationId: GetTagSchema
-              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/tagSchemaIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetTagSchemaRequest'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-            delete:
-              operationId: DeleteTagSchema
-              description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Tag Schema
-              parameters:
-              - $ref: '#/components/parameters/tagSchemaIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                "200":
-                  $ref: '#/components/responses/200Cors'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -410,6 +287,7 @@
               - Documents
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
@@ -433,7 +311,7 @@
                           metadata:
                           - key: info
                             value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                      Nested_Document:
+                      Child_Document:
                         value:
                           path: doc1.txt
                           contentType: text/plain
@@ -443,10 +321,10 @@
                             value: document1
                           documents:
                             contentType: text/plain,
-                            content: This is sub document1 content,
+                            content: This is child document1 content,
                             tags:
                             - key: type
-                              value: subdocument1
+                              value: childdocument1
                       Document_with_Webhook:
                         value:
                           path: test.txt
@@ -482,8 +360,9 @@
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -508,8 +387,9 @@
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
@@ -557,94 +437,8 @@
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
-              responses:
-                "200":
-                  $ref: '#/components/responses/200Cors'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /documents/{documentId}/versions:
-            get:
-              operationId: GetDocumentVersions
-              description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Versions
-              parameters:
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetDocumentVersionsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-            put:
-              operationId: SetDocumentVersion
-              description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Versions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/SetDocumentVersionRequest'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/SetDocumentVersionResponse'
-                "400":
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /documents/{documentId}/versions/{versionKey}:
-            delete:
-              operationId: DeleteDocumentVersion
-              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Versions
-              parameters:
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/versionKeyPath'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -660,8 +454,9 @@
               - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/versionKeyParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -689,9 +484,10 @@
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               - name: next
                 in: query
                 description: Next page of results token
@@ -721,19 +517,19 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
-              operationId: AddDocumentTag
-              description: Add a single tag to a document; this endpoint also accepts a different body parameter for adding multiple tags in a single request
+              operationId: AddDocumentTags
+              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/AddDocumentTagRequest'
+                      $ref: '#/components/schemas/AddDocumentTagsRequest'
                     examples:
                       Add_Key_Only_Tag:
                         value:
@@ -755,28 +551,82 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /documents/{documentId}/tags#:
-            post:
-              operationId: AddDocumentTags
-              description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
+            patch:
+              operationId: UpdateDocumentTags
+              description: Updates multiple tags to a document; this endpoint also accepts a different body parameter for updating a single tag
               tags:
               - Document Tags
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
                   application/json:
                     schema:
                       $ref: '#/components/schemas/AddDocumentTagsRequest'
+                    examples:
+                      Add_Key_Only_Tag:
+                        value:
+                          tags:
+                          - key: category
+                      Add_Key_and_Value_Tag:
+                        value:
+                          tags:
+                          - key: category
+                            value: sample
+                      Add_Key_and_Values_Tag:
+                        value:
+                          tags:
+                          - key: players
+                            values:
+                            - "111"
+                            - "222"
               responses:
-                "201":
+                "200":
                   $ref: '#/components/responses/200Cors'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetDocumentTags
+              description: Set multiple tags to a document; this endpoint also accepts a different body parameter for setting a single tag
+              tags:
+              - Document Tags
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentTagsRequest'
+                    examples:
+                      Add_Key_Only_Tag:
+                        value:
+                          tags:
+                          - key: category
+                      Add_Key_and_Value_Tag:
+                        value:
+                          tags:
+                          - key: category
+                            value: sample
+                      Add_Key_and_Values_Tag:
+                        value:
+                          tags:
+                          - key: players
+                            values:
+                            - "111"
+                            - "222"
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/tags/{tagKey}:
             get:
               operationId: GetDocumentTag
@@ -784,9 +634,10 @@
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -811,9 +662,9 @@
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
               requestBody:
                 required: true
                 content:
@@ -833,9 +684,9 @@
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -850,10 +701,11 @@
               tags:
               - Document Tags
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
               - $ref: '#/components/parameters/tagvalueParam'
-              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -868,10 +720,11 @@
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/versionKeyParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               - name: inline
                 in: query
                 description: Set the Content-Disposition to inline
@@ -891,7 +744,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentUrlRequest'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -911,6 +764,7 @@
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -924,7 +778,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentUrlRequest'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -937,6 +791,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: true
                 content:
@@ -973,7 +828,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddDocumentResponse'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -982,10 +837,11 @@
             get:
               operationId: GetDocumentIdUpload
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
               tags:
               - Documents
@@ -1002,7 +858,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentUrlRequest'
+                        $ref: '#/components/schemas/GetDocumentUrlResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1151,6 +1007,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1206,12 +1063,13 @@
               operationId: GetDocumentOcr
               description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/contentUrlParam'
               - $ref: '#/components/parameters/textParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1234,7 +1092,7 @@
               operationId: AddDocumentOcr
               description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1266,7 +1124,7 @@
               operationId: SetDocumentOcr
               description: Set a document's optical character recognition (OCR) result for a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1298,7 +1156,7 @@
               operationId: DeleteDocumentOcr
               description: Delete a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
-              - OCR
+              - Document OCR
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -1309,6 +1167,396 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+          /documents/{documentId}/versions:
+            get:
+              operationId: GetDocumentVersions
+              description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentVersionsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetDocumentVersion
+              description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentVersionRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetDocumentVersionResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/versions/{versionKey}:
+            delete:
+              operationId: DeleteDocumentVersion
+              description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Versions
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/versionKeyPath'
+              - $ref: '#/components/parameters/shareKeyParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /folders:
+            get:
+              operationId: GetFolderDocuments
+              description: Get list of documents in a folder
+              tags:
+              - Folders
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexKeyQueryParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetFoldersResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
+            post:
+              operationId: AddFolder
+              description: Creates a new folder
+              tags:
+              - Folders
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddFolderRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddFolderResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /folders/{indexKey}:
+            delete:
+              operationId: DeleteFolder
+              description: Delete a specific folder; folder must be empty
+              tags:
+              - Folders
+              parameters:
+              - $ref: '#/components/parameters/indexKeyParam'
+              - $ref: '#/components/parameters/shareKeyParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteFolderResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /shares/me:
+            get:
+              operationId: GetUserShares
+              description: Get a listing of user folder/document shares; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Shares
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetUserShares'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /shares/folders/{indexKey}:
+            post:
+              operationId: AddFolderShare
+              description: Creates a new folder share; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Shares
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/indexKeyParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddFolderShareRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddFolderShareResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /shares/{shareKey}:
+            delete:
+              operationId: DeleteShare
+              description: Delete a specific document share; ONLY available with FormKiQ Enterprise
+              tags:
+              - Document Shares
+              parameters:
+              - $ref: '#/components/parameters/shareKey'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteShareResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /tagSchemas:
+            get:
+              operationId: GetTagSchemas
+              description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - name: next
+                in: query
+                description: Next page of results token
+                schema:
+                  type: string
+              - name: previous
+                in: query
+                description: Previous page of results token
+                schema:
+                  type: string
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetTagSchemasRequest'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            post:
+              operationId: AddTagSchema
+              description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddTagSchemaRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/TagSchemaPostResponse'
+                "400":
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /tagSchemas/{tagSchemaId}:
+            get:
+              operationId: GetTagSchema
+              description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetTagSchemaRequest'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            delete:
+              operationId: DeleteTagSchema
+              description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Tag Schema
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/tagSchemaIdParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/antivirus:
             put:
               operationId: SetAntivirus
@@ -1318,6 +1566,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
                 required: false
                 content:
@@ -1351,6 +1600,7 @@
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1458,6 +1708,7 @@
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -1476,6 +1727,7 @@
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/tagkeyParam'
               - $ref: '#/components/parameters/tagvalueParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -1488,11 +1740,12 @@
               operationId: GetDocumentSyncs
               description: Retrieve the document syncs with external services status
               tags:
-              - Document Synchronization
+              - Documents
               parameters:
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1882,7 +2135,7 @@
               operationId: IndexFolderMove
               description: Perform an Folder Index Move
               tags:
-              - Folder Index
+              - Custom Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexTypeParam'
@@ -1921,7 +2174,7 @@
               operationId: DeleteIndex
               description: Perform a delete on the Folder Index
               tags:
-              - Folder Index
+              - Custom Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexKeyParam'
@@ -1951,7 +2204,7 @@
               operationId: IndexSearch
               description: Perform a search on a index; this is currently available for both folder and tag indices
               tags:
-              - Folder Index
+              - Custom Index
               - Tag Index
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
@@ -2171,6 +2424,20 @@
               description: Web Hook Param
               schema:
                 type: string
+            shareKey:
+              name: shareKey
+              in: path
+              description: Share Identifier
+              required: true
+              schema:
+                type: string
+            shareKeyParam:
+              name: shareKey
+              in: query
+              description: Share Identifier
+              required: false
+              schema:
+                type: string
             siteIdParam:
               name: siteId
               in: query
@@ -2200,10 +2467,24 @@
               required: true
               schema:
                 type: string
+            folderIdParam:
+              name: folderId
+              in: path
+              description: Folder Identifier
+              required: true
+              schema:
+                type: string
             documentIdParam:
               name: documentId
               in: path
               description: Document Identifier
+              required: true
+              schema:
+                type: string
+            permissionKeyParam:
+              name: permissionKey
+              in: path
+              description: Permission Identifier
               required: true
               schema:
                 type: string
@@ -2255,6 +2536,13 @@
               required: false
               schema:
                 type: string
+            indexKeyQueryParam:
+              name: indexKey
+              in: query
+              description: Index Key Identifier
+              required: false
+              schema:
+                type: string
             indexKeyParam:
               name: indexKey
               in: path
@@ -2274,12 +2562,10 @@
               type: object
               properties:
                 errors:
-                  $ref: '#/components/schemas/ValidationErrors'
-            ValidationErrors:
-              type: array
-              description: List of errors
-              items:
-                $ref: '#/components/schemas/ValidationError'
+                  type: array
+                  description: List of errors
+                  items:
+                    $ref: '#/components/schemas/ValidationError'
             ValidationError:
               type: object
               properties:
@@ -2331,12 +2617,10 @@
                   type: string
                   description: Previous page of results token
                 values:
-                  $ref: '#/components/schemas/IndexSearchItems'
-            IndexSearchItems:
-              type: array
-              description: List of search results
-              items:
-                $ref: '#/components/schemas/IndexSearch'
+                  type: array
+                  description: List of search results
+                  items:
+                    $ref: '#/components/schemas/IndexSearch'
             IndexSearch:
               type: object
               properties:
@@ -2365,7 +2649,69 @@
                   type: string
                   description: Next page of results token
                 versions:
-                  $ref: '#/components/schemas/DocumentItemVersions'
+                  type: array
+                  description: List of document versions
+                  items:
+                    $ref: '#/components/schemas/DocumentItemVersion'
+            AddFolderRequest:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Path of Folder to create
+            AddFolderResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Response Message
+                indexKey:
+                  type: string
+                  description: Folder Index Key
+            GetUserShares:
+              type: object
+              properties:
+                shares:
+                  type: array
+                  description: List of user's shares
+                  items:
+                    $ref: '#/components/schemas/UserShare'
+            UserShare:
+              type: object
+              properties:
+                documentId:
+                  type: string
+                  description: Document/Folder Identifier
+                shareKey:
+                  type: string
+                  description: Share Key Identifier
+                type:
+                  type: string
+                  enum:
+                  - FOLDER
+                  - FILE
+                  description: Type of Document
+                permissions:
+                  type: array
+                  description: List of share permissions
+                  items:
+                    type: string
+                    enum:
+                    - READ
+                    - WRITE
+                    - DELETE
+                name:
+                  type: string
+                  description: Name of Share
+                siteId:
+                  type: string
+                  description: Site Identifier
+                path:
+                  type: string
+                  description: Path or Name of document
+                userId:
+                  type: string
+                  description: User who created share
             GetDocumentTagsResponse:
               type: object
               properties:
@@ -2376,7 +2722,10 @@
                   type: string
                   description: Previous page of results token
                 tags:
-                  $ref: '#/components/schemas/DocumentItemTags'
+                  type: array
+                  description: List of tags
+                  items:
+                    $ref: '#/components/schemas/GetDocumentTagResponse'
             SetDocumentVersionRequest:
               type: object
               properties:
@@ -2389,16 +2738,6 @@
                 message:
                   type: string
                   description: Response Message
-            DocumentItemTags:
-              type: array
-              description: List of tags
-              items:
-                $ref: '#/components/schemas/GetDocumentTagResponse'
-            DocumentItemVersions:
-              type: array
-              description: List of document versions
-              items:
-                $ref: '#/components/schemas/DocumentItemVersion'
             DocumentSearch:
               type: object
               description: Document tag search criteria
@@ -2422,7 +2761,6 @@
               properties:
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 siteId:
                   type: string
@@ -2432,7 +2770,6 @@
               properties:
                 id:
                   type: string
-                  format: uuid
                 siteId:
                   type: string
                   description: Site Identifier
@@ -2441,7 +2778,6 @@
               properties:
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 siteId:
                   type: string
@@ -2450,12 +2786,10 @@
                   type: string
                   description: Url to upload document to
                 documents:
-                  $ref: '#/components/schemas/AddChildDocumentsResponse'
-            AddChildDocumentsResponse:
-              type: array
-              description: List of child documents
-              items:
-                $ref: '#/components/schemas/AddChildDocumentResponse'
+                  type: array
+                  description: List of child documents
+                  items:
+                    $ref: '#/components/schemas/AddChildDocumentResponse'
             AddChildDocumentResponse:
               type: object
               properties:
@@ -2465,7 +2799,7 @@
                 uploadUrl:
                   type: string
                   description: Url to upload document to
-            GetDocumentUrlRequest:
+            GetDocumentUrlResponse:
               type: object
               properties:
                 documentId:
@@ -2477,15 +2811,8 @@
             GetDocumentResponse:
               required:
               - documentId
-              - path
               type: object
               properties:
-                next:
-                  type: string
-                  description: Next page of results token
-                previous:
-                  type: string
-                  description: Previous page of results token
                 siteId:
                   type: string
                   description: Site Identifier
@@ -2494,18 +2821,52 @@
                   description: Path or Name of document
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 lastModifiedDate:
                   type: string
-                  format: date-time
                   description: Last Modified Timestamp
                 checksum:
                   type: string
                   description: Document checksum, changes when document file changes
                 documentId:
                   type: string
-                  format: uuid
+                  description: Document Identifier
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                userId:
+                  type: string
+                  description: User who added document
+                contentLength:
+                  type: integer
+                  description: Document size
+                versionId:
+                  type: string
+                  description: Document version
+                documents:
+                  type: array
+                  description: List of child documents
+                  items:
+                    $ref: '#/components/schemas/ChildDocument'
+            ChildDocument:
+              required:
+              - documentId
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Path or Name of document
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                lastModifiedDate:
+                  type: string
+                  description: Last Modified Timestamp
+                checksum:
+                  type: string
+                  description: Document checksum, changes when document file changes
+                documentId:
+                  type: string
                   description: Document Identifier
                 contentType:
                   type: string
@@ -2522,45 +2883,6 @@
                 belongsToDocumentId:
                   type: string
                   description: Parent Document Identifier
-                documents:
-                  type: array
-                  description: List of related documents
-                  items:
-                    type: object
-                    properties:
-                      path:
-                        type: string
-                        description: Path or Name of document
-                      insertedDate:
-                        type: string
-                        format: date-time
-                        description: Inserted Timestamp
-                      lastModifiedDate:
-                        type: string
-                        format: date-time
-                        description: Last Modified Timestamp
-                      checksum:
-                        type: string
-                        description: Document checksum, changes when document file changes
-                      documentId:
-                        type: string
-                        format: uuid
-                        description: Document Identifier
-                      contentType:
-                        type: string
-                        description: Document Content-Type
-                      userId:
-                        type: string
-                        description: User who added document
-                      contentLength:
-                        type: integer
-                        description: Document size
-                      versionId:
-                        type: string
-                        description: Document version
-                      belongsToDocumentId:
-                        type: string
-                        description: Parent Document Identifier
             DocumentFulltextRequest:
               required:
               - query
@@ -2582,12 +2904,10 @@
                   type: string
                   description: Full text search
                 tags:
-                  $ref: '#/components/schemas/DocumentFulltextTags'
-            DocumentFulltextTags:
-              type: array
-              description: List of search tags
-              items:
-                $ref: '#/components/schemas/DocumentFulltextTag'
+                  type: array
+                  description: List of search tags
+                  items:
+                    $ref: '#/components/schemas/DocumentFulltextTag'
             DocumentFulltextTag:
               required:
               - key
@@ -2671,7 +2991,10 @@
                   type: string
                   description: Is webhook enabled
                 tags:
-                  $ref: '#/components/schemas/AddDocumentTags'
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTagRequest'
             AddDocumentUploadRequest:
               required:
               - content
@@ -2684,9 +3007,15 @@
                   type: string
                   description: Path or Name of document
                 tags:
-                  $ref: '#/components/schemas/AddDocumentTags'
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTagRequest'
                 actions:
-                  $ref: '#/components/schemas/AddActions'
+                  type: array
+                  description: List of Actions
+                  items:
+                    $ref: '#/components/schemas/AddAction'
             AddDocumentRequest:
               required:
               - content
@@ -2708,24 +3037,96 @@
                   type: string
                   description: Document content
                 tags:
-                  $ref: '#/components/schemas/AddDocumentTags'
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTagRequest'
                 metadata:
-                  $ref: '#/components/schemas/AddDocumentMetadatas'
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
                 actions:
-                  $ref: '#/components/schemas/AddActions'
+                  type: array
+                  description: List of Actions
+                  items:
+                    $ref: '#/components/schemas/AddAction'
                 documents:
-                  $ref: '#/components/schemas/AddChildDocumentRequest'
+                  type: array
+                  description: List of child documents
+                  items:
+                    $ref: '#/components/schemas/AddChildDocument'
+                permissions:
+                  $ref: '#/components/schemas/AddPermissions'
+            AddFolderShareRequest:
+              type: object
+              properties:
+                permissions:
+                  $ref: '#/components/schemas/AddPermissions'
+            AddPermissions:
+              type: object
+              properties:
+                groups:
+                  $ref: '#/components/schemas/AddPermission'
+            AddPermission:
+              type: object
+              properties:
+                read:
+                  type: array
+                  description: List of Groups with Read permission
+                  items:
+                    type: string
+                write:
+                  type: array
+                  description: List of Groups with Write permission
+                  items:
+                    type: string
+                delete:
+                  type: array
+                  description: List of Groups with Delete permission
+                  items:
+                    type: string
+            AddFolderShareResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: API Response message
+                shares:
+                  type: array
+                  description: List of created shares
+                  items:
+                    $ref: '#/components/schemas/AddFolderShare'
+            AddFolderShare:
+              type: object
+              properties:
+                shareKey:
+                  type: string
+                  description: Share Key Identifier
+                path:
+                  type: string
+                  description: Path or Name of document
+            DeleteFolderResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: API Response message
+            DeleteShareResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: API Response message
             AddDocumentTagsRequest:
               type: object
               description: Add List of document tags
               properties:
                 tags:
-                  $ref: '#/components/schemas/AddDocumentTags'
-            AddDocumentMetadatas:
-              type: array
-              description: List of document Metadata
-              items:
-                $ref: '#/components/schemas/AddDocumentMetadata'
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTagRequest'
             AddDocumentMetadata:
               required:
               - key
@@ -2744,11 +3145,6 @@
                   items:
                     type: string
                     description: Metadata value
-            AddDocumentTags:
-              type: array
-              description: List of document tags
-              items:
-                $ref: '#/components/schemas/AddDocumentTagRequest'
             AddDocumentTagRequest:
               required:
               - key
@@ -2767,11 +3163,6 @@
                   items:
                     type: string
                     description: Tag value
-            AddChildDocumentRequest:
-              type: array
-              description: List of child documents
-              items:
-                $ref: '#/components/schemas/AddChildDocument'
             AddChildDocument:
               required:
               - content
@@ -2798,18 +3189,15 @@
                   description: Path or Name of document
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 lastModifiedDate:
                   type: string
-                  format: date-time
                   description: Last Modified Timestamp
                 checksum:
                   type: string
                   description: Document checksum, changes when document file changes
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 contentType:
                   type: string
@@ -2881,12 +3269,10 @@
               type: object
               properties:
                 documents:
-                  $ref: '#/components/schemas/FulltextSearchItems'
-            FulltextSearchItems:
-              type: array
-              description: List of search result documents
-              items:
-                $ref: '#/components/schemas/FulltextSearchItem'
+                  type: array
+                  description: List of search result documents
+                  items:
+                    $ref: '#/components/schemas/FulltextSearchItem'
             FulltextSearchItem:
               type: object
               properties:
@@ -2898,11 +3284,9 @@
                   description: Path or Name of document
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 contentLength:
                   type: integer
@@ -2926,11 +3310,9 @@
                   description: Path or Name of document
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 createdBy:
                   type: string
@@ -2949,12 +3331,10 @@
                   type: string
                   description: Next page of results token
                 syncs:
-                  $ref: '#/components/schemas/GetDocumentSyncs'
-            GetDocumentSyncs:
-              type: array
-              description: List of document syncs
-              items:
-                $ref: '#/components/schemas/GetDocumentSync'
+                  type: array
+                  description: List of document syncs
+                  items:
+                    $ref: '#/components/schemas/GetDocumentSync'
             GetDocumentSync:
               type: object
               properties:
@@ -2978,7 +3358,6 @@
                   - TAG
                 syncDate:
                   type: string
-                  format: date-time
                   description: Timestamp of synchronization
                 userId:
                   type: string
@@ -2986,15 +3365,20 @@
                 message:
                   type: string
                   description: Document sync message
-            AddDocumentSyncRequest:
+            GetFoldersResponse:
               type: object
               properties:
-                service:
+                next:
                   type: string
-                  description: To which service to sync the data to
-                  enum:
-                  - TYPESENSE
-                  - OPENSEARCH
+                  description: Next page of results token
+                previous:
+                  type: string
+                  description: Previous page of results token
+                documents:
+                  type: array
+                  description: List of search result documents
+                  items:
+                    $ref: '#/components/schemas/SearchResultDocument'
             DocumentSearchResponse:
               type: object
               properties:
@@ -3005,13 +3389,11 @@
                   type: string
                   description: Previous page of results token
                 documents:
-                  $ref: '#/components/schemas/SearchDocumentItems'
-            SearchDocumentItems:
-              type: array
-              description: List of search result documents
-              items:
-                $ref: '#/components/schemas/SearchDocumentItem'
-            SearchDocumentItem:
+                  type: array
+                  description: List of search result documents
+                  items:
+                    $ref: '#/components/schemas/SearchResultDocument'
+            SearchResultDocument:
               type: object
               properties:
                 siteId:
@@ -3022,11 +3404,9 @@
                   description: Path or Name of document
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 lastModifiedDate:
                   type: string
-                  format: date-time
                   description: Last Modified Timestamp
                 folder:
                   type: boolean
@@ -3039,7 +3419,6 @@
                   description: Document checksum, changes when document file changes
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 contentType:
                   type: string
@@ -3079,12 +3458,10 @@
                   type: string
                   description: Previous page of results token
                 documents:
-                  $ref: '#/components/schemas/DocumentItemResults'
-            DocumentItemResults:
-              type: array
-              description: List of documents
-              items:
-                $ref: '#/components/schemas/DocumentItemResult'
+                  type: array
+                  description: List of documents
+                  items:
+                    $ref: '#/components/schemas/DocumentItemResult'
             DocumentItemResult:
               type: object
               properties:
@@ -3096,18 +3473,15 @@
                   description: Path or Name of document
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 lastModifiedDate:
                   type: string
-                  format: date-time
                   description: Last Modified Timestamp
                 checksum:
                   type: string
                   description: Document checksum, changes when document file changes
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
                 contentType:
                   type: string
@@ -3125,12 +3499,10 @@
               type: object
               properties:
                 webhooks:
-                  $ref: '#/components/schemas/Webhooks'
-            Webhooks:
-              type: array
-              description: List of webhooks
-              items:
-                $ref: '#/components/schemas/GetWebhookResponse'
+                  type: array
+                  description: List of webhooks
+                  items:
+                    $ref: '#/components/schemas/GetWebhookResponse'
             GetWebhookResponse:
               type: object
               properties:
@@ -3145,11 +3517,9 @@
                   description: Webhook url
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 id:
                   type: string
-                  format: uuid
                   description: Webhook Identifier
                 userId:
                   type: string
@@ -3164,12 +3534,10 @@
                   type: string
                   description: Previous page of results token
                 tags:
-                  $ref: '#/components/schemas/WebhookTagsList'
-            WebhookTagsList:
-              type: array
-              description: List of webhook tags
-              items:
-                $ref: '#/components/schemas/WebhookTag'
+                  type: array
+                  description: List of webhook tags
+                  items:
+                    $ref: '#/components/schemas/WebhookTag'
             WebhookTag:
               required:
               - key
@@ -3198,12 +3566,10 @@
               type: object
               properties:
                 actions:
-                  $ref: '#/components/schemas/DocumentActionList'
-            DocumentActionList:
-              type: array
-              description: List of document actions
-              items:
-                $ref: '#/components/schemas/DocumentAction'
+                  type: array
+                  description: List of document actions
+                  items:
+                    $ref: '#/components/schemas/DocumentAction'
             DocumentAction:
               type: object
               properties:
@@ -3242,7 +3608,6 @@
                   description: User who requested the OCR
                 documentId:
                   type: string
-                  format: uuid
                   description: Document Identifier
             AddDocumentActionsResponse:
               type: object
@@ -3280,9 +3645,15 @@
                   type: string
                   description: Path or Name of document
                 tags:
-                  $ref: '#/components/schemas/AddDocumentTags'
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTagRequest'
                 metadata:
-                  $ref: '#/components/schemas/AddDocumentMetadatas'
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
             UpdateDocumentFulltextRequest:
               type: object
               properties:
@@ -3293,7 +3664,10 @@
                   type: string
                   description: Document content
                 tags:
-                  $ref: '#/components/schemas/AddDocumentTags'
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTagRequest'
             SetAntivirusRequest:
               type: object
             SetAntivirusResponse:
@@ -3306,12 +3680,10 @@
               type: object
               properties:
                 actions:
-                  $ref: '#/components/schemas/AddActions'
-            AddActions:
-              type: array
-              description: List of Actions
-              items:
-                $ref: '#/components/schemas/AddAction'
+                  type: array
+                  description: List of Actions
+                  items:
+                    $ref: '#/components/schemas/AddAction'
             AddAction:
               type: object
               required:
@@ -3439,12 +3811,10 @@
               type: object
               properties:
                 apiKeys:
-                  $ref: '#/components/schemas/ApiKeys'
-            ApiKeys:
-              type: array
-              description: List of ApiKeys
-              items:
-                $ref: '#/components/schemas/ApiKey'
+                  type: array
+                  description: List of ApiKeys
+                  items:
+                    $ref: '#/components/schemas/ApiKey'
             ApiKey:
               type: object
               properties:
@@ -3462,7 +3832,6 @@
                     type: string
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
             GetConfigurationResponse:
               type: object
@@ -3482,13 +3851,14 @@
             GetSitesRequest:
               type: object
               properties:
+                username:
+                  type: string
+                  description: Username of request caller
                 sites:
-                  $ref: '#/components/schemas/Sites'
-            Sites:
-              type: array
-              description: List of sites
-              items:
-                $ref: '#/components/schemas/Site'
+                  type: array
+                  description: List of sites
+                  items:
+                    $ref: '#/components/schemas/Site'
             Site:
               type: object
               properties:
@@ -3501,6 +3871,16 @@
                   enum:
                   - READ_WRITE
                   - READ_ONLY
+                permissions:
+                  type: array
+                  description: List of caller permissions
+                  items:
+                    type: string
+                    enum:
+                    - ADMIN
+                    - DELETE
+                    - READ
+                    - WRITE
                 uploadEmail:
                   type: string
                   description: SiteId document upload email address
@@ -3509,18 +3889,15 @@
               properties:
                 tagSchemaId:
                   type: string
-                  format: uuid
                   description: Tag Schema Identifier
             ErrorsResponse:
               type: object
               properties:
                 errors:
-                  $ref: '#/components/schemas/ErrorsList'
-            ErrorsList:
-              type: array
-              description: List of errors
-              items:
-                $ref: '#/components/schemas/Error'
+                  type: array
+                  description: List of errors
+                  items:
+                    $ref: '#/components/schemas/Error'
             Error:
               type: object
               properties:
@@ -3534,16 +3911,14 @@
               type: object
               properties:
                 schemas:
-                  $ref: '#/components/schemas/TagSchemas'
+                  type: array
+                  description: List of Tag Schemas
+                  items:
+                    $ref: '#/components/schemas/TagSchemaSummary'
                 next:
                   type: string
                 previous:
                   type: string
-            TagSchemas:
-              type: array
-              description: List of Tag Schemas
-              items:
-                $ref: '#/components/schemas/TagSchemaSummary'
             AddTagSchemaRequest:
               type: object
               properties:
@@ -3583,7 +3958,6 @@
                   type: string
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
             GetTagSchemaRequest:
               type: object
@@ -3596,29 +3970,30 @@
                   type: string
                 insertedDate:
                   type: string
-                  format: date-time
                   description: Inserted Timestamp
                 tags:
-                  type: object
-                  properties:
-                    compositeKeys:
-                      type: array
-                      description: List of Composite Keys
-                      items:
-                        $ref: '#/components/schemas/TagSchemaCompositeKey'
-                    required:
-                      type: array
-                      description: List of Required Tags
-                      items:
-                        $ref: '#/components/schemas/TagSchemaRequired'
-                    optional:
-                      type: array
-                      description: List of Optional Tags
-                      items:
-                        $ref: '#/components/schemas/TagSchemaOptional'
-                    allowAdditionalTags:
-                      type: boolean
-                      default: true
+                  $ref: '#/components/schemas/TagSchemaTags'
+            TagSchemaTags:
+              type: object
+              properties:
+                compositeKeys:
+                  type: array
+                  description: List of Composite Keys
+                  items:
+                    $ref: '#/components/schemas/TagSchemaCompositeKey'
+                required:
+                  type: array
+                  description: List of Required Tags
+                  items:
+                    $ref: '#/components/schemas/TagSchemaRequired'
+                optional:
+                  type: array
+                  description: List of Optional Tags
+                  items:
+                    $ref: '#/components/schemas/TagSchemaOptional'
+                allowAdditionalTags:
+                  type: boolean
+                  default: true
             TagSchemaCompositeKey:
               type: object
               properties:
@@ -3671,37 +4046,43 @@
               type: object
               properties:
                 config:
-                  type: object
-                  properties:
-                    onlyOfficeUrl:
-                      description: URL of the ONLYOFFICE application
-                      type: string
-                    token:
-                      description: ONLYOFFICE security token
-                      type: string
-                    documentType:
-                      description: Type of document (https://api.onlyoffice.com/editors/config/)
-                      type: string
-                    editorConfig:
-                      type: object
-                      properties:
-                        callbackUrl:
-                          type: string
-                    document:
-                      type: object
-                      properties:
-                        url:
-                          description: Defines the absolute URL where the source viewed or edited document is stored
-                          type: string
-                        title:
-                          description: Defines the desired file name for the viewed or edited document
-                          type: string
-                        key:
-                          description: Defines the unique document identifier used by the service to recognize the document
-                          type: string
-                        fileType:
-                          description: Defines the type of the file for the source viewed or edited document
-                          type: string
+                  $ref: '#/components/schemas/OnlyOfficeConfig'
+            OnlyOfficeConfig:
+              type: object
+              properties:
+                onlyOfficeUrl:
+                  description: URL of the ONLYOFFICE application
+                  type: string
+                token:
+                  description: ONLYOFFICE security token
+                  type: string
+                documentType:
+                  description: Type of document (https://api.onlyoffice.com/editors/config/)
+                  type: string
+                editorConfig:
+                  $ref: '#/components/schemas/OnlyOfficeEditorConfig'
+                document:
+                  $ref: '#/components/schemas/OnlyOfficeConfigDocument'
+            OnlyOfficeEditorConfig:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+            OnlyOfficeConfigDocument:
+              type: object
+              properties:
+                url:
+                  description: Defines the absolute URL where the source viewed or edited document is stored
+                  type: string
+                title:
+                  description: Defines the desired file name for the viewed or edited document
+                  type: string
+                key:
+                  description: Defines the unique document identifier used by the service to recognize the document
+                  type: string
+                fileType:
+                  description: Defines the type of the file for the source viewed or edited document
+                  type: string
             OnlyOfficeDocumentSaveResponse:
               type: object
               properties:
@@ -3723,16 +4104,20 @@
                   type: boolean
                   description: Whether to enable developer mode
                 signers:
-                  $ref: '#/components/schemas/EsignatureDocusignSigners'
+                  type: array
+                  description: List of DocuSign Signers
+                  items:
+                    $ref: '#/components/schemas/EsignatureDocusignSigner'
                 carbonCopies:
-                  $ref: '#/components/schemas/EsignatureDocusignCarbonCopies'
+                  type: array
+                  description: List of DocuSign Carbon Copies
+                  items:
+                    $ref: '#/components/schemas/EsignatureDocusignCarbonCopy'
                 recipientTabs:
-                  $ref: '#/components/schemas/EsignatureDocusignRecipientTabs'
-            EsignatureDocusignSigners:
-              type: array
-              description: List of DocuSign Signers
-              items:
-                $ref: '#/components/schemas/EsignatureDocusignSigner'
+                  type: array
+                  description: List of DocuSign Recipient Tabs
+                  items:
+                    $ref: '#/components/schemas/EsignatureDocusignRecipientTab'
             EsignatureDocusignSigner:
               type: object
               properties:
@@ -3742,11 +4127,6 @@
                 email:
                   type: string
                   description: Email of Signer
-            EsignatureDocusignCarbonCopies:
-              type: array
-              description: List of DocuSign Carbon Copies
-              items:
-                $ref: '#/components/schemas/EsignatureDocusignCarbonCopy'
             EsignatureDocusignCarbonCopy:
               type: object
               properties:
@@ -3756,11 +4136,6 @@
                 email:
                   type: string
                   description: Email of Signer
-            EsignatureDocusignRecipientTabs:
-              type: array
-              description: List of DocuSign Recipient Tabs
-              items:
-                $ref: '#/components/schemas/EsignatureDocusignRecipientTab'
             EsignatureDocusignRecipientTab:
               type: object
               properties:
@@ -3823,8 +4198,10 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: oauth2
-              flows: {}
+              type: http
+              scheme: bearer
+              bearerFormat: JWT
+              description: JWT authentication
               x-amazon-apigateway-authorizer:
                 type: jwt
                 jwtConfiguration:
@@ -3833,11 +4210,6 @@
                   audience:
                   - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
-            sigv4:
-              type: apiKey
-              name: Authorization
-              in: header
-              x-amazon-apigateway-authtype: awsSigv4
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
@@ -3965,4 +4337,3 @@
           allowMethods:
           - '*'
           allowHeaders:
-          - '*'

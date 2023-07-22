@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -45,12 +46,9 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -62,7 +60,6 @@ import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.formkiq.graalvm.annotations.ReflectableField;
-import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -77,16 +74,13 @@ import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
 import com.google.gson.Gson;
@@ -100,9 +94,6 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for handling Document Staging Create Events. */
 @Reflectable
-@ReflectableImport(classes = {DocumentItemDynamoDb.class, DocumentTag.class, DocumentMetadata.class,
-    DocumentTagType.class, AddDocumentTag.class, DocumentVersionServiceDynamoDb.class,
-    DocumentVersionServiceNoVersioning.class})
 @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
     fields = {@ReflectableField(name = "tag"), @ReflectableField(name = "tags")})
 @ReflectableClass(className = AddDocumentTagRequest.class, allPublicConstructors = true,
@@ -146,21 +137,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
-   * Is {@link String} a {@link UUID}.
-   *
-   * @param s {@link String}
-   * @return boolean
-   */
-  private static boolean isUuid(final String s) {
-    try {
-      UUID.fromString(s);
-      return true;
-    } catch (IllegalArgumentException e) {
-      return false;
-    }
-  }
-
-  /**
    * Decode the string according to RFC 3986: encoding for URI paths, query strings, etc. *
    *
    * @param value The string to decode.
@@ -184,8 +160,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private FolderIndexProcessor folderIndexProcesor;
   /** {@link FormKiqClient}. */
   private FormKiqClientV1 formkiqClient = null;
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService syncService = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link ActionsNotificationService}. */
@@ -200,6 +174,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
+  /** {@link DocumentSyncService}. */
+  private DocumentSyncService syncService = null;
 
   /**
    * constructor.
@@ -235,8 +211,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.region = Region.of(map.get("AWS_REGION"));
     this.credentials = awsCredentials;
 
-    String documentsTable = map.get("DOCUMENTS_TABLE");
-
     AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
@@ -245,6 +219,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     DocumentSyncServiceExtension syncExtension = new DocumentSyncServiceExtension();
     this.syncService = syncExtension.loadService(serviceCache);
+
+    String documentsTable = map.get("DOCUMENTS_TABLE");
 
     this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
@@ -336,48 +312,9 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     saveDocumentSync(siteId, doc, existingDocument);
 
-    saveActions(siteId, doc);
+    saveDocumentActions(siteId, doc);
 
     return doc;
-  }
-
-  /**
-   * Save Document Sync.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @param existingDocument {@link DocumentItem}
-   */
-  private void saveDocumentSync(final String siteId, final DynamicDocumentItem doc,
-      final DocumentItem existingDocument) {
-    String agent = doc.getString("agent");
-
-    if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
-      String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
-          : DocumentSyncService.MESSAGE_ADDED_CONTENT;
-      this.syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, doc.getUserId(), message);
-    }
-  }
-
-  /**
-   * Save Actions.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   */
-  private void saveActions(final String siteId, final DynamicDocumentItem doc) {
-    if (doc.containsKey("actions")) {
-
-      this.actionsService.deleteActions(siteId, doc.getDocumentId());
-
-      DynamicObjectToAction transform = new DynamicObjectToAction();
-      List<DynamicObject> list = doc.getList("actions");
-      List<Action> actions =
-          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
-
-      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
-    }
   }
 
   /**
@@ -653,6 +590,45 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
           e.printStackTrace();
         }
       }
+    }
+  }
+
+  /**
+   * Save Actions.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   */
+  private void saveDocumentActions(final String siteId, final DynamicDocumentItem doc) {
+    if (doc.containsKey("actions")) {
+
+      this.actionsService.deleteActions(siteId, doc.getDocumentId());
+
+      DynamicObjectToAction transform = new DynamicObjectToAction();
+      List<DynamicObject> list = doc.getList("actions");
+      List<Action> actions =
+          list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
+
+      this.actionsService.saveActions(siteId, doc.getDocumentId(), actions);
+    }
+  }
+
+  /**
+   * Save Document Sync.
+   * 
+   * @param siteId {@link String}
+   * @param doc {@link DynamicDocumentItem}
+   * @param existingDocument {@link DocumentItem}
+   */
+  private void saveDocumentSync(final String siteId, final DynamicDocumentItem doc,
+      final DocumentItem existingDocument) {
+    String agent = doc.getString("agent");
+
+    if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
+      String message = existingDocument != null ? DocumentSyncService.MESSAGE_UPDATED_CONTENT
+          : DocumentSyncService.MESSAGE_ADDED_CONTENT;
+      this.syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
+          DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, doc.getUserId(), message);
     }
   }
 
