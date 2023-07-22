@@ -2191,6 +2191,10 @@ Resources:
                        $ref: '#/components/headers/AccessControlAllowMethods'
                     Access-Control-Allow-Headers:
                       $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteIndicesResponse'
                 '400':
                   description: 400 OK
                   content:
@@ -2597,6 +2601,12 @@ Resources:
                   description: "Tag values"
                   items:
                     type: "string"
+            DeleteIndicesResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "response message"
             IndexFolderMoveResponse:
               type: "object"
               properties:
