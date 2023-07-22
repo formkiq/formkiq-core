@@ -192,7 +192,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("http://localhost:8080/public/webhooks/" + id, result.get("url"));
     assertNotNull(result.get("ttl"));
 
-    WebhooksService webhookService = getAwsServices().webhookService();
+    WebhooksService webhookService = getAwsServices().getExtension(WebhooksService.class);
     DynamicObject obj = webhookService.findWebhook(null, id);
 
     long epoch = Long.parseLong(obj.getString("TimeToLive"));
@@ -283,7 +283,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
       assertEquals("test@formkiq.com", result.get("userId"));
       verifyUrl(siteId, id, result);
 
-      WebhooksService webhookService = getAwsServices().webhookService();
+      WebhooksService webhookService = getAwsServices().getExtension(WebhooksService.class);
       DynamicObject obj = webhookService.findWebhook(siteId, id);
       assertEquals("joe smith", obj.getString("path"));
       assertEquals("test@formkiq.com", obj.getString("userId"));
@@ -347,7 +347,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals("test@formkiq.com", result.get("userId"));
     verifyUrl(siteId, id, result);
 
-    WebhooksService webhookService = getAwsServices().webhookService();
+    WebhooksService webhookService = getAwsServices().getExtension(WebhooksService.class);
     DynamicObject obj = webhookService.findWebhook(siteId, id);
     assertEquals("joe smith", obj.getString("path"));
     assertEquals("test@formkiq.com", obj.getString("userId"));
@@ -436,7 +436,7 @@ public class ApiWebhooksRequestTest extends AbstractRequestHandler {
     assertEquals(1, list.size());
     verifyPostWebhooks05(list.get(0));
 
-    WebhooksService webhookService = getAwsServices().webhookService();
+    WebhooksService webhookService = getAwsServices().getExtension(WebhooksService.class);
     DynamicObject obj = webhookService.findWebhook(null, id);
 
     long epoch = Long.parseLong(obj.getString("TimeToLive"));

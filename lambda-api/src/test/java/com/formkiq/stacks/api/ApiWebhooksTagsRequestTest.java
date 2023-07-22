@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -73,8 +74,8 @@ public class ApiWebhooksTagsRequestTest extends AbstractRequestHandler {
   @Test
   public void testGetWebhooks02() throws Exception {
     // given
-    String webhookId =
-        getAwsServices().webhookService().saveWebhook(null, "testwebhook", "joe", null, "true");
+    String webhookId = getAwsServices().getExtension(WebhooksService.class).saveWebhook(null,
+        "testwebhook", "joe", null, "true");
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-webhooks-webhookid-tags01.json");
     setPathParameter(event, "webhookId", webhookId);
 

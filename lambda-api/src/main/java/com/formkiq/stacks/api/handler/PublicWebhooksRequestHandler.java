@@ -53,8 +53,8 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/public/webhooks". */
@@ -80,8 +80,8 @@ public class PublicWebhooksRequestHandler
     }
   }
 
-  private DynamicObject buildDynamicObject(final CoreAwsServiceCache awsservice,
-      final String siteId, final String webhookId, final DynamicObject hook, final String body,
+  private DynamicObject buildDynamicObject(final AwsServiceCache awsservice, final String siteId,
+      final String webhookId, final DynamicObject hook, final String body,
       final String contentType) {
 
     DynamicObject item = new DynamicObject(new HashMap<>());
@@ -242,7 +242,7 @@ public class PublicWebhooksRequestHandler
     return expired;
   }
 
-  private boolean isIdempotencyCached(final CoreAwsServiceCache awsservice,
+  private boolean isIdempotencyCached(final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
 
     boolean cached = false;
@@ -278,8 +278,8 @@ public class PublicWebhooksRequestHandler
     String siteId = getParameter(event, "siteId");
     String webhookId = getPathParameter(event, "webhooks");
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DynamicObject hook = cacheService.webhookService().findWebhook(siteId, webhookId);
+    DynamicObject hook =
+        awsservice.getExtension(WebhooksService.class).findWebhook(siteId, webhookId);
 
     checkIsWebhookValid(hook);
 
@@ -291,10 +291,9 @@ public class PublicWebhooksRequestHandler
       throw new BadException("body isn't valid JSON");
     }
 
-    DynamicObject item =
-        buildDynamicObject(cacheService, siteId, webhookId, hook, body, contentType);
+    DynamicObject item = buildDynamicObject(awsservice, siteId, webhookId, hook, body, contentType);
 
-    if (!isIdempotencyCached(cacheService, event, siteId, item)) {
+    if (!isIdempotencyCached(awsservice, event, siteId, item)) {
       putObjectToStaging(logger, awsservice, item, siteId);
     }
 

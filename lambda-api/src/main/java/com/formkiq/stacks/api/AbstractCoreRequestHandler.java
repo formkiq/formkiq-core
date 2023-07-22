@@ -118,6 +118,8 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.WebhooksService;
+import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -255,8 +257,9 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
     AwsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    AwsServiceCache.register(WebhooksService.class, new WebhooksServiceExtension());
 
-    awsServices = new CoreAwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
+    awsServices = new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
     isEnablePublicUrls = isEnablePublicUrls(map);
 

@@ -47,7 +47,7 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
 public class WebhooksTagsRequestHandler
@@ -63,10 +63,10 @@ public class WebhooksTagsRequestHandler
 
     String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
-    PaginationResults<DynamicObject> list =
-        serviceCache.webhookService().findTags(siteId, id, null);
+    WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
+
+    PaginationResults<DynamicObject> list = webhooksService.findTags(siteId, id, null);
 
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();
@@ -107,9 +107,9 @@ public class WebhooksTagsRequestHandler
     tag.setInsertedDate(new Date());
     tag.setUserId(authorization.username());
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    DynamicObject webhook = serviceCache.webhookService().findWebhook(siteId, id);
+    DynamicObject webhook = webhooksService.findWebhook(siteId, id);
     if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
@@ -121,7 +121,7 @@ public class WebhooksTagsRequestHandler
       ttl = new Date(epoch * TO_MILLIS);
     }
 
-    serviceCache.webhookService().addTags(siteId, id, Arrays.asList(tag), ttl);
+    webhooksService.addTags(siteId, id, Arrays.asList(tag), ttl);
 
     ApiResponse resp = new ApiMessageResponse("Created Tag '" + tag.getKey() + "'.");
     return new ApiRequestHandlerResponse(SC_CREATED, resp);

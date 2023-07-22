@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -301,8 +302,8 @@ public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String id =
-          getAwsServices().webhookService().saveWebhook(siteId, "test", "joe", date, "true");
+      String id = getAwsServices().getExtension(WebhooksService.class).saveWebhook(siteId, "test",
+          "joe", date, "true");
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-webhooks-webhookid01.json");
       setPathParameter(event, "webhookId", id);

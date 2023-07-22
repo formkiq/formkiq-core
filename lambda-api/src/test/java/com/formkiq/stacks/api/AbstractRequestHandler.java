@@ -66,6 +66,7 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
@@ -122,8 +123,8 @@ public abstract class AbstractRequestHandler {
     snsService.subscribe(snsDocumentEvent, "sqs", queueSqsArn);
   }
 
-  /** {@link CoreAwsServiceCache}. */
-  private CoreAwsServiceCache awsServices;
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache awsServices;
 
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();
@@ -210,7 +211,7 @@ public abstract class AbstractRequestHandler {
 
     createApiRequestHandler("cognito");
 
-    this.awsServices = CoreAwsServiceCache.cast(new CoreRequestHandler().getAwsServices());
+    this.awsServices = new CoreRequestHandler().getAwsServices();
 
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
 
@@ -307,11 +308,11 @@ public abstract class AbstractRequestHandler {
   }
 
   /**
-   * Get {@link CoreAwsServiceCache}.
+   * Get {@link AwsServiceCache}.
    * 
-   * @return {@link CoreAwsServiceCache}
+   * @return {@link AwsServiceCache}
    */
-  public CoreAwsServiceCache getAwsServices() {
+  public AwsServiceCache getAwsServices() {
     return this.awsServices;
   }
 

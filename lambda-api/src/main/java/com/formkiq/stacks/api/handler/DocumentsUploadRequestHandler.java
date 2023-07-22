@@ -55,7 +55,6 @@ import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.api.ApiUrlResponse;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
@@ -89,7 +88,7 @@ public class DocumentsUploadRequestHandler
    * 
    * @param logger {@link LambdaLogger}
    * @param event {@link ApiGatewayRequestEvent}
-   * @param awsservice {@link CoreAwsServiceCache}
+   * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param item {@link DynamicDocumentItem}
    * @return {@link ApiRequestHandlerResponse}
@@ -98,7 +97,7 @@ public class DocumentsUploadRequestHandler
    * @throws ValidationException ValidationException
    */
   private ApiRequestHandlerResponse buildPresignedResponse(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final CoreAwsServiceCache awsservice, final String siteId,
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
       final DynamicDocumentItem item)
       throws UnsupportedEncodingException, BadException, ValidationException {
 
@@ -249,8 +248,7 @@ public class DocumentsUploadRequestHandler
     String path = query != null && query.containsKey("path") ? query.get("path") : null;
     item.setPath(path);
 
-    return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
-        item);
+    return buildPresignedResponse(logger, event, awsservice, siteId, item);
   }
 
   @Override
@@ -279,8 +277,7 @@ public class DocumentsUploadRequestHandler
     validateTags(tags);
 
     String siteId = authorization.siteId();
-    return buildPresignedResponse(logger, event, CoreAwsServiceCache.cast(awsservice), siteId,
-        item);
+    return buildPresignedResponse(logger, event, awsservice, siteId, item);
   }
 
   /**

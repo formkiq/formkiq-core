@@ -21,47 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.WebhooksService;
-import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * Core {@link AwsServiceCache}.
+ * {@link AwsServiceExtension} for {@link WebhooksService}.
  *
  */
-public class CoreAwsServiceCache extends AwsServiceCache {
-
-  /**
-   * Casts {@link AwsServiceCache} to {@link CoreAwsServiceCache}.
-   * 
-   * @param service {@link AwsServiceCache}
-   * @return {@link CoreAwsServiceCache}
-   */
-  public static CoreAwsServiceCache cast(final AwsServiceCache service) {
-    if (service instanceof CoreAwsServiceCache) {
-      return (CoreAwsServiceCache) service;
-    }
-
-    throw new UnsupportedOperationException("expected CoreAwsServiceCache.class");
-  }
+public class WebhooksServiceExtension implements AwsServiceExtension<WebhooksService> {
 
   /** {@link WebhooksService}. */
-  private WebhooksService webhookService;
+  private WebhooksService service;
 
   /**
-   * Get {@link WebhooksService}.
-   * 
-   * @return {@link WebhooksService}
+   * constructor.
    */
-  public WebhooksService webhookService() {
-    if (this.webhookService == null) {
-      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
-      this.webhookService = new WebhooksServiceImpl(connection, environment("DOCUMENTS_TABLE"));
+  public WebhooksServiceExtension() {}
+
+  @Override
+  public WebhooksService loadService(final AwsServiceCache awsServiceCache) {
+
+    if (this.service == null) {
+      DynamoDbConnectionBuilder connection =
+          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      this.service =
+          new WebhooksServiceImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
-    return this.webhookService;
+
+    return this.service;
   }
 }

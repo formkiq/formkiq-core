@@ -42,7 +42,6 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
@@ -57,12 +56,12 @@ public class WebhooksIdRequestHandler
     String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    if (serviceCache.webhookService().findWebhook(siteId, id) == null) {
+    if (webhooksService.findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
-    serviceCache.webhookService().deleteWebhook(siteId, id);
+    webhooksService.deleteWebhook(siteId, id);
 
     return new ApiRequestHandlerResponse(SC_OK,
         new ApiMessageResponse("'" + id + "' object deleted"));
@@ -75,9 +74,10 @@ public class WebhooksIdRequestHandler
 
     String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
 
-    DynamicObject m = serviceCache.webhookService().findWebhook(siteId, id);
+    WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
+
+    DynamicObject m = webhooksService.findWebhook(siteId, id);
     if (m == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
@@ -120,11 +120,9 @@ public class WebhooksIdRequestHandler
     String siteId = authorization.siteId();
     String id = getPathParameter(event, "webhookId");
 
-    CoreAwsServiceCache serviceCache = CoreAwsServiceCache.cast(awsServices);
+    WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    WebhooksService webhookService = serviceCache.webhookService();
-
-    if (webhookService.findWebhook(siteId, id) == null) {
+    if (webhooksService.findWebhook(siteId, id) == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
 
@@ -148,10 +146,10 @@ public class WebhooksIdRequestHandler
       map.put("TimeToLive", ttlDate);
     }
 
-    webhookService.updateWebhook(siteId, id, new DynamicObject(map));
+    webhooksService.updateWebhook(siteId, id, new DynamicObject(map));
 
     if (ttlDate != null) {
-      webhookService.updateTimeToLive(siteId, id, ttlDate);
+      webhooksService.updateTimeToLive(siteId, id, ttlDate);
     }
 
     return new ApiRequestHandlerResponse(SC_OK,
