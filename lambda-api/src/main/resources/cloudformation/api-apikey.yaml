@@ -796,6 +796,7 @@ Resources:
               - Documents
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/contentLengthParam'
               - $ref: '#/components/parameters/durationParam'
               - $ref: '#/components/parameters/shareKeyParam'
               requestBody:
