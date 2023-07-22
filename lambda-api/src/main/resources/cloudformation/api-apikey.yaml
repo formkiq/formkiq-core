@@ -1633,6 +1633,10 @@ Resources:
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DeleteFulltextResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3810,6 +3814,12 @@ Resources:
                   type: "string"
                   description: "Name of API Key"
             AddApiKeyResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            DeleteFulltextResponse:
               type: object
               properties:
                 message:
