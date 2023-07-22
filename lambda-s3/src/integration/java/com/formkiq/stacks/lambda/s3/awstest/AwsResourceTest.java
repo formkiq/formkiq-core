@@ -59,6 +59,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
@@ -167,7 +168,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    */
   private String subscribeToSns(final String topicArn, final String queueUrl) {
 
-    String queueArn = getSqsService().getQueueArn(queueUrl);
+    String queueArn = SqsService.getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","

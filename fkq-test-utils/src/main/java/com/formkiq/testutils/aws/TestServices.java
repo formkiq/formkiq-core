@@ -24,13 +24,9 @@
 package com.formkiq.testutils.aws;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.time.Duration;
 import java.util.Map;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -62,11 +58,11 @@ public final class TestServices {
   public static final String FORMKIQ_APP_ENVIRONMENT = "test";
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack = null;
+  /** Default Localstack Endpoint. */
+  private static final String LOCALSTACK_ENDPOINT = "http://localhost:" + DEFAULT_LOCALSTACK_PORT;
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
-      DockerImageName.parse("localstack/localstack:2.1");
-  /** {@link String}. */
-  public static final String OCR_BUCKET_NAME = "ocrbucket";
+      DockerImageName.parse("localstack/localstack:0.12.2");
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
   /** {@link SnsConnectionBuilder}. */
@@ -87,17 +83,8 @@ public final class TestServices {
   private static SsmConnectionBuilder ssmConnection;
   /** {@link String}. */
   public static final String STAGE_BUCKET_NAME = "stagebucket";
-
-  private static String getDefaultLocalStackEndpoint(final Service service) {
-    String url = "http://localhost:" + DEFAULT_LOCALSTACK_PORT;
-    if (Service.S3.equals(service)) {
-      url = "http://s3.localhost:" + DEFAULT_LOCALSTACK_PORT;
-    } else if (Service.SQS.equals(service)) {
-      url = "http://sqs.localhost:" + DEFAULT_LOCALSTACK_PORT;
-    }
-
-    return url;
-  }
+  /** {@link String}. */
+  public static final String OCR_BUCKET_NAME = "ocrbucket";
 
   /**
    * Get Local Stack Endpoint.
@@ -112,7 +99,7 @@ public final class TestServices {
     if (endpoint == null) {
       try {
         endpoint = new URI(localstack != null ? localstack.getEndpointOverride(service).toString()
-            : getDefaultLocalStackEndpoint(service));
+            : LOCALSTACK_ENDPOINT);
       } catch (URISyntaxException e) {
         throw new RuntimeException(e);
       }
@@ -144,7 +131,7 @@ public final class TestServices {
    */
   public static URI getEndpointOverride(final Service service) throws URISyntaxException {
     return localstack != null ? localstack.getEndpointOverride(service)
-        : new URI(getDefaultLocalStackEndpoint(service));
+        : new URI(LOCALSTACK_ENDPOINT);
   }
 
   /**
@@ -288,21 +275,12 @@ public final class TestServices {
    * @return boolean
    */
   private static boolean isPortAvailable() {
-
-    boolean available = false;
-    final int status200 = 200;
-
-    HttpClient client = HttpClient.newHttpClient();
-    try {
-      HttpRequest request = HttpRequest.newBuilder().timeout(Duration.ofSeconds(2))
-          .uri(new URI("http://localhost:" + DEFAULT_LOCALSTACK_PORT + "/_localstack/health")).GET()
-          .build();
-      HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-      available = response.statusCode() != status200;
-    } catch (URISyntaxException | IOException | InterruptedException e) {
+    boolean available;
+    try (ServerSocket ignored = new ServerSocket(DEFAULT_LOCALSTACK_PORT)) {
       available = true;
+    } catch (IOException e) {
+      available = false;
     }
-
     return available;
   }
 

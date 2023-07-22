@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
@@ -40,12 +39,12 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
@@ -65,16 +64,19 @@ public class DocumentIdUrlRequestHandler
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameters().get("documentId");
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
     boolean inline = "true".equals(getParameter(event, "inline"));
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = documentService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+
+    if (item == null) {
+      throw new NotFoundException("Document " + documentId + " not found.");
+    }
 
     String versionKey = getParameter(event, "versionKey");
     if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {
@@ -85,7 +87,7 @@ public class DocumentIdUrlRequestHandler
     DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
-    URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
+    URL url = getS3Url(logger, authorizer, awsservice, event, item, versionId, inline);
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))
@@ -122,7 +124,7 @@ public class DocumentIdUrlRequestHandler
    * Get S3 URL.
    * 
    * @param logger {@link LambdaLogger}
-   * @param authorization {@link ApiAuthorization}
+   * @param authorizer {@link ApiAuthorizer}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
    * @param item {@link DocumentItem}
@@ -130,7 +132,7 @@ public class DocumentIdUrlRequestHandler
    * @param inline boolean
    * @return {@link URL}
    */
-  private URL getS3Url(final LambdaLogger logger, final ApiAuthorization authorization,
+  private URL getS3Url(final LambdaLogger logger, final ApiAuthorizer authorizer,
       final AwsServiceCache awsservice, final ApiGatewayRequestEvent event, final DocumentItem item,
       final String versionId, final boolean inline) {
 
@@ -138,7 +140,7 @@ public class DocumentIdUrlRequestHandler
 
     URL url = null;
     String contentType = getContentType(event);
-    String siteId = authorization.siteId();
+    String siteId = authorizer.getSiteId();
     int hours = getDurationHours(event);
     Duration duration = Duration.ofHours(hours);
 

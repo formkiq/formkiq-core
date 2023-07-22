@@ -36,18 +36,6 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 public interface DocumentSearchService {
 
   /**
-   * Search for Documents in Folder.
-   * 
-   * @param siteId {@link String}
-   * @param indexKey {@link String}
-   * @param token {@link PaginationMapToken}
-   * @param maxresults int
-   * @return {@link PaginationResults} {@link DynamicDocumentItem}
-   */
-  PaginationResults<DynamicDocumentItem> findInFolder(String siteId, String indexKey,
-      PaginationMapToken token, int maxresults);
-
-  /**
    * Search for Documents.
    *
    * @param siteId Optional Grouping siteId

@@ -47,7 +47,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
-      Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP");
+      Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
 
   /**
    * Add Folder Index.

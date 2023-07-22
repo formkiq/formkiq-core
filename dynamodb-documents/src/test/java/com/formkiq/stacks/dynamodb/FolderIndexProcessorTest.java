@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,12 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,8 +63,8 @@ class FolderIndexProcessorTest implements DbKeys {
 
   /** {@link DynamoDbService}. */
   private static DynamoDbService dbService;
-  /** {@link FolderIndexProcessor}. */
-  private static FolderIndexProcessor index;
+  /** {@link FolderIndexProcessorImpl}. */
+  private static FolderIndexProcessorImpl index;
   /** {@link DocumentService}. */
   private static DocumentSearchService searchService;
   /** {@link DocumentService}. */
@@ -300,58 +297,6 @@ class FolderIndexProcessorTest implements DbKeys {
     }
   }
 
-  @Test
-  void testGetFolderByDocumentId01() {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("/a/test.pdf");
-
-      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
-      assertEquals(2, indexes.size());
-
-      // when
-      FolderIndexRecord folder =
-          index.getFolderByDocumentId(siteId, indexes.get(0).get("documentId").s());
-      FolderIndexRecord file =
-          index.getFolderByDocumentId(siteId, indexes.get(1).get("documentId").s());
-
-      // then
-      assertNull(file);
-      assertNotNull(folder);
-      assertEquals("a", folder.path());
-      assertEquals("folder", folder.type());
-    }
-  }
-
-  @Test
-  void testGetFoldersByDocumentId01() {
-    // given
-    final int expected = 4;
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      String documentId = UUID.randomUUID().toString();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("/a/b/c/test.pdf");
-
-      List<Map<String, AttributeValue>> indexes = index.generateIndex(siteId, item);
-      assertEquals(expected, indexes.size());
-
-      // when
-      Collection<FolderIndexRecord> folders =
-          index.getFoldersByDocumentId(siteId, indexes.get(2).get("documentId").s());
-
-      // then
-      final int expectedThen = 3;
-      assertEquals(expectedThen, folders.size());
-
-      String path = folders.stream().map(r -> r.path()).collect(Collectors.joining("/"));
-      assertEquals("a/b/c", path);
-    }
-  }
-
   /**
    * Move Directory to another directory.
    * 
@@ -363,8 +308,8 @@ class FolderIndexProcessorTest implements DbKeys {
     String userId = "fred";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      final String source = "/something/else/";
-      final String destination = "/a/b/";
+      String source = "/something/else/";
+      String destination = "/a/b/";
 
       String documentId = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -414,17 +359,13 @@ class FolderIndexProcessorTest implements DbKeys {
     String userId = "fred";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      final String source = "directory1/test.pdf";
-      final String destination = "directory2/";
+      String source = "directory1/test.pdf";
+      String destination = "directory2/";
 
       String documentId = UUID.randomUUID().toString();
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath(source);
       service.saveDocument(siteId, item, null);
-
-      Map<String, String> sourceAttr = index.getIndex(siteId, source);
-      assertEquals("test.pdf", sourceAttr.get("path"));
-      final String sourceParentDocumentId = sourceAttr.get("parentDocumentId");
 
       // when
       index.moveIndex(siteId, source, destination, userId);
@@ -449,10 +390,6 @@ class FolderIndexProcessorTest implements DbKeys {
       DynamicDocumentItem doc2 = results.getResults().get(0);
       assertEquals("directory2/test.pdf", doc2.get("path"));
       assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
-
-      Map<String, String> destAttr = index.getIndex(siteId, "directory2/test.pdf");
-      assertEquals("test.pdf", destAttr.get("path"));
-      assertNotEquals(sourceParentDocumentId, destAttr.get("parentDocumentId"));
     }
   }
 
@@ -518,25 +455,14 @@ class FolderIndexProcessorTest implements DbKeys {
     assertEquals(path, map.get("path").s());
     assertNotNull(map.get("documentId"));
 
-    String parentDocumentId = map.get("parentDocumentId").s();
-    assertTrue("".equals(parentDocumentId) || isUuid(parentDocumentId));
-
     if (hasDates) {
-      final int expected = 11;
-      assertEquals(expected, map.size());
       assertNotNull(map.get("inserteddate"));
       assertNotNull(map.get("lastModifiedDate"));
-      assertNotNull(map.get(GSI1_PK));
-      assertNotNull(map.get(GSI1_SK));
       assertEquals("joe", map.get("userId").s());
-      assertEquals("folder", map.get("type").s());
     } else {
-      final int expected = 6;
-      assertEquals(expected, map.size());
       assertNull(map.get("inserteddate"));
       assertNull(map.get("lastModifiedDate"));
       assertNull(map.get("userId"));
-      assertEquals("file", map.get("type").s());
     }
   }
 }

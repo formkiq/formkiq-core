@@ -22,7 +22,7 @@ dependencies {
 	
 	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
-	implementation group: 'org.json', name: 'json', version: '20230227'
+	implementation group: 'org.json', name: 'json', version: '20220924'
 	
 	testImplementation project(':aws-cognito')
 	testImplementation project(':fkq-test-utils')
@@ -30,11 +30,11 @@ dependencies {
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'	
 	
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.18.3'
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.17.6'
 	
-	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.18.3'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.488'
-	testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.35.0'
+	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.17.6'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.436'
+	testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.32.0'
 }
 
 task buildZip(type: Zip) {

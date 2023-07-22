@@ -1782,9 +1782,8 @@ public class DocumentServiceImplTest implements DbKeys {
 
       PaginationResults<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
-      assertEquals(2, tags.getResults().size());
+      assertEquals(1, tags.getResults().size());
       assertEquals("path", tags.getResults().get(0).getKey());
-      assertEquals("userId", tags.getResults().get(1).getKey());
     }
   }
 

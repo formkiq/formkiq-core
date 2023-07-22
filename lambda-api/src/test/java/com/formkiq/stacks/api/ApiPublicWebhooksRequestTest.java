@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -58,12 +57,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
 
-  private void enablePublicEnpoint() throws URISyntaxException {
-    Map<String, String> map = new HashMap<>(getMap());
-    map.put("ENABLE_PUBLIC_URLS", "true");
-    createApiRequestHandler(map);
-  }
-
   /**
    * Post /public/webhooks without authentication.
    *
@@ -73,9 +66,10 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
-    enablePublicEnpoint();
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
       String name = UUID.randomUUID().toString();
 
       String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
@@ -105,7 +99,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
-    enablePublicEnpoint();
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -138,7 +132,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks03() throws Exception {
     // givens
-    enablePublicEnpoint();
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks03.json");
     event.getRequestContext().setAuthorizer(new HashMap<>());
     event.getRequestContext().setIdentity(new HashMap<>());
@@ -159,7 +152,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks04() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       String name = UUID.randomUUID().toString();
@@ -189,7 +183,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
-    enablePublicEnpoint();
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -225,7 +219,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks06() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -241,6 +236,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       // then
       Map<String, Object> m = fromJson(response, Map.class);
+      final int mapsize = 2;
+      assertEquals(mapsize, m.size());
 
       assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
@@ -257,7 +254,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks07() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -292,7 +290,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks08() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -328,7 +327,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks09() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -368,7 +368,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks10() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -396,7 +397,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks11() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -428,7 +430,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks12() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -473,7 +476,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks13() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -525,7 +529,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks14() throws Exception {
-    enablePublicEnpoint();
+    // given
+    createApiRequestHandler(getMap());
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 

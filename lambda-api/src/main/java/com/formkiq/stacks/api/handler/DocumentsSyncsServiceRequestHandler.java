@@ -24,57 +24,64 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.io.IOException;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizer;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 
-/** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}". */
-public class FoldersIndexKeyRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/syncs/{service}". */
+public class DocumentsSyncsServiceRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
-  public FoldersIndexKeyRequestHandler() {}
-
-  @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.siteId();
-    FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
-
-    String indexKey = event.getPathParameters().get("indexKey");
-
-    try {
-      boolean deleted = indexProcessor.deleteEmptyDirectory(siteId, indexKey);
-
-      if (!deleted) {
-        throw new NotFoundException("directory not found");
-      }
-
-      ApiMapResponse resp = new ApiMapResponse(Map.of("message", "deleted folder"));
-      return new ApiRequestHandlerResponse(SC_OK, resp);
-
-    } catch (IOException e) {
-      throw new BadException(e.getMessage());
-    }
-  }
+  public DocumentsSyncsServiceRequestHandler() {}
 
   @Override
   public String getRequestUrl() {
-    return "/folders/{indexKey}";
+    return "/documents/{documentId}/syncs/{service}";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final AwsServiceCache awsservice) throws Exception {
+
+    // String siteId = authorizer.getSiteId();
+    // String documentId = event.getPathParameters().get("documentId");
+    // String userId = getCallingCognitoUsername(event);
+    //
+    // Map<String, Object> body = fromBodyToMap(logger, event);
+    //
+    // List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
+    // List<Action> actions = toActions(list, userId);
+    //
+    // ActionsValidator validator = new ActionsValidatorImpl();
+    //
+    // List<Collection<ValidationError>> errors = validator.validation(actions);
+    //
+    // Optional<Collection<ValidationError>> firstError =
+    // errors.stream().filter(e -> !e.isEmpty()).findFirst();
+    //
+    // if (firstError.isEmpty()) {
+    //
+    // ActionsService service = awsservice.getExtension(ActionsService.class);
+    // int idx = service.getActions(siteId, documentId).size();
+    //
+    // for (Action a : actions) {
+    // service.saveAction(siteId, documentId, a, idx);
+    // idx++;
+    // }
+
+    ApiMapResponse resp = new ApiMapResponse();
+    resp.setMap(Map.of("message", "Actions saved"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 }
