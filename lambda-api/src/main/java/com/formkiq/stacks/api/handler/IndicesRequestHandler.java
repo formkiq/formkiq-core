@@ -25,8 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -65,8 +63,7 @@ public class IndicesRequestHandler
 
     String siteId = authorization.siteId();
     String type = event.getPathParameters().get("indexType");
-    String indexKey =
-        URLDecoder.decode(event.getPathParameters().get("indexKey"), StandardCharsets.UTF_8);
+    String indexKey = event.getPathParameters().get("indexKey");
 
     if ("folder".equals(type)) {
 
