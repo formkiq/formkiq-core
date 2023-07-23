@@ -21,33 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.module.typesense;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.services.lambda.ApiAuthorization;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
 
 /**
- * {@link ApiGatewayRequestHandler} for "/documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}".
+ * 
+ * {@link AwsServiceExtension} for {@link TypeSenseService}.
+ *
  */
-public class DocumentsFulltextRequestTagsKeyValueHandler implements ApiGatewayRequestHandler {
+public class TypeSenseServiceExtension implements AwsServiceExtension<TypeSenseService> {
 
-  /** {@link DocumentsFulltextRequestTagsKeyValueHandler} URL. */
-  public static final String URL = "/documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}";
+  /** {@link TypeSenseService}. */
+  private TypeSenseService service;
+  /** {@link Region}. */
+  private Region region;
+  /** {@link AwsCredentials}. */
+  private AwsCredentials credentials;
 
-  @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
-    throw new BadException("Typesense does not support this API");
+  /**
+   * constructor.
+   * 
+   * @param awsRegion {@link Region}
+   * @param awsCredentials {@link AwsCredentials}
+   */
+  public TypeSenseServiceExtension(final Region awsRegion, final AwsCredentials awsCredentials) {
+    this.region = awsRegion;
+    this.credentials = awsCredentials;
   }
 
   @Override
-  public String getRequestUrl() {
-    return URL;
+  public TypeSenseService loadService(final AwsServiceCache awsServiceCache) {
+
+    if (this.service == null) {
+      this.service = new TypeSenseServiceImpl(awsServiceCache.environment("TYPESENSE_HOST"),
+          awsServiceCache.environment("TYPESENSE_API_KEY"), this.region, this.credentials);
+    }
+
+    return this.service;
   }
 }

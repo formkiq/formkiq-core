@@ -25,6 +25,8 @@ package com.formkiq.module.typesense;
 
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
+import static com.formkiq.module.http.HttpResponseStatus.is409;
+import static com.formkiq.module.http.HttpResponseStatus.is429;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
@@ -113,6 +115,36 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpResponse<String> response =
         this.service.post(url, Optional.of(headers), this.json.toJson(payload));
+
+    return response;
+  }
+
+  @Override
+  public HttpResponse<String> addOrUpdateDocument(final String siteId, final String documentId,
+      final Map<String, Object> data) throws IOException {
+
+    HttpResponse<String> response = addDocument(siteId, documentId, data);
+
+    if (!is2XX(response)) {
+
+      if (is404(response)) {
+
+        response = addCollection(siteId);
+
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
+
+        response = addDocument(siteId, documentId, data);
+
+      } else if (is409(response) || is429(response)) {
+
+        response = updateDocument(siteId, documentId, data);
+
+      } else {
+        throw new IOException(response.body());
+      }
+    }
 
     return response;
   }

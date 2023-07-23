@@ -56,6 +56,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
@@ -131,10 +133,10 @@ import software.amazon.awssdk.regions.Region;
  */
 public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestHandler {
 
-  /** Is Public Urls Enabled. */
-  private static boolean isEnablePublicUrls;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache awsServices;
+  /** Is Public Urls Enabled. */
+  private static boolean isEnablePublicUrls;
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
@@ -241,6 +243,49 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     S3ConnectionBuilder s3 = new S3ConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
 
+    registerExtensions(schemaEvents, s3);
+
+    awsServices = new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
+
+    if (awsServices.hasModule("typesense")) {
+      AwsCredentials creds = awsServices.getExtension(AwsCredentials.class);
+      AwsServiceCache.register(TypeSenseService.class,
+          new TypeSenseServiceExtension(region, creds));
+    }
+
+    isEnablePublicUrls = isEnablePublicUrls(map);
+
+    setAuthorizerType(ApiAuthorizerType.valueOf(map.get("USER_AUTHENTICATION").toUpperCase()));
+  }
+
+  /**
+   * Get {@link AwsServiceCache}.
+   * 
+   * @return {@link AwsServiceCache}
+   */
+  public static AwsServiceCache getAwsServicesCache() {
+    return awsServices;
+  }
+
+  /**
+   * Whether to enable public urls.
+   * 
+   * @param map {@link Map}
+   * @return boolean
+   */
+  private static boolean isEnablePublicUrls(final Map<String, String> map) {
+    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  }
+
+  /**
+   * Register Extensions.
+   * 
+   * @param schemaEvents {@link DocumentTagSchemaPlugin}
+   * @param s3 {@link S3ConnectionBuilder}
+   */
+  private static void registerExtensions(final DocumentTagSchemaPlugin schemaEvents,
+      final S3ConnectionBuilder s3) {
+
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
@@ -258,22 +303,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
     AwsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     AwsServiceCache.register(WebhooksService.class, new WebhooksServiceExtension());
-
-    awsServices = new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
-
-    isEnablePublicUrls = isEnablePublicUrls(map);
-
-    setAuthorizerType(ApiAuthorizerType.valueOf(map.get("USER_AUTHENTICATION").toUpperCase()));
-  }
-
-  /**
-   * Whether to enable public urls.
-   * 
-   * @param map {@link Map}
-   * @return boolean
-   */
-  private static boolean isEnablePublicUrls(final Map<String, String> map) {
-    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
   }
 
   /** constructor. */
@@ -309,15 +338,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   @Override
   public AwsServiceCache getAwsServices() {
-    return awsServices;
-  }
-
-  /**
-   * Get {@link AwsServiceCache}.
-   * 
-   * @return {@link AwsServiceCache}
-   */
-  public static AwsServiceCache getAwsServicesCache() {
     return awsServices;
   }
 

@@ -92,6 +92,7 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
           TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
       map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
       map.put("TYPESENSE_API_KEY", API_KEY);
+      map.put("MODULE_typesense", "true");
 
       return map;
 

@@ -280,7 +280,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   public void testVersion01() throws Exception {
     // given
     setEnvironment("MODULE_ocr", "true");
-    setEnvironment("MODULE_fulltext", "true");
+    setEnvironment("MODULE_typesense", "true");
     setEnvironment("MODULE_otherone", "false");
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-version.json");
@@ -298,6 +298,6 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     Map<String, Object> resp = fromJson(m.get("body"), Map.class);
     assertEquals("1.1", resp.get("version"));
     assertEquals("core", resp.get("type"));
-    assertEquals("[ocr, fulltext]", resp.get("modules").toString());
+    assertEquals("[ocr, typesense]", resp.get("modules").toString());
   }
 }
