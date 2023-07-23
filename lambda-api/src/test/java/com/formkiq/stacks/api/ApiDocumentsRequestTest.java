@@ -857,6 +857,97 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents request webhook invalid action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments19() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type\":\"webhook\"}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+
+      // then
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals(
+          "{\"errors\":[{\"key\":\"parameters.url\",\"error\":\"'url' parameter is required\"}]}",
+          obj.getString("body"));
+    }
+  }
+
+  /**
+   * POST /documents request webhook valid action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments20() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type\":\"webhook\",\"parameters\":{\"url\":\"http://localhost\"}}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+
+      // then
+      assertEquals("201.0", obj.getString("statusCode"));
+    }
+  }
+
+  /**
+   * POST /documents request webhook invalid type.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments21() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type\":\"something\"}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+
+      // then
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
+          obj.getString("body"));
+    }
+  }
+
+  /**
+   * POST /documents request missing type.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments22() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"actions\":[{\"type2\":\"something\"}]}";
+
+      // when
+      DynamicObject obj = handleRequestDynamic(
+          postDocumentsRequest(siteId, siteId != null ? siteId : "default", body));
+
+      // then
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
+          obj.getString("body"));
+    }
+  }
+
+  /**
    * POST /documents request Base64 body.
    *
    * @throws Exception an error has occurred

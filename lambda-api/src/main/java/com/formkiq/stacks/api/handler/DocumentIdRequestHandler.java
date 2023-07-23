@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,10 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsValidator;
+import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
@@ -93,6 +98,8 @@ public class DocumentIdRequestHandler
   /** Extension for FormKiQ config file. */
   public static final String FORMKIQ_DOC_EXT = ".fkb64";
 
+  /** {@link ActionsValidator}. */
+  private ActionsValidator actionsValidator = new ActionsValidatorImpl();
   /** {@link DocumentValidator}. */
   private DocumentValidator documentValidator = new DocumentValidatorImpl();
   /** {@link DocumentsRestrictionsMaxDocuments}. */
@@ -366,6 +373,7 @@ public class DocumentIdRequestHandler
 
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
       validateTags(item);
+      validateActions(item);
 
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
@@ -421,6 +429,39 @@ public class DocumentIdRequestHandler
 
     if (!item.containsKey("contentType")) {
       item.put("contentType", "application/octet-stream");
+    }
+  }
+
+  private void validateActions(final DynamicDocumentItem item) throws ValidationException {
+
+    List<DynamicObject> objs = item.getList("actions");
+    if (!objs.isEmpty()) {
+
+      List<Action> actions = objs.stream().map(o -> {
+
+        ActionType type;
+        try {
+          String stype = o.containsKey("type") ? o.getString("type").toUpperCase() : "";
+          type = ActionType.valueOf(stype);
+        } catch (IllegalArgumentException e) {
+          type = null;
+        }
+
+        DynamicObject map = o.containsKey("parameters") ? o.getMap("parameters") : null;
+        Map<String, String> parameters = map != null
+            ? map.entrySet().stream()
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()))
+            : Collections.emptyMap();
+
+        return new Action().type(type).parameters(parameters);
+      }).collect(Collectors.toList());
+
+      for (Action action : actions) {
+        Collection<ValidationError> errors = this.actionsValidator.validation(action);
+        if (!errors.isEmpty()) {
+          throw new ValidationException(errors);
+        }
+      }
     }
   }
 

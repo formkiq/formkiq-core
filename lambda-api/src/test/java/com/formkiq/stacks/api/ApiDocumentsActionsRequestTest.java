@@ -214,4 +214,77 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       assertEquals(0, actions.size());
     }
   }
+
+  /**
+   * POST /documents/{documentId}/actions missing 'parameters' for documenttagging.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentActions03() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
+      Map<String, Object> body =
+          Map.of("actions", Arrays.asList(Map.of("type", "documenttagging")));
+      // Map<String, Object> body = Map.of("actions", Arrays
+      // .asList(Map.of("type", "documenttagging", "parameters", Map.of("ocrParseTypes", "text"))));
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when - missing parameters
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+
+      // given - invalid engine
+      body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
+          Map.of("engine", "dunno", "tags", "something"))));
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when - missing parameters
+      response = handleRequest(event);
+
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+
+      actions = this.service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+
+      // given - invalid engine
+      body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
+          Map.of("engine", "chatgpt", "tags", "something"))));
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when - missing parameters
+      response = handleRequest(event);
+
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"Actions saved\"}", m.get("body"));
+
+      actions = this.service.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+    }
+  }
 }

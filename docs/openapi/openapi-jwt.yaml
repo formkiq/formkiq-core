@@ -349,6 +349,12 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddDocumentResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -427,6 +433,12 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddDocumentResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1055,6 +1067,12 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddDocumentActionsResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:

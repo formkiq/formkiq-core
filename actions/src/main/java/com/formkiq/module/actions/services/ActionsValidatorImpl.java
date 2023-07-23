@@ -61,6 +61,19 @@ public class ActionsValidatorImpl implements ActionsValidator {
         if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
           errors.add(
               new ValidationErrorImpl().key("parameters.url").error("'url' parameter is required"));
+        } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
+          if (!parameters.containsKey("tags")) {
+            errors.add(new ValidationErrorImpl().key("parameters.tags")
+                .error("'tags' parameter is required"));
+          }
+
+          if (!parameters.containsKey("engine")) {
+            errors.add(new ValidationErrorImpl().key("parameters.engine")
+                .error("'engine' parameter is required"));
+          } else if (!"chatgpt".equals(parameters.getOrDefault("engine", ""))) {
+            errors.add(new ValidationErrorImpl().key("parameters.engine")
+                .error("invalid 'engine' parameter"));
+          }
         }
       }
     }
