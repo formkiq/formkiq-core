@@ -3329,6 +3329,9 @@ Resources:
                 content:
                   type: "string"
                   description: "Content of document"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
                 path:
                   type: "string"
                   description: "Path or Name of document"
