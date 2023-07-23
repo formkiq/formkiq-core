@@ -269,6 +269,14 @@ public class S3Service {
     return response.asInputStream();
   }
 
+  public InputStream getContentPartAsInputStream(final String distributionBucket, final String key,
+      final String range) {
+    GetObjectRequest get =
+        GetObjectRequest.builder().bucket(distributionBucket).key(key).range(range).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
+    return response.asInputStream();
+  }
+
   /**
    * Get File String Content.
    * 
