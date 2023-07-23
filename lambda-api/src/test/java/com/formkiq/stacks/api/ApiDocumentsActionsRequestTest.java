@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -40,6 +42,7 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -51,11 +54,12 @@ import software.amazon.awssdk.services.sqs.model.Message;
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
 
-  /** {@link ActionsService}. */
-  private ActionsService service;
-
+  /** {@link ConfigService}. */
+  private ConfigService configService;
   /** {@link DocumentService}. */
   private DocumentService documentService;
+  /** {@link ActionsService}. */
+  private ActionsService service;
 
   @Override
   @BeforeEach
@@ -63,6 +67,7 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     super.before();
     this.service = getAwsServices().getExtension(ActionsService.class);
     this.documentService = getAwsServices().getExtension(DocumentService.class);
+    this.configService = getAwsServices().getExtension(ConfigService.class);
   }
 
   /**
@@ -269,12 +274,13 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       actions = this.service.getActions(siteId, documentId);
       assertEquals(0, actions.size());
 
-      // given - invalid engine
+      // given - engine
+      this.configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
       body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
           Map.of("engine", "chatgpt", "tags", "something"))));
       event.setBody(GsonUtil.getInstance().toJson(body));
 
-      // when - missing parameters
+      // when - correct parameters
       response = handleRequest(event);
 
       // then

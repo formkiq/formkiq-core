@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -48,6 +49,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 
@@ -122,7 +124,9 @@ public class DocumentsActionsRequestHandler
 
     ActionsValidator validator = new ActionsValidatorImpl();
 
-    List<Collection<ValidationError>> errors = validator.validation(actions);
+    ConfigService configsService = awsservice.getExtension(ConfigService.class);
+    DynamicObject configs = configsService.get(siteId);
+    List<Collection<ValidationError>> errors = validator.validation(actions, configs);
 
     Optional<Collection<ValidationError>> firstError =
         errors.stream().filter(e -> !e.isEmpty()).findFirst();

@@ -73,6 +73,7 @@ import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentCountService;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -373,7 +374,7 @@ public class DocumentIdRequestHandler
 
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
       validateTags(item);
-      validateActions(item);
+      validateActions(awsservice, siteId, item);
 
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
@@ -432,11 +433,14 @@ public class DocumentIdRequestHandler
     }
   }
 
-  private void validateActions(final DynamicDocumentItem item) throws ValidationException {
+  private void validateActions(final AwsServiceCache awsservice, final String siteId,
+      final DynamicDocumentItem item) throws ValidationException {
 
     List<DynamicObject> objs = item.getList("actions");
     if (!objs.isEmpty()) {
 
+      ConfigService configsService = awsservice.getExtension(ConfigService.class);
+      DynamicObject configs = configsService.get(siteId);
       List<Action> actions = objs.stream().map(o -> {
 
         ActionType type;
@@ -457,7 +461,7 @@ public class DocumentIdRequestHandler
       }).collect(Collectors.toList());
 
       for (Action action : actions) {
-        Collection<ValidationError> errors = this.actionsValidator.validation(action);
+        Collection<ValidationError> errors = this.actionsValidator.validation(action, configs);
         if (!errors.isEmpty()) {
           throw new ValidationException(errors);
         }
