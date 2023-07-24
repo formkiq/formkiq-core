@@ -279,7 +279,7 @@ public class FoldersRequestHandlerTest {
 
       setBearerToken(siteId);
 
-      String indexKey = UUID.randomUUID().toString() + "#" + UUID.randomUUID().toString();;
+      String indexKey = UUID.randomUUID().toString() + "#" + UUID.randomUUID().toString();
 
       // when
       try {
