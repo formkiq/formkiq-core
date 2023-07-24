@@ -55,6 +55,9 @@
 			<allow pkg="software.amazon.awssdk.services.ssm" />
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="software.amazon.awssdk.utils.http" />
+
+			<allow pkg="alex.mojaki.s3upload" />
+			<allow pkg="com.amazonaws.services.s3" />
 		
 			<subpackage name="util">
 
