@@ -233,13 +233,15 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     Map<String, AttributeValue> attr =
         this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
 
-    String documentId = attr.get("documentId").s();
+    if (attr.containsKey("documentId")) {
+      String documentId = attr.get("documentId").s();
 
-    if (!hasFiles(siteId, documentId)) {
-      this.dynamoDb.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
-      deleted = true;
-    } else {
-      throw new IOException("folder is not empty");
+      if (!hasFiles(siteId, documentId)) {
+        this.dynamoDb.deleteItem(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
+        deleted = true;
+      } else {
+        throw new IOException("folder is not empty");
+      }
     }
 
     return deleted;

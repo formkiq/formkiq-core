@@ -264,7 +264,31 @@ public class FoldersRequestHandlerTest {
       assertEquals("deleted folder", deleteResponse.getMessage());
       folders = this.foldersApi.getFolderDocuments(siteId, folderIndexKey, null, null, null);
       assertTrue(folders.getDocuments().isEmpty());
+    }
+  }
 
+  /**
+   * Test /delete folders that does not exist.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testDeletedFolders01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      String indexKey = UUID.randomUUID().toString() + "#" + UUID.randomUUID().toString();;
+
+      // when
+      try {
+        this.foldersApi.deleteFolder(indexKey, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"directory not found\"}", e.getResponseBody());
+      }
     }
   }
 
