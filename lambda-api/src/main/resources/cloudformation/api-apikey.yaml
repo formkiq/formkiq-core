@@ -731,6 +731,27 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/tags:
+            patch:
+              operationId: UpdateMatchingDocumentTags
+              description: This API request allows the adding/updating of multiple document tag(s) based on document(s) that have the matching tag.
+              tags:
+              - Document Tags
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/UpdateMatchingDocumentTagsRequest'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200Cors'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/url:
             get:
               operationId: GetDocumentUrl
@@ -3036,7 +3057,7 @@ Resources:
                   type: "array"
                   description: "List of document tags"
                   items:
-                    $ref: "#/components/schemas/AddDocumentTagRequest"
+                    $ref: "#/components/schemas/AddDocumentTag"
             AddDocumentUploadRequest:
               required:
               - "content"
@@ -3052,7 +3073,7 @@ Resources:
                   type: "array"
                   description: "List of document tags"
                   items:
-                    $ref: "#/components/schemas/AddDocumentTagRequest"
+                    $ref: "#/components/schemas/AddDocumentTag"
                 actions:
                   type: array
                   description: "List of Actions"
@@ -3082,7 +3103,7 @@ Resources:
                   type: "array"
                   description: "List of document tags"
                   items:
-                    $ref: "#/components/schemas/AddDocumentTagRequest"
+                    $ref: "#/components/schemas/AddDocumentTag"
                 metadata:
                   type: "array"
                   description: "List of document Metadata"
@@ -3160,6 +3181,39 @@ Resources:
                 message:
                   type: "string"
                   description: "API Response message"
+            MatchDocumentTag:
+              type: "object"
+              description: "Match Document Tag"
+              required:
+              - "key"
+              properties:
+                key:
+                  type: "string"
+                  description: "Tag key"
+                value:
+                  type: "string"
+                  description: "Tag value"
+            UpdateMatchingDocumentTagsRequest:
+              type: "object"
+              description: "Add/Update of multiple document tag(s) based on document(s) that have the matching tag."
+              required:
+              - "match"
+              - "update"
+              properties:
+                match:
+                  type: "object"
+                  properties:
+                    tag:
+                      $ref: "#/components/schemas/MatchDocumentTag"
+                update:
+                  type: "object"
+                  description: "Data to update"
+                  properties:
+                    tags:
+                      type: "array"
+                      description: "List of document tags"
+                      items:
+                        $ref: "#/components/schemas/AddDocumentTag"
             AddDocumentTagsRequest:
               type: "object"
               description: "Add List of document tags"
@@ -3168,7 +3222,7 @@ Resources:
                   type: "array"
                   description: "List of document tags"
                   items:
-                    $ref: "#/components/schemas/AddDocumentTagRequest"
+                    $ref: "#/components/schemas/AddDocumentTag"
             AddDocumentMetadata:
               required:
               - "key"
@@ -3187,7 +3241,7 @@ Resources:
                   items:
                     type: "string"
                     description: "Metadata value"
-            AddDocumentTagRequest:
+            AddDocumentTag:
               required:
               - "key"
               type: "object"
@@ -3693,7 +3747,7 @@ Resources:
                   type: "array"
                   description: "List of document tags"
                   items:
-                    $ref: "#/components/schemas/AddDocumentTagRequest"
+                    $ref: "#/components/schemas/AddDocumentTag"
                 metadata:
                   type: "array"
                   description: "List of document Metadata"
@@ -3721,7 +3775,7 @@ Resources:
                   type: "array"
                   description: "List of document tags"
                   items:
-                    $ref: "#/components/schemas/AddDocumentTagRequest"
+                    $ref: "#/components/schemas/AddDocumentTag"
                 metadata:
                   type: "array"
                   description: "List of document Metadata"
