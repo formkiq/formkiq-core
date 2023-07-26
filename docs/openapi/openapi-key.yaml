@@ -741,7 +741,21 @@
                       $ref: '#/components/schemas/UpdateMatchingDocumentTagsRequest'
               responses:
                 "200":
-                  $ref: '#/components/responses/200Cors'
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UpdateMatchingDocumentTagsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2651,6 +2665,12 @@
                   items:
                     type: string
             DeleteIndicesResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: response message
+            UpdateMatchingDocumentTagsResponse:
               type: object
               properties:
                 message:
