@@ -33,6 +33,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -85,6 +86,14 @@ public class UpdateDocumentMatchingRequestHandlerTest {
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
   /** {@link DocumentTagsApi}. */
   private DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
+
+  /**
+   * BeforeEach.
+   */
+  @BeforeEach
+  public void beforeEach() {
+    s3.deleteAllFiles(STAGE_BUCKET_NAME);
+  }
 
   /**
    * Set BearerToken.
