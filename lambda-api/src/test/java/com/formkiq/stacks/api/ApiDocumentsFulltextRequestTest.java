@@ -36,7 +36,7 @@ import com.formkiq.client.api.CustomIndexApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
-import com.formkiq.client.model.AddDocumentTagRequest;
+import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.DeleteFulltextResponse;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.SetDocumentFulltextRequest;
@@ -145,9 +145,8 @@ public class ApiDocumentsFulltextRequestTest {
       String documentId = UUID.randomUUID().toString();
       setBearerToken(siteId);
 
-      SetDocumentFulltextRequest req =
-          new SetDocumentFulltextRequest().content(content).contentType("text/plain")
-              .addTagsItem(new AddDocumentTagRequest().key("category").value("123"));
+      SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().content(content)
+          .contentType("text/plain").addTagsItem(new AddDocumentTag().key("category").value("123"));
 
       try {
         // when

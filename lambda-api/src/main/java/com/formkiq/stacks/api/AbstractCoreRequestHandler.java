@@ -100,6 +100,7 @@ import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
+import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
@@ -194,6 +195,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new IndicesSearchRequestHandler());
     addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
     addRequestHandler(new EsignatureDocusignConfigRequestHandler());
+    addRequestHandler(new UpdateDocumentMatchingRequestHandler());
   }
 
   /**
