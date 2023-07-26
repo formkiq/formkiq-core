@@ -3208,9 +3208,12 @@
                 key:
                   type: string
                   description: Tag key
-                value:
+                beginsWith:
                   type: string
-                  description: Tag value
+                  description: Searches for strings that begin with
+                eq:
+                  type: string
+                  description: Searches for strings that eq
             UpdateMatchingDocumentTagsRequest:
               type: object
               description: Add/Update of multiple document tag(s) based on document(s) that have the matching tag.
