@@ -49,6 +49,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -365,6 +366,75 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(list.getResults().get(0).getMap("matchedTag").get("value"));
       assertEquals(Arrays.asList("XYZ", "ABC"),
           list.getResults().get(0).getMap("matchedTag").get("values"));
+    }
+  }
+
+  /**
+   * Add a tag to a lot of documents.
+   */
+  @Test
+  void testAddTags05() {
+    // given
+    final int count = 200;
+    final String tagKey = "category123";
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
+
+      for (int i = 0; i < count; i++) {
+        String documentId = UUID.randomUUID().toString();
+        List<DocumentTag> tags = Arrays.asList(new DocumentTag(documentId, tagKey, "person",
+            new Date(), "joe", DocumentTagType.USERDEFINED));
+
+        tagMap.put(documentId, tags);
+      }
+
+      // when
+      service.addTags(siteId, tagMap, null);
+
+      // then
+      for (String documentId : tagMap.keySet()) {
+        PaginationResults<DocumentTag> results =
+            service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+        assertEquals(1, results.getResults().size());
+        assertEquals(tagKey, results.getResults().get(0).getKey());
+        assertEquals("person", results.getResults().get(0).getValue());
+      }
+
+      SearchQuery query = new SearchQuery().meta(new SearchMetaCriteria().indexType("tags"));
+      PaginationResults<DynamicDocumentItem> results =
+          searchService.search(siteId, query, null, MAX_RESULTS);
+      assertEquals(1, results.getResults().size());
+      assertEquals(tagKey, results.getResults().get(0).get("value"));
+    }
+  }
+
+  /**
+   * Test add Tag with Values then change to Value.
+   */
+  @Test
+  void testAddTags06() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+
+      List<DocumentTag> tags0 = Arrays.asList(new DocumentTag(null, "category",
+          Arrays.asList("person1", "person2"), new Date(), "joe", DocumentTagType.USERDEFINED));
+
+      List<DocumentTag> tags1 = Arrays.asList(new DocumentTag(null, "category", "person0",
+          new Date(), "joe", DocumentTagType.USERDEFINED));
+
+      // when
+      service.addTags(siteId, documentId, tags0, null);
+      service.addTags(siteId, documentId, tags1, null);
+
+      // then
+      PaginationResults<DocumentTag> results =
+          service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(1, results.getResults().size());
+      assertEquals("category", results.getResults().get(0).getKey());
+      assertEquals("person0", results.getResults().get(0).getValue());
     }
   }
 

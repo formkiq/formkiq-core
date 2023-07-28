@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +54,9 @@ import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * 
@@ -160,7 +163,7 @@ public class UpdateDocumentMatchingRequestHandlerTest {
 
       UpdateMatchingDocumentTagsRequest request = new UpdateMatchingDocumentTagsRequest();
       request.match(new UpdateMatchingDocumentTagsRequestMatch()
-          .tag(new MatchDocumentTag().key("category").value("person")));
+          .tag(new MatchDocumentTag().key("category").eq("person")));
       request.update(new UpdateMatchingDocumentTagsRequestUpdate()
           .addTagsItem(new AddDocumentTag().key("user").value("111")));
 
@@ -172,9 +175,15 @@ public class UpdateDocumentMatchingRequestHandlerTest {
       assertEquals("received update tags request", response.getMessage());
 
       ListObjectsResponse s3Response = s3.listObjects(STAGE_BUCKET_NAME, siteId);
-      assertEquals(1, s3Response.contents().size());
-      assertTrue(s3Response.contents().get(0).key().contains("patch_documents_tags"));
-      assertTrue(s3Response.contents().get(0).key().endsWith(FORMKIQ_DOC_EXT));
+      List<S3Object> contents = s3Response.contents();
+      assertEquals(1, contents.size());
+      assertTrue(contents.get(0).key().contains("patch_documents_tags_"));
+      assertTrue(contents.get(0).key().endsWith(FORMKIQ_DOC_EXT));
+
+      GetObjectTaggingResponse tags = s3.getObjectTags(STAGE_BUCKET_NAME, contents.get(0).key());
+      assertEquals(1, tags.tagSet().size());
+      assertEquals("userId", tags.tagSet().get(0).key());
+      assertEquals("joesmith", tags.tagSet().get(0).value());
     }
   }
 }

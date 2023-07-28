@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 
 /**
  * 
@@ -57,5 +58,17 @@ public interface DocumentSearchService {
    * @return {@link PaginationResults} {@link DynamicDocumentItem}
    */
   PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
+      PaginationMapToken token, int maxresults);
+
+  /**
+   * Search for Document Ids.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param criteria {@link SearchTagCriteria}
+   * @param token {@link PaginationMapToken}
+   * @param maxresults int
+   * @return {@link PaginationResults} {@link String}
+   */
+  PaginationResults<String> searchForDocumentIds(String siteId, SearchTagCriteria criteria,
       PaginationMapToken token, int maxresults);
 }

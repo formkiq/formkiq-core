@@ -94,11 +94,6 @@ public class UpdateMatchingDocumentTagsRequestValidatorImpl
         errors
             .add(new ValidationErrorImpl().key("match.tag.key").error("'match.tag.key' required"));
       }
-
-      if (matchTag.getValue() == null) {
-        errors.add(
-            new ValidationErrorImpl().key("match.tag.value").error("'match.tag.value' required"));
-      }
     }
   }
 

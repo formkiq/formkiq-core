@@ -74,13 +74,14 @@ public class UpdateDocumentMatchingRequestHandler
 
     String siteId = authorization.siteId();
 
-    String key = createS3Key(siteId, "patch_documents_tags" + UUID.randomUUID() + FORMKIQ_DOC_EXT);
+    String key = createS3Key(siteId, "patch_documents_tags_" + UUID.randomUUID() + FORMKIQ_DOC_EXT);
     String stageS3Bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
 
     String body = ApiGatewayRequestEventUtil.getBodyAsString(event);
     s3.putObject(stageS3Bucket, key, body.getBytes(StandardCharsets.UTF_8), "application/json");
+    s3.setObjectTag(stageS3Bucket, key, "userId", authorization.username());
 
     ApiMapResponse resp = new ApiMapResponse(Map.of("message", "received update tags request"));
     return new ApiRequestHandlerResponse(SC_OK, resp);

@@ -69,6 +69,15 @@ public interface DocumentService extends DocumentTagLoader {
   void addTags(String siteId, String documentId, Collection<DocumentTag> tags, String timeToLive);
 
   /**
+   * Add Tags to {@link Collection} of Documents.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param tags {@link Map} {@link Collection} {@link DocumentTag}
+   * @param timeToLive {@link String}
+   */
+  void addTags(String siteId, Map<String, Collection<DocumentTag>> tags, String timeToLive);
+
+  /**
    * Delete Document.
    * 
    * @param siteId Optional Grouping siteId

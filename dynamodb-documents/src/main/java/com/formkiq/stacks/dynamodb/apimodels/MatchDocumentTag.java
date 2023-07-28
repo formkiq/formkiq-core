@@ -30,17 +30,88 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Match Document Tag.
  */
 public class MatchDocumentTag {
+  /** Tag Key begins with. */
+  @Reflectable
+  private String beginsWith;
+  /** Tag Key equals. */
+  @Reflectable
+  private String eq;
   /** Tag Key. */
   @Reflectable
   private String key;
-  /** Tag Value. */
-  @Reflectable
-  private String value;
 
   /**
    * constructor.
    */
   public MatchDocumentTag() {}
+
+  /**
+   * Set Tag Key beginsWith.
+   * 
+   * @param tagKeyBeginsWith {@link String}
+   * @return {@link MatchDocumentTag}
+   */
+  public MatchDocumentTag beginsWith(final String tagKeyBeginsWith) {
+    this.beginsWith = tagKeyBeginsWith;
+    return this;
+  }
+
+  /**
+   * Set Tag Key equals.
+   * 
+   * @param tagKeyEq {@link String}
+   * @return {@link MatchDocumentTag}
+   */
+  public MatchDocumentTag eq(final String tagKeyEq) {
+    this.eq = tagKeyEq;
+    return this;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    MatchDocumentTag matchDocumentTag = (MatchDocumentTag) o;
+    return Objects.equals(this.key, matchDocumentTag.key)
+        && Objects.equals(this.beginsWith, matchDocumentTag.beginsWith)
+        && Objects.equals(this.eq, matchDocumentTag.eq);
+  }
+
+  /**
+   * Searches for strings that begin with.
+   * 
+   * @return beginsWith
+   **/
+  public String getBeginsWith() {
+    return this.beginsWith;
+  }
+
+  /**
+   * Searches for strings that eq.
+   * 
+   * @return eq
+   **/
+  public String getEq() {
+    return this.eq;
+  }
+
+  /**
+   * Tag key.
+   * 
+   * @return key
+   **/
+  public String getKey() {
+    return this.key;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.key, this.beginsWith, this.eq);
+  }
 
   /**
    * Set Key {@link String}.
@@ -54,63 +125,6 @@ public class MatchDocumentTag {
   }
 
   /**
-   * Tag key.
-   * 
-   * @return key
-   **/
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Set Value.
-   * 
-   * @param tagValue {@link String}
-   * @return {@link MatchDocumentTag}
-   */
-  public MatchDocumentTag value(final String tagValue) {
-    this.value = tagValue;
-    return this;
-  }
-
-  /**
-   * Tag value.
-   * 
-   * @return value
-   **/
-  public String getValue() {
-    return this.value;
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    MatchDocumentTag matchDocumentTag = (MatchDocumentTag) o;
-    return Objects.equals(this.key, matchDocumentTag.key)
-        && Objects.equals(this.value, matchDocumentTag.value);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.key, this.value);
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class MatchDocumentTag {\n");
-    sb.append("    key: ").append(toIndentedString(this.key)).append("\n");
-    sb.append("    value: ").append(toIndentedString(this.value)).append("\n");
-    sb.append("}");
-    return sb.toString();
-  }
-
-  /**
    * Convert the given object to string with each line indented by 4 spaces (except the first line).
    * 
    * @param o {@link Object}
@@ -121,5 +135,16 @@ public class MatchDocumentTag {
       return "null";
     }
     return o.toString().replace("\n", "\n    ");
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class MatchDocumentTag {\n");
+    sb.append("    key: ").append(toIndentedString(this.key)).append("\n");
+    sb.append("    beginsWith: ").append(toIndentedString(this.beginsWith)).append("\n");
+    sb.append("    eq: ").append(toIndentedString(this.eq)).append("\n");
+    sb.append("}");
+    return sb.toString();
   }
 }

@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
@@ -163,23 +163,35 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void addTags(final String siteId, final String documentId,
-      final Collection<DocumentTag> tags, final String timeToLive) {
+  public void addTags(final String siteId, final Map<String, Collection<DocumentTag>> tags,
+      final String timeToLive) {
 
-    List<Map<String, AttributeValue>> items =
-        getSaveTagsAttributes(siteId, documentId, tags, timeToLive);
+    Collection<String> tagKeys = new HashSet<>();
+    List<Map<String, AttributeValue>> items = new ArrayList<>();
+
+    for (Map.Entry<String, Collection<DocumentTag>> e : tags.entrySet()) {
+      List<Map<String, AttributeValue>> attributes =
+          getSaveTagsAttributes(siteId, e.getKey(), e.getValue(), timeToLive);
+      items.addAll(attributes);
+
+      tagKeys.addAll(e.getValue().stream().map(t -> t.getKey()).collect(Collectors.toList()));
+    }
 
     if (!items.isEmpty()) {
-      WriteRequestBuilder builder =
-          new WriteRequestBuilder().appends(this.documentTableName, items);
-      BatchWriteItemRequest batch =
-          BatchWriteItemRequest.builder().requestItems(builder.getItems()).build();
-      this.dbClient.batchWriteItem(batch);
 
-      List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
+      WriteRequestBuilder writeBuilder =
+          new WriteRequestBuilder().appends(this.documentTableName, items);
+
+      writeBuilder.batchWriteItem(this.dbClient);
 
       this.indexWriter.writeTagIndex(siteId, tagKeys);
     }
+  }
+
+  @Override
+  public void addTags(final String siteId, final String documentId,
+      final Collection<DocumentTag> tags, final String timeToLive) {
+    addTags(siteId, Map.of(documentId, tags), timeToLive);
   }
 
   /**

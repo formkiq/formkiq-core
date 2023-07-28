@@ -31,6 +31,7 @@ import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -45,11 +46,15 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -66,7 +71,7 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.client.FormKiqClient;
@@ -75,19 +80,25 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
+import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
@@ -150,6 +161,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private ActionsService actionsService;
   /** App Environment. */
   private String appEnvironment;
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache awsservices;
   /** {@link AwsCredentials}. */
   private AwsCredentials credentials;
   /** {@link String}. */
@@ -211,28 +224,30 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.region = Region.of(map.get("AWS_REGION"));
     this.credentials = awsCredentials;
 
-    AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
-    DocumentVersionServiceExtension dsExtension = new DocumentVersionServiceExtension();
-    DocumentVersionService versionService = dsExtension.loadService(serviceCache);
+    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
 
-    DocumentSyncServiceExtension syncExtension = new DocumentSyncServiceExtension();
-    this.syncService = syncExtension.loadService(serviceCache);
+    this.awsservices = new AwsServiceCache().environment(map);
+    this.syncService = this.awsservices.getExtension(DocumentSyncService.class);
 
-    String documentsTable = map.get("DOCUMENTS_TABLE");
-
-    this.service = new DocumentServiceImpl(dbBuilder, documentsTable, versionService);
-    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, documentsTable);
+    this.service = this.awsservices.getExtension(DocumentService.class);
+    this.actionsService = this.awsservices.getExtension(ActionsService.class);
     this.s3 = new S3Service(s3Builder);
     this.ssmConnection = ssmConnectionBuilder;
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService =
         new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
-    this.folderIndexProcesor = new FolderIndexProcessorImpl(dbBuilder, documentsTable);
+    this.folderIndexProcesor = this.awsservices.getExtension(FolderIndexProcessor.class);
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.appEnvironment = map.get("APP_ENVIRONMENT");
+
   }
 
   /**
@@ -358,6 +373,24 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
+   * Get {@link String} content from an S3 Bucket / Key.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param bucket {@link String}
+   * @param s3Key {@link String}
+   * @return {@link String}
+   */
+  private String getContentFromS3(final LambdaLogger logger, final String bucket,
+      final String s3Key) {
+    String s = this.s3.getContentAsString(bucket, s3Key, null);
+
+    if ("true".equals(System.getenv("DEBUG"))) {
+      logger.log(s);
+    }
+    return s;
+  }
+
+  /**
    * Find DocumentId for File Path.
    * 
    * @param siteId {@link String}
@@ -418,11 +451,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
 
-      String s = this.s3.getContentAsString(bucket, s3Key, null);
-
-      if ("true".equals(System.getenv("DEBUG"))) {
-        logger.log(s);
-      }
+      String s = getContentFromS3(logger, bucket, s3Key);
 
       Map<String, Object> map = this.gson.fromJson(s, Map.class);
       doc = new DynamicDocumentItem(map);
@@ -490,6 +519,64 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   }
 
   /**
+   * Default File Processor.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param bucket {@link String}
+   * @param s3Key {@link String}
+   * @param date {@link Date}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void processDefaultFile(final LambdaLogger logger, final String siteId,
+      final String bucket, final String s3Key, final Date date)
+      throws IOException, InterruptedException {
+
+    DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
+
+    Map<String, String> contentMap = createContentMap(loadDocument);
+    Map<String, String> contentTypeMap = createContentTypeMap(loadDocument);
+
+    boolean hasContent = !contentMap.isEmpty();
+
+    DocumentItem existingDocument = this.service.findDocument(siteId, loadDocument.getDocumentId());
+    DynamicDocumentItem item =
+        createDocument(logger, siteId, loadDocument, date, hasContent, existingDocument);
+
+    if (item != null) {
+
+      String tagSchemaId = item.getString("tagSchemaId");
+      Boolean newCompositeTags = item.getBoolean("newCompositeTags");
+
+      if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
+        createFormKiQConnectionIfNeeded();
+        postDocumentTags(siteId, item);
+      }
+
+      writeS3Document(logger, bucket, s3Key, siteId, item, contentMap, contentTypeMap);
+
+      if (contentMap.isEmpty()) {
+        logger.log(String.format("Skipping %s no content", item.getPath()));
+      }
+
+      if (existingDocument != null && !hasContent) {
+
+        List<Action> actions = this.actionsService.getActions(siteId, item.getDocumentId());
+        List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
+            .collect(Collectors.toList());
+        syncs.forEach(a -> a.status(ActionStatus.PENDING));
+        this.actionsService.saveActions(siteId, item.getDocumentId(), actions);
+
+        logger.log("publishing actions message to " + this.snsDocumentEvent);
+        this.notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
+      }
+    }
+
+    deleteObject(logger, bucket, s3Key);
+  }
+
+  /**
    * Process S3 Event.
    * 
    * @param logger {@link LambdaLogger}
@@ -512,53 +599,80 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (objectCreated) {
 
-      DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
-
-      Map<String, String> contentMap = createContentMap(loadDocument);
-      Map<String, String> contentTypeMap = createContentTypeMap(loadDocument);
-
-      boolean hasContent = !contentMap.isEmpty();
-
-      DocumentItem existingDocument =
-          this.service.findDocument(siteId, loadDocument.getDocumentId());
-      DynamicDocumentItem item =
-          createDocument(logger, siteId, loadDocument, date, hasContent, existingDocument);
-
-      if (item != null) {
-
-        String tagSchemaId = item.getString("tagSchemaId");
-        Boolean newCompositeTags = item.getBoolean("newCompositeTags");
-
-        if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-          createFormKiQConnectionIfNeeded();
-          postDocumentTags(siteId, item);
-        }
-
-        writeS3Document(logger, bucket, s3Key, siteId, item, contentMap, contentTypeMap);
-
-        if (contentMap.isEmpty()) {
-          logger.log(String.format("Skipping %s no content", item.getPath()));
-        }
-
-        if (existingDocument != null && !hasContent) {
-
-          List<Action> actions = this.actionsService.getActions(siteId, item.getDocumentId());
-          List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
-              .collect(Collectors.toList());
-          syncs.forEach(a -> a.status(ActionStatus.PENDING));
-          this.actionsService.saveActions(siteId, item.getDocumentId(), actions);
-
-          logger.log("publishing actions message to " + this.snsDocumentEvent);
-          this.notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
-        }
+      if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
+        processPatchDocumentsTags(logger, siteId, bucket, s3Key, date);
+      } else {
+        processDefaultFile(logger, siteId, bucket, s3Key, date);
       }
-
-      deleteObject(logger, bucket, s3Key);
     }
 
     if (!objectCreated) {
       logger.log("skipping event " + eventName);
     }
+  }
+
+  /**
+   * Process Files generated from PATCH /documents/tags.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param siteId {@link String}
+   * @param bucket {@link String}
+   * @param s3Key {@link String}
+   * @param date {@link Date}
+   */
+  private void processPatchDocumentsTags(final LambdaLogger logger, final String siteId,
+      final String bucket, final String s3Key, final Date date) {
+
+    GetObjectTaggingResponse objectTags = this.s3.getObjectTags(bucket, s3Key);
+    String user = objectTags.tagSet().stream().filter(t -> t.key().equals("userId")).findFirst()
+        .orElse(Tag.builder().value("System").build()).value();
+
+    String s = getContentFromS3(logger, bucket, s3Key);
+
+    UpdateMatchingDocumentTagsRequest request =
+        this.gson.fromJson(s, UpdateMatchingDocumentTagsRequest.class);
+
+    MatchDocumentTag matchTag = request.getMatch().getTag();
+    SearchTagCriteria query = new SearchTagCriteria().key(matchTag.getKey()).eq(matchTag.getEq())
+        .beginsWith(matchTag.getBeginsWith());
+
+    runPatchDocumentsTags(siteId, request, query, date, user);
+  }
+
+  private void runPatchDocumentsTags(final String siteId,
+      final UpdateMatchingDocumentTagsRequest request, final SearchTagCriteria query,
+      final Date date, final String user) {
+
+    PaginationMapToken token = null;
+    final int maxresults = 100;
+
+    PaginationResults<String> results = null;
+
+    DocumentSearchService searchService =
+        this.awsservices.getExtension(DocumentSearchService.class);
+
+    List<com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag> addTags =
+        request.getUpdate().getTags();
+
+    do {
+      results = searchService.searchForDocumentIds(siteId, query, token, maxresults);
+      token = results.getToken();
+
+      List<String> documentIds = results.getResults();
+
+      Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
+
+      for (String documentId : documentIds) {
+
+        List<DocumentTag> tags = addTags.stream()
+            .map(t -> new DocumentTag(documentId, t.getKey(), t.getValue(), date, user))
+            .collect(Collectors.toList());
+        tagMap.put(documentId, tags);
+      }
+
+      this.service.addTags(siteId, tagMap, null);
+
+    } while (token != null);
   }
 
   /**
