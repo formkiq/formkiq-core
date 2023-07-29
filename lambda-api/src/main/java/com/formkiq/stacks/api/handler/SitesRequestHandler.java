@@ -25,23 +25,24 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.ConfigService;
-import software.amazon.awssdk.services.ssm.SsmClient;
 
 /** {@link ApiGatewayRequestHandler} for "/sites". */
 public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
@@ -77,33 +78,32 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    List<DynamicObject> sites = authorization.siteIds().stream().map(siteId -> {
 
-    SsmConnectionBuilder ssm = awsservice.getExtension(SsmConnectionBuilder.class);
-    try (SsmClient ssmClient = ssm.build()) {
+      DynamicObject config = new DynamicObject(new HashMap<>());
+      config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
-      List<DynamicObject> sites = authorizer.getSiteIds().stream().map(siteId -> {
-        DynamicObject config = configService.get(siteId);
-        config.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+      boolean write = authorization.permissions(siteId).contains(ApiPermission.WRITE);
+      config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
 
-        boolean write = authorizer.getWriteSiteIds().contains(siteId);
-        config.put("permission", write ? "READ_WRITE" : "READ_ONLY");
+      List<String> permissions = authorization.permissions(siteId).stream().map(p -> p.name())
+          .collect(Collectors.toList());
+      Collections.sort(permissions);
 
-        return config;
-      }).collect(Collectors.toList());
+      config.put("permissions", permissions);
 
-      sites.forEach(ob -> {
-        ob.remove("PK");
-        ob.remove("SK");
-      });
+      return config;
+    }).collect(Collectors.toList());
 
-      updateUploadEmail(logger, awsservice, authorizer, sites);
+    updateUploadEmail(logger, awsservice, authorization, sites);
 
-      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("sites", sites)));
-    }
+    String userId = authorization.username();
+
+    return new ApiRequestHandlerResponse(SC_OK,
+        new ApiMapResponse(Map.of("username", userId, "sites", sites)));
   }
 
   /**
@@ -149,6 +149,12 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     return awsservice.getExtension(SsmService.class);
   }
 
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return !authorization.siteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
+  }
+
   /**
    * Does Email address already exist.
    * 
@@ -169,18 +175,20 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
    * 
    * @param logger {@link LambdaLogger}
    * @param awsservice {@link AwsServiceCache}
-   * @param authorizer {@link ApiAuthorizer}
+   * @param authorization {@link ApiAuthorization}
    * @param sites {@link List} {@link DynamicObject}
    */
   private void updateUploadEmail(final LambdaLogger logger, final AwsServiceCache awsservice,
-      final ApiAuthorizer authorizer, final List<DynamicObject> sites) {
+      final ApiAuthorization authorization, final List<DynamicObject> sites) {
 
     String mailDomain = getMailDomain(awsservice);
     SsmService ssmService = getSsmService(awsservice);
 
     if (mailDomain != null) {
 
-      List<String> writeSiteIds = authorizer.getWriteSiteIds();
+      List<String> writeSiteIds = authorization.siteIds().stream()
+          .filter(s -> authorization.permissions(s).contains(ApiPermission.WRITE))
+          .collect(Collectors.toList());
 
       sites.forEach(site -> {
 

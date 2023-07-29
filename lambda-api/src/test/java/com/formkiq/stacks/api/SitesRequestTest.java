@@ -53,7 +53,7 @@ public class SitesRequestTest extends AbstractRequestHandler {
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
 
   /**
-   * Get /esignature/docusign/config request.
+   * Get /sites request.
    * 
    * @param siteId {@link String}
    * @param group {@link String}
@@ -75,8 +75,12 @@ public class SitesRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
+    String siteId = null;
+    ConfigService config = getAwsServices().getExtension(ConfigService.class);
+    config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
+
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
-    ApiGatewayRequestEvent event = getRequest(null, "default Admins finance");
+    ApiGatewayRequestEvent event = getRequest(siteId, "default Admins finance");
 
     // when
     String response = handleRequest(event);
@@ -91,13 +95,18 @@ public class SitesRequestTest extends AbstractRequestHandler {
 
     DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
 
+    assertEquals("joesmith", resp.getString("username"));
     assertNull(resp.getString("next"));
     assertNull(resp.getString("previous"));
 
     List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
+    final int expected = 4;
+    assertEquals(expected, sites.get(0).size());
     assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
     assertEquals("READ_WRITE", sites.get(0).get("permission"));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        String.join(",", sites.get(0).getStringList("permissions")));
     assertNotNull(sites.get(0).get("uploadEmail"));
 
     String uploadEmail = sites.get(0).getString("uploadEmail");
@@ -176,7 +185,7 @@ public class SitesRequestTest extends AbstractRequestHandler {
     putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
     removeSsmParameter(
         String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
-    ApiGatewayRequestEvent event = getRequest(null, "default_read finance");
+    ApiGatewayRequestEvent event = getRequest("default", "default_read finance");
 
     // when
     String response = handleRequest(event);
@@ -246,7 +255,5 @@ public class SitesRequestTest extends AbstractRequestHandler {
     assertEquals(1, resp.getList("sites").size());
     assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
     assertEquals("READ_WRITE", resp.getList("sites").get(0).getString("permission"));
-    assertEquals("5", resp.getList("sites").get(0).getString(MAX_DOCUMENTS));
-    assertEquals("10", resp.getList("sites").get(0).getString(MAX_WEBHOOKS));
   }
 }

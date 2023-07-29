@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
@@ -83,6 +84,24 @@ public class DocumentSearchServiceImplTest {
         new DocumentVersionServiceNoVersioning());
     this.searchService =
         new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE, null);
+  }
+
+  /**
+   * Create Document with Tag.
+   * 
+   * @param siteId {@link String}
+   * @param tagKey {@link String}
+   * @param tagValue {@link String}
+   * @return {@link String}
+   */
+  private String createDocument(final String siteId, final String tagKey, final String tagValue) {
+    ZonedDateTime now = ZonedDateTime.now();
+    DocumentItem doc = createDocument(UUID.randomUUID().toString(), now, "text/plain", "test.txt");
+    Collection<DocumentTag> tags = Arrays
+        .asList(new DocumentTag(doc.getDocumentId(), tagKey, tagValue, new Date(), "testuser"));
+    this.service.saveDocument(siteId, doc, tags);
+
+    return doc.getDocumentId();
   }
 
   /**
@@ -898,6 +917,41 @@ public class DocumentSearchServiceImplTest {
 
       // then
       assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /** Search by 'eq' / 'beginsWith' Tag Key & Value. */
+  @Test
+  public void testSearchForDocumentIds01() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      PaginationMapToken startkey = null;
+      final String documentId0 = createDocument(siteId, "category", "person0");
+      final String documentId1 = createDocument(siteId, "category", "person1");
+      createDocument(siteId, "category", "other");
+
+      SearchTagCriteria c = new SearchTagCriteria("category").eq("person0");
+
+      // when
+      PaginationResults<String> results =
+          this.searchService.searchForDocumentIds(siteId, c, startkey, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getToken());
+      assertEquals(documentId0, results.getResults().get(0));
+
+      // given
+      c = new SearchTagCriteria("category").beginsWith("per");
+
+      // when
+      results = this.searchService.searchForDocumentIds(siteId, c, startkey, MAX_RESULTS);
+
+      // then
+      assertNull(results.getToken());
+      assertEquals(2, results.getResults().size());
+      assertTrue(results.getResults().contains(documentId0));
+      assertTrue(results.getResults().contains(documentId1));
     }
   }
 }

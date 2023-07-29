@@ -90,6 +90,7 @@ import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypeSenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import joptsimple.internal.Strings;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -185,7 +186,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     final int status = 200;
 
-    for (String item : Arrays.asList("1", "2", "3")) {
+    for (String item : Arrays.asList("1", "2", "3", "4", "5")) {
       String text = FileUtils.loadFile(mockServer, "/chatgpt/response" + item + ".json");
       mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item)).respond(
           org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
@@ -305,20 +306,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
-      assertEquals("Document Type", tags.getResults().get(i).getKey());
+      assertEquals("document type", tags.getResults().get(i).getKey());
       assertEquals("Memorandum", tags.getResults().get(i++).getValue());
 
-      assertEquals("Location", tags.getResults().get(i).getKey());
+      assertEquals("location", tags.getResults().get(i).getKey());
       assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
 
-      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("organization", tags.getResults().get(i).getKey());
       assertEquals("Great Auk Enterprises", tags.getResults().get(i++).getValue());
 
-      assertEquals("Person", tags.getResults().get(i).getKey());
+      assertEquals("person", tags.getResults().get(i).getKey());
       assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat,Aaron Thomas",
           String.join(",", tags.getResults().get(i++).getValues()));
 
-      assertEquals("Subject", tags.getResults().get(i).getKey());
+      assertEquals("subject", tags.getResults().get(i).getKey());
       assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
     }
   }
@@ -402,7 +403,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       int i = 0;
       assertEquals("Organization", tags.getResults().get(i).getKey());
-      assertEquals("East Repair Inc.", tags.getResults().get(i++).getValue());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
 
       assertEquals("document type", tags.getResults().get(i).getKey());
       assertEquals("Receipt", tags.getResults().get(i++).getValue());
@@ -488,6 +489,145 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("subject", tags.getResults().get(i).getKey());
       assertEquals("Frontend eaar brake cabies,New set of podal arms,Labor shrs 500",
           String.join(",", tags.getResults().get(i++).getValues()));
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action extra quotes.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction06() throws Exception {
+
+    initProcessor("fulltext", "chatgpt4");
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
+          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      final int expectedSize = 5;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      PaginationResults<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals("Memorandum", tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
+
+      assertEquals("organization", tags.getResults().get(i).getKey());
+      assertEquals("Great Auk Enterprises", tags.getResults().get(i++).getValue());
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat,Aaron Thomas",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action extra quotes.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction07() throws Exception {
+
+    initProcessor("fulltext", "chatgpt5");
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
+          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING)
+          .parameters(Map.of("engine", "chatgpt", "tags",
+              "document type,meeting date,chairperson,secretary,board members,resolutions")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      final int expectedSize = 6;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      PaginationResults<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("board members", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat",
+          Strings.join(tags.getResults().get(i++).getValues(), ","));
+
+      assertEquals("chairperson", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
+
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals("Minutes of the Director's Meeting", tags.getResults().get(i++).getValue());
+
+      assertEquals("meeting date", tags.getResults().get(i).getKey());
+      assertEquals("21st day of April, 2023", tags.getResults().get(i++).getValue());
+
+      assertEquals("resolutions", tags.getResults().get(i).getKey());
+      assertEquals("individualAppointed: Thomas Bewick", tags.getResults().get(i++).getValue());
+
+      assertEquals("secretary", tags.getResults().get(i).getKey());
+      assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
     }
   }
 

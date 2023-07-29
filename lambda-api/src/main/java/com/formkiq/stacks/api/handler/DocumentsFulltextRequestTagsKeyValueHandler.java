@@ -23,16 +23,28 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /**
  * {@link ApiGatewayRequestHandler} for "/documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}".
  */
-public class DocumentsFulltextRequestTagsKeyValueHandler
-    extends AbstractPaymentRequiredRequestHandler {
+public class DocumentsFulltextRequestTagsKeyValueHandler implements ApiGatewayRequestHandler {
 
   /** {@link DocumentsFulltextRequestTagsKeyValueHandler} URL. */
   public static final String URL = "/documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}";
+
+  @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+    throw new BadException("Typesense does not support this API");
+  }
 
   @Override
   public String getRequestUrl() {

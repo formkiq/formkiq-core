@@ -21,26 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.sqs;
+package com.formkiq.stacks.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.jupiter.api.Test;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
-/**
- * 
- * Unit Tests for {@link SqsService}.
- *
- */
-public class SqsServiceTest {
-
-  /**
-   * Test converting QueueUrl to QueueArn.
-   */
-  @Test
-  public void testGetQueueArn01() {
-    assertEquals(
-        "arn:aws:sqs:us-east-1:123456789000:updatetest-3df09234-1987-4f24-84d0-d77934ff8a80",
-        SqsService.getQueueArn(
-            "https://sqs.us-east-1.amazonaws.com/123456789000/updatetest-3df09234-1987-4f24-84d0-d77934ff8a80"));
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/permissions". */
+public class DocumentPermissionsRequestHandler extends AbstractPaymentRequiredRequestHandler {
+  @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/permissions";
   }
 }

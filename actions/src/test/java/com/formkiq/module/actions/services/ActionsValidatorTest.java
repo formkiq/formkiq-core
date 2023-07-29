@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.validation.ValidationError;
@@ -42,9 +44,10 @@ class ActionsValidatorTest {
   void testValidation01() {
     // given
     Action action = null;
+    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = this.validator.validation(action);
+    Collection<ValidationError> errors = this.validator.validation(action, obj);
 
     // then
     assertEquals(1, errors.size());
@@ -57,9 +60,10 @@ class ActionsValidatorTest {
   void testValidation02() {
     // given
     Action action = new Action();
+    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = this.validator.validation(action);
+    Collection<ValidationError> errors = this.validator.validation(action, obj);
 
     // then
     assertEquals(1, errors.size());
@@ -72,9 +76,10 @@ class ActionsValidatorTest {
   void testValidation03() {
     // given
     Action action = new Action().type(ActionType.WEBHOOK);
+    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errors = this.validator.validation(action);
+    Collection<ValidationError> errors = this.validator.validation(action, obj);
 
     // then
     assertEquals(1, errors.size());
@@ -87,10 +92,11 @@ class ActionsValidatorTest {
   void testValidation04() {
     // given
     Action action = new Action();
+    DynamicObject obj = new DynamicObject(Map.of());
     List<Action> actions = Arrays.asList(action);
 
     // when
-    List<Collection<ValidationError>> errorList = this.validator.validation(actions);
+    List<Collection<ValidationError>> errorList = this.validator.validation(actions, obj);
 
     // then
     assertEquals(1, errorList.size());
@@ -105,9 +111,10 @@ class ActionsValidatorTest {
   void testValidation05() {
     // given
     Action action = new Action().type(ActionType.OCR);
+    DynamicObject obj = new DynamicObject(Map.of());
 
     // when
-    Collection<ValidationError> errorList = this.validator.validation(action);
+    Collection<ValidationError> errorList = this.validator.validation(action, obj);
 
     // then
     assertEquals(0, errorList.size());

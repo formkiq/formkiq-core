@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.FORMKIQ_CLI;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
@@ -47,6 +48,7 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -112,6 +114,11 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag;
+import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
+import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
+import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestMatch;
+import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestUpdate;
 import com.formkiq.stacks.lambda.s3.util.LambdaContextRecorder;
 import com.formkiq.stacks.lambda.s3.util.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -147,6 +154,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link Gson}. */
   private static Gson gson =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
+
   /** Register LocalStack extension. */
   @RegisterExtension
   static LocalStackExtension localStack = new LocalStackExtension();
@@ -156,7 +164,6 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** Port to run Test server. */
   private static final int PORT = 8888;
-
   /** {@link S3Service}. */
   private static S3Service s3;
   /** {@link S3ConnectionBuilder}. */
@@ -191,7 +198,6 @@ public class StagingS3CreateTest implements DbKeys {
   private static final String STAGING_BUCKET = "example-bucket";
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService;
-
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -244,7 +250,9 @@ public class StagingS3CreateTest implements DbKeys {
 
     snsService = new SnsService(snsBuilder);
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     createResources();
 
@@ -528,14 +536,6 @@ public class StagingS3CreateTest implements DbKeys {
           service.findDocumentTags(siteId, destDocumentId, null, MAX_RESULTS).getResults();
       int tagcount = hasTags ? docitem.getList("tags").size() : 1;
       assertEquals(tagcount, tags.size());
-      // assertEquals(1, tags.size());
-
-      // DocumentTag ptag = findTag(tags, "path");
-      // assertEquals(destDocumentId, ptag.getDocumentId());
-      // assertEquals(docitem.getPath(), ptag.getValue());
-      // assertNotNull(ptag.getInsertedDate());
-      // assertEquals(DocumentTagType.SYSTEMDEFINED, ptag.getType());
-      // assertEquals(docitem.getUserId(), ptag.getUserId());
 
       if (hasTags) {
 
@@ -1301,6 +1301,115 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("category", md.getKey());
       assertEquals("person", md.getValue());
     }
+  }
+
+  /**
+   * Test processing S3 file from PATCH /documents/tags.
+   */
+  @Test
+  void testPatchDocumentsTags01() {
+    // given
+    final int maxDocuments = 150;
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String key = "category";
+      String value = "person";
+
+      String newKey = "person";
+      String newValue = "111";
+
+      List<String> documentIds = new ArrayList<>();
+      for (int i = 0; i < maxDocuments; i++) {
+        DynamicDocumentItem item = createDocumentItem();
+        documentIds.add(item.getDocumentId());
+
+        Collection<DocumentTag> tags =
+            Arrays.asList(new DocumentTag(item.getDocumentId(), key, value, new Date(), "joe"));
+        service.saveDocument(siteId, item, tags);
+      }
+
+      List<AddDocumentTag> tags = Arrays.asList(new AddDocumentTag().key(newKey).value(newValue));
+      UpdateMatchingDocumentTagsRequest req = new UpdateMatchingDocumentTagsRequest()
+          .match(new UpdateMatchingDocumentTagsRequestMatch()
+              .tag(new MatchDocumentTag().key(key).eq(value)))
+          .update(new UpdateMatchingDocumentTagsRequestUpdate().tags(tags));
+
+      byte[] data = gson.toJson(req).getBytes(StandardCharsets.UTF_8);
+
+      String s3Key =
+          createS3Key(siteId, "patch_documents_tags_" + UUID.randomUUID() + FORMKIQ_B64_EXT);
+      s3.putObject(STAGING_BUCKET, s3Key, data, "application/json");
+
+      Map<String, Object> requestMap = createRequestMap(s3Key);
+
+      // when
+      handleRequest(requestMap);
+
+      // then
+      for (String documentId : documentIds) {
+        assertEquals(newValue, service.findDocumentTag(siteId, documentId, newKey).getValue());
+      }
+    }
+  }
+
+  /**
+   * Test processing S3 file from PATCH /documents/tags multiple tags.
+   */
+  @Test
+  void testPatchDocumentsTags02() {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      String key = "category";
+      String value = "person";
+
+      String newKey0 = "person";
+      String newValue0 = "111";
+
+      String newKey1 = "player";
+      String newValue1 = "222";
+
+      DynamicDocumentItem item = createDocumentItem();
+
+      service.saveDocument(siteId, item,
+          Arrays.asList(new DocumentTag(item.getDocumentId(), key, value, new Date(), "joe")));
+
+      List<AddDocumentTag> tags = Arrays.asList(new AddDocumentTag().key(newKey0).value(newValue0),
+          new AddDocumentTag().key(newKey1).value(newValue1));
+
+      UpdateMatchingDocumentTagsRequest req = new UpdateMatchingDocumentTagsRequest()
+          .match(new UpdateMatchingDocumentTagsRequestMatch()
+              .tag(new MatchDocumentTag().key(key).eq(value)))
+          .update(new UpdateMatchingDocumentTagsRequestUpdate().tags(tags));
+
+      byte[] data = gson.toJson(req).getBytes(StandardCharsets.UTF_8);
+
+      String s3Key =
+          createS3Key(siteId, "patch_documents_tags_" + UUID.randomUUID() + FORMKIQ_B64_EXT);
+      s3.putObject(STAGING_BUCKET, s3Key, data, "application/json");
+
+      Map<String, Object> requestMap = createRequestMap(s3Key);
+
+      // when
+      handleRequest(requestMap);
+
+      // then
+      assertEquals(newValue0,
+          service.findDocumentTag(siteId, item.getDocumentId(), newKey0).getValue());
+      assertEquals(newValue1,
+          service.findDocumentTag(siteId, item.getDocumentId(), newKey1).getValue());
+    }
+  }
+
+  private Map<String, Object> createRequestMap(final String s3Key) {
+
+    Map<String, Object> record = Map.of("eventName", "ObjectCreated", "s3",
+        Map.of("bucket", Map.of("name", STAGING_BUCKET), "object", Map.of("key", s3Key)));
+    String body = gson.toJson(Map.of("Records", Arrays.asList(record)));
+    List<Map<String, Object>> records = Arrays.asList(Map.of("body", body));
+
+    return new HashMap<>(Map.of("Records", records));
   }
 
   /**

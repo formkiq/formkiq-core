@@ -21,47 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.aws.services.lambda;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.WebhooksService;
-import com.formkiq.stacks.dynamodb.WebhooksServiceImpl;
 
 /**
  * 
- * Core {@link AwsServiceCache}.
+ * Interceptor on the {@link ApiRequestHandlerResponse}.
  *
  */
-public class CoreAwsServiceCache extends AwsServiceCache {
+public interface ApiRequestHandlerInterceptor {
 
   /**
-   * Casts {@link AwsServiceCache} to {@link CoreAwsServiceCache}.
+   * Handle / Modify API requests AFTER they are processed.
    * 
-   * @param service {@link AwsServiceCache}
-   * @return {@link CoreAwsServiceCache}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param response {@link ApiRequestHandlerResponse}
+   * @throws Exception Exception
    */
-  public static CoreAwsServiceCache cast(final AwsServiceCache service) {
-    if (service instanceof CoreAwsServiceCache) {
-      return (CoreAwsServiceCache) service;
-    }
-
-    throw new UnsupportedOperationException("expected CoreAwsServiceCache.class");
-  }
-
-  /** {@link WebhooksService}. */
-  private WebhooksService webhookService;
+  void afterProcessRequest(ApiGatewayRequestEvent event, ApiAuthorization authorization,
+      ApiRequestHandlerResponse response) throws Exception;
 
   /**
-   * Get {@link WebhooksService}.
+   * Sets {@link AwsServiceCache}.
    * 
-   * @return {@link WebhooksService}
+   * @param awsServices {@link AwsServiceCache}
    */
-  public WebhooksService webhookService() {
-    if (this.webhookService == null) {
-      DynamoDbConnectionBuilder connection = getExtension(DynamoDbConnectionBuilder.class);
-      this.webhookService = new WebhooksServiceImpl(connection, environment("DOCUMENTS_TABLE"));
-    }
-    return this.webhookService;
-  }
+  void awsServiceCache(AwsServiceCache awsServices);
+
+  /**
+   * Handle / Modify API requests BEFORE they are processed.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @throws Exception Exception
+   */
+  void beforeProcessRequest(ApiGatewayRequestEvent event, ApiAuthorization authorization)
+      throws Exception;
 }

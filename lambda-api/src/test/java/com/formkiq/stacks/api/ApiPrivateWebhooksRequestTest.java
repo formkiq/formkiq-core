@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -62,8 +63,8 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
       for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
         String name = UUID.randomUUID().toString();
 
-        String id =
-            getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, enabled);
+        String id = getAwsServices().getExtension(WebhooksService.class).saveWebhook(siteId, name,
+            "joe", null, enabled);
 
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-private-webhooks01.json");
         addParameter(event, "siteId", siteId);
@@ -117,7 +118,8 @@ public class ApiPrivateWebhooksRequestTest extends AbstractRequestHandler {
     }
 
     if (hasTimeToLive) {
-      DynamicObject obj = getAwsServices().webhookService().findWebhook(siteId, webhookId);
+      DynamicObject obj =
+          getAwsServices().getExtension(WebhooksService.class).findWebhook(siteId, webhookId);
       assertNotNull(obj.get("TimeToLive"));
       assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
     }

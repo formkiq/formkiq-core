@@ -37,7 +37,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -71,7 +70,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
 
     Map<String, String> map = Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "CACHE_TABLE", "",
         "APP_ENVIRONMENT", "unittest");
-    this.awsservice = new CoreAwsServiceCache().environment(map);
+    this.awsservice = new AwsServiceCache().environment(map);
   }
 
   /**

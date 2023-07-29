@@ -1,0 +1,21 @@
+{
+    "id": "cmpl-7bwGRyeJOxasYu6ucPx5tP0pH1ohf",
+    "object": "text_completion",
+    "created": 1689276459,
+    "model": "text-davinci-003",
+    "choices":
+    [
+        {
+            "text": " board: Thomas Bewick, Ketill Ketilsson, and Farley Mowat.\n\n{\n \"documentType\": \"Minutes of the Director's Meeting\",\n \"meetingDate\": \"21st day of April, 2023\", \n \"chairperson\": \"Thomas Bewick\", \n \"secretary\": \"Aaron Thomas\", \n \"boardMembers\": [\"Thomas Bewick\",\"Ketill Ketilsson\",\"Farley Mowat\"], \n \"resolutions\": [{\"individualAppointed\":\"Thomas Bewick\"}] \n}",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage":
+    {
+        "prompt_tokens": 477,
+        "completion_tokens": 127,
+        "total_tokens": 604
+    }
+}

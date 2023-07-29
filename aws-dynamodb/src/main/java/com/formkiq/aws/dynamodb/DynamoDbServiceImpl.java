@@ -34,14 +34,18 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
  * 
@@ -87,10 +91,11 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public void deleteItem(final AttributeValue pk, final AttributeValue sk) {
+  public boolean deleteItem(final AttributeValue pk, final AttributeValue sk) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, pk, SK, sk);
-    this.dbClient
-        .deleteItem(DeleteItemRequest.builder().tableName(this.tableName).key(sourceKey).build());
+    DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
+        .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+    return !response.attributes().isEmpty();
   }
 
   @Override
@@ -103,9 +108,17 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public Map<String, AttributeValue> get(final AttributeValue pk, final AttributeValue sk) {
+    return get(new QueryConfig(), pk, sk);
+  }
+
+  @Override
+  public Map<String, AttributeValue> get(final QueryConfig config, final AttributeValue pk,
+      final AttributeValue sk) {
     Map<String, AttributeValue> key = Map.of(PK, pk, SK, sk);
     return this.dbClient.getItem(GetItemRequest.builder().tableName(this.tableName).key(key)
-        .consistentRead(Boolean.TRUE).build()).item();
+        .projectionExpression(config.projectionExpression())
+        .expressionAttributeNames(config.expressionAttributeNames()).consistentRead(Boolean.TRUE)
+        .build()).item();
   }
 
   @Override
@@ -139,6 +152,18 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public void putItems(final List<Map<String, AttributeValue>> attrs) {
+
+    if (!attrs.isEmpty()) {
+      Map<String, Collection<WriteRequest>> items =
+          new AttributeValuesToWriteRequests(this.tableName).apply(attrs);
+
+      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
+      this.dbClient.batchWriteItem(batch);
+    }
+  }
+
+  @Override
   public QueryResponse query(final AttributeValue pk,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
     String expression = PK + " = :pk";
@@ -167,6 +192,21 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
     QueryResponse response = this.dbClient.query(q);
     return response;
+  }
+
+  @Override
+  public QueryResponse queryIndex(final String indexName, final AttributeValue pk,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+
+    String expression = indexName + PK + " = :pk";
+    Map<String, AttributeValue> values = Map.of(":pk", pk);
+
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE).indexName(indexName)
+            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+
+    return this.dbClient.query(q);
   }
 
   @Override

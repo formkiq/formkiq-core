@@ -23,16 +23,19 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.DocumentSyncService.MESSAGE_ADDED_METADATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -40,6 +43,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.http.JsonServiceGson;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -60,11 +65,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
    * @return {@link ApiGatewayRequestEvent}
    */
   private ApiGatewayRequestEvent getRequest(final String siteId, final String documentId) {
-    ApiGatewayRequestEvent event =
-        new ApiGatewayRequestEventBuilder().method("get").resource("/documents/{documentId}/syncs")
-            .path("/documents/" + documentId + "/syncs").group(siteId != null ? siteId : null)
-            .user("joesmith").pathParameters(Map.of("documentId", documentId))
-            .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
+        .resource("/documents/{documentId}/syncs").path("/documents/" + documentId + "/syncs")
+        .group(siteId != null ? siteId : DEFAULT_SITE_ID).user("joesmith")
+        .pathParameters(Map.of("documentId", documentId))
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
     return event;
   }
 
@@ -78,17 +83,21 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
   public void testHandleGetDocumentSyncs01() throws Exception {
 
     String userId = "joe";
-    DocumentSyncService service = getAwsServices().getExtension(DocumentSyncService.class);
+    DocumentService service = getAwsServices().getExtension(DocumentService.class);
+    DocumentSyncService syncService = getAwsServices().getExtension(DocumentSyncService.class);
 
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String documentId = UUID.randomUUID().toString();
 
-      service.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      service.saveDocument(siteId, item, null);
+
+      syncService.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
           DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
       TimeUnit.SECONDS.sleep(1);
-      service.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE,
+      syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE,
           DocumentSyncStatus.FAILED, DocumentSyncType.METADATA, userId, MESSAGE_ADDED_METADATA);
 
       ApiGatewayRequestEvent event = getRequest(siteId, documentId);
@@ -98,7 +107,6 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractRequestHandler {
 
       // then
       Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));

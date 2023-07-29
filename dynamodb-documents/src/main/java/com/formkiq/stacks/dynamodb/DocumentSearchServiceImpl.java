@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -116,13 +117,14 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   private QueryRequest createQueryRequest(final String index, final String expression,
       final Map<String, AttributeValue> values, final PaginationMapToken token,
-      final int maxresults, final Boolean scanIndexForward) {
+      final int maxresults, final Boolean scanIndexForward, final String projectionExpression) {
     Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
 
     QueryRequest q = QueryRequest.builder().tableName(this.documentTableName).indexName(index)
         .keyConditionExpression(expression).expressionAttributeValues(values)
-        .exclusiveStartKey(startkey).scanIndexForward(scanIndexForward)
-        .limit(Integer.valueOf(maxresults)).build();
+        .projectionExpression(projectionExpression).exclusiveStartKey(startkey)
+        .scanIndexForward(scanIndexForward).limit(Integer.valueOf(maxresults)).build();
+
     return q;
   }
 
@@ -250,11 +252,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param value {@link String}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
+   * @param projectionExpression {@link String}
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsTagStartWith(final String siteId,
       final SearchQuery query, final String key, final String value, final PaginationMapToken token,
-      final int maxresults) {
+      final int maxresults, final String projectionExpression) {
 
     String expression = GSI2_PK + " = :pk and begins_with(" + GSI2_SK + ", :sk)";
 
@@ -263,7 +266,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
     values.put(":sk", AttributeValue.builder().s(value).build());
 
-    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.FALSE);
+    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.FALSE,
+        projectionExpression);
 
     return searchForDocuments(q, siteId, query);
   }
@@ -277,11 +281,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param value {@link String}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
+   * @param projectionExpression {@link String}
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTag(final String siteId,
       final SearchQuery query, final String key, final String value, final PaginationMapToken token,
-      final int maxresults) {
+      final int maxresults, final String projectionExpression) {
 
     String expression = GSI2_PK + " = :pk";
 
@@ -289,7 +294,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     values.put(":pk",
         AttributeValue.builder().s(createDatabaseKey(siteId, PREFIX_TAG + key)).build());
 
-    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.FALSE);
+    QueryRequest q = createQueryRequest(GSI2, expression, values, token, maxresults, Boolean.FALSE,
+        projectionExpression);
     return searchForDocuments(q, siteId, query);
   }
 
@@ -302,18 +308,20 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param value {@link String}
    * @param token {@link PaginationMapToken}
    * @param maxresults int
+   * @param projectionExpression {@link String}
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValue(final String siteId,
       final SearchQuery query, final String key, final String value, final PaginationMapToken token,
-      final int maxresults) {
+      final int maxresults, final String projectionExpression) {
 
     String expression = GSI1_PK + " = :pk";
 
     Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
     values.put(":pk", AttributeValue.builder()
         .s(createDatabaseKey(siteId, PREFIX_TAG + key + TAG_DELIMINATOR + value)).build());
-    QueryRequest q = createQueryRequest(GSI1, expression, values, token, maxresults, Boolean.FALSE);
+    QueryRequest q = createQueryRequest(GSI1, expression, values, token, maxresults, Boolean.FALSE,
+        projectionExpression);
     return searchForDocuments(q, siteId, query);
   }
 
@@ -325,20 +333,35 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param key {@link String}
    * @param eqOr {@link Collection} {@link String}
    * @param maxresults int
+   * @param projectionExpression {@link String}
    * @return {@link PaginationResults}
    */
   private PaginationResults<DynamicDocumentItem> findDocumentsWithTagAndValues(final String siteId,
       final SearchQuery query, final String key, final Collection<String> eqOr,
-      final int maxresults) {
+      final int maxresults, final String projectionExpression) {
 
     List<DynamicDocumentItem> list = new ArrayList<>();
     for (String eq : eqOr) {
-      PaginationResults<DynamicDocumentItem> result =
-          findDocumentsWithTagAndValue(siteId, query, key, eq, null, maxresults);
+      PaginationResults<DynamicDocumentItem> result = findDocumentsWithTagAndValue(siteId, query,
+          key, eq, null, maxresults, projectionExpression);
       list.addAll(result.getResults());
     }
 
     return new PaginationResults<DynamicDocumentItem>(list, null);
+  }
+
+  @Override
+  public PaginationResults<DynamicDocumentItem> findInFolder(final String siteId,
+      final String indexKey, final PaginationMapToken token, final int maxresults) {
+
+    DynamicObject o = this.folderIndexProcesor.getIndex(siteId, indexKey, false);
+
+    String value = GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR;
+    if (o != null) {
+      value += o.getString("documentId");
+    }
+
+    return searchByMeta(siteId, value, null, token, maxresults);
   }
 
   private String getFolderMetaDataKey(final String siteId, final SearchMetaCriteria meta) {
@@ -428,7 +451,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else {
       SearchTagCriteria search = query.tag();
-      results = searchByTag(siteId, query, search, token, maxresults);
+      results = searchByTag(siteId, query, search, token, maxresults, null);
     }
 
     return results;
@@ -449,6 +472,12 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       final int maxresults) {
 
     String value = getMetaDataKey(siteId, meta);
+    return searchByMeta(siteId, value, meta.indexFilterBeginsWith(), token, maxresults);
+  }
+
+  private PaginationResults<DynamicDocumentItem> searchByMeta(final String siteId,
+      final String value, final String indexFilterBeginsWith, final PaginationMapToken token,
+      final int maxresults) {
 
     PaginationResults<DynamicDocumentItem> result = null;
 
@@ -458,15 +487,15 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
       Map<String, AttributeValue> values = new HashMap<String, AttributeValue>();
       values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, value)).build());
 
-      if (meta.indexFilterBeginsWith() != null) {
+      if (indexFilterBeginsWith != null) {
         expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
-        values.put(":sk", AttributeValue.builder().s(meta.indexFilterBeginsWith()).build());
+        values.put(":sk", AttributeValue.builder().s(indexFilterBeginsWith).build());
       }
 
       QueryRequest q =
-          createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE);
+          createQueryRequest(null, expression, values, token, maxresults, Boolean.TRUE, null);
 
-      result = searchForMetaDocuments(q, siteId, query);
+      result = searchForMetaDocuments(q, siteId);
 
     } else {
       result = new PaginationResults<>(Collections.emptyList(), null);
@@ -477,7 +506,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
 
   private PaginationResults<DynamicDocumentItem> searchByTag(final String siteId,
       final SearchQuery query, final SearchTagCriteria csearch, final PaginationMapToken token,
-      final int maxresults) {
+      final int maxresults, final String projectionExpression) {
 
     SearchTagCriteria search = csearch;
 
@@ -516,18 +545,36 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     } else {
 
       if (!Objects.notNull(search.eqOr()).isEmpty()) {
-        result = findDocumentsWithTagAndValues(siteId, query, key, search.eqOr(), maxresults);
+        result = findDocumentsWithTagAndValues(siteId, query, key, search.eqOr(), maxresults,
+            projectionExpression);
       } else if (search.eq() != null) {
-        result = findDocumentsWithTagAndValue(siteId, query, key, search.eq(), token, maxresults);
+        result = findDocumentsWithTagAndValue(siteId, query, key, search.eq(), token, maxresults,
+            projectionExpression);
       } else if (search.beginsWith() != null) {
-        result =
-            findDocumentsTagStartWith(siteId, query, key, search.beginsWith(), token, maxresults);
+        result = findDocumentsTagStartWith(siteId, query, key, search.beginsWith(), token,
+            maxresults, projectionExpression);
       } else {
-        result = findDocumentsWithTag(siteId, query, key, null, token, maxresults);
+        result =
+            findDocumentsWithTag(siteId, query, key, null, token, maxresults, projectionExpression);
       }
     }
 
     return result;
+  }
+
+  @Override
+  public PaginationResults<String> searchForDocumentIds(final String siteId,
+      final SearchTagCriteria criteria, final PaginationMapToken token, final int maxresults) {
+
+    SearchQuery query = new SearchQuery();
+    String projectionExpression = "documentId";
+    PaginationResults<DynamicDocumentItem> searchByTag =
+        searchByTag(siteId, query, criteria, token, maxresults, projectionExpression);
+
+    List<String> documentIds = searchByTag.getResults().stream().map(m -> m.getString("documentId"))
+        .collect(Collectors.toList());
+
+    return new PaginationResults<>(documentIds, searchByTag.getToken());
   }
 
   /**
@@ -541,7 +588,90 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
   private PaginationResults<DynamicDocumentItem> searchForDocuments(final QueryRequest q,
       final String siteId, final SearchQuery query) {
 
+    String projectionExpression = q.projectionExpression();
     QueryResponse result = this.dbClient.query(q);
+
+    Map<String, DocumentTag> tags = transformToDocumentTagMap(result);
+
+    PaginationResults<DynamicDocumentItem> ret = null;
+
+    List<String> documentIds = new ArrayList<>(tags.keySet());
+
+    if (projectionExpression == null || !"documentId".equals(projectionExpression)) {
+
+      List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+
+      List<DynamicDocumentItem> results =
+          list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+              .collect(Collectors.toList()) : Collections.emptyList();
+
+      results.forEach(r -> {
+
+        DocumentTag tag = tags.get(r.getDocumentId());
+        r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
+
+        if (!notNull(query.tags()).isEmpty()) {
+          updateToMatchedTags(query, r);
+        }
+      });
+
+      ret = new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
+
+    } else {
+
+      List<DynamicDocumentItem> results = documentIds.stream()
+          .map(d -> new DynamicDocumentItem(Map.of("documentId", d))).collect(Collectors.toList());
+
+      ret = new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
+    }
+
+    return ret;
+  }
+
+  /**
+   * Search for Meta Data Documents.
+   *
+   * @param q {@link QueryRequest}
+   * @param siteId DynamoDB PK siteId
+   * @return {@link PaginationResults} {@link DocumentItemSearchResult}
+   */
+  private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
+      final String siteId) {
+
+    QueryResponse result = this.dbClient.query(q);
+
+    List<String> documentIds = result.items().stream().filter(r -> r.containsKey("documentId"))
+        .map(r -> r.get("documentId").s()).distinct().collect(Collectors.toList());
+
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+
+    Map<String, DocumentItem> documentMap = list != null
+        ? list.stream().collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()))
+        : Collections.emptyMap();
+
+    AttributeValueToGlobalMetaFolder metaFolder = new AttributeValueToGlobalMetaFolder();
+    DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
+
+    List<DynamicDocumentItem> results = result.items().stream().map(r -> {
+
+      AttributeValue documentId = r.get("documentId");
+      boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
+
+      return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
+          : new DynamicDocumentItem(metaFolder.apply(r));
+
+    }).collect(Collectors.toList());
+
+    return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
+  }
+
+  /**
+   * Transform {@link QueryResponse} to {@link DocumentTag} {@link Map}.
+   * 
+   * @param result {@link QueryResponse}
+   * @return {@link Map} {@link DocumentTag}
+   */
+  private Map<String, DocumentTag> transformToDocumentTagMap(final QueryResponse result) {
 
     Map<String, DocumentTag> tags = new HashMap<>();
     result.items().forEach(s -> {
@@ -571,64 +701,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         }
       }
     });
-
-    List<String> documentIds = new ArrayList<>(tags.keySet());
-
-    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
-
-    List<DynamicDocumentItem> results =
-        list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
-            .collect(Collectors.toList()) : Collections.emptyList();
-
-    results.forEach(r -> {
-
-      DocumentTag tag = tags.get(r.getDocumentId());
-      r.put("matchedTag", new DocumentTagToDynamicDocumentTag().apply(tag));
-
-      if (!notNull(query.tags()).isEmpty()) {
-        updateToMatchedTags(query, r);
-      }
-    });
-
-    return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
-  }
-
-  /**
-   * Search for Meta Data Documents.
-   *
-   * @param q {@link QueryRequest}
-   * @param siteId DynamoDB PK siteId
-   * @param query {@link SearchQuery}
-   * @return {@link PaginationResults} {@link DocumentItemSearchResult}
-   */
-  private PaginationResults<DynamicDocumentItem> searchForMetaDocuments(final QueryRequest q,
-      final String siteId, final SearchQuery query) {
-
-    QueryResponse result = this.dbClient.query(q);
-
-    List<String> documentIds = result.items().stream().filter(r -> r.containsKey("documentId"))
-        .map(r -> r.get("documentId").s()).distinct().collect(Collectors.toList());
-
-    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
-
-    Map<String, DocumentItem> documentMap = list != null
-        ? list.stream().collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()))
-        : Collections.emptyMap();
-
-    AttributeValueToGlobalMetaFolder metaFolder = new AttributeValueToGlobalMetaFolder();
-    DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
-
-    List<DynamicDocumentItem> results = result.items().stream().map(r -> {
-
-      AttributeValue documentId = r.get("documentId");
-      boolean isDocument = documentId != null && documentMap.containsKey(documentId.s());
-
-      return isDocument ? transform.apply(documentMap.get(r.get("documentId").s()))
-          : new DynamicDocumentItem(metaFolder.apply(r));
-
-    }).collect(Collectors.toList());
-
-    return new PaginationResults<>(results, new QueryResponseToPagination().apply(result));
+    return tags;
   }
 
   private void updateFolderMetaData(final SearchMetaCriteria meta) {

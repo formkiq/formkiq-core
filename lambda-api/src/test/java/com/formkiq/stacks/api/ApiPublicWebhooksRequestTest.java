@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -46,6 +47,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -57,6 +59,16 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   /** Extension for FormKiQ config file. */
   private static final String FORMKIQ_DOC_EXT = ".fkb64";
 
+  private void enablePublicEnpoint() throws URISyntaxException {
+    Map<String, String> map = new HashMap<>(getMap());
+    map.put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(map);
+  }
+
+  private WebhooksService getWebhooksService() {
+    return getAwsServices().getExtension(WebhooksService.class);
+  }
+
   /**
    * Post /public/webhooks without authentication.
    *
@@ -66,13 +78,12 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks01() throws Exception {
     // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -99,12 +110,12 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks02() throws Exception {
     // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks02.json", siteId, id);
@@ -132,6 +143,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks03() throws Exception {
     // givens
+    enablePublicEnpoint();
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-webhooks03.json");
     event.getRequestContext().setAuthorizer(new HashMap<>());
     event.getRequestContext().setIdentity(new HashMap<>());
@@ -152,15 +164,14 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks04() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       String name = UUID.randomUUID().toString();
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("-1000"));
       Date ttl = Date.from(now.toInstant());
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", ttl, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -183,7 +194,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @Test
   public void testPostWebhooks05() throws Exception {
     // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -191,7 +202,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusSeconds(Long.parseLong("1000"));
       Date ttl = Date.from(now.toInstant());
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", ttl, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", ttl, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -219,14 +230,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks06() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks04.json", siteId, id);
@@ -236,8 +246,6 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       // then
       Map<String, Object> m = fromJson(response, Map.class);
-      final int mapsize = 2;
-      assertEquals(mapsize, m.size());
 
       assertEquals("301.0", String.valueOf(m.get("statusCode")));
 
@@ -254,14 +262,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks07() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks05.json", siteId, id);
@@ -290,14 +297,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks08() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
@@ -327,14 +333,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks09() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
@@ -368,14 +373,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks10() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "false");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "false");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -397,14 +401,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks11() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks06.json", siteId, id);
@@ -430,8 +433,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks12() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -440,7 +442,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       ConfigService configService = getAwsServices().getExtension(ConfigService.class);
       configService.save(siteId, new DynamicObject(Map.of(DOCUMENT_TIME_TO_LIVE, "1000")));
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -476,8 +478,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks13() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -485,7 +486,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
       String name = UUID.randomUUID().toString();
 
-      String id = getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "true");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -529,15 +530,13 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testPostWebhooks14() throws Exception {
-    // given
-    createApiRequestHandler(getMap());
+    enablePublicEnpoint();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       String name = UUID.randomUUID().toString();
 
-      String id =
-          getAwsServices().webhookService().saveWebhook(siteId, name, "joe", null, "private");
+      String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "private");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-public-webhooks01.json", siteId, id);
@@ -604,7 +603,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     }
 
     if (hasTimeToLive) {
-      DynamicObject obj = getAwsServices().webhookService().findWebhook(siteId, webhookId);
+      DynamicObject obj = getWebhooksService().findWebhook(siteId, webhookId);
       assertNotNull(obj.get("TimeToLive"));
       assertEquals(obj.get("TimeToLive"), map.get("TimeToLive"));
     }

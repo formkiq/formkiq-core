@@ -47,7 +47,7 @@ public interface DocumentService extends DocumentTagLoader {
 
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS =
-      Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP", "userId");
+      Set.of("untagged", "CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP");
 
   /**
    * Add Folder Index.
@@ -67,6 +67,15 @@ public interface DocumentService extends DocumentTagLoader {
    * @param timeToLive {@link String}
    */
   void addTags(String siteId, String documentId, Collection<DocumentTag> tags, String timeToLive);
+
+  /**
+   * Add Tags to {@link Collection} of Documents.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param tags {@link Map} {@link Collection} {@link DocumentTag}
+   * @param timeToLive {@link String}
+   */
+  void addTags(String siteId, Map<String, Collection<DocumentTag>> tags, String timeToLive);
 
   /**
    * Delete Document.

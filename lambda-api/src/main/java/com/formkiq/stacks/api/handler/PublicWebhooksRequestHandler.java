@@ -35,12 +35,13 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -52,8 +53,8 @@ import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.CoreAwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.WebhooksService;
 import software.amazon.awssdk.utils.StringUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/public/webhooks". */
@@ -79,8 +80,8 @@ public class PublicWebhooksRequestHandler
     }
   }
 
-  private DynamicObject buildDynamicObject(final CoreAwsServiceCache awsservice,
-      final String siteId, final String webhookId, final DynamicObject hook, final String body,
+  private DynamicObject buildDynamicObject(final AwsServiceCache awsservice, final String siteId,
+      final String webhookId, final DynamicObject hook, final String body,
       final String contentType) {
 
     DynamicObject item = new DynamicObject(new HashMap<>());
@@ -241,7 +242,7 @@ public class PublicWebhooksRequestHandler
     return expired;
   }
 
-  private boolean isIdempotencyCached(final CoreAwsServiceCache awsservice,
+  private boolean isIdempotencyCached(final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
 
     boolean cached = false;
@@ -271,14 +272,14 @@ public class PublicWebhooksRequestHandler
 
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = getParameter(event, "siteId");
     String webhookId = getPathParameter(event, "webhooks");
 
-    CoreAwsServiceCache cacheService = CoreAwsServiceCache.cast(awsservice);
-    DynamicObject hook = cacheService.webhookService().findWebhook(siteId, webhookId);
+    DynamicObject hook =
+        awsservice.getExtension(WebhooksService.class).findWebhook(siteId, webhookId);
 
     checkIsWebhookValid(hook);
 
@@ -290,10 +291,9 @@ public class PublicWebhooksRequestHandler
       throw new BadException("body isn't valid JSON");
     }
 
-    DynamicObject item =
-        buildDynamicObject(cacheService, siteId, webhookId, hook, body, contentType);
+    DynamicObject item = buildDynamicObject(awsservice, siteId, webhookId, hook, body, contentType);
 
-    if (!isIdempotencyCached(cacheService, event, siteId, item)) {
+    if (!isIdempotencyCached(awsservice, event, siteId, item)) {
       putObjectToStaging(logger, awsservice, item, siteId);
     }
 
@@ -312,7 +312,6 @@ public class PublicWebhooksRequestHandler
       final DynamicObject item, final String siteId) {
 
     String s = GSON.toJson(item);
-
     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
     String stages3bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
@@ -320,6 +319,13 @@ public class PublicWebhooksRequestHandler
     logger.log("s3 putObject " + key + " into bucket " + stages3bucket);
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
-    s3.putObject(stages3bucket, key, bytes, item.getString("contentType"));
+    s3.putObject(stages3bucket, key, bytes, "application/json");
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
+    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 }

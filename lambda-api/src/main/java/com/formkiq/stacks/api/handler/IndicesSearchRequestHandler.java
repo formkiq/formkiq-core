@@ -29,18 +29,20 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.aws.services.lambda.ApiAuthorizer;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -66,14 +68,16 @@ public class IndicesSearchRequestHandler
   }
 
   @Override
-  public boolean isReadonly(final String method) {
-    return "post".equals(method) || "get".equals(method) || "head".equals(method);
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.permissions().contains(ApiPermission.READ);
+    return Optional.of(Boolean.valueOf(access));
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorizer authorizer,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -81,14 +85,14 @@ public class IndicesSearchRequestHandler
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    Map<String, Object> body = fromBodyToObject(logger, event, Map.class);
+    Map<String, Object> body = fromBodyToObject(event, Map.class);
 
     validatePost(body);
 
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    String siteId = authorizer.getSiteId();
+    String siteId = authorization.siteId();
     SearchQuery q = new SearchQuery()
         .meta(new SearchMetaCriteria().indexType(body.get("indexType").toString()));
 

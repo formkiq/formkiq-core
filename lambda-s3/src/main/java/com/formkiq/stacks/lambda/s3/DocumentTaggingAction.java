@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.removeEndingPunctuation;
+import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import java.io.IOException;
@@ -36,8 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -95,6 +97,22 @@ public class DocumentTaggingAction implements DocumentAction {
     this.serviceCache = services;
     this.configsService = services.getExtension(ConfigService.class);
     this.documentService = services.getExtension(DocumentService.class);
+  }
+
+  /**
+   * Adjust Tag Key.
+   * 
+   * @param tags {@link List} {@link String}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  private String adjustKeyFromTags(final List<String> tags, final String key) {
+    String s = removeQuotes(key);
+
+    Optional<String> o = tags.stream().filter(t -> t.toLowerCase().replaceAll("[^A-Za-z0-9]", "")
+        .equals(key.toLowerCase().replaceAll("[^A-Za-z0-9]", ""))).findAny();
+
+    return o.isPresent() ? o.get() : s;
   }
 
   private String createChatGptPrompt(final String siteId, final String documentId,
@@ -205,10 +223,19 @@ public class DocumentTaggingAction implements DocumentAction {
 
         if (pos > -1) {
           String key = s.substring(0, pos).trim().toLowerCase();
-          String value = s.substring(pos + 1).trim();
+          String value = removeQuotes(removeEndingPunctuation(s.substring(pos + 1).trim()));
 
           if (!key.isEmpty() && !value.isEmpty()) {
-            data.put(key, Arrays.asList(value));
+
+            List<Object> list = getObjectAsJsonList(value);
+            if (list != null) {
+
+              List<String> slist = transformToStringList(list);
+              data.put(key, slist);
+
+            } else {
+              data.put(key, Arrays.asList(value));
+            }
           }
         }
       }
@@ -220,7 +247,68 @@ public class DocumentTaggingAction implements DocumentAction {
       data.remove(e.getKey());
     }
 
-    return data;
+    Map<String, Object> values =
+        data.entrySet().stream().filter(d -> d.getKey() != null && d.getValue() != null)
+            .collect(Collectors.toMap(d -> adjustKeyFromTags(tags, d.getKey()),
+                d -> removeQuotesFromObject(d.getValue())));
+
+    return tags.stream().filter(t -> values.containsKey(t))
+        .collect(Collectors.toMap(t -> t, t -> values.get(t)));
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<String> transformToStringList(final List<Object> objs) {
+
+    List<String> list = new ArrayList<>();
+
+    for (Object ob : objs) {
+
+      if (ob instanceof Map) {
+
+        for (Map.Entry<String, String> e : ((Map<String, String>) ob).entrySet()) {
+          list.add(e.getKey() + ": " + e.getValue());
+        }
+
+      } else {
+        list.add(ob.toString());
+      }
+    }
+
+    return list;
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Object> getObjectAsJsonList(final String s) {
+
+    List<Object> list;
+
+    try {
+      list = this.gson.fromJson(s, List.class);
+    } catch (JsonSyntaxException e) {
+      list = null;
+    }
+
+    return list;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Object removeQuotesFromObject(final Object o) {
+    Object oo = o;
+    if (oo instanceof String) {
+      oo = removeQuotes((String) oo);
+    } else if (oo instanceof Collection) {
+
+      Collection<Object> list = new ArrayList<>();
+      for (Object obj : (Collection<Object>) oo) {
+        if (obj instanceof String) {
+          list.add(removeQuotes((String) obj));
+        }
+      }
+
+      oo = list;
+    }
+
+    return oo;
   }
 
   @Override

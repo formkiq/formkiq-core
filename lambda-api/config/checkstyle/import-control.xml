@@ -44,6 +44,7 @@
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			<allow pkg="com.amazonaws.xray" />
 			<allow pkg="com.formkiq.module.ocr" />
+			<allow pkg="com.formkiq.module.typesense" />
 			<allow pkg="software.amazon.awssdk" />
 			
 			<allow pkg="com.formkiq.aws.dynamodb" />
@@ -53,6 +54,7 @@
 			<allow pkg="com.formkiq.aws.ssm" />
 			<allow pkg="com.formkiq.aws.sns" />
 			
+			<allow pkg="com.formkiq.module.documentevents" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.lambda.apigateway" />
 			<allow pkg="com.formkiq.module.actions" />
@@ -81,6 +83,7 @@
 				
 				<allow pkg="com.formkiq.aws.services.lambda" />
 				<allow pkg="com.formkiq.module.typesense" />
+				<allow pkg="com.formkiq.module.http" />
 				<allow pkg="com.formkiq.module.ocr" />
 				<allow pkg="com.formkiq.stacks.api" />
 				<allow pkg="com.formkiq.stacks.common.formats" />
@@ -90,6 +93,7 @@
 				<allow pkg="java.lang.reflect" />
 				<allow pkg="java.time" />
 				<allow pkg="java.text" />
+				
 				
 			</subpackage>
 			
