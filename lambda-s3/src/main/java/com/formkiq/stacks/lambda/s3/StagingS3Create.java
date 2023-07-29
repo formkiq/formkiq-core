@@ -28,6 +28,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
@@ -52,6 +53,7 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -91,6 +93,7 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -200,6 +203,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
+  /** {@link DocumentCompressor}. */
+  private final DocumentCompressor documentCompressor;
 
   /**
    * constructor.
@@ -257,6 +262,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.appEnvironment = map.get("APP_ENVIRONMENT");
+    this.documentCompressor = new DocumentCompressor(map, s3Builder, dbBuilder);
   }
 
   /**
@@ -573,55 +579,62 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String s3Key = urlDecode(key);
     String siteId = getSiteId(s3Key);
 
-    if (objectCreated) {
-
-      DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
-
-      Map<String, String> contentMap = createContentMap(loadDocument);
-      Map<String, String> contentTypeMap = createContentTypeMap(loadDocument);
-
-      boolean hasContent = !contentMap.isEmpty();
-
-      DocumentItem existingDocument =
-          this.service.findDocument(siteId, loadDocument.getDocumentId());
-      DynamicDocumentItem item =
-          createDocument(logger, siteId, loadDocument, date, hasContent, existingDocument);
-
-      if (item != null) {
-
-        String tagSchemaId = item.getString("tagSchemaId");
-        Boolean newCompositeTags = item.getBoolean("newCompositeTags");
-
-        if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-          createFormKiQConnectionIfNeeded();
-          postDocumentTags(siteId, item);
-        }
-
-        writeS3Document(logger, bucket, s3Key, siteId, item, contentMap, contentTypeMap);
-
-        if (contentMap.isEmpty()) {
-          logger.log(String.format("Skipping %s no content", item.getPath()));
-        }
-
-        if (existingDocument != null && !hasContent) {
-
-          List<Action> actions = this.actionsService.getActions(siteId, item.getDocumentId());
-          List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
-              .collect(Collectors.toList());
-          syncs.forEach(a -> a.status(ActionStatus.PENDING));
-          this.actionsService.saveActions(siteId, item.getDocumentId(), actions);
-
-          logger.log("publishing actions message to " + this.snsDocumentEvent);
-          this.notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
-        }
-      }
-
-      deleteObject(logger, bucket, s3Key);
+    final String tempFolder = "tempfiles/";
+    if (objectCreated && key.startsWith(tempFolder) && Strings.getExtension(key).equals("json")) {
+      this.handleCompressionRequest(bucket, key);
+    } else if (objectCreated) {
+      this.handleObjectCreated(logger, bucket, siteId, s3Key, date);
     }
 
     if (!objectCreated) {
       logger.log("skipping event " + eventName);
     }
+  }
+
+  private void handleObjectCreated(final LambdaLogger logger, final String bucket,
+      final String siteId, final String s3Key, final Date date)
+      throws IOException, InterruptedException {
+    DynamicDocumentItem loadDocument = loadDocument(logger, bucket, siteId, s3Key);
+
+    Map<String, String> contentMap = createContentMap(loadDocument);
+    Map<String, String> contentTypeMap = createContentTypeMap(loadDocument);
+
+    boolean hasContent = !contentMap.isEmpty();
+
+    DocumentItem existingDocument = this.service.findDocument(siteId, loadDocument.getDocumentId());
+    DynamicDocumentItem item =
+        createDocument(logger, siteId, loadDocument, date, hasContent, existingDocument);
+
+    if (item != null) {
+
+      String tagSchemaId = item.getString("tagSchemaId");
+      Boolean newCompositeTags = item.getBoolean("newCompositeTags");
+
+      if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
+        createFormKiQConnectionIfNeeded();
+        postDocumentTags(siteId, item);
+      }
+
+      writeS3Document(logger, bucket, s3Key, siteId, item, contentMap, contentTypeMap);
+
+      if (contentMap.isEmpty()) {
+        logger.log(String.format("Skipping %s no content", item.getPath()));
+      }
+
+      if (existingDocument != null && !hasContent) {
+
+        List<Action> actions = this.actionsService.getActions(siteId, item.getDocumentId());
+        List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
+            .collect(Collectors.toList());
+        syncs.forEach(a -> a.status(ActionStatus.PENDING));
+        this.actionsService.saveActions(siteId, item.getDocumentId(), actions);
+
+        logger.log("publishing actions message to " + this.snsDocumentEvent);
+        this.notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
+      }
+    }
+
+    deleteObject(logger, bucket, s3Key);
   }
 
   /**
@@ -751,6 +764,24 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       this.s3.copyObject(bucket, s3Key, this.documentsBucket, destKey, metadata.getContentType(),
           map);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void handleCompressionRequest(final String bucket, final String key) {
+    final String contentString = this.s3.getContentAsString(bucket, key, null);
+    final Map<String, Object> content = this.gson.fromJson(contentString, Map.class);
+    final String siteId = content.get("siteId").toString();
+    final String archiveKey = key.replace(".json", ".zip");
+    Type jsonStringList = new TypeToken<List<String>>() {}.getType();
+    final List<String> documentIds =
+        gson.fromJson(content.get("documentIds").toString(), jsonStringList);
+
+    try {
+      this.documentCompressor.compressDocuments(siteId, this.documentsBucket, bucket, archiveKey,
+          documentIds);
+    } catch (Exception e) {
+      // TODO: Log
     }
   }
 }

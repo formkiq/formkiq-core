@@ -58,6 +58,8 @@
 
 			<allow pkg="alex.mojaki.s3upload" />
 			<allow pkg="com.amazonaws.services.s3" />
+			<allow pkg="com.amazonaws.auth" />
+			<allow pkg="com.amazonaws.monitoring" />
 		
 			<subpackage name="util">
 

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
@@ -199,7 +200,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * After Class.
-   * 
+   *
    */
   @AfterAll
   public static void afterClass() {
@@ -208,7 +209,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Before Class.
-   * 
+   *
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
@@ -290,7 +291,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Creates AWS Resources.
-   * 
+   *
    * @throws URISyntaxException URISyntaxException
    */
   private static void createResources() throws URISyntaxException {
@@ -334,7 +335,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Assert {@link DocumentTag} Equals.
-   * 
+   *
    * @param tag {@link DocumentTag}
    * @param attributes {@link Map}
    */
@@ -401,7 +402,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Create {@link DynamicDocumentItem}.
-   * 
+   *
    * @return {@link DynamicDocumentItem}
    */
   private DynamicDocumentItem createDocumentItem() {
@@ -421,7 +422,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Find DocumentId from Logger.
-   * 
+   *
    * @param siteId {@link String}
    * @return {@link String}
    */
@@ -453,7 +454,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Find {@link DocumentTag}.
-   * 
+   *
    * @param tags {@link List} {@link DocumentTag}
    * @param key {@link String}
    * @return {@link DocumentTag}
@@ -477,7 +478,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file.
-   * 
+   *
    * @param siteId {@link String}
    * @param docitem {@link DynamicDocumentItem}
    * @param expectedContentLength {@link String}
@@ -557,7 +558,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test CopyFile.
-   * 
+   *
    * @param siteId {@link String}
    * @param path {@link String}
    * @param expectedPath {@link String}
@@ -658,7 +659,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with TAGS.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -677,7 +678,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file without TAGS.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -691,7 +692,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file without CONTENT.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -708,7 +709,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file without DocumentId.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -723,7 +724,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with multiple documents.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -791,7 +792,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with TTL.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -824,7 +825,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file minimum attributes.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -886,7 +887,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with tagschema & composite key.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -947,7 +948,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with tagschema & without composite key.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -1008,7 +1009,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with actions.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -1081,7 +1082,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 files with existing path and CLI agent.
-   * 
+   *
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
@@ -1146,7 +1147,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test add tags to existing Document with .fkb64 file and NO content and FULLTEXT action.
-   * 
+   *
    * @throws Exception Exception
    */
   @Test
@@ -1216,7 +1217,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file with Metadata.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -1242,7 +1243,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file add Metadata.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -1275,7 +1276,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Test .fkb64 file removing Metadata.
-   * 
+   *
    * @throws IOException IOException
    */
   @Test
@@ -1327,6 +1328,49 @@ public class StagingS3CreateTest implements DbKeys {
     verifySqsMessages(0, 0, 0);
   }
 
+  /**
+   * Test documents compression.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentsCompress() throws Exception {
+    final Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
+    final StagingS3Create handler =
+        new StagingS3Create(this.env, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
+    final String fileContent = loadFile(this, "/compression-request-file.json");
+    s3.putObject(STAGING_BUCKET, "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json",
+        fileContent.getBytes(UTF_8), null, null);
+    final List<String> filePathsToCompress =
+        Arrays.asList("/255kb-text.txt", "/256kb-text.txt", "/multipart01.txt", "/multipart02.txt");
+    final List<String> docIds = Arrays.asList("56dbfd71-bdd4-4fa8-96ca-4cf69fe93cb8",
+        "6e775220-ff21-4bb0-a9e5-4d5f383c8881", "758d5107-e50f-4c62-b9b9-fd0347aa242b",
+        "b37c138e-9782-40da-8e22-23412fc75035");
+
+    for (int i = 0; i < docIds.size(); ++i) {
+      final String path = filePathsToCompress.get(i);
+      final String content = loadFile(this, path);
+      this.createDocument("default", "JohnDoe", content.getBytes(UTF_8), docIds.get(i));
+    }
+
+    Void result = handler.handleRequest(map, this.context);
+
+    assertNull(result);
+  }
+
+  private void createDocument(final String siteId, final String userId, final byte[] content,
+      final String docId) {
+    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
+    item.setDocumentId(docId == null ? UUID.randomUUID().toString() : docId);
+    item.setUserId(userId);
+    item.setInsertedDate(new Date());
+    final String documentId = item.getDocumentId();
+    service.saveDocument(siteId, item, null);
+
+    final String key = createS3Key(siteId, documentId);
+    s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
+  }
+
   private void verifyBelongsToDocument(final DocumentItem item, final String documentId,
       final List<String> documentIds) {
     assertEquals(documentIds.size(), item.getDocuments().size());
@@ -1370,7 +1414,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   /**
    * Verify SQS Messages.
-   * 
+   *
    * @param createCount int
    * @param deleteCount int
    * @param errorCount int

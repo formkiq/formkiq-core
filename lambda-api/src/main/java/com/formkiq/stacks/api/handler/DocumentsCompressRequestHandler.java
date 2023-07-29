@@ -66,7 +66,8 @@ public class DocumentsCompressRequestHandler
     final String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
     final String downloadUrl =
         getArchiveDownloadUrl(s3, stagingBucket, getS3Key(siteId, compressionId, true));
-    final DynamicObject taskObject = getS3TaskObject(requestBodyObject, compressionId, downloadUrl);
+    final DynamicObject taskObject =
+        getS3TaskObject(requestBodyObject, siteId, compressionId, downloadUrl);
 
     putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
     ApiMapResponse response =
@@ -80,14 +81,16 @@ public class DocumentsCompressRequestHandler
     return tempPrefix + compressionId + fileType;
   }
 
-  private DynamicObject getS3TaskObject(final DynamicObject requestBodyObject,
+  private DynamicObject getS3TaskObject(final DynamicObject requestBodyObject, final String siteId,
       final String compressionId, final String downloadUrl) {
     final String documentIdsKey = "documentIds";
     final Object documentIds = requestBodyObject.get(documentIdsKey);
     final String compressionIdKey = "compressionId";
     final String downloadUrlKey = "downloadUrl";
+    final String siteIdKey = "siteId";
     return new DynamicObject(Map.ofEntries(entry(documentIdsKey, documentIds),
-        entry(compressionIdKey, compressionId), entry(downloadUrlKey, downloadUrl)));
+        entry(compressionIdKey, compressionId), entry(downloadUrlKey, downloadUrl),
+        entry(siteIdKey, siteId == null ? "null" : "siteId")));
   }
 
   private String getArchiveDownloadUrl(final S3Service s3, final String stagingBucket,

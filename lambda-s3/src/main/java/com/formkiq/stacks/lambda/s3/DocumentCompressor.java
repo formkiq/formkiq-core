@@ -25,6 +25,9 @@ package com.formkiq.stacks.lambda.s3;
 
 import alex.mojaki.s3upload.MultiPartOutputStream;
 import alex.mojaki.s3upload.StreamTransferManager;
+import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.monitoring.CsmConfiguration;
+import com.amazonaws.monitoring.StaticCsmConfigurationProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -70,7 +73,7 @@ public class DocumentCompressor {
   public DocumentCompressor(final Map<String, String> envVars, final S3ConnectionBuilder s3Builder,
       final DynamoDbConnectionBuilder dbBuilder) {
     this.s3 = new S3Service(s3Builder);
-    this.multipartUploadS3 = AmazonS3ClientBuilder.defaultClient();
+    this.multipartUploadS3 = this.getS3MultiPartUploadClient(envVars);
     final String documentsTable = envVars.get("DOCUMENTS_TABLE");
     AwsServiceCache serviceCache = new AwsServiceCache().environment(envVars);
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
@@ -114,7 +117,7 @@ public class DocumentCompressor {
   private void archiveS3Objects(final String docsBucket, final String archiveBucket,
       final String archiveKey, final Map<String, Long> objectKeySizeMap) throws IOException {
     MultiPartOutputStream s3OutputStream;
-    ByteArrayOutputStream byteArrayOutputStream;
+    ByteArrayOutputStream byteArrayOutputStream = null;
     ZipOutputStream zipOutputStream;
     final Long totalFilesSize = objectKeySizeMap.values().stream().reduce(0L, Long::sum);
     final boolean isMultiPartUpload = totalFilesSize > MAX_IN_MEMORY_FILE_SIZE_50MB;
@@ -127,13 +130,13 @@ public class DocumentCompressor {
       zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
     }
 
-    for (Map.Entry<String, Long> keySize : objectKeySizeMap.entrySet()) {
-      final String objectKey = keySize.getKey();
-      final Long objectSize = keySize.getValue();
-      final String fileName = Strings.getFilename(objectKey);
-      final ZipEntry zipEntry = new ZipEntry(fileName);
+    try {
+      for (Map.Entry<String, Long> keySize : objectKeySizeMap.entrySet()) {
+        final String objectKey = keySize.getKey();
+        final Long objectSize = keySize.getValue();
+        final String fileName = Strings.getFilename(objectKey);
+        final ZipEntry zipEntry = new ZipEntry(fileName);
 
-      try {
         zipOutputStream.putNextEntry(zipEntry);
         if (isMultiPartUpload) {
           this.transferObjectToZipByChunks(zipOutputStream, docsBucket, objectKey, objectSize);
@@ -141,10 +144,14 @@ public class DocumentCompressor {
           this.transferObjectToZip(zipOutputStream, docsBucket, objectKey);
         }
         zipOutputStream.closeEntry();
-      } catch (IOException e) {
-        zipOutputStream.close();
-        throw e;
       }
+
+      if (!isMultiPartUpload) {
+        this.s3.putObject(archiveBucket, archiveKey, byteArrayOutputStream.toByteArray(),
+            "application/zip");
+      }
+    } finally {
+      zipOutputStream.close();
     }
   }
 
@@ -181,5 +188,13 @@ public class DocumentCompressor {
       content.close();
       throw e;
     }
+  }
+
+  private AmazonS3 getS3MultiPartUploadClient(final Map<String, String> envVars) {
+    return AmazonS3ClientBuilder.standard()
+        .withCredentials(new EnvironmentVariableCredentialsProvider())
+        .withRegion(envVars.get("AWS_REGION")).withClientSideMonitoringConfigurationProvider(
+            new StaticCsmConfigurationProvider(new CsmConfiguration(false, 0, null)))
+        .build();
   }
 }
