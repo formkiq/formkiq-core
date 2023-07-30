@@ -72,6 +72,8 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -154,8 +156,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
 
     DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
+    EventService documentEventService =
+        new EventServiceSns(TestServices.getSnsConnection(null), null);
 
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
+    documentService =
+        new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService, documentEventService);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     createMockServer();
 

@@ -81,9 +81,9 @@ public class DocumentSearchServiceImplTest {
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
-    this.searchService =
-        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE, null);
+        new DocumentVersionServiceNoVersioning(), null);
+    this.searchService = new DocumentSearchServiceImpl(dynamoDbConnection, this.service,
+        DOCUMENTS_TABLE, null, null);
   }
 
   /**

@@ -17,7 +17,8 @@
 		<subpackage name="services">
 			<allow pkg="com.formkiq.aws.sns" />
 			<allow pkg="com.formkiq.module.actions" />
-			<allow pkg="com.formkiq.module.documentevents" />
+			<allow pkg="com.formkiq.module.events" />
+			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.formkiq.validation" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />

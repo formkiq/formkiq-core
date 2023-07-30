@@ -24,9 +24,9 @@
 package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
-import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
-import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
+import static com.formkiq.module.events.document.DocumentEventType.CREATE;
+import static com.formkiq.module.events.document.DocumentEventType.DELETE;
+import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
@@ -83,6 +83,8 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
@@ -190,10 +192,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsService(sqsBuilder);
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
-
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);
     }
@@ -217,6 +215,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
       dbHelper.createCacheTable(CACHE_TABLE);
     }
+
+    EventService documentEventService = new EventServiceSns(snsBuilder, snsDocumentEvent);
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning(), documentEventService);
+    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+
   }
 
   /** {@link LambdaContextRecorder}. */

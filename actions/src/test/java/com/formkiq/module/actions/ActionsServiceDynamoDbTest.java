@@ -40,12 +40,15 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Unit Tests for {@link ActionsServiceDynamoDbTest}. */
@@ -67,8 +70,10 @@ public class ActionsServiceDynamoDbTest {
 
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
     service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
-    documentService =
-        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
+    EventService documentEventService =
+        new EventServiceSns(TestServices.getSnsConnection(null), "");
+    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning(), documentEventService);
   }
 
   /**

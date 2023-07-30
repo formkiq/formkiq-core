@@ -23,40 +23,54 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.events.EventService;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
-
 /**
- * 
- * {@link AwsServiceExtension} for {@link DocumentService}.
- *
+ * Extended Attributes for the {@link FolderIndexRecord}.
  */
-public class DocumentServiceExtension implements AwsServiceExtension<DocumentService> {
+public class FolderIndexRecordExtended {
 
-  /** {@link DocumentService}. */
-  private DocumentService service;
+  /** Record has changed. */
+  private boolean isChanged = false;
+  /** {@link FolderIndexRecord}. */
+  private FolderIndexRecord record = null;
 
   /**
    * constructor.
+   * 
+   * @param folderIndexRecord {@link FolderIndexRecord}
+   * @param isRecordChanged boolean
    */
-  public DocumentServiceExtension() {}
+  public FolderIndexRecordExtended(final FolderIndexRecord folderIndexRecord,
+      final boolean isRecordChanged) {
+    this.isChanged = isRecordChanged;
+    this.record = folderIndexRecord;
+  }
 
-  @Override
-  public DocumentService loadService(final AwsServiceCache awsServiceCache) {
-    if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+  /**
+   * Set IsChanged.
+   * 
+   * @param changed boolean
+   * @return {@link FolderIndexRecordExtended}
+   */
+  public FolderIndexRecordExtended changed(final boolean changed) {
+    this.isChanged = changed;
+    return this;
+  }
 
-      DocumentVersionService versionService =
-          awsServiceCache.getExtension(DocumentVersionService.class);
+  /**
+   * Is Record Changed.
+   * 
+   * @return boolean
+   */
+  public boolean isChanged() {
+    return this.isChanged;
+  }
 
-      EventService documentEventService = awsServiceCache.getExtension(EventService.class);
-      this.service = new DocumentServiceImpl(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService, documentEventService);
-    }
-
-    return this.service;
+  /**
+   * Get {@link FolderIndexRecord}.
+   * 
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord record() {
+    return this.record;
   }
 }

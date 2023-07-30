@@ -24,7 +24,8 @@
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.actions.services" />
-			<allow pkg="com.formkiq.module.documentevents" />
+			<allow pkg="com.formkiq.module.events" />
+			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.module.http" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.formkiq.module.typesense" />

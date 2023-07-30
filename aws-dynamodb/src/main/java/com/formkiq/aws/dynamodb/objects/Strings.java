@@ -81,6 +81,16 @@ public class Strings {
   }
 
   /**
+   * Remove '/' from start/end of {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String removeBackSlashes(final String s) {
+    return s.replaceAll("^/|/$", "");
+  }
+
+  /**
    * Remove single/double quotes from {@link String}.
    * 
    * @param s {@link String}

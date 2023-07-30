@@ -319,5 +319,4 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
     this.userId = createdBy;
     return this;
   }
-
 }

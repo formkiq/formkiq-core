@@ -63,6 +63,7 @@ import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.module.events.EventService;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -98,10 +99,11 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param documentService {@link DocumentService}
    * @param documentsTable {@link String}
    * @param plugin {@link DocumentTagSchemaPlugin}
+   * @param documentEventService {@link EventService}
    */
   public DocumentSearchServiceImpl(final DynamoDbConnectionBuilder connection,
       final DocumentService documentService, final String documentsTable,
-      final DocumentTagSchemaPlugin plugin) {
+      final DocumentTagSchemaPlugin plugin, final EventService documentEventService) {
 
     this.dbClient = connection.build();
     this.docService = documentService;
