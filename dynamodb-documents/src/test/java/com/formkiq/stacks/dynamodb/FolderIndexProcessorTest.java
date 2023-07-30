@@ -30,7 +30,6 @@ import static com.formkiq.testutils.aws.TestServices.clearSqsQueue;
 import static com.formkiq.testutils.aws.TestServices.createSnsTopic;
 import static com.formkiq.testutils.aws.TestServices.createSqsSubscriptionToSnsTopic;
 import static com.formkiq.testutils.aws.TestServices.getMessagesFromSqs;
-import static com.formkiq.testutils.aws.TestServices.getSnsConnection;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -60,8 +59,6 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
-import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -94,14 +91,13 @@ class FolderIndexProcessorTest implements DbKeys {
     String snsTopicArn = createSnsTopic();
     sqsQueueUrl = createSqsSubscriptionToSnsTopic(snsTopicArn);
 
-    EventService eventService = new EventServiceSns(getSnsConnection(null), snsTopicArn);
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
 
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning(), null);
-    searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE,
-        null, eventService);
+        new DocumentVersionServiceNoVersioning());
+    searchService =
+        new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE, null);
     dbService = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
   }
 

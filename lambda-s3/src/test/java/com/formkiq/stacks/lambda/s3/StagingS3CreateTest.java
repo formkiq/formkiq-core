@@ -104,8 +104,6 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
-import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -251,9 +249,8 @@ public class StagingS3CreateTest implements DbKeys {
     String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
     snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
-    EventService documentEventService = new EventServiceSns(snsBuilder, snsDocumentEvent);
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning(), documentEventService);
+        new DocumentVersionServiceNoVersioning());
 
     folderIndexProcesor = new FolderIndexProcessorImpl(dbBuilder, DOCUMENTS_TABLE);
 

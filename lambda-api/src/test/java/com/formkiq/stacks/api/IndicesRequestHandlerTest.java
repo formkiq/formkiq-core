@@ -49,8 +49,6 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.DeleteIndicesResponse;
-import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
@@ -63,7 +61,6 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for request /indices/{type}/{key}. */
 @ExtendWith(LocalStackExtension.class)
@@ -92,12 +89,9 @@ public class IndicesRequestHandlerTest {
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
-    EventService documentEventService =
-        new EventServiceSns(TestServices.getSnsConnection(null), null);
-    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning(), documentEventService);
-    dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE, null,
-        documentEventService);
+    documentService =
+        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
+    dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE, null);
   }
 
   /**

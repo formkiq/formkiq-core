@@ -67,7 +67,6 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
-import com.formkiq.module.events.EventService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -116,11 +115,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
-   * @param documentEventService {@link EventService}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService,
-      final EventService documentEventService) {
+      final String documentsTable, final DocumentVersionService documentVersionsService) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");

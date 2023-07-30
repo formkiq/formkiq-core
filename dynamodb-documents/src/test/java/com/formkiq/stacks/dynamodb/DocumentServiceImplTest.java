@@ -104,9 +104,9 @@ public class DocumentServiceImplTest implements DbKeys {
 
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning(), null);
+        new DocumentVersionServiceNoVersioning());
     searchService =
-        new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE, null, null);
+        new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE, null);
   }
 
   /** {@link SimpleDateFormat}. */

@@ -83,8 +83,6 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
-import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
@@ -216,9 +214,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       dbHelper.createCacheTable(CACHE_TABLE);
     }
 
-    EventService documentEventService = new EventServiceSns(snsBuilder, snsDocumentEvent);
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning(), documentEventService);
+        new DocumentVersionServiceNoVersioning());
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
   }

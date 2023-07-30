@@ -24,7 +24,6 @@
 package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.module.events.EventService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
@@ -52,9 +51,8 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
       DocumentVersionService versionService =
           awsServiceCache.getExtension(DocumentVersionService.class);
 
-      EventService documentEventService = awsServiceCache.getExtension(EventService.class);
       this.service = new DocumentServiceImpl(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService, documentEventService);
+          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService);
     }
 
     return this.service;
