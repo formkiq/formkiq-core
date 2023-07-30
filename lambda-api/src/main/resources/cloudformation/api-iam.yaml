@@ -925,7 +925,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/CompressDocumentsRequest'
+                      $ref: '#/components/schemas/DocumentsCompressRequest'
               description: Compress documents into a ZIP
               tags:
                 - Documents
@@ -942,7 +942,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/CompressDocumentsResponse'
+                        $ref: '#/components/schemas/DocumentsCompressResponse'
               security:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2998,7 +2998,7 @@ Resources:
                 belongsToDocumentId:
                   type: "string"
                   description: "Parent Document Identifier"
-            CompressDocumentsRequest:
+            DocumentsCompressRequest:
               type: "object"
               required:
                 - "documentIds"
@@ -3008,7 +3008,7 @@ Resources:
                   description: "Documents to compress"
                   items:
                     type: "string"
-            CompressDocumentsResponse:
+            DocumentsCompressResponse:
               type: "object"
               properties:
                 compressionId:

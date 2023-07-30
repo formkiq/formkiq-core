@@ -34,13 +34,22 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static java.util.Map.entry;
 
@@ -58,25 +67,26 @@ public class DocumentsCompressRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
     DynamicObject requestBodyObject = fromBodyToDynamicObject(event);
+    validateRequestBody(requestBodyObject);
 
     final String siteId = authorization.siteId();
-    final String compressionId = UUID.randomUUID().toString();
-    final String compressionTaskS3Key = getS3Key(siteId, compressionId, false);
+    final String documentId = UUID.randomUUID().toString();
+    final String compressionTaskS3Key = getS3Key(siteId, documentId, false);
     S3Service s3 = awsServices.getExtension(S3Service.class);
     final String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
     final String downloadUrl =
-        getArchiveDownloadUrl(s3, stagingBucket, getS3Key(siteId, compressionId, true));
+        getArchiveDownloadUrl(s3, stagingBucket, getS3Key(siteId, documentId, true));
     final DynamicObject taskObject =
-        getS3TaskObject(requestBodyObject, siteId, compressionId, downloadUrl);
+        getS3TaskObject(requestBodyObject, siteId, documentId, downloadUrl);
 
     putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
     ApiMapResponse response =
-        new ApiMapResponse(Map.of("compressionId", compressionId, "downloadUrl", downloadUrl));
+        new ApiMapResponse(Map.of("documentId", documentId, "downloadUrl", downloadUrl));
     return new ApiRequestHandlerResponse(SC_CREATED, response);
   }
 
   private String getS3Key(final String siteId, final String compressionId, final boolean isZip) {
-    final String tempPrefix = String.format("tempfiles/%s", siteId == null ? "" : siteId + "/");
+    final String tempPrefix = String.format("tempfiles/%s", createS3Key(siteId, compressionId));
     final String fileType = isZip ? ".zip" : ".json";
     return tempPrefix + compressionId + fileType;
   }
@@ -90,7 +100,7 @@ public class DocumentsCompressRequestHandler
     final String siteIdKey = "siteId";
     return new DynamicObject(Map.ofEntries(entry(documentIdsKey, documentIds),
         entry(compressionIdKey, compressionId), entry(downloadUrlKey, downloadUrl),
-        entry(siteIdKey, siteId == null ? "null" : "siteId")));
+        entry(siteIdKey, siteId == null ? DEFAULT_SITE_ID : siteId)));
   }
 
   private String getArchiveDownloadUrl(final S3Service s3, final String stagingBucket,
@@ -108,5 +118,17 @@ public class DocumentsCompressRequestHandler
     final String jsonContentType = "application/json";
     final byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
     s3.putObject(bucket, key, bytes, jsonContentType);
+  }
+
+  private void validateRequestBody(final DynamicObject requestBody) throws ValidationException {
+    final Object docIds = requestBody.get("documentIds");
+    final ValidationError validationError =
+        new ValidationErrorImpl().key("documentIds").error("is required");
+    try {
+      Type jsonStringList = new TypeToken<List<String>>() {}.getType();
+      GSON.fromJson(docIds.toString(), jsonStringList);
+    } catch (Exception e) {
+      throw new ValidationException(Arrays.asList(validationError));
+    }
   }
 }

@@ -592,7 +592,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @throws IOException IOException
    */
   private void processEvent(final LambdaLogger logger, final Date date,
-      final Map<String, Object> event) throws IOException, InterruptedException {
+      final Map<String, Object> event) throws Exception {
 
     String eventName = event.get("eventName").toString();
     boolean objectCreated = eventName.contains("ObjectCreated");
@@ -605,7 +605,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     final String tempFolder = "tempfiles/";
     if (objectCreated && key.startsWith(tempFolder) && Strings.getExtension(key).equals("json")) {
-      this.handleCompressionRequest(bucket, key);
+      this.handleCompressionRequest(logger, bucket, key);
     } else if (objectCreated) {
       if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
         processPatchDocumentsTags(logger, siteId, bucket, s3Key, date);
@@ -708,7 +708,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
         try {
           processEvent(logger, date, event);
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
           e.printStackTrace();
         }
       }
@@ -852,10 +852,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private void handleCompressionRequest(final String bucket, final String key) {
+  private void handleCompressionRequest(final LambdaLogger logger, final String bucket,
+      final String key) throws Exception {
     final String contentString = this.s3.getContentAsString(bucket, key, null);
-    final Map<String, Object> content = this.gson.fromJson(contentString, Map.class);
+    Type mapStringObject = new TypeToken<Map<String, Object>>() {}.getType();
+    final Map<String, Object> content = this.gson.fromJson(contentString, mapStringObject);
     final String siteId = content.get("siteId").toString();
     final String archiveKey = key.replace(".json", ".zip");
     Type jsonStringList = new TypeToken<List<String>>() {}.getType();
@@ -866,7 +867,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       this.documentCompressor.compressDocuments(siteId, this.documentsBucket, bucket, archiveKey,
           documentIds);
     } catch (Exception e) {
-      // TODO: Log
+      logger.log(String.format("Failed to compress documents: %s", e));
+      throw e;
     }
   }
 }
