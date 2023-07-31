@@ -1465,7 +1465,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /shares/folders/{shareKey}:
+          /shares/folders/{documentId}:
             patch:
               operationId: UpdateFolderShare
               description: Updates a folder share; ONLY available with FormKiQ Enterprise
@@ -1473,7 +1473,7 @@
               - Document Shares
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/shareKey'
+              - $ref: '#/components/parameters/documentIdParam'
               requestBody:
                 required: true
                 content:
@@ -1504,14 +1504,14 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /shares/{shareKey}:
+          /shares/{documentId}:
             delete:
               operationId: DeleteShare
               description: Delete a specific document share; ONLY available with FormKiQ Enterprise
               tags:
               - Document Shares
               parameters:
-              - $ref: '#/components/parameters/shareKey'
+              - $ref: '#/components/parameters/documentIdParam'
               responses:
                 "200":
                   description: 200 OK
@@ -2808,9 +2808,6 @@
                 documentId:
                   type: string
                   description: Document/Folder Identifier
-                shareKey:
-                  type: string
-                  description: Share Key Identifier
                 type:
                   type: string
                   enum:
@@ -2838,6 +2835,11 @@
                 userId:
                   type: string
                   description: User who created share
+                permissionType:
+                  type: string
+                  description: Type of share
+                  enum:
+                  - GROUP
             GetDocumentTagsResponse:
               type: object
               properties:
