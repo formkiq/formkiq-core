@@ -130,28 +130,26 @@ public class DocumentCompressor {
       zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
     }
 
-    try {
-      for (Map.Entry<String, Long> keySize : objectKeySizeMap.entrySet()) {
-        final String objectKey = keySize.getKey();
-        final Long objectSize = keySize.getValue();
-        final String fileName = Strings.getFilename(objectKey);
-        final ZipEntry zipEntry = new ZipEntry(fileName);
+    for (Map.Entry<String, Long> keySize : objectKeySizeMap.entrySet()) {
+      final String objectKey = keySize.getKey();
+      final Long objectSize = keySize.getValue();
+      final String fileName = Strings.getFilename(objectKey);
+      final ZipEntry zipEntry = new ZipEntry(fileName);
 
-        zipOutputStream.putNextEntry(zipEntry);
-        if (isMultiPartUpload) {
-          this.transferObjectToZipByChunks(zipOutputStream, docsBucket, objectKey, objectSize);
-        } else {
-          this.transferObjectToZip(zipOutputStream, docsBucket, objectKey);
-        }
-        zipOutputStream.closeEntry();
+      zipOutputStream.putNextEntry(zipEntry);
+      if (isMultiPartUpload) {
+        this.transferObjectToZipByChunks(zipOutputStream, docsBucket, objectKey, objectSize);
+      } else {
+        this.transferObjectToZip(zipOutputStream, docsBucket, objectKey);
       }
+      zipOutputStream.closeEntry();
+    }
 
-      if (!isMultiPartUpload) {
-        this.s3.putObject(archiveBucket, archiveKey, byteArrayOutputStream.toByteArray(),
-            "application/zip");
-      }
-    } finally {
-      zipOutputStream.close();
+    zipOutputStream.close();
+
+    if (!isMultiPartUpload) {
+      this.s3.putObject(archiveBucket, archiveKey, byteArrayOutputStream.toByteArray(),
+          "application/zip");
     }
   }
 
