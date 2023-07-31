@@ -71,11 +71,11 @@ public class DocumentsCompressRequestTest extends AbstractRequestHandler {
     assertEquals("201.0", responseStatus);
     final Map<String, Object> responseBody = this.gson.fromJson(responseMap.get("body"), Map.class);
     assertTrue(responseBody.containsKey("downloadUrl"));
-    assertTrue(responseBody.containsKey("compressionId"));
+    assertTrue(responseBody.containsKey("documentId"));
 
     // S3
-    final String compressionId = String.valueOf(responseBody.get("compressionId"));
-    final String zipTaskS3Key = String.format("tempfiles/%s.json", compressionId);
+    final String documentId = String.valueOf(responseBody.get("documentId"));
+    final String zipTaskS3Key = String.format("tempfiles/%s.json", documentId);
     final String zipTaskS3File = this.s3.getContentAsString(STAGE_BUCKET_NAME, zipTaskS3Key, null);
     assertNotNull(zipTaskS3File);
     final Map<String, Object> s3FileMap = this.gson.fromJson(zipTaskS3File, Map.class);
@@ -85,7 +85,7 @@ public class DocumentsCompressRequestTest extends AbstractRequestHandler {
     final String expectedDocumentIds = "[doc-id-1, doc-id-2, doc-id-3]";
     final Object documentIds = s3FileMap.get("documentIds");
     assertEquals(expectedDocumentIds, documentIds.toString());
-    final String expectedUrlPath = String.format("/stagebucket/tempfiles/%s.zip", compressionId);
+    final String expectedUrlPath = String.format("/stagebucket/tempfiles/%s.zip", documentId);
     final URI downloadUrl = new URI(s3FileMap.get("downloadUrl").toString());
     assertEquals(expectedUrlPath, downloadUrl.getPath());
   }
@@ -104,7 +104,7 @@ public class DocumentsCompressRequestTest extends AbstractRequestHandler {
     assertTrue(responseBody.containsKey("downloadUrl"));
 
     // S3
-    final String compressionId = String.valueOf(responseBody.get("compressionId"));
+    final String compressionId = String.valueOf(responseBody.get("documentId"));
     final String zipTaskS3Key = String.format("tempfiles/sales/%s.json", compressionId);
     final String zipTaskS3File = this.s3.getContentAsString(STAGE_BUCKET_NAME, zipTaskS3Key, null);
     final Map<String, Object> s3FileMap = this.gson.fromJson(zipTaskS3File, Map.class);

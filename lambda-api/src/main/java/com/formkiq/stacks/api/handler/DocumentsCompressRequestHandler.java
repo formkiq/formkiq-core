@@ -86,9 +86,9 @@ public class DocumentsCompressRequestHandler
   }
 
   private String getS3Key(final String siteId, final String compressionId, final boolean isZip) {
-    final String tempPrefix = String.format("tempfiles/%s", createS3Key(siteId, compressionId));
+    final String key = String.format("tempfiles/%s", createS3Key(siteId, compressionId));
     final String fileType = isZip ? ".zip" : ".json";
-    return tempPrefix + compressionId + fileType;
+    return key + fileType;
   }
 
   private DynamicObject getS3TaskObject(final DynamicObject requestBodyObject, final String siteId,

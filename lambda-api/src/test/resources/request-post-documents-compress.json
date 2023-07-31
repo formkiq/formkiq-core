@@ -18,6 +18,7 @@
     "Via": "1.1 d0e9493afe30356ba9d74f759fd26f53.cloudfront.net (CloudFront)",
     "X-Amz-Cf-Id": "EJN6YpC2orKliRAtsoOO34atS_XFJ8OaMg0JT5a3t7_-m53ORiXOpQ==",
     "X-Amzn-Trace-Id": "Root=1-5c258d5b-cf4cfa5a29636c7f4f05d801",
+    "X-API-KEY": "lLeJkzRmw36YBzhPXZbN21gIFYzoRpxA4zicrsCe",
     "X-Forwarded-For": "50.71.176.213, 70.132.57.147",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
@@ -68,6 +69,9 @@
     "X-Amzn-Trace-Id": [
       "Root=1-5c258d5b-cf4cfa5a29636c7f4f05d801"
     ],
+    "X-API-KEY": [
+      "lLeJkzRmw36YBzhPXZbN21gIFYzoRpxA4zicrsCe"
+    ],
     "X-Forwarded-For": [
       "50.71.176.213, 70.132.57.147"
     ],
@@ -98,33 +102,33 @@
     "requestId": "157a12e1-0a4a-11e9-968b-f3d29ef457da",
     "authorizer": {
       "claims": {
-        "aud": "man2qihb20eumvr55pqcuvp6n",
-        "auth_time": "1594265826",
-        "cognito:groups": "[default Admins finance]",
-        "cognito:preferred_role": "arn:aws:iam::1111111111111111:role/formkiq-stacks-document-unittest-Do-AdminGroupRole-FD83ZGMKR6KP",
-        "cognito:roles": "[arn:aws:iam::1111111111111111:role/formkiq-stacks-document-unittest-Do-AdminGroupRole-FD83ZGMKR6KP]",
-        "cognito:username": "test@formkiq.com",
-        "email": "test@formkiq.com",
+        "sub": "7b02c7c2-f03c-40e7-94fc-46fd8eca52b8",
+        "aud": "23cakansoqhfk3mpuvg3bdsd26",
         "email_verified": "true",
-        "event_id": "665f0717-4fbc-4511-912b-6cb6f566e1c0",
-        "exp": "1594269426",
-        "iat": "1594265826",
-        "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_3vWU0jnGp",
-        "sub": "9d7e8352-2142-4363-9a66-45a65daaa0de",
-        "token_use": "id"
-      },
-      "scopes": null
+        "event_id": "88c88d85-80ed-11e9-a6c7-91f69a3c6763",
+        "token_use": "id",
+        "auth_time": "1559009330",
+        "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4dlHNdF5d",
+        "cognito:groups": "[default]",
+        "cognito:username": "a0dac80d-18b3-472b-88da-79e75082b662@formkiq.com",
+        "exp": "Tue May 28 03:08:50 UTC 2019",
+        "iat": "Tue May 28 02:08:50 UTC 2019",
+        "email": "a0dac80d-18b3-472b-88da-79e75082b662@formkiq.com"
+      }
     },
     "identity": {
       "cognitoIdentityPoolId": null,
-      "accountId": null,
       "cognitoIdentityId": null,
+      "apiKey": "lLeJkzRmw36YBzhPXZbN21gIFYzoRpxA4zicrsCe",
+      "cognitoAuthenticationType": null,
+      "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+      "apiKeyId": "6tyzdz85a3",
+      "userAgent": "PostmanRuntime/7.4.0",
+      "accountId": null,
       "caller": null,
       "sourceIp": "50.71.176.213",
       "accessKey": null,
-      "cognitoAuthenticationType": null,
       "cognitoAuthenticationProvider": null,
-      "userAgent": "PostmanRuntime/7.4.0",
       "user": null
     },
     "domainName": "xc38c278ak.execute-api.us-east-1.amazonaws.com",
