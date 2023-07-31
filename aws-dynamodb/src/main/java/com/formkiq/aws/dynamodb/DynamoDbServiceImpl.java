@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -124,8 +125,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> getBatch(
-      final Collection<Map<String, AttributeValue>> keys) {
+  public List<Map<String, AttributeValue>> getBatch(final List<Map<String, AttributeValue>> keys) {
 
     List<Map<String, AttributeValue>> list = Collections.emptyList();
 
@@ -137,8 +137,19 @@ public class DynamoDbServiceImpl implements DynamoDbService {
           this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
 
       list = response.responses().get(this.tableName);
+
+      Map<String, Map<String, AttributeValue>> data =
+          list.stream().collect(Collectors.toMap(l -> getKey(l), l -> l));
+
+      list = keys.stream().map(k -> data.get(getKey(k))).filter(k -> k != null)
+          .collect(Collectors.toList());
     }
+
     return list;
+  }
+
+  private String getKey(final Map<String, AttributeValue> attr) {
+    return attr.get(PK).s() + "#" + attr.get(SK).s();
   }
 
   @Override
