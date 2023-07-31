@@ -37,7 +37,12 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import java.io.IOException;
@@ -61,7 +66,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import org.junit.jupiter.api.AfterAll;
@@ -127,7 +131,6 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Triple;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -1468,8 +1471,9 @@ public class StagingS3CreateTest implements DbKeys {
     final String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
     // ZIP file is present in S3 with expected size
+    final Long expectedZipSize = 1572912L;
     assertTrue(tempFiles.contents().stream()
-        .anyMatch(obj -> obj.key().equals(zipKey) && obj.size() == 1572912));
+        .anyMatch(obj -> obj.key().equals(zipKey) && obj.size().equals(expectedZipSize)));
     // ZIP has the expected file list
     final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey);
     final ZipInputStream zipStream = new ZipInputStream(zipContent);
