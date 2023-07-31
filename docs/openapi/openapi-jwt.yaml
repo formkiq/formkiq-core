@@ -1465,7 +1465,7 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-          /shares/folders/{documentId}:
+          /shares/folders/{shareKey}:
             patch:
               operationId: UpdateFolderShare
               description: Updates a folder share; ONLY available with FormKiQ Enterprise
@@ -1473,7 +1473,7 @@
               - Document Shares
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKey'
               requestBody:
                 required: true
                 content:
@@ -1504,14 +1504,14 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /shares/{documentId}:
+          /shares/{shareKey}:
             delete:
               operationId: DeleteShare
               description: Delete a specific document share; ONLY available with FormKiQ Enterprise
               tags:
               - Document Shares
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKey'
               responses:
                 "200":
                   description: 200 OK
