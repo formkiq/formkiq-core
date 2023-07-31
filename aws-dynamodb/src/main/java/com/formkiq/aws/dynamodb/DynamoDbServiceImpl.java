@@ -26,9 +26,11 @@ package com.formkiq.aws.dynamodb;
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -125,13 +127,17 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   public List<Map<String, AttributeValue>> getBatch(
       final Collection<Map<String, AttributeValue>> keys) {
 
-    Map<String, KeysAndAttributes> items =
-        Map.of(this.tableName, KeysAndAttributes.builder().keys(keys).build());
+    List<Map<String, AttributeValue>> list = Collections.emptyList();
 
-    BatchGetItemResponse response =
-        this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+    if (!keys.isEmpty()) {
+      Map<String, KeysAndAttributes> items =
+          Map.of(this.tableName, KeysAndAttributes.builder().keys(keys).build());
 
-    List<Map<String, AttributeValue>> list = response.responses().get(this.tableName);
+      BatchGetItemResponse response =
+          this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+
+      list = response.responses().get(this.tableName);
+    }
     return list;
   }
 
@@ -181,13 +187,14 @@ public class DynamoDbServiceImpl implements DynamoDbService {
       final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
 
-    String expression = PK + " = :pk and begins_with(" + SK + ",:sk)";
+    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String expression = gsi + PK + " = :pk and begins_with(" + gsi + SK + ",:sk)";
 
     Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
 
     QueryRequest q =
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
-            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
+            .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
             .projectionExpression(config.projectionExpression()).indexName(config.indexName())
             .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
 
