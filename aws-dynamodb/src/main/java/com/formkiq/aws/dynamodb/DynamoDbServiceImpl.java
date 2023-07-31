@@ -185,10 +185,11 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
     Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
 
-    QueryRequest q = QueryRequest.builder().tableName(this.tableName)
-        .keyConditionExpression(expression).expressionAttributeValues(values)
-        .scanIndexForward(Boolean.FALSE).projectionExpression(config.projectionExpression())
-        .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
+    QueryRequest q =
+        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+            .expressionAttributeValues(values).scanIndexForward(Boolean.FALSE)
+            .projectionExpression(config.projectionExpression()).indexName(config.indexName())
+            .exclusiveStartKey(exclusiveStartKey).limit(Integer.valueOf(limit)).build();
 
     QueryResponse response = this.dbClient.query(q);
     return response;

@@ -34,6 +34,8 @@ public class QueryConfig {
 
   /** {@link Map}. */
   private Map<String, String> expressionAttributeNames;
+  /** Index Name. */
+  private String indexName;
   /** Projection Expression. */
   private String projectionExpression;
 
@@ -61,6 +63,26 @@ public class QueryConfig {
    */
   public QueryConfig expressionAttributeNames(final Map<String, String> expressionAttributes) {
     this.expressionAttributeNames = expressionAttributes;
+    return this;
+  }
+
+  /**
+   * Get Index Name.
+   * 
+   * @return {@link String}
+   */
+  public String indexName() {
+    return this.indexName;
+  }
+
+  /**
+   * Set Index Name.
+   * 
+   * @param index {@link String}
+   * @return {@link QueryConfig}
+   */
+  public QueryConfig indexName(final String index) {
+    this.indexName = index;
     return this;
   }
 
