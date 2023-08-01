@@ -1467,7 +1467,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /shares/folders/{documentId}:
+          /shares/folders/{shareKey}:
             patch:
               operationId: UpdateFolderShare
               description: Updates a folder share; ONLY available with FormKiQ Enterprise
@@ -1475,7 +1475,7 @@ Resources:
               - Document Shares
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKey'
               requestBody:
                 required: true
                 content:
@@ -1506,14 +1506,14 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /shares/{documentId}:
+          /shares/{shareKey}:
             delete:
               operationId: DeleteShare
               description: Delete a specific document share; ONLY available with FormKiQ Enterprise
               tags:
               - Document Shares
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/shareKey'
               responses:
                 '200':
                   description: 200 OK
@@ -2807,14 +2807,13 @@ Resources:
             UserShare:
               type: "object"
               properties:
-                documentId:
+                shareKey:
                   type: "string"
-                  description: "Document/Folder Identifier"
+                  description: "Share Identifier"
                 type:
                   type: "string"
                   enum:
                     - FOLDER
-                    - FILE
                   description: "Type of Document"
                 permissions:
                   type: "array"
@@ -2825,9 +2824,6 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
-                name:
-                  type: "string"
-                  description: "Name of Share"
                 siteId:
                   type: "string"
                   description: "Site Identifier"
@@ -3235,7 +3231,7 @@ Resources:
                 message:
                   type: "string"
                   description: "API Response message"
-                documentId:
+                shareKey:
                   type: "string"
                   description: "Share Identifier"
             DeleteFolderResponse:
@@ -4389,10 +4385,8 @@ Resources:
                   description: "Message response"
           securitySchemes:
             ApiAuthorization:
-              type: http
-              scheme: bearer
-              bearerFormat: JWT
-              description: JWT authentication
+              type: oauth2
+              flows: {}
               x-amazon-apigateway-authorizer:
                 type: jwt
                 jwtConfiguration:

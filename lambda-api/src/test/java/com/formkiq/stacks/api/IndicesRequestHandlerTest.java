@@ -102,7 +102,7 @@ public class IndicesRequestHandlerTest {
   private void setBearerToken(final String siteId) {
     String jwt = JwtTokenEncoder.encodeCognito(new String[] {siteId != null ? siteId : "default"},
         "joesmith");
-    this.client.setBearerToken(jwt);
+    this.client.addDefaultHeader("Authorization", jwt);
   }
 
   /**
