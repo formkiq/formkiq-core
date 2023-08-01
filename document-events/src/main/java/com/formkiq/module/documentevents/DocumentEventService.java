@@ -21,31 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.events;
-
-import com.formkiq.module.events.document.DocumentEvent;
-import com.formkiq.module.events.folder.FolderEvent;
+package com.formkiq.module.documentevents;
 
 /**
  * 
  * {@link DocumentEvent} Service used for notification of any type of Document Event in FormKiQ.
  *
  */
-public interface EventService {
+public interface DocumentEventService {
 
   /**
    * Send {@link DocumentEvent} to Event System.
    * 
+   * @param topicArn {@link String}
    * @param event {@link DocumentEvent}
    * @return {@link String}
    */
-  String publish(DocumentEvent event);
-
-  /**
-   * Send {@link FolderEvent} to Event System.
-   * 
-   * @param event {@link FolderEvent}
-   * @return {@link String}
-   */
-  String publish(FolderEvent event);
+  String publish(String topicArn, DocumentEvent event);
 }

@@ -80,7 +80,7 @@ public class FoldersRequestHandlerTest {
   private void setBearerToken(final String siteId) {
     String jwt = JwtTokenEncoder
         .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
+    this.client.setBearerToken(jwt);
   }
 
   /**

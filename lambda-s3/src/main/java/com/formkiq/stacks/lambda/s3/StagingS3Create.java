@@ -91,7 +91,7 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.google.gson.Gson;
@@ -236,7 +236,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
-    AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
 
     this.awsservices = new AwsServiceCache().environment(map);
     this.syncService = this.awsservices.getExtension(DocumentSyncService.class);

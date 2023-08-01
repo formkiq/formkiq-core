@@ -171,7 +171,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      assertEquals("{\"message\":\"folder '" + path + "' does not exist\"}", m.get("body"));
+      assertEquals("{\"message\":\"index for '" + path + "' does not exist\"}", m.get("body"));
     }
   }
 

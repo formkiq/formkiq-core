@@ -34,31 +34,6 @@ import org.junit.jupiter.api.Test;
 class StringsTest {
 
   @Test
-  void removeBackSlashes() {
-    assertEquals("text", Strings.removeBackSlashes("text"));
-    assertEquals("text", Strings.removeBackSlashes("/text"));
-    assertEquals("text", Strings.removeBackSlashes("/text/"));
-  }
-
-  @Test
-  void removeEndingPunctuation() {
-    assertEquals("text", Strings.removeEndingPunctuation("text"));
-    assertEquals("\"text\"", Strings.removeEndingPunctuation("\"text\","));
-    assertEquals("\"text", Strings.removeEndingPunctuation("\"text!"));
-    assertEquals("'text?'", Strings.removeEndingPunctuation("'text?'"));
-    assertEquals("\"text'", Strings.removeEndingPunctuation("\"text'"));
-  }
-
-  @Test
-  void replaceQuotes() {
-    assertEquals("text", Strings.removeQuotes("text"));
-    assertEquals("text", Strings.removeQuotes("\"text\""));
-    assertEquals("text", Strings.removeQuotes("\"text"));
-    assertEquals("text", Strings.removeQuotes("'text'"));
-    assertEquals("text", Strings.removeQuotes("\"text'"));
-  }
-
-  @Test
   void testExtension() {
     assertEquals("txt", Strings.getExtension("test.txt"));
     assertEquals("txt", Strings.getExtension("/bleh/something/test.txt"));
@@ -71,5 +46,23 @@ class StringsTest {
     assertEquals("test.txt", Strings.getFilename("/bleh/something/test.txt"));
     assertEquals("test (something).txt",
         Strings.getFilename("/bleh/something/test (something).txt"));
+  }
+
+  @Test
+  void replaceQuotes() {
+    assertEquals("text", Strings.removeQuotes("text"));
+    assertEquals("text", Strings.removeQuotes("\"text\""));
+    assertEquals("text", Strings.removeQuotes("\"text"));
+    assertEquals("text", Strings.removeQuotes("'text'"));
+    assertEquals("text", Strings.removeQuotes("\"text'"));
+  }
+
+  @Test
+  void removeEndingPunctuation() {
+    assertEquals("text", Strings.removeEndingPunctuation("text"));
+    assertEquals("\"text\"", Strings.removeEndingPunctuation("\"text\","));
+    assertEquals("\"text", Strings.removeEndingPunctuation("\"text!"));
+    assertEquals("'text?'", Strings.removeEndingPunctuation("'text?'"));
+    assertEquals("\"text'", Strings.removeEndingPunctuation("\"text'"));
   }
 }

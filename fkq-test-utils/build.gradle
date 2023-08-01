@@ -4,8 +4,8 @@ description = "FormKiQ Test Utils"
 dependencies {
 	implementation project(':aws-cognito')
     implementation project(':aws-s3')
-	api project(':aws-sns')
-	api project(':aws-sqs')
+	implementation project(':aws-sns')
+	implementation project(':aws-sqs')
 	implementation project(':aws-ssm')
     implementation project(':aws-dynamodb')
 	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.488'

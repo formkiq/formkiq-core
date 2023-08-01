@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.events;
+package com.formkiq.module.documentevents;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URISyntaxException;
@@ -33,14 +33,14 @@ import com.formkiq.testutils.aws.TestServices;
 
 /**
  * 
- * Unit Tests for {@link EventServiceSns}.
+ * Unit Tests for {@link DocumentEventServiceSns}.
  *
  */
 @ExtendWith(LocalStackExtension.class)
 public class DocumentEventServiceSnsTest {
 
-  /** {@link EventServiceSns}. */
-  private static EventServiceSns service;
+  /** {@link DocumentEventServiceSns}. */
+  private static DocumentEventServiceSns service;
 
   /**
    * BeforeAll().
@@ -49,7 +49,7 @@ public class DocumentEventServiceSnsTest {
    */
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
-    service = new EventServiceSns(TestServices.getSnsConnection(null), null);
+    service = new DocumentEventServiceSns(TestServices.getSnsConnection(null));
   }
 
   /**

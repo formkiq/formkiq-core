@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.FolderIndexRecord.INDEX_FILE_SK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
 import java.text.ParseException;
@@ -67,6 +68,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -118,7 +120,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
       final String documentsTable, final DocumentVersionService documentVersionsService) {
-
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
@@ -139,10 +140,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void addFolderIndex(final String siteId, final DocumentItem item) throws IOException {
 
-    List<FolderIndexRecordExtended> list =
-        this.folderIndexProcessor.get(siteId, item.getPath(), "folder", item.getUserId());
-    List<Map<String, AttributeValue>> folderIndex = list.stream().filter(r -> r.isChanged())
-        .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
+    List<Map<String, AttributeValue>> folderIndex =
+        this.folderIndexProcessor.generateIndex(siteId, item);
+
+    folderIndex = updateFromExistingFolder(folderIndex);
 
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
@@ -950,11 +951,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     addS(pkvalues, "tagSchemaId", document.getTagSchemaId());
     addS(pkvalues, "userId", document.getUserId());
-
-    String path = isEmpty(document.getPath()) ? document.getDocumentId() : document.getPath();
-    document.setPath(path);
-    addS(pkvalues, "path", path);
-
+    addS(pkvalues, "path",
+        isEmpty(document.getPath()) ? document.getDocumentId() : document.getPath());
     addS(pkvalues, "version", document.getVersion());
     addS(pkvalues, DocumentVersionService.S3VERSION_ATTRIBUTE, document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
@@ -1201,6 +1199,38 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
+   * Rename a document document.
+   * 
+   * @param documentId {@link String}
+   * @param documentValues {@link Map}
+   * @param folderIndex {@link List}
+   */
+  private void renameDuplicateDocumentIfNeeded(final String documentId,
+      final Map<String, AttributeValue> documentValues,
+      final List<Map<String, AttributeValue>> folderIndex) {
+
+    if (!folderIndex.isEmpty()) {
+      int len = folderIndex.size();
+      Map<String, AttributeValue> documentPath = folderIndex.get(len - 1);
+
+      if (this.dbService.exists(documentPath.get(PK), documentPath.get(SK))) {
+
+        String oldPath = documentValues.get("path").s();
+        String oldFilename = documentPath.get("path").s();
+
+        String extension = Strings.getExtension(oldFilename);
+        String newFilename =
+            oldFilename.replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
+        String newPath = oldPath.replaceAll(oldFilename, newFilename);
+
+        documentValues.put("path", AttributeValue.fromS(newPath));
+        documentPath.put(SK, AttributeValue.fromS(INDEX_FILE_SK + newFilename.toLowerCase()));
+        documentPath.put("path", AttributeValue.fromS(newFilename));
+      }
+    }
+  }
+
+  /**
    * Save Record.
    * 
    * @param values {@link Map} {@link AttributeValue}
@@ -1300,13 +1330,19 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, document);
-    if (!isEmpty(document.getPath())) {
-      documentValues.put("path", AttributeValue.fromS(document.getPath()));
-    }
+    folderIndex = updateFromExistingFolder(folderIndex);
 
-    if (isPathChanges(previous, documentValues)) {
+    if (!documentExists) {
+      renameDuplicateDocumentIfNeeded(document.getDocumentId(), documentValues, folderIndex);
+    } else if (isPathChanges(previous, documentValues)) {
       this.folderIndexProcessor.deletePath(siteId, document.getDocumentId(),
           previous.get("path").s());
+    }
+
+    // update top level directory
+    if (folderIndex.size() > 1) {
+      int len = folderIndex.size();
+      folderIndex.get(len - 2).put("lastModifiedDate", documentValues.get("lastModifiedDate"));
     }
 
     List<Map<String, AttributeValue>> tagValues =
@@ -1558,5 +1594,43 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
+  }
+
+  /**
+   * Update Folder Index from any existing Folder Index.
+   * 
+   * @param folderIndex {@link List} {@link Map}
+   * @return {@link List} {@link Map}
+   */
+  private List<Map<String, AttributeValue>> updateFromExistingFolder(
+      final List<Map<String, AttributeValue>> folderIndex) {
+
+    List<Map<String, AttributeValue>> indexKeys = folderIndex.stream()
+        .map(f -> Map.of(PK, f.get(PK), SK, f.get(SK))).collect(Collectors.toList());
+
+    if (!indexKeys.isEmpty()) {
+
+      List<Map<String, AttributeValue>> attrs = getBatch(indexKeys).get(this.documentTableName);
+
+      if (!notNull(attrs).isEmpty()) {
+
+        folderIndex.forEach(f -> {
+
+          Optional<Map<String, AttributeValue>> o = attrs.stream()
+              .filter(
+                  a -> a.get(PK).s().equals(f.get(PK).s()) && a.get(SK).s().equals(f.get(SK).s()))
+              .findFirst();
+
+          if (o.isPresent()) {
+            f.put("inserteddate", o.get().get("inserteddate"));
+            f.put("lastModifiedDate", o.get().get("lastModifiedDate"));
+            f.put("userId", o.get().get("userId"));
+          }
+
+        });
+      }
+    }
+
+    return folderIndex;
   }
 }

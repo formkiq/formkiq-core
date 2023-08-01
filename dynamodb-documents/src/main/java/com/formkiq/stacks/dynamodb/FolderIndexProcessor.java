@@ -91,17 +91,6 @@ public interface FolderIndexProcessor {
   List<Map<String, AttributeValue>> generateIndex(String siteId, DocumentItem item);
 
   /**
-   * Get {@link FolderIndexRecord} based on {@link String} path.
-   * 
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param pathType {@link String}
-   * @param userId {@link String}
-   * @return {@link List} {@link FolderIndexRecordExtended}
-   */
-  List<FolderIndexRecordExtended> get(String siteId, String path, String pathType, String userId);
-
-  /**
    * Get Folder Index by documentId.
    * 
    * @param siteId {@link String}

@@ -1489,55 +1489,10 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddFolderShareResponse'
-                '400':
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /shares/folders/{shareKey}:
-            patch:
-              operationId: UpdateFolderShare
-              description: Updates a folder share; ONLY available with FormKiQ Enterprise
-              tags:
-              - Document Shares
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/shareKey'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/UpdateFolderShareRequest'
-              responses:
-                '200':
-                  description: 200 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/UpdateFolderShareResponse'
-                '400':
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /shares/{shareKey}:
             delete:
               operationId: DeleteShare
@@ -2839,13 +2794,17 @@ Resources:
             UserShare:
               type: "object"
               properties:
+                documentId:
+                  type: "string"
+                  description: "Document/Folder Identifier"
                 shareKey:
                   type: "string"
-                  description: "Share Identifier"
+                  description: "Share Key Identifier"
                 type:
                   type: "string"
                   enum:
                     - FOLDER
+                    - FILE
                   description: "Type of Document"
                 permissions:
                   type: "array"
@@ -2856,6 +2815,9 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
+                name:
+                  type: "string"
+                  description: "Name of Share"
                 siteId:
                   type: "string"
                   description: "Site Identifier"
@@ -2865,11 +2827,6 @@ Resources:
                 userId:
                   type: "string"
                   description: "User who created share"
-                permissionType:
-                  type: "string"
-                  description: "Type of share"
-                  enum:
-                    - GROUP
             GetDocumentTagsResponse:
               type: "object"
               properties:
@@ -3233,58 +3190,56 @@ Resources:
                   description: "List of child documents"
                   items:
                     $ref: "#/components/schemas/AddChildDocument"
+                permissions:
+                  $ref: "#/components/schemas/AddPermissions"
             AddFolderShareRequest:
               type: "object"
               properties:
-                share:
-                  $ref: "#/components/schemas/AddShare"
-            AddShare:
+                permissions:
+                  $ref: "#/components/schemas/AddPermissions"
+            AddPermissions:
               type: "object"
               properties:
-                group:
-                  type: "string"
-                  description: "Share with Group"
-                permissions:
+                groups:
+                  $ref: "#/components/schemas/AddPermission"
+            AddPermission:
+              type: "object"
+              properties:
+                read:
                   type: "array"
-                  description: "List of share permissions"
+                  description: "List of Groups with Read permission"
                   items:
                     type: "string"
-                    enum:
-                      - READ
-                      - WRITE
-                      - DELETE
-            UpdateFolderShareRequest:
-              type: "object"
-              properties:
-                share:
-                  $ref: "#/components/schemas/UpdateShare"
-            UpdateShare:
-              type: "object"
-              properties:
-                permissions:
+                write:
                   type: "array"
-                  description: "List of share permissions"
+                  description: "List of Groups with Write permission"
                   items:
                     type: "string"
-                    enum:
-                      - READ
-                      - WRITE
-                      - DELETE
-            UpdateFolderShareResponse:
-              type: "object"
-              properties:
-                message:
-                  type: "string"
-                  description: "API Response message"
+                delete:
+                  type: "array"
+                  description: "List of Groups with Delete permission"
+                  items:
+                    type: "string"
             AddFolderShareResponse:
               type: "object"
               properties:
                 message:
                   type: "string"
                   description: "API Response message"
+                shares:
+                  type: "array"
+                  description: "List of created shares"
+                  items:
+                    $ref: "#/components/schemas/AddFolderShare"
+            AddFolderShare:
+              type: "object"
+              properties:
                 shareKey:
                   type: "string"
-                  description: "Share Identifier"
+                  description: "Share Key Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
             DeleteFolderResponse:
               type: "object"
               properties:

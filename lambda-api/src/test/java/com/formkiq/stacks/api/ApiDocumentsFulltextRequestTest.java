@@ -73,7 +73,7 @@ public class ApiDocumentsFulltextRequestTest {
   private void setBearerToken(final String siteId) {
     String jwt = JwtTokenEncoder.encodeCognito(new String[] {siteId != null ? siteId : "default"},
         "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
+    this.client.setBearerToken(jwt);
   }
 
   /**

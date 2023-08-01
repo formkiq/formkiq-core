@@ -32,7 +32,7 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
  * {@link AwsServiceExtension} for {@link FolderIndexProcessor}.
  *
  */
-public class FolderIndexProcessorExtension implements AwsServiceExtension<FolderIndexProcessor> {
+public class IndexProcessorExtension implements AwsServiceExtension<FolderIndexProcessor> {
 
   /** {@link FolderIndexProcessor}. */
   private FolderIndexProcessor service;
@@ -40,7 +40,7 @@ public class FolderIndexProcessorExtension implements AwsServiceExtension<Folder
   /**
    * constructor.
    */
-  public FolderIndexProcessorExtension() {
+  public IndexProcessorExtension() {
 
   }
 
@@ -50,7 +50,6 @@ public class FolderIndexProcessorExtension implements AwsServiceExtension<Folder
     if (this.service == null) {
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-
       this.service =
           new FolderIndexProcessorImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
