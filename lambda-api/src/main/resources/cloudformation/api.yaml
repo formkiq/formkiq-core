@@ -4391,10 +4391,8 @@ Resources:
                   description: "Message response"
           securitySchemes:
             ApiAuthorization:
-              type: http
-              scheme: bearer
-              bearerFormat: JWT
-              description: JWT authentication
+              type: oauth2
+              flows: {}
               x-amazon-apigateway-authorizer:
                 type: jwt
                 jwtConfiguration:
