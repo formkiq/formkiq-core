@@ -24,9 +24,9 @@
 package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
-import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
-import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
+import static com.formkiq.module.events.document.DocumentEventType.CREATE;
+import static com.formkiq.module.events.document.DocumentEventType.DELETE;
+import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
@@ -190,10 +190,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsService(sqsBuilder);
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
-
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);
     }
@@ -217,6 +213,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
       dbHelper.createCacheTable(CACHE_TABLE);
     }
+
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
+    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+
   }
 
   /** {@link LambdaContextRecorder}. */

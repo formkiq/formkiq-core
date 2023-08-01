@@ -25,7 +25,7 @@ package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
@@ -81,7 +81,7 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
-import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.typesense.TypeSenseService;

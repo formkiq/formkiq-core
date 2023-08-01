@@ -34,8 +34,12 @@ public class QueryConfig {
 
   /** {@link Map}. */
   private Map<String, String> expressionAttributeNames;
+  /** Index Name. */
+  private String indexName;
   /** Projection Expression. */
   private String projectionExpression;
+  /** True - ASC, False - DESC. */
+  private Boolean scanIndexForward = Boolean.FALSE;
 
   /**
    * constructor.
@@ -65,6 +69,35 @@ public class QueryConfig {
   }
 
   /**
+   * Get Index Name.
+   * 
+   * @return {@link String}
+   */
+  public String indexName() {
+    return this.indexName;
+  }
+
+  /**
+   * Set Index Name.
+   * 
+   * @param index {@link String}
+   * @return {@link QueryConfig}
+   */
+  public QueryConfig indexName(final String index) {
+    this.indexName = index;
+    return this;
+  }
+
+  /**
+   * Is ScanIndexForward.
+   * 
+   * @return boolean
+   */
+  public Boolean isScanIndexForward() {
+    return this.scanIndexForward;
+  }
+
+  /**
    * Get Projection Expression.
    * 
    * @return {@link String}
@@ -81,6 +114,17 @@ public class QueryConfig {
    */
   public QueryConfig projectionExpression(final String projection) {
     this.projectionExpression = projection;
+    return this;
+  }
+
+  /**
+   * Set Is ScanIndexForward.
+   * 
+   * @param isScanIndexForward {@link Boolean}
+   * @return {@link QueryConfig}
+   */
+  public QueryConfig scanIndexForward(final Boolean isScanIndexForward) {
+    this.scanIndexForward = isScanIndexForward;
     return this;
   }
 

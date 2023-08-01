@@ -254,7 +254,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   @Override
   public String pk(final String siteId) {
     checkParentId();
-    return SiteIdKeyGenerator.createS3Key(siteId,
+    return SiteIdKeyGenerator.createDatabaseKey(siteId,
         GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + this.parentDocumentId);
   }
 
@@ -319,5 +319,4 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
     this.userId = createdBy;
     return this;
   }
-
 }

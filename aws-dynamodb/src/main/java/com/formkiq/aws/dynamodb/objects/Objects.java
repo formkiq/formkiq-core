@@ -37,6 +37,17 @@ import java.util.Map;
 public class Objects {
 
   /**
+   * Get Last Element of {@link List}.
+   * 
+   * @param <T> Type of Object.
+   * @param list {@link List}
+   * @return {@link Object}
+   */
+  public static <T> T last(final List<T> list) {
+    return !notNull(list).isEmpty() ? list.get(list.size() - 1) : null;
+  }
+
+  /**
    * Returns a {@link Collection} that is guarantee not to be null.
    * 
    * @param <T> Type
