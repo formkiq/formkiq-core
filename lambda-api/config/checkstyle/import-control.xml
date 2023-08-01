@@ -54,7 +54,7 @@
 			<allow pkg="com.formkiq.aws.ssm" />
 			<allow pkg="com.formkiq.aws.sns" />
 			
-			<allow pkg="com.formkiq.module.documentevents" />
+			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.lambda.apigateway" />
 			<allow pkg="com.formkiq.module.actions" />

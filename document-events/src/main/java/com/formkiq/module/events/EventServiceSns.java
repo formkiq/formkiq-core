@@ -21,21 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.documentevents;
+package com.formkiq.module.events;
 
 import java.util.Map;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
+import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.events.folder.FolderEvent;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 
 /**
  * 
- * SQS implementation of the {@link DocumentEventService}.
+ * SQS implementation of the {@link EventService}.
  *
  */
-public class DocumentEventServiceSns implements DocumentEventService {
+public class EventServiceSns implements EventService {
 
   /** Max Sns Message Size. */
   public static final int MAX_SNS_MESSAGE_SIZE = 256000;
@@ -43,18 +45,26 @@ public class DocumentEventServiceSns implements DocumentEventService {
   private Gson gson = new GsonBuilder().create();
   /** {@link SnsService}. */
   private SnsService snsService;
+  /** SNS Topic Arn. */
+  private String topicArn;
 
   /**
    * constructor.
    * 
    * @param snsBuilder {@link SnsConnectionBuilder}
+   * @param eventTopicArn {@link String}
    */
-  public DocumentEventServiceSns(final SnsConnectionBuilder snsBuilder) {
+  public EventServiceSns(final SnsConnectionBuilder snsBuilder, final String eventTopicArn) {
     this.snsService = new SnsService(snsBuilder);
+    this.topicArn = eventTopicArn;
+  }
+
+  String convertToPrintableCharacters(final String s) {
+    return s != null ? s.replaceAll("[^A-Za-z0-9/-]", "") : null;
   }
 
   @Override
-  public String publish(final String topicArn, final DocumentEvent event) {
+  public String publish(final DocumentEvent event) {
 
     String eventJson = this.gson.toJson(event);
     if (eventJson.length() > MAX_SNS_MESSAGE_SIZE) {
@@ -75,12 +85,24 @@ public class DocumentEventServiceSns implements DocumentEventService {
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
 
-    this.snsService.publish(topicArn, eventJson, tags);
+    this.snsService.publish(this.topicArn, eventJson, tags);
 
     return eventJson;
   }
 
-  String convertToPrintableCharacters(final String s) {
-    return s != null ? s.replaceAll("[^A-Za-z0-9/-]", "") : null;
+  @Override
+  public String publish(final FolderEvent event) {
+    String eventJson = this.gson.toJson(event);
+
+    MessageAttributeValue typeAttr =
+        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
+    MessageAttributeValue siteIdAttr = MessageAttributeValue.builder().dataType("String")
+        .stringValue(convertToPrintableCharacters(event.siteId())).build();
+
+    Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
+
+    this.snsService.publish(this.topicArn, eventJson, tags);
+
+    return eventJson;
   }
 }

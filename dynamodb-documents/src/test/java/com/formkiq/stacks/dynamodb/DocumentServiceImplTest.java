@@ -2047,10 +2047,11 @@ public class DocumentServiceImplTest implements DbKeys {
       smc = new SearchMetaCriteria().folder("a");
       q = new SearchQuery().meta(smc);
       items = searchService.search(siteId, q, null, MAX_RESULTS);
+
       assertEquals(1, items.getResults().size());
       result = items.getResults().get(0);
       assertEquals("b", result.get("path"));
-      assertEquals(item1Date, result.getLastModifiedDate());
+      assertNotEquals(item1Date, result.getLastModifiedDate());
 
       smc = new SearchMetaCriteria().folder("a/b");
       q = new SearchQuery().meta(smc);

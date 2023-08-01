@@ -121,7 +121,7 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.IndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -300,7 +300,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
     AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
-    AwsServiceCache.register(FolderIndexProcessor.class, new IndexProcessorExtension());
+    AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     AwsServiceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());

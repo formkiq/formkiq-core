@@ -24,15 +24,15 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.List;
 import java.util.Optional;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.documentevents.DocumentEvent;
-import com.formkiq.module.documentevents.DocumentEventService;
-import com.formkiq.module.documentevents.DocumentEventServiceSns;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSns;
+import com.formkiq.module.events.document.DocumentEvent;
 
 /**
  * 
@@ -41,10 +41,8 @@ import com.formkiq.module.documentevents.DocumentEventServiceSns;
  */
 public class ActionsNotificationServiceImpl implements ActionsNotificationService {
 
-  /** Document Event Actions Topic. */
-  private String topicArn;
-  /** {@link DocumentEventService}. */
-  private DocumentEventService documentEventService;
+  /** {@link EventService}. */
+  private EventService documentEventService;
 
   /**
    * constructor.
@@ -54,8 +52,7 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
    */
   public ActionsNotificationServiceImpl(final String documentActionsTopicArn,
       final SnsConnectionBuilder snsBuilder) {
-    this.topicArn = documentActionsTopicArn;
-    this.documentEventService = new DocumentEventServiceSns(snsBuilder);
+    this.documentEventService = new EventServiceSns(snsBuilder, documentActionsTopicArn);
   }
 
   @Override
@@ -67,7 +64,7 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
     if (o.isPresent()) {
       String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
       DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
-      this.documentEventService.publish(this.topicArn, event);
+      this.documentEventService.publish(event);
     }
   }
 }

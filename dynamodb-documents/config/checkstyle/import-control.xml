@@ -24,6 +24,9 @@
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.validation" />
 		
+		<allow pkg="com.formkiq.module.events" />
+		<allow pkg="com.formkiq.module.events.folder" />
+
 		<allow pkg="java.io" />
 		<allow pkg="java.lang.reflect" />
 		<allow pkg="java.net" />
