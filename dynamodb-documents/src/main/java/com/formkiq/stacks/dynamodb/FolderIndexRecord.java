@@ -277,7 +277,8 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
 
   @Override
   public String skGsi1() {
-    return createIndexKey(null);
+    // return createIndexKey(null);
+    return "folder";
   }
 
   /**

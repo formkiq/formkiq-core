@@ -500,11 +500,7 @@
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
+              - $ref: '#/components/parameters/nextParam'
               - name: previous
                 in: query
                 description: Previous page of results token
@@ -952,11 +948,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
+              - $ref: '#/components/parameters/nextParam'
               - name: previous
                 in: query
                 description: Previous page of results token
@@ -1263,11 +1255,7 @@
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/shareKeyParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
+              - $ref: '#/components/parameters/nextParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1352,11 +1340,7 @@
               - $ref: '#/components/parameters/indexKeyQueryParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
+              - $ref: '#/components/parameters/nextParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1434,10 +1418,14 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /shares/me:
+          /shares:
             get:
               operationId: GetUserShares
               description: Get a listing of user folder/document shares; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/groupParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
               tags:
               - Document Shares
               responses:
@@ -1571,11 +1559,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
+              - $ref: '#/components/parameters/nextParam'
               - name: previous
                 in: query
                 description: Previous page of results token
@@ -2355,11 +2339,7 @@
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
-              - name: next
-                in: query
-                description: Next page of results token
-                schema:
-                  type: string
+              - $ref: '#/components/parameters/nextParam'
               - name: previous
                 in: query
                 description: Previous page of results token
@@ -2591,6 +2571,13 @@
               required: false
               schema:
                 type: string
+            groupParam:
+              name: group
+              in: query
+              description: Group Identifier
+              required: false
+              schema:
+                type: string
             providerParam:
               name: provider
               in: query
@@ -2606,6 +2593,13 @@
               schema:
                 type: string
                 default: "10"
+            nextParam:
+              name: next
+              in: query
+              description: Next page of results token
+              required: false
+              schema:
+                type: string
             apiKeyParam:
               name: apiKey
               in: path
@@ -2829,6 +2823,9 @@
             GetUserShares:
               type: object
               properties:
+                next:
+                  type: string
+                  description: Next page of results token
                 shares:
                   type: array
                   description: List of user's shares
@@ -2837,6 +2834,9 @@
             UserShare:
               type: object
               properties:
+                group:
+                  type: string
+                  description: Name of Share Group
                 shareKey:
                   type: string
                   description: Share Identifier
@@ -4433,18 +4433,10 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: http
-              scheme: bearer
-              bearerFormat: JWT
-              description: JWT authentication
-              x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: ${CognitoUserPoolClient}
-                identitySource: $request.header.Authorization
+              type: apiKey
+              name: Authorization
+              in: header
+              x-amazon-apigateway-authtype: awsSigv4
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -217,7 +218,7 @@ public class DocumentsUploadRequestHandler
       final String documentId) throws BadException {
 
     Map<String, String> query = event.getQueryStringParameters();
-    String key = siteId != null ? siteId + "/" + documentId : documentId;
+    String key = !isDefaultSiteId(siteId) ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
     Optional<Long> contentLength = calculateContentLength(awsservice, logger, query, siteId);
 

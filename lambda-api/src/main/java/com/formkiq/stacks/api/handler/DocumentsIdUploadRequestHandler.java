@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.net.URL;
@@ -133,7 +134,7 @@ public class DocumentsIdUploadRequestHandler
   private String generatePresignedUrl(final AwsServiceCache awsservice, final String siteId,
       final String documentId, final Map<String, String> query) throws BadException {
 
-    String key = siteId != null ? siteId + "/" + documentId : documentId;
+    String key = !isDefaultSiteId(siteId) ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
     Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
     S3Service s3Service = awsservice.getExtension(S3Service.class);
