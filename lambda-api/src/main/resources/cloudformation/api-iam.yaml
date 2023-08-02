@@ -4436,18 +4436,10 @@ Resources:
                   description: "Message response"
           securitySchemes:
             ApiAuthorization:
-              type: http
-              scheme: bearer
-              bearerFormat: JWT
-              description: JWT authentication
-              x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: "${CognitoUserPoolClient}"
-                identitySource: "$request.header.Authorization"
+              type: apiKey
+              name: Authorization
+              in: header
+              x-amazon-apigateway-authtype: awsSigv4
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
