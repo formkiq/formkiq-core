@@ -1404,10 +1404,12 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /shares/me:
+          /shares:
             get:
               operationId: GetUserShares
               description: Get a listing of user folder/document shares; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/groupParam'
               tags:
               - Document Shares
               responses:
@@ -2561,6 +2563,13 @@ Resources:
               required: false
               schema:
                 type: string
+            groupParam:
+              name: group
+              in: query
+              description: Group Identifier
+              required: false
+              schema:
+                type: string
             providerParam:
               name: provider
               in: query
@@ -2807,6 +2816,9 @@ Resources:
             UserShare:
               type: "object"
               properties:
+                group:
+                  type: "string"
+                  description: "Name of Share Group"
                 shareKey:
                   type: "string"
                   description: "Share Identifier"
