@@ -2793,6 +2793,9 @@ Resources:
             GetUserShares:
               type: "object"
               properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
                 shares:
                   type: "array"
                   description: "List of user's shares"
