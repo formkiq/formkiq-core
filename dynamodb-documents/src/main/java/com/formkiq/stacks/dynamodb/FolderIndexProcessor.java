@@ -111,6 +111,15 @@ public interface FolderIndexProcessor {
   FolderIndexRecord getFolderByDocumentId(String siteId, String documentId);
 
   /**
+   * Get Folder Index by documentIds.
+   * 
+   * @param siteId {@link String}
+   * @param documentIds {@link List} {@link String}
+   * @return {@link Map} {@link FolderIndexRecord}
+   */
+  Map<String, FolderIndexRecord> getFolderByDocumentIds(String siteId, List<String> documentIds);
+
+  /**
    * Get Folders Index by documentId.
    * 
    * @param siteId {@link String}

@@ -412,22 +412,39 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   @Override
   public FolderIndexRecord getFolderByDocumentId(final String siteId, final String documentId) {
 
+    Map<String, FolderIndexRecord> map = getFolderByDocumentIds(siteId, Arrays.asList(documentId));
+    return map.containsKey(documentId) ? map.get(documentId) : null;
+  }
+
+  /**
+   * Query GSI1 for Folder by DocumentId.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link QueryResponse}
+   */
+  private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
     FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
     String pk = record.pkGsi1(siteId);
     QueryResponse response = this.dynamoDb.queryIndex(GSI1, AttributeValue.fromS(pk), null, 1);
+    return response;
+  }
 
-    if (!response.items().isEmpty()) {
+  @Override
+  public Map<String, FolderIndexRecord> getFolderByDocumentIds(final String siteId,
+      final List<String> documentIds) {
 
-      Map<String, AttributeValue> map = response.items().get(0);
+    List<Map<String, AttributeValue>> responses = documentIds.stream()
+        .map(documentId -> queryForFolderByDocumentId(siteId, documentId))
+        .filter(r -> !r.items().isEmpty()).map(r -> r.items().get(0)).collect(Collectors.toList());
 
-      Map<String, AttributeValue> attrs = this.dynamoDb.get(map.get(PK), map.get(SK));
-      record = record.getFromAttributes(attrs);
+    Map<String, FolderIndexRecord> recordMap =
+        responses.stream().map(map -> this.dynamoDb.get(map.get(PK), map.get(SK)))
+            .map(attr -> new FolderIndexRecord().getFromAttributes(attr))
+            .collect(Collectors.toMap(r -> r.documentId(), r -> r));
 
-    } else {
-      record = null;
-    }
+    return recordMap;
 
-    return record;
   }
 
   /**
