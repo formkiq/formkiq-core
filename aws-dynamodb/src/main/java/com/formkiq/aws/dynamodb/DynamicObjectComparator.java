@@ -23,12 +23,16 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 /**
  * {@link Comparator} for {@link DynamicObject}.
  */
-public class DynamicObjectComparator implements Comparator<DynamicObject> {
+public class DynamicObjectComparator implements Comparator<DynamicObject>, Serializable {
+
+  /** Serial Version UID. */
+  private static final long serialVersionUID = 7148397012749271136L;
 
   /** {@link String}. */
   private String key;
