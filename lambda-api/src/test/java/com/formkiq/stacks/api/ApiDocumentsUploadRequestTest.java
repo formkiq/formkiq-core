@@ -169,9 +169,11 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
         assertFalse(resp.getUrl().contains("content-length"));
 
         if (siteId != null) {
+          assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
           assertTrue(getLogger().containsString("generated presign url: "
               + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
         } else {
+          assertFalse(resp.getUrl().contains("/testbucket/default"));
           assertTrue(getLogger().containsString("generated presign url: "
               + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
         }
@@ -239,6 +241,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       // then
       ApiUrlResponse resp = expectResponse(response);
 
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+      }
+
       assertTrue(getLogger().containsString("generated presign url: "
           + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
       assertTrue(getLogger().containsString("for document " + resp.getDocumentId()));
@@ -267,6 +275,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
       // then
       ApiUrlResponse resp = expectResponse(response);
+
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+      }
 
       DocumentItem item = getDocumentService().findDocument(siteId, resp.getDocumentId());
       assertEquals(
@@ -413,9 +427,11 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       assertFalse(resp.getUrl().contains("content-length"));
 
       if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
         assertTrue(getLogger().containsString("generated presign url: "
             + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
       } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
         assertTrue(getLogger().containsString("generated presign url: "
             + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
       }
@@ -511,6 +527,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       ApiUrlResponse resp = expectResponse(response);
+
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+      }
 
       String documentId = resp.getDocumentId();
       assertNotNull(document);
