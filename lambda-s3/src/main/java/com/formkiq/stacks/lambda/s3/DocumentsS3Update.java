@@ -45,6 +45,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -185,6 +186,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       final SsmConnectionBuilder ssmBuilder, final SnsConnectionBuilder snsBuilder) {
 
     this.services = new AwsServiceCache().environment(map);
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbBuilder));
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
