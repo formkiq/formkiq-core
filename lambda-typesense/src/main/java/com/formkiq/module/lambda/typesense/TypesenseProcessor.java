@@ -181,6 +181,18 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     return field.get("S");
   }
 
+  /**
+   * Get User Id.
+   * @param newImage {@link Map}
+   * @param oldImage {@link Map}
+   * @return {@link String}
+   */
+  private String getUserId(final Map<String, Object> newImage, final Map<String, Object> oldImage) {
+    String userId = getField(newImage, oldImage, "userId");
+    userId = userId != null ? userId : "System";
+    return userId;
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
@@ -255,8 +267,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
           boolean s3VersionChanged = isS3VersionChanged(eventName, oldImage, newImage);
 
-          String userId = getField(newImage, oldImage, "userId");
-          userId = userId != null ? userId : "System";
+          String userId = getUserId(newImage, oldImage);
           writeToIndex(logger, siteId, documentId, newImage, userId, s3VersionChanged);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
