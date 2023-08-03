@@ -60,7 +60,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResp
 public class AwsResourceTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 80000;
+  private static final int TEST_TIMEOUT = 80;
   /** Temporary Cognito Password. */
   private static final String USER_TEMP_PASSWORD = "TEMPORARY_PASSWORd1!";
 

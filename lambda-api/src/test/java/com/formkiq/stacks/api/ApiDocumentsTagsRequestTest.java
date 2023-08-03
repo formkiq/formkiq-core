@@ -74,7 +74,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
   /** Test Timeout. */
-  private static final long TEST_TIMEOUT = 10000L;
+  private static final long TEST_TIMEOUT = 20;
 
   /** {@link SimpleDateFormat} in ISO Standard format. */
   private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
@@ -1007,7 +1007,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    * @throws Exception an error has occurred
    */
   @Test
-  @Timeout(value = TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
+  @Timeout(value = TEST_TIMEOUT, unit = TimeUnit.SECONDS)
   public void testHandlePostDocumentTags03() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

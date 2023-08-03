@@ -65,7 +65,7 @@ public class PrivateWebhooksRequestTest extends AbstractApiTest {
   /** Http Status Unauthorized. */
   private static final int STATUS_UNAUTHORIZED = 401;
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * /webhooks Options.

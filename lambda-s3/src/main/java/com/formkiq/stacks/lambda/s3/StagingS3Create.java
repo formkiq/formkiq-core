@@ -597,6 +597,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String s3Key = urlDecode(key);
     String siteId = getSiteId(s3Key);
 
+    String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
+        eventName, bucket, key);
+    logger.log(s);
+
     if (objectCreated) {
 
       if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {

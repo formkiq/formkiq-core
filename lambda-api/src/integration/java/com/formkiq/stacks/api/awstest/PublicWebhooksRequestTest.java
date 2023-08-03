@@ -69,7 +69,7 @@ public class PublicWebhooksRequestTest extends AbstractApiTest {
   /** Http Status NOT_FOUND. */
   private static final int STATUS_NOT_FOUND = 404;
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * /webhooks Options.

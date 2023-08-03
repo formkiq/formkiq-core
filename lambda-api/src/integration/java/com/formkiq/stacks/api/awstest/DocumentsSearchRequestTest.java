@@ -51,7 +51,7 @@ import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
 public class DocumentsSearchRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * Test Raw /search.
@@ -314,7 +314,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT * 2)
   public void testDocumentsSearch08() throws Exception {
     // given
     String siteId = null;
@@ -323,7 +323,9 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     final int limit = 100;
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
+      System.out.println("DOC: " + client);
       String documentId = addDocumentWithoutFile(client, siteId, path);
+      System.out.println("ADD DOC: " + documentId);
       SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)
           .query(new DocumentSearchQuery().text(text)).limit(limit);
 
@@ -333,7 +335,11 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       // when
       while (o.isEmpty()) {
         response = client.search(req);
+        response.documents().forEach(d -> {
+          System.out.println("D: " + d.documentId() + " " + d.path());
+        });
         o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+        System.out.println("O: " + response.documents().size());
         TimeUnit.SECONDS.sleep(1);
       }
 

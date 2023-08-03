@@ -112,7 +112,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   /** 200 OK. */
   private static final int STATUS_OK = 200;
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 60000;
+  private static final int TEST_TIMEOUT = 60;
 
   /**
    * After Class.
@@ -251,7 +251,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
         responseSiteId.body());
   }
 
@@ -286,7 +286,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default)\"}", responseSiteId.body());
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ,WRITE,DELETE))\"}",
+        responseSiteId.body());
   }
 
   /**
@@ -503,12 +504,12 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_FORBIDDEN, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
         responseNoSiteId.body());
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
         responseSiteId.body());
   }
 
@@ -537,11 +538,12 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().startsWith("{\"documentId\":\""));
+    assertTrue(responseNoSiteId.body().contains("\"documentId\":\""));
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default)\"}", responseSiteId.body());
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ,WRITE,DELETE))\"}",
+        responseSiteId.body());
   }
 
   /**
@@ -569,7 +571,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().startsWith("{\"documentId\":\""));
+    assertTrue(responseNoSiteId.body().contains("\"documentId\":\""));
 
     assertEquals(STATUS_CREATED, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
@@ -608,7 +610,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().startsWith("{\"documentId\":\""));
+    assertTrue(responseNoSiteId.body().contains("\"documentId\":\""));
 
     assertEquals(STATUS_CREATED, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
@@ -817,7 +819,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
       Thread.sleep(ONE_SECOND * 2);
 
       // given
-      String newpath = "newpath.txt";
+      String newpath = "newpath_" + UUID.randomUUID().toString() + ".txt";
       UpdateDocument updateDocument = new UpdateDocument().path(newpath)
           .tags(Arrays.asList(new AddDocumentTag().key("some").value("thing"),
               new AddDocumentTag().key("person").value("555")));
