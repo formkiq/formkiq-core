@@ -256,6 +256,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
           boolean s3VersionChanged = isS3VersionChanged(eventName, oldImage, newImage);
 
           String userId = getField(newImage, oldImage, "userId");
+          userId = userId != null ? userId : "System";
           writeToIndex(logger, siteId, documentId, newImage, userId, s3VersionChanged);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {
