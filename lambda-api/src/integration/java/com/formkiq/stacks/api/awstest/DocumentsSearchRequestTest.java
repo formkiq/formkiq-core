@@ -323,9 +323,7 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
     final int limit = 100;
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
-      System.out.println("DOC: " + client);
       String documentId = addDocumentWithoutFile(client, siteId, path);
-      System.out.println("ADD DOC: " + documentId);
       SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)
           .query(new DocumentSearchQuery().text(text)).limit(limit);
 
@@ -335,11 +333,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       // when
       while (o.isEmpty()) {
         response = client.search(req);
-        response.documents().forEach(d -> {
-          System.out.println("D: " + d.documentId() + " " + d.path());
-        });
         o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
-        System.out.println("O: " + response.documents().size());
+
         TimeUnit.SECONDS.sleep(1);
       }
 
