@@ -51,7 +51,7 @@ jobs:
       uses: actions/upload-artifacts@v3
       with:
         name: test-reports
-        path: **/build/reports/*
+        path: "**/build/reports/*"
         retention-days: 5
     - name: Set AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
