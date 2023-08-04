@@ -451,7 +451,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       logger.log(msg);
 
       boolean moduleOcr = this.services.hasModule("ocr");
-      boolean moduleFulltext = this.services.hasModule("fulltext");
+      boolean moduleFulltext = this.services.hasModule("opensearch");
 
       if (moduleOcr || moduleFulltext) {
         FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
@@ -467,7 +467,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           HttpResponse<String> deleteDocumentFulltext =
               fkClient.deleteDocumentFulltextAsHttpResponse(
                   new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
-          checkResponse("fulltext", siteId, documentId, deleteDocumentFulltext);
+          checkResponse("opensearch", siteId, documentId, deleteDocumentFulltext);
         }
       }
 

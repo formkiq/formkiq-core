@@ -971,7 +971,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public void testHandleRequest12() throws Exception {
 
     createMockServer(DocumentsS3Update.SERVER_ERROR);
-    this.modules = Arrays.asList("ocr", "fulltext");
+    this.modules = Arrays.asList("ocr", "opensearch");
     before();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1010,7 +1010,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   public void testHandleRequest13() throws Exception {
 
     createMockServer(OK);
-    this.modules = Arrays.asList("ocr", "fulltext");
+    this.modules = Arrays.asList("ocr", "opensearch");
     before();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
