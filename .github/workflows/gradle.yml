@@ -48,7 +48,7 @@ jobs:
     - name: Execute Gradle build
       run: ./gradlew build --info
     - name: Upload test reports
-      uses: actions/upload-artifacts@v3
+      uses: actions/upload-artifact@v3
       with:
         name: test-reports
         path: "**/build/reports/*"
