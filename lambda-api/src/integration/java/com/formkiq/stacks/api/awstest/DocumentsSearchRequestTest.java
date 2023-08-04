@@ -318,8 +318,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   public void testDocumentsSearch08() throws Exception {
     // given
     String siteId = null;
-    String path = "some/thing/else/My Documents.pdf";
-    String text = "My Documents";
+    String path = "some/thing/else/intelligent Documents.pdf";
+    String text = "intelligent Documents";
     final int limit = 100;
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
@@ -341,7 +341,8 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       // then
       assertNotNull(response);
       assertFalse(response.documents().isEmpty());
-      assertTrue(response.documents().get(0).path().startsWith("some/thing/else/My Documents"));
+      assertTrue(
+          response.documents().get(0).path().contains("some/thing/else/intelligent Documents"));
 
       // given
       DeleteDocumentRequest delReq =

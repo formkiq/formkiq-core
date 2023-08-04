@@ -400,7 +400,7 @@ class TypesenseProcessorTest {
     assertEquals("200", String.valueOf(response.statusCode()));
     assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
   }
-  
+
   /**
    * Attempt to insert subdocument.
    * 

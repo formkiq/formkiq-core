@@ -183,6 +183,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
   /**
    * Get User Id.
+   * 
    * @param newImage {@link Map}
    * @param oldImage {@link Map}
    * @return {@link String}
