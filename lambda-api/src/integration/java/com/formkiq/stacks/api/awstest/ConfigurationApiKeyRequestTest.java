@@ -47,7 +47,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
 public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * Test GET /configuration/apiKeys.

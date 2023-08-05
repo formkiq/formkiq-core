@@ -46,7 +46,7 @@ public class SitesRequestTest extends AbstractApiTest {
   /** Http Status OK. */
   private static final int HTTP_STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * Test GET /version.

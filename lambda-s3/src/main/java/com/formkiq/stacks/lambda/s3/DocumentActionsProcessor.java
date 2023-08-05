@@ -454,7 +454,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
       List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
 
-      boolean moduleFulltext = this.serviceCache.hasModule("fulltext");
+      boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
 
       if (moduleFulltext) {
         updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);

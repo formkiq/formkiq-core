@@ -603,6 +603,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String s3Key = urlDecode(key);
     String siteId = getSiteId(s3Key);
 
+    String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
+        eventName, bucket, key);
+    logger.log(s);
+
     final String tempFolder = "tempfiles/";
     if (objectCreated && key.startsWith(tempFolder) && Strings.getExtension(key).equals("json")) {
       this.handleCompressionRequest(logger, bucket, key);

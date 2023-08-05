@@ -42,7 +42,7 @@ import com.formkiq.stacks.client.requests.OptionsDocumentRequest;
 public class DocumentsDocumentIdUploadRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * Get Request Document Not Found.

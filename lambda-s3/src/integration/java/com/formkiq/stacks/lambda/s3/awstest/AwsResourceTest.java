@@ -81,7 +81,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   /** Sleep Timeout. */
   private static final long SLEEP = 500L;
   /** Test Timeout. */
-  private static final long TEST_TIMEOUT = 30000L;
+  private static final long TEST_TIMEOUT = 30;
 
   /**
    * Assert {@link LambdaFunctionConfiguration}.

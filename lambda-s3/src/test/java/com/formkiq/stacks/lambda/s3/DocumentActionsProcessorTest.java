@@ -227,7 +227,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     this.context = new LambdaContextRecorder();
     callback.reset();
 
-    initProcessor("fulltext", "chatgpt1");
+    initProcessor("opensearch", "chatgpt1");
   }
 
   /**
@@ -360,7 +360,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction04() throws Exception {
 
-    initProcessor("fulltext", "chatgpt2");
+    initProcessor("opensearch", "chatgpt2");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -431,7 +431,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction05() throws Exception {
 
-    initProcessor("fulltext", "chatgpt3");
+    initProcessor("opensearch", "chatgpt3");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -500,7 +500,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction06() throws Exception {
 
-    initProcessor("fulltext", "chatgpt4");
+    initProcessor("opensearch", "chatgpt4");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -568,7 +568,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDocumentTaggingAction07() throws Exception {
 
-    initProcessor("fulltext", "chatgpt5");
+    initProcessor("opensearch", "chatgpt5");
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given

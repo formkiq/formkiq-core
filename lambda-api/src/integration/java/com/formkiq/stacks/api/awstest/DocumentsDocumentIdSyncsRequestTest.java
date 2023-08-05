@@ -51,7 +51,7 @@ import com.formkiq.stacks.client.requests.GetDocumentSyncsRequest;
 public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30000;
+  private static final int TEST_TIMEOUT = 30;
 
   private List<DocumentSync> find(final Collection<DocumentSync> list,
       final DocumentSyncServiceType type) {

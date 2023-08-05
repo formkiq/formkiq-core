@@ -45,6 +45,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -185,6 +186,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       final SsmConnectionBuilder ssmBuilder, final SnsConnectionBuilder snsBuilder) {
 
     this.services = new AwsServiceCache().environment(map);
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbBuilder));
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
@@ -448,7 +451,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       logger.log(msg);
 
       boolean moduleOcr = this.services.hasModule("ocr");
-      boolean moduleFulltext = this.services.hasModule("fulltext");
+      boolean moduleFulltext = this.services.hasModule("opensearch");
 
       if (moduleOcr || moduleFulltext) {
         FormKiqClientV1 fkClient = this.services.getExtension(FormKiqClientV1.class);
@@ -464,7 +467,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           HttpResponse<String> deleteDocumentFulltext =
               fkClient.deleteDocumentFulltextAsHttpResponse(
                   new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
-          checkResponse("fulltext", siteId, documentId, deleteDocumentFulltext);
+          checkResponse("opensearch", siteId, documentId, deleteDocumentFulltext);
         }
       }
 
