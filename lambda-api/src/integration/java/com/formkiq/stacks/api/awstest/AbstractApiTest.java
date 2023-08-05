@@ -39,6 +39,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,7 @@ import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -83,6 +85,8 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
  */
 public abstract class AbstractApiTest {
 
+  /** Cognito Permissions User Email. */
+  protected static final String ACME_EMAIL = "acme@formkiq.com";
   /** Cognito User Email. */
   private static final String ADMIN_EMAIL = "testadminuser@formkiq.com";
   /** {@link CognitoService}. */
@@ -111,8 +115,6 @@ public abstract class AbstractApiTest {
   private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
-  /** Cognito Permissions User Email. */
-  protected static final String ACME_EMAIL = "acme@formkiq.com";
   /** {@link List} {@link FormKiqClientV1}. */
   private static List<FormKiqClientV1> formkiqClientDefault;
   /** {@link List} {@link FormKiqClientV1}. */
@@ -253,7 +255,9 @@ public abstract class AbstractApiTest {
 
     String site = siteId != null ? siteId : DEFAULT_SITE_ID;
     if (!apiClient.containsKey(site)) {
-      String apiKey = apiKeysService.createApiKey(siteId, "My API Key", null, "testuser");
+      Collection<ApiKeyPermission> permissions =
+          Arrays.asList(ApiKeyPermission.DELETE, ApiKeyPermission.READ, ApiKeyPermission.WRITE);
+      String apiKey = apiKeysService.createApiKey(siteId, "My API Key", permissions, "testuser");
 
       FormKiqClientConnection connection = new FormKiqClientConnection(rootKeyUrl)
           .cognitoIdToken(apiKey).header("Origin", Arrays.asList("http://localhost"))
@@ -320,6 +324,15 @@ public abstract class AbstractApiTest {
    */
   protected static String getRootHttpUrl() {
     return rootHttpUrl;
+  }
+
+  /**
+   * Get Root Key Url.
+   * 
+   * @return {@link String}
+   */
+  public static String getRootKeyUrl() {
+    return rootKeyUrl;
   }
 
   /**
