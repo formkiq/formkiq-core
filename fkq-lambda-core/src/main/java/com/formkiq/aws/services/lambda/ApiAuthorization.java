@@ -57,10 +57,13 @@ public class ApiAuthorization {
   public String accessSummary() {
     List<String> sites = siteIds();
 
-    String s = this.permissionsBySiteId.entrySet().stream()
-        .map(e -> e.getKey() + " ("
-            + e.getValue().stream().map(p -> p.name()).collect(Collectors.joining(",")) + ")")
-        .sorted(String::compareTo).collect(Collectors.joining(", "));
+    String s =
+        this.permissionsBySiteId.keySet().stream().sorted()
+            .map(e -> e + " ("
+                + this.permissionsBySiteId.get(e).stream().map(p -> p.name())
+                    .sorted(String::compareTo).collect(Collectors.joining(","))
+                + ")")
+            .collect(Collectors.joining(", "));
 
     return !sites.isEmpty() ? "groups: " + s : "no groups";
   }

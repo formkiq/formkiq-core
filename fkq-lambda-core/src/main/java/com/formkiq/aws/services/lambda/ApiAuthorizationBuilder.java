@@ -60,6 +60,43 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
+   * Add Permissions.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param groups {@link Collection} {@link String}
+   * @param admin boolean
+   */
+  private void addPermissions(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final Collection<String> groups, final boolean admin) {
+
+    Map<String, Object> claims = getAuthorizerClaims(event);
+
+    for (String group : groups) {
+
+      if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
+        if (group.endsWith(COGNITO_READ_SUFFIX)) {
+          authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
+              Arrays.asList(ApiPermission.READ));
+        } else if (admin) {
+          authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
+              ApiPermission.DELETE, ApiPermission.ADMIN));
+        } else if (claims.containsKey("permissions")) {
+
+          String[] list = claims.get("permissions").toString().split(",");
+          List<ApiPermission> permissions = Arrays.asList(list).stream()
+              .map(p -> ApiPermission.valueOf(p.toUpperCase())).collect(Collectors.toList());
+          authorization.addPermission(group, permissions);
+
+        } else {
+          authorization.addPermission(group,
+              Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
+        }
+      }
+    }
+  }
+
+  /**
    * Build {@link ApiAuthorization}.
    * 
    * @param event {@link ApiGatewayRequestEvent}
@@ -77,28 +114,34 @@ public class ApiAuthorizationBuilder {
     ApiAuthorization authorization =
         new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event));
 
-    for (String group : groups) {
-
-      if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
-        if (group.endsWith(COGNITO_READ_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
-              Arrays.asList(ApiPermission.READ));
-        } else if (admin) {
-          authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
-              ApiPermission.DELETE, ApiPermission.ADMIN));
-        } else {
-          authorization.addPermission(group,
-              Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
-        }
-      }
-    }
+    addPermissions(event, authorization, groups, admin);
 
     if (this.interceptor != null) {
       this.interceptor.update(event, authorization);
     }
 
     return authorization;
+  }
 
+  /**
+   * Get AuthorizerClaims from {@link ApiGatewayRequestEvent}.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Map}
+   */
+  private Map<String, Object> getAuthorizerClaims(final ApiGatewayRequestEvent event) {
+
+    Map<String, Object> claims = Collections.emptyMap();
+
+    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
+
+    if (requestContext != null) {
+      Map<String, Object> authorizer = requestContext.getAuthorizer();
+
+      claims = getAuthorizerClaims(authorizer);
+    }
+
+    return claims;
   }
 
   @SuppressWarnings("unchecked")
@@ -109,7 +152,7 @@ public class ApiAuthorizationBuilder {
       claims = (Map<String, Object>) authorizer.get("claims");
     }
 
-    if (claims == null && authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+    if (notNull(claims).isEmpty() && authorizer != null && authorizer.containsKey("apiKeyClaims")) {
       claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
     }
 
@@ -271,23 +314,16 @@ public class ApiAuthorizationBuilder {
 
   private Collection<String> loadJwtGroups(final ApiGatewayRequestEvent event) {
 
-    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
-
     Collection<String> groups = new HashSet<>();
 
-    if (requestContext != null) {
+    Map<String, Object> claims = getAuthorizerClaims(event);
 
-      Map<String, Object> authorizer = requestContext.getAuthorizer();
-
-      Map<String, Object> claims = getAuthorizerClaims(authorizer);
-
-      if (claims.containsKey("cognito:groups")) {
-        Object obj = claims.get("cognito:groups");
-        if (obj != null) {
-          String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
-          groups = new HashSet<>(Arrays.asList(s.split(" ")));
-          groups.removeIf(g -> g.length() == 0);
-        }
+    if (claims.containsKey("cognito:groups")) {
+      Object obj = claims.get("cognito:groups");
+      if (obj != null) {
+        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
+        groups = new HashSet<>(Arrays.asList(s.split(" ")));
+        groups.removeIf(g -> g.length() == 0);
       }
     }
 

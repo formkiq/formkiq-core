@@ -35,14 +35,11 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -130,13 +127,14 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     List<Map<String, AttributeValue>> list = Collections.emptyList();
 
     if (!keys.isEmpty()) {
-      Map<String, KeysAndAttributes> items =
-          Map.of(this.tableName, KeysAndAttributes.builder().keys(keys).build());
 
-      BatchGetItemResponse response =
-          this.dbClient.batchGetItem(BatchGetItemRequest.builder().requestItems(items).build());
+      ReadRequestBuilder builder = new ReadRequestBuilder();
+      builder.append(this.tableName, keys);
 
-      list = response.responses().get(this.tableName);
+      Map<String, List<Map<String, AttributeValue>>> batchReadItems =
+          builder.batchReadItems(this.dbClient);
+
+      list = batchReadItems.get(this.tableName);
 
       Map<String, Map<String, AttributeValue>> data =
           list.stream().collect(Collectors.toMap(l -> getKey(l), l -> l));

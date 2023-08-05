@@ -267,6 +267,11 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   }
 
   @Override
+  public String pkGsi2(final String siteId) {
+    return null;
+  }
+
+  @Override
   public String sk() {
     if (this.path == null || this.type == null) {
       throw new IllegalArgumentException("'path' and 'type' is required");
@@ -277,8 +282,12 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
 
   @Override
   public String skGsi1() {
-    // return createIndexKey(null);
     return "folder";
+  }
+
+  @Override
+  public String skGsi2() {
+    return null;
   }
 
   /**

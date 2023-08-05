@@ -40,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -111,6 +112,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
       Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
       assertEquals("[]", claims.get("cognito:groups"));
       assertEquals("", claims.get("cognito:username"));
+      assertEquals("", claims.get("permissions"));
     }
   }
 
@@ -127,7 +129,9 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
       String name = UUID.randomUUID().toString();
 
-      String apiKey = apiKeysService.createApiKey(siteId, name, "joe");
+      String apiKey = apiKeysService.createApiKey(siteId, name,
+          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),
+          "joe");
 
       try (InputStream is = getInput(apiKey)) {
 
@@ -151,6 +155,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
         }
 
         assertEquals(name, claims.get("cognito:username"));
+        assertEquals("DELETE,READ,WRITE", claims.get("permissions"));
       }
     }
   }
@@ -180,6 +185,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
       Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
       assertEquals("[]", claims.get("cognito:groups"));
       assertEquals("", claims.get("cognito:username"));
+      assertEquals("", claims.get("permissions"));
     }
   }
 }

@@ -68,6 +68,14 @@ public interface DynamodbRecord<T> {
   String pkGsi1(String siteId);
 
   /**
+   * GSI 2 PK.
+   * 
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  String pkGsi2(String siteId);
+
+  /**
    * Get DynamoDb SK.
    * 
    * @return {@link String}
@@ -80,6 +88,13 @@ public interface DynamodbRecord<T> {
    * @return {@link String}
    */
   String skGsi1();
+
+  /**
+   * GSI 2 SK.
+   * 
+   * @return {@link String}
+   */
+  String skGsi2();
 
   /**
    * Convert {@link Map} {@link AttributeValue}.

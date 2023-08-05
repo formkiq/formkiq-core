@@ -24,21 +24,33 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ApiKey;
+import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/configuration/apiKeys". */
 public class ConfigurationApiKeysRequestHandler
@@ -49,12 +61,6 @@ public class ConfigurationApiKeysRequestHandler
    *
    */
   public ConfigurationApiKeysRequestHandler() {}
-
-  @Override
-  public void beforeDelete(final LambdaLogger logger, final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(authorization);
-  }
 
   @Override
   public void beforeGet(final LambdaLogger logger, final ApiGatewayRequestEvent event,
@@ -75,29 +81,22 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   @Override
-  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
-
-    String apiKey = event.getQueryStringParameter("apiKey");
-
-    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    apiKeysService.deleteApiKey(apiKey);
-
-    return new ApiRequestHandlerResponse(SC_OK,
-        new ApiMapResponse(Map.of("message", "ApiKey deleted")));
-  }
-
-  @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
 
-    List<DynamicObject> list = apiKeysService.list();
+    ApiPagination pagination = getPagination(cacheService, event);
 
-    Map<String, Object> map = Map.of("apiKeys", list);
+    final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
+
+    String siteId = authorization.siteId();
+    PaginationResults<ApiKey> list = apiKeysService.list(siteId, token, limit);
+
+    Map<String, Object> map = Map.of("apiKeys", list.getResults());
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
 
@@ -106,7 +105,6 @@ public class ConfigurationApiKeysRequestHandler
     return "/configuration/apiKeys";
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
@@ -115,18 +113,42 @@ public class ConfigurationApiKeysRequestHandler
     String siteId = authorization.siteId();
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    Map<String, String> body = fromBodyToObject(event, Map.class);
-    String name = body.get("name");
+    DynamicObject body = fromBodyToDynamicObject(event);
+    validate(body);
 
-    if (name != null) {
+    String name = body.get("name").toString();
+    Collection<ApiKeyPermission> permissions = Collections.emptyList();
 
-      String userId = authorization.username();
-      String apiKey = apiKeysService.createApiKey(siteId, name, userId);
-
-      return new ApiRequestHandlerResponse(SC_OK,
-          new ApiMapResponse(Map.of("name", name, "apiKey", apiKey)));
+    if (body.containsKey("permissions")) {
+      permissions = body.getStringList("permissions").stream()
+          .map(p -> ApiKeyPermission.valueOf(p.toUpperCase())).collect(Collectors.toList());
+    } else {
+      permissions =
+          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE);
     }
 
-    throw new BadException("missing required body parameters");
+    String userId = authorization.username();
+    String apiKey = apiKeysService.createApiKey(siteId, name, permissions, userId);
+
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(Map.of("apiKey", apiKey)));
+  }
+
+  /**
+   * Validate.
+   * 
+   * @param body {@link Map}
+   * @throws ValidationException ValidationException
+   */
+  private void validate(final Map<String, Object> body) throws ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    if (!body.containsKey("name")) {
+      errors.add(new ValidationErrorImpl().key("name").error("is required"));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
   }
 }

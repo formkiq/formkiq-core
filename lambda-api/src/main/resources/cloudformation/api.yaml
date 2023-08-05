@@ -185,7 +185,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
-              operationId: ÅddApiKey
+              operationId: AddApiKey
               description: Adds a new API Key
               tags:
               - System Management
@@ -3976,12 +3976,21 @@ Resources:
                 name:
                   type: "string"
                   description: "Name of API Key"
+                permissions:
+                  type: "array"
+                  description: "List of permissions"
+                  items:
+                    type: "string"
+                    enum:
+                      - READ
+                      - WRITE
+                      - DELETE
             AddApiKeyResponse:
               type: object
               properties:
-                message:
+                apiKey:
                   type: "string"
-                  description: "Result message"
+                  description: "API Key Identifier"
             DeleteFulltextResponse:
               type: object
               properties:
@@ -4013,13 +4022,20 @@ Resources:
                   description: "API Key value"
                 userId:
                   type: "string"
-                siteIds:
-                  type: "array"
-                  items:
-                    type: "string"
+                siteId:
+                  type: "string"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
+                permissions:
+                  type: "array"
+                  description: "List of permissions"
+                  items:
+                    type: "string"
+                    enum:
+                      - READ
+                      - WRITE
+                      - DELETE
             GetConfigurationResponse:
               type: object
               properties:

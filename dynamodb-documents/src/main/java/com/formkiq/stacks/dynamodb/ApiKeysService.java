@@ -23,8 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.List;
-import com.formkiq.aws.dynamodb.DynamicObject;
+import java.util.Collection;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
 
 /**
  * 
@@ -38,32 +39,40 @@ public interface ApiKeysService {
    * 
    * @param siteId {@link String}
    * @param name {@link String}
+   * @param permissions {@link Collection} {@link ApiKeyPermission}
    * @param userId {@link String}
    * @return {@link String}
    */
-  String createApiKey(String siteId, String name, String userId);
+  String createApiKey(String siteId, String name, Collection<ApiKeyPermission> permissions,
+      String userId);
 
   /**
    * Delete Api Key.
    * 
+   * @param siteId {@link String}
    * @param apiKey {@link String}
+   * @return boolean
    */
-  void deleteApiKey(String apiKey);
+  boolean deleteApiKey(String siteId, String apiKey);
 
   /**
    * Get Api Key.
    * 
    * @param apiKey {@link String}
+   * @param masked boolean
    * @return boolean
    */
-  DynamicObject get(String apiKey);
+  ApiKey get(String apiKey, boolean masked);
 
   /**
    * Get List of API Keys.
    * 
-   * @return {@link List} {@link String}
+   * @param siteId {@link String}
+   * @param token {@link PaginationMapToken}
+   * @param limit int
+   * @return {@link PaginationResults} {@link String}
    */
-  List<DynamicObject> list();
+  PaginationResults<ApiKey> list(String siteId, PaginationMapToken token, int limit);
 
   /**
    * Mask Api Key.
