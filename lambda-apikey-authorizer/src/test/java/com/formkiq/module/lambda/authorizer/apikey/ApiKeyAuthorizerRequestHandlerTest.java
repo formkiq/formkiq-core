@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
@@ -181,6 +182,37 @@ class ApiKeyAuthorizerRequestHandlerTest {
       Map<String, Object> map = GSON.fromJson(response, Map.class);
       assertEquals(Boolean.FALSE, map.get("isAuthorized"));
 
+      Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+      Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+      assertEquals("[]", claims.get("cognito:groups"));
+      assertEquals("", claims.get("cognito:username"));
+      assertEquals("", claims.get("permissions"));
+    }
+  }
+
+  /**
+   * Test Invalid very long API Key.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHandleRequest04() throws Exception {
+    // given
+    final int len = 2000;
+    String apiKey = Strings.generateRandomString(len);
+
+    try (InputStream is = getInput(apiKey)) {
+
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+      // when
+      processor.handleRequest(is, os, this.context);
+
+      // then
+      String response = new String(os.toByteArray(), "UTF-8");
+      Map<String, Object> map = GSON.fromJson(response, Map.class);
+      assertEquals(Boolean.FALSE, map.get("isAuthorized"));
       Map<String, Object> ctx = (Map<String, Object>) map.get("context");
       Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
       assertEquals("[]", claims.get("cognito:groups"));

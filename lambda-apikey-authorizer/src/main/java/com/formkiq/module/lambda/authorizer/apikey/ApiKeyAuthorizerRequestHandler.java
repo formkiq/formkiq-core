@@ -51,6 +51,8 @@ import software.amazon.awssdk.utils.IoUtils;
 @Reflectable
 public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
 
+  /** Max Api Key Length. */
+  private static final int MAX_APIKEY_LENGTH = 100;
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsServices;
   /** {@link Gson}. */
@@ -115,6 +117,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     Map<String, Object> map = this.gson.fromJson(json, Map.class);
 
     String apiKey = getIdentitySource(map);
+    apiKey = apiKey != null && apiKey.length() < MAX_APIKEY_LENGTH ? apiKey : null;
 
     ApiKey api = apiKeys.get(apiKey, false);
     api = api != null ? api

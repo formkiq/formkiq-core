@@ -24,6 +24,7 @@
 
 		<subpackage name="objects">
 			<allow pkg="java.time" />
+			<allow pkg="java.security" />
 		</subpackage>
 	</subpackage>
 	

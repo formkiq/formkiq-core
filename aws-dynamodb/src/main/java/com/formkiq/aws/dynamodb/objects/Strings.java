@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.security.SecureRandom;
 import java.util.UUID;
 
 /**
@@ -31,6 +32,24 @@ import java.util.UUID;
  *
  */
 public class Strings {
+  /**
+   * Generate Random String.
+   * 
+   * @param len int
+   * @return {@link String}
+   */
+  public static String generateRandomString(final int len) {
+    final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+    SecureRandom random = new SecureRandom();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < len; i++) {
+      int randomIndex = random.nextInt(chars.length());
+      sb.append(chars.charAt(randomIndex));
+    }
+
+    return sb.toString();
+  }
+
   /**
    * Get Filename from Path.
    * 
@@ -99,7 +118,7 @@ public class Strings {
   public static String removeEndingPunctuation(final String s) {
     return s.replaceAll("[!\\.,?]$", "");
   }
-
+  
   /**
    * Remove single/double quotes from {@link String}.
    * 
