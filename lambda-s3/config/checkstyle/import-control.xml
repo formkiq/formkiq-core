@@ -57,11 +57,6 @@
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="software.amazon.awssdk.utils.http" />
 
-			<allow pkg="alex.mojaki.s3upload" />
-			<allow pkg="com.amazonaws.services.s3" />
-			<allow pkg="com.amazonaws.auth" />
-			<allow pkg="com.amazonaws.monitoring" />
-		
 			<subpackage name="util">
 
 				<allow pkg="com.amazonaws.auth" />

@@ -1443,15 +1443,12 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Test documents compression.
+   * Tests documents compression.
    *
    * @throws Exception Exception
    */
   @Test
   public void testDocumentsCompress() throws Exception {
-    final Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
-    final StagingS3Create handler =
-        new StagingS3Create(this.env, null, dbBuilder, s3Builder, ssmBuilder, snsBuilder);
     final String fileContent = loadFile(this, "/compression-request-file.json");
     s3.putObject(STAGING_BUCKET, "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json",
         fileContent.getBytes(UTF_8), null, null);
@@ -1467,7 +1464,8 @@ public class StagingS3CreateTest implements DbKeys {
       this.createDocument("default", "JohnDoe", content.getBytes(UTF_8), docIds.get(i));
     }
 
-    handler.handleRequest(map, this.context);
+    final Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
+    this.handleRequest(map);
 
     final String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
@@ -1476,6 +1474,44 @@ public class StagingS3CreateTest implements DbKeys {
     assertTrue(tempFiles.contents().stream()
         .anyMatch(obj -> obj.key().equals(zipKey) && obj.size().equals(expectedZipSize)));
     // ZIP has the expected file list
+    final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey);
+    final ZipInputStream zipStream = new ZipInputStream(zipContent);
+    for (ZipEntry entry = zipStream.getNextEntry(); entry != null; entry =
+        zipStream.getNextEntry()) {
+      final String name = entry.getName();
+      assertTrue(docIds.contains(name));
+      zipStream.closeEntry();
+    }
+    zipStream.close();
+  }
+
+  /**
+   * Tests documents compression (multipart upload).
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentsCompressMultipart() throws Exception {
+    final String fileToCompress = "/multipart01.txt";
+    final String fileContent = loadFile(this, fileToCompress);
+    final int filesNumber = 5;
+    ArrayList<String> docIds = new ArrayList<>(filesNumber);
+    for (int i = 0; i < filesNumber; ++i) {
+      final String docId = UUID.randomUUID().toString();
+      docIds.add(docId);
+      this.createDocument(null, "JaneDoe", fileContent.getBytes(UTF_8), docId);
+    }
+
+    final String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
+    final long maxTestChunkSize1Mb = 1024 * 1024;
+    final DocumentCompressor compressor =
+        new DocumentCompressor(this.env, s3Builder, dbBuilder, maxTestChunkSize1Mb);
+    compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, zipKey, docIds);
+
+    final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
+    final Long expectedZipSize = 7234532L;
+    assertTrue(tempFiles.contents().stream()
+        .anyMatch(obj -> obj.key().equals(zipKey) && obj.size().equals(expectedZipSize)));
     final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey);
     final ZipInputStream zipStream = new ZipInputStream(zipContent);
     for (ZipEntry entry = zipStream.getNextEntry(); entry != null; entry =

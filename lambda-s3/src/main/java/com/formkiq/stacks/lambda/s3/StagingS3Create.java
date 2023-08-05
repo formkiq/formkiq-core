@@ -253,7 +253,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.appEnvironment = map.get("APP_ENVIRONMENT");
 
-    this.documentCompressor = new DocumentCompressor(map, s3Builder, dbBuilder);
+    this.documentCompressor = new DocumentCompressor(map, s3Builder, dbBuilder, null);
   }
 
   /**

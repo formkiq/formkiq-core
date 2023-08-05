@@ -109,7 +109,7 @@ public class DocumentsCompressRequestHandler
     Duration duration = Duration.ofHours(1);
     PresignGetUrlConfig config = new PresignGetUrlConfig()
         .contentDispositionByPath(objectPath, false).contentType(zipContentType);
-    URL url = s3.presignGetUrl(stagingBucket, objectPath, duration, "1", config);
+    URL url = s3.presignGetUrl(stagingBucket, objectPath, duration, null, config);
     return url.toString();
   }
 
