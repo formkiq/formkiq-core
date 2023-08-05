@@ -1506,7 +1506,8 @@ public class StagingS3CreateTest implements DbKeys {
     final Long maxTestChunkSize1Mb = 1024 * 1024L;
     final DocumentCompressor compressor =
         new DocumentCompressor(this.env, s3Builder, dbBuilder, maxTestChunkSize1Mb);
-    compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, zipKey, docIds);
+    compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, zipKey, docIds,
+        this.logger);
 
     final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
     final Long expectedZipSize = 7234532L;

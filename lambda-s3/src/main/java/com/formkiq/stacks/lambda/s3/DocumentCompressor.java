@@ -23,11 +23,13 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3MultipartUploader;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -84,10 +86,16 @@ public class DocumentCompressor {
   }
 
   public void compressDocuments(final String siteId, final String docsBucket,
-      final String archiveBucket, final String archiveKey, final List<String> documentIds)
-      throws Exception {
+      final String archiveBucket, final String archiveKey, final List<String> documentIds,
+      final LambdaLogger logger) throws Exception {
+    logger.log(
+        String.format("Got siteId: %s and docs to compress: %s", siteId, documentIds.toString()));
     final Map<String, String> documentIdObjectKeyMap =
         this.getDocumentObjectKeys(siteId, documentIds);
+    logger.log(String.format("Got docs object keys: %s", documentIdObjectKeyMap.toString()));
+    for (Map.Entry<String, String> entry : documentIdObjectKeyMap.entrySet()) {
+      logger.log(String.format("key: %s, value: %s", entry.getKey(), entry.getValue()));
+    }
 
     if (documentIds.size() != documentIdObjectKeyMap.size()) {
       final List<String> missingDocuments = documentIds.stream()
@@ -98,7 +106,8 @@ public class DocumentCompressor {
     }
 
     final ArrayList<String> objectKeys = new ArrayList<>(documentIdObjectKeyMap.values());
-    final Map<String, Long> objectKeySizeMap = this.getObjectKeySizeMap(docsBucket, objectKeys);
+    final Map<String, Long> objectKeySizeMap =
+        this.getObjectKeySizeMap(docsBucket, objectKeys, logger);
     this.archiveS3Objects(docsBucket, archiveBucket, archiveKey, objectKeySizeMap);
   }
 
@@ -112,7 +121,14 @@ public class DocumentCompressor {
         .collect(Collectors.toMap(DocumentItem::getDocumentId, DocumentItem::getPath));
   }
 
-  private Map<String, Long> getObjectKeySizeMap(final String bucket, final ArrayList<String> keys) {
+  private Map<String, Long> getObjectKeySizeMap(final String bucket, final ArrayList<String> keys,
+      final LambdaLogger logger) {
+    keys.stream().map(key -> {
+      final S3ObjectMetadata md = this.s3.getObjectMetadata(bucket, key, null);
+      logger.log(String.format("Got object metadata: %s", md.toString()));
+      logger.log(String.format("Got object size: %s", md.getContentLength()));
+      return null;
+    });
     return keys.stream().collect(Collectors.toMap(String::new,
         key -> this.s3.getObjectMetadata(bucket, key, null).getContentLength()));
   }
