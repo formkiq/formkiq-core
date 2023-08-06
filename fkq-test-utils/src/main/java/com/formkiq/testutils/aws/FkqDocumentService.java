@@ -36,9 +36,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.GetDocumentContentResponse;
+import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -237,6 +240,32 @@ public class FkqDocumentService {
    * @param client {@link FormKiqClientV1}
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
+      final String siteId, final String documentId) throws InterruptedException {
+
+    DocumentsApi api = new DocumentsApi(client);
+
+    while (true) {
+
+      try {
+        return api.getDocumentContent(documentId, null, siteId, null);
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
+   * Wait For Document Content.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
@@ -281,6 +310,34 @@ public class FkqDocumentService {
       HttpResponse<String> response = client.getDocumentContentAsHttpResponse(request);
       if (STATUS_OK == response.statusCode() && response.body().contains(content)) {
         break;
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
+   * Wait for Document Tag.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param tagKey {@link String}
+   * @return {@link GetDocumentTagResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentTagResponse waitForDocumentTag(final ApiClient apiClient,
+      final String siteId, final String documentId, final String tagKey)
+      throws InterruptedException {
+
+    DocumentTagsApi api = new DocumentTagsApi(apiClient);
+
+    while (true) {
+
+      try {
+        return api.getDocumentTag(documentId, tagKey, siteId, null);
+      } catch (ApiException e) {
+        // tag not found
       }
 
       TimeUnit.SECONDS.sleep(1);

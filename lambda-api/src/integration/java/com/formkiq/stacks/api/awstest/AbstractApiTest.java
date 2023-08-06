@@ -54,6 +54,11 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.formkiq.aws.sts.StsConnectionBuilder;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddApiKeyRequest;
+import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -67,6 +72,7 @@ import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
@@ -93,6 +99,8 @@ public abstract class AbstractApiTest {
   private static CognitoService adminCognitoService;
   /** {@link AuthenticationResultTypes}. */
   private static AuthenticationResultType adminToken;
+  /** FormKiQ KEY API Client. */
+  private static Map<String, String> apiKeys = new HashMap<>();
   /** FormKiQ KEY API Client. */
   private static Map<String, FormKiqClientV1> apiClient = new HashMap<>();
   /** Api Gateway Invoke Group. */
@@ -300,6 +308,63 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Get {@link ApiClient}.
+   * 
+   * @param siteId {@link String}
+   * @return {@link List} {@link ApiClient}
+   * @throws ApiException ApiException
+   */
+  public static List<ApiClient> getApiClients(final String siteId) throws ApiException {
+
+    String awsprofile = System.getProperty("testprofile");
+
+    try (ProfileCredentialsProvider p = ProfileCredentialsProvider.create(awsprofile)) {
+
+      ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(getRootHttpUrl());
+      jwtClient.addDefaultHeader("Authorization", adminToken.accessToken());
+
+      AwsCredentials credentials = p.resolveCredentials();
+
+      ApiClient iamClient = new ApiClient().setReadTimeout(0).setBasePath(getRootRestUrl());
+      iamClient.setAWS4Configuration(credentials.accessKeyId(), credentials.secretAccessKey(),
+          awsregion.toString(), "execute-api");
+
+      ApiClient keyClient = new ApiClient().setReadTimeout(0).setBasePath(getRootKeyUrl());
+      String token = getApiKey(iamClient, siteId);
+      keyClient.addDefaultHeader("Authorization", token);
+
+      return Arrays.asList(jwtClient, iamClient, keyClient);
+    }
+  }
+
+  /**
+   * Get API Key for {@link String}.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  private static String getApiKey(final ApiClient client, final String siteId) throws ApiException {
+
+    String site = siteId != null ? siteId : DEFAULT_SITE_ID;
+
+    if (!apiKeys.containsKey(site)) {
+
+      SystemManagementApi api = new SystemManagementApi(client);
+
+      List<PermissionsEnum> permissions =
+          Arrays.asList(PermissionsEnum.READ, PermissionsEnum.DELETE, PermissionsEnum.WRITE);
+      AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
+      String apiKey = api.addApiKey(req, siteId).getApiKey();
+
+      apiKeys.put(site, apiKey);
+    }
+
+    return apiKeys.get(site);
+  }
+
+  /**
    * Get Default Clients.
    * 
    * @return {@link List} {@link FormKiqClientV1}
@@ -415,7 +480,7 @@ public abstract class AbstractApiTest {
   /**
    * Setup Cognito.
    */
-  private static void setupCognito() {
+  private static synchronized void setupCognito() {
 
     if (!adminCognitoService.isUserExists(ADMIN_EMAIL)) {
 

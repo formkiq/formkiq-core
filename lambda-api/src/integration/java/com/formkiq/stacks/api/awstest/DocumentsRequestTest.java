@@ -286,7 +286,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default (READ,WRITE,DELETE))\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
         responseSiteId.body());
   }
 
@@ -542,7 +542,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default (READ,WRITE,DELETE))\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
         responseSiteId.body());
   }
 

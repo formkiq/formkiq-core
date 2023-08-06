@@ -184,16 +184,16 @@ public class ConfigurationApiKeyRequestTest extends AbstractApiTest {
         assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
             e.getResponseBody());
       }
-      
+
       // given
-      req = new com.formkiq.client.model.AddApiKeyRequest()
-          .name(name).addPermissionsItem(PermissionsEnum.WRITE);
+      req = new com.formkiq.client.model.AddApiKeyRequest().name(name)
+          .addPermissionsItem(PermissionsEnum.WRITE);
       apiKey = this.jwtSystemApi.addApiKey(req, siteId).getApiKey();
-      
+
       // when
       this.keyApiClient.addDefaultHeader("Authorization", apiKey);
       AddDocumentResponse response = this.keyDocumentsApi.addDocument(docReq, siteId, null);
-      
+
       // then
       assertNotNull(response.getDocumentId());
     }
