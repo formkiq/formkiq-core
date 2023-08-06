@@ -608,8 +608,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     logger.log(s);
 
     final String tempFolder = "tempfiles/";
-    if (objectCreated && key.startsWith(tempFolder) && Strings.getExtension(key).equals("json")) {
-      this.handleCompressionRequest(logger, bucket, key);
+    if (objectCreated && key.startsWith(tempFolder)) {
+      if (Strings.getExtension(key).equals("json")) {
+        this.handleCompressionRequest(logger, bucket, key);
+      } else {
+        logger.log(String.format("skipping event for key %s", key));
+      }
     } else if (objectCreated) {
       if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
         processPatchDocumentsTags(logger, siteId, bucket, s3Key, date);

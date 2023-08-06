@@ -1480,6 +1480,22 @@ public class StagingS3CreateTest implements DbKeys {
     DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
   }
 
+  /**
+   * Test ZIP file upload event in temp files is skipped.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testTempFilesZipEvent() throws Exception {
+    final Map<String, Object> map = loadFileAsMap(this, "/temp-files-zip-created-event.json");
+    final String key = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
+    this.handleRequest(map);
+
+    assertTrue(this.logger.containsString(String.format("skipping event for key %s", key)));
+
+    verifySqsMessages(0, 0, 0);
+  }
+
   private void createDocument(final String siteId, final String userId, final byte[] content,
       final String docId) {
     DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
