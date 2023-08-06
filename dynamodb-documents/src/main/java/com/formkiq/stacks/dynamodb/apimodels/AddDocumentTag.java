@@ -30,6 +30,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 /**
  * List of Document Tags (use either &#39;value&#39; or &#39;values&#39; not both).
  */
+@Reflectable
 public class AddDocumentTag {
   /** Tag Key. */
   @Reflectable

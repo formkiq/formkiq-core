@@ -30,6 +30,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 /**
  * Data to update.
  */
+@Reflectable
 public class UpdateMatchingDocumentTagsRequestUpdate {
   /** {@link List} {@link AddDocumentTag}. */
   @Reflectable
