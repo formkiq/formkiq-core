@@ -32,6 +32,7 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.StagingS3Create.FORMKIQ_B64_EXT;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
+import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsByteArray;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
@@ -65,8 +66,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -1443,7 +1442,7 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Tests documents compression.
+   * Tests document compression event.
    *
    * @throws Exception Exception
    */
@@ -1458,10 +1457,13 @@ public class StagingS3CreateTest implements DbKeys {
         "6e775220-ff21-4bb0-a9e5-4d5f383c8881", "758d5107-e50f-4c62-b9b9-fd0347aa242b",
         "b37c138e-9782-40da-8e22-23412fc75035");
 
+    final Map<String, Long> expectedChecksums = new HashMap<>();
     for (int i = 0; i < docIds.size(); ++i) {
+      final String docId = docIds.get(i);
       final String path = filePathsToCompress.get(i);
-      final String content = loadFile(this, path);
-      this.createDocument("default", "JohnDoe", content.getBytes(UTF_8), docIds.get(i));
+      final byte[] content = loadFileAsByteArray(this, path);
+      this.createDocument("default", "JohnDoe", content, docId);
+      expectedChecksums.put(docId, DocumentCompressorTest.getContentChecksum(content));
     }
 
     final Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
@@ -1475,53 +1477,7 @@ public class StagingS3CreateTest implements DbKeys {
         .anyMatch(obj -> obj.key().equals(zipKey) && obj.size().equals(expectedZipSize)));
     // ZIP has the expected file list
     final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey);
-    final ZipInputStream zipStream = new ZipInputStream(zipContent);
-    for (ZipEntry entry = zipStream.getNextEntry(); entry != null; entry =
-        zipStream.getNextEntry()) {
-      final String name = entry.getName();
-      assertTrue(docIds.contains(name));
-      zipStream.closeEntry();
-    }
-    zipStream.close();
-  }
-
-  /**
-   * Tests documents compression (multipart upload).
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testDocumentsCompressMultipart() throws Exception {
-    final String fileToCompress = "/multipart01.txt";
-    final String fileContent = loadFile(this, fileToCompress);
-    final int filesNumber = 5;
-    ArrayList<String> docIds = new ArrayList<>(filesNumber);
-    for (int i = 0; i < filesNumber; ++i) {
-      final String docId = UUID.randomUUID().toString();
-      docIds.add(docId);
-      this.createDocument(null, "JaneDoe", fileContent.getBytes(UTF_8), docId);
-    }
-
-    final String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
-    final Long maxTestChunkSize1Mb = 1024 * 1024L;
-    final DocumentCompressor compressor =
-        new DocumentCompressor(this.env, s3Builder, dbBuilder, maxTestChunkSize1Mb);
-    compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, zipKey, docIds,
-        this.logger);
-
-    final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
-    final Long expectedZipSize = 7234532L;
-    assertTrue(tempFiles.contents().stream()
-        .anyMatch(obj -> obj.key().equals(zipKey) && obj.size().equals(expectedZipSize)));
-    final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey);
-    final ZipInputStream zipStream = new ZipInputStream(zipContent);
-    for (ZipEntry entry = zipStream.getNextEntry(); entry != null; entry =
-        zipStream.getNextEntry()) {
-      final String name = entry.getName();
-      assertTrue(docIds.contains(name));
-      zipStream.closeEntry();
-    }
-    zipStream.close();
+    DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
   }
 
   private void createDocument(final String siteId, final String userId, final byte[] content,

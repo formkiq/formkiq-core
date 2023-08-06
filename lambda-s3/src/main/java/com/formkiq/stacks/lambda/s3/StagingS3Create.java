@@ -869,7 +869,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     try {
       this.documentCompressor.compressDocuments(siteId, this.documentsBucket, bucket, archiveKey,
-          documentIds, logger);
+          documentIds);
     } catch (Exception e) {
       logger.log(String.format("Failed to compress documents: %s", e));
       throw e;

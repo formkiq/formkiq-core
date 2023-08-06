@@ -23,13 +23,11 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
-import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3MultipartUploader;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -41,10 +39,8 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -86,59 +82,42 @@ public class DocumentCompressor {
   }
 
   public void compressDocuments(final String siteId, final String docsBucket,
-      final String archiveBucket, final String archiveKey, final List<String> documentIds,
-      final LambdaLogger logger) throws Exception {
-    logger.log(
-        String.format("Got siteId: %s and docs to compress: %s", siteId, documentIds.toString()));
-    final Map<String, String> documentIdObjectKeyMap =
-        this.getDocumentObjectKeys(siteId, documentIds);
-    logger.log(String.format("Got docs object keys: %s", documentIdObjectKeyMap.toString()));
-    for (Map.Entry<String, String> entry : documentIdObjectKeyMap.entrySet()) {
-      logger.log(String.format("key: %s, value: %s", entry.getKey(), entry.getValue()));
-    }
+      final String archiveBucket, final String archiveKey, final List<String> documentIds)
+      throws Exception {
+    final Map<DocumentItem, Long> documentContentSize =
+        this.getDocumentContentSizeMap(siteId, docsBucket, documentIds);
 
-    if (documentIds.size() != documentIdObjectKeyMap.size()) {
-      final List<String> missingDocuments = documentIds.stream()
-          .filter(docId -> !documentIdObjectKeyMap.containsKey(docId)).collect(Collectors.toList());
-      final String missingDocsStr =
-          missingDocuments.stream().map(Object::toString).collect(Collectors.joining(", "));
-      throw new Exception(String.format("Can't find documents with id(s): %s", missingDocsStr));
-    }
-
-    final ArrayList<String> objectKeys = new ArrayList<>(documentIdObjectKeyMap.values());
-    final Map<String, Long> objectKeySizeMap =
-        this.getObjectKeySizeMap(docsBucket, objectKeys, logger);
-    this.archiveS3Objects(docsBucket, archiveBucket, archiveKey, objectKeySizeMap);
+    this.archiveS3Objects(siteId, docsBucket, archiveBucket, archiveKey, documentContentSize);
   }
 
-  private Map<String, String> getDocumentObjectKeys(final String siteId,
-      final List<String> documentIds) {
+  private Map<DocumentItem, Long> getDocumentContentSizeMap(final String siteId,
+      final String bucket, final List<String> documentIds) throws Exception {
     final List<DocumentItem> documents = this.documentService.findDocuments(siteId, documentIds);
+
     if (documents == null) {
-      return new HashMap<>();
+      throw new Exception("Can't find documents");
+    } else if (documentIds.size() != documents.size()) {
+      final List<String> missingDocs = documentIds.stream()
+          .filter(docId -> documents.stream().noneMatch(item -> item.getDocumentId().equals(docId)))
+          .collect(Collectors.toList());
+      final String missingDocsStr =
+          missingDocs.stream().map(Object::toString).collect(Collectors.joining(", "));
+      throw new Exception(String.format("Can't find documents: %s", missingDocsStr));
     }
-    return documents.stream()
-        .collect(Collectors.toMap(DocumentItem::getDocumentId, DocumentItem::getPath));
+
+    return documents.stream().collect(Collectors.toMap(item -> item,
+        item -> this.s3.getObjectMetadata(bucket,
+            SiteIdKeyGenerator.createS3Key(siteId, item.getDocumentId()), null)
+            .getContentLength()));
   }
 
-  private Map<String, Long> getObjectKeySizeMap(final String bucket, final ArrayList<String> keys,
-      final LambdaLogger logger) {
-    keys.stream().map(key -> {
-      final S3ObjectMetadata md = this.s3.getObjectMetadata(bucket, key, null);
-      logger.log(String.format("Got object metadata: %s", md.toString()));
-      logger.log(String.format("Got object size: %s", md.getContentLength()));
-      return null;
-    });
-    return keys.stream().collect(Collectors.toMap(String::new,
-        key -> this.s3.getObjectMetadata(bucket, key, null).getContentLength()));
-  }
-
-  private void archiveS3Objects(final String docsBucket, final String archiveBucket,
-      final String archiveKey, final Map<String, Long> objectKeySizeMap) throws IOException {
+  private void archiveS3Objects(final String siteId, final String docsBucket,
+      final String archiveBucket, final String archiveKey,
+      final Map<DocumentItem, Long> documentSizeMap) throws IOException {
     String multipartUploadId = null;
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     ZipOutputStream zipOutputStream;
-    final Long totalFilesSize = objectKeySizeMap.values().stream().reduce(0L, Long::sum);
+    final Long totalFilesSize = documentSizeMap.values().stream().reduce(0L, Long::sum);
     final boolean isMultiPartUpload = totalFilesSize > this.maxInMemoryChunkSize;
 
     if (isMultiPartUpload) {
@@ -147,18 +126,18 @@ public class DocumentCompressor {
 
     zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
 
-    for (Map.Entry<String, Long> keySizePair : objectKeySizeMap.entrySet()) {
-      final String objectKey = keySizePair.getKey();
-      final Long objectSize = keySizePair.getValue();
-      final String fileName = Strings.getFilename(objectKey);
-      final ZipEntry zipEntry = new ZipEntry(fileName);
+    for (Map.Entry<DocumentItem, Long> docSizePair : documentSizeMap.entrySet()) {
+      final DocumentItem document = docSizePair.getKey();
+      final Long objectSize = docSizePair.getValue();
+      final String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.getDocumentId());
+      final ZipEntry zipEntry = new ZipEntry(document.getPath());
 
       zipOutputStream.putNextEntry(zipEntry);
       if (isMultiPartUpload) {
-        this.transferObjectToZipInChunks(zipOutputStream, docsBucket, objectKey,
-            byteArrayOutputStream, multipartUploadId, objectSize);
+        this.transferObjectToZipInChunks(zipOutputStream, docsBucket, s3Key, byteArrayOutputStream,
+            multipartUploadId, objectSize);
       } else {
-        this.transferObjectToZip(zipOutputStream, docsBucket, objectKey);
+        this.transferObjectToZip(zipOutputStream, docsBucket, s3Key);
       }
 
       zipOutputStream.closeEntry();
