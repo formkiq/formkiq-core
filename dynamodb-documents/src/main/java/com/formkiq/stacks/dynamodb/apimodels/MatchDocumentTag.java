@@ -29,6 +29,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 /**
  * Match Document Tag.
  */
+@Reflectable
 public class MatchDocumentTag {
   /** Tag Key begins with. */
   @Reflectable

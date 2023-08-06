@@ -118,7 +118,7 @@ public class Strings {
   public static String removeEndingPunctuation(final String s) {
     return s.replaceAll("[!\\.,?]$", "");
   }
-  
+
   /**
    * Remove single/double quotes from {@link String}.
    * 
