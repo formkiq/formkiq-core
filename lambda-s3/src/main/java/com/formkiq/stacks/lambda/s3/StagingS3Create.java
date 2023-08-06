@@ -384,10 +384,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       final String s3Key) {
     String s = this.s3.getContentAsString(bucket, s3Key, null);
 
-    if ("true".equals(System.getenv("DEBUG"))) {
+    if (isDebug()) {
       logger.log(s);
     }
     return s;
+  }
+
+  private boolean isDebug() {
+    return "true".equals(System.getenv("DEBUG"));
   }
 
   /**
@@ -637,13 +641,18 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         this.gson.fromJson(s, UpdateMatchingDocumentTagsRequest.class);
 
     MatchDocumentTag matchTag = request.getMatch().getTag();
+    if (isDebug()) {
+      logger.log("matching Tag: " + request.getMatch().getTag() + " eq: " + matchTag.getEq()
+          + " beginsWith: " + matchTag.getBeginsWith());
+    }
+
     SearchTagCriteria query = new SearchTagCriteria().key(matchTag.getKey()).eq(matchTag.getEq())
         .beginsWith(matchTag.getBeginsWith());
 
-    runPatchDocumentsTags(siteId, request, query, date, user);
+    runPatchDocumentsTags(logger, siteId, request, query, date, user);
   }
 
-  private void runPatchDocumentsTags(final String siteId,
+  private void runPatchDocumentsTags(final LambdaLogger logger, final String siteId,
       final UpdateMatchingDocumentTagsRequest request, final SearchTagCriteria query,
       final Date date, final String user) {
 
@@ -663,6 +672,9 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       token = results.getToken();
 
       List<String> documentIds = results.getResults();
+      if (isDebug()) {
+        logger.log("found: " + documentIds.size() + " matching documents");
+      }
 
       Map<String, Collection<DocumentTag>> tagMap = new HashMap<>();
 
