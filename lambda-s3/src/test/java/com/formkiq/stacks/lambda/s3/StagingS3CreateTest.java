@@ -1350,7 +1350,7 @@ public class StagingS3CreateTest implements DbKeys {
       for (String documentId : documentIds) {
         assertEquals(newValue, service.findDocumentTag(siteId, documentId, newKey).getValue());
       }
-      
+
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
     }
   }
@@ -1401,7 +1401,7 @@ public class StagingS3CreateTest implements DbKeys {
           service.findDocumentTag(siteId, item.getDocumentId(), newKey0).getValue());
       assertEquals(newValue1,
           service.findDocumentTag(siteId, item.getDocumentId(), newKey1).getValue());
-      
+
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
     }
   }
