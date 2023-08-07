@@ -1366,6 +1366,7 @@
               tags:
               - Folders
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexKeyParam'
               - $ref: '#/components/parameters/shareKeyParam'
               responses:
