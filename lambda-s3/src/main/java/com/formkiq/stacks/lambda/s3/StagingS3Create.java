@@ -650,6 +650,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         .beginsWith(matchTag.getBeginsWith());
 
     runPatchDocumentsTags(logger, siteId, request, query, date, user);
+
+    this.s3.deleteObject(bucket, s3Key, null);
   }
 
   private void runPatchDocumentsTags(final LambdaLogger logger, final String siteId,
