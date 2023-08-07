@@ -140,7 +140,7 @@ public abstract class AbstractApiTest {
   /** Key API Root Url. */
   private static String rootKeyUrl;
   /** API Root Rest Url. */
-  private static String rootRestUrl;
+  private static String rootIamUrl;
   /** SiteId. */
   protected static final String SITE_ID = UUID.randomUUID().toString();
   /** {@link SsmConnectionBuilder}. */
@@ -201,7 +201,7 @@ public abstract class AbstractApiTest {
 
     try (ProfileCredentialsProvider credentials =
         ProfileCredentialsProvider.builder().profileName(awsprofile).build()) {
-      FormKiqClientConnection connection = new FormKiqClientConnection(rootRestUrl)
+      FormKiqClientConnection connection = new FormKiqClientConnection(rootIamUrl)
           .region(awsregion).credentials(credentials.resolveCredentials())
           .header("Origin", Arrays.asList("http://localhost"))
           .header("Access-Control-Request-Method", Arrays.asList("GET"));
@@ -325,7 +325,7 @@ public abstract class AbstractApiTest {
 
       AwsCredentials credentials = p.resolveCredentials();
 
-      ApiClient iamClient = new ApiClient().setReadTimeout(0).setBasePath(getRootRestUrl());
+      ApiClient iamClient = new ApiClient().setReadTimeout(0).setBasePath(getRootIamUrl());
       iamClient.setAWS4Configuration(credentials.accessKeyId(), credentials.secretAccessKey(),
           awsregion.toString(), "execute-api");
 
@@ -405,8 +405,8 @@ public abstract class AbstractApiTest {
    * 
    * @return {@link String}
    */
-  private static String getRootRestUrl() {
-    return rootRestUrl;
+  private static String getRootIamUrl() {
+    return rootIamUrl;
   }
 
   /**
@@ -416,7 +416,7 @@ public abstract class AbstractApiTest {
    * @return boolean
    */
   public static boolean isIamAuthentication(final String url) {
-    return url.startsWith(getRootRestUrl());
+    return url.startsWith(getRootIamUrl());
   }
 
   /**
@@ -432,7 +432,7 @@ public abstract class AbstractApiTest {
     rootHttpUrl =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsHttpUrl");
 
-    rootRestUrl =
+    rootIamUrl =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsIamUrl");
 
     rootKeyUrl =

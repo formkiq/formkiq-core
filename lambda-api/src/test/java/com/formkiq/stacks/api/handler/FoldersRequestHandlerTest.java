@@ -258,7 +258,7 @@ public class FoldersRequestHandlerTest {
       assertEquals(indexKey, folders.getDocuments().get(0).getIndexKey());
 
       // when
-      DeleteFolderResponse deleteResponse = this.foldersApi.deleteFolder(indexKey, null);
+      DeleteFolderResponse deleteResponse = this.foldersApi.deleteFolder(indexKey, siteId, null);
 
       // then
       assertEquals("deleted folder", deleteResponse.getMessage());
@@ -283,7 +283,7 @@ public class FoldersRequestHandlerTest {
 
       // when
       try {
-        this.foldersApi.deleteFolder(indexKey, null);
+        this.foldersApi.deleteFolder(indexKey, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
