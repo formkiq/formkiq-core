@@ -113,4 +113,14 @@ public final class FileUtils {
       return IoUtils.toUtf8String(in);
     }
   }
+
+  public static byte[] loadFileAsByteArray(final Object caller, final String filename)
+      throws IOException {
+    try (InputStream in = caller.getClass().getResourceAsStream(filename)) {
+      if (in == null) {
+        throw new FileNotFoundException(filename);
+      }
+      return in.readAllBytes();
+    }
+  }
 }

@@ -56,7 +56,7 @@
 			<allow pkg="software.amazon.awssdk.services.ssm" />
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="software.amazon.awssdk.utils.http" />
-		
+
 			<subpackage name="util">
 
 				<allow pkg="com.amazonaws.auth" />

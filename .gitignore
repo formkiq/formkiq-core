@@ -1,4 +1,6 @@
 .gradle
+.idea
+formkiq-core.iml
 build
 bin
 .DS_Store

@@ -29,6 +29,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
@@ -54,6 +55,7 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -94,6 +96,7 @@ import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -187,12 +190,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
+  /** {@link DocumentCompressor}. */
+  private final DocumentCompressor documentCompressor;
   /** {@link DocumentSyncService}. */
   private DocumentSyncService syncService = null;
 
   /**
    * constructor.
-   * 
+   *
    */
   public StagingS3Create() {
     this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
@@ -248,11 +253,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.appEnvironment = map.get("APP_ENVIRONMENT");
 
+    this.documentCompressor = new DocumentCompressor(map, s3Builder, dbBuilder, null);
   }
 
   /**
    * Generate {@link Map} of DocumentId / Content.
-   * 
+   *
    * @param doc {@link DynamicDocumentItem}
    * @return {@link Map}
    */
@@ -278,7 +284,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Generate {@link Map} of DocumentId / Content Type.
-   * 
+   *
    * @param doc {@link DynamicDocumentItem}
    * @return {@link Map}
    */
@@ -374,7 +380,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Get {@link String} content from an S3 Bucket / Key.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param s3Key {@link String}
@@ -396,7 +402,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Find DocumentId for File Path.
-   * 
+   *
    * @param siteId {@link String}
    * @param path {@link String}
    * @return {@link String}
@@ -440,7 +446,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Loads Document from Bucket / DB.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @param bucket {@link String}
    * @param siteId {@link String}
@@ -490,7 +496,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * If document has a tagschema that needs to be processed.
-   * 
+   *
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @throws InterruptedException InterruptedException
@@ -524,7 +530,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Default File Processor.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param bucket {@link String}
@@ -582,7 +588,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Process S3 Event.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @param date {@link Date}
    * @param event {@link Map}
@@ -590,7 +596,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @throws IOException IOException
    */
   private void processEvent(final LambdaLogger logger, final Date date,
-      final Map<String, Object> event) throws IOException, InterruptedException {
+      final Map<String, Object> event) throws Exception {
 
     String eventName = event.get("eventName").toString();
     boolean objectCreated = eventName.contains("ObjectCreated");
@@ -605,8 +611,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         eventName, bucket, key);
     logger.log(s);
 
-    if (objectCreated) {
-
+    final String tempFolder = "tempfiles/";
+    if (objectCreated && key.startsWith(tempFolder)) {
+      if (Strings.getExtension(key).equals("json")) {
+        this.handleCompressionRequest(logger, bucket, key);
+      } else {
+        logger.log(String.format("skipping event for key %s", key));
+      }
+    } else if (objectCreated) {
       if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
         processPatchDocumentsTags(logger, siteId, bucket, s3Key, date);
       } else {
@@ -621,7 +633,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Process Files generated from PATCH /documents/tags.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param bucket {@link String}
@@ -695,7 +707,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Process Event Records.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @param date {@link Date}
    * @param records {@link List} {@link Map}
@@ -718,7 +730,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
         try {
           processEvent(logger, date, event);
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
           e.printStackTrace();
         }
       }
@@ -727,7 +739,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Save Actions.
-   * 
+   *
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    */
@@ -747,7 +759,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /**
    * Save Document Sync.
-   * 
+   *
    * @param siteId {@link String}
    * @param doc {@link DynamicDocumentItem}
    * @param existingDocument {@link DocumentItem}
@@ -859,6 +871,26 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       this.s3.copyObject(bucket, s3Key, this.documentsBucket, destKey, metadata.getContentType(),
           map);
+    }
+  }
+
+  private void handleCompressionRequest(final LambdaLogger logger, final String bucket,
+      final String key) throws Exception {
+    final String contentString = this.s3.getContentAsString(bucket, key, null);
+    Type mapStringObject = new TypeToken<Map<String, Object>>() {}.getType();
+    final Map<String, Object> content = this.gson.fromJson(contentString, mapStringObject);
+    final String siteId = content.get("siteId").toString();
+    final String archiveKey = key.replace(".json", ".zip");
+    Type jsonStringList = new TypeToken<List<String>>() {}.getType();
+    final List<String> documentIds =
+        gson.fromJson(content.get("documentIds").toString(), jsonStringList);
+
+    try {
+      this.documentCompressor.compressDocuments(siteId, this.documentsBucket, bucket, archiveKey,
+          documentIds);
+    } catch (Exception e) {
+      logger.log(String.format("Failed to compress documents: %s", e));
+      throw e;
     }
   }
 }

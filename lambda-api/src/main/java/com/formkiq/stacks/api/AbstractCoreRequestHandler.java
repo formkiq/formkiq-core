@@ -68,6 +68,7 @@ import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentPermissionsKeyRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentPermissionsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsCompressRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
@@ -189,6 +190,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksRequestHandler());
     addRequestHandler(new DocumentsRequestHandler());
     addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new DocumentsCompressRequestHandler());
     addRequestHandler(new OnlyOfficeNewRequestHandler());
     addRequestHandler(new OnlyOfficeSaveRequestHandler());
     addRequestHandler(new OnlyOfficeEditRequestHandler());
@@ -264,7 +266,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   /**
    * Get {@link AwsServiceCache}.
-   * 
+   *
    * @return {@link AwsServiceCache}
    */
   public static AwsServiceCache getAwsServicesCache() {
@@ -273,7 +275,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   /**
    * Whether to enable public urls.
-   * 
+   *
    * @param map {@link Map}
    * @return boolean
    */
@@ -283,7 +285,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   /**
    * Register Extensions.
-   * 
+   *
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    * @param s3 {@link S3ConnectionBuilder}
    */
