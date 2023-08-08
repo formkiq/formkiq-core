@@ -143,6 +143,15 @@ public abstract class AbstractAwsIntegrationTest {
     return apiKeys.get(site);
   }
 
+  /**
+   * Get {@link FkqCognitoService}.
+   * 
+   * @return {@link FkqCognitoService}
+   */
+  public static FkqCognitoService getCognito() {
+    return cognito;
+  }
+
   private static void setupServices() {
 
     String awsprofile = System.getProperty("testprofile");
