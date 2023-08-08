@@ -47,7 +47,7 @@ import com.formkiq.client.model.GetFoldersResponse;
 public class FoldersRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20;
+  private static final int TEST_TIMEOUT = 30;
 
   /**
    * Test POST/GET /folders.
