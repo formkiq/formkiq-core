@@ -55,11 +55,12 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
@@ -76,6 +77,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -190,8 +192,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String snsDocumentEvent;
   /** {@link SsmConnectionBuilder}. */
   private SsmConnectionBuilder ssmConnection;
-  /** {@link DocumentCompressor}. */
-  private final DocumentCompressor documentCompressor;
   /** {@link DocumentSyncService}. */
   private DocumentSyncService syncService = null;
 
@@ -231,19 +231,22 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     AwsServiceCache.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
+    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Builder));
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
     AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    AwsServiceCache.register(S3ConnectionBuilder.class,
+        new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
 
     this.awsservices = new AwsServiceCache().environment(map);
     this.syncService = this.awsservices.getExtension(DocumentSyncService.class);
 
     this.service = this.awsservices.getExtension(DocumentService.class);
     this.actionsService = this.awsservices.getExtension(ActionsService.class);
-    this.s3 = new S3Service(s3Builder);
+    this.s3 = this.awsservices.getExtension(S3Service.class);
     this.ssmConnection = ssmConnectionBuilder;
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.notificationService =
@@ -252,8 +255,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.appEnvironment = map.get("APP_ENVIRONMENT");
-
-    this.documentCompressor = new DocumentCompressor(map, s3Builder, dbBuilder, null);
   }
 
   /**
@@ -874,8 +875,17 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
   }
 
+  /**
+   * Handle Document Compression Request.
+   * 
+   * @param logger {@link LambdaLogger}
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @throws IOException IOException
+   */
   private void handleCompressionRequest(final LambdaLogger logger, final String bucket,
-      final String key) throws Exception {
+      final String key) throws IOException {
+
     final String contentString = this.s3.getContentAsString(bucket, key, null);
     Type mapStringObject = new TypeToken<Map<String, Object>>() {}.getType();
     final Map<String, Object> content = this.gson.fromJson(contentString, mapStringObject);
@@ -883,14 +893,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     final String archiveKey = key.replace(".json", ".zip");
     Type jsonStringList = new TypeToken<List<String>>() {}.getType();
     final List<String> documentIds =
-        gson.fromJson(content.get("documentIds").toString(), jsonStringList);
+        this.gson.fromJson(content.get("documentIds").toString(), jsonStringList);
 
-    try {
-      this.documentCompressor.compressDocuments(siteId, this.documentsBucket, bucket, archiveKey,
-          documentIds);
-    } catch (Exception e) {
-      logger.log(String.format("Failed to compress documents: %s", e));
-      throw e;
-    }
+    DocumentCompressor documentCompressor = new DocumentCompressor(this.awsservices);
+    documentCompressor.compressDocuments(siteId, this.documentsBucket, bucket, archiveKey,
+        documentIds);
   }
 }

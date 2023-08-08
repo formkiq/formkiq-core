@@ -23,66 +23,51 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
+import static java.util.Map.entry;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
-import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Map;
-import java.util.UUID;
-import java.util.Arrays;
-import java.util.List;
-
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
-import static java.util.Map.entry;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/compress". */
 public class DocumentsCompressRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  @Override
-  public String getRequestUrl() {
-    return "/documents/compress";
+  private String getArchiveDownloadUrl(final S3Service s3, final String stagingBucket,
+      final String objectPath) {
+    final String zipContentType = "application/zip";
+    Duration duration = Duration.ofHours(1);
+    PresignGetUrlConfig config = new PresignGetUrlConfig()
+        .contentDispositionByPath(objectPath, false).contentType(zipContentType);
+    URL url = s3.presignGetUrl(stagingBucket, objectPath, duration, null, config);
+    return url.toString();
   }
 
   @Override
-  public ApiRequestHandlerResponse post(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
-    DynamicObject requestBodyObject = fromBodyToDynamicObject(event);
-    validateRequestBody(requestBodyObject);
-
-    final String siteId = authorization.siteId();
-    final String documentId = UUID.randomUUID().toString();
-    final String compressionTaskS3Key = getS3Key(siteId, documentId, false);
-    S3Service s3 = awsServices.getExtension(S3Service.class);
-    final String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
-    final String downloadUrl =
-        getArchiveDownloadUrl(s3, stagingBucket, getS3Key(siteId, documentId, true));
-    final DynamicObject taskObject =
-        getS3TaskObject(requestBodyObject, siteId, documentId, downloadUrl);
-
-    putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
-    ApiMapResponse response =
-        new ApiMapResponse(Map.of("documentId", documentId, "downloadUrl", downloadUrl));
-    return new ApiRequestHandlerResponse(SC_CREATED, response);
+  public String getRequestUrl() {
+    return "/documents/compress";
   }
 
   private String getS3Key(final String siteId, final String compressionId, final boolean isZip) {
@@ -91,6 +76,15 @@ public class DocumentsCompressRequestHandler
     return key + fileType;
   }
 
+  /**
+   * Create S3 Object that is processed in the StagingS3Create lambda.
+   * 
+   * @param requestBodyObject {@link DynamicObject}
+   * @param siteId {@link String}
+   * @param compressionId {@link String}
+   * @param downloadUrl {@link String}
+   * @return {@link DynamicObject}
+   */
   private DynamicObject getS3TaskObject(final DynamicObject requestBodyObject, final String siteId,
       final String compressionId, final String downloadUrl) {
     final String documentIdsKey = "documentIds";
@@ -103,16 +97,41 @@ public class DocumentsCompressRequestHandler
         entry(siteIdKey, siteId == null ? DEFAULT_SITE_ID : siteId)));
   }
 
-  private String getArchiveDownloadUrl(final S3Service s3, final String stagingBucket,
-      final String objectPath) {
-    final String zipContentType = "application/zip";
-    Duration duration = Duration.ofHours(1);
-    PresignGetUrlConfig config = new PresignGetUrlConfig()
-        .contentDispositionByPath(objectPath, false).contentType(zipContentType);
-    URL url = s3.presignGetUrl(stagingBucket, objectPath, duration, null, config);
-    return url.toString();
+  @Override
+  public ApiRequestHandlerResponse post(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsServices) throws Exception {
+
+    String siteId = authorization.siteId();
+    String documentId = UUID.randomUUID().toString();
+    String compressionTaskS3Key = getS3Key(siteId, documentId, false);
+
+    S3Service s3 = awsServices.getExtension(S3Service.class);
+    DynamicObject requestBodyObject = fromBodyToDynamicObject(event);
+
+    DocumentService documentService = awsServices.getExtension(DocumentService.class);
+    validateRequestBody(documentService, requestBodyObject, siteId);
+
+    String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
+    String downloadUrl =
+        getArchiveDownloadUrl(s3, stagingBucket, getS3Key(siteId, documentId, true));
+
+    DynamicObject taskObject = getS3TaskObject(requestBodyObject, siteId, documentId, downloadUrl);
+
+    putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
+    ApiMapResponse response = new ApiMapResponse(Map.of("downloadUrl", downloadUrl));
+
+    return new ApiRequestHandlerResponse(SC_CREATED, response);
   }
 
+  /**
+   * Write document compression request to S3 Staging bucket.
+   * 
+   * @param s3 {@link S3Service}
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param content {@link String}
+   */
   private void putObjectToStaging(final S3Service s3, final String bucket, final String key,
       final String content) {
     final String jsonContentType = "application/json";
@@ -120,15 +139,39 @@ public class DocumentsCompressRequestHandler
     s3.putObject(bucket, key, bytes, jsonContentType);
   }
 
-  private void validateRequestBody(final DynamicObject requestBody) throws ValidationException {
-    final Object docIds = requestBody.get("documentIds");
-    final ValidationError validationError =
-        new ValidationErrorImpl().key("documentIds").error("is required");
+  /**
+   * Validate Request body.
+   * 
+   * @param documentService {@link DocumentService}
+   * @param requestBody {@link DynamicObject}
+   * @param siteId {@link String}
+   * @throws ValidationException ValidationException
+   */
+  private void validateRequestBody(final DocumentService documentService,
+      final DynamicObject requestBody, final String siteId) throws ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
     try {
-      Type jsonStringList = new TypeToken<List<String>>() {}.getType();
-      GSON.fromJson(docIds.toString(), jsonStringList);
+      List<String> documentIds = requestBody.getStringList("documentIds");
+
+      if (documentIds.isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("documentIds").error("is required"));
+      } else {
+        for (String documentId : documentIds) {
+          if (!documentService.exists(siteId, documentId)) {
+            errors.add(new ValidationErrorImpl().key("documentId")
+                .error(String.format("Document '%s' does not exist", documentId)));
+          }
+        }
+      }
+
     } catch (Exception e) {
-      throw new ValidationException(Arrays.asList(validationError));
+      errors.add(new ValidationErrorImpl().key("documentIds").error("is required"));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
     }
   }
 }

@@ -23,16 +23,16 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.FORMKIQ_CLI;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.StagingS3Create.FORMKIQ_B64_EXT;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
-import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsByteArray;
+import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
@@ -66,7 +66,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,7 +133,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
@@ -378,7 +376,7 @@ public class StagingS3CreateTest implements DbKeys {
    * before.
    */
   @BeforeEach
-  public void before() {
+  void before() {
 
     this.env = new HashMap<>();
     this.env.put("AWS_REGION", Region.US_EAST_1.id());
@@ -412,6 +410,19 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
+  private void createDocument(final String siteId, final String userId, final byte[] content,
+      final String docId) {
+    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
+    item.setDocumentId(docId == null ? UUID.randomUUID().toString() : docId);
+    item.setUserId(userId);
+    item.setInsertedDate(new Date());
+    final String documentId = item.getDocumentId();
+    service.saveDocument(siteId, item, null);
+
+    final String key = createS3Key(siteId, documentId);
+    s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
+  }
+
   /**
    * Create {@link DynamicDocumentItem}.
    *
@@ -430,6 +441,16 @@ public class StagingS3CreateTest implements DbKeys {
     item.setUserId("joe");
 
     return item;
+  }
+
+  private Map<String, Object> createRequestMap(final String s3Key) {
+
+    Map<String, Object> record = Map.of("eventName", "ObjectCreated", "s3",
+        Map.of("bucket", Map.of("name", STAGING_BUCKET), "object", Map.of("key", s3Key)));
+    String body = gson.toJson(Map.of("Records", Arrays.asList(record)));
+    List<Map<String, Object>> records = Arrays.asList(Map.of("body", body));
+
+    return new HashMap<>(Map.of("Records", records));
   }
 
   /**
@@ -626,7 +647,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  public void testCopyFile01() throws Exception {
+  void testCopyFile01() throws Exception {
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       String documentId = UUID.randomUUID().toString();
       testCopyFile(siteId, documentId, documentId);
@@ -639,7 +660,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  public void testCopyFile02() throws Exception {
+  void testCopyFile02() throws Exception {
     int i = 0;
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       final String documentId = "test" + i + ".pdf";
@@ -654,10 +675,48 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  public void testCopyFile03() throws Exception {
+  void testCopyFile03() throws Exception {
     final String documentId = "something/where/test.pdf";
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       testCopyFile(siteId, documentId, "something/where/test.pdf");
+    }
+  }
+
+  /**
+   * Tests document compression event.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testDocumentsCompress() throws Exception {
+    // given
+    String fileContent = loadFile(this, "/compression-request-file.json");
+    s3.putObject(STAGING_BUCKET, "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json",
+        fileContent.getBytes(UTF_8), null, null);
+    List<String> filePathsToCompress =
+        Arrays.asList("/255kb-text.txt", "/256kb-text.txt", "/multipart01.txt", "/multipart02.txt");
+    List<String> docIds = Arrays.asList("56dbfd71-bdd4-4fa8-96ca-4cf69fe93cb8",
+        "6e775220-ff21-4bb0-a9e5-4d5f383c8881", "758d5107-e50f-4c62-b9b9-fd0347aa242b",
+        "b37c138e-9782-40da-8e22-23412fc75035");
+
+    Map<String, Long> expectedChecksums = new HashMap<>();
+    for (int i = 0; i < docIds.size(); ++i) {
+      final String docId = docIds.get(i);
+      final String path = filePathsToCompress.get(i);
+      final byte[] content = loadFileAsByteArray(this, path);
+      this.createDocument("default", "JohnDoe", content, docId);
+      expectedChecksums.put(docId, DocumentCompressorTest.getContentChecksum(content));
+    }
+    assertFalse(expectedChecksums.isEmpty());
+
+    // when
+    Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
+    this.handleRequest(map);
+
+    // then
+    String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
+    try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey)) {
+      DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
     }
   }
 
@@ -667,7 +726,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension01() throws IOException {
+  void testFkB64Extension01() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
     item.put("tags",
@@ -686,7 +745,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension02() throws IOException {
+  void testFkB64Extension02() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -700,7 +759,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension03() throws IOException {
+  void testFkB64Extension03() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
     item.put("content", null);
 
@@ -717,7 +776,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension04() throws IOException {
+  void testFkB64Extension04() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
     item.setDocumentId(null);
 
@@ -732,7 +791,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension05() throws IOException {
+  void testFkB64Extension05() throws IOException {
     String documentId0 = "0d1a788d-9a70-418a-8c33-a9ee9c1a0173";
     String documentId1 = "24af57ca-f61d-4ff8-b8a0-d7666073560e";
     String documentId2 = "f2416702-6b3c-4d29-a217-82a43b16b964";
@@ -800,7 +859,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension06() throws IOException {
+  void testFkB64Extension06() throws IOException {
     String timeToLive = "1612061365";
     DynamicDocumentItem item = createDocumentItem();
     item.put("TimeToLive", timeToLive);
@@ -833,7 +892,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension07() throws IOException {
+  void testFkB64Extension07() throws IOException {
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
     data.put("contentType", "text/plain");
@@ -895,7 +954,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension08() throws IOException {
+  void testFkB64Extension08() throws IOException {
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
     data.put("tagSchemaId", UUID.randomUUID().toString());
@@ -956,7 +1015,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension09() throws IOException {
+  void testFkB64Extension09() throws IOException {
     final String documentId = "12345";
     Map<String, Object> data = new HashMap<>();
     data.put("documentId", documentId);
@@ -1017,7 +1076,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension10() throws IOException {
+  void testFkB64Extension10() throws IOException {
 
     final String documentId = "12345";
     Map<String, Object> data = new HashMap<>();
@@ -1091,7 +1150,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws InterruptedException InterruptedException
    */
   @Test
-  public void testFkB64Extension11() throws IOException, InterruptedException {
+  void testFkB64Extension11() throws IOException, InterruptedException {
 
     String path = "sample/test.txt";
     Map<String, Object> data = new HashMap<>();
@@ -1155,7 +1214,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  public void testFkB64Extension12() throws Exception {
+  void testFkB64Extension12() throws Exception {
     final Date now = new Date();
     final String userId = "joesmith";
     final long contentLength = 1000;
@@ -1225,7 +1284,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension13() throws IOException {
+  void testFkB64Extension13() throws IOException {
     DynamicDocumentItem item = createDocumentItem();
 
     item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
@@ -1251,7 +1310,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension14() throws IOException {
+  void testFkB64Extension14() throws IOException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -1284,7 +1343,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws IOException IOException
    */
   @Test
-  public void testFkB64Extension15() throws IOException {
+  void testFkB64Extension15() throws IOException {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -1410,14 +1469,20 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
-  private Map<String, Object> createRequestMap(final String s3Key) {
+  /**
+   * Test ZIP file upload event in temp files is skipped.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testTempFilesZipEvent() throws Exception {
+    final Map<String, Object> map = loadFileAsMap(this, "/temp-files-zip-created-event.json");
+    final String key = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
+    this.handleRequest(map);
 
-    Map<String, Object> record = Map.of("eventName", "ObjectCreated", "s3",
-        Map.of("bucket", Map.of("name", STAGING_BUCKET), "object", Map.of("key", s3Key)));
-    String body = gson.toJson(Map.of("Records", Arrays.asList(record)));
-    List<Map<String, Object>> records = Arrays.asList(Map.of("body", body));
+    assertTrue(this.logger.containsString(String.format("skipping event for key %s", key)));
 
-    return new HashMap<>(Map.of("Records", records));
+    verifySqsMessages(0, 0, 0);
   }
 
   /**
@@ -1426,7 +1491,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  public void testUnknownEvent01() throws Exception {
+  void testUnknownEvent01() throws Exception {
     // given
     final Map<String, Object> map = loadFileAsMap(this, "/objectunknown-event1.json");
 
@@ -1443,74 +1508,6 @@ public class StagingS3CreateTest implements DbKeys {
     assertTrue(this.logger.containsString("skipping event ObjectUnknwn:Delete"));
 
     verifySqsMessages(0, 0, 0);
-  }
-
-  /**
-   * Tests document compression event.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testDocumentsCompress() throws Exception {
-    final String fileContent = loadFile(this, "/compression-request-file.json");
-    s3.putObject(STAGING_BUCKET, "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json",
-        fileContent.getBytes(UTF_8), null, null);
-    final List<String> filePathsToCompress =
-        Arrays.asList("/255kb-text.txt", "/256kb-text.txt", "/multipart01.txt", "/multipart02.txt");
-    final List<String> docIds = Arrays.asList("56dbfd71-bdd4-4fa8-96ca-4cf69fe93cb8",
-        "6e775220-ff21-4bb0-a9e5-4d5f383c8881", "758d5107-e50f-4c62-b9b9-fd0347aa242b",
-        "b37c138e-9782-40da-8e22-23412fc75035");
-
-    final Map<String, Long> expectedChecksums = new HashMap<>();
-    for (int i = 0; i < docIds.size(); ++i) {
-      final String docId = docIds.get(i);
-      final String path = filePathsToCompress.get(i);
-      final byte[] content = loadFileAsByteArray(this, path);
-      this.createDocument("default", "JohnDoe", content, docId);
-      expectedChecksums.put(docId, DocumentCompressorTest.getContentChecksum(content));
-    }
-
-    final Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
-    this.handleRequest(map);
-
-    final String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
-    final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
-    // ZIP file is present in S3 with expected size
-    final Long expectedZipSize = 1572912L;
-    assertTrue(tempFiles.contents().stream()
-        .anyMatch(obj -> obj.key().equals(zipKey) && obj.size().equals(expectedZipSize)));
-    // ZIP has the expected file list
-    final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey);
-    DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
-  }
-
-  /**
-   * Test ZIP file upload event in temp files is skipped.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testTempFilesZipEvent() throws Exception {
-    final Map<String, Object> map = loadFileAsMap(this, "/temp-files-zip-created-event.json");
-    final String key = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
-    this.handleRequest(map);
-
-    assertTrue(this.logger.containsString(String.format("skipping event for key %s", key)));
-
-    verifySqsMessages(0, 0, 0);
-  }
-
-  private void createDocument(final String siteId, final String userId, final byte[] content,
-      final String docId) {
-    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(docId == null ? UUID.randomUUID().toString() : docId);
-    item.setUserId(userId);
-    item.setInsertedDate(new Date());
-    final String documentId = item.getDocumentId();
-    service.saveDocument(siteId, item, null);
-
-    final String key = createS3Key(siteId, documentId);
-    s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
   }
 
   private void verifyBelongsToDocument(final DocumentItem item, final String documentId,

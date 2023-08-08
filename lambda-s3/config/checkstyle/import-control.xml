@@ -59,10 +59,7 @@
 
 			<subpackage name="util">
 
-				<allow pkg="com.amazonaws.auth" />
-				<allow pkg="com.amazonaws.regions" />
 				<allow pkg="com.amazonaws.services.lambda.runtime" />
-				<allow pkg="com.amazonaws.services.simplesystemsmanagement" />
 				
 				<allow pkg="com.google.gson" />
 				<allow pkg="java.io" />

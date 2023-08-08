@@ -29,10 +29,8 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -40,19 +38,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipEntry;
 import java.util.zip.CRC32;
-
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -60,8 +62,10 @@ import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 
+/**
+ * Unit Test for {@link DocumentCompressor}.
+ */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentCompressorTest {
@@ -81,25 +85,42 @@ public class DocumentCompressorTest {
   private static final String STAGING_BUCKET = "staging";
   /** {@link DocumentCompressor}. */
   private DocumentCompressor compressor;
-  /** Env vars. */
-  private Map<String, String> env;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
 
+  /**
+   * Before Each Test.
+   */
   @BeforeEach
   public void before() {
-    this.env = new HashMap<>();
-    this.env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    this.env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    final Long maxTestChunkSize1Mb = 1024 * 1024L;
     dbHelper.truncateTable(DOCUMENTS_TABLE);
     s3.deleteAllFiles(STAGING_BUCKET);
     s3.deleteAllFiles(DOCUMENTS_BUCKET);
-    this.compressor = new DocumentCompressor(this.env, s3Builder, dbBuilder, maxTestChunkSize1Mb);
+
+    this.compressor = new DocumentCompressor(serviceCache);
   }
 
+  /**
+   * Before All Tests.
+   * 
+   * @throws Exception Exception
+   */
   @BeforeAll
-  public static void beforeClass() throws URISyntaxException, IOException {
+  public static void beforeClass() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+
     s3Builder = TestServices.getS3Connection(null);
+    AwsServiceCache.register(S3ConnectionBuilder.class,
+        new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
+    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Builder));
+
     dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbBuilder));
+    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+
     dbHelper = DynamoDbTestServices.getDynamoDbHelper(null);
     s3 = new S3Service(s3Builder);
     documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
@@ -110,10 +131,12 @@ public class DocumentCompressorTest {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
       dbHelper.createCacheTable(CACHE_TABLE);
     }
+
+    serviceCache = new AwsServiceCache().environment(env);
   }
 
   @Test
-  public void testDocumentsCompress() throws Exception {
+  void testDocumentsCompress() throws Exception {
     final List<String> filePathsToCompress =
         Arrays.asList("/255kb-text.txt", "/256kb-text.txt", "/multipart01.txt", "/multipart02.txt");
     final Map<String, Long> fileChecksums = new HashMap<>();
@@ -126,22 +149,18 @@ public class DocumentCompressorTest {
     final String archiveKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
 
-    this.compressor = new DocumentCompressor(this.env, s3Builder, dbBuilder, null);
+    this.compressor = new DocumentCompressor(serviceCache);
     this.compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, archiveKey,
         documentIds);
 
-    final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
-    // ZIP file is present in S3 with expected size
-    final Long expectedZipSize = 1572912L;
-    assertTrue(tempFiles.contents().stream()
-        .anyMatch(obj -> obj.key().equals(archiveKey) && obj.size().equals(expectedZipSize)));
-    final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, archiveKey);
-    // Check that all files are present and content checksum is the same
-    validateZipContent(zipContent, fileChecksums);
+    try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, archiveKey)) {
+      // Check that all files are present and content checksum is the same
+      validateZipContent(zipContent, fileChecksums);
+    }
   }
 
   @Test
-  public void testDocumentsCompressMultipart() throws Exception {
+  void testDocumentsCompressMultipart() throws Exception {
     final String fileToCompress = "/multipart01.txt";
     final byte[] fileContent = loadFileAsByteArray(this, fileToCompress);
     final Long checksum = getContentChecksum(fileContent);
@@ -157,12 +176,9 @@ public class DocumentCompressorTest {
     this.compressor.compressDocuments("default", DOCUMENTS_BUCKET, STAGING_BUCKET, archiveKey,
         documentIds);
 
-    final ListObjectsResponse tempFiles = s3.listObjects(STAGING_BUCKET, "tempfiles/");
-    final Long expectedZipSize = 7234532L;
-    assertTrue(tempFiles.contents().stream()
-        .anyMatch(obj -> obj.key().equals(archiveKey) && obj.size().equals(expectedZipSize)));
-    final InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, archiveKey);
-    validateZipContent(zipContent, fileChecksums);
+    try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, archiveKey)) {
+      validateZipContent(zipContent, fileChecksums);
+    }
   }
 
   private String createDocument(final String siteId, final String userId, final byte[] content) {
@@ -177,10 +193,21 @@ public class DocumentCompressorTest {
     return item.getDocumentId();
   }
 
-  public static void validateZipContent(final InputStream input,
-      final Map<String, Long> expectedEntryChecksum) throws Exception {
+  /**
+   * Validate Zip file Contents checksums.
+   * 
+   * @param input {@link InputStream}
+   * @param expectedEntryChecksum {@link Map}
+   * @throws IOException IOException
+   */
+  static void validateZipContent(final InputStream input,
+      final Map<String, Long> expectedEntryChecksum) throws IOException {
+
     final ZipInputStream stream = new ZipInputStream(input);
+
+    int count = 0;
     for (ZipEntry entry = stream.getNextEntry(); entry != null; entry = stream.getNextEntry()) {
+
       final String name = entry.getName();
       final byte[] content = stream.readAllBytes();
 
@@ -188,15 +215,23 @@ public class DocumentCompressorTest {
       assertEquals(expectedEntryChecksum.get(name), getContentChecksum(content));
 
       stream.closeEntry();
+      count++;
     }
     stream.close();
+    assertEquals(count, expectedEntryChecksum.size());
   }
 
-  public static Long getContentChecksum(final byte[] content) {
+  /**
+   * Generate checksum based on content.
+   * 
+   * @param content byte[]
+   * @return {@link Long}
+   */
+  static Long getContentChecksum(final byte[] content) {
     final CRC32 crc = new CRC32();
     crc.update(content, 0, content.length);
     long checksum = crc.getValue();
     crc.reset();
-    return checksum;
+    return Long.valueOf(checksum);
   }
 }

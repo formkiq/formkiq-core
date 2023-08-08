@@ -38,6 +38,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.ArrayList;
 
+/**
+ * S3 Multipart Uploader.
+ */
 public class S3MultipartUploader {
   /**
    * S3 client.
@@ -56,6 +59,11 @@ public class S3MultipartUploader {
    */
   private final HashMap<String, Integer> uploadIdPartNumber;
 
+  /**
+   * constructor.
+   * 
+   * @param builder {@link S3ConnectionBuilder}
+   */
   public S3MultipartUploader(final S3ConnectionBuilder builder) {
     this.s3 = builder.build();
     this.uploadIdCompletedParts = new HashMap<>();
@@ -63,41 +71,59 @@ public class S3MultipartUploader {
     this.uploadIdPartNumber = new HashMap<>();
   }
 
-  public String initializeUpload(final String bucketName, final String objectKey) {
+  /**
+   * Initialize Multipart upload.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  public String initializeUpload(final String bucket, final String key) {
     CreateMultipartUploadRequest uploadRequest =
-        CreateMultipartUploadRequest.builder().bucket(bucketName).key(objectKey).build();
+        CreateMultipartUploadRequest.builder().bucket(bucket).key(key).build();
     final CreateMultipartUploadResponse uploadMetadata =
         this.s3.createMultipartUpload(uploadRequest);
     final String uploadId = uploadMetadata.uploadId();
     this.uploadIdMetadata.put(uploadId, uploadMetadata);
     this.uploadIdCompletedParts.put(uploadId, new ArrayList<>());
-    this.uploadIdPartNumber.put(uploadId, 1);
+    this.uploadIdPartNumber.put(uploadId, Integer.valueOf(1));
     return uploadId;
   }
 
+  /**
+   * Upload Chunk.
+   * 
+   * @param uploadId {@link String}
+   * @param chunk byte[]
+   */
   public void uploadChunk(final String uploadId, final byte[] chunk) {
     final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
     final String bucketName = metadata.bucket();
     final String objectKey = metadata.key();
 
     try {
-      int partNumber = this.uploadIdPartNumber.get(uploadId);
-      UploadPartRequest uploadPartRequest =
-          UploadPartRequest.builder().bucket(bucketName).key(objectKey).uploadId(uploadId)
-              .partNumber(partNumber).contentLength((long) chunk.length).build();
+      int partNumber = this.uploadIdPartNumber.get(uploadId).intValue();
+      UploadPartRequest uploadPartRequest = UploadPartRequest.builder().bucket(bucketName)
+          .key(objectKey).uploadId(uploadId).partNumber(Integer.valueOf(partNumber))
+          .contentLength(Long.valueOf(chunk.length)).build();
 
       UploadPartResponse uploadPartResponse =
           this.s3.uploadPart(uploadPartRequest, RequestBody.fromBytes(chunk));
 
-      this.uploadIdCompletedParts.get(uploadId).add(
-          CompletedPart.builder().partNumber(partNumber).eTag(uploadPartResponse.eTag()).build());
-      this.uploadIdPartNumber.put(uploadId, ++partNumber);
+      this.uploadIdCompletedParts.get(uploadId).add(CompletedPart.builder()
+          .partNumber(Integer.valueOf(partNumber)).eTag(uploadPartResponse.eTag()).build());
+      this.uploadIdPartNumber.put(uploadId, Integer.valueOf(++partNumber));
     } catch (Exception e) {
       this.abortMultipartUpload(uploadId);
       throw e;
     }
   }
 
+  /**
+   * Complete Upload.
+   * 
+   * @param uploadId {@link String}
+   */
   public void completeUpload(final String uploadId) {
     final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
     final String bucketName = metadata.bucket();
@@ -112,6 +138,11 @@ public class S3MultipartUploader {
     this.s3.completeMultipartUpload(completeMultipartUploadRequest);
   }
 
+  /**
+   * Abort Multipart Upload.
+   * 
+   * @param uploadId {@link String}
+   */
   public void abortMultipartUpload(final String uploadId) {
     final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
     final String bucketName = metadata.bucket();
