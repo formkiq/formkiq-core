@@ -34,7 +34,7 @@ dependencies {
 	testImplementation project(':aws-dynamodb')
 	testImplementation project(':dynamodb-documents')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.85'
+	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.20.121'
 	
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'

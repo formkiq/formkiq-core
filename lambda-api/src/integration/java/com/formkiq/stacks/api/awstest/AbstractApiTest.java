@@ -201,8 +201,8 @@ public abstract class AbstractApiTest {
 
     try (ProfileCredentialsProvider credentials =
         ProfileCredentialsProvider.builder().profileName(awsprofile).build()) {
-      FormKiqClientConnection connection = new FormKiqClientConnection(rootIamUrl)
-          .region(awsregion).credentials(credentials.resolveCredentials())
+      FormKiqClientConnection connection = new FormKiqClientConnection(rootIamUrl).region(awsregion)
+          .credentials(credentials.resolveCredentials())
           .header("Origin", Arrays.asList("http://localhost"))
           .header("Access-Control-Request-Method", Arrays.asList("GET"));
       restClient = new FormKiqClientV1(connection);
