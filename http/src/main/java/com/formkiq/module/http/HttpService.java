@@ -25,6 +25,7 @@ package com.formkiq.module.http;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -76,5 +77,17 @@ public interface HttpService {
    * @throws IOException IOException
    */
   HttpResponse<String> post(String url, Optional<HttpHeaders> headers, String payload)
+      throws IOException;
+
+  /**
+   * Post HTTP Request and return a {@link String}.
+   * 
+   * @param url {@link String}
+   * @param headers {@link HttpHeaders}
+   * @param payload {@link Path}
+   * @return {@link HttpResponse} {@link String}
+   * @throws IOException IOException
+   */
+  HttpResponse<String> put(String url, Optional<HttpHeaders> headers, Path payload)
       throws IOException;
 }

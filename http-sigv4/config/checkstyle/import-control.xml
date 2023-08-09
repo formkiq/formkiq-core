@@ -14,6 +14,7 @@
 		<allow pkg="java.net.http" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
+		<allow pkg="java.nio.file" />
 		
 		<allow pkg="java.nio.charset" />
 		<allow pkg="software.amazon.awssdk.http" />

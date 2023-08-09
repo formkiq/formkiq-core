@@ -46,23 +46,23 @@ public class DocumentCompressor {
   /**
    * Used to determine whether to use S3 multipart upload.
    */
-  private static final long MAX_IN_MEMORY_CHUNK_SIZE = 1 * 1024 * 1024;
+  private static final long MAX_IN_MEMORY_CHUNK_SIZE = 64 * 1024 * 1024;
+  /**
+   * To get documents S3 object keys.
+   */
+  private final DocumentService documentService;
   /**
    * Used to determine whether to use S3 multipart upload.
    */
   private final long maxInMemoryChunkSize;
   /**
-   * S3 Service.
-   */
-  private final S3Service s3;
-  /**
    * For chunked upload of large files.
    */
   private final S3MultipartUploader multipartUploader;
   /**
-   * To get documents S3 object keys.
+   * S3 Service.
    */
-  private final DocumentService documentService;
+  private final S3Service s3;
 
   /**
    * constructor.
@@ -76,6 +76,51 @@ public class DocumentCompressor {
         new S3MultipartUploader(serviceCache.getExtension(S3ConnectionBuilder.class));
     this.documentService = serviceCache.getExtension(DocumentService.class);
     this.maxInMemoryChunkSize = MAX_IN_MEMORY_CHUNK_SIZE;
+  }
+
+  private void archiveS3Objects(final String siteId, final String docsBucket,
+      final String archiveBucket, final String archiveKey,
+      final Map<DocumentItem, Long> documentSizeMap) throws IOException {
+
+    Long totalFilesSize = documentSizeMap.values().stream().reduce(Long.valueOf(0), Long::sum);
+    boolean isMultiPartUpload = totalFilesSize.longValue() > this.maxInMemoryChunkSize;
+
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+    String multipartUploadId =
+        isMultiPartUpload ? this.multipartUploader.initializeUpload(archiveBucket, archiveKey)
+            : null;
+
+    ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
+
+    for (Map.Entry<DocumentItem, Long> docSizePair : documentSizeMap.entrySet()) {
+      DocumentItem document = docSizePair.getKey();
+      Long objectSize = docSizePair.getValue();
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.getDocumentId());
+      ZipEntry zipEntry = new ZipEntry(document.getPath());
+
+      zipOutputStream.putNextEntry(zipEntry);
+
+      if (isMultiPartUpload) {
+        transferObjectToZipInChunks(zipOutputStream, docsBucket, s3Key, byteArrayOutputStream,
+            multipartUploadId, objectSize);
+      } else {
+        transferObjectToZip(zipOutputStream, docsBucket, s3Key);
+      }
+
+      zipOutputStream.closeEntry();
+    }
+
+    zipOutputStream.close();
+
+    if (!isMultiPartUpload) {
+      this.s3.putObject(archiveBucket, archiveKey, byteArrayOutputStream.toByteArray(),
+          "application/zip");
+    } else {
+      zipOutputStream.flush();
+      this.uploadChunkIfNeeded(multipartUploadId, byteArrayOutputStream, true);
+      this.multipartUploader.completeUpload(multipartUploadId);
+    }
   }
 
   /**
@@ -109,35 +154,11 @@ public class DocumentCompressor {
             .getContentLength()));
   }
 
-  private void archiveS3Objects(final String siteId, final String docsBucket,
-      final String archiveBucket, final String archiveKey,
-      final Map<DocumentItem, Long> documentSizeMap) throws IOException {
-
-    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-    String multipartUploadId = this.multipartUploader.initializeUpload(archiveBucket, archiveKey);
-
-    ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
-
-    for (Map.Entry<DocumentItem, Long> docSizePair : documentSizeMap.entrySet()) {
-      DocumentItem document = docSizePair.getKey();
-      Long objectSize = docSizePair.getValue();
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.getDocumentId());
-      ZipEntry zipEntry = new ZipEntry(document.getPath());
-
-      zipOutputStream.putNextEntry(zipEntry);
-
-      transferObjectToZipInChunks(zipOutputStream, docsBucket, s3Key, byteArrayOutputStream,
-          multipartUploadId, objectSize);
-
-      zipOutputStream.closeEntry();
+  private void transferObjectToZip(final ZipOutputStream outputStream, final String bucket,
+      final String key) throws IOException {
+    try (InputStream content = this.s3.getContentAsInputStream(bucket, key)) {
+      content.transferTo(outputStream);
     }
-
-    zipOutputStream.close();
-    zipOutputStream.flush();
-
-    this.uploadChunkIfNeeded(multipartUploadId, byteArrayOutputStream, true);
-    this.multipartUploader.completeUpload(multipartUploadId);
   }
 
   private void transferObjectToZipInChunks(final ZipOutputStream zipOutputStream,

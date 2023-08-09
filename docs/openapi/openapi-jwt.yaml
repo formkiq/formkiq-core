@@ -918,7 +918,7 @@
                   application/json:
                     schema:
                       $ref: '#/components/schemas/DocumentsCompressRequest'
-              description: Compress documents into an .ZIP archive file, and returns a S3 presigned url for the location of the archive file. The operation is async and processing time depends on the number and size of documents included; a HEAD request can be used to determine if the file is ready.
+              description: Compress documents into an .ZIP archive file, and returns a S3 presigned url for the location of the archive file. The operation is async and processing time depends on the number and size of documents included; a 404 status code is returned until the file is ready.
               tags:
               - Documents
               responses:

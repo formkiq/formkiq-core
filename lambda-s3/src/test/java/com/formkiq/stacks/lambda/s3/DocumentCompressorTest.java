@@ -203,7 +203,7 @@ public class DocumentCompressorTest {
   static void validateZipContent(final InputStream input,
       final Map<String, Long> expectedEntryChecksum) throws IOException {
 
-    final ZipInputStream stream = new ZipInputStream(input);
+    ZipInputStream stream = new ZipInputStream(input);
 
     int count = 0;
     for (ZipEntry entry = stream.getNextEntry(); entry != null; entry = stream.getNextEntry()) {
