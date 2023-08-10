@@ -35,6 +35,9 @@ import java.util.zip.ZipOutputStream;
  */
 public class FileGenerator {
 
+  /** {@link Random}. */
+  private Random random = new Random();
+
   /** Buffer Size. */
   private static final int BUFFER_SIZE = 1024;
 
@@ -58,11 +61,10 @@ public class FileGenerator {
     zipOut.putNextEntry(entry);
 
     // Generate random data
-    Random random = new Random();
     byte[] buffer = new byte[BUFFER_SIZE];
     long writtenBytes = 0;
     while (writtenBytes < targetSize) {
-      random.nextBytes(buffer);
+      this.random.nextBytes(buffer);
       zipOut.write(buffer);
       writtenBytes += buffer.length;
     }
