@@ -73,7 +73,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
 
   private void checkParentId() {
     if (this.parentDocumentId == null) {
-      throw new IllegalArgumentException("'parentId' is required");
+      throw new IllegalArgumentException("'parentDocumentId' is required");
     }
   }
 
@@ -143,7 +143,8 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   }
 
   @Override
-  public FolderIndexRecord getFromAttributes(final Map<String, AttributeValue> attrs) {
+  public FolderIndexRecord getFromAttributes(final String siteId,
+      final Map<String, AttributeValue> attrs) {
 
     FolderIndexRecord record = new FolderIndexRecord().documentId(ss(attrs, "documentId"))
         .path(ss(attrs, "path")).type(ss(attrs, "type")).userId(ss(attrs, "userId"))
@@ -165,6 +166,18 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
         record = record.lastModifiedDate(df.parse(ss(attrs, "lastModifiedDate")));
       } catch (ParseException e) {
         throw new IllegalArgumentException("invalid 'lastModifiedDate'");
+      }
+    }
+
+    if (this.parentDocumentId == null) {
+      String pk = ss(attrs, PK);
+      String s = SiteIdKeyGenerator.resetDatabaseKey(siteId, pk);
+
+      int pos = s.lastIndexOf(TAG_DELIMINATOR);
+      if (pos > -1) {
+        record.parentDocumentId = s.substring(pos + 1);
+      } else {
+        record.parentDocumentId = "";
       }
     }
 

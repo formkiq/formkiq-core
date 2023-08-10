@@ -123,7 +123,8 @@ public class ApiKey implements DynamodbRecord<ApiKey>, DbKeys {
   }
 
   @Override
-  public ApiKey getFromAttributes(final Map<String, AttributeValue> attrs) {
+  public ApiKey getFromAttributes(final String siteIdParam,
+      final Map<String, AttributeValue> attrs) {
 
     ApiKey record = new ApiKey().apiKey(ss(attrs, "apiKey")).name(ss(attrs, "name"))
         .userId(ss(attrs, "userId")).permissions(toPermissions(attrs)).siteId(ss(attrs, "siteId"));

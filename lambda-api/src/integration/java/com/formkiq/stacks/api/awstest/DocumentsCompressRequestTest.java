@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -59,6 +58,7 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.FileGenerator;
 
 /**
  * 
@@ -72,29 +72,18 @@ public class DocumentsCompressRequestTest extends AbstractApiTest {
   private static final int MB = 1024;
   /** Number of bytes in 1 MB. */
   private static final int MB_1 = 1000000;
-
   /** Http Status 404. */
   private static final int STATUS_NOT_FOUND = 404;
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 60;
+
+  /** {@link FileGenerator}. */
+  private FileGenerator fileGenerator = new FileGenerator();
   /** {@link HttpService}. */
   private HttpService http = new HttpServiceJdk11();
   /** {@link HttpClient}. */
   private HttpClient httpClient = HttpClient.newHttpClient();
-
-  private void createFile(final String filePath, final long fileSizeInBytes) throws IOException {
-    try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
-      byte[] buffer = new byte[MB];
-      long remainingBytes = fileSizeInBytes;
-
-      while (remainingBytes > 0) {
-        int bytesToWrite = (int) Math.min(buffer.length, remainingBytes);
-        outputStream.write(buffer, 0, bytesToWrite);
-        remainingBytes -= bytesToWrite;
-      }
-    }
-  }
 
   private HttpResponse<InputStream> fetchDownloadUrl(final String downloadUrl)
       throws IOException, InterruptedException {
@@ -179,14 +168,9 @@ public class DocumentsCompressRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPostDocumentsCompresss02() throws Exception {
     // given
-    File file1 = File.createTempFile("tmp", ".bin");
-    createFile(file1.toString(), MB * MB);
-    file1.deleteOnExit();
-
+    File file1 = this.fileGenerator.generateZipFile(MB * MB);
     final int numberOfMb = 5;
-    File file2 = File.createTempFile("tmp", ".bin");
-    createFile(file2.toString(), numberOfMb * MB * MB);
-    file2.deleteOnExit();
+    File file2 = this.fileGenerator.generateZipFile(numberOfMb * MB * MB);
 
     String siteId = null;
     ApiClient apiClient = getApiClients(null).get(0);

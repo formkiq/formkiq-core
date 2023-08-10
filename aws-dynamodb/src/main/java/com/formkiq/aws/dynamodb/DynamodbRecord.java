@@ -46,10 +46,11 @@ public interface DynamodbRecord<T> {
   /**
    * Transform {@link Map} {@link AttributeValue} to {@link Object}.
    * 
+   * @param siteId {@link String}
    * @param attrs {@link Map} {@link AttributeValue}
    * @return {@link Object}
    */
-  T getFromAttributes(Map<String, AttributeValue> attrs);
+  T getFromAttributes(String siteId, Map<String, AttributeValue> attrs);
 
   /**
    * Get DynamoDb PK.

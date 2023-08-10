@@ -161,7 +161,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         CancellationReason cr = e.cancellationReasons().get(0);
         if (cr.item() != null && cr.item().containsKey("documentId")) {
           values = cr.item();
-          record = record.getFromAttributes(values);
+          record = record.getFromAttributes(siteId, values);
         } else {
           throw e;
         }
@@ -292,7 +292,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         String docId = documentId;
         FolderIndexRecord record = null;
         if (docId == null) {
-          record = getFolderId(pk, sk, folder);
+          record = getFolderId(siteId, pk, sk, folder);
         } else {
           record = new FolderIndexRecord().documentId(docId).type("file").parentDocumentId(lastUuid)
               .path(folder);
@@ -304,7 +304,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
         String sk = getSk(folder, false);
 
-        FolderIndexRecord record = getFolderId(pk, sk, folder);
+        FolderIndexRecord record = getFolderId(siteId, pk, sk, folder);
         lastUuid = record.documentId();
         uuids.put(folder, record.getAttributes(siteId));
       }
@@ -373,7 +373,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
       if (!attrs.isEmpty()) {
 
-        record = record.getFromAttributes(attrs);
+        record = record.getFromAttributes(siteId, attrs);
         isRecordChanged = false;
 
       } else {
@@ -440,7 +440,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     Map<String, FolderIndexRecord> recordMap =
         responses.stream().map(map -> this.dynamoDb.get(map.get(PK), map.get(SK)))
-            .map(attr -> new FolderIndexRecord().getFromAttributes(attr))
+            .map(attr -> new FolderIndexRecord().getFromAttributes(siteId, attr))
             .collect(Collectors.toMap(r -> r.documentId(), r -> r));
 
     return recordMap;
@@ -450,14 +450,15 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   /**
    * Get Folder Id.
    * 
+   * @param siteId {@link String}
    * @param pk {@link String}
    * @param sk {@link String}
    * @param folder {@link String}
    * @return {@link FolderIndexRecord}
    * @throws IOException IOException
    */
-  private FolderIndexRecord getFolderId(final String pk, final String sk, final String folder)
-      throws IOException {
+  private FolderIndexRecord getFolderId(final String siteId, final String pk, final String sk,
+      final String folder) throws IOException {
 
     Map<String, AttributeValue> map =
         this.dynamoDb.get(AttributeValue.fromS(pk), AttributeValue.fromS(sk));
@@ -466,7 +467,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       throw new IOException(String.format("index for '%s' does not exist", folder));
     }
 
-    FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(map);
+    FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, map);
 
     return record;
   }
@@ -583,7 +584,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     for (String folder : folders) {
       String pk = getPk(siteId, lastUuid);
       String sk = getSk(folder, false);
-      FolderIndexRecord record = getFolderId(pk, sk, folder);
+      FolderIndexRecord record = getFolderId(siteId, pk, sk, folder);
 
       lastUuid = record.documentId();
 

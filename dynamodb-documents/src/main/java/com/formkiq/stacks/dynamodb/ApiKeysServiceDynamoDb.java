@@ -126,7 +126,7 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
     Map<String, AttributeValue> map = this.db.get(fromS(key.pk(null)), fromS(key.sk()));
 
     if (!map.isEmpty()) {
-      key = new ApiKey().getFromAttributes(map);
+      key = new ApiKey().getFromAttributes(null, map);
 
       if (masked) {
         key.apiKey(mask(key.apiKey()));
@@ -156,7 +156,7 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
         .map(m -> Map.of(PK, m.get(PK), SK, m.get(SK))).collect(Collectors.toList());
 
     List<ApiKey> apiKeys =
-        this.db.getBatch(attrs).stream().map(a -> new ApiKey().getFromAttributes(a))
+        this.db.getBatch(attrs).stream().map(a -> new ApiKey().getFromAttributes(siteId, a))
             .map(a -> a.apiKey(mask(a.apiKey()))).collect(Collectors.toList());
 
     return new PaginationResults<ApiKey>(apiKeys, new QueryResponseToPagination().apply(response));
