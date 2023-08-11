@@ -109,8 +109,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
-// @ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
-// DocumentVersionServiceNoVersioning.class})
 @ReflectableClass(className = UpdateFulltextTag.class, allPublicConstructors = true,
     fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
         @ReflectableField(name = "values")})

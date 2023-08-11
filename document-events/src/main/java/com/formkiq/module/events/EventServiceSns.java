@@ -24,6 +24,7 @@
 package com.formkiq.module.events;
 
 import java.util.Map;
+import java.util.logging.Logger;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.module.events.document.DocumentEvent;
@@ -39,6 +40,8 @@ import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
  */
 public class EventServiceSns implements EventService {
 
+  /** {@link Logger}. */
+  private static final Logger LOGGER = Logger.getLogger(EventServiceSns.class.getName());
   /** Max Sns Message Size. */
   public static final int MAX_SNS_MESSAGE_SIZE = 256000;
   /** {@link Gson}. */
@@ -85,6 +88,7 @@ public class EventServiceSns implements EventService {
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
 
+    LOGGER.info("publishing to: " + this.topicArn + " body: " + eventJson);
     this.snsService.publish(this.topicArn, eventJson, tags);
 
     return eventJson;
@@ -101,6 +105,7 @@ public class EventServiceSns implements EventService {
 
     Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
 
+    LOGGER.info("publishing to: " + this.topicArn + " body: " + eventJson);
     this.snsService.publish(this.topicArn, eventJson, tags);
 
     return eventJson;
