@@ -32,6 +32,7 @@ import com.formkiq.module.events.folder.FolderEvent;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 
 /**
  * 
@@ -104,7 +105,9 @@ public class EventServiceSns implements EventService {
     Map<String, MessageAttributeValue> tags = Map.of("type", typeAttr, "siteId", siteIdAttr);
 
     LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " body: " + eventJson);
-    this.snsService.publish(this.topicArn, eventJson, tags);
+    PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
+    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " body: " + eventJson
+        + " messageId: " + response.messageId());
 
     return eventJson;
   }
