@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler;
+package com.formkiq.module.ocr;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
@@ -50,9 +50,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.ocr.DocumentOcrService;
-import com.formkiq.module.ocr.OcrRequest;
-import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/ocr". */
