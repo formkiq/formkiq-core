@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
@@ -76,18 +77,23 @@ public class DocumentContentFunction {
   /**
    * Find Content Url.
    * 
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
   @SuppressWarnings("unchecked")
-  private List<String> findContentUrls(final String siteId, final DocumentItem item)
-      throws IOException {
+  private List<String> findContentUrls(final LambdaLogger logger, final String siteId,
+      final DocumentItem item) throws IOException {
 
     List<String> urls = null;
     String documentId = item.getDocumentId();
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+
+    if (logger != null) {
+      logger.log("content type: " + item.getContentType());
+    }
 
     if (MimeType.isPlainText(item.getContentType())) {
 
@@ -107,6 +113,10 @@ public class DocumentContentFunction {
 
       try {
         HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
+
+        if (logger != null) {
+          logger.log("GET /documents/{documentId}/ocr response: " + response.body());
+        }
 
         Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
 
@@ -151,14 +161,15 @@ public class DocumentContentFunction {
   /**
    * Convert {@link DocumentItem} to list of Document Content Urls.
    * 
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param item {@link DocumentItem}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
-  public List<String> getContentUrls(final String siteId, final DocumentItem item)
-      throws IOException {
-    List<String> contentUrls = findContentUrls(siteId, item);
+  public List<String> getContentUrls(final LambdaLogger logger, final String siteId,
+      final DocumentItem item) throws IOException {
+    List<String> contentUrls = findContentUrls(logger, siteId, item);
     return contentUrls;
   }
 

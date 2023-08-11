@@ -56,7 +56,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/GetVersionRequest"
+                        "$ref": "#/components/schemas/GetVersionResponse"
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3587,6 +3587,9 @@ Resources:
                 versionId:
                   type: "string"
                   description: "Document version"
+                belongsToDocumentId:
+                  type: "string"
+                  description: "Parent Document Identifier"
                 matchedTag:
                   $ref: "#/components/schemas/DocumentSearchMatchTag"
                 tags:
@@ -3890,9 +3893,8 @@ Resources:
                   enum:
                     - chatgpt
                 tags:
-                  description: "DocumentTagging: List of Tags to generate tags for"
-                  items:
-                    type: "string"
+                  description: "DocumentTagging: Comma-deliminted list of keywords to generate tags for"
+                  type: "string"
             AddDocumentOcrRequest:
               type: object
               example:
@@ -3923,7 +3925,7 @@ Resources:
                 content:
                   type: "string"
                   description: "Document content"
-            GetVersionRequest:
+            GetVersionResponse:
               type: object
               properties:
                 version:

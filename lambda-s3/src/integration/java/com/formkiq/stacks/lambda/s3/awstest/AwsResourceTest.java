@@ -356,6 +356,12 @@ public class AwsResourceTest extends AbstractAwsTest {
             contentType);
 
         String documentId = assertSnsMessage(documentQueueUrl, "create");
+
+        while (!getS3Service().getObjectMetadata(getDocumentsbucketname(), documentId, null)
+            .isObjectExists()) {
+          TimeUnit.SECONDS.sleep(1);
+        }
+
         assertEquals("this is a test",
             getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
 

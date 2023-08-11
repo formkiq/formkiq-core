@@ -60,7 +60,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -444,34 +443,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      ActionStatus status = ActionStatus.COMPLETE;
-      DocumentItem item = this.documentService.findDocument(siteId, documentId);
-      debug(logger, siteId, item);
-
-      logger.log("contenttype: " + item.getContentType());
-      logger.log("MIMETYPE: " + MimeType.isPlainText(item.getContentType()));
-      logger.log("DOCUMENTS_S3_BUCKET: " + this.serviceCache.environment("DOCUMENTS_S3_BUCKET"));
-      DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
-      List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
-
-      boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
-
-      if (moduleFulltext) {
-        updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
-      } else if (this.typesense != null) {
-        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
-      } else {
-        status = ActionStatus.FAILED;
-      }
-
-      List<Action> updatedActions =
-          this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
-
-      if (ActionStatus.COMPLETE.equals(status)) {
-        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
-      }
-
-      action.status(status);
+      processFulltext(logger, siteId, documentId, action);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
@@ -535,6 +507,37 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     } else {
       logger.log(String.format("Skipping event %s", event.type()));
     }
+  }
+
+  private void processFulltext(final LambdaLogger logger, final String siteId,
+      final String documentId, final Action action) throws IOException, InterruptedException {
+    ActionStatus status = ActionStatus.COMPLETE;
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    debug(logger, siteId, item);
+
+    DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
+
+    List<String> contentUrls =
+        documentContentFunc.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
+
+    boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
+
+    if (moduleFulltext) {
+      updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
+    } else if (this.typesense != null) {
+      updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+    } else {
+      status = ActionStatus.FAILED;
+    }
+
+    List<Action> updatedActions =
+        this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
+
+    if (ActionStatus.COMPLETE.equals(status)) {
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+    }
+
+    action.status(status);
   }
 
   /**

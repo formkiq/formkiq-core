@@ -38,10 +38,12 @@ import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetVersionResponse;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.DocumentSync;
 import com.formkiq.stacks.client.models.DocumentSyncs;
-import com.formkiq.stacks.client.models.Version;
 import com.formkiq.stacks.client.requests.GetDocumentSyncsRequest;
 
 /**
@@ -63,11 +65,12 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
     return list.stream().filter(s -> s.type().equals(type.name())).findFirst();
   }
 
-  private boolean isComplete(final String formkiqType, final DocumentSyncs syncs) {
+  private boolean isComplete(final GetVersionResponse versions, final DocumentSyncs syncs) {
     final int four = 4;
     int count = syncs.syncs().size();
-    return ("enterprise".equals(formkiqType) && count == four)
-        || (!"enterprise".equals(formkiqType) && count == 2);
+    String type = versions.getModules().contains("opensearch") ? "enterprise" : "core";
+    return ("enterprise".equals(type) && count == four)
+        || (!"enterprise".equals(type) && count == 2);
   }
 
   /**
@@ -79,14 +82,13 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGetSyncs01() throws Exception {
 
-    String formkiqType = null;
+    List<ApiClient> clients = getApiClients(null);
+    SystemManagementApi api = new SystemManagementApi(clients.get(0));
+    GetVersionResponse versions = api.getVersion();
 
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
-
-        Version version = client.getVersion();
-        formkiqType = version.type();
 
         String path = UUID.randomUUID().toString();
         String documentId = addDocumentWithoutFile(client, siteId, path);
@@ -97,7 +99,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractApiTest {
         // when
         DocumentSyncs syncs = client.getDocumentSyncs(req);
 
-        while (!isComplete(formkiqType, syncs)) {
+        while (!isComplete(versions, syncs)) {
           TimeUnit.SECONDS.sleep(1);
           syncs = client.getDocumentSyncs(req);
         }
