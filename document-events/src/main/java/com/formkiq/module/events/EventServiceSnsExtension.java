@@ -21,39 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions.services;
+package com.formkiq.module.events;
 
-import com.formkiq.module.events.EventService;
+import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link ActionsNotificationService}.
+ * {@link AwsServiceExtension} for {@link EventService}.
  *
  */
-public class ActionsNotificationServiceExtension
-    implements AwsServiceExtension<ActionsNotificationService> {
+public class EventServiceSnsExtension implements AwsServiceExtension<EventService> {
 
-  /** {@link ActionsNotificationService}. */
-  private ActionsNotificationService service;
+  /** {@link EventService}. */
+  private EventService service;
+  /** {@link SnsConnectionBuilder}. */
+  private SnsConnectionBuilder sns;
 
   /**
    * constructor.
    * 
+   * @param snsBuilder {@link SnsConnectionBuilder}
    */
-  public ActionsNotificationServiceExtension() {}
+  public EventServiceSnsExtension(final SnsConnectionBuilder snsBuilder) {
+    this.sns = snsBuilder;
+  }
 
   @Override
-  public ActionsNotificationService loadService(final AwsServiceCache awsServiceCache) {
+  public EventService loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
 
-      EventService eventService = awsServiceCache.getExtension(EventService.class);
-      this.service = new ActionsNotificationServiceImpl(eventService);
+      this.service =
+          new EventServiceSns(this.sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
     }
 
     return this.service;
   }
 }
+
 

@@ -6,6 +6,7 @@ def moduleName = "formkiq-module-lambda-ocr-tesseract"
 dependencies {
 
 	implementation project(':actions')
+	implementation project(':document-events')
 	implementation project(':aws-s3')
 	implementation project(':aws-sqs')
 	implementation project(':aws-sns')

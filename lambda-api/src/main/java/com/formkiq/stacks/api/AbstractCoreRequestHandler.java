@@ -52,6 +52,8 @@ import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.ocr.DocumentOcrService;
@@ -69,13 +71,13 @@ import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentPermissionsKeyRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentPermissionsRequestHandler;
-import com.formkiq.stacks.api.handler.DocumentsCompressRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagValueRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsKeyRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsActionsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsCompressRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyValueHandler;
@@ -243,13 +245,10 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     SnsConnectionBuilder sns = new SnsConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
 
-    AwsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension(sns));
-
     S3ConnectionBuilder s3 = new S3ConnectionBuilder(enableAwsXray).setRegion(region)
         .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
 
-    registerExtensions(schemaEvents, s3);
+    registerExtensions(schemaEvents, s3, sns);
 
     awsServices = new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
@@ -288,10 +287,14 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    *
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
    * @param s3 {@link S3ConnectionBuilder}
+   * @param sns {@link SnsConnectionBuilder}
    */
   private static void registerExtensions(final DocumentTagSchemaPlugin schemaEvents,
-      final S3ConnectionBuilder s3) {
+      final S3ConnectionBuilder s3, final SnsConnectionBuilder sns) {
 
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(sns));
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
     AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));

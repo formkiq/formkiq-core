@@ -76,10 +76,12 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
-import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
@@ -185,6 +187,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     AwsServiceCache.register(FormKiqClientV1.class,
         new FormKiQClientV1Extension(awsRegion, awsCredentials));
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(sns));
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
 
     this.serviceCache =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
@@ -193,8 +198,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     this.documentService = this.serviceCache.getExtension(DocumentService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
-    String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
+    this.notificationService = this.serviceCache.getExtension(ActionsNotificationService.class);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;

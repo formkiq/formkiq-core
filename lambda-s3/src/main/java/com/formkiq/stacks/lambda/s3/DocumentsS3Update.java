@@ -63,11 +63,12 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
-import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSns;
+import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
@@ -192,19 +193,19 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
     AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsBuilder));
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
     AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
-    AwsServiceCache serviceCache = new AwsServiceCache().environment(map);
-
-    this.service = serviceCache.getExtension(DocumentService.class);
+    this.service = this.services.getExtension(DocumentService.class);
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.s3service = new S3Service(s3builder);
-    this.documentEventService = new EventServiceSns(snsBuilder, this.snsDocumentEvent);
-    this.notificationService =
-        new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
+    this.documentEventService = this.services.getExtension(EventService.class);
+    this.notificationService = this.services.getExtension(ActionsNotificationService.class);
   }
 
   /**

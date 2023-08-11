@@ -7,6 +7,8 @@
 	
 	<subpackage name="events">
 	
+		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.module.events.document" />
 		<allow pkg="com.formkiq.module.events.folder" />
 		<allow pkg="java.util" />

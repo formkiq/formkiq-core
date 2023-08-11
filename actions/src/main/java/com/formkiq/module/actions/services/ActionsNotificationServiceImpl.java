@@ -28,10 +28,8 @@ import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.List;
 import java.util.Optional;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.document.DocumentEvent;
 
 /**
@@ -47,12 +45,13 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
   /**
    * constructor.
    * 
-   * @param documentActionsTopicArn {@link String}
-   * @param snsBuilder {@link SnsConnectionBuilder}
+   * @param eventService {@link EventService}
    */
-  public ActionsNotificationServiceImpl(final String documentActionsTopicArn,
-      final SnsConnectionBuilder snsBuilder) {
-    this.documentEventService = new EventServiceSns(snsBuilder, documentActionsTopicArn);
+  public ActionsNotificationServiceImpl(final EventService eventService) {
+    if (eventService == null) {
+      throw new IllegalArgumentException("'eventService' is required");
+    }
+    this.documentEventService = eventService;
   }
 
   @Override

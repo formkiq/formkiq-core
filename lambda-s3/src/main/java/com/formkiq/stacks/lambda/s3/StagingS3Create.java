@@ -72,7 +72,7 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
-import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
@@ -238,6 +238,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
     AwsServiceCache.register(S3ConnectionBuilder.class,
         new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
 
@@ -249,8 +251,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     this.s3 = this.awsservices.getExtension(S3Service.class);
     this.ssmConnection = ssmConnectionBuilder;
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.notificationService =
-        new ActionsNotificationServiceImpl(this.snsDocumentEvent, snsBuilder);
+    this.notificationService = this.awsservices.getExtension(ActionsNotificationService.class);
     this.folderIndexProcesor = this.awsservices.getExtension(FolderIndexProcessor.class);
 
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");

@@ -59,6 +59,8 @@ import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
@@ -133,8 +135,9 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
     AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
 
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsConnection));
     AwsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension(snsConnection));
+        new ActionsNotificationServiceExtension());
   }
 
   /**
