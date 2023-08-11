@@ -76,6 +76,8 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.actions.services.DynamicObjectToAction;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.client.FormKiqClient;
@@ -238,6 +240,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsBuilder));
     AwsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
     AwsServiceCache.register(S3ConnectionBuilder.class,
