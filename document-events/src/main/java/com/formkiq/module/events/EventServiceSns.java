@@ -87,8 +87,9 @@ public class EventServiceSns implements EventService {
       tags = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
     }
 
-    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " body: " + eventJson);
-    this.snsService.publish(this.topicArn, eventJson, tags);
+    PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
+    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
+        + response.messageId() + " body: " + eventJson);
 
     return eventJson;
   }
@@ -106,8 +107,8 @@ public class EventServiceSns implements EventService {
 
     LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " body: " + eventJson);
     PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
-    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " body: " + eventJson
-        + " messageId: " + response.messageId());
+    LambdaRuntime.getLogger().log("publishing to: " + this.topicArn + " messageId: "
+        + response.messageId() + " body: " + eventJson);
 
     return eventJson;
   }
