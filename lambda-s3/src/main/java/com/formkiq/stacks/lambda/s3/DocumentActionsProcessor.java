@@ -75,6 +75,7 @@ import com.formkiq.graalvm.annotations.ReflectableField;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
@@ -478,9 +479,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       String documentId = event.documentId();
 
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
+
+      Optional<Action> running =
+          actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
       Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
 
-      if (o.isPresent()) {
+      if (running.isPresent()) {
+
+        logger.log(String.format("ACTIONS already RUNNING for  SiteId %s Document %s", siteId,
+            documentId));
+
+      } else if (o.isPresent()) {
 
         Action action = o.get();
         ActionStatus status = ActionStatus.RUNNING;

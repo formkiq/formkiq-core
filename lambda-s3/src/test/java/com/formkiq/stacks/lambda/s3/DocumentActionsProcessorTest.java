@@ -961,4 +961,46 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(documentId + " joe " + content, body.get("text"));
     }
   }
+
+  /**
+   * Handle RUNNING action in progress.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @Test
+  public void testHandle08() throws IOException, URISyntaxException {
+    try (DynamoDbClient db = dbBuilder.build()) {
+      for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+        // given
+        String documentId = UUID.randomUUID().toString();
+
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+        item.setContentType("application/pdf");
+        documentService.saveDocument(siteId, item, null);
+
+        List<Action> actions = Arrays.asList(
+            new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK)
+                .parameters(Map.of("url", URL + "/callback")),
+            new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2")));
+        actionsService.saveActions(siteId, documentId, actions);
+
+        Map<String, Object> map =
+            loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+                documentId, "default", siteId != null ? siteId : "default");
+
+        // when
+        processor.handleRequest(map, this.context);
+
+        // then
+        actions = actionsService.getActions(siteId, documentId);
+        assertEquals(2, actions.size());
+        assertEquals(ActionStatus.RUNNING, actions.get(0).status());
+        assertEquals(ActionStatus.PENDING, actions.get(1).status());
+
+        HttpRequest lastRequest = callback.getLastRequest();
+        assertNull(lastRequest);
+      }
+    }
+  }
 }
