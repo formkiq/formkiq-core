@@ -66,4 +66,9 @@ public class VersionRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   public String getRequestUrl() {
     return "/version";
   }
+
+  @Override
+  public boolean isSiteIdRequired() {
+    return false;
+  }
 }

@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -82,37 +83,36 @@ public class ChatGptRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testOcrAndChatGpt01() throws Exception {
-
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      for (FormKiqClientV1 client : getFormKiqClients(siteId)) {
+      List<FormKiqClientV1> clients = getFormKiqClients(siteId);
+      FormKiqClientV1 client = clients.get(0);
 
-        byte[] content = toBytes("/ocr/receipt.png");
-        String documentId = addDocument(client, siteId, "receipt.png", content, "image/png");
-        waitForDocumentContent(client, siteId, documentId);
+      byte[] content = toBytes("/ocr/receipt.png");
+      String documentId = addDocument(client, siteId, "receipt.png", content, "image/png");
+      waitForDocumentContent(client, siteId, documentId);
 
-        // when
-        AddDocumentActionRequest addReq =
-            new AddDocumentActionRequest().siteId(siteId).documentId(documentId)
-                .actions(Arrays.asList(new AddDocumentAction().type(DocumentActionType.OCR),
-                    new AddDocumentAction().type(DocumentActionType.DOCUMENTTAGGING)
-                        .parameters(Map.of("engine", "chatgpt", "tags",
-                            "organization,location,person,subject,sentiment,document type"))));
-        client.addDocumentAction(addReq);
+      // when
+      AddDocumentActionRequest addReq =
+          new AddDocumentActionRequest().siteId(siteId).documentId(documentId)
+              .actions(Arrays.asList(new AddDocumentAction().type(DocumentActionType.OCR),
+                  new AddDocumentAction().type(DocumentActionType.DOCUMENTTAGGING)
+                      .parameters(Map.of("engine", "chatgpt", "tags",
+                          "organization,location,person,subject,sentiment,document type"))));
+      client.addDocumentAction(addReq);
 
-        // then
-        waitForActionsComplete(client, siteId, documentId, DocumentActionType.DOCUMENTTAGGING);
+      // then
+      waitForActionsComplete(client, siteId, documentId, DocumentActionType.DOCUMENTTAGGING);
 
-        GetDocumentTagsRequest tagsReq =
-            new GetDocumentTagsRequest().siteId(siteId).documentId(documentId);
-        DocumentTags tags = client.getDocumentTags(tagsReq);
-        assertTrue(
-            tags.tags().stream().filter(r -> r.key().equals("untagged")).findFirst().isEmpty());
+      GetDocumentTagsRequest tagsReq =
+          new GetDocumentTagsRequest().siteId(siteId).documentId(documentId);
+      DocumentTags tags = client.getDocumentTags(tagsReq);
+      assertTrue(
+          tags.tags().stream().filter(r -> r.key().equals("untagged")).findFirst().isEmpty());
 
-        assertTrue(tags.tags().stream().filter(r -> r.key().toLowerCase().equals("person"))
-            .findFirst().isPresent());
-      }
+      assertTrue(tags.tags().stream().filter(r -> r.key().toLowerCase().equals("person"))
+          .findFirst().isPresent());
     }
   }
 

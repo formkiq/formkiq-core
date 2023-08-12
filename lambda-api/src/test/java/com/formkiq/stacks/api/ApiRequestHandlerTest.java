@@ -300,4 +300,36 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     assertEquals("core", resp.get("type"));
     assertEquals("[ocr, typesense]", resp.get("modules").toString());
   }
+
+  /**
+   * /version request belong to multiple groups.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testVersion02() throws Exception {
+    // given
+    setEnvironment("MODULE_ocr", "true");
+    setEnvironment("MODULE_typesense", "true");
+    setEnvironment("MODULE_otherone", "false");
+
+    ApiGatewayRequestEvent event = toRequestEvent("/request-version.json");
+    setCognitoGroup(event, "finance", "other");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, String> m = fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    Map<String, Object> resp = fromJson(m.get("body"), Map.class);
+    assertEquals("1.1", resp.get("version"));
+    assertEquals("core", resp.get("type"));
+    assertEquals("[ocr, typesense]", resp.get("modules").toString());
+  }
 }

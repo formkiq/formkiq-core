@@ -386,6 +386,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 
+    hasAccess = isHandlerSiteIdRequired(authorization, handler, hasAccess);
+
     if (hasAccess.isEmpty()) {
       switch (method) {
         case "head":
@@ -456,6 +458,23 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   private boolean isEmpty(final ApiGatewayRequestEvent event) {
     return event != null && event.getHeaders() == null && event.getPath() == null;
+  }
+
+  /**
+   * Does {@link ApiGatewayRequestHandler} requires a SiteId parameter.
+   * 
+   * @param authorization {@link ApiAuthorization}
+   * @param handler {@link ApiGatewayRequestHandler}
+   * @param hasAccess {@link Boolean}
+   * @return {@link Optional}
+   */
+  private Optional<Boolean> isHandlerSiteIdRequired(final ApiAuthorization authorization,
+      final ApiGatewayRequestHandler handler, final Optional<Boolean> hasAccess) {
+    Optional<Boolean> result = hasAccess;
+    if (hasAccess.isEmpty() && authorization.siteIds().size() > 1 && !handler.isSiteIdRequired()) {
+      result = Optional.of(Boolean.TRUE);
+    }
+    return result;
   }
 
   private void log(final LambdaLogger logger, final ApiGatewayRequestEvent event,
