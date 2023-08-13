@@ -23,11 +23,14 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * 
  * Type of API Key Permissions.
  *
  */
+@Reflectable
 public enum ApiKeyPermission {
   /** Delete Permission. */
   DELETE,
