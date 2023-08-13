@@ -3,23 +3,27 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,6 +39,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
@@ -44,6 +52,7 @@ import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentTagsKeyRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentTagKeyRequest;
+import joptsimple.internal.Strings;
 
 /**
  * GET, OPTIONS, POST /documents/{documentId}/tags tests.
@@ -483,72 +492,80 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  // @Test
-  // @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  // public void testDocumentsTags07() throws Exception {
-  //
-  // String siteId = null;
-  // for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
-  // // given
-  // String content = "this is some data";
-  // List<AddDocumentTag> tags =
-  // Arrays.asList(new AddDocumentTag().key("category").value("person"),
-  // new AddDocumentTag().key("user").value("111"));
-  //
-  // // when
-  // AddDocumentResponse addDocument = client.addDocument(new AddDocumentRequest().siteId(siteId)
-  // .document(new AddDocument().content(content).tags(tags)));
-  //
-  // // then
-  // String documentId = addDocument.documentId();
-  //
-  // waitForDocumentContent(client, siteId, documentId);
-  // GetDocumentTagsKeyRequest getReq =
-  // new GetDocumentTagsKeyRequest().siteId(siteId).documentId(documentId).tagKey("category");
-  // assertEquals("person", client.getDocumentTag(getReq).value());
-  //
-  // // given
-  // UpdateDocumentTagsRequest updateTagReq =
-  // new UpdateDocumentTagsRequest().siteId(siteId).documentId(documentId)
-  // .tags(Arrays.asList(new AddDocumentTag().key("playerId").value("555"),
-  // new AddDocumentTag().key("category").values(Arrays.asList("c0", "c1"))));
-  //
-  // // when
-  // assertTrue(client.updateDocumentTags(updateTagReq));
-  //
-  // // then
-  // int i = 0;
-  // final int expected = 3;
-  // GetDocumentTagsRequest getTagsReq =
-  // new GetDocumentTagsRequest().siteId(siteId).documentId(documentId);
-  // DocumentTags taglist = client.getDocumentTags(getTagsReq);
-  // assertEquals(expected, taglist.tags().size());
-  // assertEquals("category", taglist.tags().get(i).key());
-  // assertEquals("c0,c1", Strings.join(taglist.tags().get(i++).values(), ","));
-  //
-  // assertEquals("playerId", taglist.tags().get(i).key());
-  // assertEquals("555", taglist.tags().get(i++).value());
-  // assertEquals("user", taglist.tags().get(i).key());
-  // assertEquals("111", taglist.tags().get(i++).value());
-  //
-  // // given
-  // SetDocumentTagsRequest setTagsReq =
-  // new SetDocumentTagsRequest().siteId(siteId).documentId(documentId).tags(tags);
-  //
-  // // when
-  // assertTrue(client.setDocumentTags(setTagsReq));
-  //
-  // // then
-  // i = 0;
-  // taglist = client.getDocumentTags(getTagsReq);
-  // assertEquals(2, taglist.tags().size());
-  // assertEquals("category", taglist.tags().get(i).key());
-  // assertEquals("person", taglist.tags().get(i++).value());
-  //
-  // assertEquals("user", taglist.tags().get(i).key());
-  // assertEquals("111", taglist.tags().get(i++).value());
-  // }
-  // }
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testDocumentsTags07() throws Exception {
+
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
+
+      // given
+      DocumentsApi documentsApi = new DocumentsApi(client);
+      DocumentTagsApi tagsApi = new DocumentTagsApi(client);
+
+      String content = "this is some data";
+      List<com.formkiq.client.model.AddDocumentTag> tags = Arrays.asList(
+          new com.formkiq.client.model.AddDocumentTag().key("category").value("person"),
+          new com.formkiq.client.model.AddDocumentTag().key("user").value("111"));
+
+      com.formkiq.client.model.AddDocumentRequest addReq =
+          new com.formkiq.client.model.AddDocumentRequest().content(content).tags(tags);
+      // when
+      com.formkiq.client.model.AddDocumentResponse addDocument =
+          documentsApi.addDocument(addReq, siteId, null);
+
+      // then
+      String documentId = addDocument.getDocumentId();
+
+      waitForDocumentContent(client, siteId, documentId);
+
+      assertEquals("person",
+          tagsApi.getDocumentTag(documentId, "category", siteId, null).getValue());
+
+      // given
+      com.formkiq.client.model.AddDocumentTagsRequest updateTagReq =
+          new com.formkiq.client.model.AddDocumentTagsRequest()
+              .addTagsItem(
+                  new com.formkiq.client.model.AddDocumentTag().key("playerId").value("555"))
+              .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key("category")
+                  .values(Arrays.asList("c0", "c1")));
+
+      // when
+      tagsApi.updateDocumentTags(documentId, updateTagReq, siteId);
+
+      // then
+      int i = 0;
+      final int expected = 3;
+
+      List<GetDocumentTagResponse> taglist =
+          tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
+      assertEquals(expected, taglist.size());
+      assertEquals("category", taglist.get(i).getKey());
+      assertEquals("c0,c1", Strings.join(taglist.get(i++).getValues(), ","));
+
+      assertEquals("playerId", taglist.get(i).getKey());
+      assertEquals("555", taglist.get(i++).getValue());
+      assertEquals("user", taglist.get(i).getKey());
+      assertEquals("111", taglist.get(i++).getValue());
+
+      // given
+      com.formkiq.client.model.AddDocumentTagsRequest setTagsReq =
+          new com.formkiq.client.model.AddDocumentTagsRequest().tags(tags);
+
+      // when
+      tagsApi.setDocumentTags(documentId, setTagsReq, siteId);
+
+      // then
+      i = 0;
+      taglist = tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
+      assertEquals(2, taglist.size());
+      assertEquals("category", taglist.get(i).getKey());
+      assertEquals("person", taglist.get(i++).getValue());
+
+      assertEquals("user", taglist.get(i).getKey());
+      assertEquals("111", taglist.get(i++).getValue());
+    }
+  }
 
   /**
    * Verify UserId.

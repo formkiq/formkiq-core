@@ -3366,7 +3366,6 @@
             GetDocumentTagResponse:
               required:
               - key
-              - value
               type: object
               properties:
                 insertedDate:
