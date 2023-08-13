@@ -7,6 +7,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.47.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.5.1'
   id 'de.undercouch.download' version '5.4.0'
+  id 'org.openapi.generator' version '6.6.0'
 }
 
 def moduleName = "formkiq-core"
@@ -154,4 +155,30 @@ task buildSamZip(type: Zip) {
    		include 'openapi-jwt.yaml'
    		include 'openapi-iam.yaml'
     } 
+}
+
+task validateOpenApiJwtSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
+    inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
+    recommend = true
+}
+
+task validateOpenApiIamSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
+    inputSpec = "$rootDir/docs/openapi/openapi-iam.yaml".toString()
+    recommend = true
+}
+
+task validateOpenApiKeySpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
+    inputSpec = "$rootDir/docs/openapi/openapi-key.yaml".toString()
+    recommend = true
+}
+
+task validateOpenApiSpecs(dependsOn: ['validateOpenApiJwtSpec', 'validateOpenApiIamSpec', 'validateOpenApiKeySpec'])
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set("$rootDir/docs/openapi/openapi-jwt.yaml")
+    outputDir.set("$buildDir/generated")
+    apiPackage.set("com.formkiq.springboot.api")
+    invokerPackage.set("com.formkiq.springboot.invoker")
+    modelPackage.set("com.formkiq.springboot.model")
 }
