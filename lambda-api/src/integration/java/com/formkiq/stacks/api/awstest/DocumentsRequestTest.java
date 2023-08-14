@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -53,6 +54,8 @@ import java.util.function.BiPredicate;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.stacks.client.FormKiqClient;
@@ -68,12 +71,14 @@ import com.formkiq.stacks.client.models.Document;
 import com.formkiq.stacks.client.models.DocumentMetadata;
 import com.formkiq.stacks.client.models.DocumentSearchMetadata;
 import com.formkiq.stacks.client.models.DocumentSearchQuery;
+import com.formkiq.stacks.client.models.DocumentTag;
 import com.formkiq.stacks.client.models.DocumentTags;
 import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.models.Documents;
 import com.formkiq.stacks.client.models.UpdateDocument;
 import com.formkiq.stacks.client.requests.AddDocumentRequest;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
+import com.formkiq.stacks.client.requests.GetDocumentContentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.GetDocumentsRequest;
@@ -87,6 +92,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
  * GET, OPTIONS, POST /documents. Tests.
  *
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class DocumentsRequestTest extends AbstractApiTest {
 
   /** 1 Second. */
@@ -106,7 +112,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   /** 200 OK. */
   private static final int STATUS_OK = 200;
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 60000;
+  private static final int TEST_TIMEOUT = 60;
 
   /**
    * After Class.
@@ -177,7 +183,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDelete01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       String documentId = UUID.randomUUID().toString();
       DeleteDocumentRequest request = new DeleteDocumentRequest().documentId(documentId);
@@ -199,7 +205,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       GetDocumentsRequest request = new GetDocumentsRequest().date(new Date());
       // when
@@ -245,7 +251,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
         responseSiteId.body());
   }
 
@@ -280,7 +286,8 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default)\"}", responseSiteId.body());
+    assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
+        responseSiteId.body());
   }
 
   /**
@@ -348,7 +355,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       String documentId = UUID.randomUUID().toString();
       OptionsDocumentRequest req = new OptionsDocumentRequest().documentId(documentId);
@@ -370,7 +377,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testOptions02() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       // when
       HttpResponse<String> response = client.optionsDocuments();
@@ -389,7 +396,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPost01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       AddDocument post =
           new AddDocument().contentType("text/plain").content("test data", StandardCharsets.UTF_8);
@@ -497,12 +504,12 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_FORBIDDEN, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
         responseNoSiteId.body());
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default_read)\"}",
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
         responseSiteId.body());
   }
 
@@ -531,11 +538,12 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().startsWith("{\"documentId\":\""));
+    assertTrue(responseNoSiteId.body().contains("\"documentId\":\""));
 
     assertEquals(STATUS_FORBIDDEN, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
-    assertEquals("{\"message\":\"fkq access denied (groups: default)\"}", responseSiteId.body());
+    assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
+        responseSiteId.body());
   }
 
   /**
@@ -563,7 +571,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().startsWith("{\"documentId\":\""));
+    assertTrue(responseNoSiteId.body().contains("\"documentId\":\""));
 
     assertEquals(STATUS_CREATED, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
@@ -602,7 +610,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
     // then
     assertEquals(STATUS_CREATED, responseNoSiteId.statusCode());
     assertRequestCorsHeaders(responseNoSiteId.headers());
-    assertTrue(responseNoSiteId.body().startsWith("{\"documentId\":\""));
+    assertTrue(responseNoSiteId.body().contains("\"documentId\":\""));
 
     assertEquals(STATUS_CREATED, responseSiteId.statusCode());
     assertRequestCorsHeaders(responseSiteId.headers());
@@ -654,7 +662,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
 
     for (boolean enablePublicEndpoint : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
-      for (FormKiqClientV1 client : getFormKiqClients(null)) {
+      for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
         // given
         AddDocument post = new AddDocument()
             .tags(Arrays.asList(new AddDocumentTag().key("formName").value("Job Application Form")))
@@ -735,7 +743,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPost08() throws Exception {
     // given
-    FormKiqClientV1 client = getFormKiqClients(null).get(0);
+    FormKiqClientV1 client = getFormKiqDefaultClients().get(0);
     String url = getRootHttpUrl() + "/documents";
 
     Map<String, List<String>> headers =
@@ -782,7 +790,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPost09() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       AddDocument post = new AddDocument().path("something.txt").contentType("text/plain")
           .content("test data", StandardCharsets.UTF_8)
@@ -811,7 +819,7 @@ public class DocumentsRequestTest extends AbstractApiTest {
       Thread.sleep(ONE_SECOND * 2);
 
       // given
-      String newpath = "newpath.txt";
+      String newpath = "newpath_" + UUID.randomUUID().toString() + ".txt";
       UpdateDocument updateDocument = new UpdateDocument().path(newpath)
           .tags(Arrays.asList(new AddDocumentTag().key("some").value("thing"),
               new AddDocumentTag().key("person").value("555")));
@@ -885,5 +893,76 @@ public class DocumentsRequestTest extends AbstractApiTest {
         assertEquals("category", md.value());
       }
     }
+  }
+
+  /**
+   * Save new File and update new tags with default site.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testPatch01DefaultClient() throws Exception {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
+      testPatch01(client, null);
+    }
+  }
+
+  /**
+   * Save new File and update new tags with default site.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testPatch01SiteIdClient() throws Exception {
+    for (FormKiqClientV1 client : getFormKiqSiteIdClients()) {
+      testPatch01(client, SITE_ID);
+    }
+  }
+
+  /**
+   * Save new File and update new tags with default site.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
+   * 
+   * @throws Exception Exception
+   */
+  private void testPatch01(final FormKiqClientV1 client, final String siteId)
+      throws IOException, InterruptedException, URISyntaxException {
+    // given
+    String content = "test data";
+    AddDocument post =
+        new AddDocument().contentType("text/plain").content(content, StandardCharsets.UTF_8);
+    AddDocumentRequest req = new AddDocumentRequest().siteId(siteId).document(post);
+
+    // when
+    HttpResponse<String> response = client.addDocumentAsHttpResponse(req);
+
+    // then
+    assertEquals(STATUS_CREATED, response.statusCode());
+    Map<String, Object> map = toMap(response);
+    String documentId = map.get("documentId").toString();
+    waitForDocumentContent(client, siteId, documentId);
+
+    // given
+    String tagKey = "mykey";
+    UpdateDocument updateDocument =
+        new UpdateDocument().tags(Arrays.asList(new AddDocumentTag().key(tagKey).value("myvalue")));
+    UpdateDocumentRequest request =
+        new UpdateDocumentRequest().siteId(siteId).documentId(documentId).document(updateDocument);
+
+    // when - patch document
+    response = client.updateDocumentAsHttpResponse(request);
+
+    // then
+    assertEquals(STATUS_OK, response.statusCode());
+    DocumentTag tag = waitForDocumentTag(client, siteId, documentId, tagKey);
+    assertNotNull(tag);
+
+    GetDocumentContentRequest contentReq =
+        new GetDocumentContentRequest().siteId(siteId).documentId(documentId);
+    assertEquals(content, client.getDocumentContent(contentReq).content());
   }
 }

@@ -33,6 +33,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -60,10 +61,10 @@ public class HttpServiceSigv4 implements HttpService {
 
   /** {@link HttpClient}. */
   private HttpClient client;
-  /** {@link Region}. */
-  private Region signingRegion;
   /** {@link AwsCredentials}. */
   private AwsCredentials signingCredentials;
+  /** {@link Region}. */
+  private Region signingRegion;
 
   /**
    * constructor.
@@ -79,6 +80,36 @@ public class HttpServiceSigv4 implements HttpService {
     if (region == null || awsCredentials == null) {
       throw new IllegalArgumentException();
     }
+  }
+
+  /**
+   * Build a {@link SdkHttpFullRequest.Builder}.
+   * 
+   * @param uri URI
+   * @param method {@link SdkHttpMethod}
+   * @param headers {@link HttpHeaders}
+   * @param payload {@link String}
+   * @return {@link SdkHttpFullRequest.Builder}
+   * @throws IOException IOException
+   */
+  private SdkHttpFullRequest.Builder buildRequest(final String uri, final SdkHttpMethod method,
+      final Optional<HttpHeaders> headers, final Optional<String> payload) throws IOException {
+
+    SdkHttpFullRequest.Builder requestBuilder =
+        SdkHttpFullRequest.builder().uri(toUri(uri)).method(method);
+
+    if (headers.isPresent()) {
+      for (Map.Entry<String, String> e : headers.get().getAll().entrySet()) {
+        requestBuilder = requestBuilder.appendHeader(e.getKey(), e.getValue());
+      }
+    }
+
+    if (payload.isPresent()) {
+      StringContentStreamProvider provider = new StringContentStreamProvider(payload.get());
+      requestBuilder = requestBuilder.contentStreamProvider(provider);
+    }
+
+    return requestBuilder;
   }
 
   @Override
@@ -136,71 +167,6 @@ public class HttpServiceSigv4 implements HttpService {
     }
   }
 
-  /**
-   * AWS Signature Version 4 signing.
-   * 
-   * @param request {@link SdkHttpFullRequest.Builder}
-   * @return {@link SdkHttpFullRequest}
-   */
-  private SdkHttpFullRequest sign(final SdkHttpFullRequest.Builder request) {
-
-    SdkHttpFullRequest req = request.build();
-
-    Aws4SignerParams params = Aws4SignerParams.builder().signingName("execute-api")
-        .signingRegion(this.signingRegion).awsCredentials(this.signingCredentials).build();
-
-    Aws4Signer signer = Aws4Signer.create();
-
-    req = signer.sign(req, params);
-
-    return req;
-  }
-
-  /**
-   * Build a {@link SdkHttpFullRequest.Builder}.
-   * 
-   * @param uri URI
-   * @param method {@link SdkHttpMethod}
-   * @param headers {@link HttpHeaders}
-   * @param payload {@link String}
-   * @return {@link SdkHttpFullRequest.Builder}
-   * @throws IOException IOException
-   */
-  private SdkHttpFullRequest.Builder buildRequest(final String uri, final SdkHttpMethod method,
-      final Optional<HttpHeaders> headers, final Optional<String> payload) throws IOException {
-
-    SdkHttpFullRequest.Builder requestBuilder =
-        SdkHttpFullRequest.builder().uri(toUri(uri)).method(method);
-
-    if (headers.isPresent()) {
-      for (Map.Entry<String, String> e : headers.get().getAll().entrySet()) {
-        requestBuilder = requestBuilder.appendHeader(e.getKey(), e.getValue());
-      }
-    }
-
-    if (payload.isPresent()) {
-      StringContentStreamProvider provider = new StringContentStreamProvider(payload.get());
-      requestBuilder = requestBuilder.contentStreamProvider(provider);
-    }
-
-    return requestBuilder;
-  }
-
-  /**
-   * Convert {@link String} to {@link URI}.
-   * 
-   * @param uri {@link String}
-   * @return {@link URI}
-   * @throws IOException IOException
-   */
-  private URI toUri(final String uri) throws IOException {
-    try {
-      return new URI(uri);
-    } catch (URISyntaxException e) {
-      throw new IOException(e);
-    }
-  }
-
   @Override
   public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers)
       throws IOException {
@@ -228,4 +194,44 @@ public class HttpServiceSigv4 implements HttpService {
     return execute(req);
   }
 
+  @Override
+  public HttpResponse<String> put(final String url, final Optional<HttpHeaders> headers,
+      final Path payload) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * AWS Signature Version 4 signing.
+   * 
+   * @param request {@link SdkHttpFullRequest.Builder}
+   * @return {@link SdkHttpFullRequest}
+   */
+  private SdkHttpFullRequest sign(final SdkHttpFullRequest.Builder request) {
+
+    SdkHttpFullRequest req = request.build();
+
+    Aws4SignerParams params = Aws4SignerParams.builder().signingName("execute-api")
+        .signingRegion(this.signingRegion).awsCredentials(this.signingCredentials).build();
+
+    Aws4Signer signer = Aws4Signer.create();
+
+    req = signer.sign(req, params);
+
+    return req;
+  }
+
+  /**
+   * Convert {@link String} to {@link URI}.
+   * 
+   * @param uri {@link String}
+   * @return {@link URI}
+   * @throws IOException IOException
+   */
+  private URI toUri(final String uri) throws IOException {
+    try {
+      return new URI(uri);
+    } catch (URISyntaxException e) {
+      throw new IOException(e);
+    }
+  }
 }

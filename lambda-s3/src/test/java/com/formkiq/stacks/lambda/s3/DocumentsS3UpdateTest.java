@@ -24,9 +24,9 @@
 package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.module.documentevents.DocumentEventType.CREATE;
-import static com.formkiq.module.documentevents.DocumentEventType.DELETE;
-import static com.formkiq.module.documentevents.DocumentEventType.UPDATE;
+import static com.formkiq.module.events.document.DocumentEventType.CREATE;
+import static com.formkiq.module.events.document.DocumentEventType.DELETE;
+import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFile;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsMap;
@@ -135,7 +135,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private static S3Service s3service;
   /** {@link DocumentService}. */
   private static DocumentServiceImpl service;
-  /** 500 Milliseconds. */
+  /** 500 SECONDS. */
   private static final long SLEEP = 500L;
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate1";
@@ -152,7 +152,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /** {@link SsmConnectionBuilder}. */
   private static SsmConnectionBuilder ssmBuilder;
   /** Test Timeout. */
-  private static final long TEST_TIMEOUT = 30000L;
+  private static final long TEST_TIMEOUT = 30;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
 
@@ -190,10 +190,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsService(sqsBuilder);
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
-
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);
     }
@@ -208,13 +204,20 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsService = new SnsService(snsBuilder);
 
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
-    snsService.subscribe(snsDocumentEvent, "sqs", sqsDocumentEventUrl);
+
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentEventUrl);
+    snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
     if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
       dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
       dbHelper.createCacheTable(CACHE_TABLE);
     }
+
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
+    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+
   }
 
   /** {@link LambdaContextRecorder}. */
@@ -454,7 +457,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -509,7 +512,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest02() throws Exception {
 
     Date date = createDate2DaysAgo();
@@ -574,7 +577,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest03() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -612,7 +615,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest04() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -649,7 +652,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest05() throws Exception {
 
     String documentId = UUID.randomUUID().toString();
@@ -718,7 +721,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest06() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
@@ -770,7 +773,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest07() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -805,7 +808,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest08() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -841,7 +844,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest09() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -877,7 +880,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest10() throws Exception {
     String ttl = "1612061365";
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -927,7 +930,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest11() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -964,11 +967,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest12() throws Exception {
 
     createMockServer(DocumentsS3Update.SERVER_ERROR);
-    this.modules = Arrays.asList("ocr", "fulltext");
+    this.modules = Arrays.asList("ocr", "opensearch");
     before();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1003,11 +1006,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest13() throws Exception {
 
     createMockServer(OK);
-    this.modules = Arrays.asList("ocr", "fulltext");
+    this.modules = Arrays.asList("ocr", "opensearch");
     before();
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1037,7 +1040,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.MILLISECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testHandleRequest14() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {

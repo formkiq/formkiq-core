@@ -454,6 +454,7 @@ Resources:
               - s3:DeleteObjectVersion
               - s3:ListBucket
               - s3:ListBucketVersions
+              - s3:PutObjectTagging
               Resource:
               - Fn::Join:
                 - ''

@@ -48,7 +48,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
   /** 1/2 second sleep. */
   private static final int SLEEP = 500;
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30000;
+  private static final int TEST_TIMEOUT = 30;
   /** {@link HttpClient}. */
   private HttpClient http = HttpClient.newHttpClient();
 

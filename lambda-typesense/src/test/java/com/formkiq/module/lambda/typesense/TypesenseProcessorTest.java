@@ -400,4 +400,36 @@ class TypesenseProcessorTest {
     assertEquals("200", String.valueOf(response.statusCode()));
     assertEquals(1, syncService.getSyncs(siteId, documentId, null, MAX).getResults().size());
   }
+
+  /**
+   * Attempt to insert subdocument.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest09() throws Exception {
+    // given
+    String siteId = null;
+    String documentId = "3dbc3319-6ef4-402a-a46c-a87a7ce05a73";
+
+    Map<String, Object> map = loadRequest("/insert_subdocument01.json", null, null);
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    List<String> documents = service.searchFulltext(siteId, documentId, MAX);
+    assertEquals(1, documents.size());
+    assertEquals(documentId, documents.get(0));
+
+    PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
+    assertEquals(1, syncs.getResults().size());
+    assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
+    assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());
+    assertEquals(DocumentSyncStatus.COMPLETE, syncs.getResults().get(0).getStatus());
+    assertEquals(DocumentSyncType.METADATA, syncs.getResults().get(0).getType());
+    assertEquals("System", syncs.getResults().get(0).getUserId());
+    assertEquals("added Document Metadata", syncs.getResults().get(0).getMessage());
+    assertNotNull(syncs.getResults().get(0).getSyncDate());
+  }
 }

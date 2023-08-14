@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,6 +37,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.AddDocumentTag;
 import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
@@ -45,15 +52,17 @@ import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentTagsKeyRequest;
 import com.formkiq.stacks.client.requests.OptionsDocumentTagsRequest;
 import com.formkiq.stacks.client.requests.UpdateDocumentTagKeyRequest;
+import joptsimple.internal.Strings;
 
 /**
  * GET, OPTIONS, POST /documents/{documentId}/tags tests.
  *
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30000;
+  private static final int TEST_TIMEOUT = 30;
 
   /**
    * Delete Document Tag.
@@ -91,7 +100,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags01() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
       AddDocumentTagRequest request =
@@ -144,7 +153,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags02() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -198,7 +207,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags03() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -276,7 +285,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags04() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -355,7 +364,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags05() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -417,7 +426,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsTags06() throws Exception {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (FormKiqClientV1 client : getFormKiqDefaultClients()) {
 
       // given
       String documentId = addDocumentWithoutFile(client, null, null);
@@ -475,6 +484,86 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractApiTest {
       } finally {
         deleteDocument(client, documentId);
       }
+    }
+  }
+
+  /**
+   * Test PATCH / PUT /documents/{documentId}/tags.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testDocumentsTags07() throws Exception {
+
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
+
+      // given
+      DocumentsApi documentsApi = new DocumentsApi(client);
+      DocumentTagsApi tagsApi = new DocumentTagsApi(client);
+
+      String content = "this is some data";
+      List<com.formkiq.client.model.AddDocumentTag> tags = Arrays.asList(
+          new com.formkiq.client.model.AddDocumentTag().key("category").value("person"),
+          new com.formkiq.client.model.AddDocumentTag().key("user").value("111"));
+
+      com.formkiq.client.model.AddDocumentRequest addReq =
+          new com.formkiq.client.model.AddDocumentRequest().content(content).tags(tags);
+      // when
+      com.formkiq.client.model.AddDocumentResponse addDocument =
+          documentsApi.addDocument(addReq, siteId, null);
+
+      // then
+      String documentId = addDocument.getDocumentId();
+
+      waitForDocumentContent(client, siteId, documentId);
+
+      assertEquals("person",
+          tagsApi.getDocumentTag(documentId, "category", siteId, null).getValue());
+
+      // given
+      com.formkiq.client.model.AddDocumentTagsRequest updateTagReq =
+          new com.formkiq.client.model.AddDocumentTagsRequest()
+              .addTagsItem(
+                  new com.formkiq.client.model.AddDocumentTag().key("playerId").value("555"))
+              .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key("category")
+                  .values(Arrays.asList("c0", "c1")));
+
+      // when
+      tagsApi.updateDocumentTags(documentId, updateTagReq, siteId);
+
+      // then
+      int i = 0;
+      final int expected = 3;
+
+      List<GetDocumentTagResponse> taglist =
+          tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
+      assertEquals(expected, taglist.size());
+      assertEquals("category", taglist.get(i).getKey());
+      assertEquals("c0,c1", Strings.join(taglist.get(i++).getValues(), ","));
+
+      assertEquals("playerId", taglist.get(i).getKey());
+      assertEquals("555", taglist.get(i++).getValue());
+      assertEquals("user", taglist.get(i).getKey());
+      assertEquals("111", taglist.get(i++).getValue());
+
+      // given
+      com.formkiq.client.model.AddDocumentTagsRequest setTagsReq =
+          new com.formkiq.client.model.AddDocumentTagsRequest().tags(tags);
+
+      // when
+      tagsApi.setDocumentTags(documentId, setTagsReq, siteId);
+
+      // then
+      i = 0;
+      taglist = tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
+      assertEquals(2, taglist.size());
+      assertEquals("category", taglist.get(i).getKey());
+      assertEquals("person", taglist.get(i++).getValue());
+
+      assertEquals("user", taglist.get(i).getKey());
+      assertEquals("111", taglist.get(i++).getValue());
     }
   }
 

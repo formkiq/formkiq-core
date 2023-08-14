@@ -4,7 +4,11 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.testutils">
-	
+		
+	<allow pkg="java.io" />
+	<allow pkg="java.nio" />
+	<allow pkg="java.util" />
+
 	<subpackage name="aws">
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.google.gson" />
@@ -19,7 +23,19 @@
 		<allow pkg="com.formkiq.testutils.aws" />
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
+		<allow pkg="java.nio.charset" />
+		<allow pkg="java.time" />
 		<allow pkg="java.util" />
+		
+		<allow pkg="com.formkiq.client.api" />
+		<allow pkg="com.formkiq.client.invoker" />
+		<allow pkg="com.formkiq.client.model" />
+
+		<allow pkg="org.mockserver.mock.action" />
+		<allow pkg="org.mockserver.model" />
+		<allow pkg="org.mockserver.integration" />
+		<allow pkg="io.jsonwebtoken" />
+
 		<allow pkg="org.junit.jupiter.api.extension" />
 		<allow pkg="org.testcontainers.containers" />
 		<allow pkg="org.testcontainers.utility" />
@@ -31,6 +47,7 @@
 		<allow pkg="software.amazon.awssdk.services.s3" />
 		<allow pkg="software.amazon.awssdk.services.ssm" />
 		<allow pkg="software.amazon.awssdk.utils" />
+		<allow pkg="software.amazon.awssdk.services.sqs.model" />
 
 	</subpackage>
 	

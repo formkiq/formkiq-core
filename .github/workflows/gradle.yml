@@ -47,6 +47,13 @@ jobs:
       uses: gradle/gradle-build-action@v2
     - name: Execute Gradle build
       run: ./gradlew build --info
+    - name: Upload test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-reports
+        path: "**/build/reports/*"
+        retention-days: 5
     - name: Set AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:

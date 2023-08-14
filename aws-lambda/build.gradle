@@ -2,8 +2,8 @@
 description = "AWS Lambda"
 
 dependencies {
-    api group: 'software.amazon.awssdk', name: 'lambda', version: '2.20.33'
-    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.33'
+    api group: 'software.amazon.awssdk', name: 'lambda', version: '2.20.121'
+    implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.121'
     
     configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

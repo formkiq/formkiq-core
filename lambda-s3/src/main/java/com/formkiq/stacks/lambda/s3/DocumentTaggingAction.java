@@ -115,15 +115,16 @@ public class DocumentTaggingAction implements DocumentAction {
     return o.isPresent() ? o.get() : s;
   }
 
-  private String createChatGptPrompt(final String siteId, final String documentId,
-      final Action action) throws IOException {
+  private String createChatGptPrompt(final LambdaLogger logger, final String siteId,
+      final String documentId, final Action action) throws IOException {
 
     String tags = getTags(action);
 
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     DocumentContentFunction docContentFucn = new DocumentContentFunction(this.serviceCache);
-    List<String> contentUrls = docContentFucn.getContentUrls(siteId, item);
+    List<String> contentUrls =
+        docContentFucn.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
 
     if (contentUrls.isEmpty()) {
       throw new IOException("'contentUrls' is empty");
@@ -353,7 +354,7 @@ public class DocumentTaggingAction implements DocumentAction {
     payload.put("top_p", CHAT_GPT_TOP_P);
     payload.put("frequency_penalty", CHAT_GPT_FREQ_PENALTY);
     payload.put("presence_penalty", CHAT_GPT_PRESENCE_PENALTY);
-    payload.put("prompt", createChatGptPrompt(siteId, documentId, action));
+    payload.put("prompt", createChatGptPrompt(logger, siteId, documentId, action));
 
     String url = this.serviceCache.environment("CHATGPT_API_COMPLETIONS_URL");
     HttpResponse<String> response = this.http.post(url, headers, this.gson.toJson(payload));

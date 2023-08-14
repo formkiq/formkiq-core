@@ -3,10 +3,11 @@ plugins {
   id 'java-library'
   id 'checkstyle'
   id 'com.github.spotbugs'  version '5.0.14'
-  id 'com.diffplug.spotless' version '6.17.0'
-  id 'com.github.ben-manes.versions' version '0.46.0'
-  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.5.0'
+  id 'com.diffplug.spotless' version '6.19.0'
+  id 'com.github.ben-manes.versions' version '0.47.0'
+  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.5.1'
   id 'de.undercouch.download' version '5.4.0'
+  id 'org.openapi.generator' version '6.6.0'
 }
 
 def moduleName = "formkiq-core"
@@ -24,8 +25,8 @@ def getCmdParam() {
 repositories { mavenCentral() }
 
 allprojects {
-  version = '1.11.1'
-  ext.awsCognitoVersion = '1.5.0'
+  version = '1.12.0'
+  ext.awsCognitoVersion = '1.5.1'
   group = 'com.formkiq.stacks'
   
 	apply plugin: 'com.diffplug.spotless'
@@ -95,21 +96,13 @@ subprojects {
   } 
   
   checkstyle {
-    toolVersion '8.29'
+    toolVersion '8.45.1'
     configFile file("config/checkstyle/checkstyle.xml")
     configProperties = [project_loc: "${projectDir}"]
+    maxWarnings = 0
+    maxErrors = 0
   }
 
-  tasks.withType(Checkstyle).each { checkstyleTask ->
-    checkstyleTask.doLast {
-        reports.all { report ->
-            def outputFile = report.destination
-            if (outputFile.exists() && outputFile.text.contains("<error ")) {
-                throw new GradleException("There were checkstyle warnings! For more info check $outputFile")
-            }
-        }
-    }
-  }
 }
 
 description = "FormKiQ Core"
@@ -162,4 +155,30 @@ task buildSamZip(type: Zip) {
    		include 'openapi-jwt.yaml'
    		include 'openapi-iam.yaml'
     } 
+}
+
+task validateOpenApiJwtSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
+    inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
+    recommend = true
+}
+
+task validateOpenApiIamSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
+    inputSpec = "$rootDir/docs/openapi/openapi-iam.yaml".toString()
+    recommend = true
+}
+
+task validateOpenApiKeySpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
+    inputSpec = "$rootDir/docs/openapi/openapi-key.yaml".toString()
+    recommend = true
+}
+
+task validateOpenApiSpecs(dependsOn: ['validateOpenApiJwtSpec', 'validateOpenApiIamSpec', 'validateOpenApiKeySpec'])
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set("$rootDir/docs/openapi/openapi-jwt.yaml")
+    outputDir.set("$buildDir/generated")
+    apiPackage.set("com.formkiq.springboot.api")
+    invokerPackage.set("com.formkiq.springboot.invoker")
+    modelPackage.set("com.formkiq.springboot.model")
 }

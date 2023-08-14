@@ -23,7 +23,6 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -41,8 +40,9 @@ public interface DynamoDbService {
    * 
    * @param pk {@link AttributeValue}
    * @param sk {@link AttributeValue}
+   * @return boolean
    */
-  void deleteItem(AttributeValue pk, AttributeValue sk);
+  boolean deleteItem(AttributeValue pk, AttributeValue sk);
 
   /**
    * Whether Database Record Exists.
@@ -63,19 +63,36 @@ public interface DynamoDbService {
   Map<String, AttributeValue> get(AttributeValue pk, AttributeValue sk);
 
   /**
+   * Gets DynamoDB Record.
+   * 
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> get(QueryConfig config, AttributeValue pk, AttributeValue sk);
+
+  /**
    * Batch Get a number of Keys.
    * 
-   * @param keys {@link Collection}
+   * @param keys {@link List}
    * @return {@link List}
    */
-  List<Map<String, AttributeValue>> getBatch(Collection<Map<String, AttributeValue>> keys);
+  List<Map<String, AttributeValue>> getBatch(List<Map<String, AttributeValue>> keys);
 
   /**
    * Put DynamoDb Record.
    * 
-   * @param attr {@link Map}
+   * @param attr {@link Map} {@link AttributeValue}
    */
   void putItem(Map<String, AttributeValue> attr);
+
+  /**
+   * Put DynamoDb Records.
+   * 
+   * @param attrs {@link List} {@link Map} {@link AttributeValue}
+   */
+  void putItems(List<Map<String, AttributeValue>> attrs);
 
   /**
    * Query DynamoDB Records.
@@ -98,6 +115,18 @@ public interface DynamoDbService {
    * @return {@link QueryResponse}
    */
   QueryResponse queryBeginsWith(QueryConfig config, AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Query DynamoDB Index for Records.
+   * 
+   * @param indexName {@link String}
+   * @param pk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse queryIndex(String indexName, AttributeValue pk,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**

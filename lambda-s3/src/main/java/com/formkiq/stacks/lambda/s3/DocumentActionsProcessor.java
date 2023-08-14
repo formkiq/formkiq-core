@@ -25,7 +25,7 @@ package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.module.documentevents.DocumentEventType.ACTIONS;
+import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
@@ -60,7 +60,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
@@ -73,16 +72,18 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.formkiq.graalvm.annotations.ReflectableField;
-import com.formkiq.graalvm.annotations.ReflectableImport;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
-import com.formkiq.module.actions.services.ActionsNotificationServiceImpl;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.actions.services.NextActionPredicate;
-import com.formkiq.module.documentevents.DocumentEvent;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSnsExtension;
+import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.typesense.TypeSenseService;
@@ -101,9 +102,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -113,8 +112,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
-@ReflectableImport(classes = {DocumentEvent.class, DocumentVersionServiceDynamoDb.class,
-    DocumentVersionServiceNoVersioning.class})
 @ReflectableClass(className = UpdateFulltextTag.class, allPublicConstructors = true,
     fields = {@ReflectableField(name = "key"), @ReflectableField(name = "value"),
         @ReflectableField(name = "values")})
@@ -191,6 +188,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     AwsServiceCache.register(FormKiqClientV1.class,
         new FormKiQClientV1Extension(awsRegion, awsCredentials));
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(sns));
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
 
     this.serviceCache =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
@@ -199,8 +199,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     this.documentService = this.serviceCache.getExtension(DocumentService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
-    String snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
-    this.notificationService = new ActionsNotificationServiceImpl(snsDocumentEvent, sns);
+    this.notificationService = this.serviceCache.getExtension(ActionsNotificationService.class);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
     final int cacheTime = 5;
@@ -447,34 +446,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      ActionStatus status = ActionStatus.COMPLETE;
-      DocumentItem item = this.documentService.findDocument(siteId, documentId);
-      debug(logger, siteId, item);
-
-      logger.log("contenttype: " + item.getContentType());
-      logger.log("MIMETYPE: " + MimeType.isPlainText(item.getContentType()));
-      logger.log("DOCUMENTS_S3_BUCKET: " + this.serviceCache.environment("DOCUMENTS_S3_BUCKET"));
-      DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
-      List<String> contentUrls = documentContentFunc.getContentUrls(siteId, item);
-
-      boolean moduleFulltext = this.serviceCache.hasModule("fulltext");
-
-      if (moduleFulltext) {
-        updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
-      } else if (this.typesense != null) {
-        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
-      } else {
-        status = ActionStatus.FAILED;
-      }
-
-      List<Action> updatedActions =
-          this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
-
-      if (ActionStatus.COMPLETE.equals(status)) {
-        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
-      }
-
-      action.status(status);
+      processFulltext(logger, siteId, documentId, action);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
@@ -507,9 +479,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       String documentId = event.documentId();
 
       List<Action> actions = this.actionsService.getActions(siteId, documentId);
+
+      Optional<Action> running =
+          actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
       Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
 
-      if (o.isPresent()) {
+      if (running.isPresent()) {
+
+        logger.log(String.format("ACTIONS already RUNNING for  SiteId %s Document %s", siteId,
+            documentId));
+
+      } else if (o.isPresent()) {
 
         Action action = o.get();
         ActionStatus status = ActionStatus.RUNNING;
@@ -538,6 +518,37 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     } else {
       logger.log(String.format("Skipping event %s", event.type()));
     }
+  }
+
+  private void processFulltext(final LambdaLogger logger, final String siteId,
+      final String documentId, final Action action) throws IOException, InterruptedException {
+    ActionStatus status = ActionStatus.COMPLETE;
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    debug(logger, siteId, item);
+
+    DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
+
+    List<String> contentUrls =
+        documentContentFunc.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
+
+    boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
+
+    if (moduleFulltext) {
+      updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
+    } else if (this.typesense != null) {
+      updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+    } else {
+      status = ActionStatus.FAILED;
+    }
+
+    List<Action> updatedActions =
+        this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
+
+    if (ActionStatus.COMPLETE.equals(status)) {
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+    }
+
+    action.status(status);
   }
 
   /**

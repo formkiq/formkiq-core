@@ -51,7 +51,7 @@ import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
 public class DocumentsSearchRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * Test Raw /search.
@@ -314,12 +314,12 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT * 2)
   public void testDocumentsSearch08() throws Exception {
     // given
     String siteId = null;
-    String path = "some/thing/else/My Documents.pdf";
-    String text = "My Documents";
+    String path = "some/thing/else/intelligent Documents.pdf";
+    String text = "intelligent Documents";
     final int limit = 100;
     for (FormKiqClientV1 client : getFormKiqClients(null)) {
 
@@ -334,13 +334,15 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
       while (o.isEmpty()) {
         response = client.search(req);
         o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+
         TimeUnit.SECONDS.sleep(1);
       }
 
       // then
       assertNotNull(response);
       assertFalse(response.documents().isEmpty());
-      assertTrue(response.documents().get(0).path().startsWith("some/thing/else/My Documents"));
+      assertTrue(
+          response.documents().get(0).path().contains("some/thing/else/intelligent Documents"));
 
       // given
       DeleteDocumentRequest delReq =

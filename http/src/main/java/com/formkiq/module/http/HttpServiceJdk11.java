@@ -32,6 +32,7 @@ import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
@@ -120,6 +121,21 @@ public class HttpServiceJdk11 implements HttpService {
     BodyPublisher body =
         payload != null ? BodyPublishers.ofString(payload) : HttpRequest.BodyPublishers.noBody();
     HttpRequest request = build(url, headers).POST(body).build();
+    try {
+      return this.client.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+
+  @Override
+  public HttpResponse<String> put(final String url, final Optional<HttpHeaders> headers,
+      final Path payload) throws IOException {
+
+    HttpRequest request =
+        build(url, headers).PUT(HttpRequest.BodyPublishers.ofFile(payload)).build();
+
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {

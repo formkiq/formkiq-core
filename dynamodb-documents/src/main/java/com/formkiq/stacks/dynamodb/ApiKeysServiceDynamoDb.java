@@ -23,22 +23,22 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
@@ -48,13 +48,6 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  *
  */
 public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
-
-  /** Api Key Length. */
-  private static final int API_KEY_LENGTH = 51;
-  /** API Query Limit. */
-  private static final int LIMIT = 100;
-  /** Mask Value, must be even number. */
-  private static final int MASK = 8;
 
   /**
    * Generate Random String.
@@ -77,9 +70,6 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   /** {@link DynamoDbService}. */
   private DynamoDbService db;
 
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
   /**
    * constructor.
    *
@@ -96,72 +86,84 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   }
 
   @Override
-  public String createApiKey(final String siteId, final String name, final String userId) {
+  public String createApiKey(final String siteId, final String name,
+      final Collection<ApiKeyPermission> permissions, final String userId) {
 
-    String site = siteId != null ? siteId : DEFAULT_SITE_ID;
-    String apiKey = generateRandomString(API_KEY_LENGTH);
-    Map<String, AttributeValue> keys = getKeys(apiKey);
-    keys.put("apiKey", AttributeValue.fromS(apiKey));
-    keys.put("name", AttributeValue.fromS(name));
-    keys.put("siteIds", AttributeValue.fromL(Arrays.asList(AttributeValue.fromS(site))));
-    keys.put("insertedDate", AttributeValue.fromS(this.df.format(new Date())));
-    keys.put("userId", AttributeValue.fromS(userId));
-    this.db.putItem(keys);
+    String apiKey = generateRandomString(ApiKey.API_KEY_LENGTH);
+
+    ApiKey key = new ApiKey().apiKey(apiKey).name(name).insertedDate(new Date()).userId(userId)
+        .permissions(permissions).siteId(siteId);
+
+    this.db.putItem(key.getAttributes(siteId));
     return apiKey;
   }
 
   @Override
-  public void deleteApiKey(final String apiKey) {
+  public boolean deleteApiKey(final String siteId, final String apiKey) {
 
-    Map<String, AttributeValue> keys = getKeys(apiKey);
+    boolean deleted = false;
+    ApiKey key = new ApiKey().apiKey(apiKey);
 
-    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+    QueryConfig config = new QueryConfig().indexName(GSI2);
 
-    String apiKeyStart = apiKey.substring(0, MASK);
-    String apiKeyEnd = apiKey.substring(apiKey.length() - MASK / 2);
+    QueryResponse response =
+        this.db.queryBeginsWith(config, fromS(key.pkGsi2(siteId)), fromS(key.skGsi2()), null, 2);
 
-    QueryResponse response = this.db.queryBeginsWith(config, keys.get(PK),
-        AttributeValue.fromS(PREFIX_API_KEY + apiKeyStart), null, LIMIT);
+    if (!response.items().isEmpty()) {
+      Map<String, AttributeValue> map = response.items().get(0);
+      deleted = this.db.deleteItem(map.get(PK), map.get(SK));
+    }
 
-    response.items().forEach(i -> {
-      if (i.get(SK).s().endsWith(apiKeyEnd)) {
-        this.db.deleteItem(i.get(PK), i.get(SK));
+    return deleted;
+  }
+
+  @Override
+  public ApiKey get(final String apiKey, final boolean masked) {
+
+    String k = apiKey != null ? apiKey : "";
+    ApiKey key = new ApiKey().apiKey(k);
+
+    Map<String, AttributeValue> map = this.db.get(fromS(key.pk(null)), fromS(key.sk()));
+
+    if (!map.isEmpty()) {
+      key = new ApiKey().getFromAttributes(null, map);
+
+      if (masked) {
+        key.apiKey(mask(key.apiKey()));
       }
-    });
 
+    } else {
+      key = null;
+    }
+
+    return key;
   }
 
   @Override
-  public DynamicObject get(final String apiKey) {
-    Map<String, AttributeValue> keys = getKeys(apiKey);
-    Map<String, AttributeValue> map = this.db.get(keys.get(PK), keys.get(SK));
-    return new AttributeValueToDynamicObject().apply(map);
-  }
+  public PaginationResults<ApiKey> list(final String siteId, final PaginationMapToken token,
+      final int limit) {
 
-  private Map<String, AttributeValue> getKeys(final String apiKey) {
-    return keysGeneric(null, PREFIX_API_KEYS, PREFIX_API_KEY + mask(apiKey));
-  }
+    ApiKey apiKey = new ApiKey().siteId(siteId);
+    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
 
-  @Override
-  public List<DynamicObject> list() {
-    Map<String, AttributeValue> keys = getKeys("");
-    QueryResponse response = this.db.query(keys.get(PK), null, LIMIT);
+    AttributeValue pk = fromS(apiKey.pkGsi1(siteId));
+    AttributeValue sk = fromS("apikey" + TAG_DELIMINATOR);
 
-    List<DynamicObject> list =
-        response.items().stream().map(new AttributeValueToDynamicObject()).map(o -> {
-          String apiKey = mask(o.getString("apiKey"));
-          o.put("apiKey", apiKey);
-          o.remove(PK);
-          o.remove(SK);
-          return o;
-        }).collect(Collectors.toList());
+    Map<String, AttributeValue> startKey = new PaginationToAttributeValue().apply(token);
+    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startKey, limit);
 
-    return list;
+    List<Map<String, AttributeValue>> attrs = response.items().stream()
+        .map(m -> Map.of(PK, m.get(PK), SK, m.get(SK))).collect(Collectors.toList());
+
+    List<ApiKey> apiKeys =
+        this.db.getBatch(attrs).stream().map(a -> new ApiKey().getFromAttributes(siteId, a))
+            .map(a -> a.apiKey(mask(a.apiKey()))).collect(Collectors.toList());
+
+    return new PaginationResults<ApiKey>(apiKeys, new QueryResponseToPagination().apply(response));
   }
 
   @Override
   public String mask(final String apiKey) {
-    return apiKey != null && apiKey.length() == API_KEY_LENGTH ? apiKey.subSequence(0, MASK)
-        + "****************" + apiKey.substring(apiKey.length() - MASK / 2) : apiKey;
+    return new ApiKey().apiKey(apiKey).mask();
   }
 }

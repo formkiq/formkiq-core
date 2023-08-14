@@ -23,12 +23,33 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.security.SecureRandom;
+import java.util.UUID;
+
 /**
  * 
  * {@link String} Helper.
  *
  */
 public class Strings {
+  /**
+   * Generate Random String.
+   * 
+   * @param len int
+   * @return {@link String}
+   */
+  public static String generateRandomString(final int len) {
+    final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+    SecureRandom random = new SecureRandom();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < len; i++) {
+      int randomIndex = random.nextInt(chars.length());
+      sb.append(chars.charAt(randomIndex));
+    }
+
+    return sb.toString();
+  }
+
   /**
    * Get Filename from Path.
    * 
@@ -64,13 +85,28 @@ public class Strings {
   }
 
   /**
-   * Remove single/double quotes from {@link String}.
+   * Is {@link String} a {@link UUID}.
+   *
+   * @param s {@link String}
+   * @return boolean
+   */
+  public static boolean isUuid(final String s) {
+    try {
+      UUID.fromString(s);
+      return true;
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Remove '/' from start/end of {@link String}.
    * 
    * @param s {@link String}
    * @return {@link String}
    */
-  public static String removeQuotes(final String s) {
-    return s.replaceAll("^['\"]|['\"]$", "");
+  public static String removeBackSlashes(final String s) {
+    return s.replaceAll("^/|/$", "");
   }
 
   /**
@@ -81,5 +117,15 @@ public class Strings {
    */
   public static String removeEndingPunctuation(final String s) {
     return s.replaceAll("[!\\.,?]$", "");
+  }
+
+  /**
+   * Remove single/double quotes from {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String removeQuotes(final String s) {
+    return s.replaceAll("^['\"]|['\"]$", "");
   }
 }

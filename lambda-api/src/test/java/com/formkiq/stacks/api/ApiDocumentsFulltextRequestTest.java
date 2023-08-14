@@ -23,101 +23,232 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import com.formkiq.client.api.AdvancedDocumentSearchApi;
+import com.formkiq.client.api.CustomIndexApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.invoker.Configuration;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.DeleteFulltextResponse;
+import com.formkiq.client.model.GetDocumentFulltextResponse;
+import com.formkiq.client.model.SetDocumentFulltextRequest;
+import com.formkiq.client.model.SetDocumentFulltextResponse;
+import com.formkiq.client.model.UpdateDocumentFulltextRequest;
+import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.FormKiqApiExtension;
+import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TypeSenseExtension;
 
 /** Unit Tests for request /documents/{documentId}/fulltext. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class ApiDocumentsFulltextRequestTest extends AbstractRequestHandler {
+@ExtendWith(TypeSenseExtension.class)
+public class ApiDocumentsFulltextRequestTest {
+
+  /** FormKiQ Server. */
+  @RegisterExtension
+  static FormKiqApiExtension server =
+      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
+  /** {@link ApiClient}. */
+  private ApiClient client =
+      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
+  /** {@link CustomIndexApi}. */
+  private AdvancedDocumentSearchApi searchApi = new AdvancedDocumentSearchApi(this.client);
 
   /**
-   * GET /documents/{documentId}/fulltext request.
+   * Set BearerToken.
+   * 
+   * @param siteId {@link String}
+   */
+  private void setBearerToken(final String siteId) {
+    String jwt = JwtTokenEncoder.encodeCognito(new String[] {siteId != null ? siteId : "default"},
+        "joesmith");
+    this.client.addDefaultHeader("Authorization", jwt);
+  }
+
+  /**
+   * GET /documents/{documentId}/fulltext request. Document NOT found.
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentFulltext01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-put-documents-fulltext.json");
-      event.setHttpMethod("get");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", "1");
+      setBearerToken(siteId);
+      String documentId = UUID.randomUUID().toString();
 
       // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      try {
+        this.searchApi.getDocumentFulltext(documentId, siteId, null);
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
     }
   }
 
   /**
-   * PUT /documents/{documentId}/fulltext request.
+   * GET /documents/{documentId}/fulltext and PUT /documents/{documentId}/fulltext request.
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocumentFulltext02() throws Exception {
+    String content = "some content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
+
+      SetDocumentFulltextRequest req =
+          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
+
+      // when
+      SetDocumentFulltextResponse putResponse =
+          this.searchApi.setDocumentFulltext(documentId, siteId, req);
+
+      // then
+      assertEquals("Add document to Typesense", putResponse.getMessage());
+
+      GetDocumentFulltextResponse response =
+          this.searchApi.getDocumentFulltext(documentId, siteId, null);
+      assertEquals("text/plain", response.getContentType());
+      assertEquals(content, response.getContent());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/fulltext with tags request.
+   *
+   * @throws Exception an error has occurred
+   */
   @Test
   public void testHandlePutDocumentFulltext01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    String content = "some content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-put-documents-fulltext.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", "1");
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
 
-      // when
-      String response = handleRequest(event);
+      SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().content(content)
+          .contentType("text/plain").addTagsItem(new AddDocumentTag().key("category").value("123"));
 
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      try {
+        // when
+        this.searchApi.setDocumentFulltext(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"'tags' are not supported with Typesense\"}",
+            e.getResponseBody());
+      }
     }
   }
 
   /**
-   * DELETE /documents/{documentId}/fulltext request.
+   * PUT /documents/{documentId}/fulltext with 'contentUrls' request.
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
-  public void testHandleDeleteDocumentFulltext01() throws Exception {
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+  public void testHandlePutDocumentFulltext02() throws Exception {
+    String content = "some content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
       // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-fulltext.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", "1");
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
 
-      // when
-      String response = handleRequest(event);
+      SetDocumentFulltextRequest req = new SetDocumentFulltextRequest().content(content)
+          .contentType("text/plain").addContentUrlsItem("http://localhost");
 
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("402.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      try {
+        // when
+        this.searchApi.setDocumentFulltext(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"'contentUrls' are not supported by Typesense\"}",
+            e.getResponseBody());
+      }
     }
   }
+
+  /**
+   * DELETE /documents/{documentId}/fulltext.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleDeleteDocumentFulltext01() throws Exception {
+    String content = "some content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
+
+      SetDocumentFulltextRequest req =
+          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
+      this.searchApi.setDocumentFulltext(documentId, siteId, req);
+
+      // when
+      DeleteFulltextResponse response = this.searchApi.deleteDocumentFulltext(documentId, siteId);
+
+      // then
+      assertEquals("Deleted document '" + documentId + "'", response.getMessage());
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId}/fulltext request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePatchDocumentFulltext02() throws Exception {
+    String content = "some content";
+    String content2 = "new content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      setBearerToken(siteId);
+
+      SetDocumentFulltextRequest req =
+          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
+
+      SetDocumentFulltextResponse putResponse =
+          this.searchApi.setDocumentFulltext(documentId, siteId, req);
+
+      UpdateDocumentFulltextRequest updateReq =
+          new UpdateDocumentFulltextRequest().content(content2).contentType("text/plain");
+
+      // when
+      this.searchApi.updateDocumentFulltext(documentId, siteId, updateReq);
+
+      // then
+      GetDocumentFulltextResponse documentFulltext =
+          this.searchApi.getDocumentFulltext(documentId, siteId, null);
+      assertEquals(content2, documentFulltext.getContent());
+      assertEquals("Add document to Typesense", putResponse.getMessage());
+    }
+  }
+
+  // contentUrls
 }

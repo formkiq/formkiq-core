@@ -23,16 +23,176 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+import static com.formkiq.module.http.HttpResponseStatus.is2XX;
+import static com.formkiq.module.http.HttpResponseStatus.is404;
+import java.net.http.HttpResponse;
+import java.util.Map;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
+import com.formkiq.aws.services.lambda.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.typesense.TypeSenseService;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/fulltext". */
-public class DocumentsFulltextRequestHandler extends AbstractPaymentRequiredRequestHandler {
+public class DocumentsFulltextRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link DocumentsFulltextRequestHandler} URL. */
   public static final String URL = "/documents/{documentId}/fulltext";
 
+  /**
+   * Build Document from Reqeust Body.
+   * 
+   * @param body {@link Map}
+   * @return {@link Map}
+   * @throws BadException BadException
+   */
+  private Map<String, Object> buildDocumentFromRequestBody(final Map<String, Object> body)
+      throws BadException {
+    DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
+    Map<String, Object> document = fulltext.apply(body);
+
+    if (body.containsKey("contentUrls")) {
+      throw new BadException("'contentUrls' are not supported by Typesense");
+    }
+
+    if (body.containsKey("tags")) {
+      throw new BadException("'tags' are not supported with Typesense");
+    }
+
+    String text = document.get("text").toString();
+    if (body.containsKey("content")) {
+      text += body.get("content");
+    }
+
+    body.put("text", text);
+
+    return document;
+  }
+
+  private TypeSenseService checkTypesenseInstalled(final AwsServiceCache awsservice)
+      throws BadException {
+    if (!awsservice.hasModule("typesense")) {
+      throw new BadException("'typesense' is not configured");
+    }
+
+    return awsservice.getExtension(TypeSenseService.class);
+  }
+
+  @Override
+  public ApiRequestHandlerResponse delete(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
+
+    String siteId = authorization.siteId();
+    String documentId = event.getPathParameters().get("documentId");
+
+    typeSenseService.deleteDocument(siteId, documentId);
+
+    Map<String, Object> map = Map.of("message", "Deleted document '" + documentId + "'");
+    return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ApiRequestHandlerResponse get(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.siteId();
+    String documentId = event.getPathParameters().get("documentId");
+
+    TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
+
+    HttpResponse<String> response = typeSenseService.getDocument(siteId, documentId);
+
+    if (is2XX(response)) {
+
+      Map<String, Object> body = GSON.fromJson(response.body(), Map.class);
+      body.put("documentId", body.get("id"));
+      body.remove("id");
+
+      body.put("content", body.get("text"));
+      body.remove("text");
+
+      ApiMapResponse resp = new ApiMapResponse();
+      resp.setMap(body);
+      return new ApiRequestHandlerResponse(SC_OK, resp);
+    }
+
+    return handleError(response, documentId);
+  }
+
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  private ApiRequestHandlerResponse handleError(final HttpResponse<String> response,
+      final String documentId) throws DocumentNotFoundException, BadException {
+    if (is404(response)) {
+      throw new DocumentNotFoundException(documentId);
+    }
+
+    throw new BadException(response.body());
+  }
+
+  @Override
+  public ApiRequestHandlerResponse patch(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
+
+    String siteId = authorization.siteId();
+    String documentId = event.getPathParameters().get("documentId");
+
+    Map<String, Object> body = fromBodyToMap(event);
+
+    Map<String, Object> document = buildDocumentFromRequestBody(body);
+
+    HttpResponse<String> response = typeSenseService.updateDocument(siteId, documentId, document);
+
+    if (is2XX(response)) {
+      Map<String, Object> map = Map.of("message", "Updated document to Typesense");
+      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    }
+
+    return handleError(response, documentId);
+  }
+
+  @Override
+  public ApiRequestHandlerResponse put(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    TypeSenseService typeSenseService = checkTypesenseInstalled(awsservice);
+
+    String siteId = authorization.siteId();
+    String documentId = event.getPathParameters().get("documentId");
+
+    Map<String, Object> body = fromBodyToMap(event);
+
+    Map<String, Object> document = buildDocumentFromRequestBody(body);
+
+    HttpResponse<String> response =
+        typeSenseService.addOrUpdateDocument(siteId, documentId, document);
+
+    if (is2XX(response)) {
+      Map<String, Object> map = Map.of("message", "Add document to Typesense");
+      return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+    }
+
+    return handleError(response, documentId);
   }
 }

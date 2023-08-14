@@ -288,6 +288,21 @@ public class S3Service {
   }
 
   /**
+   * Get Content in Parts.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param range {@link String}
+   * @return {@link InputStream}
+   */
+  public InputStream getContentPartAsInputStream(final String bucket, final String key,
+      final String range) {
+    GetObjectRequest get = GetObjectRequest.builder().bucket(bucket).key(key).range(range).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
+    return response.asInputStream();
+  }
+
+  /**
    * Get Bucket's Notifications.
    * 
    * @param bucket {@link String}

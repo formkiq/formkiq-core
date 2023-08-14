@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Configuration;
+import com.formkiq.stacks.client.requests.UpdateConfigurationRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 /**
@@ -45,7 +46,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
 public class ConfigurationRequestTest extends AbstractApiTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 20000;
+  private static final int TEST_TIMEOUT = 20;
 
   /**
    * Test GET /configuration.
@@ -54,7 +55,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testConfigs01() throws Exception {
+  public void testGetConfiguration01() throws Exception {
 
     // given
     final int expected = 3;
@@ -74,11 +75,11 @@ public class ConfigurationRequestTest extends AbstractApiTest {
     FormKiqClientV1 fc = clients.get(2);
 
     // when
-    HttpResponse<String> response = fc.getConfigurationAsHttpResponse();
+    Configuration configuation = fc.getConfiguration();
 
     // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+    assertEquals("", configuation.maxContentLengthBytes());
+    assertEquals("", configuation.maxDocuments());
   }
 
   /**
@@ -88,13 +89,74 @@ public class ConfigurationRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testConfigs02() throws Exception {
+  public void testGetConfiguration02() throws Exception {
     // given
     AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
     FormKiqClientV1 client = createHttpClient(token);
 
     // when
-    HttpResponse<String> response = client.getConfigurationAsHttpResponse();
+    Configuration configuation = client.getConfiguration();
+
+    // then
+    assertEquals("", configuation.maxContentLengthBytes());
+    assertEquals("", configuation.maxDocuments());
+  }
+
+  /**
+   * Test GET /configuration as readuser user.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testPatchConfiguration01() throws Exception {
+    // given
+    AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
+    FormKiqClientV1 client = createHttpClient(token);
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().config(new Configuration());
+
+    // when
+    HttpResponse<String> response = client.updateConfigurationAsHttpResponse(req);
+
+    // then
+    assertEquals("401", String.valueOf(response.statusCode()));
+    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+  }
+
+  /**
+   * Test GET /configuration as admin.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testPatchConfiguration02() throws Exception {
+    // given
+    final int expected = 3;
+    List<FormKiqClientV1> clients = getFormKiqClients(null);
+    assertEquals(expected, clients.size());
+
+    String chatGptKey = "aklsdjsalkdjsakldjsadjadad";
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().config(new Configuration().chatGptApiKey(chatGptKey));
+
+    for (FormKiqClientV1 client : Arrays.asList(clients.get(0), clients.get(1))) {
+      // when
+      HttpResponse<String> response = client.updateConfigurationAsHttpResponse(req);
+
+      // then
+      assertEquals("200", String.valueOf(response.statusCode()));
+      assertEquals("{\"message\":\"Config saved\"}", response.body());
+
+      Configuration configuration = client.getConfiguration();
+      assertEquals("akls*******adad", configuration.chatGptApiKey());
+    }
+
+    // given
+    FormKiqClientV1 client = clients.get(2);
+
+    // when
+    HttpResponse<String> response = client.updateConfigurationAsHttpResponse(req);
 
     // then
     assertEquals("401", String.valueOf(response.statusCode()));

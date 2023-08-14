@@ -30,15 +30,16 @@ import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.google.gson.Gson;
@@ -50,6 +51,8 @@ import software.amazon.awssdk.utils.IoUtils;
 @Reflectable
 public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
 
+  /** Max Api Key Length. */
+  private static final int MAX_APIKEY_LENGTH = 100;
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsServices;
   /** {@link Gson}. */
@@ -114,17 +117,25 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     Map<String, Object> map = this.gson.fromJson(json, Map.class);
 
     String apiKey = getIdentitySource(map);
+    apiKey = apiKey != null && apiKey.length() < MAX_APIKEY_LENGTH ? apiKey : null;
 
-    DynamicObject obj = apiKeys.get(apiKey);
-    List<String> siteIds = obj.getStringList("siteIds");
-    boolean isAuthorized = apiKey != null && apiKey.equals(obj.getOrDefault("apiKey", ""));
+    ApiKey api = apiKeys.get(apiKey, false);
+    api = api != null ? api
+        : new ApiKey().name("").apiKey("").siteId("").permissions(Collections.emptyList());
 
-    String apiKeyName = (String) obj.getOrDefault("name", "");
-    String group = isAuthorized ? "[" + String.join(",", siteIds) + "]" : "[]";
+    String siteId = api.siteId();
+    boolean isAuthorized = apiKey != null && apiKey.equals(api.apiKey());
+
+    String apiKeyName = api.name();
+    String group = isAuthorized ? "[" + siteId + "]" : "[]";
+    String permissions =
+        api.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(","));
 
     log(logger, map, isAuthorized, group);
+
     Map<String, Object> response = Map.of("isAuthorized", Boolean.valueOf(isAuthorized), "context",
-        Map.of("apiKeyClaims", Map.of("cognito:groups", group, "cognito:username", apiKeyName)));
+        Map.of("apiKeyClaims", Map.of("permissions", permissions, "cognito:groups", group,
+            "cognito:username", apiKeyName)));
 
     OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
     writer.write(this.gson.toJson(response));

@@ -58,8 +58,8 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
-import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
@@ -82,7 +82,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   /** Sleep Timeout. */
   private static final long SLEEP = 500L;
   /** Test Timeout. */
-  private static final long TEST_TIMEOUT = 30000L;
+  private static final long TEST_TIMEOUT = 30;
 
   /**
    * Assert {@link LambdaFunctionConfiguration}.
@@ -168,7 +168,7 @@ public class AwsResourceTest extends AbstractAwsTest {
    */
   private String subscribeToSns(final String topicArn, final String queueUrl) {
 
-    String queueArn = SqsService.getQueueArn(queueUrl);
+    String queueArn = getSqsService().getQueueArn(queueUrl);
 
     Map<QueueAttributeName, String> attributes = new HashMap<>();
     attributes.put(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Id\":\"Queue_Policy\","
@@ -332,39 +332,46 @@ public class AwsResourceTest extends AbstractAwsTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddDeleteFile04() throws Exception {
     // given
-    String key = UUID.randomUUID().toString();
+    final String siteId = null;
+    final String key = UUID.randomUUID().toString();
 
-    try (SnsClient snsClient = getSnsClient(); SqsClient sqsClient = getSqsClient()) {
-      String createQueue = "createtest-" + UUID.randomUUID();
-      String documentQueueUrl = createSqsQueue(createQueue).queueUrl();
-      String subscriptionDocumentArn = subscribeToSns(getSnsDocumentEventArn(), documentQueueUrl);
+    String contentType = "text/plain";
+    String mycategory = "mycategory";
+    String myvalue = UUID.randomUUID().toString();
 
-      String contentType = "text/plain";
+    Map<String, Object> data = new HashMap<>();
+    data.put("userId", "joesmith");
+    data.put("contentType", contentType);
+    data.put("isBase64", Boolean.TRUE);
+    data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
+    data.put("tags",
+        Arrays.asList(Map.of("key", "category", "value", "document"),
+            Map.of("key", mycategory, "value", myvalue),
+            Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
+    byte[] json = this.gson.toJson(data).getBytes(StandardCharsets.UTF_8);
 
-      Map<String, Object> data = new HashMap<>();
-      data.put("userId", "joesmith");
-      data.put("contentType", contentType);
-      data.put("isBase64", Boolean.TRUE);
-      data.put("content", "dGhpcyBpcyBhIHRlc3Q=");
-      data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
-          Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
-      byte[] json = this.gson.toJson(data).getBytes(StandardCharsets.UTF_8);
+    // when
+    getS3Service().putObject(getStagingdocumentsbucketname(), key + ".fkb64", json, contentType);
 
-      try {
+    // then
+    SearchQuery query = new SearchQuery().tag(new SearchTagCriteria().key(mycategory).eq(myvalue));
 
-        // when
-        getS3Service().putObject(getStagingdocumentsbucketname(), key + ".fkb64", json,
-            contentType);
+    PaginationResults<DynamicDocumentItem> results = null;
 
-        String documentId = assertSnsMessage(documentQueueUrl, "create");
-        assertEquals("this is a test",
-            getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
+    do {
+      results = getSearchService().search(siteId, query, null, MAX_RESULTS);
+      TimeUnit.SECONDS.sleep(1);
+    } while (results.getResults().isEmpty());
 
-      } finally {
-        getSnsService().unsubscribe(subscriptionDocumentArn);
-        getSqsService().deleteQueue(documentQueueUrl);
-      }
+    String documentId = results.getResults().get(0).getDocumentId();
+
+    while (!getS3Service().getObjectMetadata(getDocumentsbucketname(), documentId, null)
+        .isObjectExists()) {
+      TimeUnit.SECONDS.sleep(1);
     }
+
+    assertEquals("this is a test",
+        getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
   }
 
   /**

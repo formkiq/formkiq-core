@@ -11,6 +11,7 @@
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		
+		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />
 		<allow pkg="java.util" />
@@ -23,6 +24,7 @@
 
 		<subpackage name="objects">
 			<allow pkg="java.time" />
+			<allow pkg="java.security" />
 		</subpackage>
 	</subpackage>
 	

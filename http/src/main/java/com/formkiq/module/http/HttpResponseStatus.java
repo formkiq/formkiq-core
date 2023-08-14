@@ -36,6 +36,8 @@ public class HttpResponseStatus {
   private static final int STATUS_200 = 200;
   /** 300 Response Code. */
   private static final int STATUS_300 = 300;
+  /** 403 Forbidden Response Code. */
+  public static final int STATUS_FORBIDDEN = 403;
   /** 404 Response Code. */
   private static final int STATUS_404 = 404;
   /** 409 Response Code. */

@@ -26,7 +26,6 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +70,7 @@ public class ConfigServiceDynamoDb implements ConfigService, DbKeys {
   @Override
   public DynamicObject get(final String siteId) {
 
-    Collection<Map<String, AttributeValue>> keys = new ArrayList<>();
+    List<Map<String, AttributeValue>> keys = new ArrayList<>();
 
     if (isDefaultSiteId(siteId)) {
       keys.add(keysGeneric(null, PREFIX_CONFIG, DEFAULT_SITE_ID));

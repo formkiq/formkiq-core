@@ -41,10 +41,42 @@ public final class FileUtils {
   private static final Gson GSON = new GsonBuilder().create();
 
   /**
-   * private constructor.
+   * Loads File into a {@link Map}.
+   * 
+   * @param caller {@link Object}.
+   * @param filename {@link String}
+   * 
+   * @return {@link String}
+   * @throws IOException IOException
    */
-  private FileUtils() {
+  public static String loadFile(final Object caller, final String filename) throws IOException {
 
+    try (InputStream in = caller.getClass().getResourceAsStream(filename)) {
+
+      if (in == null) {
+        throw new FileNotFoundException(filename);
+      }
+
+      return IoUtils.toUtf8String(in);
+    }
+  }
+
+  /**
+   * Load File as Byte Array.
+   * 
+   * @param caller {@link Object}
+   * @param filename {@link String}
+   * @return byte[]
+   * @throws IOException IOException
+   */
+  public static byte[] loadFileAsByteArray(final Object caller, final String filename)
+      throws IOException {
+    try (InputStream in = caller.getClass().getResourceAsStream(filename)) {
+      if (in == null) {
+        throw new FileNotFoundException(filename);
+      }
+      return in.readAllBytes();
+    }
   }
 
   /**
@@ -94,23 +126,9 @@ public final class FileUtils {
   }
 
   /**
-   * Loads File into a {@link Map}.
-   * 
-   * @param caller {@link Object}.
-   * @param filename {@link String}
-   * 
-   * @return {@link String}
-   * @throws IOException IOException
+   * private constructor.
    */
-  public static String loadFile(final Object caller, final String filename) throws IOException {
+  private FileUtils() {
 
-    try (InputStream in = caller.getClass().getResourceAsStream(filename)) {
-
-      if (in == null) {
-        throw new FileNotFoundException(filename);
-      }
-
-      return IoUtils.toUtf8String(in);
-    }
   }
 }

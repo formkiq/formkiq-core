@@ -5,14 +5,25 @@
 
 <import-control pkg="com.formkiq.module">
 	
-	<subpackage name="documentevents">
-		
+	<subpackage name="events">
+	
+		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		<allow pkg="com.formkiq.module.lambdaservices" />
+		<allow pkg="com.formkiq.module.events.document" />
+		<allow pkg="com.formkiq.module.events.folder" />
 		<allow pkg="java.util" />
 		<allow pkg="com.formkiq.aws.sns" />
-		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.services.sns.model" />
+			
+		<subpackage name="document">	
+			<allow pkg="com.formkiq.graalvm.annotations" />
+		</subpackage>
 
+		<subpackage name="folder">	
+			<allow pkg="com.formkiq.graalvm.annotations" />
+		</subpackage>
+		
 	</subpackage>
 	
 </import-control>

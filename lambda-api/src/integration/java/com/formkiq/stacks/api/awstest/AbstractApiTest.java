@@ -39,9 +39,11 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.cognito.CognitoConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoService;
@@ -52,6 +54,11 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
 import com.formkiq.aws.sts.StsConnectionBuilder;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddApiKeyRequest;
+import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -60,10 +67,12 @@ import com.formkiq.stacks.client.models.DocumentWithChildren;
 import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentRequest;
 import com.formkiq.stacks.client.requests.GetDocumentUploadRequest;
+import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceDynamoDb;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
@@ -82,12 +91,16 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
  */
 public abstract class AbstractApiTest {
 
+  /** Cognito Permissions User Email. */
+  protected static final String ACME_EMAIL = "acme@formkiq.com";
   /** Cognito User Email. */
   private static final String ADMIN_EMAIL = "testadminuser@formkiq.com";
   /** {@link CognitoService}. */
   private static CognitoService adminCognitoService;
   /** {@link AuthenticationResultTypes}. */
   private static AuthenticationResultType adminToken;
+  /** FormKiQ KEY API Client. */
+  private static Map<String, String> apiKeys = new HashMap<>();
   /** FormKiQ KEY API Client. */
   private static Map<String, FormKiqClientV1> apiClient = new HashMap<>();
   /** Api Gateway Invoke Group. */
@@ -110,6 +123,10 @@ public abstract class AbstractApiTest {
   private static DynamoDbConnectionBuilder dbConnection;
   /** Cognito FINANCE User Email. */
   protected static final String FINANCE_EMAIL = "testfinance@formkiq.com";
+  /** {@link List} {@link FormKiqClientV1}. */
+  private static List<FormKiqClientV1> formkiqClientDefault;
+  /** {@link List} {@link FormKiqClientV1}. */
+  private static List<FormKiqClientV1> formkiqClientSiteId;
   /** FormKiQ Http API Client. */
   private static FormKiqClientV1 httpClient;
   /** 1 Second. */
@@ -123,7 +140,9 @@ public abstract class AbstractApiTest {
   /** Key API Root Url. */
   private static String rootKeyUrl;
   /** API Root Rest Url. */
-  private static String rootRestUrl;
+  private static String rootIamUrl;
+  /** SiteId. */
+  protected static final String SITE_ID = UUID.randomUUID().toString();
   /** {@link SsmConnectionBuilder}. */
   private static SsmConnectionBuilder ssmBuilder;
   /** {@link SsmService}. */
@@ -141,15 +160,15 @@ public abstract class AbstractApiTest {
    * Add User and/or Login Cognito.
    * 
    * @param username {@link String}
-   * @param groupName {@link String}
+   * @param groupNames {@link List} {@link String}
    */
-  private static void addAndLoginCognito(final String username, final String groupName) {
+  private static void addAndLoginCognito(final String username, final List<String> groupNames) {
     if (!adminCognitoService.isUserExists(username)) {
 
       adminCognitoService.addUser(username, TEMP_USER_PASSWORD);
       adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
 
-      if (groupName != null) {
+      for (String groupName : groupNames) {
         if (!groupName.startsWith(DEFAULT_SITE_ID)) {
           adminCognitoService.addGroup(groupName);
         }
@@ -182,8 +201,8 @@ public abstract class AbstractApiTest {
 
     try (ProfileCredentialsProvider credentials =
         ProfileCredentialsProvider.builder().profileName(awsprofile).build()) {
-      FormKiqClientConnection connection = new FormKiqClientConnection(rootRestUrl)
-          .region(awsregion).credentials(credentials.resolveCredentials())
+      FormKiqClientConnection connection = new FormKiqClientConnection(rootIamUrl).region(awsregion)
+          .credentials(credentials.resolveCredentials())
           .header("Origin", Arrays.asList("http://localhost"))
           .header("Access-Control-Request-Method", Arrays.asList("GET"));
       restClient = new FormKiqClientV1(connection);
@@ -211,6 +230,9 @@ public abstract class AbstractApiTest {
 
     setupCognito();
     setupConfigService(awsprofile);
+
+    formkiqClientDefault = Arrays.asList(httpClient, restClient, getApiKeyClient(null));
+    formkiqClientSiteId = Arrays.asList(httpClient, restClient, getApiKeyClient(SITE_ID));
   }
 
   /**
@@ -241,7 +263,9 @@ public abstract class AbstractApiTest {
 
     String site = siteId != null ? siteId : DEFAULT_SITE_ID;
     if (!apiClient.containsKey(site)) {
-      String apiKey = apiKeysService.createApiKey(siteId, "My API Key", "testuser");
+      Collection<ApiKeyPermission> permissions =
+          Arrays.asList(ApiKeyPermission.DELETE, ApiKeyPermission.READ, ApiKeyPermission.WRITE);
+      String apiKey = apiKeysService.createApiKey(siteId, "My API Key", permissions, "testuser");
 
       FormKiqClientConnection connection = new FormKiqClientConnection(rootKeyUrl)
           .cognitoIdToken(apiKey).header("Origin", Arrays.asList("http://localhost"))
@@ -284,6 +308,81 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Get {@link ApiClient}.
+   * 
+   * @param siteId {@link String}
+   * @return {@link List} {@link ApiClient}
+   * @throws ApiException ApiException
+   */
+  public static List<ApiClient> getApiClients(final String siteId) throws ApiException {
+
+    String awsprofile = System.getProperty("testprofile");
+
+    try (ProfileCredentialsProvider p = ProfileCredentialsProvider.create(awsprofile)) {
+
+      ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(getRootHttpUrl());
+      jwtClient.addDefaultHeader("Authorization", adminToken.accessToken());
+
+      AwsCredentials credentials = p.resolveCredentials();
+
+      ApiClient iamClient = new ApiClient().setReadTimeout(0).setBasePath(getRootIamUrl());
+      iamClient.setAWS4Configuration(credentials.accessKeyId(), credentials.secretAccessKey(),
+          awsregion.toString(), "execute-api");
+
+      ApiClient keyClient = new ApiClient().setReadTimeout(0).setBasePath(getRootKeyUrl());
+      String token = getApiKey(iamClient, siteId);
+      keyClient.addDefaultHeader("Authorization", token);
+
+      return Arrays.asList(jwtClient, iamClient, keyClient);
+    }
+  }
+
+  /**
+   * Get API Key for {@link String}.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  private static String getApiKey(final ApiClient client, final String siteId) throws ApiException {
+
+    String site = siteId != null ? siteId : DEFAULT_SITE_ID;
+
+    if (!apiKeys.containsKey(site)) {
+
+      SystemManagementApi api = new SystemManagementApi(client);
+
+      List<PermissionsEnum> permissions =
+          Arrays.asList(PermissionsEnum.READ, PermissionsEnum.DELETE, PermissionsEnum.WRITE);
+      AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
+      String apiKey = api.addApiKey(req, siteId).getApiKey();
+
+      apiKeys.put(site, apiKey);
+    }
+
+    return apiKeys.get(site);
+  }
+
+  /**
+   * Get Default Clients.
+   * 
+   * @return {@link List} {@link FormKiqClientV1}
+   */
+  public static List<FormKiqClientV1> getFormKiqDefaultClients() {
+    return formkiqClientDefault;
+  }
+
+  /**
+   * Get Clients for SiteId.
+   * 
+   * @return {@link List} {@link FormKiqClientV1}
+   */
+  public static List<FormKiqClientV1> getFormKiqSiteIdClients() {
+    return formkiqClientSiteId;
+  }
+
+  /**
    * Get API Root Http Url.
    * 
    * @return {@link String}
@@ -293,12 +392,21 @@ public abstract class AbstractApiTest {
   }
 
   /**
+   * Get Root Key Url.
+   * 
+   * @return {@link String}
+   */
+  public static String getRootKeyUrl() {
+    return rootKeyUrl;
+  }
+
+  /**
    * Get API Root Reset Url.
    * 
    * @return {@link String}
    */
-  private static String getRootRestUrl() {
-    return rootRestUrl;
+  private static String getRootIamUrl() {
+    return rootIamUrl;
   }
 
   /**
@@ -308,7 +416,7 @@ public abstract class AbstractApiTest {
    * @return boolean
    */
   public static boolean isIamAuthentication(final String url) {
-    return url.startsWith(getRootRestUrl());
+    return url.startsWith(getRootIamUrl());
   }
 
   /**
@@ -324,7 +432,7 @@ public abstract class AbstractApiTest {
     rootHttpUrl =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsHttpUrl");
 
-    rootRestUrl =
+    rootIamUrl =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/api/DocumentsIamUrl");
 
     rootKeyUrl =
@@ -372,7 +480,7 @@ public abstract class AbstractApiTest {
   /**
    * Setup Cognito.
    */
-  private static void setupCognito() {
+  private static synchronized void setupCognito() {
 
     if (!adminCognitoService.isUserExists(ADMIN_EMAIL)) {
 
@@ -389,9 +497,10 @@ public abstract class AbstractApiTest {
       adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
     }
 
-    addAndLoginCognito(USER_EMAIL, DEFAULT_SITE_ID);
-    addAndLoginCognito(FINANCE_EMAIL, "finance");
-    addAndLoginCognito(READONLY_EMAIL, "default_read");
+    addAndLoginCognito(USER_EMAIL, Arrays.asList(DEFAULT_SITE_ID));
+    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
+    addAndLoginCognito(READONLY_EMAIL, Arrays.asList("default_read"));
+    addAndLoginCognito(ACME_EMAIL, Arrays.asList("acme", "accounting"));
 
     adminToken = login(ADMIN_EMAIL, USER_PASSWORD);
     FormKiqClientConnection connection = new FormKiqClientConnection(rootHttpUrl)

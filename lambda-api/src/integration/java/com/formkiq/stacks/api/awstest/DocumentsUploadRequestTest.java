@@ -70,7 +70,7 @@ public class DocumentsUploadRequestTest extends AbstractApiTest {
   private static final String SITEID1 = UUID.randomUUID().toString();
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30000;
+  private static final int TEST_TIMEOUT = 30;
   /** Sleep Timeout. */
   private static final int SLEEP = 1000;
 

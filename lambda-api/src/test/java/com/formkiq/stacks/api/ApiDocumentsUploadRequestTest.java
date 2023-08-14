@@ -79,6 +79,71 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * Verify Response.
+   *
+   * @param response {@link String}
+   * @return {@link ApiUrlResponse}
+   */
+  private ApiUrlResponse expectResponse(final String response) {
+
+    @SuppressWarnings("unchecked")
+    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    ApiUrlResponse resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiUrlResponse.class);
+
+    assertNull(resp.getNext());
+    assertNull(resp.getPrevious());
+    return resp;
+  }
+
+  /**
+   * Get /documents/upload request.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param readonly boolean
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getRequest(final String siteId, final String documentId,
+      final boolean readonly) {
+
+    String resource = documentId != null ? "/documents/{documentId}/upload" : "/documents/upload";
+    String path = documentId != null ? "/documents/" + documentId + "/upload" : "/documents/upload";
+    String group = siteId != null ? siteId : "default";
+
+    if (readonly) {
+      group += "_read";
+    }
+
+    Map<String, String> pathMap =
+        documentId != null ? Map.of("documentId", documentId) : Collections.emptyMap();
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
+        .resource(resource).path(path).group(group).user("joesmith").pathParameters(pathMap)
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
+    return event;
+  }
+
+  /**
+   * POST /documents/upload request.
+   * 
+   * @param siteId {@link String}
+   * @param group {@link String}
+   * @param body {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent postDocumentsUploadRequest(final String siteId, final String group,
+      final String body) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("post")
+        .resource("/documents/upload").path("/documents/upload").group(group).user("joesmith")
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
+    return event;
+  }
+
+  /**
    * Valid POST generate upload document signed url.
    *
    * @throws Exception an error has occurred
@@ -104,9 +169,11 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
         assertFalse(resp.getUrl().contains("content-length"));
 
         if (siteId != null) {
+          assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
           assertTrue(getLogger().containsString("generated presign url: "
               + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
         } else {
+          assertFalse(resp.getUrl().contains("/testbucket/default"));
           assertTrue(getLogger().containsString("generated presign url: "
               + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
         }
@@ -119,156 +186,6 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
           assertTrue(getLogger().containsString(" on path " + null));
         }
       }
-    }
-  }
-
-  /**
-   * Valid POST generate upload document signed url.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocumentsUpload01() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String path = "/bleh/test.txt";
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-upload-documentid.json");
-      event.setHttpMethod("POST");
-      addParameter(event, "siteId", siteId);
-      com.formkiq.stacks.client.models.DocumentTag tag0 =
-          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-      com.formkiq.stacks.client.models.AddDocumentAction action0 =
-          new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
-      AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
-          .actions(Arrays.asList(action0));
-      event.setBody(GsonUtil.getInstance().toJson(document));
-      event.setIsBase64Encoded(Boolean.FALSE);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      ApiUrlResponse resp = expectResponse(response);
-      assertFalse(resp.getUrl().contains("content-length"));
-
-      if (siteId != null) {
-        assertTrue(getLogger().containsString("generated presign url: "
-            + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
-      } else {
-        assertTrue(getLogger().containsString("generated presign url: "
-            + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
-      }
-
-      String documentId = resp.getDocumentId();
-      assertNotNull(document);
-
-      ActionsService actionsService = getAwsServices().getExtension(ActionsService.class);
-      List<Action> actions = actionsService.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
-      assertEquals(ActionType.OCR, actions.get(0).type());
-      assertEquals(ActionStatus.PENDING, actions.get(0).status());
-
-      int i = 0;
-      final int expectedCount = 1;
-      List<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(expectedCount, tags.size());
-      assertEquals("test", tags.get(i).getKey());
-      assertEquals("this", tags.get(i++).getValue());
-
-      assertNotNull(getDocumentService().findMostDocumentDate());
-    }
-  }
-
-  /**
-   * fails TagSchema required tags.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocumentsUpload02() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      final String tagSchemaId = UUID.randomUUID().toString();
-      AwsServiceCache.register(DocumentTagSchemaPlugin.class,
-          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
-
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-upload-documentid.json");
-      event.setHttpMethod("POST");
-      addParameter(event, "siteId", siteId);
-      com.formkiq.stacks.client.models.DocumentTag tag0 =
-          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-      AddLargeDocument document =
-          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
-      event.setBody(GsonUtil.getInstance().toJson(document));
-      event.setIsBase64Encoded(Boolean.FALSE);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}", m.get("body"));
-
-      assertNull(getDocumentService().findMostDocumentDate());
-    }
-  }
-
-  /**
-   * Valid POST generate upload document signed url.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocumentsUpload03() throws Exception {
-    // given
-    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
-        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
-
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      String tagSchemaId = UUID.randomUUID().toString();
-      ApiGatewayRequestEvent event =
-          toRequestEvent("/request-get-documents-upload-documentid.json");
-      event.setHttpMethod("POST");
-      addParameter(event, "siteId", siteId);
-      com.formkiq.stacks.client.models.DocumentTag tag0 =
-          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
-      AddLargeDocument document =
-          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
-      event.setBody(GsonUtil.getInstance().toJson(document));
-      event.setIsBase64Encoded(Boolean.FALSE);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      ApiUrlResponse resp = expectResponse(response);
-
-      String documentId = resp.getDocumentId();
-      assertNotNull(document);
-
-      int i = 0;
-      final int expectedCount = 2;
-      List<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
-      assertEquals(expectedCount, tags.size());
-      assertEquals("test", tags.get(i).getKey());
-      assertEquals("this", tags.get(i++).getValue());
-      assertEquals("testtag", tags.get(i).getKey());
-      assertEquals("testvalue", tags.get(i++).getValue());
-
-      assertNotNull(getDocumentService().findMostDocumentDate());
     }
   }
 
@@ -324,6 +241,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       // then
       ApiUrlResponse resp = expectResponse(response);
 
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+      }
+
       assertTrue(getLogger().containsString("generated presign url: "
           + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
       assertTrue(getLogger().containsString("for document " + resp.getDocumentId()));
@@ -352,6 +275,12 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
       // then
       ApiUrlResponse resp = expectResponse(response);
+
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+      }
 
       DocumentItem item = getDocumentService().findDocument(siteId, resp.getDocumentId());
       assertEquals(
@@ -467,25 +396,159 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Verify Response.
+   * Valid POST generate upload document signed url.
    *
-   * @param response {@link String}
-   * @return {@link ApiUrlResponse}
+   * @throws Exception an error has occurred
    */
-  private ApiUrlResponse expectResponse(final String response) {
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String path = "/bleh/test.txt";
 
-    @SuppressWarnings("unchecked")
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      com.formkiq.stacks.client.models.AddDocumentAction action0 =
+          new com.formkiq.stacks.client.models.AddDocumentAction().type(DocumentActionType.OCR);
+      AddLargeDocument document = new AddLargeDocument().path(path).tags(Arrays.asList(tag0))
+          .actions(Arrays.asList(action0));
 
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiUrlResponse resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiUrlResponse.class);
+      ApiGatewayRequestEvent event = postDocumentsUploadRequest(siteId,
+          siteId != null ? siteId : "default", GsonUtil.getInstance().toJson(document));
 
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
-    return resp;
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      ApiUrlResponse resp = expectResponse(response);
+      assertFalse(resp.getUrl().contains("content-length"));
+
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+        assertTrue(getLogger().containsString("generated presign url: "
+            + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+        assertTrue(getLogger().containsString("generated presign url: "
+            + TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/"));
+      }
+
+      String documentId = resp.getDocumentId();
+      assertNotNull(document);
+
+      ActionsService actionsService = getAwsServices().getExtension(ActionsService.class);
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionType.OCR, actions.get(0).type());
+      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+
+      int i = 0;
+      final int expectedCount = 1;
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(expectedCount, tags.size());
+      assertEquals("test", tags.get(i).getKey());
+      assertEquals("this", tags.get(i++).getValue());
+
+      assertNotNull(getDocumentService().findMostDocumentDate());
+    }
+  }
+
+  /**
+   * fails TagSchema required tags.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload02() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      final String tagSchemaId = UUID.randomUUID().toString();
+      AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+          new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
+
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      AddLargeDocument document =
+          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"errors\":[{\"error\":\"test error\",\"key\":\"type\"}]}", m.get("body"));
+
+      assertNull(getDocumentService().findMostDocumentDate());
+    }
+  }
+
+  /**
+   * Valid POST generate upload document signed url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload03() throws Exception {
+    // given
+    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnNewTags()));
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      String tagSchemaId = UUID.randomUUID().toString();
+      ApiGatewayRequestEvent event =
+          toRequestEvent("/request-get-documents-upload-documentid.json");
+      event.setHttpMethod("POST");
+      addParameter(event, "siteId", siteId);
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("test").value("this");
+      AddLargeDocument document =
+          new AddLargeDocument().tagSchemaId(tagSchemaId).tags(Arrays.asList(tag0));
+      event.setBody(GsonUtil.getInstance().toJson(document));
+      event.setIsBase64Encoded(Boolean.FALSE);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      ApiUrlResponse resp = expectResponse(response);
+
+      if (siteId != null) {
+        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+      } else {
+        assertFalse(resp.getUrl().contains("/testbucket/default"));
+      }
+
+      String documentId = resp.getDocumentId();
+      assertNotNull(document);
+
+      int i = 0;
+      final int expectedCount = 2;
+      List<DocumentTag> tags =
+          getDocumentService().findDocumentTags(siteId, documentId, null, LIMIT).getResults();
+      assertEquals(expectedCount, tags.size());
+      assertEquals("test", tags.get(i).getKey());
+      assertEquals("this", tags.get(i++).getValue());
+      assertEquals("testtag", tags.get(i).getKey());
+      assertEquals("testvalue", tags.get(i++).getValue());
+
+      assertNotNull(getDocumentService().findMostDocumentDate());
+    }
   }
 
   /**
@@ -495,7 +558,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testHandlePostDocumentsUpload08() throws Exception {
+  public void testHandlePostDocumentsUpload04() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -517,29 +580,33 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
   }
 
   /**
-   * Get /documents/upload request.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param readonly boolean
-   * @return {@link ApiGatewayRequestEvent}
+   * Valid POST /documents/upload, invalid tag.
+   *
+   * @throws Exception an error has occurred
    */
-  private ApiGatewayRequestEvent getRequest(final String siteId, final String documentId,
-      final boolean readonly) {
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentsUpload05() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-    String resource = documentId != null ? "/documents/{documentId}/upload" : "/documents/upload";
-    String path = documentId != null ? "/documents/" + documentId + "/upload" : "/documents/upload";
-    String group = siteId != null ? siteId : "default";
+      com.formkiq.stacks.client.models.DocumentTag tag0 =
+          new com.formkiq.stacks.client.models.DocumentTag().key("CLAMAV_SCAN_TIMESTAMP")
+              .value("this");
+      AddLargeDocument document = new AddLargeDocument().tags(Arrays.asList(tag0));
 
-    if (readonly) {
-      group += "_read";
+      ApiGatewayRequestEvent event = postDocumentsUploadRequest(siteId,
+          siteId != null ? siteId : "default", GsonUtil.getInstance().toJson(document));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals(
+          "{\"errors\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"error\":\"unallowed tag key\"}]}",
+          String.valueOf(m.get("body")));
     }
-
-    Map<String, String> pathMap =
-        documentId != null ? Map.of("documentId", documentId) : Collections.emptyMap();
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
-        .resource(resource).path(path).group(group).user("joesmith").pathParameters(pathMap)
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
-    return event;
   }
 }

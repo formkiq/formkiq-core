@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Map;
+
 /**
  * 
  * DynamoDB Query Config.
@@ -30,14 +32,69 @@ package com.formkiq.aws.dynamodb;
  */
 public class QueryConfig {
 
+  /** {@link Map}. */
+  private Map<String, String> expressionAttributeNames;
+  /** Index Name. */
+  private String indexName;
   /** Projection Expression. */
   private String projectionExpression;
+  /** True - ASC, False - DESC. */
+  private Boolean scanIndexForward = Boolean.FALSE;
 
   /**
    * constructor.
    */
   public QueryConfig() {
 
+  }
+
+  /**
+   * Get Expression Attribute Names.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, String> expressionAttributeNames() {
+    return this.expressionAttributeNames;
+  }
+
+  /**
+   * Set Expression Attribute Names.
+   * 
+   * @param expressionAttributes {@link Map}
+   * @return {@link QueryConfig}
+   */
+  public QueryConfig expressionAttributeNames(final Map<String, String> expressionAttributes) {
+    this.expressionAttributeNames = expressionAttributes;
+    return this;
+  }
+
+  /**
+   * Get Index Name.
+   * 
+   * @return {@link String}
+   */
+  public String indexName() {
+    return this.indexName;
+  }
+
+  /**
+   * Set Index Name.
+   * 
+   * @param index {@link String}
+   * @return {@link QueryConfig}
+   */
+  public QueryConfig indexName(final String index) {
+    this.indexName = index;
+    return this;
+  }
+
+  /**
+   * Is ScanIndexForward.
+   * 
+   * @return boolean
+   */
+  public Boolean isScanIndexForward() {
+    return this.scanIndexForward;
   }
 
   /**
@@ -59,4 +116,16 @@ public class QueryConfig {
     this.projectionExpression = projection;
     return this;
   }
+
+  /**
+   * Set Is ScanIndexForward.
+   * 
+   * @param isScanIndexForward {@link Boolean}
+   * @return {@link QueryConfig}
+   */
+  public QueryConfig scanIndexForward(final Boolean isScanIndexForward) {
+    this.scanIndexForward = isScanIndexForward;
+    return this;
+  }
+
 }

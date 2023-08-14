@@ -24,7 +24,8 @@
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.actions.services" />
-			<allow pkg="com.formkiq.module.documentevents" />
+			<allow pkg="com.formkiq.module.events" />
+			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.module.http" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.formkiq.module.typesense" />
@@ -55,13 +56,10 @@
 			<allow pkg="software.amazon.awssdk.services.ssm" />
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="software.amazon.awssdk.utils.http" />
-		
+
 			<subpackage name="util">
 
-				<allow pkg="com.amazonaws.auth" />
-				<allow pkg="com.amazonaws.regions" />
 				<allow pkg="com.amazonaws.services.lambda.runtime" />
-				<allow pkg="com.amazonaws.services.simplesystemsmanagement" />
 				
 				<allow pkg="com.google.gson" />
 				<allow pkg="java.io" />

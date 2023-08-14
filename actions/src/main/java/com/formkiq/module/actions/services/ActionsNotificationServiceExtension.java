@@ -23,7 +23,7 @@
  */
 package com.formkiq.module.actions.services;
 
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.module.events.EventService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
@@ -37,25 +37,20 @@ public class ActionsNotificationServiceExtension
 
   /** {@link ActionsNotificationService}. */
   private ActionsNotificationService service;
-  /** {@link SnsConnectionBuilder}. */
-  private SnsConnectionBuilder sns;
 
   /**
    * constructor.
    * 
-   * @param snsBuilder {@link SnsConnectionBuilder}
    */
-  public ActionsNotificationServiceExtension(final SnsConnectionBuilder snsBuilder) {
-    this.sns = snsBuilder;
-  }
+  public ActionsNotificationServiceExtension() {}
 
   @Override
   public ActionsNotificationService loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
 
-      this.service = new ActionsNotificationServiceImpl(
-          awsServiceCache.environment("SNS_DOCUMENT_EVENT"), this.sns);
+      EventService eventService = awsServiceCache.getExtension(EventService.class);
+      this.service = new ActionsNotificationServiceImpl(eventService);
     }
 
     return this.service;

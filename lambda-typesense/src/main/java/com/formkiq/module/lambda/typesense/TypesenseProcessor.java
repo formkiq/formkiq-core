@@ -31,9 +31,6 @@ import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
-import static com.formkiq.module.http.HttpResponseStatus.is404;
-import static com.formkiq.module.http.HttpResponseStatus.is409;
-import static com.formkiq.module.http.HttpResponseStatus.is429;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.Collections;
@@ -137,33 +134,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
       throws IOException {
 
-    HttpResponse<String> response = this.typeSenseService.addDocument(siteId, documentId, data);
+    HttpResponse<String> response =
+        this.typeSenseService.addOrUpdateDocument(siteId, documentId, data);
 
-    if (!is2XX(response)) {
+    if (is2XX(response)) {
 
-      if (is404(response)) {
-
-        response = this.typeSenseService.addCollection(siteId);
-
-        if (!is2XX(response)) {
-          throw new IOException(response.body());
-        }
-
-        response = this.typeSenseService.addDocument(siteId, documentId, data);
-        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
-
-        if (!is2XX(response)) {
-          throw new IOException(response.body());
-        }
-
-      } else if (is409(response) || is429(response)) {
-
-        response = this.typeSenseService.updateDocument(siteId, documentId, data);
-        addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, false);
-
-      } else {
-        throw new IOException(response.body());
-      }
+      boolean added = "POST".equals(response.request().method());
+      addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, added);
 
     } else {
       addDocumentSync(response, siteId, documentId, userId, s3VersionChanged, true);
@@ -202,6 +179,19 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     }
 
     return field.get("S");
+  }
+
+  /**
+   * Get User Id.
+   * 
+   * @param newImage {@link Map}
+   * @param oldImage {@link Map}
+   * @return {@link String}
+   */
+  private String getUserId(final Map<String, Object> newImage, final Map<String, Object> oldImage) {
+    String userId = getField(newImage, oldImage, "userId");
+    userId = userId != null ? userId : "System";
+    return userId;
   }
 
   @SuppressWarnings("unchecked")
@@ -278,7 +268,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
           boolean s3VersionChanged = isS3VersionChanged(eventName, oldImage, newImage);
 
-          String userId = getField(newImage, oldImage, "userId");
+          String userId = getUserId(newImage, oldImage);
           writeToIndex(logger, siteId, documentId, newImage, userId, s3VersionChanged);
 
         } else if ("REMOVE".equalsIgnoreCase(eventName)) {

@@ -23,21 +23,28 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.stacks.dynamodb.ConfigService;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -47,6 +54,10 @@ import software.amazon.awssdk.services.sqs.model.Message;
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
 
+  /** {@link ConfigService}. */
+  private ConfigService configService;
+  /** {@link DocumentService}. */
+  private DocumentService documentService;
   /** {@link ActionsService}. */
   private ActionsService service;
 
@@ -55,6 +66,8 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
   public void before() throws Exception {
     super.before();
     this.service = getAwsServices().getExtension(ActionsService.class);
+    this.documentService = getAwsServices().getExtension(DocumentService.class);
+    this.configService = getAwsServices().getExtension(ConfigService.class);
   }
 
   /**
@@ -69,6 +82,10 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
       this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
@@ -108,6 +125,10 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
       this.service.saveActions(siteId, documentId,
           Arrays.asList(new Action().status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
@@ -172,6 +193,9 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       // given
       String documentId = UUID.randomUUID().toString();
 
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
       Map<String, Object> body =
           Map.of("actions", Arrays.asList(Map.of("parameters", Map.of("ocrParseTypes", "text"))));
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
@@ -193,6 +217,80 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
 
       List<Action> actions = this.service.getActions(siteId, documentId);
       assertEquals(0, actions.size());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions missing 'parameters' for documenttagging.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandlePostDocumentActions03() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, null);
+
+      Map<String, Object> body =
+          Map.of("actions", Arrays.asList(Map.of("type", "documenttagging")));
+      // Map<String, Object> body = Map.of("actions", Arrays
+      // .asList(Map.of("type", "documenttagging", "parameters", Map.of("ocrParseTypes", "text"))));
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when - missing parameters
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+
+      // given - invalid engine
+      body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
+          Map.of("engine", "dunno", "tags", "something"))));
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when - missing parameters
+      response = handleRequest(event);
+
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+
+      actions = this.service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+
+      // given - engine
+      this.configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+      body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
+          Map.of("engine", "chatgpt", "tags", "something"))));
+      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      // when - correct parameters
+      response = handleRequest(event);
+
+      // then
+      m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"Actions saved\"}", m.get("body"));
+
+      actions = this.service.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
     }
   }
 }

@@ -24,15 +24,24 @@
 package com.formkiq.testutils.aws;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
@@ -40,6 +49,8 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /**
  * 
@@ -58,11 +69,11 @@ public final class TestServices {
   public static final String FORMKIQ_APP_ENVIRONMENT = "test";
   /** {@link LocalStackContainer}. */
   private static LocalStackContainer localstack = null;
-  /** Default Localstack Endpoint. */
-  private static final String LOCALSTACK_ENDPOINT = "http://localhost:" + DEFAULT_LOCALSTACK_PORT;
   /** LocalStack {@link DockerImageName}. */
   private static final DockerImageName LOCALSTACK_IMAGE =
-      DockerImageName.parse("localstack/localstack:0.12.2");
+      DockerImageName.parse("localstack/localstack:2.1");
+  /** {@link String}. */
+  public static final String OCR_BUCKET_NAME = "ocrbucket";
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
   /** {@link SnsConnectionBuilder}. */
@@ -83,8 +94,63 @@ public final class TestServices {
   private static SsmConnectionBuilder ssmConnection;
   /** {@link String}. */
   public static final String STAGE_BUCKET_NAME = "stagebucket";
-  /** {@link String}. */
-  public static final String OCR_BUCKET_NAME = "ocrbucket";
+
+  /**
+   * Clear SQS Queue.
+   * 
+   * @param queueUrl {@link String}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static void clearSqsQueue(final String queueUrl) throws URISyntaxException {
+    SqsService sqsService = new SqsService(getSqsConnection(null));
+    ReceiveMessageResponse response = sqsService.receiveMessages(queueUrl);
+    while (!response.messages().isEmpty()) {
+      for (Message msg : response.messages()) {
+        sqsService.deleteMessage(queueUrl, msg.receiptHandle());
+      }
+
+      response = sqsService.receiveMessages(queueUrl);
+    }
+  }
+
+  /**
+   * Create Random Sns Topic.
+   * 
+   * @return {@link String}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static String createSnsTopic() throws URISyntaxException {
+    SnsService snsService = new SnsService(getSnsConnection(null));
+    return snsService.createTopic("sns_" + UUID.randomUUID()).topicArn();
+  }
+
+  /**
+   * Create a random SQS queue and subscribes to an SNS Topic.
+   * 
+   * @param snsTopicArn {@link String}
+   * @return {@link String}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static String createSqsSubscriptionToSnsTopic(final String snsTopicArn)
+      throws URISyntaxException {
+    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SnsService snsService = new SnsService(getSnsConnection(null));
+    String queueUrl = sqsService.createQueue("sqs_" + UUID.randomUUID()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(queueUrl);
+    snsService.subscribe(snsTopicArn, "sqs", sqsQueueArn);
+    return queueUrl;
+  }
+
+  private static String getDefaultLocalStackEndpoint(final Service service) {
+    String url = "http://localhost:" + DEFAULT_LOCALSTACK_PORT;
+    if (Service.S3.equals(service)) {
+      url = "http://s3.localhost:" + DEFAULT_LOCALSTACK_PORT;
+    } else if (Service.SQS.equals(service)) {
+      url = "http://sqs.localhost:" + DEFAULT_LOCALSTACK_PORT;
+    }
+
+    return url;
+  }
 
   /**
    * Get Local Stack Endpoint.
@@ -99,7 +165,7 @@ public final class TestServices {
     if (endpoint == null) {
       try {
         endpoint = new URI(localstack != null ? localstack.getEndpointOverride(service).toString()
-            : LOCALSTACK_ENDPOINT);
+            : getDefaultLocalStackEndpoint(service));
       } catch (URISyntaxException e) {
         throw new RuntimeException(e);
       }
@@ -131,7 +197,46 @@ public final class TestServices {
    */
   public static URI getEndpointOverride(final Service service) throws URISyntaxException {
     return localstack != null ? localstack.getEndpointOverride(service)
-        : new URI(LOCALSTACK_ENDPOINT);
+        : new URI(getDefaultLocalStackEndpoint(service));
+  }
+
+  /**
+   * Get Messages from SQS queue.
+   * 
+   * @param queueUrl {@link String}
+   * @return {@link List}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static List<Message> getMessagesFromSqs(final String queueUrl) throws URISyntaxException {
+    SqsService sqsService = new SqsService(getSqsConnection(null));
+    List<Message> msgs = sqsService.receiveMessages(queueUrl).messages();
+    return msgs;
+  }
+
+  /**
+   * Get Messages from SQS queue.
+   * 
+   * @param queueUrl {@link String}
+   * @return {@link List}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static List<Message> waitForMessagesFromSqs(final String queueUrl)
+      throws URISyntaxException {
+
+    SqsService sqsService = new SqsService(getSqsConnection(null));
+    List<Message> msgs = Collections.emptyList();
+
+    while (msgs.isEmpty()) {
+      msgs = sqsService.receiveMessages(queueUrl).messages();
+      if (msgs.isEmpty()) {
+        try {
+          TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    return msgs;
   }
 
   /**
@@ -275,12 +380,21 @@ public final class TestServices {
    * @return boolean
    */
   private static boolean isPortAvailable() {
-    boolean available;
-    try (ServerSocket ignored = new ServerSocket(DEFAULT_LOCALSTACK_PORT)) {
+
+    boolean available = false;
+    final int status200 = 200;
+
+    HttpClient client = HttpClient.newHttpClient();
+    try {
+      HttpRequest request = HttpRequest.newBuilder().timeout(Duration.ofSeconds(2))
+          .uri(new URI("http://localhost:" + DEFAULT_LOCALSTACK_PORT + "/_localstack/health")).GET()
+          .build();
+      HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+      available = response.statusCode() != status200;
+    } catch (URISyntaxException | IOException | InterruptedException e) {
       available = true;
-    } catch (IOException e) {
-      available = false;
     }
+
     return available;
   }
 
