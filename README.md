@@ -61,6 +61,13 @@ Follow our [Quickstart Guide](https://docs.formkiq.com/docs/1.9.0/quickstart/REA
 
 Then checkout out our [Getting Started with the FormKiQ Document API](https://docs.formkiq.com/docs/1.9.0/tutorials/formkiq-document-api-with-postman.html)
 
+## Client SDKs
+
+The following are official FormKiQ client SDKs that were generated using the [OpenAPI Generator](https://github.com/OpenAPITools/openapi-generator)
+
+* [Java](https://github.com/formkiq/formkiq-client-sdk-java)
+* [Python](https://github.com/formkiq/formkiq-client-sdk-python)
+  
 ## Tutorials
 
 After FormKiQ is installed checkout the following links to continue on your journey!
