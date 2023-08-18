@@ -12,8 +12,81 @@
           license:
             name: Apache 2.0
             url: https://www.apache.org/licenses/LICENSE-2.0.html
-          description: 'Formkiq API: Document Management Platform API using JWT Authentication'
+          description: |-
+            Formkiq API: Document Management Platform API using OAuth(JWT) Authentication
+
+            You can find out more about FormKiQ at [https://formkiq.com](http://formkiq.com).
+
+            ## Introduction
+
+            FormKiQ is an API-first (head-less), battle-tested document management API. The FormKiQ API provides all the API endpoints to build your Perfect Document Management Platform.
+
+            FormKiQ API was built on top of [OpenAPI specification](https://www.openapis.org), so it is easy to use the API spec file with any application that supports the OpenAPI specification.
+
+            Open API OAuth Specification - https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/openapi/openapi-jwt.yaml
+
+            Open API IAM Specification - https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/openapi/openapi-iam.yaml
+
+            ## Authentication
+            FormKiQ offers three forms of authentication:
+              - OAuth(JWT)
+              - AWS IAM
+              - API Key
           version: 1.12.0
+        tags:
+        - name: documents
+          description: API for the add, updating and fetching of documents
+          x-displayName: Documents
+        - name: documentTags
+          description: API for the add, updating and fetching of document tags
+          x-displayName: Document Tags
+        - name: documentSearch
+          description: API for searching for documents
+          x-displayName: Document Search
+        - name: systemManagement
+          description: System Management API
+          x-displayName: System Management
+        - name: advancedDocumentSearch
+          description: Advanced Document Search API
+          x-displayName: Advanced Document Search
+        - name: documentActions
+          description: Document Actions API
+          x-displayName: Document Actions
+        - name: documentOCR
+          description: Document OCR API
+          x-displayName: Document OCR
+        - name: documentVersions
+          description: Document Versions API
+          x-displayName: Document Versions
+        - name: documentFolders
+          description: Document Folders API
+          x-displayName: Document Folders
+        - name: documentShares
+          description: Document Shares API
+          x-displayName: Document Shares
+        - name: tagSchema
+          description: Tag Schema API
+          x-displayName: Tag Schema
+        - name: antivirus
+          description: Antivirus API
+          x-displayName: Antivirus
+        - name: public
+          description: Public API Endpoints
+          x-displayName: Public Endpoints
+        - name: webhooks
+          description: Webhooks API
+          x-displayName: Webhooks
+        - name: onlyoffice
+          description: Onlyoffice API
+          x-displayName: Onlyoffice
+        - name: e-signature
+          description: E-Signature API
+          x-displayName: E-Signature
+        - name: Application
+          x-amazon-apigateway-tag-value: FormKiQ
+        - name: AppEnvironment
+          x-amazon-apigateway-tag-value:
+            Fn::Sub: ${AppEnvironment}
         servers:
         - url: http://localhost
           description: Local development server
@@ -21,6 +94,7 @@
           /version:
             get:
               operationId: GetVersion
+              summary: Get FormKiQ version
               description: Return the version of FormKiQ
               tags:
               - System Management
@@ -49,6 +123,7 @@
             get:
               operationId: GetSites
               description: Returns the list of sites that the user has access to
+              summary: Get site(s) access
               tags:
               - System Management
               responses:
@@ -76,6 +151,7 @@
             get:
               operationId: GetConfigs
               description: Returns the list of sites that the user has access to
+              summary: Get site configuration
               tags:
               - System Management
               parameters:
@@ -104,6 +180,7 @@
             patch:
               operationId: UpdateConfig
               description: Update the System Management configuration
+              summary: Update site configuration
               tags:
               - System Management
               parameters:
@@ -143,6 +220,7 @@
             get:
               operationId: GetApiKeys
               description: Returns the list of ApiKeys
+              summary: Get API Keys
               tags:
               - System Management
               parameters:
@@ -171,6 +249,7 @@
             post:
               operationId: AddApiKey
               description: Adds a new API Key
+              summary: Add API Key
               tags:
               - System Management
               parameters:
@@ -207,6 +286,7 @@
             delete:
               operationId: DeleteApiKey
               description: Adds a new API Key
+              summary: Delete API Key
               tags:
               - System Management
               parameters:
@@ -236,6 +316,7 @@
               tags:
               - Documents
               description: Returns a list of the most recent documents added, ordered by inserted, descending
+              summary: Get Documents listing
               parameters:
               - name: date
                 in: query
@@ -283,6 +364,7 @@
             post:
               operationId: AddDocument
               description: Creates a new document; body may include document content if less than 5 MB
+              summary: Add new document
               tags:
               - Documents
               parameters:
@@ -362,6 +444,7 @@
           /documents/{documentId}:
             get:
               operationId: GetDocument
+              summary: Get document
               description: Retrieves a document's details, i.e., metadata
               tags:
               - Documents
@@ -389,6 +472,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             patch:
               operationId: UpdateDocument
+              summary: Update document
               description: Update a document's details, i.e., metadata
               tags:
               - Documents
@@ -445,6 +529,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteDocument
+              summary: Delete document
               description: Delete a document
               tags:
               - Documents
@@ -461,6 +546,7 @@
           /documents/{documentId}/content:
             get:
               operationId: GetDocumentContent
+              summary: Get document's contents
               description: Get a document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
               tags:
               - Documents
@@ -492,6 +578,7 @@
           /documents/{documentId}/tags:
             get:
               operationId: GetDocumentTags
+              summary: Get document's tags
               description: Get a listing of a document's tags
               tags:
               - Document Tags
@@ -526,6 +613,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddDocumentTags
+              summary: Add tag to document
               description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
               tags:
               - Document Tags
@@ -561,6 +649,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
             patch:
               operationId: UpdateDocumentTags
+              summary: Update document tags
               description: Updates multiple tags to a document; this endpoint also accepts a different body parameter for updating a single tag
               tags:
               - Document Tags
@@ -599,6 +688,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
               operationId: SetDocumentTags
+              summary: Set document's tags
               description: Set multiple tags to a document; this endpoint also accepts a different body parameter for setting a single tag
               tags:
               - Document Tags
@@ -638,6 +728,7 @@
           /documents/{documentId}/tags/{tagKey}:
             get:
               operationId: GetDocumentTag
+              summary: Get document tag by key
               description: Get a document tag by using its key
               tags:
               - Document Tags
@@ -666,6 +757,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
               operationId: SetDocumentTag
+              summary: Update document tag value(s)
               description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
               tags:
               - Document Tags
@@ -688,6 +780,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteDocumentTag
+              summary: Delete document tag
               description: Delete a document tag by using its key
               tags:
               - Document Tags
@@ -705,6 +798,7 @@
           /documents/{documentId}/tags/{tagKey}/{tagValue}:
             delete:
               operationId: DeleteDocumentTagAndValue
+              summary: Delete document's tag value
               description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
               tags:
               - Document Tags
@@ -724,6 +818,7 @@
           /documents/tags:
             patch:
               operationId: UpdateMatchingDocumentTags
+              summary: Mass Update document tag(s)
               description: This API request allows the adding/updating of multiple document tag(s) based on document(s) that have the matching tag.
               tags:
               - Document Tags
@@ -759,6 +854,7 @@
           /documents/{documentId}/url:
             get:
               operationId: GetDocumentUrl
+              summary: Get document content url
               description: Returns a URL for the document's contents; this URL will expire (the default is 48 hours)
               tags:
               - Documents
@@ -795,6 +891,7 @@
           /documents/upload:
             get:
               operationId: GetDocumentUpload
+              summary: Get url to add large document
               description: Returns a URL that can be used to upload document content and create a new document; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
               tags:
               - Documents
@@ -828,6 +925,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddDocumentUpload
+              summary: Add large document
               description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
               tags:
               - Documents
@@ -880,6 +978,7 @@
           /documents/{documentId}/upload:
             get:
               operationId: GetDocumentIdUpload
+              summary: Get url to update large document
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -910,6 +1009,7 @@
           /documents/compress:
             post:
               operationId: CompressDocuments
+              summary: Compress multiple documents into a .zip file
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               requestBody:
@@ -942,6 +1042,7 @@
           /search:
             post:
               operationId: DocumentSearch
+              summary: Document search
               description: Document search query request; documents are searched primarily using a document tag key and optional tag value, or if Typesense is enabled, searches on the document path and versioned metadata is also available. An optional documentIds parameter is also available in the DocumentSearchBody to filter, with up to 100 documentIds accepted.
               tags:
               - Document Search
@@ -1008,6 +1109,7 @@
           /searchFulltext:
             post:
               operationId: DocumentFulltext
+              summary: Document full-text search
               description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1041,6 +1143,7 @@
           /queryFulltext:
             post:
               operationId: QueryFulltext
+              summary: Direct opensearch search API
               description: Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1073,6 +1176,7 @@
           /documents/{documentId}/actions:
             get:
               operationId: GetDocumentActions
+              summary: Get document actions
               description: Get document actions and their status
               tags:
               - Document Actions
@@ -1100,6 +1204,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddDocumentActions
+              summary: Add document action
               description: Add one or more actions to a document; this appends actions and does not replace previous actions
               tags:
               - Document Actions
@@ -1139,6 +1244,7 @@
           /documents/{documentId}/ocr:
             get:
               operationId: GetDocumentOcr
+              summary: Get document ocr content
               description: Get a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document OCR
@@ -1168,6 +1274,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
             post:
               operationId: AddDocumentOcr
+              summary: Perform document ocr
               description: Document optical character recognition (OCR) request; extract text and data from a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document OCR
@@ -1200,6 +1307,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
             put:
               operationId: SetDocumentOcr
+              summary: Set document ocr result
               description: Set a document's optical character recognition (OCR) result for a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document OCR
@@ -1232,6 +1340,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
             delete:
               operationId: DeleteDocumentOcr
+              summary: Delete document ocr
               description: Delete a document's optical character recognition (OCR) result, if exists; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document OCR
@@ -1248,6 +1357,7 @@
           /documents/{documentId}/versions:
             get:
               operationId: GetDocumentVersions
+              summary: Get document's versions
               description: Get a listing of document content and metadata versions; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Versions
@@ -1276,6 +1386,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             put:
               operationId: SetDocumentVersion
+              summary: Set version of document
               description: Set document to a previous document version; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Versions
@@ -1315,6 +1426,7 @@
           /documents/{documentId}/versions/{versionKey}:
             delete:
               operationId: DeleteDocumentVersion
+              summary: Delete document version
               description: Delete a specific previous document version; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Versions
@@ -1332,9 +1444,10 @@
           /folders:
             get:
               operationId: GetFolderDocuments
+              summary: Get document folders
               description: Get list of documents in a folder
               tags:
-              - Folders
+              - Document Folders
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexKeyQueryParam'
@@ -1361,9 +1474,10 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
             post:
               operationId: AddFolder
+              summary: Add document folder
               description: Creates a new folder
               tags:
-              - Folders
+              - Document Folders
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/shareKeyParam'
@@ -1394,9 +1508,10 @@
           /folders/{indexKey}:
             delete:
               operationId: DeleteFolder
+              summary: Delete document folder
               description: Delete a specific folder; folder must be empty
               tags:
-              - Folders
+              - Document Folders
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/indexKeyParam'
@@ -1422,6 +1537,7 @@
           /shares:
             get:
               operationId: GetUserShares
+              summary: Get user shared folders
               description: Get a listing of user folder/document shares; ONLY available with FormKiQ Enterprise
               parameters:
               - $ref: '#/components/parameters/groupParam'
@@ -1450,6 +1566,7 @@
           /shares/folders/{indexKey}:
             post:
               operationId: AddFolderShare
+              summary: Add folder share
               description: Creates a new folder share; ONLY available with FormKiQ Enterprise
               tags:
               - Document Shares
@@ -1489,6 +1606,7 @@
           /shares/{shareKey}:
             delete:
               operationId: DeleteShare
+              summary: Delete folder share
               description: Delete a specific document share; ONLY available with FormKiQ Enterprise
               tags:
               - Document Shares
@@ -1515,6 +1633,7 @@
           /tagSchemas:
             get:
               operationId: GetTagSchemas
+              summary: Get tag schemas
               description: Returns the list of tagSchemas; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Tag Schema
@@ -1550,6 +1669,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddTagSchema
+              summary: Add tag schemas
               description: Creates a new TagSchema; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Tag Schema
@@ -1595,6 +1715,7 @@
           /tagSchemas/{tagSchemaId}:
             get:
               operationId: GetTagSchema
+              summary: Get tag schema
               description: Retrieves a TagSchema's details, i.e., metadata; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Tag Schema
@@ -1621,6 +1742,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteTagSchema
+              summary: Delete tag schema
               description: Delete a TagSchema; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Tag Schema
@@ -1637,6 +1759,7 @@
           /documents/{documentId}/antivirus:
             put:
               operationId: SetAntivirus
+              summary: Antivirus document scan
               description: Perform an Anti-Malware / Antivirus scan on a document; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Antivirus
@@ -1671,6 +1794,7 @@
           /documents/{documentId}/fulltext:
             get:
               operationId: GetDocumentFulltext
+              summary: Get document's full-text
               description: Retrieve an OpenSearch document's details, i.e., metadata
               tags:
               - Advanced Document Search
@@ -1698,6 +1822,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             delete:
               operationId: DeleteDocumentFulltext
+              summary: Delete document full-text
               description: Remove full text search for a document from OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1724,6 +1849,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             put:
               operationId: SetDocumentFulltext
+              summary: Set document's full-text
               description: Set all text/tags found within a document to OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1756,6 +1882,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
             patch:
               operationId: UpdateDocumentFulltext
+              summary: Update document's full-text
               description: Update a document in OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1789,6 +1916,7 @@
           /documents/{documentId}/fulltext/tags/{tagKey}:
             delete:
               operationId: DeleteDocumentFulltextTag
+              summary: Delete document full-text tag
               description: Remove document tags from OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1807,6 +1935,7 @@
           /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
             delete:
               operationId: DeleteDocumentFulltextTagAndValue
+              summary: Delete document full-text tag/value
               description: Remove document tag/value from OpenSearch; ONLY available with FormKiQ Enterprise
               tags:
               - Advanced Document Search
@@ -1826,6 +1955,7 @@
           /documents/{documentId}/syncs:
             get:
               operationId: GetDocumentSyncs
+              summary: Get document syncs
               description: Retrieve the document syncs with external services status
               tags:
               - Documents
@@ -1855,6 +1985,7 @@
           /public/documents:
             post:
               operationId: PublicAddDocument
+              summary: Public add document
               description: Allow unauthenticated creation of new documents; must be enabled during installation (disabled by default)
               tags:
               - Public
@@ -1885,6 +2016,7 @@
           /public/webhooks/{webhooks+}:
             post:
               operationId: PublicAddWebhook
+              summary: Public add webhook
               description: Receive an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
               tags:
               - Public
@@ -1916,6 +2048,7 @@
           /private/webhooks/{webhooks+}:
             post:
               operationId: AddWebhookDocument
+              summary: Add webhook
               description: Receive an incoming private webhook and creates a document based on the webhook's body; requires authentication
               tags:
               - Webhooks
@@ -1949,6 +2082,7 @@
           /webhooks:
             get:
               operationId: GetWebhooks
+              summary: Get webhooks
               tags:
               - Webhooks
               description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
@@ -1977,6 +2111,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddWebhook
+              summary: Add webhook
               description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
               tags:
               - Webhooks
@@ -2009,6 +2144,7 @@
           /webhooks/{webhookId}:
             get:
               operationId: GetWebhook
+              summary: Get webhook
               tags:
               - Webhooks
               description: Return a webhook's details, i.e., its metadata
@@ -2038,6 +2174,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             delete:
               operationId: DeleteWebhook
+              summary: Delete webhook
               description: Delete a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
               tags:
               - Webhooks
@@ -2053,6 +2190,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             patch:
               operationId: UpdateWebhook
+              summary: Update webhook
               description: Updates a webhook's details, i.e., its metadata
               tags:
               - Webhooks
@@ -2075,6 +2213,7 @@
           /webhooks/{webhookId}/tags:
             get:
               operationId: GetWebhookTags
+              summary: Get webhook tags
               description: Get a webhook's tags
               tags:
               - Webhooks
@@ -2101,6 +2240,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddWebhookTag
+              summary: Add webhook tag
               description: Add a tag to a webhook
               tags:
               - Webhooks
@@ -2131,6 +2271,7 @@
           /onlyoffice/{documentId}/edit:
             post:
               operationId: OnlyOfficeDocumentEdit
+              summary: Edit onlyoffice document
               description: Provide ONLYOFFICE integration for editing documents; ONLY available with FormKiQ Enterprise
               tags:
               - Onlyoffice
@@ -2164,6 +2305,7 @@
           /onlyoffice/new:
             post:
               operationId: OnlyOfficeDocumentNew
+              summary: Create onlyoffice document
               description: Provide ONLYOFFICE integration for the creation of new documents; ONLY available with FormKiQ Enterprise
               tags:
               - Onlyoffice
@@ -2196,6 +2338,7 @@
           /onlyoffice/{documentId}/save:
             post:
               operationId: OnlyOfficeDocumentSave
+              summary: Save onlyoffice document
               description: Save an updated document for ONLYOFFICE integration. ONLY available with FormKiQ Enterprise
               tags:
               - Onlyoffice
@@ -2340,6 +2483,7 @@
           /esignature/docusign/{documentId}:
             post:
               operationId: EsignatureDocusign
+              summary: Create E-signature request
               description: Create a DocuSign E-Signature request; ONLY available with FormKiQ Enterprise
               tags:
               - E-Signature
@@ -2379,6 +2523,7 @@
           /esignature/docusign/config:
             get:
               operationId: EsignatureDocusignConfig
+              summary: Get E-signature config
               description: Get DocuSign configuration info; ONLY available with FormKiQ Enterprise
               tags:
               - E-Signature
@@ -2404,6 +2549,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
             put:
               operationId: EsignatureSetDocusignConfig
+              summary: Set E-signature config
               description: Set DocuSign configuration, required for integration; ONLY available with FormKiQ Enterprise
               tags:
               - E-Signature
@@ -2436,6 +2582,7 @@
           /esignature/docusign/events:
             post:
               operationId: AddEsignatureDocusignEvents
+              summary: Add E-signature event
               description: DocuSign callback URL handler; ONLY available with FormKiQ Enterprise
               tags:
               - E-Signature
@@ -4517,9 +4664,3 @@
               gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
               gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
         x-amazon-apigateway-cors:
-          allowOrigins:
-          - '*'
-          maxAge: 3600
-          allowMethods:
-          - '*'
-          allowHeaders:
