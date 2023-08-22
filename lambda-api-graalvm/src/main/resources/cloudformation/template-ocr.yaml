@@ -1,0 +1,177 @@
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+#@overlay/match by=overlay.all
+---
+Resources:
+
+  #@overlay/match missing_ok=True
+  OcrBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-ocr-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpiryRule
+            Prefix: tempfiles/
+            Status: Enabled
+            ExpirationInDays: 1
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+            
+  #@overlay/match missing_ok=True
+  OcrBucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "OCR S3 Bucket Name"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/OcrBucket"
+      Type: String
+      Value:   
+        Ref: OcrBucket
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+
+  #@overlay/match missing_ok=True
+  OcrQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 700
+      ReceiveMessageWaitTimeSeconds: 20
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ ${FormKiQType}"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+  #@overlay/match missing_ok=True
+  OcrQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: OcrQueue
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: LambdaSendMessagesToQueue
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sqs:SendMessage
+          Resource: 
+            Fn::GetAtt:
+            - OcrQueue
+            - Arn
+      Queues:
+      - Ref: OcrQueue
+
+  #@overlay/match missing_ok=True
+  OcrQueueParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Ocr SQS Queue"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/OcrQueue"
+      Type: String
+      Value: 
+        Ref: OcrQueue
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  #@overlay/match missing_ok=True
+  OcrQueueUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Ocr SQS Queue Url"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/OcrQueueUrl"
+      Type: String
+      Value: 
+        Fn::GetAtt: 
+        - OcrQueue
+        - QueueUrl
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+  #@overlay/match missing_ok=True
+  OcrQueueArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Ocr SQS Queue Url"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/OcrQueueArn"
+      Type: String
+      Value: 
+        Fn::GetAtt: 
+        - OcrQueue
+        - Arn
+      Tags:
+        Application: 
+          Fn::Sub: "FormKiQ ${FormKiQType}"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        StackName: 
+          Fn::Sub: "${AWS::StackName}"
+          
+Outputs:
+  #@overlay/match missing_ok=True
+  OcrBucket:
+    Value:
+      Ref: OcrBucket
+  #@overlay/match missing_ok=True
+  OcrQueue:
+    Value:
+      Ref: OcrQueue  
+  #@overlay/match missing_ok=True
+  OcrQueueUrl:
+    Value:
+      Fn::GetAtt: 
+      - OcrQueue
+      - QueueUrl  
+  #@overlay/match missing_ok=True
+  OcrQueueArn:
+    Value:
+      Fn::GetAtt: 
+      - OcrQueue
+      - Arn
