@@ -34,6 +34,13 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
         cache: gradle
+    - name: add binaries to path
+      run: |
+        mkdir -p "$HOME/.local/bin"
+        curl -L -o "$HOME/.local/bin/ytt" https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
+        chmod +x "$HOME/.local/bin/ytt"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        ytt --version
     - name: Execute Gradle build
       run: ./gradlew build --info
     - name: Upload test reports
