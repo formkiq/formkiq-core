@@ -14,16 +14,6 @@ configurations {
     integrationRuntime.extendsFrom testRuntime
 }
 
-def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
-}
-
-def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
-}
-
 dependencies {
 
  	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
@@ -68,16 +58,6 @@ compileJava {
     options.annotationProcessorPath += configurations.runtimeClasspath
 }
 
-nativeImage { 
-	outputFileName = "server"
-	dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.1"
-	mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-    enableHttp = true
-    enableHttps = true
-    enableStatic = true
-	systemProperty = ["java.net.preferIPv4Stack=true"]
-}
-
 test {
   failFast = true
   useJUnitPlatform()
@@ -88,43 +68,3 @@ task integrationTest(type: Test) {
     classpath = sourceSets.integration.runtimeClasspath
     useJUnitPlatform()
 }
-
-task buildZip(type: Zip) {
-	dependsOn test, graalvmNativeImage
-	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
-  	outputs.files("${buildDir}/lambda-s3-graalvm.zip")
-  	
-	archiveFileName = "lambda-s3-graalvm.zip"
-    destinationDirectory = file("${buildDir}")
-    from("${project.projectDir}/runtime") {
-        include 'bootstrap'
-    }
-    from("${buildDir}/graalvm") {
-        include 'server'
-    }
-}
-
-task assembleTemplate {
-    dependsOn buildZip
-	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
-	outputs.dir("${buildDir}/distributions/formkiq-core")
-
-	def randomtext = ('0'..'z').shuffled().take(10).join();
-	def sha256 = randomtext.digest('SHA-256')
-
-	doLast {
-		
-		copy {
-		  from layout.buildDirectory.file("${buildDir}/lambda-s3-graalvm.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/storage"
-	    }
-	    
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
-		}
-	}
-}
-
-graalvmNativeImage.dependsOn check
-
-build.dependsOn assembleTemplate

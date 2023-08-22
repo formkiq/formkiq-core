@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC "-//Puppy Crawl//DTD Import Control 1.1//EN" "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq">
+	<subpackage name="lambda">
+		<subpackage name="apigateway">
+			<allow pkg="com.amazonaws.services.lambda.runtime" />
+			<allow pkg="com.formkiq.aws.dynamodb" />
+			<allow pkg="com.formkiq.graalvm.annotations" />
+
+			<allow pkg="com.formkiq.aws.services.lambda" />
+			<allow pkg="com.formkiq.lambda.apigateway.ApiResponseStatus" />
+			<allow pkg="com.formkiq.lambda.apigateway.exception" />
+			<allow pkg="com.formkiq.lambda.apigateway.util" />
+			<allow pkg="com.formkiq.stacks.common.objects" />
+
+			<allow pkg="com.google.gson" />
+
+			<allow pkg="com.formkiq.aws.s3" />
+			<allow pkg="com.formkiq.aws.sqs" />
+			<allow pkg="com.formkiq.aws.ssm" />
+
+			<allow pkg="com.formkiq.stacks.dynamodb" />
+
+			<allow pkg="java.io" />
+			<allow pkg="java.time" />
+			<allow pkg="java.nio.charset" />
+			<allow pkg="java.util" />
+
+			<allow pkg="software.amazon.awssdk.utils" />
+
+			<subpackage name="util">
+				<allow pkg="java.lang.reflect" />
+			</subpackage>
+
+		</subpackage>
+	</subpackage>
+
+	<subpackage name="stacks">
+		<subpackage name="api">
+
+			<allow pkg="com.formkiq.module.events" />
+			<allow pkg="com.amazonaws.services.lambda.runtime" />
+			<allow pkg="com.amazonaws.xray" />
+			<allow pkg="com.formkiq.module.ocr" />
+			<allow pkg="com.formkiq.module.typesense" />
+			<allow pkg="software.amazon.awssdk" />
+
+			<allow pkg="com.formkiq.aws.dynamodb" />
+			<allow pkg="com.formkiq.aws.services.lambda" />
+			<allow pkg="com.formkiq.aws.s3" />
+			<allow pkg="com.formkiq.aws.sqs" />
+			<allow pkg="com.formkiq.aws.ssm" />
+			<allow pkg="com.formkiq.aws.sns" />
+
+			<allow pkg="com.formkiq.module.events.document" />
+			<allow pkg="com.formkiq.graalvm.annotations" />
+			<allow pkg="com.formkiq.lambda.apigateway" />
+			<allow pkg="com.formkiq.module.actions" />
+			<allow pkg="com.formkiq.module.actions.services" />
+			<allow pkg="com.formkiq.module.lambdaservices" />
+			<allow pkg="com.formkiq.plugins.tagschema" />
+			<allow pkg="com.formkiq.validation" />
+			<allow pkg="com.formkiq.stacks.common.objects" />
+			<allow pkg="com.formkiq.stacks.dynamodb" />
+
+			<allow pkg="com.formkiq.stacks.api" />
+			<allow pkg="com.formkiq.stacks.api.handler" />
+			<allow pkg="com.formkiq.stacks.api.util" />
+
+			<allow pkg="com.google.gson" />
+			<allow pkg="java.io" />
+			<allow pkg="java.net" />
+			<allow pkg="java.nio.charset" />
+			<allow pkg="java.time" />
+			<allow pkg="java.util" />
+
+			<allow pkg="org.easymock" />
+			<allow pkg="org.junit" />
+
+			<subpackage name="handler">
+
+				<allow pkg="com.formkiq.aws.services.lambda" />
+				<allow pkg="com.formkiq.module.typesense" />
+				<allow pkg="com.formkiq.module.http" />
+				<allow pkg="com.formkiq.module.ocr" />
+				<allow pkg="com.formkiq.stacks.api" />
+				<allow pkg="com.formkiq.stacks.common.formats" />
+				<allow pkg="com.formkiq.stacks.common.objects" />
+				<allow pkg="com.formkiq.validation" />
+
+				<allow pkg="java.lang.reflect" />
+				<allow pkg="java.time" />
+				<allow pkg="java.text" />
+
+
+			</subpackage>
+
+			<subpackage name="util">
+				<allow pkg="java.lang.reflect" />
+			</subpackage>
+
+		</subpackage>
+	</subpackage>
+</import-control>
