@@ -113,8 +113,8 @@ task buildDistribution(type: Copy) {
 	outputs.upToDateWhen {false}
 
     from 'console/build/distributions/formkiq-core'
-    from 'lambda-api/build/distributions/formkiq-core'
-    from 'lambda-s3/build/distributions/formkiq-core'
+    from 'lambda-api-graalvm/build/distributions/formkiq-core'
+    from 'lambda-s3-graalvm/build/distributions/formkiq-core'
     from 'lambda-typesense/build/distributions/formkiq-module-lambda-typesense'
     from 'lambda-ocr-tesseract/build/distributions/formkiq-core'
     from 'module-email-notify/build/distributions/formkiq-core'
