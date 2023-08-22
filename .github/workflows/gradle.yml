@@ -33,18 +33,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'temurin'
-    - name: add binaries to path
-      run: |
-        mkdir -p "$HOME/.local/bin"
-        curl -L -o "$HOME/.local/bin/ytt" https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
-        chmod +x "$HOME/.local/bin/ytt"
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        ytt --version
-        npm install openapi-generator -g
-        alias openapi-generator=openapi-generator-cli
-        openapi-generator --version
-    - name: Setup Gradle
-      uses: gradle/gradle-build-action@v2
+        cache: gradle
     - name: Execute Gradle build
       run: ./gradlew build --info
     - name: Upload test reports
