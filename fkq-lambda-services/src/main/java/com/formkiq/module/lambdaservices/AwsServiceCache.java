@@ -79,6 +79,16 @@ public class AwsServiceCache {
   }
 
   /**
+   * De-register Extension.
+   * 
+   * @param <T> Type of Class
+   * @param clazz {@link Class}
+   */
+  public <T> void deregister(final Class<T> clazz) {
+    EXTENSIONS.remove(clazz);
+  }
+
+  /**
    * Get Environment parameters.
    * 
    * @return {@link Map}

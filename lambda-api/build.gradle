@@ -23,29 +23,29 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
 	
-	implementation project(':document-events')
-	implementation project(':fkq-lambda-services')
-	implementation project(':fkq-lambda-core')
-	implementation project(':fkq-validation')
-	implementation project(':fkq-plugins')
-	implementation project(':aws-s3')
-	implementation project(':aws-sqs')
-	implementation project(':aws-ssm')
-	implementation project(':aws-sns')
-	implementation project(':aws-dynamodb')
-	implementation project(':dynamodb-documents')
-	implementation project(':actions')
-	implementation project(':typesense')
-	implementation project(':ocr')
-	implementation project(':http-sigv4')
+	api project(':document-events')
+	api project(':fkq-lambda-services')
+	api project(':fkq-lambda-core')
+	api project(':fkq-validation')
+	api project(':fkq-plugins')
+	api project(':aws-s3')
+	api project(':aws-sqs')
+	api project(':aws-ssm')
+	api project(':aws-sns')
+	api project(':aws-dynamodb')
+	api project(':dynamodb-documents')
+	api project(':actions')
+	api project(':typesense')
+	api project(':ocr')
+	api project(':http-sigv4')
 	
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+	api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+    api group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     
-    implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
-    implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+    api group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
+    api group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
     
-	implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
+	api group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 	
     testImplementation group: 'com.formkiq.stacks', name: 'client', version:'1.11.0'
 	testImplementation project(':aws-cognito')
