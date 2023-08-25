@@ -181,10 +181,10 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   private void updateUploadEmail(final LambdaLogger logger, final AwsServiceCache awsservice,
       final ApiAuthorization authorization, final List<DynamicObject> sites) {
 
-    String mailDomain = getMailDomain(awsservice);
     SsmService ssmService = getSsmService(awsservice);
+    String mailDomain = ssmService != null ? getMailDomain(awsservice) : null;
 
-    if (mailDomain != null) {
+    if (mailDomain != null && ssmService != null) {
 
       List<String> writeSiteIds = authorization.siteIds().stream()
           .filter(s -> authorization.permissions(s).contains(ApiPermission.WRITE))

@@ -1,0 +1,16 @@
+
+description = "Netty Server"
+
+dependencies {
+		
+	implementation project(':lambda-s3')
+	implementation project(':lambda-api')
+	implementation group: 'io.netty', name: 'netty-all', version: '4.1.96.Final'	
+	
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+}
+
+test {
+  failFast = true
+  useJUnitPlatform()  
+}

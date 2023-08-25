@@ -30,10 +30,10 @@ allprojects {
   group = 'com.formkiq.stacks'
   
 	apply plugin: 'com.diffplug.spotless'
-  
+	
 	java {
 		toolchain {
-			languageVersion.set(JavaLanguageVersion.of(11))
+			languageVersion.set(JavaLanguageVersion.of(17))
 		}
 	}
   
@@ -62,9 +62,6 @@ subprojects {
   apply plugin: 'com.github.spotbugs'
   apply plugin: 'com.github.ben-manes.versions'
   apply plugin: 'com.formkiq.gradle.graalvm-native-plugin'
-  
-  sourceCompatibility = "11"
-  targetCompatibility = "11"
   
   compileJava.dependsOn 'spotlessCheck'
 
