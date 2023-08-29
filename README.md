@@ -57,9 +57,9 @@ Try out our [FormKiQ Readonly Demo](https://demo.tryformkiq.com/?demo=tryformkiq
 
 The following are AWS CloudFormation scripts that can be used to install FormKiQ and other resources in a single click!
 
-Follow our [Quickstart Guide](https://docs.formkiq.com/docs/1.9.0/quickstart/README.html) to get started!
+Follow our [Quickstart Guide](https://docs.formkiq.com/docs/getting-started/quick-start) to get started!
 
-Then checkout out our [Getting Started with the FormKiQ Document API](https://docs.formkiq.com/docs/1.9.0/tutorials/formkiq-document-api-with-postman.html)
+Then checkout out our [API Walkthrough](https://docs.formkiq.com/docs/getting-started/api-walkthrough)
 
 ## Client SDKs
 
@@ -72,10 +72,9 @@ The following are official FormKiQ client SDKs that were generated using the [Op
 
 After FormKiQ is installed checkout the following links to continue on your journey!
 
-* [Getting Started with the FormKiQ Document API](https://docs.formkiq.com/docs/1.9.0/tutorials/formkiq-document-api-with-postman.html)
-* [FormKiQ API Reference](https://docs.formkiq.com/docs/1.9.0/api/index.html)
-* [Tutorials](https://docs.formkiq.com/docs/1.9.0/tutorials/overview.html)
-* [How-To](https://docs.formkiq.com/docs/1.9.0/how-to/overview.html)
+* [FormKiQ API Reference](https://docs.formkiq.com/docs/category/api-reference)
+* [Tutorials](https://docs.formkiq.com/docs/category/tutorials)
+* [How-To](https://docs.formkiq.com/docs/category/how-to)
 
 ## Support
 
