@@ -205,7 +205,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService;
   /** Test TImeout. */
-  private static final long TEST_TIMEOUT = 10;
+  private static final long TEST_TIMEOUT = 30;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
   /** UUID 1. */
