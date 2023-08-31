@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,7 +78,6 @@ public class HttpServerTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
-  @Disabled
   void testAddDocument01() throws Exception {
     // given
     String siteId = null;

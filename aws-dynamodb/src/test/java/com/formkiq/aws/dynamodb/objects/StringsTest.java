@@ -24,6 +24,8 @@
 package com.formkiq.aws.dynamodb.objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -71,5 +73,22 @@ class StringsTest {
     assertEquals("test.txt", Strings.getFilename("/bleh/something/test.txt"));
     assertEquals("test (something).txt",
         Strings.getFilename("/bleh/something/test (something).txt"));
+  }
+
+  @Test
+  void testFindUrlMatch01() {
+    // given
+    List<String> strs =
+        Arrays.asList("/documents/{documentId}/content", "/documents", "/documents/{documentId}");
+
+    // when
+    String result0 = Strings.findUrlMatch(strs, "/documents/123/content");
+    String result1 = Strings.findUrlMatch(strs, "/documents/123");
+    String result2 = Strings.findUrlMatch(strs, "/documents");
+
+    // then
+    assertEquals("/documents/{documentId}/content", result0);
+    assertEquals("/documents/{documentId}", result1);
+    assertEquals("/documents", result2);
   }
 }

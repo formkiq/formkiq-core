@@ -67,7 +67,6 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpServerExpectContinueHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -79,12 +78,12 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
   /** Cache Table. */
   private static final String CACHE_TABLE = "Cache";
+  /** Document Syncs Table Name. */
+  public static final String DOCUMENT_SYNCS_TABLE = "DocumentSyncs";
   /** Documents S3 Bucket. */
   private static final String DOCUMENTS_BUCKET = "documents";
   /** Documents Table. */
   private static final String DOCUMENTS_TABLE = "Documents";
-  /** Document Syncs Table Name. */
-  public static final String DOCUMENT_SYNCS_TABLE = "DocumentSyncs";
   /** Max Content Length. */
   private static final int MAX_CONTENT_LENGTH = 5242880;
   /** Documents Stating S3 Bucket. */
@@ -97,21 +96,18 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   /**
    * constructor.
    * 
-   * @param command {@link CommandLine}
+   * @param commandLine {@link CommandLine}
    */
-  public HttpServerInitializer(final CommandLine command) {
-    setupHandler(command);
+  public HttpServerInitializer(final CommandLine commandLine) {
 
-    Map<String, String> env = getEnvironment();
-    Map<String, URI> endpoints = getEndpoints(command);
-    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
-    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+    String minioAccessKey = commandLine.getOptionValue("minioAccessKey");
+    String minioSecretKey = commandLine.getOptionValue("minioSecretKey");
 
-    AwsServiceCache serviceCache = new AwsServiceCacheBuilder(env, endpoints, credentialsProvider)
-        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
-        .build();
-    this.s3Create = new StagingS3Create(serviceCache);
+    AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider
+        .create(AwsBasicCredentials.create(minioAccessKey, minioSecretKey));
+
+    setupHandler(commandLine, credentialsProvider);
+    setupS3Lambda(commandLine, credentialsProvider);
   }
 
   /**
@@ -238,8 +234,10 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
    * Setup FormKiQ.
    * 
    * @param commandLine {@link CommandLine}
+   * @param credentialsProvider {@link AwsCredentialsProvider}
    */
-  private void setupHandler(final CommandLine commandLine) {
+  private void setupHandler(final CommandLine commandLine,
+      final AwsCredentialsProvider credentialsProvider) {
 
     String minioAccessKey = commandLine.getOptionValue("minioAccessKey");
     String minioSecretKey = commandLine.getOptionValue("minioSecretKey");
@@ -250,9 +248,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     try {
 
       Map<String, URI> awsServiceEndpoints = getEndpoints(commandLine);
-
-      AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider
-          .create(AwsBasicCredentials.create(minioAccessKey, minioSecretKey));
 
       this.handler = new NettyRequestHandler(env, awsServiceEndpoints, credentialsProvider);
 
@@ -274,5 +269,24 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Set S3 Lambda.
+   * 
+   * @param command {@link CommandLine}
+   * @param credentialsProvider {@link AwsCredentialsProvider}
+   */
+  private void setupS3Lambda(final CommandLine command,
+      final AwsCredentialsProvider credentialsProvider) {
+
+    Map<String, String> env = getEnvironment();
+    Map<String, URI> endpoints = getEndpoints(command);
+
+    AwsServiceCache serviceCache = new AwsServiceCacheBuilder(env, endpoints, credentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+        .build();
+    this.s3Create = new StagingS3Create(serviceCache);
   }
 }
