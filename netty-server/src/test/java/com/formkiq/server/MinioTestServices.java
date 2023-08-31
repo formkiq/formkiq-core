@@ -75,11 +75,9 @@ public final class MinioTestServices {
   public static GenericContainer<?> getMinioLocal() {
     if (minioContainer == null && isPortAvailable()) {
 
-      // MINIO_ROOT_USER
-      // MINIO_ROOT_PASSWORD
       minioContainer =
           new GenericContainer<>(MINIO_IMAGE).withExposedPorts(DEFAULT_PORT, DEFAULT_CONSOLE_PORT)
-              .withEnv("MINIO_ACCESS_KEY", ACCESS_KEY).withEnv("MINIO_SECRET_KEY", SECRET_KEY)
+              .withEnv("MINIO_ROOT_USER", ACCESS_KEY).withEnv("MINIO_ROOT_PASSWORD", SECRET_KEY)
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS", "on")
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS",
                   "http://host.docker.internal:" + NettyExtension.BASE_HTTP_SERVER_PORT
@@ -88,8 +86,6 @@ public final class MinioTestServices {
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENDPOINT_STAGINGDOCUMENTS",
                   "http://host.docker.internal:" + NettyExtension.BASE_HTTP_SERVER_PORT
                       + "/minio/s3/stagingdocuments")
-              .withFileSystemBind(System.getProperty("user.home") + "/minio/" + UUID.randomUUID(),
-                  "/data")
               .withCommand("server", "/data", "--console-address", ":9090");
     }
 
