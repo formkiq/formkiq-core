@@ -43,12 +43,12 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner.Builder;
  */
 public class S3ConnectionBuilder {
 
-  /** S3 Region. */
-  private Region region;
   /** {@link S3ClientBuilder}. */
   private S3ClientBuilder builder;
   /** Builder. */
   private Builder presignerBuilder;
+  /** S3 Region. */
+  private Region region;
   /** {@link S3Client}. */
   private S3Client s3Client;
 

@@ -170,23 +170,27 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
       final SnsConnectionBuilder sns) {
 
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbBuilder));
-    AwsServiceCache.register(SsmConnectionBuilder.class,
-        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
-    AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
-    AwsServiceCache.register(FormKiqClientV1.class,
-        new FormKiQClientV1Extension(awsRegion, awsCredentials));
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(sns));
-    AwsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
-
     this.serviceCache =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
+
+    this.serviceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbBuilder));
+    this.serviceCache.register(SsmConnectionBuilder.class,
+        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
+    this.serviceCache.register(SnsConnectionBuilder.class,
+        new ClassServiceExtension<SnsConnectionBuilder>(sns));
+    this.serviceCache.register(S3ConnectionBuilder.class,
+        new ClassServiceExtension<S3ConnectionBuilder>(s3));
+    this.serviceCache.register(SsmService.class, new SsmServiceExtension());
+    this.serviceCache.register(S3Service.class, new S3ServiceExtension());
+    this.serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    this.serviceCache.register(DocumentService.class, new DocumentServiceExtension());
+    this.serviceCache.register(ConfigService.class, new ConfigServiceExtension());
+    this.serviceCache.register(FormKiqClientV1.class,
+        new FormKiQClientV1Extension(awsRegion, awsCredentials));
+    this.serviceCache.register(EventService.class, new EventServiceSnsExtension());
+    this.serviceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
 
     this.s3Service = this.serviceCache.getExtension(S3Service.class);
     this.documentService = this.serviceCache.getExtension(DocumentService.class);

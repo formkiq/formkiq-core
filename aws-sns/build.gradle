@@ -5,6 +5,7 @@ dependencies {
     api 'software.amazon.awssdk:sns:2.20.121'
     implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.20.121'
 	implementation project(':aws-xray')
+	implementation project(':fkq-lambda-services')
 	
 	configurations.all {
    		exclude group: 'software.amazon.awssdk', module: 'apache-client'

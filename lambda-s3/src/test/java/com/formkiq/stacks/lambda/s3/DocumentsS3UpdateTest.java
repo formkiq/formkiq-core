@@ -70,6 +70,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.schema.DocumentSchema;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
@@ -210,9 +211,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
     dbHelper = new DynamoDbHelper(dbBuilder);
-    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
-      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
-      dbHelper.createCacheTable(CACHE_TABLE);
+
+    try (DynamoDbClient dbClient = dbBuilder.build()) {
+      DocumentSchema schema = new DocumentSchema(dbClient);
+      schema.createDocumentsTable(DOCUMENTS_TABLE);
+      schema.createCacheTable(CACHE_TABLE);
     }
 
     service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,

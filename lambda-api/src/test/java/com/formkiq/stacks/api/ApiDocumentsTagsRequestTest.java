@@ -57,7 +57,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -350,7 +349,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
   @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteTagDocument04() throws Exception {
-    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+    getAwsServices().register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1325,7 +1324,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags10() throws Exception {
-    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+    getAwsServices().register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -1357,7 +1356,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
    */
   @Test
   public void testHandlePostDocumentTags11() throws Exception {
-    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+    getAwsServices().register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(new DocumentTagSchemaReturnErrors()));
 
     for (String method : Arrays.asList("post", "patch", "put")) {

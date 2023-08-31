@@ -23,6 +23,12 @@
  */
 package com.formkiq.server;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -36,51 +42,95 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class HttpServer {
 
-  // static final boolean SSL = System.getProperty("ssl") != null;
-  // static final int PORT = Integer.parseInt(System.getProperty("port", SSL ? "8443" : "8080"));
-
   /** Default Server Port. */
   private static final int DEFAULT_PORT = 8080;
-  /** Server Port. */
-  private int port;
 
   /**
-   * constructor.
+   * Create Options.
    * 
-   * @param serverPort int
+   * @return {@link Options}
    */
-  public HttpServer(final int serverPort) {
-    this.port = serverPort;
+  private static Options createOptions() {
+
+    Options options = new Options();
+    Option port = new Option(null, "port", true, "http server port");
+    options.addOption(port);
+
+    Option dynamodb = new Option(null, "dynamodb-url", true, "dynamodb url");
+    dynamodb.setRequired(true);
+    options.addOption(dynamodb);
+
+    Option s3 = new Option(null, "s3-url", true, "s3 url");
+    s3.setRequired(true);
+    options.addOption(s3);
+
+    Option minioAccessKey = new Option(null, "minioAccessKey", true, "Minio Access Key");
+    minioAccessKey.setRequired(true);
+    options.addOption(minioAccessKey);
+
+    Option minioSecretKey = new Option(null, "minioSecretKey", true, "Minio Secret Key");
+    minioSecretKey.setRequired(true);
+    options.addOption(minioSecretKey);
+
+    return options;
   }
 
   /**
    * Main.
    * 
    * @param args {@link String}
-   * @throws Exception Exception
+   * @throws ParseException ParseException
+   * @throws InterruptedException InterruptedException
    */
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) throws ParseException, InterruptedException {
+    new HttpServer(args).run();
+  }
 
-    int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
+  /** {@link CommandLine}. */
+  private CommandLine commandLine;
+  /** Server Port. */
+  private int port;
 
-    new HttpServer(port).run();
+  /**
+   * constructor.
+   * 
+   * @param args {@link String}
+   * @throws ParseException ParseException
+   */
+  public HttpServer(final String[] args) throws ParseException {
+
+    this.port = DEFAULT_PORT;
+
+    CommandLineParser parser = new DefaultParser();
+    Options options = createOptions();
+    CommandLine line = parser.parse(options, args);
+
+    if (line.hasOption("port")) {
+      this.port = Integer.parseInt(line.getOptionValue("port"));
+    }
+
+    this.commandLine = line;
   }
 
   /**
    * Run Server.
    * 
-   * @throws Exception Exception
+   * @return {@link Channel}
+   * 
+   * @throws InterruptedException InterruptedException
    */
-  public void run() throws Exception {
+  public Channel run() throws InterruptedException {
 
     EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     EventLoopGroup workerGroup = new NioEventLoopGroup();
+
     try {
+
       ServerBootstrap b = new ServerBootstrap();
       b.group(bossGroup, workerGroup);
       b.channel(NioServerSocketChannel.class);
       b.handler(new LoggingHandler(LogLevel.INFO));
-      b.childHandler(new HttpServerInitializer());
+      b.childHandler(new HttpServerInitializer(this.commandLine));
 
       Channel ch = b.bind(this.port).sync().channel();
 
@@ -88,6 +138,9 @@ public class HttpServer {
           "Open your web browser and navigate to " + "http://127.0.0.1:" + this.port + '/');
 
       ch.closeFuture().sync();
+
+      return ch;
+
     } finally {
       bossGroup.shutdownGracefully();
       workerGroup.shutdownGracefully();

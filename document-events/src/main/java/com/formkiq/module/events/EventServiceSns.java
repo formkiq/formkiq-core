@@ -57,6 +57,12 @@ public class EventServiceSns implements EventService {
    * @param eventTopicArn {@link String}
    */
   public EventServiceSns(final SnsConnectionBuilder snsBuilder, final String eventTopicArn) {
+    if (snsBuilder == null) {
+      throw new IllegalArgumentException("'snsBuilder' is null");
+    }
+    if (eventTopicArn == null) {
+      throw new IllegalArgumentException("'eventTopicArn' is null");
+    }
     this.snsService = new SnsService(snsBuilder);
     this.topicArn = eventTopicArn;
   }

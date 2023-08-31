@@ -21,38 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.events;
+package com.formkiq.module.lambdaservices;
 
-import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import java.net.URI;
+import java.util.Map;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link EventService}.
- *
+ * Initialize Service in {@link AwsServiceCache}.
  */
-public class EventServiceSnsExtension implements AwsServiceExtension<EventService> {
-
-  /** {@link EventService}. */
-  private EventService service;
+public interface AwsServiceRegistry {
 
   /**
-   * constructor.
+   * Init Service.
+   * 
+   * @param serviceCache {@link AwsServiceCache}
+   * @param awsServiceEndpoints {@link Map}
+   * @param credentialsProvider {@link AwsCredentialsProvider}
    */
-  public EventServiceSnsExtension() {}
-
-  @Override
-  public EventService loadService(final AwsServiceCache awsServiceCache) {
-
-    if (this.service == null) {
-
-      SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
-      this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
-    }
-
-    return this.service;
-  }
+  void initService(AwsServiceCache serviceCache, Map<String, URI> awsServiceEndpoints,
+      AwsCredentialsProvider credentialsProvider);
 }
-
-

@@ -9,13 +9,17 @@
 		<allow pkg="java.nio.charset" />		
 		<allow pkg="java.io" />
 		<allow pkg="java.time" />
+		<allow pkg="java.net" />
 		<allow pkg="java.util" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
+		<allow pkg="com.formkiq.aws.sns" />
 		<allow pkg="com.formkiq.aws.services.lambda" />
 		<allow pkg="com.formkiq.aws.sqs" />
 		<allow pkg="com.formkiq.aws.ssm" />
+		
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.plugins.tagschema" />
@@ -24,6 +28,10 @@
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.validation" />
 		<allow pkg="com.google.gson" />
+		
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.core.exception" />
+		<allow pkg="software.amazon.awssdk.regions" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		
 		<subpackage name="services">

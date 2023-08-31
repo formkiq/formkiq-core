@@ -21,38 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.events;
+package com.formkiq.server;
 
-import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.testcontainers.containers.GenericContainer;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link EventService}.
+ * JUnit 5 Extension for Minio.
  *
  */
-public class EventServiceSnsExtension implements AwsServiceExtension<EventService> {
+public class MinioExtension
+    implements BeforeAllCallback, BeforeEachCallback, ExtensionContext.Store.CloseableResource {
 
-  /** {@link EventService}. */
-  private EventService service;
-
-  /**
-   * constructor.
-   */
-  public EventServiceSnsExtension() {}
+  /** Minio. */
+  private GenericContainer<?> minioLocal;
 
   @Override
-  public EventService loadService(final AwsServiceCache awsServiceCache) {
+  public void beforeAll(final ExtensionContext context) throws Exception {
 
-    if (this.service == null) {
+    this.minioLocal = MinioTestServices.getMinioLocal();
 
-      SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
-      this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
+    if (this.minioLocal != null) {
+      this.minioLocal.start();
     }
+  }
 
-    return this.service;
+  @Override
+  public void beforeEach(final ExtensionContext context) throws Exception {
+    // empty
+  }
+
+  @Override
+  public void close() throws Throwable {
+
+    if (this.minioLocal != null) {
+      this.minioLocal.stop();
+    }
   }
 }
-
-

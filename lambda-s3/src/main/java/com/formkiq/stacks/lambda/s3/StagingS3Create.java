@@ -45,8 +45,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -57,11 +56,12 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Strings;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -79,7 +79,7 @@ import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -103,7 +103,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.ssm.SsmClient;
@@ -170,8 +169,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private String appEnvironment;
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsservices;
-  /** {@link AwsCredentials}. */
-  private AwsCredentials credentials;
   /** {@link String}. */
   private String documentsBucket;
   /** IAM Documents Url. */
@@ -184,16 +181,12 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private Gson gson = new GsonBuilder().create();
   /** {@link ActionsNotificationService}. */
   private ActionsNotificationService notificationService;
-  /** {@link Region}. */
-  private Region region;
   /** {@link S3Service}. */
   private S3Service s3;
   /** {@link DocumentService}. */
   private DocumentService service;
   /** SNS Document Event Arn. */
   private String snsDocumentEvent;
-  /** {@link SsmConnectionBuilder}. */
-  private SsmConnectionBuilder ssmConnection;
   /** {@link DocumentSyncService}. */
   private DocumentSyncService syncService = null;
 
@@ -202,63 +195,43 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    *
    */
   public StagingS3Create() {
-    this(System.getenv(), EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SsmConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))));
+    this(new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+        EnvironmentVariableCredentialsProvider.create())
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+        .build());
   }
 
   /**
    * constructor.
-   *
-   * @param map {@link Map}
-   * @param awsCredentials {@link AwsCredentials}
-   * @param dbBuilder {@link DynamoDbConnectionBuilder}
-   * @param s3Builder {@link S3ConnectionBuilder}
-   * @param ssmConnectionBuilder {@link SsmConnectionBuilder}
-   * @param snsBuilder {@link SnsConnectionBuilder}
-   * @throws Exception Exception
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
    */
-  protected StagingS3Create(final Map<String, String> map, final AwsCredentials awsCredentials,
-      final DynamoDbConnectionBuilder dbBuilder, final S3ConnectionBuilder s3Builder,
-      final SsmConnectionBuilder ssmConnectionBuilder, final SnsConnectionBuilder snsBuilder) {
+  public StagingS3Create(final AwsServiceCache awsServiceCache) {
 
-    this.region = Region.of(map.get("AWS_REGION"));
-    this.credentials = awsCredentials;
-
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbBuilder));
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Builder));
-    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
-    AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
-    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
-    AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsBuilder));
-    AwsServiceCache.register(ActionsNotificationService.class,
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
+    awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
-    AwsServiceCache.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3Builder));
 
-    this.awsservices = new AwsServiceCache().environment(map);
+    this.awsservices = awsServiceCache;
+    this.documentsBucket = this.awsservices.environment("DOCUMENTS_S3_BUCKET");
+    this.appEnvironment = this.awsservices.environment("APP_ENVIRONMENT");
     this.syncService = this.awsservices.getExtension(DocumentSyncService.class);
 
     this.service = this.awsservices.getExtension(DocumentService.class);
     this.actionsService = this.awsservices.getExtension(ActionsService.class);
     this.s3 = this.awsservices.getExtension(S3Service.class);
-    this.ssmConnection = ssmConnectionBuilder;
-    this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");
+
+    this.snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     this.notificationService = this.awsservices.getExtension(ActionsNotificationService.class);
     this.folderIndexProcesor = this.awsservices.getExtension(FolderIndexProcessor.class);
-
-    this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
-    this.appEnvironment = map.get("APP_ENVIRONMENT");
   }
 
   /**
@@ -350,9 +323,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (this.documentsIamUrl == null) {
       final int cacheTime = 5;
-      SsmService ssmService = new SsmServiceCache(this.ssmConnection, cacheTime, TimeUnit.MINUTES);
+      SsmConnectionBuilder ssmConnection =
+          this.awsservices.getExtension(SsmConnectionBuilder.class);
+      SsmService ssmService = new SsmServiceCache(ssmConnection, cacheTime, TimeUnit.MINUTES);
 
-      try (SsmClient ssmClient = this.ssmConnection.build()) {
+      try (SsmClient ssmClient = ssmConnection.build()) {
         this.documentsIamUrl = ssmService
             .getParameterValue("/formkiq/" + this.appEnvironment + "/api/DocumentsIamUrl");
       }
@@ -360,10 +335,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (this.formkiqClient == null) {
       FormKiqClientConnection fkqConnection =
-          new FormKiqClientConnection(this.documentsIamUrl).region(this.region);
+          new FormKiqClientConnection(this.documentsIamUrl).region(this.awsservices.region());
 
-      if (this.credentials != null) {
-        fkqConnection = fkqConnection.credentials(this.credentials);
+      AwsCredentials credentials = this.awsservices.getExtension(AwsCredentials.class);
+      if (credentials != null) {
+        fkqConnection = fkqConnection.credentials(credentials);
       }
 
       this.formkiqClient = new FormKiqClientV1(fkqConnection);

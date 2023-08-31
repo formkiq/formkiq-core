@@ -21,38 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.events;
+package com.formkiq.aws.sqs;
 
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import java.net.URI;
+import java.util.Map;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceRegistry;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link EventService}.
- *
+ * SQS {@link AwsServiceRegistry}.
  */
-public class EventServiceSnsExtension implements AwsServiceExtension<EventService> {
-
-  /** {@link EventService}. */
-  private EventService service;
-
-  /**
-   * constructor.
-   */
-  public EventServiceSnsExtension() {}
+public class SqsAwsServiceRegistry implements AwsServiceRegistry {
 
   @Override
-  public EventService loadService(final AwsServiceCache awsServiceCache) {
+  public void initService(final AwsServiceCache serviceCache,
+      final Map<String, URI> awsServiceEndpoints,
+      final AwsCredentialsProvider credentialsProvider) {
 
-    if (this.service == null) {
+    SqsConnectionBuilder sqs = new SqsConnectionBuilder(serviceCache.enableXray())
+        .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
+        .setEndpointOverride(awsServiceEndpoints.get("sqs"));
 
-      SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
-      this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
-    }
-
-    return this.service;
+    serviceCache.register(SqsConnectionBuilder.class,
+        new ClassServiceExtension<SqsConnectionBuilder>(sqs));
   }
 }
-
-

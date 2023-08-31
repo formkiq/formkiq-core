@@ -222,6 +222,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
+    env.put("SNS_DOCUMENT_EVENT", "someevent");
 
     processor = new DocumentActionsProcessor(env, Region.US_EAST_1, credentials, dbBuilder,
         TestServices.getS3Connection(null), TestServices.getSsmConnection(null),

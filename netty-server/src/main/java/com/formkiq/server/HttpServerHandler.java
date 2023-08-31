@@ -25,19 +25,17 @@ package com.formkiq.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
-import com.formkiq.stacks.api.AbstractCoreRequestHandler;
-import com.formkiq.stacks.api.CoreRequestHandler;
+import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.netty.buffer.ByteBuf;
@@ -50,64 +48,30 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.utils.IoUtils;
 
 /**
  * {@link SimpleChannelInboundHandler} for Http Server.
  */
 public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-  /** {@link CoreRequestHandler}. */
-  private static final CoreRequestHandler HANDLER = new CoreRequestHandler();
-
-  static {
-
-    Map<String, String> env = Map.of("USER_AUTHENTICATION", "cognito", "VERSION", "1.13",
-        "FORMKIQ_TYPE", "core", "MODULE_fulltext", "true", "MODULE_ocr", "true");
-    Map<String, URI> awsServiceEndpoints = Map.of();
-
-    AbstractCoreRequestHandler.configureHandler(env, Region.US_EAST_1, null, awsServiceEndpoints,
-        new DocumentTagSchemaPluginEmpty());
-    AbstractCoreRequestHandler.buildUrlMap();
-
-    HANDLER.getAwsServices().deregister(SsmService.class);
-  }
-
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+  /** {@link NettyRequestHandler}. */
+  private NettyRequestHandler handler;
+  /** {@link StagingS3Create}. */
+  private StagingS3Create s3Create;
 
-  @Override
-  protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest req)
-      throws Exception {
-
-    ByteBuf content = req.content();
-    try (InputStream iss = new ByteBufInputStream(content)) {
-
-      final String group = "default";
-
-      ApiGatewayRequestEvent apiEvent = new ApiGatewayRequestEvent();
-      apiEvent.setPath(req.uri());
-      apiEvent.setResource(req.uri());
-      apiEvent.setHttpMethod(req.method().name());
-      ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
-      requestContext.setAuthorizer(Map.of("claims",
-          Map.of("cognito:username", "admin", "cognito:groups", "[" + group + "]")));
-      apiEvent.setRequestContext(requestContext);
-
-      String event = this.gson.toJson(apiEvent);
-
-      InputStream is = new ByteArrayInputStream(event.getBytes(StandardCharsets.UTF_8));
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
-      Context context = new LambdaContext(UUID.randomUUID().toString());
-
-      HANDLER.handleRequest(is, os, context);
-
-      DefaultFullHttpResponse response = buildResponse(os);
-      response.headers().set("Content-Type", "application/plain; charset=UTF-8");
-      HttpUtil.setContentLength(response, response.content().readableBytes());
-
-      ctx.writeAndFlush(response);
-    }
+  /**
+   * constructor.
+   * 
+   * @param requestHandler {@link NettyRequestHandler}
+   * @param stagingS3Create {@link StagingS3Create}
+   */
+  public HttpServerHandler(final NettyRequestHandler requestHandler,
+      final StagingS3Create stagingS3Create) {
+    this.handler = requestHandler;
+    this.s3Create = stagingS3Create;
   }
 
   @SuppressWarnings("unchecked")
@@ -125,8 +89,79 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   }
 
   @Override
+  protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest req)
+      throws Exception {
+
+    if (req.uri().endsWith("/minio/s3/stagingdocuments")) {
+      processS3CreateRequest(ctx, req);
+    } else {
+      processApiGatewayRequest(ctx, req);
+    }
+  }
+
+  private void processS3CreateRequest(final ChannelHandlerContext ctx, final FullHttpRequest req) {
+
+    String statusCode = "200";
+    String body = "AKLJDASLKDA";
+    Context context = new LambdaContext(UUID.randomUUID().toString());
+
+    Map<String, Object> request = new HashMap<>();
+
+    this.s3Create.handleRequest(request, context);
+
+    DefaultFullHttpResponse response =
+        new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.parseLine(statusCode),
+            Unpooled.copiedBuffer(body, StandardCharsets.UTF_8));
+
+    HttpUtil.setContentLength(response, response.content().readableBytes());
+
+    ctx.writeAndFlush(response);
+  }
+
+  private void processApiGatewayRequest(final ChannelHandlerContext ctx, final FullHttpRequest req)
+      throws IOException {
+    final String group = "default";
+
+    ApiGatewayRequestEvent apiEvent = new ApiGatewayRequestEvent();
+    apiEvent.setPath(req.uri());
+    apiEvent.setResource(req.uri());
+    apiEvent.setHttpMethod(req.method().name());
+    ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
+    requestContext.setAuthorizer(
+        Map.of("claims", Map.of("cognito:username", "admin", "cognito:groups", "[" + group + "]")));
+    apiEvent.setRequestContext(requestContext);
+
+    String body = getBody(req.content());
+    apiEvent.setBody(body);
+
+    String event = this.gson.toJson(apiEvent);
+
+    InputStream is = new ByteArrayInputStream(event.getBytes(StandardCharsets.UTF_8));
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    Context context = new LambdaContext(UUID.randomUUID().toString());
+
+    this.handler.handleRequest(is, os, context);
+
+    DefaultFullHttpResponse response = buildResponse(os);
+    HttpUtil.setContentLength(response, response.content().readableBytes());
+
+    ctx.writeAndFlush(response);
+  }
+
+  @Override
+  public void channelReadComplete(final ChannelHandlerContext ctx) {
+    ctx.flush();
+  }
+
+  @Override
   public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
     cause.printStackTrace();
     ctx.close();
+  }
+
+  private String getBody(final ByteBuf content) throws IOException {
+    try (InputStream is = new ByteBufInputStream(content)) {
+      return IoUtils.toUtf8String(is);
+    }
   }
 }

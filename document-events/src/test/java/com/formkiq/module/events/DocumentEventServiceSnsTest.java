@@ -49,7 +49,7 @@ public class DocumentEventServiceSnsTest {
    */
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
-    service = new EventServiceSns(TestServices.getSnsConnection(null), null);
+    service = new EventServiceSns(TestServices.getSnsConnection(null), "test");
   }
 
   /**

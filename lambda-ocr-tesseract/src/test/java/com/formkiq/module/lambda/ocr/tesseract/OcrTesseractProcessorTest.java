@@ -97,7 +97,7 @@ class OcrTesseractProcessorTest {
     TesseractWrapperData wrapper = new TesseractWrapperData(OCR_TEXT);
     processor = new OcrTesseractProcessor(
         Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "DOCUMENTS_S3_BUCKET", BUCKET_NAME,
-            "OCR_S3_BUCKET", OCR_BUCKET_NAME),
+            "OCR_S3_BUCKET", OCR_BUCKET_NAME, "SNS_DOCUMENT_EVENT", "test"),
         dbConnection, s3Connection, sns,
         Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
             new TesseractFormatConverter(wrapper)));
