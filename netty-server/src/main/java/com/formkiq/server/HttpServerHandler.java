@@ -28,10 +28,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
@@ -48,6 +52,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import software.amazon.awssdk.utils.IoUtils;
 
 /**
@@ -61,6 +66,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   private NettyRequestHandler handler;
   /** {@link StagingS3Create}. */
   private StagingS3Create s3Create;
+  /** {@link NettyRequestHandler} Urls. */
+  private Collection<String> urls;
 
   /**
    * constructor.
@@ -71,6 +78,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   public HttpServerHandler(final NettyRequestHandler requestHandler,
       final StagingS3Create stagingS3Create) {
     this.handler = requestHandler;
+    this.urls = this.handler.getUrlMap().keySet();
     this.s3Create = stagingS3Create;
   }
 
@@ -99,33 +107,70 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     }
   }
 
-  private void processS3CreateRequest(final ChannelHandlerContext ctx, final FullHttpRequest req) {
+  @Override
+  public void channelReadComplete(final ChannelHandlerContext ctx) {
+    ctx.flush();
+  }
 
-    String statusCode = "200";
-    String body = "AKLJDASLKDA";
-    Context context = new LambdaContext(UUID.randomUUID().toString());
+  private Map<String, String> createPathParameters(final String resource, final String uri) {
 
-    Map<String, Object> request = new HashMap<>();
+    Map<String, String> map = new HashMap<>();
 
-    this.s3Create.handleRequest(request, context);
+    if (resource != null && uri != null) {
+      String[] s0 = resource.split("/");
+      String[] s1 = uri.split("/");
 
-    DefaultFullHttpResponse response =
-        new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.parseLine(statusCode),
-            Unpooled.copiedBuffer(body, StandardCharsets.UTF_8));
 
-    HttpUtil.setContentLength(response, response.content().readableBytes());
+      for (int i = 0; i < s0.length; i++) {
+        if (s0[i].startsWith("{") && s0[i].endsWith("}")) {
+          map.put(s0[i].substring(1, s0[i].length() - 1), s1[i]);
+        }
+      }
+    }
 
-    ctx.writeAndFlush(response);
+    return map;
+  }
+
+  private Map<String, String> createQueryParameters(final FullHttpRequest request) {
+
+    Map<String, String> map = new HashMap<>();
+    QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
+    Map<String, List<String>> params = queryStringDecoder.parameters();
+
+    for (Entry<String, List<String>> e : params.entrySet()) {
+      map.put(e.getKey(), e.getValue().get(0));
+    }
+
+    return map;
+  }
+
+  @Override
+  public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
+    cause.printStackTrace();
+    ctx.close();
+  }
+
+  private String getBody(final ByteBuf content) throws IOException {
+    try (InputStream is = new ByteBufInputStream(content)) {
+      return IoUtils.toUtf8String(is);
+    }
   }
 
   private void processApiGatewayRequest(final ChannelHandlerContext ctx, final FullHttpRequest req)
       throws IOException {
-    final String group = "default";
+
+    String resource = Strings.findUrlMatch(this.urls, req.uri());
+    Map<String, String> pathParams = createPathParameters(resource, req.uri());
+    Map<String, String> queryParameters = createQueryParameters(req);
 
     ApiGatewayRequestEvent apiEvent = new ApiGatewayRequestEvent();
     apiEvent.setPath(req.uri());
-    apiEvent.setResource(req.uri());
+    apiEvent.setResource(resource != null ? resource : req.uri());
     apiEvent.setHttpMethod(req.method().name());
+    apiEvent.setPathParameters(pathParams);
+    apiEvent.setQueryStringParameters(queryParameters);
+
+    String group = "default";
     ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
     requestContext.setAuthorizer(
         Map.of("claims", Map.of("cognito:username", "admin", "cognito:groups", "[" + group + "]")));
@@ -148,20 +193,22 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     ctx.writeAndFlush(response);
   }
 
-  @Override
-  public void channelReadComplete(final ChannelHandlerContext ctx) {
-    ctx.flush();
-  }
+  @SuppressWarnings("unchecked")
+  private void processS3CreateRequest(final ChannelHandlerContext ctx, final FullHttpRequest req)
+      throws IOException {
 
-  @Override
-  public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-    cause.printStackTrace();
-    ctx.close();
-  }
+    String body = getBody(req.content());
+    Context context = new LambdaContext(UUID.randomUUID().toString());
 
-  private String getBody(final ByteBuf content) throws IOException {
-    try (InputStream is = new ByteBufInputStream(content)) {
-      return IoUtils.toUtf8String(is);
-    }
+    Map<String, Object> request = this.gson.fromJson(body, Map.class);
+
+    this.s3Create.handleRequest(request, context);
+
+    DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
+        HttpResponseStatus.OK, Unpooled.copiedBuffer(body, StandardCharsets.UTF_8));
+
+    HttpUtil.setContentLength(response, response.content().readableBytes());
+
+    ctx.writeAndFlush(response);
   }
 }
