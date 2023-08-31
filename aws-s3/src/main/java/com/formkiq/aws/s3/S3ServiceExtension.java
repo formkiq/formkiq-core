@@ -35,22 +35,18 @@ public class S3ServiceExtension implements AwsServiceExtension<S3Service> {
 
   /** {@link S3Service}. */
   private S3Service service;
-  /** {@link S3ConnectionBuilder}. */
-  private S3ConnectionBuilder connection;
 
   /**
    * constructor.
-   * 
-   * @param s3Connection {@link S3ConnectionBuilder}
    */
-  public S3ServiceExtension(final S3ConnectionBuilder s3Connection) {
-    this.connection = s3Connection;
-  }
+  public S3ServiceExtension() {}
 
   @Override
   public S3Service loadService(final AwsServiceCache awsServiceCache) {
+
     if (this.service == null) {
-      this.service = new S3Service(this.connection);
+      S3ConnectionBuilder connection = awsServiceCache.getExtension(S3ConnectionBuilder.class);
+      this.service = new S3Service(connection);
     }
 
     return this.service;

@@ -23,15 +23,11 @@
  */
 package com.formkiq.stacks.api;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
@@ -40,11 +36,8 @@ import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.services.lambda.services.CacheService;
 import com.formkiq.aws.services.lambda.services.DynamoDbCacheServiceExtension;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -54,7 +47,6 @@ import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.DocumentsOcrRequestHandler;
@@ -127,7 +119,6 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -137,12 +128,35 @@ import software.amazon.awssdk.regions.Region;
  */
 public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestHandler {
 
-  /** {@link AwsServiceCache}. */
-  private static AwsServiceCache awsServices;
   /** Is Public Urls Enabled. */
   private static boolean isEnablePublicUrls;
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
+
+  /**
+   * Initialize.
+   * 
+   * @param serviceCache {@link AwsServiceCache}
+   * @param plugin {@link DocumentTagSchemaPlugin}
+   */
+  public static void initialize(final AwsServiceCache serviceCache,
+      final DocumentTagSchemaPlugin plugin) {
+
+    registerExtensions(serviceCache, plugin);
+
+    if (serviceCache.hasModule("typesense")) {
+      Region region = serviceCache.region();
+      AwsCredentials creds = serviceCache.getExtension(AwsCredentials.class);
+      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension(region, creds));
+    }
+
+    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
+
+    setAuthorizerType(
+        ApiAuthorizerType.valueOf(serviceCache.environment("USER_AUTHENTICATION").toUpperCase()));
+
+    buildUrlMap();
+  }
 
   /**
    * Add Url Request Handler Mapping.
@@ -156,7 +170,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   /**
    * Build Core UrlMap.
    */
-  public static void buildUrlMap() {
+  private static void buildUrlMap() {
     URL_MAP.put("options", new DocumentsOptionsRequestHandler());
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
@@ -272,43 +286,43 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   /**
    * Whether to enable public urls.
    *
-   * @param map {@link Map}
+   * @param serviceCache {@link AwsServiceCache}
    * @return boolean
    */
-  private static boolean isEnablePublicUrls(final Map<String, String> map) {
-    return "true".equals(map.getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  private static boolean isEnablePublicUrls(final AwsServiceCache serviceCache) {
+    return "true".equals(serviceCache.environment().getOrDefault("ENABLE_PUBLIC_URLS", "false"));
   }
 
   /**
    * Register Extensions.
    *
+   * @param serviceCache {@link AwsServiceCache}
    * @param schemaEvents {@link DocumentTagSchemaPlugin}
-   * @param s3 {@link S3ConnectionBuilder}
-   * @param sns {@link SnsConnectionBuilder}
    */
-  private static void registerExtensions(final DocumentTagSchemaPlugin schemaEvents,
-      final S3ConnectionBuilder s3, final SnsConnectionBuilder sns) {
+  private static void registerExtensions(final AwsServiceCache serviceCache,
+      final DocumentTagSchemaPlugin schemaEvents) {
 
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(sns));
-    AwsServiceCache.register(ActionsNotificationService.class,
+    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    serviceCache.register(EventService.class, new EventServiceSnsExtension());
+    serviceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
-    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3));
-    AwsServiceCache.register(SqsService.class, new SqsServiceExtension());
-    AwsServiceCache.register(DocumentTagSchemaPlugin.class,
+    serviceCache.register(ActionsService.class, new ActionsServiceExtension());
+    serviceCache.register(SsmService.class, new SsmServiceExtension());
+    serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(SqsService.class, new SqsServiceExtension());
+    serviceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(schemaEvents));
-    AwsServiceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
-    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
-    AwsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    AwsServiceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
-    AwsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
-    AwsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
-    AwsServiceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
-    AwsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
-    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    AwsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
-    AwsServiceCache.register(WebhooksService.class, new WebhooksServiceExtension());
+    serviceCache.register(CacheService.class, new DynamoDbCacheServiceExtension());
+    serviceCache.register(DocumentService.class, new DocumentServiceExtension());
+    serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    serviceCache.register(DocumentCountService.class, new DocumentCountServiceExtension());
+    serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    serviceCache.register(ConfigService.class, new ConfigServiceExtension());
+    serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
+    serviceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    serviceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
   }
 
   /** constructor. */
@@ -340,11 +354,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     }
 
     throw new NotFoundException(resource + " not found");
-  }
-
-  @Override
-  public AwsServiceCache getAwsServices() {
-    return awsServices;
   }
 
   @Override

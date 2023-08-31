@@ -40,16 +40,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.mockserver.mock.action.ExpectationResponseCallback;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
-import com.formkiq.stacks.api.AbstractCoreRequestHandler;
 import com.formkiq.stacks.api.CoreRequestHandler;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypeSenseExtension;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
@@ -59,7 +54,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback {
 
   /** {@link CoreRequestHandler}. */
-  private CoreRequestHandler handler = new CoreRequestHandler();
+  private TestCoreRequestHandler handler;
 
   @Override
   public RequestStreamHandler getHandler() {
@@ -109,10 +104,6 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
 
   @Override
   public void initHandler() {
-
-    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
-    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
-    AbstractCoreRequestHandler.configureHandler(getMapEnvironment(), AWS_REGION,
-        credentialsProvider, TestServices.getEndpointMap(), new DocumentTagSchemaPluginEmpty());
+    this.handler = new TestCoreRequestHandler(getMapEnvironment());
   }
 }

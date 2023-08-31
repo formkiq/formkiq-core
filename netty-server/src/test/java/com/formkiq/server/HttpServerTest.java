@@ -23,17 +23,27 @@
  */
 package com.formkiq.server;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -41,38 +51,49 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 /**
  * Unit Test for {@link HttpServer}.
  */
+@ExtendWith(DynamoDbExtension.class)
+@ExtendWith(MinioExtension.class)
+@ExtendWith(NettyExtension.class)
 public class HttpServerTest {
 
+  /** Test Time. */
+  private static final int TEST_TIME = 10;
+  /** Http Server Port. */
+  private static final int BASE_HTTP_SERVER_PORT = 8080;
   /** Base Url. */
-  private static final String BASE_URL = "http://localhost:8080";
-  /** {@link Thread}. */
-  private static Thread serverThread;
+  private static final String BASE_URL = "http://localhost:" + BASE_HTTP_SERVER_PORT;
 
-  /**
-   * BeforeAll.
-   */
-  @BeforeAll
-  public static void beforeAll() {
-    serverThread = new Thread(() -> {
-      try {
-        HttpServer.main(new String[0]);
-      } catch (Exception e) {
-        // stopped
-      }
-    });
-    serverThread.start();
-  }
+  /** {@link ApiClient}. */
+  private ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL);
 
-  /**
-   * After All.
-   */
-  @AfterAll
-  public static void tearDown() {
-    serverThread.interrupt();
-  }
+  /** {@link DocumentsApi}. */
+  private DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+
+  /**
+   * Test add documents.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  @Disabled
+  void testAddDocument01() throws Exception {
+    // given
+    String siteId = null;
+    String content = UUID.randomUUID().toString();
+    AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
+
+    // when
+    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, siteId, null);
+
+    // then
+    String documentId = addDocument.getDocumentId();
+    assertNotNull(documentId);
+    waitForDocumentContent(this.apiClient, siteId, documentId);
+  }
 
   /**
    * Test non existing endpoints.
@@ -80,6 +101,7 @@ public class HttpServerTest {
    * @throws Exception Exception
    */
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
   void testInvalidEndpoint() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/hello")).build();
@@ -91,33 +113,13 @@ public class HttpServerTest {
   }
 
   /**
-   * Test /version.
-   * 
-   * @throws Exception Exception
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  void testVersions() throws Exception {
-    HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/version")).build();
-
-    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
-    assertEquals("1.13", results.get("version"));
-    assertEquals("core", results.get("type"));
-    assertEquals("fulltext,ocr",
-        ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
-  }
-
-  /**
    * Test /sites.
    * 
    * @throws Exception Exception
    */
   @SuppressWarnings("unchecked")
   @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
   void testSites() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/sites")).build();
@@ -133,5 +135,27 @@ public class HttpServerTest {
     assertEquals("[DELETE, READ, WRITE]", sites.get(0).get("permissions").toString());
     assertEquals("default", sites.get(0).get("siteId"));
     assertEquals("READ_WRITE", sites.get(0).get("permission"));
+  }
+
+  /**
+   * Test /version.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  void testVersions() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/version")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
+    assertEquals("1.13", results.get("version"));
+    assertEquals("core", results.get("type"));
+    assertEquals("fulltext,ocr",
+        ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
   }
 }

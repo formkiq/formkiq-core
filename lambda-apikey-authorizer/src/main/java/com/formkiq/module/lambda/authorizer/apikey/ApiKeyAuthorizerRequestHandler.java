@@ -80,9 +80,9 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     this.awsServices =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+    this.awsServices.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbConnection));
-    AwsServiceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
+    this.awsServices.register(ApiKeysService.class, new ApiKeysServiceExtension());
   }
 
   /**

@@ -21,38 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.events;
+package com.formkiq.aws.sns;
 
-import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
  * 
- * {@link AwsServiceExtension} for {@link EventService}.
+ * {@link AwsServiceExtension} for {@link SnsService}.
  *
  */
-public class EventServiceSnsExtension implements AwsServiceExtension<EventService> {
+public class SnsServiceExtension implements AwsServiceExtension<SnsService> {
 
-  /** {@link EventService}. */
-  private EventService service;
-
-  /**
-   * constructor.
-   */
-  public EventServiceSnsExtension() {}
+  /** {@link SnsService}. */
+  private SnsService service;
 
   @Override
-  public EventService loadService(final AwsServiceCache awsServiceCache) {
-
+  public SnsService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
-
-      SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
-      this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
+      SnsConnectionBuilder connection = awsServiceCache.getExtension(SnsConnectionBuilder.class);
+      this.service = new SnsService(connection);
     }
 
     return this.service;
   }
 }
-
-

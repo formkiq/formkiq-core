@@ -56,6 +56,7 @@ import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.FormatConverter;
@@ -251,14 +252,19 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    */
   protected void register(final DynamoDbConnectionBuilder dbConnection,
       final S3ConnectionBuilder s3Connection, final SnsConnectionBuilder snsConnection) {
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        
+    this.awsServices.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbConnection));
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Connection));
-    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    this.awsServices.register(S3ConnectionBuilder.class,
+        new ClassServiceExtension<S3ConnectionBuilder>(s3Connection));
+    this.awsServices.register(SnsConnectionBuilder.class,
+        new ClassServiceExtension<SnsConnectionBuilder>(snsConnection));
+    this.awsServices.register(S3Service.class, new S3ServiceExtension());
+    this.awsServices.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    this.awsServices.register(ActionsService.class, new ActionsServiceExtension());
 
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsConnection));
-    AwsServiceCache.register(ActionsNotificationService.class,
+    this.awsServices.register(EventService.class, new EventServiceSnsExtension());
+    this.awsServices.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
   }
 }

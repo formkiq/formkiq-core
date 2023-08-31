@@ -21,41 +21,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
 import java.util.Map;
-import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
-import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginEmpty;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import com.formkiq.stacks.api.AbstractCoreRequestHandler;
+import com.formkiq.testutils.aws.TestServices;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
-/** {@link RequestStreamHandler} for handling API Gateway 'GET' requests. */
-@Reflectable
-public class CoreRequestHandler extends AbstractCoreRequestHandler {
+/**
+ * Test {@link AbstractCoreRequestHandler}.
+ */
+public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
 
   /** {@link AwsServiceCache}. */
-  private static AwsServiceCache serviceCache;
+  private AwsServiceCache serviceCache;
 
-  static {
+  /**
+   * constructor.
+   * 
+   * @param environment {@link Map}
+   */
+  public TestCoreRequestHandler(final Map<String, String> environment) {
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
-        EnvironmentVariableCredentialsProvider.create())
-        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-            new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
-        .build();
+    this.serviceCache =
+        new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
+                new SmsAwsServiceRegistry())
+            .build();
 
-    initialize(serviceCache, new DocumentTagSchemaPluginEmpty());
+    initialize(this.serviceCache, new DocumentTagSchemaPluginEmpty());
   }
 
   @Override
   public AwsServiceCache getAwsServices() {
-    return serviceCache;
+    return this.serviceCache;
   }
 }

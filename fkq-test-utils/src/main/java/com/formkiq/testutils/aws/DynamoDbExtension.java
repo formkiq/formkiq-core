@@ -27,7 +27,8 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.GenericContainer;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.schema.DocumentSchema;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
  * 
@@ -45,13 +46,12 @@ public class DynamoDbExtension
   public static final String DOCUMENTS_VERSION_TABLE = "DocumentVersions";
   /** Cache Table Name. */
   public static final String CACHE_TABLE = "Cache";
-  /** {@link DynamoDbConnectionBuilder}. */
-  private DynamoDbConnectionBuilder dbConnection;
   /** {@link GenericContainer}. */
   private GenericContainer<?> dynamoDbLocal;
   /** {@link DynamoDbHelper}. */
   private DynamoDbHelper dbhelper;
-
+  /** {@link DocumentSchema}. */
+  private DocumentSchema schema;
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
@@ -62,24 +62,15 @@ public class DynamoDbExtension
       this.dynamoDbLocal.start();
     }
 
-    this.dbConnection = DynamoDbTestServices.getDynamoDbConnection();
     this.dbhelper = new DynamoDbHelper(DynamoDbTestServices.getDynamoDbConnection());
 
-    DynamoDbHelper dbHelper = new DynamoDbHelper(this.dbConnection);
-    if (!dbHelper.isTableExists(DOCUMENTS_TABLE)) {
-      dbHelper.createDocumentsTable(DOCUMENTS_TABLE);
-    }
+    try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection().build()) {
+      this.schema = new DocumentSchema(db);
 
-    if (!dbHelper.isTableExists(DOCUMENTS_VERSION_TABLE)) {
-      dbHelper.createDocumentsTable(DOCUMENTS_VERSION_TABLE);
-    }
-
-    if (!dbHelper.isTableExists(CACHE_TABLE)) {
-      dbHelper.createCacheTable(CACHE_TABLE);
-    }
-
-    if (!dbHelper.isTableExists(DOCUMENT_SYNCS_TABLE)) {
-      dbHelper.createDocumentSyncsTable(DOCUMENT_SYNCS_TABLE);
+      this.schema.createDocumentsTable(DOCUMENTS_TABLE);
+      this.schema.createDocumentsTable(DOCUMENTS_VERSION_TABLE);
+      this.schema.createCacheTable(CACHE_TABLE);
+      this.schema.createDocumentSyncsTable(DOCUMENT_SYNCS_TABLE);
     }
   }
 

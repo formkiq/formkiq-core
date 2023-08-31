@@ -188,18 +188,19 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       final SsmConnectionBuilder ssmBuilder, final SnsConnectionBuilder snsBuilder) {
 
     this.services = new AwsServiceCache().environment(map);
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+    this.services.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbBuilder));
-    AwsServiceCache.register(SsmService.class, new SsmServiceExtension());
-    AwsServiceCache.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
-    AwsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsBuilder));
-    AwsServiceCache.register(ActionsNotificationService.class,
+    this.services.register(SsmService.class, new SsmServiceExtension());
+    this.services.register(SnsConnectionBuilder.class, new ClassServiceExtension<>(snsBuilder));
+    this.services.register(SsmConnectionBuilder.class, new ClassServiceExtension<>(ssmBuilder));
+    this.services.register(DocumentService.class, new DocumentServiceExtension());
+    this.services.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    this.services.register(EventService.class, new EventServiceSnsExtension());
+    this.services.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
 
     Region region = Region.of(map.get("AWS_REGION"));
-    AwsServiceCache.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
+    this.services.register(FormKiqClientV1.class, new FormKiQClientV1Extension(region, creds));
 
     this.service = this.services.getExtension(DocumentService.class);
     this.snsDocumentEvent = map.get("SNS_DOCUMENT_EVENT");

@@ -25,6 +25,7 @@ package com.formkiq.module.lambdaservices;
 
 import java.util.HashMap;
 import java.util.Map;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * Get Aws Services from Cache.
@@ -32,26 +33,18 @@ import java.util.Map;
  */
 public class AwsServiceCache {
 
-  /** {@link AwsServiceExtension}. */
-  private static final Map<Class<?>, AwsServiceExtension<?>> EXTENSIONS = new HashMap<>();
-
-  /**
-   * Registers an {@link AwsServiceExtension}.
-   * 
-   * @param clazz {@link Class}
-   * @param <T> Type of Class
-   * @param extension {@link AwsServiceExtension}
-   */
-  public static <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
-    EXTENSIONS.put(clazz, extension);
-  }
-
   /** Is Debug Mode. */
   private boolean debug;
+  /** Enable X Ray. */
+  private boolean enableXray;
   /** Environment {@link Map}. */
   private Map<String, String> environment;
+  /** {@link AwsServiceExtension}. */
+  private final Map<Class<?>, AwsServiceExtension<?>> extensions = new HashMap<>();
   /** FormKiQ Type. */
   private String formKiQType;
+  /** {@link Region}. */
+  private Region region;
 
   /**
    * constructor.
@@ -85,7 +78,27 @@ public class AwsServiceCache {
    * @param clazz {@link Class}
    */
   public <T> void deregister(final Class<T> clazz) {
-    EXTENSIONS.remove(clazz);
+    this.extensions.remove(clazz);
+  }
+
+  /**
+   * Get Enable X Ray.
+   * 
+   * @return boolean
+   */
+  public boolean enableXray() {
+    return this.enableXray;
+  }
+
+  /**
+   * Set Enable X Ray.
+   * 
+   * @param enabled boolean
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache enableXray(final boolean enabled) {
+    this.enableXray = enabled;
+    return this;
   }
 
   /**
@@ -137,7 +150,8 @@ public class AwsServiceCache {
    */
   @SuppressWarnings("unchecked")
   public <T> T getExtension(final Class<T> clazz) {
-    return EXTENSIONS.containsKey(clazz) ? (T) EXTENSIONS.get(clazz).loadService(this) : null;
+    return this.extensions.containsKey(clazz) ? (T) this.extensions.get(clazz).loadService(this)
+        : null;
   }
 
   /**
@@ -148,5 +162,36 @@ public class AwsServiceCache {
    */
   public boolean hasModule(final String module) {
     return "true".equals(environment("MODULE_" + module));
+  }
+
+  /**
+   * Get {@link Region}.
+   * 
+   * @return {@link Region}
+   */
+  public Region region() {
+    return this.region;
+  }
+
+  /**
+   * Set {@link Region}.
+   * 
+   * @param awsRegion {@link Region}
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache region(final Region awsRegion) {
+    this.region = awsRegion;
+    return this;
+  }
+
+  /**
+   * Registers an {@link AwsServiceExtension}.
+   * 
+   * @param clazz {@link Class}
+   * @param <T> Type of Class
+   * @param extension {@link AwsServiceExtension}
+   */
+  public <T> void register(final Class<T> clazz, final AwsServiceExtension<T> extension) {
+    this.extensions.put(clazz, extension);
   }
 }
