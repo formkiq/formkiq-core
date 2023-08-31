@@ -45,12 +45,14 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import io.minio.BucketExistsArgs;
 import io.minio.GetBucketNotificationArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.SetBucketNotificationArgs;
+import io.minio.SetBucketVersioningArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -60,6 +62,8 @@ import io.minio.errors.XmlParserException;
 import io.minio.messages.EventType;
 import io.minio.messages.NotificationConfiguration;
 import io.minio.messages.QueueConfiguration;
+import io.minio.messages.VersioningConfiguration;
+import io.minio.messages.VersioningConfiguration.Status;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -92,6 +96,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   private NettyRequestHandler handler;
   /** {@link StagingS3Create}. */
   private StagingS3Create s3Create;
+  /** {@link DocumentsS3Update}. */
+  private DocumentsS3Update s3Update;
 
   /**
    * constructor.
@@ -178,7 +184,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   }
 
   private HttpServerHandler createServerHandler() {
-    return new HttpServerHandler(this.handler, this.s3Create);
+    return new HttpServerHandler(this.handler, this.s3Create, this.s3Update);
   }
 
   private Map<String, URI> getEndpoints(final CommandLine commandLine) {
@@ -227,6 +233,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
       IOException, NoSuchAlgorithmException, ServerException, XmlParserException {
     if (!mc.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
       mc.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+      mc.setBucketVersioning(SetBucketVersioningArgs.builder().bucket(bucket)
+          .config(new VersioningConfiguration(Status.ENABLED, Boolean.FALSE)).build());
     }
   }
 
@@ -287,6 +295,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
         .build();
+
     this.s3Create = new StagingS3Create(serviceCache);
+    this.s3Update = new DocumentsS3Update(serviceCache);
   }
 }

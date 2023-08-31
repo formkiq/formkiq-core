@@ -43,6 +43,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentContentResponse;
+import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.stacks.client.FormKiqClient;
@@ -366,6 +367,36 @@ public class FkqDocumentService {
       HttpResponse<String> response = client.getDocumentContentAsHttpResponse(request);
       if (STATUS_OK == response.statusCode() && response.body().contains(content)) {
         break;
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
+   * Wait For Document Content Length.
+   * 
+   * @param client {@link FormKiqClientV1}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link GetDocumentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentResponse waitForDocumentContentLength(final ApiClient client,
+      final String siteId, final String documentId) throws InterruptedException {
+
+    DocumentsApi api = new DocumentsApi(client);
+
+    while (true) {
+
+      try {
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        if (response.getContentLength() != null) {
+          return response;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
       }
 
       TimeUnit.SECONDS.sleep(1);
