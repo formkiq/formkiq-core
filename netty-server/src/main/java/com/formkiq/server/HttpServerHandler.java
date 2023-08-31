@@ -39,6 +39,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
+import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -66,6 +67,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   private NettyRequestHandler handler;
   /** {@link StagingS3Create}. */
   private StagingS3Create s3Create;
+  /** {@link DocumentsS3Update}. */
+  private DocumentsS3Update s3Update;
   /** {@link NettyRequestHandler} Urls. */
   private Collection<String> urls;
 
@@ -74,12 +77,14 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
    * 
    * @param requestHandler {@link NettyRequestHandler}
    * @param stagingS3Create {@link StagingS3Create}
+   * @param documentS3Update {@link DocumentsS3Update}
    */
   public HttpServerHandler(final NettyRequestHandler requestHandler,
-      final StagingS3Create stagingS3Create) {
+      final StagingS3Create stagingS3Create, final DocumentsS3Update documentS3Update) {
     this.handler = requestHandler;
     this.urls = this.handler.getUrlMap().keySet();
     this.s3Create = stagingS3Create;
+    this.s3Update = documentS3Update;
   }
 
   @SuppressWarnings("unchecked")
@@ -100,7 +105,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest req)
       throws Exception {
 
-    if (req.uri().endsWith("/minio/s3/stagingdocuments")) {
+    if (req.uri().contains("/minio/s3/")) {
       processS3CreateRequest(ctx, req);
     } else {
       processApiGatewayRequest(ctx, req);
@@ -202,7 +207,11 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     Map<String, Object> request = this.gson.fromJson(body, Map.class);
 
-    this.s3Create.handleRequest(request, context);
+    if (req.uri().endsWith("/minio/s3/documents")) {
+      this.s3Update.handleRequest(request, context);
+    } else {
+      this.s3Create.handleRequest(request, context);
+    }
 
     DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
         HttpResponseStatus.OK, Unpooled.copiedBuffer(body, StandardCharsets.UTF_8));

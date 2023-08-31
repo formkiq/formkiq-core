@@ -24,6 +24,7 @@
 package com.formkiq.server;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URI;
@@ -42,6 +43,7 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -56,7 +58,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 public class HttpServerTest {
 
   /** Test Time. */
-  private static final int TEST_TIME = 10;
+  private static final int TEST_TIME = 30;
   /** Http Server Port. */
   private static final int BASE_HTTP_SERVER_PORT = 8080;
   /** Base Url. */
@@ -91,6 +93,12 @@ public class HttpServerTest {
     String documentId = addDocument.getDocumentId();
     assertNotNull(documentId);
     waitForDocumentContent(this.apiClient, siteId, documentId);
+
+    assertEquals(content,
+        this.documentsApi.getDocumentContent(documentId, null, siteId, null).getContent());
+
+    GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, siteId, documentId);
+    assertEquals(content.length(), response.getContentLength().intValue());
   }
 
   /**
