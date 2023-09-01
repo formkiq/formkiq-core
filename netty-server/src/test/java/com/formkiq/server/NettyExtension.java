@@ -59,8 +59,8 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
     params.add("--port=" + BASE_HTTP_SERVER_PORT);
     params.add("--dynamodb-url=" + DynamoDbTestServices.getEndpoint());
     params.add("--s3-url=" + MinioTestServices.getEndpoint());
-    params.add("--minioAccessKey=" + MinioTestServices.ACCESS_KEY);
-    params.add("--minioSecretKey=" + MinioTestServices.SECRET_KEY);
+    params.add("--minio-access-key=" + MinioTestServices.ACCESS_KEY);
+    params.add("--minio-secret-key=" + MinioTestServices.SECRET_KEY);
 
     this.serverThread = new Thread(() -> {
       try {

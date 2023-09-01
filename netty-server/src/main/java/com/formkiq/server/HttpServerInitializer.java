@@ -106,8 +106,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
    */
   public HttpServerInitializer(final CommandLine commandLine) {
 
-    String minioAccessKey = commandLine.getOptionValue("minioAccessKey");
-    String minioSecretKey = commandLine.getOptionValue("minioSecretKey");
+    String minioAccessKey = commandLine.getOptionValue("minio-access-key");
+    String minioSecretKey = commandLine.getOptionValue("minio-secret-key");
 
     AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider
         .create(AwsBasicCredentials.create(minioAccessKey, minioSecretKey));
@@ -206,8 +206,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     env.put("USER_AUTHENTICATION", "cognito");
     env.put("VERSION", "1.13");
     env.put("FORMKIQ_TYPE", "core");
-    env.put("MODULE_fulltext", "true");
-    env.put("MODULE_ocr", "true");
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("CACHE_TABLE", CACHE_TABLE);
     env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
@@ -247,8 +245,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   private void setupHandler(final CommandLine commandLine,
       final AwsCredentialsProvider credentialsProvider) {
 
-    String minioAccessKey = commandLine.getOptionValue("minioAccessKey");
-    String minioSecretKey = commandLine.getOptionValue("minioSecretKey");
+    String minioAccessKey = commandLine.getOptionValue("minio-access-key");
+    String minioSecretKey = commandLine.getOptionValue("minio-secret-key");
     String s3Url = commandLine.getOptionValue("s3-url");
 
     Map<String, String> env = getEnvironment();
