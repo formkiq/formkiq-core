@@ -57,8 +57,8 @@ public final class MinioTestServices {
    */
   @SuppressWarnings("resource")
   public static URI getEndpoint() {
-    GenericContainer<?> dynamoDb = getMinioLocal();
-    Integer port = dynamoDb != null ? dynamoDb.getFirstMappedPort() : DEFAULT_PORT;
+    GenericContainer<?> container = getMinioLocal(null);
+    Integer port = container != null ? container.getFirstMappedPort() : DEFAULT_PORT;
     try {
       return new URI("http://127.0.0.1:" + port);
     } catch (URISyntaxException e) {
@@ -69,10 +69,11 @@ public final class MinioTestServices {
   /**
    * Get Singleton Instance of {@link GenericContainer}.
    * 
+   * @param webhookEndpoint {@link String}
    * @return {@link GenericContainer}
    */
   @SuppressWarnings("resource")
-  public static GenericContainer<?> getMinioLocal() {
+  public static GenericContainer<?> getMinioLocal(final String webhookEndpoint) {
     if (minioContainer == null && isPortAvailable()) {
 
       minioContainer =
@@ -80,12 +81,11 @@ public final class MinioTestServices {
               .withEnv("MINIO_ROOT_USER", ACCESS_KEY).withEnv("MINIO_ROOT_PASSWORD", SECRET_KEY)
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS", "on")
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS",
-                  "http://host.docker.internal:" + NettyExtension.BASE_HTTP_SERVER_PORT
-                      + "/minio/s3/documents")
+                  webhookEndpoint + "/minio/s3/documents")
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENABLE_STAGINGDOCUMENTS", "on")
+              .withExtraHost("host.docker.internal", "host-gateway")
               .withEnv("MINIO_NOTIFY_WEBHOOK_ENDPOINT_STAGINGDOCUMENTS",
-                  "http://host.docker.internal:" + NettyExtension.BASE_HTTP_SERVER_PORT
-                      + "/minio/s3/stagingdocuments")
+                  webhookEndpoint + "/minio/s3/stagingdocuments")
               .withCommand("server", "/data", "--console-address", ":9090");
     }
 

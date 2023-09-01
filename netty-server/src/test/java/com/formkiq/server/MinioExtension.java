@@ -42,7 +42,8 @@ public class MinioExtension
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    this.minioLocal = MinioTestServices.getMinioLocal();
+    String webhookEndpoint = "http://host.docker.internal:" + NettyExtension.BASE_HTTP_SERVER_PORT;
+    this.minioLocal = MinioTestServices.getMinioLocal(webhookEndpoint);
 
     if (this.minioLocal != null) {
       this.minioLocal.start();
