@@ -1,3 +1,7 @@
+plugins {
+  id("com.palantir.docker") version "0.35.0"
+  id "com.palantir.docker-run" version "0.35.0"
+}
 
 description = "Netty Server"
 
@@ -18,3 +22,44 @@ test {
   failFast = true
   useJUnitPlatform()  
 }
+
+task copyLibs(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$buildDir/libs"
+}
+
+jar {
+  manifest {
+    attributes(
+      'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
+      'Main-Class': 'com.formkiq.server.HttpServer'
+    )
+  }
+}
+
+task prepareDockerfileTemplate(type: Copy) {
+    from "src/main/resources/docker"
+    include "Dockerfile"
+    filter { it.replaceAll('<%=version%>', project.version) }
+    into "$buildDir/dockerfile/"
+}
+
+dockerPrepare.dependsOn copyLibs,jar,prepareDockerfileTemplate
+dockerfileZip.dependsOn prepareDockerfileTemplate
+
+docker {
+	dependsOn prepareDockerfileTemplate
+    name "formkiq/${project.name}:${project.version}"
+    files "$buildDir/libs/"
+    dockerfile file("$buildDir/dockerfile/Dockerfile")
+}
+
+dockerRun {
+    name "${project.name}"
+    image "formkiq/${project.name}:${project.version}"
+    ports '8080:8080'
+    clean true
+    daemonize false
+}
+
+check.dependsOn tasks.docker

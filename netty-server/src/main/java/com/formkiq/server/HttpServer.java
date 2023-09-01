@@ -23,6 +23,9 @@
  */
 package com.formkiq.server;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -44,6 +47,8 @@ public class HttpServer {
 
   /** Default Server Port. */
   private static final int DEFAULT_PORT = 8080;
+  /** {@link Logger}. */
+  private static Logger logger = Logger.getLogger(HttpServer.class.getName());
 
   /**
    * Create Options.
@@ -64,11 +69,11 @@ public class HttpServer {
     s3.setRequired(true);
     options.addOption(s3);
 
-    Option minioAccessKey = new Option(null, "minioAccessKey", true, "Minio Access Key");
+    Option minioAccessKey = new Option(null, "minio-access-key", true, "Minio Access Key");
     minioAccessKey.setRequired(true);
     options.addOption(minioAccessKey);
 
-    Option minioSecretKey = new Option(null, "minioSecretKey", true, "Minio Secret Key");
+    Option minioSecretKey = new Option(null, "minio-secret-key", true, "Minio Secret Key");
     minioSecretKey.setRequired(true);
     options.addOption(minioSecretKey);
 
@@ -83,6 +88,7 @@ public class HttpServer {
    * @throws InterruptedException InterruptedException
    */
   public static void main(final String[] args) throws ParseException, InterruptedException {
+    logger.info("Starting FormKiQ server");
     new HttpServer(args).run();
   }
 
@@ -99,17 +105,40 @@ public class HttpServer {
    */
   public HttpServer(final String[] args) throws ParseException {
 
-    this.port = DEFAULT_PORT;
+    Options options = createOptions();
+    String[] newargs = loadArgs(options, args);
 
     CommandLineParser parser = new DefaultParser();
-    Options options = createOptions();
-    CommandLine line = parser.parse(options, args);
+    CommandLine line = parser.parse(options, newargs);
 
     if (line.hasOption("port")) {
       this.port = Integer.parseInt(line.getOptionValue("port"));
+    } else {
+      this.port = DEFAULT_PORT;
     }
 
     this.commandLine = line;
+  }
+
+  /**
+   * Load Args from Environment and commandline.
+   * 
+   * @param options {@link Options}
+   * @param args {@link String}
+   * @return {@link String}
+   */
+  private String[] loadArgs(final Options options, final String[] args) {
+    Set<String> set = new HashSet<>(Set.of(args));
+
+    for (Option o : options.getOptions()) {
+      String env = o.getLongOpt().toUpperCase().replaceAll("-", "_");
+      if (System.getenv().containsKey(env)) {
+        set.add("--" + o.getLongOpt() + "=" + System.getenv(env));
+      }
+    }
+
+    String[] newargs = set.toArray(new String[0]);
+    return newargs;
   }
 
   /**

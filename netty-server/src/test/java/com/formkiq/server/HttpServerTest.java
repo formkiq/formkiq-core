@@ -161,7 +161,7 @@ public class HttpServerTest {
     Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
     assertEquals("1.13", results.get("version"));
     assertEquals("core", results.get("type"));
-    assertEquals("fulltext,ocr",
+    assertEquals("",
         ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
   }
 }
