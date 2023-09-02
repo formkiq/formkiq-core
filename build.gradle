@@ -3,11 +3,11 @@ plugins {
   id 'java-library'
   id 'checkstyle'
   id 'com.github.spotbugs'  version '5.0.14'
-  id 'com.diffplug.spotless' version '6.19.0'
+  id 'com.diffplug.spotless' version '6.21.0'
   id 'com.github.ben-manes.versions' version '0.47.0'
   id 'com.formkiq.gradle.graalvm-native-plugin' version '1.5.1'
-  id 'de.undercouch.download' version '5.4.0'
-  id 'org.openapi.generator' version '6.6.0'
+  id 'de.undercouch.download' version '5.5.0'
+  id 'org.openapi.generator' version '7.0.0'
 }
 
 def moduleName = "formkiq-core"
@@ -93,7 +93,7 @@ subprojects {
   } 
   
   checkstyle {
-    toolVersion '8.45.1'
+    toolVersion '9.3'
     configFile file("config/checkstyle/checkstyle.xml")
     configProperties = [project_loc: "${projectDir}"]
     maxWarnings = 0

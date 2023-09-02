@@ -2,6 +2,6 @@
 description = "FKQ Validation Library"
 
 dependencies {
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
   implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
 }

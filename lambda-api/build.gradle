@@ -21,7 +21,7 @@ tasks.processIntegrationResources {
 
 dependencies {
 
-	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
+	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.1'
 	
 	api project(':document-events')
 	api project(':fkq-lambda-services')
@@ -39,7 +39,7 @@ dependencies {
 	api project(':ocr')
 	api project(':http-sigv4')
 	
-	api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
+	api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'
     api group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     
     api group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.3.1'
@@ -54,14 +54,14 @@ dependencies {
 	testImplementation project(':fkq-test-utils')
 	testImplementation project(':lambda-typesense')
 	
-	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.20.121'
-	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.20.121'
+	testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.20.140'
+	testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.20.140'
 	
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.10.0'
     testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
 	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.19.0'
 	testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
-	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.488'
+	testImplementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
 	testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
 }
 
