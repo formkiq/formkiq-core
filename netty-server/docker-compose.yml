@@ -2,7 +2,7 @@ version: '3.8'
 services:
 
   formkiq:
-    image: formkiq/netty-server:1.13.0
+    image: formkiq/api-server:1.13.0-SNAPSHOT
     depends_on:
       - minio
       - dynamodb

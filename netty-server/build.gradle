@@ -49,7 +49,7 @@ dockerfileZip.dependsOn prepareDockerfileTemplate
 
 docker {
 	dependsOn prepareDockerfileTemplate
-    name "formkiq/${project.name}:${project.version}"
+    name "formkiq/api-server:${project.version}-SNAPSHOT"
     files "$buildDir/libs/"
     dockerfile file("$buildDir/dockerfile/Dockerfile")
 }
