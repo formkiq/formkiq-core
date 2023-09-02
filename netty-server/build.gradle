@@ -5,6 +5,20 @@ plugins {
 
 description = "Netty Server"
 
+sourceSets {
+    integration {
+        java.srcDir "$projectDir/src/integration/java"
+        resources.srcDir "$projectDir/src/integration/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+    integrationRuntime.extendsFrom testRuntime
+}
+
 dependencies {
 		
 	implementation project(':lambda-s3')
@@ -15,12 +29,18 @@ dependencies {
 	
 	testImplementation project(':fkq-test-utils')
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.9.1'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.18.3'
+	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
 }
 
 test {
   failFast = true
   useJUnitPlatform()  
+}
+
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+    useJUnitPlatform()
 }
 
 task copyLibs(type: Copy) {
