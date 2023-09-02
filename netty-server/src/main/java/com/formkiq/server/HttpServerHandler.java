@@ -161,16 +161,33 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     }
   }
 
+  /**
+   * Remove query parameters from URI.
+   * 
+   * @param req {@link FullHttpRequest}
+   * @return {@link String}
+   */
+  private String getUri(final FullHttpRequest req) {
+    String uri = req.uri();
+    int pos = uri.indexOf("?");
+    if (pos > -1) {
+      uri = uri.substring(0, pos);
+    }
+    return uri;
+  }
+
   private void processApiGatewayRequest(final ChannelHandlerContext ctx, final FullHttpRequest req)
       throws IOException {
 
-    String resource = Strings.findUrlMatch(this.urls, req.uri());
-    Map<String, String> pathParams = createPathParameters(resource, req.uri());
+    String uri = getUri(req);
+
+    String resource = Strings.findUrlMatch(this.urls, uri);
+    Map<String, String> pathParams = createPathParameters(resource, uri);
     Map<String, String> queryParameters = createQueryParameters(req);
 
     ApiGatewayRequestEvent apiEvent = new ApiGatewayRequestEvent();
     apiEvent.setPath(req.uri());
-    apiEvent.setResource(resource != null ? resource : req.uri());
+    apiEvent.setResource(resource != null ? resource : uri);
     apiEvent.setHttpMethod(req.method().name());
     apiEvent.setPathParameters(pathParams);
     apiEvent.setQueryStringParameters(queryParameters);

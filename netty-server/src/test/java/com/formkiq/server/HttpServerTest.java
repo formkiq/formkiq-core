@@ -44,6 +44,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -99,6 +100,23 @@ public class HttpServerTest {
 
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, siteId, documentId);
     assertEquals(content.length(), response.getContentLength().intValue());
+  }
+
+  /**
+   * Test get documents by date.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  void testGetDocument01() throws Exception {
+    // given
+    // when
+    GetDocumentsResponse documents =
+        this.documentsApi.getDocuments("2020-05-20", null, null, null, null, null);
+
+    // then
+    assertEquals(0, documents.getDocuments().size());
   }
 
   /**

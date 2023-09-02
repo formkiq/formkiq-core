@@ -170,8 +170,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     try {
 
-      makeBucket(mc, DOCUMENTS_BUCKET);
-      makeBucket(mc, STAGING_DOCUMENTS_BUCKET);
+      makeBucket(mc, DOCUMENTS_BUCKET, Boolean.TRUE);
+      makeBucket(mc, STAGING_DOCUMENTS_BUCKET, Boolean.FALSE);
 
       addEventNotification(mc, DOCUMENTS_BUCKET, "DOCUMENTS");
       addEventNotification(mc, STAGING_DOCUMENTS_BUCKET, "STAGINGDOCUMENTS");
@@ -213,6 +213,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     env.put("AWS_REGION", "us-east-1");
     env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("SNS_DOCUMENT_EVENT", "");
+    env.put("DEBUG", "false");
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     return env;
   }
@@ -226,13 +227,14 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     ch.pipeline().addLast(createServerHandler());
   }
 
-  private void makeBucket(final MinioClient mc, final String bucket) throws ErrorResponseException,
-      InsufficientDataException, InternalException, InvalidKeyException, InvalidResponseException,
-      IOException, NoSuchAlgorithmException, ServerException, XmlParserException {
+  private void makeBucket(final MinioClient mc, final String bucket, final Boolean versioning)
+      throws ErrorResponseException, InsufficientDataException, InternalException,
+      InvalidKeyException, InvalidResponseException, IOException, NoSuchAlgorithmException,
+      ServerException, XmlParserException {
     if (!mc.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
       mc.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
       mc.setBucketVersioning(SetBucketVersioningArgs.builder().bucket(bucket)
-          .config(new VersioningConfiguration(Status.ENABLED, Boolean.FALSE)).build());
+          .config(new VersioningConfiguration(Status.ENABLED, versioning)).build());
     }
   }
 
