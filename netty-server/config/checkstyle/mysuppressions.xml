@@ -4,6 +4,7 @@
 
 <suppressions>
 	<suppress files=".*[\\/]src[\\/](test)[\\/]" checks="ImportControl"/>
+	<suppress files=".*[\\/]src[\\/](integration)[\\/]" checks="ImportControl"/>
     <suppress files="\.*Test\.java" checks="ImportControl"/>
 </suppressions>
 
