@@ -231,6 +231,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
       throws ErrorResponseException, InsufficientDataException, InternalException,
       InvalidKeyException, InvalidResponseException, IOException, NoSuchAlgorithmException,
       ServerException, XmlParserException {
+
     if (!mc.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
       mc.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
       mc.setBucketVersioning(SetBucketVersioningArgs.builder().bucket(bucket)
