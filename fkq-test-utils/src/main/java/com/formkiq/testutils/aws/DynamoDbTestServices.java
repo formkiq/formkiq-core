@@ -96,7 +96,7 @@ public final class DynamoDbTestServices {
   public static GenericContainer<?> getDynamoDbLocal() {
     if (dynamoDbLocal == null && isPortAvailable()) {
       final Integer exposedPort = Integer.valueOf(DEFAULT_PORT);
-      dynamoDbLocal = new GenericContainer<>("amazon/dynamodb-local:1.21.0")
+      dynamoDbLocal = new GenericContainer<>("amazon/dynamodb-local:1.22.0")
           .withExposedPorts(exposedPort).withCommand("-jar DynamoDBLocal.jar -sharedDb");
     }
 
