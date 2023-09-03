@@ -57,7 +57,9 @@ Parameters:
 
   VpcStackName:
     Type: String
-    Description: (optional) FormKiQ VPC Stack Name 
+    Description: >
+      The name of the CloudFormation VPC stack that can be created after the initial FormKiQ install, using the add-on CloudFormation template for VPC https://docs.formkiq.com/docs/getting-started/quick-start#create-vpc.
+      Some services such as Typesense, Tesseract, and OpenSearch require a VPC. Only required if you are using any of these services; otherwise, this can remain empty.
     Default: ""
 
   TypesenseApiKey:
