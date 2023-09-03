@@ -101,6 +101,10 @@ Parameters:
     Type: String
     Default: ""
     
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+    
 Conditions:
 
   HasCertificateStackName:
@@ -224,7 +228,7 @@ Resources:
               Action:
               - ssm:GetParameter
               Resource: 
-              - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
               - s3:GetObject
@@ -234,11 +238,11 @@ Resources:
               Resource: 
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: ConsoleBucket
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: ConsoleBucket
                   - '/*'
             - Effect: Allow
@@ -249,11 +253,11 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: CognitoConfigBucket
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: CognitoConfigBucket
                   - '/*'
             - Effect: Allow
@@ -262,7 +266,7 @@ Resources:
               Resource: 
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: DistributionBucket
                   - '/*'
             - Effect: Allow

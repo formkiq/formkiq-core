@@ -40,6 +40,10 @@ Parameters:
     Description: Cognito User Pool Client
     AllowedPattern: ".+"    
 
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Resources:
 
   ConsoleAdminUser:
@@ -203,7 +207,7 @@ Resources:
               - "sts:AssumeRole"
       Path: "/"
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole      
+      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/service-role/AWSLambdaVPCAccessExecutionRole"      
       Policies: 
         - 
           PolicyName: 

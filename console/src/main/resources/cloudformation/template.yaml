@@ -37,7 +37,22 @@ Conditions:
       - Fn::Equals: 
         - Ref: CertificateStackName
         - ''
-                  
+        
+  IsNotGovCloud:
+    Fn::And:
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-gov-west-1
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-gov-east-1
+              
 Resources:
 
   Console:
@@ -158,6 +173,7 @@ Resources:
           
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
+    Condition: IsNotGovCloud
     Properties:
       DistributionConfig:
         Origins:
@@ -228,6 +244,7 @@ Resources:
 
   ConsoleUrlParameter:
     Type: AWS::SSM::Parameter
+    Condition: IsNotGovCloud
     Properties:
       Description: "The URL for the FormKiQ Console"
       Name: 
@@ -258,6 +275,7 @@ Resources:
           Fn::Sub: "${AWS::StackName}"
         
   CloudFrontOriginAccessIdentity:
+    Condition: IsNotGovCloud
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
@@ -265,6 +283,7 @@ Resources:
           Fn::Sub: "FormKiQ Console CloudFront Identity"
 
   ConsoleBucketPolicy:
+    Condition: IsNotGovCloud
     Type: "AWS::S3::BucketPolicy"
     Properties: 
       Bucket: 
@@ -303,13 +322,16 @@ Outputs:
             - 'https://'
             - Fn::ImportValue:
                 Fn::Sub: '${CertificateStackName}-ConsoleDomain'
-      - Fn::Join: 
-          - ""
-          - 
-            - 'https://'
-            - Fn::GetAtt:
-              - CloudFrontDistribution
-              - DomainName
+      - Fn::If:
+        - IsNotGovCloud
+        - Fn::Join: 
+            - ""
+            - 
+              - 'https://'
+              - Fn::GetAtt:
+                - CloudFrontDistribution
+                - DomainName
+        - "none"
           
   ConsoleBucket:
     Value:
@@ -329,6 +351,9 @@ Outputs:
       
   CloudFrontDistributionDomainName:
     Value:
-      Fn::GetAtt:
-      - CloudFrontDistribution
-      - DomainName
+      Fn::If:
+      - IsNotGovCloud
+      - Fn::GetAtt:
+        - CloudFrontDistribution
+        - DomainName
+      - ""

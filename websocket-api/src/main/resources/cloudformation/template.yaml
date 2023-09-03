@@ -29,7 +29,11 @@ Parameters:
     Default: "core"
     Type: String
     AllowedValues: ["core", "enterprise"]
-    
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Resources:
 
   WebSocketApi:
@@ -87,7 +91,7 @@ Resources:
       IntegrationMethod: POST
       IntegrationUri: 
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations
+            arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations
 
   Deployment:
     Type: AWS::ApiGatewayV2::Deployment
@@ -295,7 +299,7 @@ Resources:
               Action:
               - execute-api:ManageConnections
               Resource:
-              - Fn::Sub: "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
+              - Fn::Sub: "arn:${Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
             - Effect: Allow
               Action:
               - dynamodb:BatchGetItem
@@ -306,8 +310,8 @@ Resources:
               - dynamodb:PutItem
               - dynamodb:DeleteItem
               Resource: 
-              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
-              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
 
   WebConnectionsParameter:
     Type: AWS::SSM::Parameter

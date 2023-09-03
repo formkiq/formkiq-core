@@ -29,7 +29,11 @@ Parameters:
     Default: "core"
     Type: String
     AllowedValues: ["core", "enterprise"]
-    
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Resources:
 
   TesseractProcessorLogGroup:
@@ -138,7 +142,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - 'arn:aws:s3:::'
+              - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
                 - "/*"
           - Effect: Allow
@@ -148,7 +152,7 @@ Resources:
             Resource:
               Fn::Join:
               - ''
-              - - 'arn:aws:s3:::'
+              - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
                 - "/*"
           - Effect: Allow
@@ -165,7 +169,7 @@ Resources:
             - dynamodb:Query
             - dynamodb:UpdateItem
             Resource:
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           - Effect: Allow
             Action:
             - sns:Publish
@@ -197,4 +201,4 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AWSXRayDaemonWriteAccess"

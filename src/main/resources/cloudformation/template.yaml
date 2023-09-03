@@ -76,7 +76,70 @@ Parameters:
     Default: "FARGATE_SPOT"
     Type: String
     AllowedValues: ["FARGATE_SPOT", "FARGATE"]
-    
+
+Mappings: 
+  RegionMap: 
+    "us-east-2":
+      PARTITION: "aws"
+    us-east-1:
+      PARTITION: "aws"
+    us-west-1:
+      PARTITION: "aws"
+    us-west-2:
+      PARTITION: "aws"
+    af-south-1:
+      PARTITION: "aws"
+    ap-east-1:
+      PARTITION: "aws"
+    ap-south-2:
+      PARTITION: "aws"
+    ap-southeast-3:
+      PARTITION: "aws"
+    ap-southeast-4:
+      PARTITION: "aws"
+    ap-south-1:
+      PARTITION: "aws"
+    ap-northeast-3:
+      PARTITION: "aws"
+    ap-northeast-2:
+      PARTITION: "aws"
+    ap-southeast-1:
+      PARTITION: "aws"
+    ap-southeast-2:
+      PARTITION: "aws"
+    ap-northeast-1:
+      PARTITION: "aws"
+    ca-central-1:
+      PARTITION: "aws"
+    eu-central-1:
+      PARTITION: "aws"
+    eu-west-1:
+      PARTITION: "aws"
+    eu-west-2:
+      PARTITION: "aws"
+    eu-south-1:
+      PARTITION: "aws"
+    eu-west-3:
+      PARTITION: "aws"
+    eu-south-2:
+      PARTITION: "aws"
+    eu-north-1:
+      PARTITION: "aws"
+    eu-central-2:
+      PARTITION: "aws"
+    il-central-1:
+      PARTITION: "aws"
+    me-south-1:
+      PARTITION: "aws"
+    me-central-1:
+      PARTITION: "aws"
+    sa-east-1:
+      PARTITION: "aws"
+    us-gov-east-1:
+      PARTITION: "aws-us-gov"
+    us-gov-west-1:
+      PARTITION: "aws-us-gov"
+      
 Conditions:
 
   HasTypesenseApiKey:
@@ -84,7 +147,13 @@ Conditions:
       - Fn::Equals: 
         - Ref: TypesenseApiKey
         - ''
-        
+
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
 Resources:
 
   EditionParameter:
@@ -140,6 +209,11 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -171,6 +245,11 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
         AppEnvironment: 
           Ref: AppEnvironment
         ConsoleVersion: 
@@ -301,6 +380,11 @@ Resources:
     Properties:
       Location: api/template.yaml
       Parameters:
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
         AppEnvironment: 
           Ref: AppEnvironment
         EnablePublicUrls: 
@@ -351,6 +435,11 @@ Resources:
     Properties:
       Location: console/template-users.yaml
       Parameters:
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
         AppEnvironment: 
           Ref: AppEnvironment
         AdminEmail: 
@@ -387,6 +476,11 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
         CognitoUserPoolId: 
           Fn::GetAtt: 
           - Cognito
@@ -402,36 +496,10 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
 
-  ECSCluster:
-    Type: 'AWS::ECS::Cluster'
-    Properties:
-      ClusterName:
-        Fn::Sub: "FormKiQ-${AppEnvironment}"
-      CapacityProviders:
-        - FARGATE
-        - FARGATE_SPOT
-      DefaultCapacityProviderStrategy:
-        - CapacityProvider:
-            Ref: CapacityProvider
-          Weight: 1
-      Tags:
-        - Key: "Application"
-          Value: 
-            Fn::Sub: "FormKiQ"        
-        - Key: "AppEnvironment"
-          Value: 
-            Fn::Sub: "${AppEnvironment}"
-        - Key: "StackName"
-          Value: 
-            Fn::Sub: "${AWS::StackName}"
-            
-  TypeSenseService:
+  EcsCluster:
     Type: AWS::Serverless::Application
-    DependsOn:
-      - ECSCluster
-      - CoreStorage
     Properties:
-      Location: typesense/template.yaml
+      Location: ./ecs-cluster.yaml
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
@@ -439,8 +507,32 @@ Resources:
           Ref: TypesenseApiKey
         VpcStackName:
           Ref: VpcStackName
-        ECSCluster:
-          Ref: ECSCluster
+        CapacityProvider:
+          Ref: CapacityProvider
+            
+  TypeSenseService:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - EcsCluster
+      - CoreStorage
+    Properties:
+      Location: typesense/template.yaml
+      Parameters:
+        AppEnvironment: 
+          Ref: AppEnvironment
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
+        TypesenseApiKey:
+          Ref: TypesenseApiKey
+        VpcStackName:
+          Ref: VpcStackName
+        ECSCluster: 
+          Fn::GetAtt: 
+          - EcsCluster
+          - Outputs.ECSCluster
         TypesenseMemory:
           Ref: TypesenseMemory
       Tags:
@@ -507,6 +599,11 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        Partition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
                     
 Outputs:
   AppEnvironment:
