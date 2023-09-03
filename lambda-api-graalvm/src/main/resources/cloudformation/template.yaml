@@ -158,7 +158,7 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.api.CoreRequestHandler
       Description: Lambda function that processes API requests
-      Runtime: provided
+      Runtime: provided.al2
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

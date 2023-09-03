@@ -241,7 +241,7 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.lambda.s3.DocumentActionsProcessor
       Description: Lambda function to process Document Actions requests
-      Runtime: provided
+      Runtime: provided.al2
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -303,7 +303,7 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
       Description: Lambda function that processes document written to the Staging S3 Bucket
-      Runtime: provided
+      Runtime: provided.al2
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -391,7 +391,7 @@ Resources:
     Properties:    
       Handler: com.formkiq.stacks.lambda.s3.DocumentsS3Update
       Description: Lambda function that processes document written to the Documents S3 Bucket
-      Runtime: provided
+      Runtime: provided.al2
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

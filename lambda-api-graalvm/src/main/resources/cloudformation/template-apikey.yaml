@@ -13,7 +13,7 @@ Resources:
     Properties:
       Handler: com.formkiq.module.lambda.authorizer.apikey.ApiKeyAuthorizerRequestHandler
       Description: Lambda function that processes ApiKey Authorizer
-      Runtime: provided
+      Runtime: provided.al2
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
