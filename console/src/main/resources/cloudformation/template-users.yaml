@@ -60,6 +60,7 @@ Resources:
 
   ConsoleAdminUser:
     Type: AWS::Cognito::UserPoolUser
+    Condition: IsNotGovCloud
     Properties:
       DesiredDeliveryMediums: 
         - EMAIL
@@ -76,6 +77,7 @@ Resources:
 
   ConsoleAddUserToGroup:
     Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Condition: IsNotGovCloud
     DependsOn:
     - ConsoleAdminUser
     Properties: 
@@ -88,6 +90,7 @@ Resources:
 
   ConsoleAddUserToDefaultGroup:
     Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Condition: IsNotGovCloud
     DependsOn:
     - ConsoleAdminUser
     Properties: 
