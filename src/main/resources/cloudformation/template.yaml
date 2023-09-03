@@ -148,11 +148,17 @@ Conditions:
         - Ref: TypesenseApiKey
         - ''
 
-  HasVpcStackName:
-    Fn::Not:
-      - Fn::Equals: 
-        - Ref: VpcStackName
-        - ''
+  IsGovCloud:
+    Fn::Or:
+      - Fn::Equals:
+          - Ref: AWS::Region
+          - us-east-2
+      - Fn::Equals:
+          - Ref: AWS::Region
+          - us-gov-west-1
+      - Fn::Equals:
+          - Ref: AWS::Region
+          - us-gov-east-1
 
 Resources:
 
@@ -230,6 +236,11 @@ Resources:
           Ref: AppEnvironment
         AdminEmail: 
           Ref: AdminEmail
+        IsGovCloud:
+          Fn::If:
+          - IsGovCloud
+          - "true"
+          - "false"
       Tags:
         Application: "FormKiQ Core"
         AppEnvironment: 
@@ -435,6 +446,11 @@ Resources:
     Properties:
       Location: console/template-users.yaml
       Parameters:
+        IsGovCloud:
+          Fn::If:
+          - IsGovCloud
+          - "true"
+          - "false"
         Partition:
           Fn::FindInMap:
           - RegionMap

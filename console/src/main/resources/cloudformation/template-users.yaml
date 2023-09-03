@@ -44,6 +44,18 @@ Parameters:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
 
+  IsGovCloud:
+    Description: Is Installation AWS Region gov cloud
+    Type: String
+    AllowedValues: ["true", "false"]
+
+Conditions:
+        
+  IsNotGovCloud:
+    Fn::Equals: 
+      - Ref: IsGovCloud
+      - 'false'
+      
 Resources:
 
   ConsoleAdminUser:

@@ -30,6 +30,11 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
+  IsGovCloud:
+    Description: Is Installation AWS Region gov cloud
+    Type: String
+    AllowedValues: ["true", "false"]
+    
 Conditions:
 
   HasCertificateStackName:
@@ -39,19 +44,9 @@ Conditions:
         - ''
         
   IsNotGovCloud:
-    Fn::And:
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: AWS::Region
-              - us-east-2
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: AWS::Region
-              - us-gov-west-1
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: AWS::Region
-              - us-gov-east-1
+    Fn::Equals: 
+      - Ref: IsGovCloud
+      - 'false'
               
 Resources:
 
