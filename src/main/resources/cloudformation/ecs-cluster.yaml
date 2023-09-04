@@ -50,7 +50,7 @@ Resources:
     Condition: CreateResources
     Properties:
       ClusterName:
-        Fn::Sub: "FormKiQ-${AppEnvironment}"
+        Fn::Sub: "Formkiq-${AppEnvironment}"
       CapacityProviders:
         - FARGATE
         - FARGATE_SPOT
