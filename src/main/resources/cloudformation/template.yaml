@@ -152,9 +152,6 @@ Conditions:
     Fn::Or:
       - Fn::Equals:
           - Ref: AWS::Region
-          - us-east-2
-      - Fn::Equals:
-          - Ref: AWS::Region
           - us-gov-west-1
       - Fn::Equals:
           - Ref: AWS::Region
