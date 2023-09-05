@@ -60,8 +60,8 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for uploading /documents/uploads. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
   /** Results Limit. */

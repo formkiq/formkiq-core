@@ -55,7 +55,6 @@ public final class MinioTestServices {
    * 
    * @return {@link URI}
    */
-  @SuppressWarnings("resource")
   public static URI getEndpoint() {
     GenericContainer<?> container = getMinioLocal(null);
     Integer port = container != null ? container.getFirstMappedPort() : DEFAULT_PORT;

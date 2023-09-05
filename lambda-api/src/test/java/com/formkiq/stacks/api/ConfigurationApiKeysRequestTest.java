@@ -57,8 +57,7 @@ public class ConfigurationApiKeysRequestTest {
   private static final int STATUS_UNAUTHORIZED = 401;
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(new FormKiQResponseCallback());
   /** {@link ApiClient}. */
   private ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());

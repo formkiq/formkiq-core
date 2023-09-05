@@ -44,8 +44,8 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for request /documents/{documentId}/content. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class DocumentIdContentGetRequestHandlerTest extends AbstractRequestHandler {
 
   /**

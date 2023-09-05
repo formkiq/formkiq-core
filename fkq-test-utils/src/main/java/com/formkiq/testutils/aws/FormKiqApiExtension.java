@@ -41,26 +41,30 @@ public class FormKiqApiExtension
 
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
-  /** Port to run Test server. */
-  private int port = -1;
-
   /** {@link ClientAndServer}. */
   private ClientAndServer formkiqServer;
 
-  /**
-   * constructor.
-   */
-  public FormKiqApiExtension() {
-    final int topPort = 8000;
-    final int bottomPort = 7000;
-    this.port = NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
-  }
+  /** Port to run Test server. */
+  private int port = -1;
 
   /** {@link ExpectationResponseCallback}. */
   private ExpectationResponseCallback responseCallback;
 
+  /**
+   * constructor.
+   * 
+   * @param callback {@link ExpectationResponseCallback}
+   */
+  public FormKiqApiExtension(final ExpectationResponseCallback callback) {
+    this.responseCallback = callback;
+  }
+
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
+
+    final int topPort = 8000;
+    final int bottomPort = 7000;
+    this.port = NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
 
     this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
 
@@ -83,16 +87,5 @@ public class FormKiqApiExtension
    */
   public String getBasePath() {
     return "http://localhost:" + this.port;
-  }
-
-  /**
-   * Set Callback.
-   * 
-   * @param callback {@link ExpectationResponseCallback}
-   * @return {@link FormKiqApiExtension}
-   */
-  public FormKiqApiExtension setCallback(final ExpectationResponseCallback callback) {
-    this.responseCallback = callback;
-    return this;
   }
 }

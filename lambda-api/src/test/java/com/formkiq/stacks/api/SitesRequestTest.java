@@ -34,36 +34,38 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.client.model.GetSitesRequest;
+import com.formkiq.client.model.Site;
+import com.formkiq.stacks.api.handler.AbstractApiClientRequestTest;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /sites. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class SitesRequestTest extends AbstractRequestHandler {
+@ExtendWith(LocalStackExtension.class)
+public class SitesRequestTest extends AbstractApiClientRequestTest {
 
+  /** {@link ConfigService}. */
+  private static ConfigService config;
   /** Email Pattern. */
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
+  /** {@link SsmService}. */
+  private static SsmService ssm;
 
   /**
-   * Get /sites request.
-   * 
-   * @param siteId {@link String}
-   * @param group {@link String}
-   * @return {@link ApiGatewayRequestEvent}
+   * BeforeEach.
    */
-  private ApiGatewayRequestEvent getRequest(final String siteId, final String group) {
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("get")
-        .resource("/sites").path("/sites").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).build();
-    return event;
+  @BeforeEach
+  public void beforeAll() {
+    config = getAwsServices().getExtension(ConfigService.class);
+    ssm = getAwsServices().getExtension(SsmService.class);
   }
 
   /**
@@ -71,67 +73,51 @@ public class SitesRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetSites01() throws Exception {
     // given
     String siteId = null;
-    ConfigService config = getAwsServices().getExtension(ConfigService.class);
+    setBearerToken(new String[] {"default", "Admins", "finance"});
     config.save(siteId, new DynamicObject(Map.of("chatGptApiKey", "somevalue")));
 
-    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
-    ApiGatewayRequestEvent event = getRequest(siteId, "default Admins finance");
+    ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
     // when
-    String response = handleRequest(event);
+    GetSitesRequest response = this.systemApi.getSites();
 
     // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-    assertEquals("joesmith", resp.getString("username"));
-    assertNull(resp.getString("next"));
-    assertNull(resp.getString("previous"));
-
-    List<DynamicObject> sites = resp.getList("sites");
+    List<Site> sites = response.getSites();
     assertEquals(2, sites.size());
-    final int expected = 4;
-    assertEquals(expected, sites.get(0).size());
-    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
-    assertEquals("READ_WRITE", sites.get(0).get("permission"));
-    assertEquals("ADMIN,DELETE,READ,WRITE",
-        String.join(",", sites.get(0).getStringList("permissions")));
-    assertNotNull(sites.get(0).get("uploadEmail"));
 
-    String uploadEmail = sites.get(0).getString("uploadEmail");
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
+    assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        sites.get(0).getPermissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertNotNull(sites.get(0).getUploadEmail());
+
+    String uploadEmail = sites.get(0).getUploadEmail();
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
 
-    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email",
-        FORMKIQ_APP_ENVIRONMENT, sites.get(0).get("siteId"))));
+    assertNotNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(0).getSiteId())));
 
     String[] strs = uploadEmail.split("@");
     assertEquals("tryformkiq.com", strs[1]);
     assertEquals("{\"siteId\":\"default\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
-        getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
+        ssm.getParameterValue(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
 
-    assertEquals("finance", sites.get(1).get("siteId"));
-    assertEquals("READ_WRITE", sites.get(1).get("permission"));
-    assertNotNull(sites.get(1).get("uploadEmail"));
-    uploadEmail = sites.get(1).getString("uploadEmail");
+    assertEquals("finance", sites.get(1).getSiteId());
+    assertEquals("READ_WRITE", sites.get(1).getPermission().toString());
+    assertNotNull(sites.get(1).getUploadEmail());
+    uploadEmail = sites.get(1).getUploadEmail();
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
-    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email",
-        FORMKIQ_APP_ENVIRONMENT, sites.get(1).get("siteId"))));
+    assertNotNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(1).getSiteId())));
     strs = uploadEmail.split("@");
     assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
-        getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
+        ssm.getParameterValue(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
   }
 
   /**
@@ -139,38 +125,25 @@ public class SitesRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetSites02() throws Exception {
     // given
-    removeSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain");
-    ApiGatewayRequestEvent event = getRequest(null, "default Admins finance");
+    ssm.removeParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain");
+    setBearerToken(new String[] {"default", "Admins", "finance"});
 
     // when
-    String response = handleRequest(event);
+    GetSitesRequest response = this.systemApi.getSites();
 
     // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-    assertNull(resp.getString("next"));
-    assertNull(resp.getString("previous"));
-
-    List<DynamicObject> sites = resp.getList("sites");
+    List<Site> sites = response.getSites();
     assertEquals(2, sites.size());
-    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
-    assertEquals("READ_WRITE", sites.get(0).get("permission"));
-    assertNull(sites.get(0).get("uploadEmail"));
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
+    assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
+    assertNull(sites.get(0).getUploadEmail());
 
-    assertEquals("finance", sites.get(1).get("siteId"));
-    assertEquals("READ_WRITE", sites.get(1).get("permission"));
-    assertNull(sites.get(1).get("uploadEmail"));
+    assertEquals("finance", sites.get(1).getSiteId());
+    assertEquals("READ_WRITE", sites.get(1).getPermission().toString());
+    assertNull(sites.get(1).getUploadEmail());
   }
 
   /**
@@ -178,51 +151,40 @@ public class SitesRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetSites03() throws Exception {
     // given
-    putSsmParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
-    removeSsmParameter(
+    ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
+    ssm.removeParameter(
         String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, "default"));
-    ApiGatewayRequestEvent event = getRequest("default", "default_read finance");
+
+    setBearerToken(new String[] {"default_read", "finance"});
 
     // when
-    String response = handleRequest(event);
+    GetSitesRequest response = this.systemApi.getSites();
 
     // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    List<Site> sites = response.getSites();
 
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-    assertNull(resp.get("next"));
-    assertNull(resp.get("previous"));
-
-    List<DynamicObject> sites = resp.getList("sites");
     assertEquals(2, sites.size());
-    assertEquals(DEFAULT_SITE_ID, sites.get(0).get("siteId"));
-    assertEquals("READ_ONLY", sites.get(0).get("permission"));
-    assertNull(sites.get(0).get("uploadEmail"));
+    assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
+    assertEquals("READ_ONLY", sites.get(0).getPermission().toString());
+    assertNull(sites.get(0).getUploadEmail());
 
-    assertNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT,
-        sites.get(0).get("siteId"))));
+    assertNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(0).getSiteId())));
 
-    assertEquals("finance", sites.get(1).get("siteId"));
-    assertEquals("READ_WRITE", sites.get(1).get("permission"));
-    assertNotNull(sites.get(1).get("uploadEmail"));
-    String uploadEmail = sites.get(1).getString("uploadEmail");
+    assertEquals("finance", sites.get(1).getSiteId());
+    assertEquals("READ_WRITE", sites.get(1).getPermission().toString());
+    assertNotNull(sites.get(1).getUploadEmail());
+    String uploadEmail = sites.get(1).getUploadEmail();
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
-    assertNotNull(getSsmParameter(String.format("/formkiq/%s/siteid/%s/email",
-        FORMKIQ_APP_ENVIRONMENT, sites.get(1).get("siteId"))));
+    assertNotNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
+        FORMKIQ_APP_ENVIRONMENT, sites.get(1).getSiteId())));
     String[] strs = uploadEmail.split("@");
     assertEquals("{\"siteId\":\"finance\", \"appEnvironment\":\"" + FORMKIQ_APP_ENVIRONMENT + "\"}",
-        getSsmParameter(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
+        ssm.getParameterValue(String.format("/formkiq/ses/%s/%s", strs[1], strs[0])));
   }
 
   /**
@@ -230,30 +192,23 @@ public class SitesRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetSites04() throws Exception {
     // given
     String siteId = "finance";
-    ApiGatewayRequestEvent event = getRequest(siteId, siteId);
+    setBearerToken(siteId);
 
     ConfigService configService = getAwsServices().getExtension(ConfigService.class);
     configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
-    String response = handleRequest(event);
+    GetSitesRequest response = this.systemApi.getSites();
 
     // then
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+    List<Site> sites = response.getSites();
 
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-    assertEquals(1, resp.getList("sites").size());
-    assertEquals(siteId, resp.getList("sites").get(0).getString("siteId"));
-    assertEquals("READ_WRITE", resp.getList("sites").get(0).getString("permission"));
+    assertEquals(1, sites.size());
+    assertEquals(siteId, sites.get(0).getSiteId());
+    assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
   }
 }

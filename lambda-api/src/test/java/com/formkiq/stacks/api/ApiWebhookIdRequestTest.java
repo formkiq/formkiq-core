@@ -42,8 +42,8 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /webhooks/{webhookId}. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class ApiWebhookIdRequestTest extends AbstractRequestHandler {
 
   /**

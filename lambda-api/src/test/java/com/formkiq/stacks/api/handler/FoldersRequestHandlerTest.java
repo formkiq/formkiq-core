@@ -39,15 +39,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /**
@@ -55,13 +52,14 @@ import com.formkiq.testutils.aws.LocalStackExtension;
  * Test Handlers for: GET/POST /folders, DELETE /folders/{indexKey}.
  *
  */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class FoldersRequestHandlerTest {
+@ExtendWith(LocalStackExtension.class)
+public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /** Forbidden (403). */
   private static final int STATUS_FORBIDDEN = 403;
 
+<<<<<<< HEAD
   /** FormKiQ Server. */
   @RegisterExtension
   static FormKiqApiExtension server =
@@ -83,6 +81,8 @@ public class FoldersRequestHandlerTest {
     this.client.addDefaultHeader("Authorization", jwt);
   }
 
+=======
+>>>>>>> f4b8d1f (update)
   /**
    * Test getting folders.
    * 

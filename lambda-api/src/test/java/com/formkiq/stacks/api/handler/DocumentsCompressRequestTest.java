@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,18 +37,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.DocumentsCompressRequest;
 import com.formkiq.client.model.DocumentsCompressResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
@@ -57,18 +50,14 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 
 /** POST /documents/compress tests. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class DocumentsCompressRequestTest {
+@ExtendWith(LocalStackExtension.class)
+public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
   /** To test objects put to the staging S3. **/
   private static S3Service s3 = null;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-  /** FormKiQ Server. */
-  @RegisterExtension
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
 
   /**
    * BeforeAll.
@@ -80,13 +69,6 @@ public class DocumentsCompressRequestTest {
     s3 = new S3Service(TestServices.getS3Connection(null));
   }
 
-  /** {@link ApiClient}. */
-  private ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
-
-  /** {@link DocumentsApi}. */
-  private DocumentsApi documentsApi = new DocumentsApi(this.client);
-
   /**
    * Create Dummy document.
    * 
@@ -97,17 +79,6 @@ public class DocumentsCompressRequestTest {
   private String createDocument(final String siteId) throws ApiException {
     AddDocumentUploadRequest req = new AddDocumentUploadRequest();
     return this.documentsApi.addDocumentUpload(req, siteId, null, null, null).getDocumentId();
-  }
-
-  /**
-   * Set BearerToken.
-   * 
-   * @param siteId {@link String}
-   */
-  private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder
-        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
   }
 
   /**

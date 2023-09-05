@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler.FORMKIQ_DOC_EXT;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,12 +36,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.client.api.DocumentTagsApi;
-import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.MatchDocumentTag;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequest;
@@ -50,10 +45,7 @@ import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestUpdate;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -63,16 +55,12 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * Test Handlers for: PATCH /documents/tags.
  *
  */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class UpdateDocumentMatchingRequestHandlerTest {
+@ExtendWith(LocalStackExtension.class)
+public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /** {@link S3Service}. */
   private static S3Service s3;
-  /** FormKiQ Server. */
-  @RegisterExtension
-  static FormKiqApiExtension server =
-      new FormKiqApiExtension().setCallback(new FormKiQResponseCallback());
 
   /**
    * BeforeAll.
@@ -81,14 +69,8 @@ public class UpdateDocumentMatchingRequestHandlerTest {
    */
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
-    s3 = new S3Service(TestServices.getS3Connection(null));
+    s3 = getAwsServices().getExtension(S3Service.class);
   }
-
-  /** {@link ApiClient}. */
-  private ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
-  /** {@link DocumentTagsApi}. */
-  private DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
 
   /**
    * BeforeEach.
@@ -96,17 +78,6 @@ public class UpdateDocumentMatchingRequestHandlerTest {
   @BeforeEach
   public void beforeEach() {
     s3.deleteAllFiles(STAGE_BUCKET_NAME);
-  }
-
-  /**
-   * Set BearerToken.
-   * 
-   * @param siteId {@link String}
-   */
-  private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder
-        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
   }
 
   /**

@@ -37,8 +37,8 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request POST /public/documents. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandler {
 
   /**

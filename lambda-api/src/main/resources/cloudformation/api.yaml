@@ -157,7 +157,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/GetSitesRequest"
+                        "$ref": "#/components/schemas/GetSitesResponse"
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4215,7 +4215,7 @@ Resources:
                 maxWebhooks:
                   type: "string"
                   description: "Set Maximum number of Webhooks allowed"
-            GetSitesRequest:
+            GetSitesResponse:
               type: object
               properties:
                 username:
