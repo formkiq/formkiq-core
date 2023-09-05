@@ -111,7 +111,8 @@ public final class DynamoDbTestServices {
   @SuppressWarnings("resource")
   public static URI getEndpoint() {
     GenericContainer<?> dynamoDb = getDynamoDbLocal();
-    Integer port = dynamoDb != null ? dynamoDb.getFirstMappedPort() : Integer.valueOf(DEFAULT_PORT);
+    Integer port = dynamoDb != null && dynamoDb.isRunning() ? dynamoDb.getFirstMappedPort()
+        : Integer.valueOf(DEFAULT_PORT);
     try {
       return new URI("http://localhost:" + port);
     } catch (URISyntaxException e) {

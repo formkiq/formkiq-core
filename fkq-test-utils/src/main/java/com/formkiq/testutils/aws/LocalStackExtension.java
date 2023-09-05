@@ -23,15 +23,29 @@
  */
 package com.formkiq.testutils.aws;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
+import java.util.Map;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.ssm.SsmServiceImpl;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
@@ -41,12 +55,38 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 public class LocalStackExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+
+  /**
+   * Get {@link AwsServiceCache}.
+   * 
+   * @return {@link AwsServiceCache}
+   */
+  public static AwsServiceCache getAwsServiceCache() {
+    return serviceCache;
+  }
+
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
     TestServices.startLocalStack();
 
-    S3Service s3service = new S3Service(TestServices.getS3Connection(null));
+    Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    serviceCache =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
+                new SmsAwsServiceRegistry())
+            .build();
+
+    serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(SsmService.class, new SsmServiceExtension());
+
+    S3Service s3service = serviceCache.getExtension(S3Service.class);
     if (!s3service.exists(BUCKET_NAME)) {
       s3service.createBucket(BUCKET_NAME);
     }
@@ -59,8 +99,8 @@ public class LocalStackExtension
       s3service.createBucket(OCR_BUCKET_NAME);
     }
 
-    new SsmServiceImpl(TestServices.getSsmConnection(null))
-        .putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
+    SsmService ssm = serviceCache.getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/version", "1.1");
   }
 
   @Override

@@ -8,6 +8,7 @@ dependencies {
 	api project(':aws-sqs')
 	implementation project(':aws-ssm')
     implementation project(':aws-dynamodb')
+    implementation project(':fkq-lambda-services')
     
 	implementation group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.12.543'
 	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.3'

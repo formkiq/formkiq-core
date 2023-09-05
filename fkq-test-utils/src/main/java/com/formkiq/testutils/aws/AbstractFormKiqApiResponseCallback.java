@@ -108,13 +108,12 @@ public abstract class AbstractFormKiqApiResponseCallback implements ExpectationR
     ApiHttpRequest event = new HttpRequestToApiHttpRequest(getResourceUrls()).apply(httpRequest);
 
     String s = this.gson.toJson(event);
+
     InputStream is = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
     ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-
     getHandler().handleRequest(is, outstream, this.context);
 
     String response = new String(outstream.toByteArray(), "UTF-8");
-
     return createResponse(response);
   }
 
