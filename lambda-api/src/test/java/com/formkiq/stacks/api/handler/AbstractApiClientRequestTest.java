@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.FoldersApi;
@@ -90,8 +89,6 @@ public abstract class AbstractApiClientRequestTest {
   /** {@link ApiClient}. */
   protected ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
-  /** {@link DocumentActionsApi}. */
-  protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */
   protected DocumentsApi documentsApi = new DocumentsApi(this.client);
   /** {@link FoldersApi}. */
