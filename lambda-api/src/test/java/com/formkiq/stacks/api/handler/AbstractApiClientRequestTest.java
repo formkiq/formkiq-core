@@ -24,7 +24,10 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.FoldersApi;
@@ -32,9 +35,18 @@ import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.Configuration;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -61,13 +73,25 @@ public abstract class AbstractApiClientRequestTest {
    */
   public static AwsServiceCache getAwsServices() {
     AwsServiceCache awsServiceCache = LocalStackExtension.getAwsServiceCache();
+
+    Map<String, String> environment = new HashMap<>(awsServiceCache.environment());
+    environment.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    awsServiceCache.environment(environment);
+
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
     return awsServiceCache;
   }
 
   /** {@link ApiClient}. */
   protected ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
+  /** {@link DocumentActionsApi}. */
+  protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */
   protected DocumentsApi documentsApi = new DocumentsApi(this.client);
   /** {@link FoldersApi}. */

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
@@ -42,7 +42,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.model.GetSitesRequest;
 import com.formkiq.client.model.Site;
-import com.formkiq.stacks.api.handler.AbstractApiClientRequestTest;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;

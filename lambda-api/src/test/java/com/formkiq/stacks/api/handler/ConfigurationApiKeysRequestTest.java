@@ -21,9 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,43 +36,20 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.invoker.Configuration;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.DeleteApiKeyResponse;
 import com.formkiq.client.model.GetApiKeysResponse;
-import com.formkiq.stacks.api.handler.FormKiQResponseCallback;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /configuration/apiKeys. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class ConfigurationApiKeysRequestTest {
+@ExtendWith(LocalStackExtension.class)
+public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
 
   /** Unauthorized (401). */
   private static final int STATUS_UNAUTHORIZED = 401;
-  /** FormKiQ Server. */
-  @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(new FormKiQResponseCallback());
-  /** {@link ApiClient}. */
-  private ApiClient client =
-      Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
-  /** {@link FoldersApi}. */
-  private SystemManagementApi api = new SystemManagementApi(this.client);
-
-  /**
-   * Set BearerToken.
-   * 
-   * @param siteId {@link String}
-   */
-  private void setBearerToken(final String siteId) {
-    String jwt = JwtTokenEncoder
-        .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
-    this.client.addDefaultHeader("Authorization", jwt);
-  }
 
   /**
    * Delete /configuration/apiKeys default as User.
@@ -89,7 +65,7 @@ public class ConfigurationApiKeysRequestTest {
       setBearerToken(siteId);
 
       try {
-        this.api.deleteApiKey("ABC", siteId);
+        this.systemApi.deleteApiKey("ABC", siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -115,7 +91,7 @@ public class ConfigurationApiKeysRequestTest {
       setBearerToken(siteId);
 
       try {
-        this.api.addApiKey(req, siteId);
+        this.systemApi.addApiKey(req, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -143,13 +119,13 @@ public class ConfigurationApiKeysRequestTest {
 
       // when
       setBearerToken(group);
-      AddApiKeyResponse response = this.api.addApiKey(req, siteId);
+      AddApiKeyResponse response = this.systemApi.addApiKey(req, siteId);
 
       // then
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse apiKeys = this.api.getApiKeys(siteId);
+      GetApiKeysResponse apiKeys = this.systemApi.getApiKeys(siteId);
 
       // then
       assertEquals(1, apiKeys.getApiKeys().size());
@@ -165,11 +141,11 @@ public class ConfigurationApiKeysRequestTest {
       String apiKey = apiKeys.getApiKeys().get(0).getApiKey();
 
       // when
-      DeleteApiKeyResponse delResponse = this.api.deleteApiKey(apiKey, siteId);
+      DeleteApiKeyResponse delResponse = this.systemApi.deleteApiKey(apiKey, siteId);
 
       // then
       assertEquals("ApiKey deleted", delResponse.getMessage());
-      apiKeys = this.api.getApiKeys(siteId);
+      apiKeys = this.systemApi.getApiKeys(siteId);
       assertEquals(0, apiKeys.getApiKeys().size());
     }
   }
@@ -189,7 +165,7 @@ public class ConfigurationApiKeysRequestTest {
     setBearerToken(group);
 
     try {
-      this.api.getApiKeys(siteId);
+      this.systemApi.getApiKeys(siteId);
       fail();
     } catch (ApiException e) {
       assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
