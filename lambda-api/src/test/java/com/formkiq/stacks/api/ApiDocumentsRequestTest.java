@@ -74,8 +74,8 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** Unit Tests for request GET / POST / DELETE /documents. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
   /** One Second. */
