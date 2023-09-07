@@ -41,8 +41,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.aws.cognito.CognitoConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.CognitoIdentityService;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
@@ -70,8 +71,8 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
  */
 public class WebsocketTest {
 
-  /** {@link CognitoService}. */
-  private static CognitoService adminCognitoService;
+  /** {@link CognitoIdentityService}. */
+  private static CognitoIdentityProviderService adminCognitoService;
 
   /** {@link DynamoDbConnectionBuilder}. */
   private static DynamoDbConnectionBuilder dbConnection;
@@ -160,13 +161,10 @@ public class WebsocketTest {
     String cognitoClientId =
         ssmService.getParameterValue("/formkiq/" + app + "/cognito/UserPoolClientId");
 
-    String cognitoIdentitypool =
-        ssmService.getParameterValue("/formkiq/" + app + "/cognito/IdentityPoolId");
-
-    CognitoConnectionBuilder adminBuilder =
-        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+    CognitoIdentityProviderConnectionBuilder adminBuilder =
+        new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
             .setCredentials(awsprofile).setRegion(awsregion);
-    adminCognitoService = new CognitoService(adminBuilder);
+    adminCognitoService = new CognitoIdentityProviderService(adminBuilder);
 
     addAndLoginCognito(USER_EMAIL, GROUP);
     token = adminCognitoService.login(USER_EMAIL, USER_PASSWORD);

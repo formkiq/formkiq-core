@@ -30,7 +30,8 @@ jar.enabled = false
 dependencies {
 	testImplementation project(':aws-sqs')
 	testImplementation project(':aws-ssm')
-	testImplementation project(':aws-cognito')
+        testImplementation project(':aws-cognito-identity')
+        testImplementation project(':aws-cognito-identityprovider')
 	testImplementation project(':aws-dynamodb')
 	testImplementation project(':dynamodb-documents')
 	

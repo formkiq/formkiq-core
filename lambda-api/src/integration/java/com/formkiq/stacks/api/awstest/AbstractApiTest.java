@@ -45,8 +45,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
-import com.formkiq.aws.cognito.CognitoConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoService;
+import com.formkiq.aws.cognito.CognitoIdentityConnectionBuilder;
+import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.CognitoIdentityService;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.iam.IamConnectionBuilder;
 import com.formkiq.aws.iam.IamService;
@@ -95,8 +97,10 @@ public abstract class AbstractApiTest {
   protected static final String ACME_EMAIL = "acme@formkiq.com";
   /** Cognito User Email. */
   private static final String ADMIN_EMAIL = "testadminuser@formkiq.com";
-  /** {@link CognitoService}. */
-  private static CognitoService adminCognitoService;
+  /** {@link CognitoIdentityProviderService}. */
+  private static CognitoIdentityProviderService adminCognitoIdentityProviderService;
+  /** {@link CognitoIdentityService}. */
+  private static CognitoIdentityService adminCognitoIdentityService;
   /** {@link AuthenticationResultTypes}. */
   private static AuthenticationResultType adminToken;
   /** FormKiQ KEY API Client. */
@@ -163,23 +167,25 @@ public abstract class AbstractApiTest {
    * @param groupNames {@link List} {@link String}
    */
   private static void addAndLoginCognito(final String username, final List<String> groupNames) {
-    if (!adminCognitoService.isUserExists(username)) {
+    if (!adminCognitoIdentityProviderService.isUserExists(username)) {
 
-      adminCognitoService.addUser(username, TEMP_USER_PASSWORD);
-      adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+      adminCognitoIdentityProviderService.addUser(username, TEMP_USER_PASSWORD);
+      adminCognitoIdentityProviderService.loginWithNewPassword(username, TEMP_USER_PASSWORD,
+          USER_PASSWORD);
 
       for (String groupName : groupNames) {
         if (!groupName.startsWith(DEFAULT_SITE_ID)) {
-          adminCognitoService.addGroup(groupName);
+          adminCognitoIdentityProviderService.addGroup(groupName);
         }
-        adminCognitoService.addUserToGroup(username, groupName);
+        adminCognitoIdentityProviderService.addUserToGroup(username, groupName);
       }
 
     } else {
 
-      AdminGetUserResponse user = adminCognitoService.getUser(username);
+      AdminGetUserResponse user = adminCognitoIdentityProviderService.getUser(username);
       if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
-        adminCognitoService.loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+        adminCognitoIdentityProviderService.loginWithNewPassword(username, TEMP_USER_PASSWORD,
+            USER_PASSWORD);
       }
     }
   }
@@ -208,10 +214,17 @@ public abstract class AbstractApiTest {
       restClient = new FormKiqClientV1(connection);
     }
 
-    CognitoConnectionBuilder adminBuilder =
-        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+    CognitoIdentityConnectionBuilder adminIdentityBuilder =
+        new CognitoIdentityConnectionBuilder(cognitoClientId, cognitoUserPoolId,
+            cognitoIdentitypool).setCredentials(awsprofile).setRegion(awsregion);
+
+    adminCognitoIdentityService = new CognitoIdentityService(adminIdentityBuilder);
+
+    CognitoIdentityProviderConnectionBuilder adminIdentityProviderBuilder =
+        new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
             .setCredentials(awsprofile).setRegion(awsregion);
-    adminCognitoService = new CognitoService(adminBuilder);
+    adminCognitoIdentityProviderService =
+        new CognitoIdentityProviderService(adminIdentityProviderBuilder);
 
     stsBuilder = new StsConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion);
 
@@ -236,12 +249,21 @@ public abstract class AbstractApiTest {
   }
 
   /**
-   * Get Admin {@link CognitoService}.
+   * Get Admin {@link CognitoIdentityProviderService}.
    * 
-   * @return {@link CognitoService}
+   * @return {@link CognitoIdentityProviderService}
    */
-  protected static CognitoService getAdminCognitoService() {
-    return adminCognitoService;
+  protected static CognitoIdentityProviderService getAdminCognitoIdentityProviderService() {
+    return adminCognitoIdentityProviderService;
+  }
+
+  /**
+   * Get Admin {@link CognitoIdentityService}.
+   * 
+   * @return {@link CognitoIdentityService}
+   */
+  protected static CognitoIdentityService getAdminCognitoIdentityService() {
+    return adminCognitoIdentityService;
   }
 
   /**
@@ -459,7 +481,7 @@ public abstract class AbstractApiTest {
    * @return {@link AuthenticationResultType}
    */
   public static AuthenticationResultType login(final String username, final String password) {
-    return adminCognitoService.login(username, password);
+    return adminCognitoIdentityProviderService.login(username, password);
   }
 
   /**
@@ -482,19 +504,21 @@ public abstract class AbstractApiTest {
    */
   private static synchronized void setupCognito() {
 
-    if (!adminCognitoService.isUserExists(ADMIN_EMAIL)) {
+    if (!adminCognitoIdentityProviderService.isUserExists(ADMIN_EMAIL)) {
 
-      adminCognitoService.addUser(ADMIN_EMAIL, TEMP_USER_PASSWORD);
-      adminCognitoService.addUserToGroup(ADMIN_EMAIL, "Admins");
+      adminCognitoIdentityProviderService.addUser(ADMIN_EMAIL, TEMP_USER_PASSWORD);
+      adminCognitoIdentityProviderService.addUserToGroup(ADMIN_EMAIL, "Admins");
 
-      adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
+      adminCognitoIdentityProviderService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD,
+          USER_PASSWORD);
 
     } else {
 
-      adminCognitoService.updateUserAttributes(ADMIN_EMAIL,
+      adminCognitoIdentityProviderService.updateUserAttributes(ADMIN_EMAIL,
           Arrays.asList(AttributeType.builder().name("email_verified").value("true").build()));
-      adminCognitoService.setUserPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, false);
-      adminCognitoService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, USER_PASSWORD);
+      adminCognitoIdentityProviderService.setUserPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD, false);
+      adminCognitoIdentityProviderService.loginWithNewPassword(ADMIN_EMAIL, TEMP_USER_PASSWORD,
+          USER_PASSWORD);
     }
 
     addAndLoginCognito(USER_EMAIL, Arrays.asList(DEFAULT_SITE_ID));
@@ -599,13 +623,13 @@ public abstract class AbstractApiTest {
   }
 
   /**
-   * Create {@link CognitoConnectionBuilder}.
+   * Create {@link CognitoIdentityConnectionBuilder}.
    * 
-   * @return {@link CognitoConnectionBuilder}
+   * @return {@link CognitoIdentityConnectionBuilder}
    */
-  public CognitoConnectionBuilder createCognitoConnectionBuilder() {
-    return new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
-        .setRegion(awsregion);
+  public CognitoIdentityConnectionBuilder createCognitoConnectionBuilder() {
+    return new CognitoIdentityConnectionBuilder(cognitoClientId, cognitoUserPoolId,
+        cognitoIdentitypool).setRegion(awsregion);
   }
 
   /**
@@ -729,5 +753,23 @@ public abstract class AbstractApiTest {
   protected Map<String, Object> toMap(final String response) throws IOException {
     Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
     return m;
+  }
+
+  /**
+   * Get Cognito Client Id.
+   * 
+   * @return {@link String}
+   */
+  public static String getCognitoClientId() {
+    return cognitoClientId;
+  }
+
+  /**
+   * Get Cognito User Pool Id.
+   * 
+   * @return {@link String}
+   */
+  public static String getCognitoUserPoolId() {
+    return cognitoUserPoolId;
   }
 }

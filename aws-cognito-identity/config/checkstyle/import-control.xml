@@ -14,7 +14,7 @@
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.http.urlconnection" />
 		<allow pkg="software.amazon.awssdk.services.cognitoidentity" />
-		<allow pkg="software.amazon.awssdk.services.cognitoidentityprovider" />
+		<allow pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
 		<allow pkg="software.amazon.awssdk.regions" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		

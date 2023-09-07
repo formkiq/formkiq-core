@@ -2,7 +2,8 @@
 description = "FormKiQ Test Utils"
 
 dependencies {
-	implementation project(':aws-cognito')
+        implementation project(':aws-cognito-identity')
+        implementation project(':aws-cognito-identityprovider')
     implementation project(':aws-s3')
 	api project(':aws-sns')
 	api project(':aws-sqs')

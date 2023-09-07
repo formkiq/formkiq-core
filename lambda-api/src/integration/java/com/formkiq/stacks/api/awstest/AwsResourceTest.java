@@ -43,8 +43,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.aws.cognito.CognitoConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.requests.GetDocumentsRequest;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -74,15 +74,17 @@ public class AwsResourceTest extends AbstractApiTest {
     String email = UUID.randomUUID() + "@formkiq.com";
     String group =
         getParameterStoreValue("/formkiq/" + getAppenvironment() + "/cognito/AdminGroup");
-    Credentials cred = getAdminCognitoService().getCredentials(getAdminToken());
+    Credentials cred = getAdminCognitoIdentityService().getCredentials(getAdminToken());
 
     AwsCredentials basic =
         AwsSessionCredentials.create(cred.accessKeyId(), cred.secretKey(), cred.sessionToken());
 
-    CognitoConnectionBuilder userBuilder =
-        createCognitoConnectionBuilder().setCredentials(StaticCredentialsProvider.create(basic));
+    CognitoIdentityProviderConnectionBuilder userBuilder =
+        new CognitoIdentityProviderConnectionBuilder(getCognitoClientId(), getCognitoUserPoolId())
+            .setCredentials(StaticCredentialsProvider.create(basic));
 
-    CognitoService userCognitoService = new CognitoService(userBuilder);
+    CognitoIdentityProviderService userCognitoService =
+        new CognitoIdentityProviderService(userBuilder);
 
     // when
     GetUserResponse user = userCognitoService.getUser(getAdminToken());
@@ -203,7 +205,7 @@ public class AwsResourceTest extends AbstractApiTest {
   @Test
   public void testUserAddSelfToAdmin() {
     try {
-      getAdminCognitoService().getCredentials(login(USER_EMAIL, USER_PASSWORD));
+      getAdminCognitoIdentityService().getCredentials(login(USER_EMAIL, USER_PASSWORD));
       fail();
     } catch (NotAuthorizedException e) {
       assertTrue(true);
@@ -216,7 +218,7 @@ public class AwsResourceTest extends AbstractApiTest {
   @Test
   public void testFinanceUserAddSelfToAdmin() {
     try {
-      getAdminCognitoService().getCredentials(login(FINANCE_EMAIL, USER_PASSWORD));
+      getAdminCognitoIdentityService().getCredentials(login(FINANCE_EMAIL, USER_PASSWORD));
       fail();
     } catch (NotAuthorizedException e) {
       assertTrue(true);
@@ -229,7 +231,7 @@ public class AwsResourceTest extends AbstractApiTest {
   @Test
   public void testReadonlyUserAddSelfToAdmin() {
     try {
-      getAdminCognitoService().getCredentials(login(READONLY_EMAIL, USER_PASSWORD));
+      getAdminCognitoIdentityService().getCredentials(login(READONLY_EMAIL, USER_PASSWORD));
       fail();
     } catch (NotAuthorizedException e) {
       assertTrue(true);
