@@ -155,7 +155,7 @@ Resources:
     Properties:
       Handler: com.formkiq.stacks.console.ConsoleInstallHandler
       Description: Lambda function that Installs the FormKiQ Console
-      Runtime: java11
+      Runtime: java17
       Timeout: 300
       MemorySize: 512
       Role:
