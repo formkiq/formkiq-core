@@ -24,8 +24,8 @@
 package com.formkiq.testutils.aws;
 
 import java.util.Arrays;
-import com.formkiq.aws.cognito.CognitoConnectionBuilder;
-import com.formkiq.aws.cognito.CognitoService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -49,8 +49,8 @@ public class FkqCognitoService {
   private String rootJwtUrl;
   /** FormKiQ Key Api Url. */
   private String rootKeyUrl;
-  /** {@link CognitoService}. */
-  private CognitoService service;
+  /** {@link CognitoIdentityProviderService}. */
+  private CognitoIdentityProviderService service;
   /** {@link FkqSsmService}. */
   private FkqSsmService ssm;
 
@@ -83,13 +83,11 @@ public class FkqCognitoService {
     String cognitoClientId =
         this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolClientId");
 
-    String cognitoIdentitypool =
-        this.ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/IdentityPoolId");
-
-    CognitoConnectionBuilder adminBuilder =
-        new CognitoConnectionBuilder(cognitoClientId, cognitoUserPoolId, cognitoIdentitypool)
+    CognitoIdentityProviderConnectionBuilder builder =
+        new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
             .setCredentials(awsProfile).setRegion(awsRegion);
-    this.service = new CognitoService(adminBuilder);
+
+    this.service = new CognitoIdentityProviderService(builder);
   }
 
   /**

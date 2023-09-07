@@ -32,22 +32,16 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient;
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClientBuilder;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClientBuilder;
 
 /**
  * 
  * Cognito Connection Builder.
  *
  */
-public class CognitoConnectionBuilder {
+public class CognitoIdentityConnectionBuilder {
 
   /** {@link CognitoIdentityClientBuilder}. */
   private CognitoIdentityClientBuilder clientBuilder;
-  /** {@link CognitoIdentityProviderClientBuilder}. */
-  private CognitoIdentityProviderClientBuilder providerBuilder;
-  /** {@link CognitoIdentityProviderClient}. */
-  private CognitoIdentityProviderClient provider;
   /** {@link String}. */
   private String clientId;
   /** {@link String}. */
@@ -66,18 +60,15 @@ public class CognitoConnectionBuilder {
    * @param cognitoUserPoolId {@link String}
    * @param cognitoIdentityPoolId {@link String}
    */
-  public CognitoConnectionBuilder(final String cognitoClientId, final String cognitoUserPoolId,
-      final String cognitoIdentityPoolId) {
+  public CognitoIdentityConnectionBuilder(final String cognitoClientId,
+      final String cognitoUserPoolId, final String cognitoIdentityPoolId) {
 
     System.setProperty("software.amazon.awssdk.http.service.impl",
         "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService");
 
-    this.providerBuilder =
-        CognitoIdentityProviderClient.builder().httpClientBuilder(UrlConnectionHttpClient.builder())
-            .credentialsProvider(AnonymousCredentialsProvider.create());
-
     this.clientBuilder =
-        CognitoIdentityClient.builder().credentialsProvider(AnonymousCredentialsProvider.create());
+        CognitoIdentityClient.builder().httpClientBuilder(UrlConnectionHttpClient.builder())
+            .credentialsProvider(AnonymousCredentialsProvider.create());
 
     this.clientId = cognitoClientId;
     this.userPoolId = cognitoUserPoolId;
@@ -95,19 +86,6 @@ public class CognitoConnectionBuilder {
     }
 
     return this.client;
-  }
-
-  /**
-   * Build {@link CognitoIdentityProviderClient}.
-   * 
-   * @return {@link CognitoIdentityProviderClient}
-   */
-  public CognitoIdentityProviderClient buildProvider() {
-    if (this.provider == null) {
-      this.provider = this.providerBuilder.build();
-    }
-
-    return this.provider;
   }
 
   /**
@@ -150,10 +128,9 @@ public class CognitoConnectionBuilder {
    * Set Credentials.
    * 
    * @param credentials {@link AwsCredentialsProvider}
-   * @return {@link CognitoConnectionBuilder}
+   * @return {@link CognitoIdentityConnectionBuilder}
    */
-  public CognitoConnectionBuilder setCredentials(final AwsCredentialsProvider credentials) {
-    this.providerBuilder = this.providerBuilder.credentialsProvider(credentials);
+  public CognitoIdentityConnectionBuilder setCredentials(final AwsCredentialsProvider credentials) {
     this.clientBuilder = this.clientBuilder.credentialsProvider(credentials);
     return this;
   }
@@ -162,9 +139,9 @@ public class CognitoConnectionBuilder {
    * Set Credentials.
    * 
    * @param credentials {@link String}
-   * @return {@link CognitoConnectionBuilder}
+   * @return {@link CognitoIdentityConnectionBuilder}
    */
-  public CognitoConnectionBuilder setCredentials(final String credentials) {
+  public CognitoIdentityConnectionBuilder setCredentials(final String credentials) {
 
     try (ProfileCredentialsProvider prov =
         ProfileCredentialsProvider.builder().profileName(credentials).build()) {
@@ -176,11 +153,11 @@ public class CognitoConnectionBuilder {
    * Set Endpoint Override.
    * 
    * @param uri {@link String}
-   * @return {@link CognitoConnectionBuilder}
+   * @return {@link CognitoIdentityConnectionBuilder}
    * @throws URISyntaxException URISyntaxException
    */
-  public CognitoConnectionBuilder setEndpointOverride(final String uri) throws URISyntaxException {
-    this.providerBuilder = this.providerBuilder.endpointOverride(new URI(uri));
+  public CognitoIdentityConnectionBuilder setEndpointOverride(final String uri)
+      throws URISyntaxException {
     this.clientBuilder = this.clientBuilder.endpointOverride(new URI(uri));
     return this;
   }
@@ -189,11 +166,10 @@ public class CognitoConnectionBuilder {
    * Set Region.
    * 
    * @param r {@link Region}
-   * @return {@link CognitoConnectionBuilder}
+   * @return {@link CognitoIdentityConnectionBuilder}
    */
-  public CognitoConnectionBuilder setRegion(final Region r) {
+  public CognitoIdentityConnectionBuilder setRegion(final Region r) {
     this.region = r;
-    this.providerBuilder = this.providerBuilder.region(this.region);
     this.clientBuilder = this.clientBuilder.region(this.region);
     return this;
   }

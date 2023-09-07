@@ -6,7 +6,8 @@ pluginManagement {
 rootProject.name = 'formkiq-core'
 
 include 'console'
-include 'aws-cognito'
+include 'aws-cognito-identity'
+include 'aws-cognito-identityprovider'
 include 'aws-iam'
 include 'aws-lambda'
 include 'aws-s3'

@@ -27,19 +27,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient;
-import software.amazon.awssdk.services.cognitoidentity.model.Credentials;
-import software.amazon.awssdk.services.cognitoidentity.model.DescribeIdentityPoolRequest;
-import software.amazon.awssdk.services.cognitoidentity.model.DescribeIdentityPoolResponse;
-import software.amazon.awssdk.services.cognitoidentity.model.GetCredentialsForIdentityRequest;
-import software.amazon.awssdk.services.cognitoidentity.model.GetCredentialsForIdentityResponse;
-import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest;
-import software.amazon.awssdk.services.cognitoidentity.model.GetIdResponse;
-import software.amazon.awssdk.services.cognitoidentity.model.GetIdentityPoolRolesRequest;
-import software.amazon.awssdk.services.cognitoidentity.model.GetIdentityPoolRolesResponse;
-import software.amazon.awssdk.services.cognitoidentity.model.SetIdentityPoolRolesRequest;
-import software.amazon.awssdk.services.cognitoidentity.model.SetIdentityPoolRolesResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminConfirmSignUpRequest;
@@ -73,34 +60,25 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
  * Cognito Services.
  *
  */
-public class CognitoService {
+public class CognitoIdentityProviderService {
 
   /** {@link String}. */
   private String clientId;
-  /** {@link CognitoIdentityClient}. */
-  private CognitoIdentityClient cognitoClient;
   /** {@link CognitoIdentityProviderClient}. */
   private CognitoIdentityProviderClient cognitoProvider;
-  /** {@link String}. */
-  private String identityPool;
-  /** {@link Region}. */
-  private Region region;
   /** {@link String}. */
   private String userPoolId;
 
   /**
    * Constructor.
    * 
-   * @param builder {@link CognitoConnectionBuilder}
+   * @param builder {@link CognitoIdentityProviderConnectionBuilder}
    */
-  public CognitoService(final CognitoConnectionBuilder builder) {
-    this.cognitoProvider = builder.buildProvider();
-    this.cognitoClient = builder.buildClient();
+  public CognitoIdentityProviderService(final CognitoIdentityProviderConnectionBuilder builder) {
+    this.cognitoProvider = builder.build();
 
     this.clientId = builder.getClientId();
     this.userPoolId = builder.getUserPoolId();
-    this.identityPool = builder.getIdentityPool();
-    this.region = builder.getRegion();
   }
 
   /**
@@ -163,17 +141,6 @@ public class CognitoService {
   }
 
   /**
-   * Describe Identity Pool.
-   * 
-   * @param identityPoolId {@link String}
-   * @return {@link DescribeIdentityPoolResponse}
-   */
-  public DescribeIdentityPoolResponse describeIdentityPool(final String identityPoolId) {
-    return this.cognitoClient.describeIdentityPool(
-        DescribeIdentityPoolRequest.builder().identityPoolId(identityPoolId).build());
-  }
-
-  /**
    * Finds User by Email.
    *
    * @param email {@link String}
@@ -187,38 +154,6 @@ public class CognitoService {
 
     ListUsersResponse users = this.cognitoProvider.listUsers(usersRequest);
     return users;
-  }
-
-  /**
-   * Get {@link Credentials} from an {@link AuthenticationResultType}.
-   * 
-   * @param token {@link AuthenticationResultType}
-   * @return {@link Credentials}
-   */
-  public Credentials getCredentials(final AuthenticationResultType token) {
-
-    Map<String, String> logins = new HashMap<>();
-    logins.put("cognito-idp." + this.region + ".amazonaws.com/" + this.userPoolId, token.idToken());
-
-    GetIdResponse r = this.cognitoClient
-        .getId(GetIdRequest.builder().logins(logins).identityPoolId(this.identityPool).build());
-    GetCredentialsForIdentityRequest req = GetCredentialsForIdentityRequest.builder().logins(logins)
-        .identityId(r.identityId()).build();
-
-    GetCredentialsForIdentityResponse rr = this.cognitoClient.getCredentialsForIdentity(req);
-
-    return rr.credentials();
-  }
-
-  /**
-   * Get Identity Pool Roles.
-   * 
-   * @param identityPoolId {@link String}
-   * @return {@link GetIdentityPoolRolesResponse}
-   */
-  public GetIdentityPoolRolesResponse getIdentityPoolRoles(final String identityPoolId) {
-    return this.cognitoClient.getIdentityPoolRoles(
-        GetIdentityPoolRolesRequest.builder().identityPoolId(identityPoolId).build());
   }
 
   /**
@@ -325,17 +260,6 @@ public class CognitoService {
     }
 
     return authentication;
-  }
-
-  /**
-   * Set Identity Pool Roles.
-   * 
-   * @param request {@link SetIdentityPoolRolesRequest}
-   * @return {@link SetIdentityPoolRolesResponse}
-   */
-  public SetIdentityPoolRolesResponse setIdentityPoolRoles(
-      final SetIdentityPoolRolesRequest request) {
-    return this.cognitoClient.setIdentityPoolRoles(request);
   }
 
   /**
