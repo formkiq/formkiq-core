@@ -22,6 +22,7 @@
 				<allow pkg="com.formkiq.module.lambdaservices" />
 				<allow pkg="com.formkiq.stacks.dynamodb" />
 				
+				<allow pkg="software.amazon.awssdk.auth.credentials" />
 				<allow pkg="software.amazon.awssdk.regions" />
 				<allow pkg="software.amazon.awssdk.utils" />
 				

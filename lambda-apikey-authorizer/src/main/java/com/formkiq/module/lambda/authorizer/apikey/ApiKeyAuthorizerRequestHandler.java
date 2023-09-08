@@ -35,16 +35,16 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** {@link RequestHandler} for handling DynamoDb to Tesseract OCR Processor. */
@@ -54,35 +54,33 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
   /** Max Api Key Length. */
   private static final int MAX_APIKEY_LENGTH = 100;
   /** {@link AwsServiceCache}. */
-  private AwsServiceCache awsServices;
+  private static AwsServiceCache awsServices;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
+  static {
+    if (System.getenv().containsKey("AWS_REGION")) {
+      awsServices = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+          EnvironmentVariableCredentialsProvider.create())
+          .addService(new DynamoDbAwsServiceRegistry()).build();
+    }
+  }
 
   /**
    * constructor.
    * 
    */
-  public ApiKeyAuthorizerRequestHandler() {
-    this(System.getenv(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))));
-  }
+  public ApiKeyAuthorizerRequestHandler() {}
 
   /**
    * constructor.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
    *
-   * @param map {@link Map}
-   * @param dbConnection {@link DynamoDbConnectionBuilder}
    */
-  public ApiKeyAuthorizerRequestHandler(final Map<String, String> map,
-      final DynamoDbConnectionBuilder dbConnection) {
-
-    this.awsServices =
-        new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
-
-    this.awsServices.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbConnection));
-    this.awsServices.register(ApiKeysService.class, new ApiKeysServiceExtension());
+  public ApiKeyAuthorizerRequestHandler(final AwsServiceCache awsServiceCache) {
+    awsServices = awsServiceCache;
+    awsServices.register(ApiKeysService.class, new ApiKeysServiceExtension());
   }
 
   /**
@@ -91,7 +89,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
    * @return {@link AwsServiceCache}
    */
   public AwsServiceCache getAwsServices() {
-    return this.awsServices;
+    return awsServices;
   }
 
   @SuppressWarnings("unchecked")
@@ -106,11 +104,11 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
       final Context context) throws IOException {
 
     LambdaLogger logger = context.getLogger();
-    ApiKeysService apiKeys = this.awsServices.getExtension(ApiKeysService.class);
+    ApiKeysService apiKeys = awsServices.getExtension(ApiKeysService.class);
 
     String json = IoUtils.toUtf8String(input);
 
-    if (this.awsServices.debug()) {
+    if (awsServices.debug()) {
       logger.log(json);
     }
 
