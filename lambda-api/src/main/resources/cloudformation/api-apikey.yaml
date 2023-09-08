@@ -60,6 +60,9 @@ Resources:
           - name: systemManagement
             description: System Management API
             x-displayName: System Management
+          - name: userManagement
+            description: User Management API
+            x-displayName: User Management
           - name: advancedDocumentSearch
             description: Advanced Document Search API
             x-displayName: Advanced Document Search
@@ -2604,6 +2607,36 @@ Resources:
                         $ref: '#/components/schemas/EsignatureDocusignResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
+          /groups:
+            get:
+              operationId: GetGroups
+              summary: Get User Groups
+              description: Return the list of created user groups
+              tags:
+              - User Management
+              parameters:
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetGroupsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -4167,6 +4200,32 @@ Resources:
                 message:
                   type: "string"
                   description: "Result message"
+            GetGroupsResponse:
+              type: object
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                groups:
+                  type: "array"
+                  description: "List of Groups"
+                  items:
+                    $ref: "#/components/schemas/Group"
+            Group:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of Group"
+                description:
+                  type: "string"
+                  description: "Description of group"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  description: "Last Modified Timestamp"
             GetApiKeysResponse:
               type: object
               properties:
