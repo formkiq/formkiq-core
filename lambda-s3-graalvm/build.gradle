@@ -69,6 +69,8 @@ task assembleTemplate {
 	}
 }
 
-graalvmNativeImage.dependsOn check
+//graalvmNativeImage.dependsOn check
 
-build.dependsOn assembleTemplate
+task buildDeploy {
+	dependsOn assembleTemplate
+}

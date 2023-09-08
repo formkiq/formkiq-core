@@ -77,4 +77,6 @@ task assembleTemplate {
 	}
 }
 
-build.dependsOn assembleTemplate
+task buildDeploy {
+	dependsOn assembleTemplate
+}
