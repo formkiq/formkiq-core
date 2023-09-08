@@ -99,5 +99,8 @@ task assembleTemplate {
 
 buildJava11Zip.dependsOn jar
 
-graalvmNativeImage.dependsOn check
-build.dependsOn assembleTemplate
+//graalvmNativeImage.dependsOn check
+//buildDeploy.dependsOn assembleTemplate
+task buildDeploy {
+	dependsOn assembleTemplate
+}

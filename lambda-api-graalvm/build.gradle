@@ -154,5 +154,7 @@ task unzipAwsCognito(type: Copy) {
 
 buildJava11Zip.dependsOn jar
 
-graalvmNativeImage.dependsOn check
-build.dependsOn assembleTemplate, assembleOpenApiTemplate, unzipAwsCognito
+//graalvmNativeImage.dependsOn check
+task buildDeploy {
+	dependsOn assembleTemplate, assembleOpenApiTemplate, unzipAwsCognito
+}
