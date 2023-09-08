@@ -12,7 +12,7 @@
     <a href="https://docs.formkiq.com">Documentation</a> | 
     <a href="https://blog.formkiq.com">Blog</a> |
     <a href="https://github.com/formkiq/formkiq-core#Installation">Installation</a> |
-    <a href="https://www.formkiq.com/pricing">Paid Support</a>
+    <a href="https://www.formkiq.com/pricing">FormKiQ Pro and Enterprise</a>
 </div>
 </div>
 
@@ -20,7 +20,7 @@
 
 <div>
 	Build your perfect document management solution<br><br>
-	FormKiQ&trade; Core is an open source Document Management Platform that supports anyone from startups to enterprises.<br><br>API first design makes it perfect to run standalone or to add Document Management functionality to existing applications.<br><br>FormKiQ can be used as a more robust document control and discovery solution than file storage products like Google Drive and Dropbox, or as a more flexible document management alternative to services like eFileCabinet, DocuPhase, and M-files.
+	FormKiQ&trade; Core is an open source Document Management Platform that supports anyone from startups to enterprises.<br><br>API first design makes it perfect to run standalone or to add Document Management functionality to existing applications.<br><br>FormKiQ can be used as a more robust document control and discovery solution than file storage products like Google Drive and Dropbox, or as a more flexible document management or enterprise content management alternative to services like OpenText, Revver, eFileCabinet, DocuPhase, M-files, and even Microsoft SharePoint.
 <br />
 <br />
 </div>
