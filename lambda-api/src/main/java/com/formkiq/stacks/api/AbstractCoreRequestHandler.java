@@ -26,6 +26,8 @@ package com.formkiq.stacks.api;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.formkiq.aws.cognito.CognitoIdentityProviderService;
+import com.formkiq.aws.cognito.CognitoIdentityProviderServiceExtension;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.s3.S3Service;
@@ -302,6 +304,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   private static void registerExtensions(final AwsServiceCache serviceCache,
       final DocumentTagSchemaPlugin schemaEvents) {
 
+    serviceCache.register(CognitoIdentityProviderService.class,
+        new CognitoIdentityProviderServiceExtension());
     serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     serviceCache.register(EventService.class, new EventServiceSnsExtension());
     serviceCache.register(ActionsNotificationService.class,

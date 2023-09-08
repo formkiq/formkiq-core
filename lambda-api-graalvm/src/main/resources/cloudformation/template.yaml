@@ -172,6 +172,10 @@ Resources:
             Fn::Sub: "${AppEnvironment}"
           DEBUG: false
           ENABLE_AWS_X_RAY: true
+          COGNITO_USER_POOL_CLIENT_ID:
+            Ref: CognitoUserPoolClient
+          COGNITO_USER_POOL_ID:
+            Ref: CognitoUserPoolId
           DOCUMENTS_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           CACHE_TABLE: 

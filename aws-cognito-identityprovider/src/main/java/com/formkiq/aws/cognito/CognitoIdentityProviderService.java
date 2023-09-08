@@ -51,6 +51,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroup
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
@@ -187,6 +189,19 @@ public class CognitoIdentityProviderService {
    */
   public boolean isUserExists(final String email) {
     return !findUserByEmail(email).users().isEmpty();
+  }
+
+  /**
+   * List Cognito Groups.
+   * 
+   * @param token {@link String}
+   * @param limit {@link Integer}
+   * @return {@link ListGroupsResponse}
+   */
+  public ListGroupsResponse listGroups(final String token, final Integer limit) {
+    ListGroupsResponse listGroups = this.cognitoProvider.listGroups(ListGroupsRequest.builder()
+        .userPoolId(this.userPoolId).nextToken(token).limit(limit).build());
+    return listGroups;
   }
 
   /**

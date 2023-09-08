@@ -29,6 +29,7 @@ dependencies {
 	api project(':fkq-validation')
 	api project(':fkq-plugins')
 	api project(':aws-s3')
+	api project(':aws-cognito-identityprovider')
 	api project(':aws-sqs')
 	api project(':aws-ssm')
 	api project(':aws-sns')
