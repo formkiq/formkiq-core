@@ -4023,6 +4023,12 @@ Resources:
                 ocrParseTypes:
                   type: "string"
                   description: "OCR: Parse types - TEXT, FORMS, TABLES"
+                ocrEngine:
+                  type: "string"
+                  description: "OCR: Engine to use for Optical character recognition"
+                  enum:
+                    - TESSERACT
+                    - TEXTRACT
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
                   description: "OCR: For the rewriting of the PDF document, converting any image text to searchable text"
