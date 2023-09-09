@@ -117,8 +117,8 @@ task buildDistribution(type: Copy) {
     from 'lambda-s3-graalvm/build/distributions'
     from 'lambda-typesense/build/distributions'
     from 'lambda-ocr-tesseract/build/distributions'
-    from 'module-email-notify/build/distributions/formkiq-core/sam'
-    from 'websocket-api/build/distributions/formkiq-core/sam'
+    from 'module-email-notify/build/distributions'
+    from 'websocket-api/build/distributions'
     from 'lambda-apikey-authorizer/build/distributions'
     into "${buildDir}/modules"
 }
@@ -180,27 +180,6 @@ distributions {
         }
     }
 }
-
-/*
-check.dependsOn ':buildSamZip'
-
-task buildSamZip(type: Zip) {
-	dependsOn assembleTemplate
-	outputs.upToDateWhen { false }
-	archiveFileName = "formkiq-core-${project.version}.zip"
-    destinationDirectory = file("${buildDir}/distributions/formkiq-core")
-   	from("${buildDir}/distributions/formkiq-core/sam") {
-   		include '*'
-      include '**///**'
-    //}
-    /*
-	from("${projectDir}") {
-   		include 'INSTALL.md'
-   		include 'LICENSE'
-   		include 'openapi-jwt.yaml'
-   		include 'openapi-iam.yaml'
-    } 
-}*/
 
 task validateOpenApiJwtSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
     inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
