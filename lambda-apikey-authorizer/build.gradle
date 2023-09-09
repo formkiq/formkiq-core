@@ -1,5 +1,7 @@
 description = "FormKiQ Core - API Key Authorizer"
 
+apply plugin: 'distribution'
+
 def moduleName = "formkiq-module-lambda-authorizer-apikey"
 
 dependencies {
@@ -43,6 +45,7 @@ test {
   useJUnitPlatform()
 }
 
+/*
 task buildZip(type: Zip) {
 	dependsOn test, graalvmNativeImage
 	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
@@ -56,27 +59,37 @@ task buildZip(type: Zip) {
     from("${buildDir}/graalvm") {
         include 'server'
     }
-}
-
+}*/
+/*
 task buildJava11Zip(type: Zip) {
     from compileJava
     into('lib') {
         from configurations.default
     }           
+}*/
+
+//task buildDeploy {
+//	dependsOn assembleTemplate
+//}
+
+distZip.dependsOn graalvmNativeImage
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "api/${moduleName}.zip"
 }
 
-task assembleTemplate {
-  dependsOn buildZip
-  outputs.upToDateWhen { false }
-  
-	doLast {
-	    copy {
-		  from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/api"
-	    }
-	}
-}
-
-task buildDeploy {
-	dependsOn assembleTemplate
+distributions {
+    main {
+        contents {
+            from("runtime/") {
+            	include "bootstrap"
+            }
+            from ("${buildDir}/graalvm") {
+                include("server")
+            }
+            into '/'
+        }
+    }
 }

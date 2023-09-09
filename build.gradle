@@ -2,6 +2,7 @@
 plugins {
   id 'java-library'
   id 'checkstyle'
+  id 'distribution'
   id 'com.github.spotbugs'  version '5.0.14'
   id 'com.diffplug.spotless' version '6.21.0'
   id 'com.github.ben-manes.versions' version '0.47.0'
@@ -104,37 +105,62 @@ subprojects {
 
 description = "FormKiQ Core"
 
+apply plugin: 'distribution'
+
 task buildDistribution(type: Copy) {
 	dependsOn subprojects.build
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	outputs.upToDateWhen {false}
 
-    from 'console/build/distributions/formkiq-core'
-    from 'lambda-api-graalvm/build/distributions/formkiq-core'
-    from 'lambda-s3-graalvm/build/distributions/formkiq-core'
-    from 'lambda-typesense/build/distributions/formkiq-module-lambda-typesense'
-    from 'lambda-ocr-tesseract/build/distributions/formkiq-core'
-    from 'module-email-notify/build/distributions/formkiq-core'
-    from 'websocket-api/build/distributions/formkiq-core'
-    from 'lambda-apikey-authorizer/build/distributions/formkiq-core'
-    into "${buildDir}/distributions/formkiq-core"
+    from 'console/build/distributions'
+    from 'lambda-api-graalvm/build/distributions'
+    from 'lambda-s3-graalvm/build/distributions'
+    from 'lambda-typesense/build/distributions'
+    from 'lambda-ocr-tesseract/build/distributions'
+    from 'module-email-notify/build/distributions/formkiq-core/sam'
+    from 'websocket-api/build/distributions/formkiq-core/sam'
+    from 'lambda-apikey-authorizer/build/distributions'
+    into "${buildDir}/modules"
 }
 
-task assembleTemplate {
+task buildTemplate {
     dependsOn buildDistribution
-  	outputs.upToDateWhen { false }
-	doLast {
+    
+	outputs.upToDateWhen { false }
+    
+	doLast {	
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "*"
-	      into "${buildDir}/distributions/formkiq-core/sam"
+		  exclude "module-documentevent.yaml"
+	      into "${buildDir}/modules"
 	    }
 		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/distributions/formkiq-core/sam/template.yaml --output-files ${buildDir}/distributions/formkiq-core/sam"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value version=${project.version} -f ${buildDir}/modules/template.yaml --output-files ${buildDir}/modules"
 		}	
 	}
 }
 
+distZip.dependsOn buildTemplate
+
+tasks.distTar.enabled = false
+
+distributions {
+    main {
+        contents {
+            from(".") {
+            	include "INSTALL.md"
+            	include "LICENSE"
+            }
+            from("${buildDir}/modules") {
+            	include "**/**"
+            }
+            into '/'
+        }
+    }
+}
+
+/*
 check.dependsOn ':buildSamZip'
 
 task buildSamZip(type: Zip) {
@@ -144,15 +170,16 @@ task buildSamZip(type: Zip) {
     destinationDirectory = file("${buildDir}/distributions/formkiq-core")
    	from("${buildDir}/distributions/formkiq-core/sam") {
    		include '*'
-      include '**/**'
-    }
+      include '**///**'
+    //}
+    /*
 	from("${projectDir}") {
    		include 'INSTALL.md'
    		include 'LICENSE'
    		include 'openapi-jwt.yaml'
    		include 'openapi-iam.yaml'
     } 
-}
+}*/
 
 task validateOpenApiJwtSpec(type: org.openapitools.generator.gradle.plugin.tasks.ValidateTask){
     inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()

@@ -67,4 +67,4 @@ jobs:
         S3_BUCKET: ${{ secrets.S3_BUCKET }}
         DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
       run: |
-        aws s3 cp ./build/distributions/formkiq-core/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
+        aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
