@@ -6,7 +6,7 @@ plugins {
   id 'com.github.spotbugs'  version '5.0.14'
   id 'com.diffplug.spotless' version '6.21.0'
   id 'com.github.ben-manes.versions' version '0.47.0'
-  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.5.1'
+  id 'com.formkiq.gradle.graalvm-native-plugin' version '1.6.0'
   id 'de.undercouch.download' version '5.5.0'
   id 'org.openapi.generator' version '7.0.0'
 }
@@ -123,8 +123,29 @@ task buildDistribution(type: Copy) {
     into "${buildDir}/modules"
 }
 
+task downloadAwsCognito(type: Download) {
+    src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
+    dest buildDir
+    overwrite false
+}
+
+/*
+task downloadAwsCognito(type: Copy) {
+    from file("$buildDir/../../../aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
+    into file("${buildDir}")
+}*/
+
+task unzipAwsCognito(type: Copy) {
+  dependsOn downloadAwsCognito
+  def zipFile = file("${buildDir}/aws-cognito-v${awsCognitoVersion}.zip")
+  def outputDir = file("${buildDir}/modules/cognito")
+
+  from zipTree(zipFile)
+  into outputDir
+}
+
 task buildTemplate {
-    dependsOn buildDistribution
+    dependsOn buildDistribution, unzipAwsCognito
     
 	outputs.upToDateWhen { false }
     
