@@ -1,5 +1,7 @@
 description = "FormKiQ Core - Lambda S3 Graalvm"
 
+apply plugin: 'distribution'
+
 def getCmd() {
     String os = System.getProperty("os.name").toLowerCase()
     return os.contains("win") ? "cmd" : "bash"
@@ -33,44 +35,39 @@ test {
   useJUnitPlatform()
 }
 
-task buildZip(type: Zip) {
-    dependsOn test, graalvmNativeImage
-    inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
-    outputs.files("${buildDir}/lambda-s3-graalvm.zip")
-  	
-    archiveFileName = "lambda-s3-graalvm.zip"
-    destinationDirectory = file("${buildDir}")
-    from("${project.projectDir}/runtime") {
-        include 'bootstrap'
-    }
-    from("${buildDir}/graalvm") {
-        include 'server'
-    }
-}
-
-task assembleTemplate {
-    dependsOn buildZip
+task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
-	outputs.dir("${buildDir}/distributions/formkiq-core")
+	outputs.files("${buildDir}/distributions/storage/template.yaml")
 
 	def randomtext = ('0'..'z').shuffled().take(10).join();
 	def sha256 = randomtext.digest('SHA-256')
 
 	doLast {
-		
-		copy {
-		  from layout.buildDirectory.file("${buildDir}/lambda-s3-graalvm.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/storage"
-	    }
 	    
 		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/formkiq-core/sam/storage/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/storage/template.yaml"
 		}
 	}
 }
 
-//graalvmNativeImage.dependsOn check
+distZip.dependsOn buildTemplate, graalvmNativeImage
 
-task buildDeploy {
-	dependsOn assembleTemplate
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "storage/lambda-s3-graalvm.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from("runtime/") {
+            	include "bootstrap"
+            }
+            from ("${buildDir}/graalvm") {
+                include("server")
+            }
+            into '/'
+        }
+    }
 }

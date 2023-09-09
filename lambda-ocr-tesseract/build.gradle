@@ -1,5 +1,7 @@
 description = "FormKiQ Core - Lambda OCR Tesseract"
 
+apply plugin: 'distribution'
+
 def tesseract_version = "5.3.1"
 def moduleName = "formkiq-module-lambda-ocr-tesseract"
 
@@ -30,6 +32,7 @@ dependencies {
         testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.19.0'
 }
 
+/*
 task buildZip(type: Zip) {
 	dependsOn check
 	archiveFileName = "${moduleName}.zip"
@@ -39,7 +42,7 @@ task buildZip(type: Zip) {
     into('lib') {
         from configurations.runtimeClasspath
     }           
-}
+}*/
 
 test {
   failFast = true
@@ -75,28 +78,51 @@ task buildTesseractLayer(type: Zip) {
 	dependsOn updateTesseractFiles
     from "${buildDir}/tesseract"
     archiveFileName.set("layer-tesseract-5.3.1.zip")
-    destinationDirectory = file("$buildDir")
+    destinationDirectory = file("${buildDir}/distributions/ocr-tesseract")
 }
 
-task assembleTemplate {
-  dependsOn buildZip, buildTesseractLayer  
-  outputs.upToDateWhen { false }
+task buildTemplate {
+	inputs.files("src/main/resources/cloudformation/template.yaml")
+	outputs.files("${buildDir}/distributions/ocr-tesseract/template.yaml")
+  //dependsOn buildZip, buildTesseractLayer  
+  //outputs.upToDateWhen { false }
   
 	doLast {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "template*"
-	      into "${buildDir}/distributions/formkiq-core/sam/ocr"
+	      into "${buildDir}/distributions/ocr-tesseract"
 	    }
-	    copy {
-		  from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/ocr"
-	    }
-	    copy {
-		  from layout.projectDirectory.file("${buildDir}/layer-tesseract-${tesseract_version}.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/ocr"
-	    }
+	    //copy {
+		  //from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
+	      //into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	    //}
+	    //copy {
+		  //from layout.projectDirectory.file("${buildDir}/layer-tesseract-${tesseract_version}.zip")
+	      //into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	    //}
 	}
 }
 
-build.dependsOn assembleTemplate
+distZip.dependsOn buildTemplate, buildTesseractLayer
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "ocr-tesseract/${moduleName}.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from compileJava
+    		from processResources              
+    		into('lib') {
+        		from configurations.runtimeClasspath
+    		}    
+            into '/'
+        }
+    }
+}
+
+//build.dependsOn assembleTemplate

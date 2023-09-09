@@ -1,5 +1,6 @@
-	
 description = "FormKiQ Core - Console"
+
+apply plugin: 'distribution'
 
 sourceSets {
     integration {
@@ -38,26 +39,6 @@ dependencies {
 	testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.37.0'
 }
 
-task buildZip(type: Zip) {
-	dependsOn check
-	archiveFileName = "console-installer.zip"
-    destinationDirectory = file("${buildDir}")
-    from compileJava
-    from processResources              
-    into('lib') {
-        from configurations.runtimeClasspath
-    }           
-}
-
-task buildUnzip(type: Copy) {
-  dependsOn buildZip
-  def zipFile = file("${buildDir}/console-installer.zip")
-  def outputDir = file("${buildDir}/tmp/console")
-
-  from zipTree(zipFile)
-  into outputDir
-}
-
 test {
   failFast = true
   useJUnitPlatform()
@@ -69,22 +50,36 @@ task integrationTest(type: Test) {
     useJUnitPlatform()
 }
 
-task assembleTemplate {
-    dependsOn buildZip
+task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
-	outputs.dir("${buildDir}/distributions")
+	outputs.files("${buildDir}/distributions/console/template.yaml", "${buildDir}/distributions/console/template-install.yaml", "${buildDir}/distributions/console/template-users.yaml")
 	
 	doLast {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "template*"
-	      into "${buildDir}/distributions/formkiq-core/sam/console"
-	    }
-	    copy {
-		  from layout.projectDirectory.file("${buildDir}/console-installer.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/console"
+	      into "${buildDir}/distributions/console"
 	    }
 	}
 }
 
-build.dependsOn assembleTemplate
+distZip.dependsOn buildTemplate
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "console/console-installer.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from compileJava
+    		from processResources              
+    		into('lib') {
+        		from configurations.runtimeClasspath
+    		}    
+            into '/'
+        }
+    }
+}

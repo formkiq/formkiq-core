@@ -1,5 +1,7 @@
 description = "FormKiQ Core - Lambda TypeSense"
 
+apply plugin: 'distribution'
+
 def moduleName = "formkiq-module-lambda-typesense"
 def getCmd() {
     String os = System.getProperty("os.name").toLowerCase()
@@ -54,6 +56,7 @@ test {
   useJUnitPlatform()
 }
 
+/*
 task buildLambdaZip(type: Zip) {
 	dependsOn test, graalvmNativeImage
 	inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
@@ -67,40 +70,63 @@ task buildLambdaZip(type: Zip) {
     from("${buildDir}/graalvm") {
         include 'server'
     }
-}
-
+}*/
+/*
 task buildJava11Zip(type: Zip) {
     from compileJava
     into('lib') {
         from configurations.default
     }           
-}
+}*/
 
+/*
 task copyLambda(type: Copy) {
   dependsOn buildLambdaZip
   outputs.upToDateWhen {false}
   from buildLambdaZip.outputs.files.singleFile
   into "${buildDir}/distributions/${moduleName}/sam/typesense"
-}
+}*/
 
-task assembleTemplate {
-	dependsOn copyLambda
-  outputs.upToDateWhen { false }
+task buildTemplate {
+	inputs.files("src/main/resources/cloudformation/typesense/template.yaml")
+	outputs.files("${buildDir}/distributions/typesense/template.yaml")
   
 	def randomtext = ('0'..'z').shuffled().take(10).join();
 	def sha256 = randomtext.digest('SHA-256')
 	
   	doLast {
 		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/${moduleName}/sam/typesense/template.yaml"
+			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/typesense/template.yaml"
 		}
 	}
 }
 
-buildJava11Zip.dependsOn jar
+distZip.dependsOn buildTemplate, graalvmNativeImage
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "typesense/${moduleName}-graalvm.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from("runtime/") {
+            	include "bootstrap"
+            }
+            from ("${buildDir}/graalvm") {
+                include("server")
+            }
+            into '/'
+        }
+    }
+}
+
+//buildJava11Zip.dependsOn jar
 
 //graalvmNativeImage.dependsOn check
 //buildDeploy.dependsOn assembleTemplate
-task buildDeploy {
-	dependsOn assembleTemplate
-}
+//task buildDeploy {
+//	dependsOn assembleTemplate
+//}
