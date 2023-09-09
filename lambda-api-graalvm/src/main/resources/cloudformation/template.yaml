@@ -175,7 +175,7 @@ Resources:
           COGNITO_USER_POOL_CLIENT_ID:
             Ref: CognitoUserPoolClient
           COGNITO_USER_POOL_ID:
-            Ref: CognitoUserPoolId
+            Ref: CognitoUserPool
           DOCUMENTS_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
           CACHE_TABLE: 
