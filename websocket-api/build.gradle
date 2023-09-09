@@ -1,5 +1,8 @@
 import org.apache.tools.ant.taskdefs.condition.Os
+
 description = "FormKiQ Core - WebSocket"
+
+apply plugin: 'distribution'
 
 sourceSets {
     integration {
@@ -30,8 +33,8 @@ jar.enabled = false
 dependencies {
 	testImplementation project(':aws-sqs')
 	testImplementation project(':aws-ssm')
-        testImplementation project(':aws-cognito-identity')
-        testImplementation project(':aws-cognito-identityprovider')
+    testImplementation project(':aws-cognito-identity')
+    testImplementation project(':aws-cognito-identityprovider')
 	testImplementation project(':aws-dynamodb')
 	testImplementation project(':dynamodb-documents')
 	
@@ -56,11 +59,12 @@ task integrationTest(type: Test) {
 }
 
 task npmInstall {
-  inputs.files("src/main/resources/js")
-  outputs.files("${buildDir}/resources/main/js/websocket-api.zip")
-  dependsOn processResources, compileTestJava, checkstyleTest, spotbugsTest, compileIntegrationJava, checkstyleIntegration, spotbugsIntegration
+
+  dependsOn processResources
   
   doLast {
+	  
+	  delete("${buildDir}/resources/main/js/websocket-api.zip")
 	  
 	  exec {
 	    workingDir "${buildDir}/resources/main/js"
@@ -78,53 +82,53 @@ jar.dependsOn npmInstall
 
 task npmtest {
   onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
-  dependsOn npmInstall, jar
-  inputs.files("src/main/resources/js")
-  outputs.dir("${buildDir}/resources/main/js/coverage")
   doLast {
     exec {
-      commandLine getCmd(), getCmdParam(), "cd build/resources/main/js ; npm test"
-    }
+	  workingDir "${buildDir}/resources/main/js"
+	  commandLine getCmd(), getCmdParam(), "npm test"
+	}
   }
 }
 
-task assembleTemplate {
-    dependsOn check
+task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml")
-	outputs.dir("${buildDir}/distributions/formkiq-core")
-	doLast {
+	outputs.files("${buildDir}/distributions/websocket-api/template.yaml")
 	
+	doLast {
 		copy {
-		  from layout.buildDirectory.file("${buildDir}/resources/main/js/websocket-api.zip"), layout.projectDirectory.file("src/main/resources/cloudformation/template.yaml")
-	      into "${buildDir}/distributions/formkiq-core/sam/websocket-api"
+		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+		  include "template*"
+	      into "${buildDir}/distributions/websocket-api"
 	    }
 	}
 }
 
-task updateLambda {
-	outputs.upToDateWhen { false }
-	dependsOn assembleTemplate
-	doLast {
-		exec {
-			commandLine getCmd(), getCmdParam(), "aws lambda list-functions --region ${testregion} --profile ${testprofile} | jq -r '.Functions[] | .FunctionName' | grep formkiq-core-${testappenvironment} | grep 'Websocket' | xargs -I{} aws lambda update-function-code --function-name {} --zip-file fileb://${buildDir}/websocket-api.zip --region ${testregion} --profile ${testprofile}"
-		}
-	}
-}
+task unzipPack(type: Copy) {
+  dependsOn npmInstall
+  def zipFile = file("${buildDir}/resources/main/js/websocket-api.zip")
+  def outputDir = file("${buildDir}/pack")
 
-ext.macroLocalStackStart = {
-	exec {
-	  commandLine getCmd(), getCmdParam(), "docker-compose  -f ./docker-compose.yml up -d"
-	}
-	exec {
-	  commandLine getCmd(), getCmdParam(), "${project.rootDir}/wait-for-localstack.sh 4568"
-	}
-}
-  
-ext.macroDockerComposeDown = {
-    exec {
-      commandLine getCmd(), getCmdParam(), "docker-compose  -f ${project.rootDir}/docker-compose.yml down"
-    }
+  from zipTree(zipFile)
+  into outputDir
 }
 
 test.dependsOn npmtest
-build.dependsOn assembleTemplate
+
+distZip.dependsOn buildTemplate, npmInstall, unzipPack
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "websocket-api/websocket-api.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from("${buildDir}/pack") {
+            	include "**/**"
+            }
+            into '/'
+        }
+    }
+}

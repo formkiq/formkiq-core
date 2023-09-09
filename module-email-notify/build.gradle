@@ -2,6 +2,8 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 description = "FormKiQ Core - Email Notify Module"
 
+apply plugin: 'distribution'
+
 sourceSets {
     integration {
         java.srcDir "$projectDir/src/integration/java"
@@ -29,8 +31,8 @@ def getCmdParam() {
 jar.enabled = false
 
 dependencies {
-        testImplementation project(':aws-cognito-identity')
-        testImplementation project(':aws-cognito-identityprovider')
+    testImplementation project(':aws-cognito-identity')
+    testImplementation project(':aws-cognito-identityprovider')
     testImplementation project(':aws-s3')
     testImplementation project(':aws-sqs')
     testImplementation project(':aws-ssm')
@@ -52,15 +54,12 @@ task integrationTest(type: Test) {
 }
 
 task npmInstall {
-  dependsOn processResources, compileTestJava, checkstyleTest, spotbugsTest, compileIntegrationJava, checkstyleIntegration, spotbugsIntegration
-  inputs.files("src/main/resources/js")
-  outputs.files("${buildDir}/resources/main/js/module-email-notify.zip")
+  dependsOn processResources
   
   doLast {
 	  
-	  delete fileTree("${buildDir}/resources/main/js") {
-        include '**/*.zip'
-      }
+	  delete("${buildDir}/resources/main/js/module-email-notify.zip")
+	  
 	  exec {
 	    workingDir "${buildDir}/resources/main/js"
 		commandLine getCmd(), getCmdParam(), "npm install"
@@ -77,30 +76,27 @@ jar.dependsOn npmInstall
 
 task npmtest {
   onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
-  dependsOn npmInstall, jar
-  inputs.files("src/main/resources/js")
-  outputs.dir("${buildDir}/resources/main/js/coverage")
   doFirst {
 	macroLocalStackStart()
   }
   
   doLast {
-    exec {
-      commandLine "bash", "-c", "cd build/resources/main/js ; npm test"
-    }
+  	exec {
+	  workingDir "${buildDir}/resources/main/js"
+	  commandLine getCmd(), getCmdParam(), "npm test"
+	}
     macroDockerComposeDown()
   }
 }
 
-task assembleTemplate {
-    dependsOn check
+task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml")
-	outputs.dir("${buildDir}/distributions/formkiq-core")
+	outputs.files("${buildDir}/distributions/module-email-notify/template.yaml")
 	doLast {
 	
 		copy {
-		  from layout.buildDirectory.file("${buildDir}/resources/main/js/module-email-notify.zip"), layout.projectDirectory.file("src/main/resources/cloudformation/template.yaml")
-	      into "${buildDir}/distributions/formkiq-core/sam/module-email-notify"
+		  from layout.projectDirectory.file("src/main/resources/cloudformation/template.yaml")
+	      into "${buildDir}/distributions/module-email-notify"
 	    }
 	}
 }
@@ -120,5 +116,32 @@ ext.macroDockerComposeDown = {
     }
 }
 
+task unzipPack(type: Copy) {
+  dependsOn npmInstall
+  def zipFile = file("${buildDir}/resources/main/js/module-email-notify.zip")
+  def outputDir = file("${buildDir}/pack")
+
+  from zipTree(zipFile)
+  into outputDir
+}
+
 test.dependsOn npmtest
-build.dependsOn assembleTemplate
+
+distZip.dependsOn buildTemplate, npmInstall, unzipPack
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = "module-email-notify/module-email-notify.zip"
+}
+
+distributions {
+    main {
+        contents {
+            from("${buildDir}/pack") {
+            	include "**/**"
+            }
+            into '/'
+        }
+    }
+}
