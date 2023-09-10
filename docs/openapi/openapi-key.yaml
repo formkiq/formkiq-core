@@ -2604,7 +2604,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
           /groups:
             get:
-              operationId: GetUserGroups
+              operationId: GetGroups
               description: Returns the list of user groups configured in the application
               summary: Get configured system group(s)
               parameters:
