@@ -31,8 +31,11 @@ jobs:
         aws-region: us-east-2
     - name: deploy to s3
       env:
+        S3_BUCKET: ${{ secrets.S3_BUCKET }}
         formKiQVersion: ${{ github.event.inputs.version }}
       run: |
+        aws s3 cp s3://${S3_BUCKET}/formkiq-core/formkiq-core-${formKiQVersion}.zip .
+        unzip formkiq-core*
         sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-dev-distribution-us-east-2 --template-file template.yaml --region us-east-2 --output-template-file template-${formKiQVersion}.yaml
         aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-dev-distribution-us-east-2/${formKiQVersion}/template.yaml
         aws s3 cp vpc.yaml s3://formkiq-dev-distribution-us-east-2/${formKiQVersion}/vpc.yaml
