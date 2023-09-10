@@ -157,7 +157,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/GetSitesRequest"
+                        "$ref": "#/components/schemas/GetSitesResponse"
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2604,6 +2604,37 @@ Resources:
                         $ref: '#/components/schemas/EsignatureDocusignResponse'
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
+          /groups:
+            get:
+              operationId: GetUserGroups
+              description: Returns the list of user groups configured in the application
+              summary: Get configured system group(s)
+              parameters:
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              tags:
+              - User Management
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/GetGroupsResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
         components:
           headers:
             AccessControlAllowOrigin:
@@ -4192,7 +4223,33 @@ Resources:
                 maxWebhooks:
                   type: "string"
                   description: "Set Maximum number of Webhooks allowed"
-            GetSitesRequest:
+            GetGroupsResponse:
+              type: object
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                groups:
+                  type: "array"
+                  description: "List of groups"
+                  items:
+                    $ref: "#/components/schemas/Group"
+            Group:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of group"
+                description:
+                  type: "string"
+                  description: "Description of group"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted timestamp of group"
+                lastModifiedDate:
+                  type: "string"
+                  description: "Last nodified timestamp of group"
+            GetSitesResponse:
               type: object
               properties:
                 username:
