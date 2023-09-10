@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -65,13 +66,17 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
     ListGroupsResponse response = service.listGroups(token, Integer.valueOf(limit));
 
+    logger.log("Got groups: " + response.groups().size());
     response.groups().stream().map(g -> {
 
-      Date creationDate = Date.from(g.creationDate());
-      Date lastModifiedDate = Date.from(g.lastModifiedDate());
+      logger.log("groupName: " + g.groupName());
+      logger.log("description: " + g.description());
+      logger.log("creationDate: " + g.creationDate());
+      logger.log("lastModifiedDate: " + g.lastModifiedDate());
 
-      return Map.of("name", g.groupName(), "description", g.description(), "insertedDate",
-          df.format(creationDate), "lastModifiedDate", df.format(lastModifiedDate));
+      return Map.of("name", g.groupName(), "description",
+          g.description() != null ? g.description() : "", "insertedDate",
+          toString(df, g.creationDate()), "lastModifiedDate", toString(df, g.lastModifiedDate()));
     }).collect(Collectors.toList());
 
     Map<String, Object> map = new HashMap<>();
@@ -85,5 +90,15 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  private String toString(final SimpleDateFormat df, final Instant date) {
+    String result = "";
+
+    if (date != null) {
+      result = df.format(Date.from(date));
+    }
+
+    return result;
   }
 }
