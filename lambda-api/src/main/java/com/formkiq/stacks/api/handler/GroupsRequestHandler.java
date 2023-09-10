@@ -26,9 +26,9 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -67,7 +67,7 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     ListGroupsResponse response = service.listGroups(token, Integer.valueOf(limit));
 
     logger.log("Got groups: " + response.groups().size());
-    response.groups().stream().map(g -> {
+    List<Map<String, String>> groups = response.groups().stream().map(g -> {
 
       logger.log("groupName: " + g.groupName());
       logger.log("description: " + g.description());
@@ -80,7 +80,7 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }).collect(Collectors.toList());
 
     Map<String, Object> map = new HashMap<>();
-    map.put("groups", new ArrayList<>());
+    map.put("groups", groups);
     map.put("next", response.nextToken());
 
     ApiMapResponse resp = new ApiMapResponse(map);
