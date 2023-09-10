@@ -25,6 +25,9 @@ package com.formkiq.aws.cognito;
 
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
@@ -50,9 +53,12 @@ public class CognitoIdentityProviderServiceExtension
       String cognitoClientId = serviceCache.environment("COGNITO_USER_POOL_CLIENT_ID");
       String cognitoUserPoolId = serviceCache.environment("COGNITO_USER_POOL_ID");
 
+      AwsCredentials awsCredentials = serviceCache.getExtension(AwsCredentials.class);
+      AwsCredentialsProvider cred = StaticCredentialsProvider.create(awsCredentials);
+
       CognitoIdentityProviderConnectionBuilder connection =
           new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
-              .setRegion(serviceCache.region());
+              .setRegion(serviceCache.region()).setCredentials(cred);
 
       this.service = new CognitoIdentityProviderService(connection);
     }
