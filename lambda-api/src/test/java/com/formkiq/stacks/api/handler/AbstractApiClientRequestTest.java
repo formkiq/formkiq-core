@@ -29,7 +29,7 @@ import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.FoldersApi;
+import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.Configuration;
@@ -91,8 +91,8 @@ public abstract class AbstractApiClientRequestTest {
       Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
   /** {@link DocumentsApi}. */
   protected DocumentsApi documentsApi = new DocumentsApi(this.client);
-  /** {@link FoldersApi}. */
-  protected FoldersApi foldersApi = new FoldersApi(this.client);
+  /** {@link DocumentFoldersApi}. */
+  protected DocumentFoldersApi foldersApi = new DocumentFoldersApi(this.client);
   /** {@link SystemManagementApi}. */
   protected SystemManagementApi systemApi = new SystemManagementApi(this.client);
   /** {@link DocumentTagsApi}. */
