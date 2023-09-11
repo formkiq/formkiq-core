@@ -84,6 +84,7 @@ import com.formkiq.stacks.api.handler.EsignatureDocusignDocumentIdRequestHandler
 import com.formkiq.stacks.api.handler.FoldersIndexKeyRequestHandler;
 import com.formkiq.stacks.api.handler.FoldersRequestHandler;
 import com.formkiq.stacks.api.handler.GroupsRequestHandler;
+import com.formkiq.stacks.api.handler.GroupsUsersRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesFolderMoveRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesRequestHandler;
 import com.formkiq.stacks.api.handler.IndicesSearchRequestHandler;
@@ -219,6 +220,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new EsignatureDocusignConfigRequestHandler());
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
     addRequestHandler(new GroupsRequestHandler());
+    addRequestHandler(new GroupsUsersRequestHandler());
   }
 
   /**
