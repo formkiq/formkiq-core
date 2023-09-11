@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.client.model.GetSitesRequest;
+import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.Site;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -82,7 +82,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
     // when
-    GetSitesRequest response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites();
 
     // then
     List<Site> sites = response.getSites();
@@ -131,7 +131,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {"default", "Admins", "finance"});
 
     // when
-    GetSitesRequest response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites();
 
     // then
     List<Site> sites = response.getSites();
@@ -160,7 +160,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {"default_read", "finance"});
 
     // when
-    GetSitesRequest response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites();
 
     // then
     List<Site> sites = response.getSites();
@@ -201,7 +201,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     configService.save(siteId, new DynamicObject(Map.of(MAX_DOCUMENTS, "5", MAX_WEBHOOKS, "10")));
 
     // when
-    GetSitesRequest response = this.systemApi.getSites();
+    GetSitesResponse response = this.systemApi.getSites();
 
     // then
     List<Site> sites = response.getSites();
