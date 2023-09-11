@@ -529,6 +529,7 @@ Resources:
             - Effect: Allow
               Action:
               - cognito-idp:ListGroups
+              - cognito-idp:ListUsersInGroup
               Resource:
               - Fn::Sub: "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow
