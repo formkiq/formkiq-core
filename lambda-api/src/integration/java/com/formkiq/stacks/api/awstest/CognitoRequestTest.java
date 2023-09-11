@@ -33,7 +33,9 @@ import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.UserManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetGroupsResponse;
+import com.formkiq.client.model.GetUsersInGroupResponse;
 import com.formkiq.client.model.Group;
+import com.formkiq.client.model.User;
 
 /**
  * Process Urls.
@@ -64,7 +66,7 @@ public class CognitoRequestTest extends AbstractApiTest {
       UserManagementApi userApi = new UserManagementApi(client);
 
       // when
-      GetGroupsResponse response = userApi.getUserGroups(null, null);
+      GetGroupsResponse response = userApi.getGroups(null, null);
 
       // then
       assertFalse(response.getGroups().isEmpty());
@@ -76,6 +78,38 @@ public class CognitoRequestTest extends AbstractApiTest {
       assertNotNull(o.get().getDescription());
       assertNotNull(o.get().getInsertedDate());
       assertNotNull(o.get().getLastModifiedDate());
+    }
+  }
+
+  /**
+   * Test GET /groups/{groupName}/users.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testGetGroupUsers01() throws Exception {
+
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : clients) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+      String groupName = "Admins";
+
+      // when
+      GetUsersInGroupResponse response = userApi.getUsersInGroup(groupName, null, null);
+
+      // then
+      assertFalse(response.getUsers().isEmpty());
+
+      User user = response.getUsers().get(0);
+
+      assertNotNull(user.getUsername());
+      assertNotNull(user.getUserStatus());
+      assertNotNull(user.getInsertedDate());
+      assertNotNull(user.getLastModifiedDate());
     }
   }
 }
