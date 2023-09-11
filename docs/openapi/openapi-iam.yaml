@@ -2633,6 +2633,43 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /groups/{groupName}/users:
+            get:
+              operationId: GetUsersInGroup
+              description: Returns the list of users in a group
+              summary: Get users in a group
+              parameters:
+              - name: groupName
+                in: path
+                required: true
+                description: Fetch documents inserted on a certain date (yyyy-MM-dd)
+                schema:
+                  type: string
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              tags:
+              - User Management
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetUsersInGroupResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:
@@ -4243,6 +4280,32 @@
                 maxWebhooks:
                   type: string
                   description: Set Maximum number of Webhooks allowed
+            GetUsersInGroupResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                users:
+                  type: array
+                  description: List of users
+                  items:
+                    $ref: '#/components/schemas/User'
+            User:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Username of user
+                userStatus:
+                  type: string
+                  description: Status of user
+                insertedDate:
+                  type: string
+                  description: Inserted timestamp of user
+                lastModifiedDate:
+                  type: string
+                  description: Last nodified timestamp of user
             GetGroupsResponse:
               type: object
               properties:

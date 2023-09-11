@@ -41,21 +41,23 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 
-/** {@link ApiGatewayRequestHandler} for "/groups". */
-public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+/** {@link ApiGatewayRequestHandler} for "/groups/{groupName}/users". */
+public class GroupsUsersRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Default Limit. */
   private static final int DEFAULT_LIMIT = 10;
-  /** {@link GroupsRequestHandler} URL. */
-  public static final String URL = "/groups";
+  /** {@link GroupsUsersRequestHandler} URL. */
+  public static final String URL = "/groups/{groupName}/users";
 
   @Override
   public ApiRequestHandlerResponse get(final LambdaLogger logger,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
+    String groupName = event.getPathParameters().get("groupName");
     String token = event.getQueryStringParameter("next");
     String limitS = event.getQueryStringParameter("limit");
     int limit = limitS != null ? Integer.parseInt(limitS) : DEFAULT_LIMIT;
@@ -64,16 +66,17 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-    ListGroupsResponse response = service.listGroups(token, Integer.valueOf(limit));
+    ListUsersInGroupResponse response =
+        service.listUsersInGroup(groupName, token, Integer.valueOf(limit));
 
-    List<Map<String, String>> groups = response.groups().stream().map(g -> {
-      return Map.of("name", g.groupName(), "description",
-          g.description() != null ? g.description() : "", "insertedDate",
-          toString(df, g.creationDate()), "lastModifiedDate", toString(df, g.lastModifiedDate()));
+    List<Map<String, String>> users = response.users().stream().map(u -> {
+      return Map.of("username", u.username(), "userStatus", u.userStatusAsString(), "insertedDate",
+          toString(df, u.userCreateDate()), "lastModifiedDate",
+          toString(df, u.userLastModifiedDate()));
     }).collect(Collectors.toList());
 
     Map<String, Object> map = new HashMap<>();
-    map.put("groups", groups);
+    map.put("users", users);
     map.put("next", response.nextToken());
 
     ApiMapResponse resp = new ApiMapResponse(map);

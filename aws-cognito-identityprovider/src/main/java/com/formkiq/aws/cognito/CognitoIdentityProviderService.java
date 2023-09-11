@@ -53,6 +53,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequ
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
@@ -202,6 +204,22 @@ public class CognitoIdentityProviderService {
     ListGroupsResponse listGroups = this.cognitoProvider.listGroups(ListGroupsRequest.builder()
         .userPoolId(this.userPoolId).nextToken(token).limit(limit).build());
     return listGroups;
+  }
+
+  /**
+   * List Users in Cognito Groups.
+   * 
+   * @param groupName {@link String}
+   * @param token {@link String}
+   * @param limit {@link Integer}
+   * @return {@link ListUsersInGroupResponse}
+   */
+  public ListUsersInGroupResponse listUsersInGroup(final String groupName, final String token,
+      final Integer limit) {
+    ListUsersInGroupResponse listUsers = this.cognitoProvider
+        .listUsersInGroup(ListUsersInGroupRequest.builder().userPoolId(this.userPoolId)
+            .groupName(groupName).nextToken(token).limit(limit).build());
+    return listUsers;
   }
 
   /**

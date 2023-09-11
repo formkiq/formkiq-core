@@ -62,7 +62,7 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     if (System.getenv().containsKey("AWS_REGION")) {
       awsServices = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-              .addService(new DynamoDbAwsServiceRegistry()).build();
+          .addService(new DynamoDbAwsServiceRegistry()).build();
     }
   }
 
