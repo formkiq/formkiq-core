@@ -112,6 +112,7 @@ task unzipPack(type: Copy) {
   into outputDir
 }
 
+npmtest.dependsOn npmInstall
 test.dependsOn npmtest
 
 distZip.dependsOn buildTemplate, npmInstall, unzipPack

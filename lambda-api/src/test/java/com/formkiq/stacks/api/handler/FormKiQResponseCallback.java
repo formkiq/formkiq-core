@@ -57,6 +57,9 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
@@ -76,8 +79,11 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
 
   private AwsServiceCache createAwsServices() {
     Map<String, String> env = Map.of("AWS_REGION", AWS_REGION.toString());
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
     AwsServiceCache awsServices =
-        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), null)
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new SnsAwsServiceRegistry(),
                 new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
             .build();
