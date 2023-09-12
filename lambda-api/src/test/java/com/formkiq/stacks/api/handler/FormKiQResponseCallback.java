@@ -37,10 +37,22 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.mockserver.mock.action.ExpectationResponseCallback;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import com.formkiq.stacks.api.CoreRequestHandler;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceExtension;
+import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.TestServices;
@@ -53,8 +65,45 @@ import com.formkiq.testutils.aws.TypeSenseExtension;
  */
 public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback {
 
-  /** {@link CoreRequestHandler}. */
+  /** SQS Sns Update Queue. */
+  private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
+  /** SQS Create Url. */
+  private static String snsDocumentEvent;
+  /** SQS Sns Create QueueUrl. */
+  private static String sqsDocumentEventUrl;
+  /** {@link TestCoreRequestHandler}. */
   private TestCoreRequestHandler handler;
+
+  private AwsServiceCache createAwsServices() {
+    Map<String, String> env = Map.of("AWS_REGION", AWS_REGION.toString());
+    AwsServiceCache awsServices =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), null)
+            .addService(new DynamoDbAwsServiceRegistry(), new SnsAwsServiceRegistry(),
+                new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())
+            .build();
+
+    awsServices.register(SnsService.class, new SnsServiceExtension());
+    awsServices.register(SsmService.class, new SsmServiceExtension());
+    awsServices.register(SqsService.class, new SqsServiceExtension());
+
+    return awsServices;
+  }
+
+  private void createSnsTopics(final AwsServiceCache awsServices) {
+    SsmService ssm = awsServices.getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl",
+        "http://localhost:" + getServerPort());
+
+    SqsService sqs = awsServices.getExtension(SqsService.class);
+    if (!sqs.exists(SNS_SQS_CREATE_QUEUE)) {
+      sqsDocumentEventUrl = sqs.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
+    }
+
+    String queueSqsArn = sqs.getQueueArn(sqsDocumentEventUrl);
+    SnsService snsService = awsServices.getExtension(SnsService.class);
+    snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
+    snsService.subscribe(snsDocumentEvent, "sqs", queueSqsArn);
+  }
 
   @Override
   public RequestStreamHandler getHandler() {
@@ -64,9 +113,14 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
   @Override
   public Map<String, String> getMapEnvironment() {
 
+    AwsServiceCache awsServices = createAwsServices();
+
+    createSnsTopics(awsServices);
+
     try {
       Map<String, String> map = new HashMap<>();
 
+      map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
       map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
       map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
       map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
@@ -88,6 +142,7 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
       map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
       map.put("TYPESENSE_API_KEY", API_KEY);
       map.put("MODULE_typesense", "true");
+      map.put("SQS_DOCUMENT_EVENT_URL", sqsDocumentEventUrl);
 
       return map;
 

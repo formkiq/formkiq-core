@@ -4086,6 +4086,7 @@ Resources:
                     - ANTIVIRUS
                     - WEBHOOK
                     - DOCUMENTTAGGING
+                    - NOTIFICATION
                 parameters:
                   $ref: "#/components/schemas/AddActionParameters"
             AddActionParameters:
@@ -4114,6 +4115,15 @@ Resources:
                   description: "DocumentTagging: Engine to use for document tagging generation"
                   enum:
                     - chatgpt
+                notificationType:
+                  type: "string"
+                  description: "Notification Type"
+                  enum:
+                    - email
+                notificationTo:
+                  description: "Who to send the notification to"
+                  items:
+                    type: "string"
                 tags:
                   description: "DocumentTagging: Comma-deliminted list of keywords to generate tags for"
                   type: "string"

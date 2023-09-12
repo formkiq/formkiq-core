@@ -35,6 +35,8 @@ public enum ActionType {
   DOCUMENTTAGGING,
   /** Full Text. */
   FULLTEXT,
+  /** Notification Action. */
+  NOTIFICATION,
   /** OCR. */
   OCR,
   /** WebHook. */

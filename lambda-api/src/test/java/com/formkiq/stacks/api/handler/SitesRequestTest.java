@@ -62,7 +62,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
    * BeforeEach.
    */
   @BeforeEach
-  public void beforeAll() {
+  public void beforeEach() {
     config = getAwsServices().getExtension(ConfigService.class);
     ssm = getAwsServices().getExtension(SsmService.class);
   }

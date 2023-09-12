@@ -25,11 +25,9 @@ package com.formkiq.testutils.aws;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
-import java.util.Random;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.mock.action.ExpectationResponseCallback;
 
 /**
  * 
@@ -39,36 +37,37 @@ import org.mockserver.mock.action.ExpectationResponseCallback;
 public class FormKiqApiExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
-  /** {@link Random}. */
-  private static final Random NUM_RAND = new Random();
+  /** {@link AbstractFormKiqApiResponseCallback}. */
+  private AbstractFormKiqApiResponseCallback callback;
+
   /** {@link ClientAndServer}. */
   private ClientAndServer formkiqServer;
 
   /** Port to run Test server. */
   private int port = -1;
-
-  /** {@link ExpectationResponseCallback}. */
-  private ExpectationResponseCallback responseCallback;
+  /** Is server running. */
+  private boolean running = false;
 
   /**
    * constructor.
    * 
-   * @param callback {@link ExpectationResponseCallback}
+   * @param responseCallback {@link AbstractFormKiqApiResponseCallback}
    */
-  public FormKiqApiExtension(final ExpectationResponseCallback callback) {
-    this.responseCallback = callback;
+  public FormKiqApiExtension(final AbstractFormKiqApiResponseCallback responseCallback) {
+    this.callback = responseCallback;
+    this.port = responseCallback.getServerPort();
+    this.callback = responseCallback;
   }
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    final int topPort = 8000;
-    final int bottomPort = 7000;
-    this.port = NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
+    if (!this.running) {
+      this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
 
-    this.formkiqServer = startClientAndServer(Integer.valueOf(this.port));
-
-    this.formkiqServer.when(request()).respond(this.responseCallback);
+      this.formkiqServer.when(request()).respond(this.callback);
+      this.running = true;
+    }
   }
 
   @Override
@@ -78,6 +77,7 @@ public class FormKiqApiExtension
       this.formkiqServer.stop();
     }
     this.formkiqServer = null;
+    this.running = false;
   }
 
   /**
@@ -87,5 +87,14 @@ public class FormKiqApiExtension
    */
   public String getBasePath() {
     return "http://localhost:" + this.port;
+  }
+
+  /**
+   * Get callback.
+   * 
+   * @return {@link AbstractFormKiqApiResponseCallback}
+   */
+  public AbstractFormKiqApiResponseCallback getCallback() {
+    return this.callback;
   }
 }
