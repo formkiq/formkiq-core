@@ -164,7 +164,7 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /configuration:
             get:
-              operationId: GetConfigs
+              operationId: GetConfiguration
               description: Returns the list of sites that the user has access to
               summary: Get site configuration
               tags:
@@ -193,7 +193,7 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             patch:
-              operationId: UpdateConfig
+              operationId: UpdateConfiguration
               description: Update the System Management configuration
               summary: Update site configuration 
               tags:

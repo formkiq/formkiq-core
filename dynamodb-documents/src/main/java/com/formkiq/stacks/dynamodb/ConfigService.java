@@ -40,6 +40,12 @@ public interface ConfigService {
   String MAX_WEBHOOKS = "MaxWebhooks";
   /** Webhook Time To Live Key. */
   String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
+  /** Smtp Server. */
+  String SMTP_SERVER = "SmtpServer";
+  /** Smtp Username. */
+  String SMTP_USERNAME = "SmtpUsername";
+  /** Smtp Password. */
+  String SMTP_PASSWORD = "SmtpPassword";
 
   /**
    * Delete Config.

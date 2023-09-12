@@ -103,7 +103,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
   }
 
   /**
-   * Test GET /configuration as readuser user.
+   * Test PATCH /configuration as readuser user.
    * 
    * @throws Exception Exception
    */
@@ -124,7 +124,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
   }
 
   /**
-   * Test GET /configuration as admin.
+   * Test PATCH /configuration as admin.
    * 
    * @throws Exception Exception
    */

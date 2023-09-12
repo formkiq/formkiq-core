@@ -29,6 +29,9 @@ import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
+import static com.formkiq.stacks.dynamodb.ConfigService.SMTP_PASSWORD;
+import static com.formkiq.stacks.dynamodb.ConfigService.SMTP_SERVER;
+import static com.formkiq.stacks.dynamodb.ConfigService.SMTP_USERNAME;
 import java.util.HashMap;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -89,11 +92,20 @@ public class ConfigurationRequestHandler
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     DynamicObject obj = configService.get(siteId);
+
     Map<String, Object> map = new HashMap<>();
     map.put("chatGptApiKey", mask(obj.getOrDefault(CHATGPT_API_KEY, "").toString()));
     map.put("maxContentLengthBytes", obj.getOrDefault(MAX_DOCUMENT_SIZE_BYTES, ""));
     map.put("maxDocuments", obj.getOrDefault(MAX_DOCUMENTS, ""));
     map.put("maxWebhooks", obj.getOrDefault(MAX_WEBHOOKS, ""));
+    map.put("smtpServer", obj.getOrDefault(SMTP_SERVER, ""));
+    map.put("smtpUsername", obj.getOrDefault(SMTP_USERNAME, ""));
+
+    if (obj.containsKey(SMTP_PASSWORD)) {
+      map.put("smtpPassword", "************");
+    } else {
+      map.put("smtpPassword", "");
+    }
 
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
   }
@@ -110,7 +122,6 @@ public class ConfigurationRequestHandler
       final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.siteId();
-
     Map<String, String> body = fromBodyToObject(event, Map.class);
 
     Map<String, Object> map = new HashMap<>();
@@ -118,6 +129,9 @@ public class ConfigurationRequestHandler
     put(map, body, MAX_DOCUMENT_SIZE_BYTES, "maxContentLengthBytes");
     put(map, body, MAX_DOCUMENTS, "maxDocuments");
     put(map, body, MAX_WEBHOOKS, "maxWebhooks");
+    put(map, body, SMTP_SERVER, "smtpServer");
+    put(map, body, SMTP_USERNAME, "smtpUsername");
+    put(map, body, SMTP_PASSWORD, "smtpPassword");
 
     if (!map.isEmpty()) {
       ConfigService configService = awsservice.getExtension(ConfigService.class);
