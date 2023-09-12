@@ -4141,9 +4141,8 @@
                   enum:
                   - email
                 notificationTo:
-                  description: Who to send the notification to
-                  items:
-                    type: string
+                  description: Who to send the notification to (comma-delimited list)
+                  type: string
                 tags:
                   description: 'DocumentTagging: Comma-deliminted list of keywords to generate tags for'
                   type: string
