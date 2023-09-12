@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -36,8 +37,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.aws.services.lambda.GsonUtil;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddAction.TypeEnum;
+import com.formkiq.client.model.AddActionParameters;
+import com.formkiq.client.model.AddActionParameters.EngineEnum;
+import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.AddDocumentActionsResponse;
+import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -50,9 +59,9 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 /** Unit Tests for request /documents/{documentId}/actions. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
+@ExtendWith(LocalStackExtension.class)
+public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
   private ConfigService configService;
@@ -61,10 +70,13 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
   /** {@link ActionsService}. */
   private ActionsService service;
 
-  @Override
+  /**
+   * Before.
+   * 
+   * @throws Exception Exception
+   */
   @BeforeEach
   public void before() throws Exception {
-    super.before();
     this.service = getAwsServices().getExtension(ActionsService.class);
     this.documentService = getAwsServices().getExtension(DocumentService.class);
     this.configService = getAwsServices().getExtension(ConfigService.class);
@@ -75,12 +87,12 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentActions01() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      setBearerToken(siteId);
       String documentId = UUID.randomUUID().toString();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -89,27 +101,16 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
       this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
-      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-actions01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-
       // when
-      String response = handleRequest(event);
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-      Map<String, Object> actionsMap = GsonUtil.getInstance().fromJson(m.get("body"), Map.class);
-      List<Map<String, Object>> list = (List<Map<String, Object>>) actionsMap.get("actions");
-      assertEquals(1, list.size());
-      assertEquals("ocr", list.get(0).get("type"));
-      assertEquals("complete", list.get(0).get("status"));
-      assertEquals("{test=this}", list.get(0).get("parameters").toString());
+      List<DocumentAction> actions = response.getActions();
+      assertEquals(1, actions.size());
+      assertEquals("ocr", actions.get(0).getType());
+      assertEquals("complete", actions.get(0).getStatus());
+      assertEquals("{test=this}", actions.get(0).getParameters().toString());
     }
   }
 
@@ -124,6 +125,7 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      setBearerToken(siteId);
       String documentId = UUID.randomUUID().toString();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -133,29 +135,22 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
           Arrays.asList(new Action().status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
 
-      Map<String, Object> body = Map.of("actions",
-          Arrays.asList(Map.of("type", "ocr", "parameters", Map.of("ocrParseTypes", "text")),
-              Map.of("type", "webhook", "parameters", Map.of("url", "https://localhost"))));
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      event.setBody(GsonUtil.getInstance().toJson(body));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(
+          new AddAction().type(TypeEnum.OCR)
+              .parameters(new AddActionParameters().ocrParseTypes("text")),
+          new AddAction().type(TypeEnum.WEBHOOK)
+              .parameters(new AddActionParameters().url("https://localhost"))));
 
       // when
-      String response = handleRequest(event);
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      assertEquals("{\"message\":\"Actions saved\"}", m.get("body"));
+      assertEquals("Actions saved", response.getMessage());
 
       int i = 0;
       List<Action> actions = this.service.getActions(siteId, documentId);
-      assertEquals(mapsize, actions.size());
+
       assertEquals(ActionType.FULLTEXT, actions.get(i).type());
       assertEquals(ActionStatus.COMPLETE, actions.get(i++).status());
 
@@ -185,35 +180,29 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentActions02() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      setBearerToken(siteId);
       String documentId = UUID.randomUUID().toString();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       this.documentService.saveDocument(siteId, item, null);
 
-      Map<String, Object> body =
-          Map.of("actions", Arrays.asList(Map.of("parameters", Map.of("ocrParseTypes", "text"))));
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      event.setBody(GsonUtil.getInstance().toJson(body));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
+          .asList(new AddAction().parameters(new AddActionParameters().ocrParseTypes("text"))));
 
       // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        final int status = 400;
+        assertEquals(status, e.getCode());
+        assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", e.getResponseBody());
+      }
 
       List<Action> actions = this.service.getActions(siteId, documentId);
       assertEquals(0, actions.size());
@@ -225,72 +214,52 @@ public class ApiDocumentsActionsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentActions03() throws Exception {
 
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      setBearerToken(siteId);
       String documentId = UUID.randomUUID().toString();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       this.documentService.saveDocument(siteId, item, null);
 
-      Map<String, Object> body =
-          Map.of("actions", Arrays.asList(Map.of("type", "documenttagging")));
-      // Map<String, Object> body = Map.of("actions", Arrays
-      // .asList(Map.of("type", "documenttagging", "parameters", Map.of("ocrParseTypes", "text"))));
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-actions01.json");
-      addParameter(event, "siteId", siteId);
-      setPathParameter(event, "documentId", documentId);
-      event.setBody(GsonUtil.getInstance().toJson(body));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Arrays.asList(new AddAction().type(TypeEnum.DOCUMENTTAGGING)));
 
-      // when - missing parameters
-      String response = handleRequest(event);
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
 
-      // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
+        // then
+        final int status = 400;
+        assertEquals(status, e.getCode());
+        assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", e.getResponseBody());
+      }
 
       List<Action> actions = this.service.getActions(siteId, documentId);
       assertEquals(0, actions.size());
 
-      // given - invalid engine
-      body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
-          Map.of("engine", "dunno", "tags", "something"))));
-      event.setBody(GsonUtil.getInstance().toJson(body));
-
-      // when - missing parameters
-      response = handleRequest(event);
-
-      // then
-      m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", m.get("body"));
-
-      actions = this.service.getActions(siteId, documentId);
-      assertEquals(0, actions.size());
-
       // given - engine
       this.configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
-      body = Map.of("actions", Arrays.asList(Map.of("type", "documenttagging", "parameters",
-          Map.of("engine", "chatgpt", "tags", "something"))));
-      event.setBody(GsonUtil.getInstance().toJson(body));
+
+      req = new AddDocumentActionsRequest()
+          .actions(Arrays.asList(new AddAction().type(TypeEnum.DOCUMENTTAGGING)
+              .parameters(new AddActionParameters().engine(EngineEnum.CHATGPT).tags("something"))));
 
       // when - correct parameters
-      response = handleRequest(event);
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
-      m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-      assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals("{\"message\":\"Actions saved\"}", m.get("body"));
+      assertEquals("Actions saved", response.getMessage());
 
       actions = this.service.getActions(siteId, documentId);
       assertEquals(1, actions.size());
+      assertEquals(ActionType.DOCUMENTTAGGING, actions.get(0).type());
     }
   }
 }

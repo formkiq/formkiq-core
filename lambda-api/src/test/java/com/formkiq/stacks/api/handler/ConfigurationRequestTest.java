@@ -61,9 +61,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     // when
-    SetConfigResponse updateConfig =
-        this.systemApi.updateConfig(new SetConfigRequest().chatGptApiKey("anothervalue"), siteId);
-    GetConfigurationResponse response = this.systemApi.getConfigs(siteId);
+    SetConfigResponse updateConfig = this.systemApi
+        .updateConfiguration(new SetConfigRequest().chatGptApiKey("anothervalue"), siteId);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
     assertEquals("Config saved", updateConfig.getMessage());
@@ -92,7 +92,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     // when
-    GetConfigurationResponse response = this.systemApi.getConfigs(siteId);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
     assertEquals("some*******alue", response.getChatGptApiKey());
@@ -121,7 +121,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     config.save(null, new DynamicObject(Map.of(CHATGPT_API_KEY, "somevalue")));
 
     // when
-    GetConfigurationResponse response = this.systemApi.getConfigs(siteId);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
     assertEquals("some*******alue", response.getChatGptApiKey());
@@ -150,7 +150,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     config.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "anothervalue")));
 
     // when
-    GetConfigurationResponse response = this.systemApi.getConfigs(siteId);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
     assertEquals("anot*******alue", response.getChatGptApiKey());
@@ -178,8 +178,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when
-    SetConfigResponse configResponse = this.systemApi.updateConfig(config, siteId);
-    GetConfigurationResponse response = this.systemApi.getConfigs(siteId);
+    SetConfigResponse configResponse = this.systemApi.updateConfiguration(config, siteId);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
     assertEquals("Config saved", configResponse.getMessage());
@@ -210,7 +210,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfig(config, siteId);
+      this.systemApi.updateConfiguration(config, siteId);
       fail();
     } catch (ApiException e) {
       final int code = 401;
@@ -234,8 +234,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .smtpPassword("password2");
 
     // when
-    SetConfigResponse configResponse = this.systemApi.updateConfig(config, siteId);
-    GetConfigurationResponse response = this.systemApi.getConfigs(siteId);
+    SetConfigResponse configResponse = this.systemApi.updateConfiguration(config, siteId);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
     assertEquals("Config saved", configResponse.getMessage());

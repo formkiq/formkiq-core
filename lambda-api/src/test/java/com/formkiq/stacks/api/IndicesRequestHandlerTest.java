@@ -63,13 +63,15 @@ import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /indices/{type}/{key}. */
-@ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 public class IndicesRequestHandlerTest {
 
+  /** {@link FormKiQResponseCallback}. */
+  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
   /** {@link ApiClient}. */
   private ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());

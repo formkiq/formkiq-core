@@ -56,10 +56,11 @@ import com.formkiq.testutils.aws.TypeSenseExtension;
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(TypeSenseExtension.class)
 public class ApiDocumentsFulltextRequestTest {
-
+  /** {@link FormKiQResponseCallback}. */
+  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(new FormKiQResponseCallback());
+  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
   /** {@link ApiClient}. */
   private ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());

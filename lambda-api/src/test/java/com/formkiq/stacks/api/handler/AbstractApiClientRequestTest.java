@@ -24,12 +24,17 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.client.api.DocumentActionsApi;
+import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.Configuration;
@@ -46,24 +51,34 @@ import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 /**
  * Abstract Request Test using {@link ApiClient}.
  */
 public abstract class AbstractApiClientRequestTest {
 
-  /** {@link FormKiQResponseCallback}. */
-  private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();
-
   /** FormKiQ Server. */
   @RegisterExtension
-  static FormKiqApiExtension server = new FormKiqApiExtension(CALLBACK);
+  static FormKiqApiExtension server = new FormKiqApiExtension(generateCallback());
 
+  /** 500 Milliseconds. */
+  private static final long SLEEP = 500L;
   /** Time out. */
   private static final int TIMEOUT = 30000;
+
+  /**
+   * Get Generate Callback.
+   * 
+   * @return {@link AbstractFormKiqApiResponseCallback}
+   */
+  private static AbstractFormKiqApiResponseCallback generateCallback() {
+    return new FormKiQResponseCallback();
+  }
 
   /**
    * Get {@link AwsServiceCache}.
@@ -77,6 +92,7 @@ public abstract class AbstractApiClientRequestTest {
     environment.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     awsServiceCache.environment(environment);
 
+    awsServiceCache.register(SqsService.class, new SqsServiceExtension());
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
@@ -89,6 +105,8 @@ public abstract class AbstractApiClientRequestTest {
   /** {@link ApiClient}. */
   protected ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
+  /** {@link DocumentActionsApi}. */
+  protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
   /** {@link DocumentsApi}. */
   protected DocumentsApi documentsApi = new DocumentsApi(this.client);
   /** {@link DocumentFoldersApi}. */
@@ -108,6 +126,32 @@ public abstract class AbstractApiClientRequestTest {
    */
   protected <T> T fromJson(final String json, final Class<T> clazz) {
     return GsonUtil.getInstance().fromJson(json, clazz);
+  }
+
+  /**
+   * Get Sqs Messages.
+   * 
+   * @return {@link List} {@link Message}
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public List<Message> getSqsMessages() throws InterruptedException, URISyntaxException {
+
+    String sqsDocumentEventUrl =
+        server.getCallback().getMapEnvironment().get("SQS_DOCUMENT_EVENT_URL");
+    SqsService sqsService = getAwsServices().getExtension(SqsService.class);
+
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    while (msgs.isEmpty()) {
+      Thread.sleep(SLEEP);
+      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    }
+
+    for (Message msg : msgs) {
+      sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());
+    }
+
+    return msgs;
   }
 
   /**
