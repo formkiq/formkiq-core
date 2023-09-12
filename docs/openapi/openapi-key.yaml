@@ -198,6 +198,9 @@
                           maxContentLengthBytes: "1000000"
                           maxDocuments: "1000"
                           maxWebhooks: "10"
+                          smtpServer: <smtp server>
+                          smtpUsername: <smtp username>
+                          smtpPassword: <smtp password>
               responses:
                 "200":
                   description: 200 OK
@@ -4193,6 +4196,15 @@
                 maxWebhooks:
                   type: string
                   description: Set Maximum number of Webhooks allowed
+                smtpServer:
+                  type: string
+                  description: SMTP server for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
+                smtpUsername:
+                  type: string
+                  description: SMTP username for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
+                smtpPassword:
+                  type: string
+                  description: SMTP password for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
             SetConfigResponse:
               type: object
               properties:
@@ -4280,6 +4292,15 @@
                 maxWebhooks:
                   type: string
                   description: Set Maximum number of Webhooks allowed
+                smtpServer:
+                  type: string
+                  description: SMTP server for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
+                smtpUsername:
+                  type: string
+                  description: SMTP username for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
+                smtpPassword:
+                  type: string
+                  description: SMTP password for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
             GetUsersInGroupResponse:
               type: object
               properties:
