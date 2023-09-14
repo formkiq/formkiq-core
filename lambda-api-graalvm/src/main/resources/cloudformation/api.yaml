@@ -4189,15 +4189,9 @@ Resources:
                 maxWebhooks:
                   type: "string"
                   description: "Set Maximum number of Webhooks allowed"
-                smtpServer:
+                notificationEmail:
                   type: "string"
-                  description: "SMTP server for sending notifications (requires smtpServer, smtpUsername, smtpPassword)"
-                smtpUsername:
-                  type: "string"
-                  description: "SMTP username for sending notifications (requires smtpServer, smtpUsername, smtpPassword)"
-                smtpPassword:
-                  type: "string"
-                  description: "SMTP password for sending notifications (requires smtpServer, smtpUsername, smtpPassword)"
+                  description: "Email address to use for notifications"
             SetConfigResponse:
               type: object
               properties:
