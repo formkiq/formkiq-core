@@ -25,12 +25,18 @@ package com.formkiq.stacks.api.awstest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.SetConfigRequest;
+import com.formkiq.client.model.SetConfigResponse;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Configuration;
 import com.formkiq.stacks.client.requests.UpdateConfigurationRequest;
@@ -161,5 +167,59 @@ public class ConfigurationRequestTest extends AbstractApiTest {
     // then
     assertEquals("401", String.valueOf(response.statusCode()));
     assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+  }
+
+  /**
+   * PUT /config notification email.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutConfiguration03() throws Exception {
+    // given
+    String siteId = null;
+    List<ApiClient> clients = getApiClients(null);
+
+    String adminEmail =
+        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+    SetConfigRequest req = new SetConfigRequest().notificationEmail(adminEmail);
+
+    for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
+      SystemManagementApi api = new SystemManagementApi(client);
+
+      // when
+      SetConfigResponse updateConfiguration = api.updateConfiguration(req, siteId);
+
+      // then
+      assertEquals("", updateConfiguration.getMessage());
+    }
+  }
+
+  /**
+   * PUT /config invalid notification email.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutConfiguration04() throws Exception {
+    // given
+    String siteId = null;
+    List<ApiClient> clients = getApiClients(null);
+
+    String email = "test@formkiq.com";
+    SetConfigRequest req = new SetConfigRequest().notificationEmail(email);
+
+    for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
+      SystemManagementApi api = new SystemManagementApi(client);
+
+      // when
+      try {
+        api.updateConfiguration(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("", e.getResponseBody());
+      }
+    }
   }
 }

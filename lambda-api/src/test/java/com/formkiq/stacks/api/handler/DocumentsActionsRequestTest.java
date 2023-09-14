@@ -43,6 +43,7 @@ import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.EngineEnum;
+import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.DocumentAction;
@@ -83,6 +84,20 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save Document.
+   * 
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  private String saveDocument(final String siteId) {
+    String documentId = UUID.randomUUID().toString();
+
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    this.documentService.saveDocument(siteId, item, null);
+    return documentId;
+  }
+
+  /**
    * Get /documents/{documentId}/actions request.
    *
    * @throws Exception an error has occurred
@@ -93,10 +108,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      this.documentService.saveDocument(siteId, item, null);
+      String documentId = saveDocument(siteId);
 
       this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
@@ -126,10 +138,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      this.documentService.saveDocument(siteId, item, null);
+      String documentId = saveDocument(siteId);
 
       this.service.saveActions(siteId, documentId,
           Arrays.asList(new Action().status(ActionStatus.COMPLETE)
@@ -186,10 +195,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      this.documentService.saveDocument(siteId, item, null);
+      String documentId = saveDocument(siteId);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
           .asList(new AddAction().parameters(new AddActionParameters().ocrParseTypes("text"))));
@@ -220,10 +226,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       setBearerToken(siteId);
-      String documentId = UUID.randomUUID().toString();
-
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      this.documentService.saveDocument(siteId, item, null);
+      String documentId = saveDocument(siteId);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
           .actions(Arrays.asList(new AddAction().type(TypeEnum.DOCUMENTTAGGING)));
@@ -260,6 +263,74 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       actions = this.service.getActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals(ActionType.DOCUMENTTAGGING, actions.get(0).type());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions missing 'parameters' for notification.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActions04() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
+          .asList(new AddAction().type(TypeEnum.NOTIFICATION).parameters(new AddActionParameters()
+              .notificationType(NotificationTypeEnum.EMAIL).notificationTo("test@formkiq.com"))));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+
+        // then
+        final int status = 400;
+        assertEquals(status, e.getCode());
+        assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", e.getResponseBody());
+      }
+
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(0, actions.size());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for notification.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActions05() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken("Admins");
+      String documentId = saveDocument(siteId);
+
+      this.configService.save(siteId,
+          new DynamicObject(Map.of("NotificationEmail", "test@formkiq.com")));
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
+          .asList(new AddAction().type(TypeEnum.NOTIFICATION).parameters(new AddActionParameters()
+              .notificationType(NotificationTypeEnum.EMAIL).notificationTo("test@formkiq.com"))));
+
+      setBearerToken(siteId);
+
+      // when
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+
+      // then
+      assertEquals("Actions saved", response.getMessage());
+      List<Action> actions = this.service.getActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(ActionType.NOTIFICATION, actions.get(0).type());
     }
   }
 }

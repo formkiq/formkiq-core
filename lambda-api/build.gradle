@@ -33,6 +33,7 @@ dependencies {
 	api project(':aws-sqs')
 	api project(':aws-ssm')
 	api project(':aws-sns')
+	api project(':aws-ses')
 	api project(':aws-dynamodb')
 	api project(':dynamodb-documents')
 	api project(':actions')
