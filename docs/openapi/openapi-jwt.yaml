@@ -198,9 +198,7 @@
                           maxContentLengthBytes: "1000000"
                           maxDocuments: "1000"
                           maxWebhooks: "10"
-                          smtpServer: <smtp server>
-                          smtpUsername: <smtp username>
-                          smtpPassword: <smtp password>
+                          notificationEmail: <email>
               responses:
                 "200":
                   description: 200 OK
@@ -215,6 +213,12 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/SetConfigResponse'
+                "400":
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4301,15 +4305,9 @@
                 maxWebhooks:
                   type: string
                   description: Set Maximum number of Webhooks allowed
-                smtpServer:
+                notificationEmail:
                   type: string
-                  description: SMTP server for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
-                smtpUsername:
-                  type: string
-                  description: SMTP username for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
-                smtpPassword:
-                  type: string
-                  description: SMTP password for sending notifications (requires smtpServer, smtpUsername, smtpPassword)
+                  description: Email address to use for notifications (Must be verified identity created in AWS SES)
             GetUsersInGroupResponse:
               type: object
               properties:
