@@ -52,6 +52,17 @@ public class AwsServiceCache {
   public AwsServiceCache() {}
 
   /**
+   * Contains {@link AwsServiceExtension}.
+   * 
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  public <T> boolean containsExtension(final Class<T> clazz) {
+    return this.extensions.containsKey(clazz);
+  }
+
+  /**
    * Is Debug.
    * 
    * @return boolean

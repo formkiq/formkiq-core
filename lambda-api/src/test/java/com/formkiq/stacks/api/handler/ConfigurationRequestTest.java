@@ -71,9 +71,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("", response.getMaxContentLengthBytes());
     assertEquals("", response.getMaxDocuments());
     assertEquals("", response.getMaxWebhooks());
-    assertEquals("", response.getSmtpServer());
-    assertEquals("", response.getSmtpUsername());
-    assertEquals("", response.getSmtpPassword());
+    assertEquals("", response.getNotificationEmail());
   }
 
   /**
@@ -99,9 +97,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("", response.getMaxContentLengthBytes());
     assertEquals("", response.getMaxDocuments());
     assertEquals("", response.getMaxWebhooks());
-    assertEquals("", response.getSmtpServer());
-    assertEquals("", response.getSmtpUsername());
-    assertEquals("", response.getSmtpPassword());
+    assertEquals("", response.getNotificationEmail());
   }
 
   /**
@@ -128,9 +124,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("", response.getMaxContentLengthBytes());
     assertEquals("", response.getMaxDocuments());
     assertEquals("", response.getMaxWebhooks());
-    assertEquals("", response.getSmtpServer());
-    assertEquals("", response.getSmtpUsername());
-    assertEquals("", response.getSmtpPassword());
+    assertEquals("", response.getNotificationEmail());
   }
 
   /**
@@ -157,9 +151,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("", response.getMaxContentLengthBytes());
     assertEquals("", response.getMaxDocuments());
     assertEquals("", response.getMaxWebhooks());
-    assertEquals("", response.getSmtpServer());
-    assertEquals("", response.getSmtpUsername());
-    assertEquals("", response.getSmtpPassword());
+    assertEquals("", response.getNotificationEmail());
   }
 
   /**
@@ -188,9 +180,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("1000000", response.getMaxContentLengthBytes());
     assertEquals("1000", response.getMaxDocuments());
     assertEquals("5", response.getMaxWebhooks());
-    assertEquals("", response.getSmtpServer());
-    assertEquals("", response.getSmtpUsername());
-    assertEquals("", response.getSmtpPassword());
+    assertEquals("", response.getNotificationEmail());
   }
 
   /**
@@ -216,32 +206,5 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       final int code = 401;
       assertEquals(code, e.getCode());
     }
-  }
-
-  /**
-   * PUT /config smtp.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePutConfiguration03() throws Exception {
-    // given
-    String siteId = null;
-    String group = "Admins";
-    setBearerToken(group);
-
-    SetConfigRequest config = new SetConfigRequest().smtpServer("server2").smtpUsername("username2")
-        .smtpPassword("password2");
-
-    // when
-    SetConfigResponse configResponse = this.systemApi.updateConfiguration(config, siteId);
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
-
-    // then
-    assertEquals("Config saved", configResponse.getMessage());
-
-    assertEquals("server2", response.getSmtpServer());
-    assertEquals("username2", response.getSmtpUsername());
-    assertEquals("************", response.getSmtpPassword());
   }
 }
