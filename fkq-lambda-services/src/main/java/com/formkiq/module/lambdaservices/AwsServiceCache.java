@@ -161,8 +161,30 @@ public class AwsServiceCache {
    */
   @SuppressWarnings("unchecked")
   public <T> T getExtension(final Class<T> clazz) {
-    return this.extensions.containsKey(clazz) ? (T) this.extensions.get(clazz).loadService(this)
-        : null;
+    if (this.extensions.containsKey(clazz)) {
+      return (T) this.extensions.get(clazz).loadService(this);
+    }
+
+    throw new RuntimeException("class " + clazz.getName() + " is not registered");
+  }
+
+  /**
+   * Load {@link AwsServiceExtension}.
+   * 
+   * @param <T> Type of Class.
+   * @param clazz {@link Class}
+   * @return Class instance
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getExtensionOrNull(final Class<T> clazz) {
+
+    T result = null;
+
+    if (this.extensions.containsKey(clazz)) {
+      result = (T) this.extensions.get(clazz).loadService(this);
+    }
+
+    return result;
   }
 
   /**

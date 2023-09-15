@@ -4145,8 +4145,11 @@ Resources:
                   description: "Notification Type"
                   enum:
                     - email
-                notificationTo:
-                  description: "Who to send the notification to (comma-delimited list)"
+                notificationToCc:
+                  description: "Who to carbon copy on the notification to (comma-delimited list)"
+                  type: "string"
+                notificationToBcc:
+                  description: "Who to blind carbon copy on the notification to (comma-delimited list)"
                   type: "string"
                 notificationSubject:
                   description: "Subject of the notification"

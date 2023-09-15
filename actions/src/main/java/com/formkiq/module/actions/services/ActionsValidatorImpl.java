@@ -24,7 +24,14 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -105,24 +112,26 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
       Map<String, String> parameters = getParameters(action);
 
-      if (!hasValue(parameters, "notificationTo")) {
-        errors.add(new ValidationErrorImpl().key("parameters.notificationTo")
-            .error("'notificationTo' parameter is required"));
+      for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
+          PARAMETER_NOTIFICATION_SUBJECT)) {
+        if (!hasValue(parameters, parameter)) {
+          errors.add(new ValidationErrorImpl().key("parameters." + parameter)
+              .error("'" + parameter + "' parameter is required"));
+        }
       }
 
-      if (!hasValue(parameters, "notificationType")) {
-        errors.add(new ValidationErrorImpl().key("parameters.notificationType")
-            .error("'notificationType' parameter is required"));
+      if (!hasValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
+          && !hasValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
+        errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TO_CC)
+            .error("'" + PARAMETER_NOTIFICATION_TO_CC + "' or '" + PARAMETER_NOTIFICATION_TO_BCC
+                + "' is required"));
       }
 
-      if (!hasValue(parameters, "notificationSubject")) {
-        errors.add(new ValidationErrorImpl().key("parameters.notificationSubject")
-            .error("'notificationSubject' parameter is required"));
-      }
-
-      if (!hasValue(parameters, "notificationText") && !hasValue(parameters, "notificationHtml")) {
-        errors.add(new ValidationErrorImpl().key("parameters.notificationText")
-            .error("'notificationText' or 'notificationHtml' is required"));
+      if (!hasValue(parameters, PARAMETER_NOTIFICATION_TEXT)
+          && !hasValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
+        errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TEXT)
+            .error("'" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
+                + "' is required"));
       }
     }
   }

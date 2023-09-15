@@ -80,6 +80,8 @@ import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
+import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.client.FormKiqClient;
 import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
@@ -219,6 +221,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
+    awsServiceCache.register(DocumentTagSchemaPlugin.class,
+        new DocumentTagSchemaPluginExtension(null));
 
     this.awsservices = awsServiceCache;
     this.documentsBucket = this.awsservices.environment("DOCUMENTS_S3_BUCKET");

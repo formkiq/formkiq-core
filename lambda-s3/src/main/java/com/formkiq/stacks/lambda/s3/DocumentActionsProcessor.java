@@ -43,27 +43,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ses.SesAwsServiceRegistry;
+import com.formkiq.aws.ses.SesService;
+import com.formkiq.aws.ses.SesServiceExtension;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.graalvm.annotations.ReflectableClass;
@@ -75,13 +77,13 @@ import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.client.FormKiqClientConnection;
@@ -103,7 +105,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -133,94 +134,102 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /** {@link S3Service}. */
   private S3Service s3Service;
   /** {@link AwsServiceCache}. */
+  private static AwsServiceCache preInitServiceCache;
+  /** {@link AwsServiceCache}. */
   private AwsServiceCache serviceCache;
   /** {@link TypeSenseService}. */
   private TypeSenseService typesense = null;
 
+  static {
+
+    if (System.getenv().containsKey("AWS_REGION")) {
+      preInitServiceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+          EnvironmentVariableCredentialsProvider.create())
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
+          .build();
+
+      initialize(preInitServiceCache);
+    }
+  }
+
   /**
-   * constructor.
+   * Initialize.
    * 
+   * @param awsServiceCache {@link AwsServiceCache}
    */
-  public DocumentActionsProcessor() {
-    this(System.getenv(), Region.of(System.getenv("AWS_REGION")),
-        EnvironmentVariableCredentialsProvider.create().resolveCredentials(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SsmConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))));
+  static void initialize(final AwsServiceCache awsServiceCache) {
+
+    AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
+
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    awsServiceCache.register(FormKiqClientV1.class,
+        new FormKiQClientV1Extension(awsServiceCache.region(), awsCredentials));
+    awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
+    awsServiceCache.register(SesService.class, new SesServiceExtension());
   }
 
   /**
    * constructor.
-   *
-   * @param map {@link Map}
-   * @param awsRegion {@link Region}
-   * @param awsCredentials {@link AwsCredentials}
-   * @param dbBuilder {@link DynamoDbConnectionBuilder}
-   * @param s3 {@link S3ConnectionBuilder}
-   * @param ssm {@link SsmConnectionBuilder}
-   * @param sns {@link SnsConnectionBuilder}
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   * 
    */
-  protected DocumentActionsProcessor(final Map<String, String> map, final Region awsRegion,
-      final AwsCredentials awsCredentials, final DynamoDbConnectionBuilder dbBuilder,
-      final S3ConnectionBuilder s3, final SsmConnectionBuilder ssm,
-      final SnsConnectionBuilder sns) {
+  public DocumentActionsProcessor(final AwsServiceCache awsServiceCache) {
 
-    this.serviceCache =
-        new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
+    if (preInitServiceCache == null) {
+      initialize(awsServiceCache);
+    }
 
-    this.serviceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbBuilder));
-    this.serviceCache.register(SsmConnectionBuilder.class,
-        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
-    this.serviceCache.register(SnsConnectionBuilder.class,
-        new ClassServiceExtension<SnsConnectionBuilder>(sns));
-    this.serviceCache.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3));
-    this.serviceCache.register(SsmService.class, new SsmServiceExtension());
-    this.serviceCache.register(S3Service.class, new S3ServiceExtension());
-    this.serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    this.serviceCache.register(DocumentService.class, new DocumentServiceExtension());
-    this.serviceCache.register(ConfigService.class, new ConfigServiceExtension());
-    this.serviceCache.register(FormKiqClientV1.class,
-        new FormKiQClientV1Extension(awsRegion, awsCredentials));
-    this.serviceCache.register(EventService.class, new EventServiceSnsExtension());
-    this.serviceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    this.s3Service = awsServiceCache.getExtension(S3Service.class);
+    this.documentService = awsServiceCache.getExtension(DocumentService.class);
+    this.actionsService = awsServiceCache.getExtension(ActionsService.class);
+    this.notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
 
-    this.s3Service = this.serviceCache.getExtension(S3Service.class);
-    this.documentService = this.serviceCache.getExtension(DocumentService.class);
-    this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
-    this.notificationService = this.serviceCache.getExtension(ActionsNotificationService.class);
-
-    String appEnvironment = map.get("APP_ENVIRONMENT");
-    final int cacheTime = 5;
-    SsmService ssmService = new SsmServiceCache(ssm, cacheTime, TimeUnit.MINUTES);
+    String appEnvironment = awsServiceCache.environment("APP_ENVIRONMENT");
+    SsmService ssmService = awsServiceCache.getExtension(SsmService.class);
 
     String typeSenseHost =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/TypesenseEndpoint");
     String typeSenseApiKey =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
 
+    AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
+
     if (typeSenseHost != null && typeSenseApiKey != null) {
-      this.typesense =
-          new TypeSenseServiceImpl(typeSenseHost, typeSenseApiKey, awsRegion, awsCredentials);
+
+      this.typesense = new TypeSenseServiceImpl(typeSenseHost, typeSenseApiKey,
+          awsServiceCache.region(), awsCredentials);
     }
 
     this.documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
-    this.fkqConnection = new FormKiqClientConnection(this.documentsIamUrl).region(awsRegion);
+    this.fkqConnection =
+        new FormKiqClientConnection(this.documentsIamUrl).region(awsServiceCache.region());
 
     if (awsCredentials != null) {
       this.fkqConnection = this.fkqConnection.credentials(awsCredentials);
     }
 
     this.formkiqClient = new FormKiqClientV1(this.fkqConnection);
+    this.serviceCache = awsServiceCache;
+  }
+
+  /**
+   * constructor.
+   * 
+   */
+  public DocumentActionsProcessor() {
+    this(preInitServiceCache);
   }
 
   /**
@@ -456,6 +465,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     } else if (ActionType.WEBHOOK.equals(action.type())) {
 
       sendWebhook(siteId, documentId, action);
+
+    } else if (ActionType.NOTIFICATION.equals(action.type())) {
+
+      DocumentAction da = new NotificationAction(siteId, this.serviceCache);
+      da.run(logger, siteId, documentId, action);
     }
 
     logAction(logger, "action complete", siteId, documentId, action);
@@ -530,7 +544,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     DocumentContentFunction documentContentFunc = new DocumentContentFunction(this.serviceCache);
 
     List<String> contentUrls =
-        documentContentFunc.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
+        documentContentFunc.getContentUrls(isDebug() ? logger : null, siteId, item);
 
     if (contentUrls.size() > 0) {
       boolean moduleFulltext = this.serviceCache.hasModule("opensearch");

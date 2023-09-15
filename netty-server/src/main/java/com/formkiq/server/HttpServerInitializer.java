@@ -31,7 +31,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.commons.cli.CommandLine;
+
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.schema.DocumentSchema;
@@ -42,11 +44,13 @@ import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceNoOpExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
+
 import io.minio.BucketExistsArgs;
 import io.minio.GetBucketNotificationArgs;
 import io.minio.MakeBucketArgs;
@@ -261,7 +265,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
       this.handler = new NettyRequestHandler(env, awsServiceEndpoints, credentialsProvider);
 
       AwsServiceCache aws = this.handler.getAwsServices();
-      aws.deregister(SsmService.class);
+      aws.register(SsmService.class, new SsmServiceNoOpExtension());
       aws.deregister(SqsService.class);
       aws.deregister(SnsService.class);
 
