@@ -108,9 +108,21 @@ public class ActionsValidatorImpl implements ActionsValidator {
       if (!hasValue(parameters, "notificationTo")) {
         errors.add(new ValidationErrorImpl().key("parameters.notificationTo")
             .error("'notificationTo' parameter is required"));
-      } else if (!hasValue(parameters, "notificationType")) {
+      }
+
+      if (!hasValue(parameters, "notificationType")) {
         errors.add(new ValidationErrorImpl().key("parameters.notificationType")
             .error("'notificationType' parameter is required"));
+      }
+
+      if (!hasValue(parameters, "notificationSubject")) {
+        errors.add(new ValidationErrorImpl().key("parameters.notificationSubject")
+            .error("'notificationSubject' parameter is required"));
+      }
+
+      if (!hasValue(parameters, "notificationText") && !hasValue(parameters, "notificationHtml")) {
+        errors.add(new ValidationErrorImpl().key("parameters.notificationText")
+            .error("'notificationText' or 'notificationHtml' is required"));
       }
     }
   }

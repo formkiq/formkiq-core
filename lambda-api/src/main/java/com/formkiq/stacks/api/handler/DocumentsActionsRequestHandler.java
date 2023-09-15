@@ -40,7 +40,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
@@ -52,6 +51,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
@@ -148,9 +148,10 @@ public class DocumentsActionsRequestHandler
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(Map.of("message", "Actions saved"));
       return new ApiRequestHandlerResponse(SC_OK, resp);
+
     }
 
-    throw new BadException("missing/invalid 'type' in body");
+    throw new ValidationException(firstError.get());
   }
 
   @SuppressWarnings("unchecked")
