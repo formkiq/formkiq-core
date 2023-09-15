@@ -81,17 +81,17 @@ public class AwsResourceTest extends AbstractApiTest {
 
     CognitoIdentityProviderConnectionBuilder userBuilder =
         new CognitoIdentityProviderConnectionBuilder(getCognitoClientId(), getCognitoUserPoolId())
-            .setCredentials(StaticCredentialsProvider.create(basic));
+            .setRegion(getAwsRegion()).setCredentials(StaticCredentialsProvider.create(basic));
 
     CognitoIdentityProviderService userCognitoService =
         new CognitoIdentityProviderService(userBuilder);
 
     // when
-    GetUserResponse user = userCognitoService.getUser(getAdminToken());
     userCognitoService.addUser(email, USER_TEMP_PASSWORD);
     userCognitoService.addUserToGroup(email, group);
 
     // then
+    GetUserResponse user = userCognitoService.getUser(getAdminToken());
     assertNotNull(user.username());
     assertEquals("testadminuser@formkiq.com", user.userAttributes().stream()
         .filter(f -> f.name().equals("email")).findFirst().get().value());

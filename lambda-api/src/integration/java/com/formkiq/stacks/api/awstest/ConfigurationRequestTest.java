@@ -175,7 +175,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePutConfiguration03() throws Exception {
+  public void testPatchConfiguration03() throws Exception {
     // given
     String siteId = null;
     List<ApiClient> clients = getApiClients(null);
@@ -191,7 +191,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
       SetConfigResponse updateConfiguration = api.updateConfiguration(req, siteId);
 
       // then
-      assertEquals("", updateConfiguration.getMessage());
+      assertEquals("Config saved", updateConfiguration.getMessage());
     }
   }
 
@@ -201,7 +201,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePutConfiguration04() throws Exception {
+  public void testPatchConfiguration04() throws Exception {
     // given
     String siteId = null;
     List<ApiClient> clients = getApiClients(null);
@@ -218,7 +218,9 @@ public class ConfigurationRequestTest extends AbstractApiTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("", e.getResponseBody());
+        String expected = "{\"errors\":[{\"key\":\"notificationEmail\","
+            + "\"error\":\"'notificationEmail' is not setup in AWS SES\"}]}";
+        assertEquals(expected, e.getResponseBody());
       }
     }
   }
