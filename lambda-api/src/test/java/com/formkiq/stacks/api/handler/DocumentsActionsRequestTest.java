@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -205,9 +207,15 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         this.documentActionsApi.addDocumentActions(documentId, siteId, req);
         fail();
       } catch (ApiException e) {
+
         final int status = 400;
         assertEquals(status, e.getCode());
-        assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", e.getResponseBody());
+
+        Collection<Map<String, Object>> validation = getValidationErrors(e);
+        assertEquals(1, validation.size());
+
+        Map<String, Object> i = validation.iterator().next();
+        assertEquals("'type' is required", i.get("error"));
       }
 
       List<Action> actions = this.service.getActions(siteId, documentId);
@@ -240,7 +248,16 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         // then
         final int status = 400;
         assertEquals(status, e.getCode());
-        assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", e.getResponseBody());
+
+        Collection<Map<String, Object>> validation = getValidationErrors(e);
+        assertEquals(2, validation.size());
+
+        Iterator<Map<String, Object>> itr = validation.iterator();
+        Map<String, Object> i = itr.next();
+        assertEquals("'tags' parameter is required", i.get("error"));
+
+        i = itr.next();
+        assertEquals("'engine' parameter is required", i.get("error"));
       }
 
       List<Action> actions = this.service.getActions(siteId, documentId);
@@ -290,13 +307,15 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
 
         // then
-        final int status = 400;
-        assertEquals(status, e.getCode());
-        assertEquals("{\"message\":\"missing/invalid 'type' in body\"}", e.getResponseBody());
-      }
+        Collection<Map<String, Object>> validation = getValidationErrors(e);
+        assertEquals(1, validation.size());
 
-      List<Action> actions = this.service.getActions(siteId, documentId);
-      assertEquals(0, actions.size());
+        Map<String, Object> i = validation.iterator().next();
+        assertEquals("parameters.notificationEmail", i.get("key"));
+
+        List<Action> actions = this.service.getActions(siteId, documentId);
+        assertEquals(0, actions.size());
+      }
     }
   }
 
@@ -316,9 +335,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.configService.save(siteId,
           new DynamicObject(Map.of("NotificationEmail", "test@formkiq.com")));
 
-      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
-          .asList(new AddAction().type(TypeEnum.NOTIFICATION).parameters(new AddActionParameters()
-              .notificationType(NotificationTypeEnum.EMAIL).notificationTo("test@formkiq.com"))));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
+              .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
+                  .notificationTo("test@formkiq.com").notificationSubject("test subject")
+                  .notificationText("some text"))));
 
       setBearerToken(siteId);
 

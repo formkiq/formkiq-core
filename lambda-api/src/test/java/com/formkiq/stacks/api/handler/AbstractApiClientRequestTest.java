@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.services.ActionsService;
@@ -55,6 +57,9 @@ import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 /**
@@ -152,6 +157,21 @@ public abstract class AbstractApiClientRequestTest {
     }
 
     return msgs;
+  }
+
+  /**
+   * Get Validation Errors.
+   * 
+   * @param e {@link ApiException}
+   * @return {@link ValidationException}
+   */
+  @SuppressWarnings("unchecked")
+  public Collection<Map<String, Object>> getValidationErrors(final ApiException e) {
+    Gson gson = new GsonBuilder().create();
+
+    Map<String, Object> map = gson.fromJson(e.getResponseBody(), Map.class);
+    Collection<Map<String, Object>> errors = (Collection<Map<String, Object>>) map.get("errors");
+    return errors;
   }
 
   /**
