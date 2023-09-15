@@ -4147,6 +4147,15 @@
                 notificationTo:
                   description: Who to send the notification to (comma-delimited list)
                   type: string
+                notificationSubject:
+                  description: Subject of the notification
+                  type: string
+                notificationText:
+                  description: Text of the notification
+                  type: string
+                notificationHtml:
+                  description: Html of the notification
+                  type: string
                 tags:
                   description: 'DocumentTagging: Comma-deliminted list of keywords to generate tags for'
                   type: string
