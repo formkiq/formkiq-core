@@ -3499,6 +3499,7 @@
                   items:
                     $ref: '#/components/schemas/AddDocumentTag'
             DocumentMetadata:
+              type: object
               description: Document Metadata (use either 'value' or 'values' not both)
               properties:
                 key:
@@ -3826,6 +3827,11 @@
                 belongsToDocumentId:
                   type: string
                   description: Parent Document Identifier
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/DocumentMetadata'
                 matchedTag:
                   $ref: '#/components/schemas/DocumentSearchMatchTag'
                 tags:
