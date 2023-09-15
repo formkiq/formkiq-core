@@ -21,6 +21,7 @@ dependencies {
 	implementation project(':aws-s3')
 	implementation project(':aws-sns')
 	implementation project(':aws-ssm')
+	implementation project(':aws-ses')
 	implementation project(':aws-dynamodb')
 	implementation project(':fkq-plugins')
 	implementation project(':dynamodb-documents')

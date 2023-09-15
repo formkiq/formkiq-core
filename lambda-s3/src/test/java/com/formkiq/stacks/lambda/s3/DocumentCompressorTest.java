@@ -57,6 +57,8 @@ import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
@@ -124,6 +126,7 @@ public class DocumentCompressorTest {
         new DynamoDbConnectionBuilderExtension(dbBuilder));
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
     serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
   }
 
   @Test

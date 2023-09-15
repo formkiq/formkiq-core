@@ -275,6 +275,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     return event;
   }
 
+  private ApiRequestHandlerInterceptor getApiRequestHandlerInterceptor(
+      final AwsServiceCache awsServices) {
+    return awsServices.getExtensionOrNull(ApiRequestHandlerInterceptor.class);
+  }
+
   /**
    * Get {@link AwsServiceCache}.
    *
@@ -424,7 +429,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiAuthorization authorization, final Optional<Boolean> hasAccess) {
 
     AuthorizationHandler authorizationHandler =
-        getAwsServices().getExtension(AuthorizationHandler.class);
+        getAwsServices().getExtensionOrNull(AuthorizationHandler.class);
 
     Optional<Boolean> isAuthorized = hasAccess;
 
@@ -520,19 +525,14 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     try {
 
-      ApiAuthorizationInterceptor interceptor =
-          awsServices.getExtension(ApiAuthorizationInterceptor.class);
-
-      if (interceptor != null) {
-        interceptor.awsServiceCache(awsServices);
-      }
+      ApiAuthorizationInterceptor interceptor = setupApiAuthorizationInterceptor(awsServices);
 
       ApiAuthorization authorization =
           new ApiAuthorizationBuilder().interceptors(interceptor).build(event);
       log(logger, event, authorization);
 
       ApiRequestHandlerInterceptor requestInterceptor =
-          awsServices.getExtension(ApiRequestHandlerInterceptor.class);
+          getApiRequestHandlerInterceptor(awsServices);
 
       executeRequestInterceptor(requestInterceptor, event, awsServices, authorization);
 
@@ -655,6 +655,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           break;
       }
     }
+  }
+
+  private ApiAuthorizationInterceptor setupApiAuthorizationInterceptor(
+      final AwsServiceCache awsServices) {
+    ApiAuthorizationInterceptor interceptor =
+        awsServices.getExtensionOrNull(ApiAuthorizationInterceptor.class);
+
+    if (interceptor != null) {
+      interceptor.awsServiceCache(awsServices);
+    }
+    return interceptor;
   }
 
   private String toStringFromMap(final Map<String, String> map) {

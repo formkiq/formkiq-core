@@ -298,7 +298,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays
           .asList(new AddAction().type(TypeEnum.NOTIFICATION).parameters(new AddActionParameters()
-              .notificationType(NotificationTypeEnum.EMAIL).notificationTo("test@formkiq.com"))));
+              .notificationType(NotificationTypeEnum.EMAIL).notificationToCc("test@formkiq.com"))));
 
       // when
       try {
@@ -338,7 +338,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
           .actions(Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
               .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
-                  .notificationTo("test@formkiq.com").notificationSubject("test subject")
+                  .notificationToCc("test@formkiq.com").notificationSubject("test subject")
                   .notificationText("some text"))));
 
       setBearerToken(siteId);
