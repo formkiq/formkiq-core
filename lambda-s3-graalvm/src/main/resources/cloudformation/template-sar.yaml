@@ -644,6 +644,10 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action:
+            - ses:SendEmail
+            Resource: "*"
+          - Effect: Allow
+            Action:
             - s3:ListBucket
             Resource:
             - Fn::Join:

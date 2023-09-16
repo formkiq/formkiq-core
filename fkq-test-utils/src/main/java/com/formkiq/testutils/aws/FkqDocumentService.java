@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.testutils.aws;
 
@@ -41,6 +38,8 @@ import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import com.formkiq.client.model.GetDocumentResponse;
@@ -97,7 +96,7 @@ public class FkqDocumentService {
   public static String addDocument(final ApiClient apiClient, final String siteId,
       final String path, final byte[] content, final String contentType, final String shareKey)
       throws IOException, InterruptedException, URISyntaxException, ApiException {
-    // given
+
     DocumentsApi api = new DocumentsApi(apiClient);
     GetDocumentUrlResponse response =
         api.getDocumentUpload(path, siteId, Integer.valueOf(content.length), null, shareKey);
@@ -105,6 +104,30 @@ public class FkqDocumentService {
 
     http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)
         .method("PUT", BodyPublishers.ofByteArray(content)).build(), BodyHandlers.ofString());
+    return response.getDocumentId();
+  }
+
+  /**
+   * Add Document.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param content {@link String}
+   * @param contentType {@link String}
+   * @param actions {@link List} {@link AddAction}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public static String addDocument(final ApiClient apiClient, final String siteId,
+      final String path, final String content, final String contentType,
+      final List<AddAction> actions) throws ApiException {
+
+    DocumentsApi api = new DocumentsApi(apiClient);
+    com.formkiq.client.model.AddDocumentRequest req =
+        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
+            .path(path).actions(actions);
+    AddDocumentResponse response = api.addDocument(req, siteId, null);
     return response.getDocumentId();
   }
 
@@ -249,6 +272,8 @@ public class FkqDocumentService {
   /**
    * Wait for Actions to Complete.
    * 
+   * <<<<<<< HEAD
+   * 
    * @param client {@link ApiClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
@@ -263,6 +288,8 @@ public class FkqDocumentService {
 
   /**
    * Wait for Actions to Complete.
+   * 
+   * ======= >>>>>>> d3e8d3f (update)
    * 
    * @param client {@link FormKiqClientV1}
    * @param siteId {@link String}
