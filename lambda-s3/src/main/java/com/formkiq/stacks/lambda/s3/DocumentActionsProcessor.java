@@ -426,6 +426,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final String documentId, final List<Action> actions, final Action action)
       throws IOException, InterruptedException {
 
+    boolean updateComplete = false;
     logAction(logger, "action start", siteId, documentId, action);
 
     if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
@@ -433,11 +434,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       DocumentTaggingAction dtAction = new DocumentTaggingAction(this.serviceCache);
       dtAction.run(logger, siteId, documentId, action);
 
-      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
-          action.type(), ActionStatus.COMPLETE);
-
-      action.status(ActionStatus.COMPLETE);
-      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      updateComplete = true;
 
     } else if (ActionType.OCR.equals(action.type())) {
 
@@ -470,9 +467,19 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       DocumentAction da = new NotificationAction(siteId, this.serviceCache);
       da.run(logger, siteId, documentId, action);
+
+      updateComplete = true;
     }
 
     logAction(logger, "action complete", siteId, documentId, action);
+
+    if (updateComplete) {
+      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
+          action.type(), ActionStatus.COMPLETE);
+
+      action.status(ActionStatus.COMPLETE);
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+    }
   }
 
   /**
