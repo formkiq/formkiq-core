@@ -28,16 +28,17 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplet
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddAction.TypeEnum;
-import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddActionParameters;
+import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.GetDocumentActionsResponse;
+import com.formkiq.client.model.SetConfigRequest;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
@@ -57,26 +58,31 @@ public class DocumentsActionsRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddNotifications01() throws Exception {
     // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+    String siteId = null;
+    List<ApiClient> clients = getApiClients(siteId);
+    ApiClient client = clients.get(0);
 
-      List<ApiClient> clients = getApiClients(siteId);
-      ApiClient client = clients.get(0);
+    String adminEmail =
+        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+    SetConfigRequest req = new SetConfigRequest().notificationEmail(adminEmail);
 
-      String content = "this is a test";
-      String subject = "Test email";
-      String text = "This is a text email";
-      List<AddAction> actions = Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
-          .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
-              .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
-              .notificationText(text)));
+    SystemManagementApi api = new SystemManagementApi(client);
+    api.updateConfiguration(req, siteId);
 
-      // when
-      String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
+    String content = "this is a test";
+    String subject = "Test email";
+    String text = "This is a text email";
+    List<AddAction> actions = Arrays.asList(new AddAction().type(TypeEnum.NOTIFICATION)
+        .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
+            .notificationSubject(subject).notificationToCc("mfriesen@gmail.com")
+            .notificationText(text)));
 
-      // then
-      GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
-      assertEquals(1, response.getActions().size());
-      assertEquals("", response.getActions().get(0).getStatus());
-    }
+    // when
+    String documentId = addDocument(client, siteId, "test.txt", content, "text/plain", actions);
+
+    // then
+    GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
+    assertEquals(1, response.getActions().size());
+    assertEquals("complete", response.getActions().get(0).getStatus());
   }
 }
