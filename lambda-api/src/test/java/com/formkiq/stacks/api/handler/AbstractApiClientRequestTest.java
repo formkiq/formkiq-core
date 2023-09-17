@@ -35,6 +35,7 @@ import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -120,6 +121,8 @@ public abstract class AbstractApiClientRequestTest {
   protected SystemManagementApi systemApi = new SystemManagementApi(this.client);
   /** {@link DocumentTagsApi}. */
   protected DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
+  /** {@link DocumentWorkflowsApi}. */
+  protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
 
   /**
    * Convert JSON to Object.

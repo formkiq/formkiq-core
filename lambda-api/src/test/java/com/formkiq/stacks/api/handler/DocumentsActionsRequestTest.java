@@ -163,7 +163,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       List<Action> actions = this.service.getActions(siteId, documentId);
 
       assertEquals(ActionType.FULLTEXT, actions.get(i).type());
-      assertEquals(ActionStatus.COMPLETE, actions.get(i++).status());
+      assertEquals(ActionStatus.COMPLETE, actions.get(i).status());
+      assertEquals("{test=this}", actions.get(i++).parameters().toString());
 
       assertEquals(ActionType.OCR, actions.get(i).type());
       assertEquals(ActionStatus.PENDING, actions.get(i).status());
