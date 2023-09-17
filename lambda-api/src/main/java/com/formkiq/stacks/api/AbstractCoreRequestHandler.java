@@ -104,6 +104,8 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksTagsRequestHandler;
+import com.formkiq.stacks.api.handler.WorkflowsIdRequestHandler;
+import com.formkiq.stacks.api.handler.WorkflowsRequestHandler;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -221,6 +223,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
     addRequestHandler(new GroupsRequestHandler());
     addRequestHandler(new GroupsUsersRequestHandler());
+    addRequestHandler(new WorkflowsRequestHandler());
+    addRequestHandler(new WorkflowsIdRequestHandler());
   }
 
   /**

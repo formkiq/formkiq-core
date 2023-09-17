@@ -4335,7 +4335,6 @@
                 notificationType:
                   type: string
                   description: Notification Type
-                  default: email
                   enum:
                   - email
                 notificationToCc:
