@@ -78,6 +78,9 @@ Resources:
           - name: documentShares
             description: Document Shares API
             x-displayName: Document Shares
+          - name: documentWorkflows
+            description: Document Workflows API
+            x-displayName: Document Workflows
           - name: tagSchema
             description: Tag Schema API
             x-displayName: Tag Schema
@@ -1567,7 +1570,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetUserShares'
+                        $ref: '#/components/schemas/GetUserSharesResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -1639,6 +1642,138 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /workflows:
+            get:
+              operationId: GetWorkflows
+              summary: Get workflows
+              description: Get a listing of workflows; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              tags:
+              - Document Workflows
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetWorkflowsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddWorkflow
+              summary: Add workflow
+              description: Creates a new Workflow; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddWorkflowRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddWorkflowResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /workflows/{workflowId}:
+            get:
+              operationId: GetWorkflow
+              summary: Get workflow
+              description: Get a workflow; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              tags:
+              - Document Workflows
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetWorkflowResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              operationId: DeleteWorkflow
+              summary: Delete workflow
+              description: Delete a Workflow; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/DeleteWorkflowResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /tagSchemas:
             get:
               operationId: GetTagSchemas
@@ -1703,7 +1838,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/TagSchemaPostResponse'
+                        $ref: '#/components/schemas/AddTagSchemaResponse'
                 '400':
                   description: 400 BAD REQUEST
                   headers:
@@ -2814,6 +2949,13 @@ Resources:
               required: true
               schema:
                 type: string
+            workflowIdParam:
+              name: workflowId
+              in: path
+              description: Workflow Identifier
+              required: true
+              schema:
+                type: string
             tagSchemaIdParam:
               name: tagSchemaId
               in: path
@@ -3006,7 +3148,52 @@ Resources:
                 indexKey:
                   type: "string"
                   description: "Folder Index Key"
-            GetUserShares:
+            GetWorkflowsResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                workflows:
+                  type: "array"
+                  description: "List of workflows"
+                  items:
+                    $ref: "#/components/schemas/WorkflowSummary"
+            GetWorkflowResponse:
+              type: "object"
+              properties:
+                name:
+                  description: "Workflow name"
+                  type: "string"
+                description:
+                  description: "Workflow description"
+                  type: "string"
+                config:
+                  description: "Workflow configuration"
+                  $ref: "#/components/schemas/WorkflowConfig"
+                steps:
+                  description: "Workflow steps"
+                  items:
+                    $ref: "#/components/schemas/WorkflowStep"
+            WorkflowSummary:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of Workflow"
+                description:
+                  type: "string"
+                  description: "Description of Workflow"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  description: "Last Modified Timestamp"
+                userId:
+                  type: "string"
+                  description: "User who created share"
+            GetUserSharesResponse:
               type: "object"
               properties:
                 next:
@@ -4143,6 +4330,7 @@ Resources:
                 notificationType:
                   type: "string"
                   description: "Notification Type"
+                  default: "email"
                   enum:
                     - email
                 notificationToCc:
@@ -4252,6 +4440,12 @@ Resources:
                 apiKey:
                   type: "string"
                   description: "API Key Identifier"
+            DeleteWorkflowResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
             DeleteFulltextResponse:
               type: object
               properties:
@@ -4403,7 +4597,7 @@ Resources:
                 uploadEmail:
                   type: "string"
                   description: "SiteId document upload email address"
-            TagSchemaPostResponse:
+            AddTagSchemaResponse:
               type: "object"
               properties:
                 tagSchemaId:
@@ -4438,6 +4632,77 @@ Resources:
                   type: "string"
                 previous:
                   type: "string"
+            AddWorkflowRequest:
+              type: "object"
+              required:
+                - name
+                - steps
+              properties:
+                name:
+                  description: "Workflow name"
+                  type: "string"
+                description:
+                  description: "Workflow description"
+                  type: "string"
+                config:
+                  description: "Workflow configuration"
+                  $ref: "#/components/schemas/WorkflowConfig"
+                steps:
+                  description: "Workflow steps"
+                  items:
+                    $ref: "#/components/schemas/WorkflowStep"
+            WorkflowStep:
+              type: "object"
+              required:
+                - id
+                - type
+              properties:
+                id:
+                  type: "string"
+                  description: "Step identifier"
+                type:
+                  type: "string"
+                  description: "Workflow step type"
+                  enum:
+                    - action
+                    - approvalQueue
+                action:
+                  $ref: "#/components/schemas/AddAction"
+                queue:
+                  $ref: "#/components/schemas/AddQueue"
+            AddQueue:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of queue"
+                ifApprovedStepId:
+                  type: "string"
+                  description: "If approved goto step id"
+                ifNotApprovedStepId:
+                  type: "string"
+                  description: "If not approved goto step id"
+                approvalGroups:
+                  items:
+                    type: "string"
+            WorkflowConfig:
+              type: "object"
+              properties:
+                notificationType:
+                  type: "string"
+                  description: "Notification Type"
+                  default: "email"
+                  enum:
+                    - email
+                    - none
+            AddWorkflowResponse:
+              type: "object"
+              properties:
+                workflowId:
+                  type: "string"
+                  description: "Workflow Identifier"
             AddTagSchemaRequest:
               type: "object"
               properties:
