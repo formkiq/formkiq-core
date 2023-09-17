@@ -1774,6 +1774,112 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /workflows/queue/{queueName}/documents:
+            get:
+              operationId: WorkflowQueueDocuments
+              summary: Document search
+              description: List documents in Workflow Queue; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/queueNameParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/WorkflowQueueDocumentsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
+          /documents/{documentId}/workflow/{workflowId}:
+            get:
+              operationId: DocumentWorkflow
+              summary: Document search
+              description: Get document workflow status; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/DocumentWorkflowResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
+            post:
+              operationId: AddDocumentWorkflow
+              summary: Add document workflow
+              description: Creates a document workflow step status; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentWorkflowRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentWorkflowResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /tagSchemas:
             get:
               operationId: GetTagSchemas
@@ -2949,6 +3055,13 @@ Resources:
               required: true
               schema:
                 type: string
+            queueNameParam:
+              name: queueName
+              in: path
+              description: Queue Name
+              required: true
+              schema:
+                type: string
             workflowIdParam:
               name: workflowId
               in: path
@@ -3957,6 +4070,77 @@ Resources:
                   description: "List of search result documents"
                   items:
                     $ref: "#/components/schemas/SearchResultDocument"
+            DocumentWorkflowResponse:
+              type: "object"
+              properties:
+                steps:
+                  description: "Document Workflow steps"
+                  items:
+                    $ref: "#/components/schemas/DocumentWorkflowStep"
+            DocumentWorkflowStep:
+              type: "object"
+              properties:
+                id:
+                  type: "string"
+                  description: "Step identifier"
+                status:
+                  type: "string"
+                  description: "Workflow step status"
+                  enum:
+                    - COMPLETE
+                    - FAILED
+            WorkflowQueueDocumentsResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                documents:
+                  type: "array"
+                  description: "List of search result documents"
+                  items:
+                    $ref: "#/components/schemas/QueueDocument"
+            QueueDocument:
+              type: "object"
+              properties:
+                siteId:
+                  type: "string"
+                  description: "Site Identifier"
+                path:
+                  type: "string"
+                  description: "Path or Name of document"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                lastModifiedDate:
+                  type: "string"
+                  description: "Last Modified Timestamp"
+                checksum:
+                  type: "string"
+                  description: "Document checksum, changes when document file changes"
+                documentId:
+                  type: "string"
+                  description: "Document Identifier"
+                contentType:
+                  type: "string"
+                  description: "Document Content-Type"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                contentLength:
+                  type: "integer"
+                  description: "Document size"
+                versionId:
+                  type: "string"
+                  description: "Document version"
+                belongsToDocumentId:
+                  type: "string"
+                  description: "Parent Document Identifier"
+                metadata:
+                  type: "array"
+                  description: "List of document Metadata"
+                  items:
+                    $ref: "#/components/schemas/DocumentMetadata"
             DocumentSearchResponse:
               type: "object"
               properties:
@@ -4631,6 +4815,20 @@ Resources:
                   type: "string"
                 previous:
                   type: "string"
+            AddDocumentWorkflowRequest:
+              type: "object"
+              required:
+                - stepId
+              properties:
+                stepId:
+                  description: "Step identifier"
+                  type: "string"
+                status:
+                  type: "string"
+                  description: "Workflow step status"
+                  enum:
+                    - COMPLETE
+                    - FAILED
             AddWorkflowRequest:
               type: "object"
               required:
@@ -4702,6 +4900,12 @@ Resources:
                 workflowId:
                   type: "string"
                   description: "Workflow Identifier"
+            AddDocumentWorkflowResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
             AddTagSchemaRequest:
               type: "object"
               properties:
