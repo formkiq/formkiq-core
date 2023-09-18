@@ -4878,9 +4878,9 @@ Resources:
                 ifApprovedStepId:
                   type: "string"
                   description: "If approved goto step id"
-                ifNotApprovedStepId:
+                ifRejectedStepId:
                   type: "string"
-                  description: "If not approved goto step id"
+                  description: "If rejected goto step id"
                 approvalGroups:
                   items:
                     type: "string"
