@@ -79,7 +79,7 @@ Parameters:
 
 Mappings: 
   RegionMap: 
-    "us-east-2":
+    us-east-2:
       PARTITION: "aws"
     us-east-1:
       PARTITION: "aws"
@@ -338,6 +338,11 @@ Resources:
           Fn::Sub: "${PasswordRequireUppercase}"
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
+        AwsArnPartition:
+          Fn::FindInMap:
+          - RegionMap
+          - Ref: "AWS::Region"
+          - PARTITION
         RedirectUrl:
           Fn::GetAtt:
           - CoreConsole

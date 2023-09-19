@@ -433,10 +433,10 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AmazonAPIGatewayInvokeFullAccess"
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AmazonElasticFileSystemClientReadWriteAccess"
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
         -
           PolicyName: apigatewaylambdarole
@@ -666,7 +666,7 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       
   ApiGatewayAccount:
     Type: 'AWS::ApiGateway::Account'
@@ -700,13 +700,13 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
   ApiGatewayInvokeGroup:
     Type: AWS::IAM::Group
     Properties:
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
   ApiGatewayInvokeGroupParameter:
     Type: AWS::SSM::Parameter

@@ -26,7 +26,7 @@ repositories { mavenCentral() }
 
 allprojects {
   version = '1.12.1'
-  ext.awsCognitoVersion = '1.5.1'
+  ext.awsCognitoVersion = '1.5.3'
   group = 'com.formkiq.stacks'
   
 	apply plugin: 'com.diffplug.spotless'

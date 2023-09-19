@@ -245,9 +245,9 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AmazonAPIGatewayInvokeFullAccess"
-      - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/AWSXRayDaemonWriteAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       
   TypesenseLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -435,7 +435,7 @@ Resources:
             Principal:
               Service: [ecs-tasks.amazonaws.com]
       ManagedPolicyArns:
-        - Fn::Sub: "arn:${Partition}:iam::${Partition}:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+        - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
       Policies:
         -
           PolicyName: 
