@@ -3292,18 +3292,18 @@
                 name:
                   type: string
                   description: Name of Workflow
+                documentId:
+                  type: string
+                  description: Workflow identifier
                 description:
                   type: string
                   description: Description of Workflow
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
-                lastModifiedDate:
-                  type: string
-                  description: Last Modified Timestamp
                 userId:
                   type: string
-                  description: User who created share
+                  description: User who created workflow
             GetUserSharesResponse:
               type: object
               properties:
