@@ -561,9 +561,9 @@
               tags:
               - Documents
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/versionKeyParam'
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
@@ -1646,9 +1646,9 @@
               summary: Get workflows
               description: Get a listing of workflows; ONLY available with FormKiQ Enterprise
               parameters:
-              - $ref: '#/components/parameters/limitParam'
-              - $ref: '#/components/parameters/nextParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
               tags:
               - Document Workflows
               responses:
@@ -1780,8 +1780,8 @@
               tags:
               - Document Workflows
               parameters:
-              - $ref: '#/components/parameters/queueNameParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/queueNameParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/nextParam'
               responses:
@@ -1810,9 +1810,9 @@
               tags:
               - Document Workflows
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
               responses:
                 "200":
                   description: 200 OK
@@ -1838,9 +1838,9 @@
               tags:
               - Document Workflows
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
-              - $ref: '#/components/parameters/siteIdParam'
               requestBody:
                 required: true
                 content:
@@ -2047,8 +2047,8 @@
               tags:
               - Advanced Document Search
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/shareKeyParam'
               responses:
                 "200":
@@ -2208,8 +2208,8 @@
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
               responses:
@@ -2427,8 +2427,8 @@
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhookIdParam'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -2443,8 +2443,8 @@
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhookIdParam'
               requestBody:
                 required: true
                 content:
@@ -2466,8 +2466,8 @@
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhookIdParam'
               responses:
                 "200":
                   description: 200 OK
@@ -2493,8 +2493,8 @@
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/webhookIdParam'
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/webhookIdParam'
               requestBody:
                 required: true
                 content:
