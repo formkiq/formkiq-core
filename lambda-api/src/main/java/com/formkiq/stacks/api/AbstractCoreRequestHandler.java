@@ -35,7 +35,6 @@ import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
-import com.formkiq.aws.services.lambda.ApiAuthorizerType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -259,8 +258,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     }
 
     isEnablePublicUrls = isEnablePublicUrls(map);
-
-    setAuthorizerType(ApiAuthorizerType.valueOf(map.get("USER_AUTHENTICATION").toUpperCase()));
   }
 
   /**

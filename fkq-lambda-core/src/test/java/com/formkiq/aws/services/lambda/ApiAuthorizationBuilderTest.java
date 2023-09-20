@@ -88,32 +88,28 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer01() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
+    String s0 = "[default]";
+    String s1 = "[finance]";
 
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_default]" : "[default]";
-      String s1 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_finance]" : "[finance]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
 
-      ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-      ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-      // when
-      final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-      final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    // then
+    assertEquals("default", api0.siteId());
+    assertEquals("default", String.join(",", api0.siteIds()));
+    assertEquals("READ,WRITE,DELETE",
+        api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("groups: default (DELETE,READ,WRITE)", api0.accessSummary());
 
-      // then
-      assertEquals("default", api0.siteId());
-      assertEquals("default", String.join(",", api0.siteIds()));
-      assertEquals("READ,WRITE,DELETE",
-          api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-      assertEquals("groups: default (DELETE,READ,WRITE)", api0.accessSummary());
-
-      assertEquals("finance", api1.siteId());
-      assertEquals("finance", String.join(",", api1.siteIds()));
-      assertEquals("READ,WRITE,DELETE",
-          api1.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-      assertEquals("groups: finance (DELETE,READ,WRITE)", api1.accessSummary());
-    }
+    assertEquals("finance", api1.siteId());
+    assertEquals("finance", String.join(",", api1.siteIds()));
+    assertEquals("READ,WRITE,DELETE",
+        api1.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE)", api1.accessSummary());
   }
 
   /**
@@ -122,30 +118,27 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer02() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_default_read]" : "[default_read]";
-      String s1 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_finance_read]" : "[finance_read]";
-      ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-      ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    String s0 = "[default_read]";
+    String s1 = "[finance_read]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
 
-      // when
-      final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-      final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-      // then
-      assertEquals("default", api0.siteId());
-      assertEquals("default", String.join(",", api0.siteIds()));
-      assertEquals("READ",
-          api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-      assertEquals("groups: default (READ)", api0.accessSummary());
+    // then
+    assertEquals("default", api0.siteId());
+    assertEquals("default", String.join(",", api0.siteIds()));
+    assertEquals("READ",
+        api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("groups: default (READ)", api0.accessSummary());
 
-      assertEquals("finance", api1.siteId());
-      assertEquals("finance", String.join(",", api1.siteIds()));
-      assertEquals("READ",
-          api1.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-      assertEquals("groups: finance (READ)", api1.accessSummary());
-    }
+    assertEquals("finance", api1.siteId());
+    assertEquals("finance", String.join(",", api1.siteIds()));
+    assertEquals("READ",
+        api1.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("groups: finance (READ)", api1.accessSummary());
   }
 
   /**
@@ -154,32 +147,27 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer03() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_Admins formkiq_default]"
-          : "[Admins default]";
-      String s1 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_Admins formkiq_finance"
-          : "[Admins finance]";
-      ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-      ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    String s0 = "[Admins default]";
+    String s1 = "[Admins finance]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
 
-      // when
-      final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-      final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-      // then
-      assertEquals("default", api0.siteId());
-      assertEquals("default", String.join(",", api0.siteIds()));
-      assertEquals("ADMIN,DELETE,READ,WRITE",
-          api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.accessSummary());
+    // then
+    assertEquals("default", api0.siteId());
+    assertEquals("default", String.join(",", api0.siteIds()));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.accessSummary());
 
-      assertEquals("finance", api1.siteId());
-      assertEquals("finance", String.join(",", api1.siteIds()));
-      assertEquals("ADMIN,DELETE,READ,WRITE",
-          api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.accessSummary());
-    }
+    assertEquals("finance", api1.siteId());
+    assertEquals("finance", String.join(",", api1.siteIds()));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.accessSummary());
   }
 
   /**
@@ -188,32 +176,27 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer04() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_admins formkiq_default]"
-          : "[admins default]";
-      String s1 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_admins formkiq_finance"
-          : "[admins finance]";
-      ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-      ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    String s0 = "[admins default]";
+    String s1 = "[admins finance]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
 
-      // when
-      final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-      final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-      // then
-      assertEquals("default", api0.siteId());
-      assertEquals("default", String.join(",", api0.siteIds()));
-      assertEquals("ADMIN,DELETE,READ,WRITE",
-          api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.accessSummary());
+    // then
+    assertEquals("default", api0.siteId());
+    assertEquals("default", String.join(",", api0.siteIds()));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.accessSummary());
 
-      assertEquals("finance", api1.siteId());
-      assertEquals("finance", String.join(",", api1.siteIds()));
-      assertEquals("ADMIN,DELETE,READ,WRITE",
-          api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.accessSummary());
-    }
+    assertEquals("finance", api1.siteId());
+    assertEquals("finance", String.join(",", api1.siteIds()));
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.accessSummary());
   }
 
   /**
@@ -222,39 +205,33 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer05() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
+    String s0 = "[default other]";
+    String s1 = "[finance other]";
 
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_default formkiq_other]"
-          : "[default other]";
-      String s1 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_finance formkiq_other]"
-          : "[finance other]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    event0.setQueryStringParameters(Map.of("siteId", "other"));
 
-      ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-      event0.setQueryStringParameters(Map.of("siteId", "other"));
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    event1.setQueryStringParameters(Map.of("siteId", "other"));
 
-      ApiGatewayRequestEvent event1 = getJwtEvent(s1);
-      event1.setQueryStringParameters(Map.of("siteId", "other"));
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-      // when
-      final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-      final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    // then
+    assertEquals("other", api0.siteId());
+    assertEquals("default,other", String.join(",", api0.siteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api0.accessSummary());
 
-      // then
-      assertEquals("other", api0.siteId());
-      assertEquals("default,other", String.join(",", api0.siteIds()));
-      assertEquals("DELETE,READ,WRITE",
-          api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
-          api0.accessSummary());
-
-      assertEquals("other", api1.siteId());
-      assertEquals("finance,other", String.join(",", api1.siteIds()));
-      assertEquals("DELETE,READ,WRITE",
-          api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
-          api1.accessSummary());
-    }
+    assertEquals("other", api1.siteId());
+    assertEquals("finance,other", String.join(",", api1.siteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api1.accessSummary());
   }
 
   /**
@@ -263,29 +240,24 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer06() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
+    String s0 = "[default other]";
 
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_default formkiq_other]"
-          : "[default other]";
+    ApiGatewayRequestEvent event = getJwtEvent(s0);
 
-      ApiGatewayRequestEvent event = getJwtEvent(s0);
+    // when
+    ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
 
-      // when
-      ApiAuthorization api = new ApiAuthorizationBuilder(type).build(event);
-
-      // then
-      assertNull(api.siteId());
-      assertEquals("default,other", String.join(",", api.siteIds()));
-      assertEquals("",
-          api.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-      assertEquals("DELETE,READ,WRITE", api.permissions("default").stream().map(p -> p.name())
-          .sorted().collect(Collectors.joining(",")));
-      assertEquals("DELETE,READ,WRITE", api.permissions("other").stream().map(p -> p.name())
-          .sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
-          api.accessSummary());
-    }
+    // then
+    assertNull(api.siteId());
+    assertEquals("default,other", String.join(",", api.siteIds()));
+    assertEquals("",
+        api.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE", api.permissions("default").stream().map(p -> p.name())
+        .sorted().collect(Collectors.joining(",")));
+    assertEquals("DELETE,READ,WRITE", api.permissions("other").stream().map(p -> p.name()).sorted()
+        .collect(Collectors.joining(",")));
+    assertEquals("groups: default (DELETE,READ,WRITE), other (DELETE,READ,WRITE)",
+        api.accessSummary());
   }
 
   /**
@@ -297,37 +269,33 @@ class ApiAuthorizationBuilderTest {
     String userArn0 = "arn:aws:sts::111111111111:assumed-role/formkiqIUK/ApiGatewayInvokeRole";
     String userArn1 = "arn:aws:iam::1111111111111111:user/" + UUID.randomUUID();
 
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
+    for (String userArn : Arrays.asList(userArn0, userArn1)) {
 
-      for (String userArn : Arrays.asList(userArn0, userArn1)) {
+      ApiGatewayRequestEvent event0 = getUserArnEvent(userArn);
 
-        ApiGatewayRequestEvent event0 = getUserArnEvent(userArn);
+      // when
+      ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
 
-        // when
-        ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
+      // then
+      assertEquals("default", api0.siteId());
+      assertEquals("default", String.join(",", api0.siteIds()));
+      assertEquals("ADMIN,DELETE,READ,WRITE",
+          api0.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+      assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.accessSummary());
 
-        // then
-        assertEquals("default", api0.siteId());
-        assertEquals("default", String.join(",", api0.siteIds()));
-        assertEquals("ADMIN,DELETE,READ,WRITE", api0.permissions().stream().map(p -> p.name())
-            .sorted().collect(Collectors.joining(",")));
-        assertEquals("groups: default (ADMIN,DELETE,READ,WRITE)", api0.accessSummary());
+      // given
+      ApiGatewayRequestEvent event1 = getUserArnEvent(userArn);
+      event1.setQueryStringParameters(Map.of("siteId", "finance"));
 
-        // given
-        ApiGatewayRequestEvent event1 = getUserArnEvent(userArn);
-        event1.setQueryStringParameters(Map.of("siteId", "finance"));
+      // when
+      ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-        // when
-        ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
-
-        // then
-        assertEquals("finance", api1.siteId());
-        assertEquals("finance", String.join(",", api1.siteIds()));
-        assertEquals("ADMIN,DELETE,READ,WRITE", api1.permissions().stream().map(p -> p.name())
-            .sorted().collect(Collectors.joining(",")));
-        assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.accessSummary());
-      }
+      // then
+      assertEquals("finance", api1.siteId());
+      assertEquals("finance", String.join(",", api1.siteIds()));
+      assertEquals("ADMIN,DELETE,READ,WRITE",
+          api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+      assertEquals("groups: finance (ADMIN,DELETE,READ,WRITE)", api1.accessSummary());
     }
   }
 
@@ -339,38 +307,32 @@ class ApiAuthorizationBuilderTest {
     // given
     String userArn = "arn:aws:sts::111111111111:another/formkiqIUK/ApiGatewayInvokeRole";
 
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
+    ApiGatewayRequestEvent event = getUserArnEvent(userArn);
 
-      ApiGatewayRequestEvent event = getUserArnEvent(userArn);
+    // when
+    ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
 
-      // when
-      ApiAuthorization api = new ApiAuthorizationBuilder(type).build(event);
-
-      // then
-      assertNull(api.siteId());
-      assertEquals("", String.join(",", api.siteIds()));
-      assertEquals("",
-          api.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-      assertEquals("no groups", api.accessSummary());
-    }
+    // then
+    assertNull(api.siteId());
+    assertEquals("", String.join(",", api.siteIds()));
+    assertEquals("",
+        api.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("no groups", api.accessSummary());
   }
 
   /**
-   * SAML - multiple groups.
+   * multiple groups.
    */
   @Test
   void testApiAuthorizer09() throws Exception {
     // given
-    ApiAuthorizerType type = ApiAuthorizerType.SAML;
-
     String s = "[formkiq_finance other]";
 
     ApiGatewayRequestEvent event = getJwtEvent(s);
     event.setQueryStringParameters(Map.of("siteId", "finance"));
 
     // when
-    final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event);
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event);
 
     // then
     assertEquals("finance", api0.siteId());
@@ -386,34 +348,28 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer10() throws Exception {
     // given
-    for (ApiAuthorizerType type : Arrays.asList(ApiAuthorizerType.COGNITO,
-        ApiAuthorizerType.SAML)) {
+    String s0 = "[default default_read]";
+    String s1 = "[finance finance_read]";
 
-      String s0 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_default formkiq_default_read]"
-          : "[default default_read]";
-      String s1 = ApiAuthorizerType.SAML.equals(type) ? "[formkiq_finance formkiq_finance_read]"
-          : "[finance finance_read]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
 
-      ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-      ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
-      // when
-      final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-      final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    // then
+    assertEquals("default", api0.siteId());
+    assertEquals("default", String.join(",", api0.siteIds()));
+    assertEquals("DELETE,READ,WRITE", api0.permissions().stream().map(p -> p.name())
+        .sorted(String::compareTo).collect(Collectors.joining(",")));
+    assertEquals("groups: default (DELETE,READ,WRITE)", api0.accessSummary());
 
-      // then
-      assertEquals("default", api0.siteId());
-      assertEquals("default", String.join(",", api0.siteIds()));
-      assertEquals("DELETE,READ,WRITE", api0.permissions().stream().map(p -> p.name())
-          .sorted(String::compareTo).collect(Collectors.joining(",")));
-      assertEquals("groups: default (DELETE,READ,WRITE)", api0.accessSummary());
-
-      assertEquals("finance", api1.siteId());
-      assertEquals("finance", String.join(",", api1.siteIds()));
-      assertEquals("DELETE,READ,WRITE",
-          api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
-      assertEquals("groups: finance (DELETE,READ,WRITE)", api1.accessSummary());
-    }
+    assertEquals("finance", api1.siteId());
+    assertEquals("finance", String.join(",", api1.siteIds()));
+    assertEquals("DELETE,READ,WRITE",
+        api1.permissions().stream().map(p -> p.name()).sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE)", api1.accessSummary());
   }
 
   /**
@@ -422,14 +378,12 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizer11() throws Exception {
     // given
-    ApiAuthorizerType type = ApiAuthorizerType.COGNITO;
-
     ApiGatewayRequestEvent event0 = getApiKeyJwtEvent("default", "read,write");
     ApiGatewayRequestEvent event1 = getApiKeyJwtEvent("finance", "read,write");
 
     // when
-    final ApiAuthorization api0 = new ApiAuthorizationBuilder(type).build(event0);
-    final ApiAuthorization api1 = new ApiAuthorizationBuilder(type).build(event1);
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
     // then
     assertEquals("default", api0.siteId());
