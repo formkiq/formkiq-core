@@ -1901,6 +1901,39 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
+   * Test Save case insensitive tag keys.
+   */
+  @Test
+  public void testSaveDocumentItemWithTag10() {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+
+      List<String> tagKeys = Arrays.asList("filetype", "fileType");
+
+      DynamicDocumentItem doc = new DynamicDocumentItem(new HashMap<>());
+      doc.put("documentId", documentId);
+      List<Map<String, Object>> taglist = new ArrayList<>();
+
+      for (String tagKey : tagKeys) {
+        taglist.add(Map.of("documentId", documentId, "key", tagKey, "value", "test", "insertedDate",
+            new Date(), "userId", username, "type", DocumentTagType.USERDEFINED.name()));
+      }
+
+      doc.put("tags", taglist);
+
+      // when
+      DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
+
+      // then
+      item = service.findDocument(siteId, item.getDocumentId());
+      assertNotNull(item);
+    }
+  }
+
+  /**
    * Test Saving / updating folders.
    * 
    * @throws InterruptedException InterruptedException

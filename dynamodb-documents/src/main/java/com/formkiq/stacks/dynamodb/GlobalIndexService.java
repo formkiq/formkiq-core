@@ -128,7 +128,7 @@ public class GlobalIndexService {
   }
 
   private String getTagsSk(final String tagKey) {
-    return "key" + TAG_DELIMINATOR + tagKey.toLowerCase();
+    return "key" + TAG_DELIMINATOR + tagKey;
   }
 
   /**
