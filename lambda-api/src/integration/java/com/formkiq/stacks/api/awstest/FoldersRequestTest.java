@@ -33,8 +33,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.FoldersApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddFolderRequest;
@@ -67,7 +67,7 @@ public class FoldersRequestTest extends AbstractApiTest {
 
       for (ApiClient apiClient : clients) {
 
-        FoldersApi foldersApi = new FoldersApi(apiClient);
+        DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
         String folder = UUID.randomUUID().toString();
         AddFolderRequest req = new AddFolderRequest().path(folder);
 
@@ -110,7 +110,7 @@ public class FoldersRequestTest extends AbstractApiTest {
 
       for (ApiClient apiClient : clients) {
 
-        FoldersApi foldersApi = new FoldersApi(apiClient);
+        DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
         String folder = "somefolder123";
         AddFolderRequest req = new AddFolderRequest().path(folder);
 
