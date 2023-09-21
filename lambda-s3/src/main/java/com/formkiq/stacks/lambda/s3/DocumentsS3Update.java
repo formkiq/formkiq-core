@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
 import static com.formkiq.module.events.document.DocumentEventType.DELETE;
 import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
@@ -531,7 +532,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         attributes.put("contentType", AttributeValue.fromS(contentType));
       }
 
-      attributes.put("checksum", AttributeValue.fromS(resp.getEtag()));
+      String checksum = removeQuotes(resp.getEtag());
+      attributes.put("checksum", AttributeValue.fromS(checksum));
 
       if (contentLength != null) {
         attributes.put("contentLength", AttributeValue.fromN("" + contentLength));

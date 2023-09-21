@@ -35,6 +35,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -481,6 +482,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
+      assertFalse(item.getChecksum().startsWith("\""));
+      assertFalse(item.getChecksum().endsWith("\""));
       assertNotNull(item.getS3version());
 
       PaginationResults<DocumentTag> tags =

@@ -1007,6 +1007,34 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
+   * Has current changed from previous.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   * @return boolean
+   */
+  private boolean isChangedMatching(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
+
+    boolean changed = previous.size() != current.size();
+
+    if (!changed) {
+      for (Map.Entry<String, AttributeValue> e : current.entrySet()) {
+
+        if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")) {
+          AttributeValue av = previous.get(e.getKey());
+          if (av == null || !e.getValue().equals(av)) {
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return changed;
+  }
+
+  /**
    * Is {@link List} {@link DynamicObject} contain a non generated tag.
    * 
    * @param tags {@link List} {@link DynamicObject}
@@ -1289,14 +1317,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     removeNullMetadata(document, documentValues);
 
-    boolean previousSameAsCurrent = previous.equals(current);
+    String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
+    boolean hasDocumentChanged = documentVersionsTableName != null && !previous.isEmpty()
+        && isChangedMatching(previous, current);
 
-    if (!previousSameAsCurrent) {
+    if (hasDocumentChanged) {
       this.versionsService.addDocumentVersionAttributes(previous, documentValues);
     }
-
-    Collection<Map<String, AttributeValue>> previousList =
-        !previous.isEmpty() ? Arrays.asList(previous) : Collections.emptyList();
 
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, document);
@@ -1316,9 +1343,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
         .appends(this.documentTableName, folderIndex);
 
-    String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
-    if (documentVersionsTableName != null) {
-      writeBuilder = writeBuilder.appends(documentVersionsTableName, previousList);
+    if (hasDocumentChanged) {
+      writeBuilder = writeBuilder.appends(documentVersionsTableName, Arrays.asList(previous));
     }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {
