@@ -2909,7 +2909,7 @@
                 next:
                   type: string
                   description: Next page of results token
-                versions:
+                documents:
                   type: array
                   description: List of document versions
                   items:
