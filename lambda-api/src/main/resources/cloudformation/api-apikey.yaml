@@ -2915,7 +2915,7 @@ Resources:
                   type: "array"
                   description: "List of document versions"
                   items:
-                    $ref: "#/components/schemas/DocumentItemVersion"
+                    $ref: "#/components/schemas/DocumentVersion"
             AddFolderRequest:
               type: "object"
               properties:
@@ -3479,7 +3479,7 @@ Resources:
                 content:
                   type: "string"
                   description: "Document content"
-            DocumentItemVersion:
+            DocumentVersion:
               type: "object"
               properties:
                 path:
