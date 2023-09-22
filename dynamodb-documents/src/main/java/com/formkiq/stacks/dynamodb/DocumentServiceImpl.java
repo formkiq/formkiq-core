@@ -26,7 +26,8 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static software.amazon.awssdk.utils.StringUtils.isEmpty;
+import static com.formkiq.aws.dynamodb.objects.Strings.*;
+import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -968,8 +969,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       addN(pkvalues, "contentLength", "" + document.getContentLength());
     }
 
+    updateCurrentChecksumFromPrevious(document, previous);
+
     if (document.getChecksum() != null) {
-      String etag = document.getChecksum().replaceAll("^\"|\"$", "");
+      String etag = removeQuotes(document.getChecksum());
       addS(pkvalues, "checksum", etag);
     }
 
@@ -980,6 +983,24 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addMetadata(document, pkvalues);
 
     return pkvalues;
+  }
+
+  /**
+   * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
+   * the previous loaded document.
+   * 
+   * @param document {@link DocumentItem}
+   * @param previous {@link Map}
+   */
+  private void updateCurrentChecksumFromPrevious(final DocumentItem document,
+      final Map<String, AttributeValue> previous) {
+    AttributeValue pchecksum = previous.get("checksum");
+    if (pchecksum != null && !isEmpty(pchecksum.s())) {
+      String checksum = document.getChecksum();
+      if (isEmpty(checksum) || isUuid(checksum)) {
+        document.setChecksum(pchecksum.s());
+      }
+    }
   }
 
   /**
