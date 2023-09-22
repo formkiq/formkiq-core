@@ -1046,7 +1046,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     for (Map.Entry<String, AttributeValue> e : current.entrySet()) {
 
-      if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")) {
+      if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")
+          && !e.getKey().equals("checksum")) {
+        
         AttributeValue av = previous.get(e.getKey());
         if (av == null || !e.getValue().equals(av)) {
           this.logger.log("key: " + e.getKey() + " expect: " + e.getValue() + " got: " + av);
