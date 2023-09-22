@@ -93,6 +93,15 @@ public class FkqCognitoService {
   }
 
   /**
+   * Add Cognito Group.
+   * 
+   * @param groupname {@link String}
+   */
+  public void addGroup(final String groupname) {
+    this.service.addGroup(groupname);
+  }
+
+  /**
    * Add Cognito User.
    * 
    * @param email {@link String}
