@@ -1028,6 +1028,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")) {
           AttributeValue av = previous.get(e.getKey());
           if (av == null || !e.getValue().equals(av)) {
+            this.logger.log("key: " + e.getKey() + " expect: " + e.getValue() + " got: " + av);
             changed = true;
             break;
           }
