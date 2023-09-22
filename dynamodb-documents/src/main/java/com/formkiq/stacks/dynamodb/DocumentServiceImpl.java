@@ -1020,18 +1020,16 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   private boolean isChangedMatching(final Map<String, AttributeValue> previous,
       final Map<String, AttributeValue> current) {
 
-    boolean changed = previous.size() != current.size();
+    boolean changed = false;
 
-    if (!changed) {
-      for (Map.Entry<String, AttributeValue> e : current.entrySet()) {
+    for (Map.Entry<String, AttributeValue> e : current.entrySet()) {
 
-        if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")) {
-          AttributeValue av = previous.get(e.getKey());
-          if (av == null || !e.getValue().equals(av)) {
-            this.logger.log("key: " + e.getKey() + " expect: " + e.getValue() + " got: " + av);
-            changed = true;
-            break;
-          }
+      if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")) {
+        AttributeValue av = previous.get(e.getKey());
+        if (av == null || !e.getValue().equals(av)) {
+          this.logger.log("key: " + e.getKey() + " expect: " + e.getValue() + " got: " + av);
+          changed = true;
+          break;
         }
       }
     }
