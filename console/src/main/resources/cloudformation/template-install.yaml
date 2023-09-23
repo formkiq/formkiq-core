@@ -104,6 +104,11 @@ Parameters:
   Partition:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
+
+  IsGovCloud:
+    Description: Is Installation AWS Region gov cloud
+    Type: String
+    AllowedValues: ["true", "false"]
     
 Conditions:
 
@@ -118,10 +123,16 @@ Conditions:
       - Fn::Equals: 
         - Ref: HostedZoneId
         - ''
-        
+
+  IsNotGovCloud:
+    Fn::Equals: 
+      - Ref: IsGovCloud
+      - 'false'
+
 Resources:
 
   ConsoleInstallerParameter:
+    Condition: IsNotGovCloud
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Lambda for Console Installation"
@@ -140,6 +151,7 @@ Resources:
 
   ConsoleInstaller:
     Type: AWS::Serverless::Function
+    Condition: IsNotGovCloud
     Properties:
       Handler: com.formkiq.stacks.console.ConsoleInstallHandler
       Description: Lambda function that Installs the FormKiQ Console
@@ -193,6 +205,7 @@ Resources:
 
   ConsoleInstallRole:
     Type: AWS::IAM::Role
+    Condition: IsNotGovCloud
     Properties:
       Tags:
         - Key: "Application"
@@ -280,6 +293,7 @@ Resources:
 
   ConsoleInstallerRef:
     Type: Custom::ConsoleInstallerRef
+    Condition: IsNotGovCloud
     Properties:
       Nonce:
         Ref: ConsoleVersion

@@ -258,6 +258,11 @@ Resources:
           - RegionMap
           - Ref: "AWS::Region"
           - PARTITION
+        IsGovCloud:
+          Fn::If:
+          - IsGovCloud
+          - "true"
+          - "false"
         AppEnvironment: 
           Ref: AppEnvironment
         ConsoleVersion: 
