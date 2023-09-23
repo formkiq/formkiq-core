@@ -390,7 +390,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       }
 
       list.add(new FolderIndexRecordExtended(record, isRecordChanged));
-      parentId = record.documentId();
+
+      if (record.documentId() != null) {
+        parentId = record.documentId();
+      }
 
       i++;
     }
