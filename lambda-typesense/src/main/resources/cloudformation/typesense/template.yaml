@@ -52,7 +52,11 @@ Parameters:
   ECSCluster:
     Type: String
     Description: Reference to the ECSCluster
-    
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Mappings: 
   TypesenseMap: 
     "1024": 
@@ -241,9 +245,9 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
-      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       
   TypesenseLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
@@ -269,14 +273,14 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             Resource: 
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
             - dynamodb:Query
             - dynamodb:DeleteItem
             Resource:
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
             
   TypesenseTableStream:
     Type: AWS::Lambda::EventSourceMapping
@@ -431,7 +435,7 @@ Resources:
             Principal:
               Service: [ecs-tasks.amazonaws.com]
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
       Policies:
         -
           PolicyName: 

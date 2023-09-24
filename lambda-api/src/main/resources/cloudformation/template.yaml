@@ -109,7 +109,11 @@ Parameters:
     Type: String
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
-    
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Conditions:
 
   HasCertificateStackName:
@@ -429,10 +433,10 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-      - arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
-      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
         -
           PolicyName: apigatewaylambdarole
@@ -458,20 +462,20 @@ Resources:
               Resource:
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
                   - '/*'
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
               - Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
                   - '/*'
             - Effect: Allow
@@ -485,30 +489,30 @@ Resources:
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Resource: 
-              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
             - Effect: Allow
               Action:
               - dynamodb:Query
               - dynamodb:Scan
               Resource:
-              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
             - Effect: Allow
               Action:
               - dynamodb:Get*
               - dynamodb:Put*
               Resource: 
-              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
             - Effect: Allow
               Action:
               - ssm:GetParameter
               - ssm:PutParameter
               Resource: 
-              - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
             - Effect: Allow
               Action:
               - sqs:SendMessage
               Resource:
-              - Fn::Sub: "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
+              - Fn::Sub: "arn:${Partition}:sqs:${AWS::Region}:${AWS::AccountId}:formkiq*"
               - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/WebsocketArn}}"
             - Effect: Allow
               Action:
@@ -516,7 +520,7 @@ Resources:
               - dynamodb:Get*
               - dynamodb:Query
               Resource:
-              - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+              - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
             - Effect: Allow
               Action:
               - sns:Publish
@@ -531,7 +535,7 @@ Resources:
               Resource:
                 Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: OcrBucket
                   - "/*"
             - Effect: Allow
@@ -540,7 +544,7 @@ Resources:
               Resource:
                 Fn::Join:
                 - ''
-                - - 'arn:aws:s3:::'
+                - - Fn::Sub: "arn:${Partition}:s3:::"
                   - Ref: OcrBucket
 
   DocumentsIamApiUrlParameter:
@@ -662,7 +666,7 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       
   ApiGatewayAccount:
     Type: 'AWS::ApiGateway::Account'
@@ -696,13 +700,13 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
   ApiGatewayInvokeGroup:
     Type: AWS::IAM::Group
     Properties:
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
   ApiGatewayInvokeGroupParameter:
     Type: AWS::SSM::Parameter

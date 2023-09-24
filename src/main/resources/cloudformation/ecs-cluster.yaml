@@ -1,0 +1,80 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - ECS Cluster
+    
+Parameters:
+    
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  TypesenseApiKey:
+    Type: String
+    Description: TypeSense API Key
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name
+
+  CapacityProvider:
+    Description: AWS Fargate capacity provider to use, either the FARGATE or FARGATE_SPOT
+    Type: String
+
+Conditions:
+
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
+  CreateResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypesenseApiKey
+
+Resources:
+
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Condition: CreateResources
+    Properties:
+      ClusterName:
+        Fn::Sub: "Formkiq-${AppEnvironment}"
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider:
+            Ref: CapacityProvider
+          Weight: 1
+      Tags:
+        - Key: "Application"
+          Value: 
+            Fn::Sub: "FormKiQ"        
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+        - Key: "StackName"
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+
+Outputs:
+
+  ECSCluster:
+    Description: ECS Cluster
+    Value:
+      Fn::If:
+      - CreateResources
+      - Ref: ECSCluster
+      - ""

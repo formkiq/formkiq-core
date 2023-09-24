@@ -40,10 +40,27 @@ Parameters:
     Description: Cognito User Pool Client
     AllowedPattern: ".+"    
 
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
+  IsGovCloud:
+    Description: Is Installation AWS Region gov cloud
+    Type: String
+    AllowedValues: ["true", "false"]
+
+Conditions:
+        
+  IsNotGovCloud:
+    Fn::Equals: 
+      - Ref: IsGovCloud
+      - 'false'
+      
 Resources:
 
   ConsoleAdminUser:
     Type: AWS::Cognito::UserPoolUser
+    Condition: IsNotGovCloud
     Properties:
       DesiredDeliveryMediums: 
         - EMAIL
@@ -60,6 +77,7 @@ Resources:
 
   ConsoleAddUserToGroup:
     Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Condition: IsNotGovCloud
     DependsOn:
     - ConsoleAdminUser
     Properties: 
@@ -72,6 +90,7 @@ Resources:
 
   ConsoleAddUserToDefaultGroup:
     Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Condition: IsNotGovCloud
     DependsOn:
     - ConsoleAdminUser
     Properties: 
@@ -203,7 +222,7 @@ Resources:
               - "sts:AssumeRole"
       Path: "/"
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole      
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"      
       Policies: 
         - 
           PolicyName: 

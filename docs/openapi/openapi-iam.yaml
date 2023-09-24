@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.12.0
+          version: 1.12.1
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -2909,11 +2909,11 @@
                 next:
                   type: string
                   description: Next page of results token
-                versions:
+                documents:
                   type: array
                   description: List of document versions
                   items:
-                    $ref: '#/components/schemas/DocumentItemVersion'
+                    $ref: '#/components/schemas/DocumentVersion'
             AddFolderRequest:
               type: object
               properties:
@@ -3423,6 +3423,21 @@
                   description: List of document tags
                   items:
                     $ref: '#/components/schemas/AddDocumentTag'
+            DocumentMetadata:
+              description: Document Metadata (use either 'value' or 'values' not both)
+              properties:
+                key:
+                  type: string
+                  description: Metadata key
+                value:
+                  type: string
+                  description: Metadata value
+                values:
+                  type: array
+                  description: Metadata values
+                  items:
+                    type: string
+                    description: Metadata value
             AddDocumentMetadata:
               required:
               - key
@@ -3477,7 +3492,7 @@
                 content:
                   type: string
                   description: Document content
-            DocumentItemVersion:
+            DocumentVersion:
               type: object
               properties:
                 path:
@@ -3504,12 +3519,15 @@
                 contentLength:
                   type: integer
                   description: Document size
-                versionId:
+                version:
                   type: string
                   description: Document version
                 versionKey:
                   type: string
                   description: Document Version Identifier
+                s3version:
+                  type: string
+                  description: Document storage version
             GetDocumentTagResponse:
               required:
               - key
@@ -3737,6 +3755,11 @@
                   $ref: '#/components/schemas/DocumentSearchMatchTag'
                 tags:
                   type: object
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/DocumentMetadata'
             DocumentSearchMatchTag:
               type: object
               properties:
@@ -4540,7 +4563,7 @@
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4554,7 +4577,7 @@
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4568,7 +4591,7 @@
               payloadFormatVersion: "1.0"
             antivirusLambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4582,7 +4605,7 @@
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4596,7 +4619,7 @@
               payloadFormatVersion: "1.0"
             fulltextLambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4610,7 +4633,7 @@
               payloadFormatVersion: "1.0"
             onlyOfficeLambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4624,7 +4647,7 @@
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "200"
@@ -4638,7 +4661,7 @@
               payloadFormatVersion: "1.0"
             lambdaApi201:
               uri:
-                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
+                Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations
               responses:
                 default:
                   statusCode: "201"

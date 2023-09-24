@@ -45,19 +45,13 @@ public class ApiAuthorizationBuilder {
   /** The suffix for the 'readonly' Cognito group. */
   private static final String COGNITO_READ_SUFFIX = "_read";
 
-  /** {@link ApiAuthorizerType}. */
-  private ApiAuthorizerType authorizerType;
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private ApiAuthorizationInterceptor interceptor = null;
 
   /**
    * constructor.
-   * 
-   * @param apiAuthorizerType {@link ApiAuthorizerType}
    */
-  public ApiAuthorizationBuilder(final ApiAuthorizerType apiAuthorizerType) {
-    this.authorizerType = apiAuthorizerType;
-  }
+  public ApiAuthorizationBuilder() {}
 
   /**
    * Add Permissions.
@@ -325,11 +319,6 @@ public class ApiAuthorizationBuilder {
         groups = new HashSet<>(Arrays.asList(s.split(" ")));
         groups.removeIf(g -> g.length() == 0);
       }
-    }
-
-    if (ApiAuthorizerType.SAML.equals(this.authorizerType)) {
-      groups = groups.stream().filter(g -> g.startsWith("formkiq_"))
-          .map(g -> g.replaceAll("^formkiq_", "")).collect(Collectors.toList());
     }
 
     String userRoleArn = getUserRoleArn(event);

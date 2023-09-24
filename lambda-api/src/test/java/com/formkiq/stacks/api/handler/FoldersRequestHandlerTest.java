@@ -36,7 +36,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import com.formkiq.client.api.FoldersApi;
+import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
@@ -70,7 +70,7 @@ public class FoldersRequestHandlerTest {
   private ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(0).setBasePath(server.getBasePath());
   /** {@link FoldersApi}. */
-  private FoldersApi foldersApi = new FoldersApi(this.client);
+  private DocumentFoldersApi foldersApi = new DocumentFoldersApi(this.client);
 
   /**
    * Set BearerToken.

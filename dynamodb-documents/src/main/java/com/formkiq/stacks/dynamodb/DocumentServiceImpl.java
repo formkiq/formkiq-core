@@ -26,7 +26,9 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static software.amazon.awssdk.utils.StringUtils.isEmpty;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
+import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -964,8 +966,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       addN(pkvalues, "contentLength", "" + document.getContentLength());
     }
 
+    updateCurrentChecksumFromPrevious(document, previous);
+
     if (document.getChecksum() != null) {
-      String etag = document.getChecksum().replaceAll("^\"|\"$", "");
+      String etag = removeQuotes(document.getChecksum());
       addS(pkvalues, "checksum", etag);
     }
 
@@ -976,6 +980,24 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     addMetadata(document, pkvalues);
 
     return pkvalues;
+  }
+
+  /**
+   * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
+   * the previous loaded document.
+   * 
+   * @param document {@link DocumentItem}
+   * @param previous {@link Map}
+   */
+  private void updateCurrentChecksumFromPrevious(final DocumentItem document,
+      final Map<String, AttributeValue> previous) {
+    AttributeValue pchecksum = previous.get("checksum");
+    if (pchecksum != null && !isEmpty(pchecksum.s())) {
+      String checksum = document.getChecksum();
+      if (isEmpty(checksum) || isUuid(checksum)) {
+        document.setChecksum(pchecksum.s());
+      }
+    }
   }
 
   /**
@@ -1004,6 +1026,34 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return items;
+  }
+
+  /**
+   * Has current changed from previous.
+   * 
+   * @param previous {@link Map}
+   * @param current {@link Map}
+   * @return boolean
+   */
+  private boolean isChangedMatching(final Map<String, AttributeValue> previous,
+      final Map<String, AttributeValue> current) {
+
+    boolean changed = false;
+
+    for (Map.Entry<String, AttributeValue> e : current.entrySet()) {
+
+      if (!e.getKey().equals("inserteddate") && !e.getKey().equals("lastModifiedDate")
+          && !e.getKey().equals("checksum")) {
+
+        AttributeValue av = previous.get(e.getKey());
+        if (av == null || !e.getValue().equals(av)) {
+          changed = true;
+          break;
+        }
+      }
+    }
+    
+    return changed;
   }
 
   /**
@@ -1289,14 +1339,13 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     removeNullMetadata(document, documentValues);
 
-    boolean previousSameAsCurrent = previous.equals(current);
+    String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
+    boolean hasDocumentChanged = documentVersionsTableName != null && !previous.isEmpty()
+        && isChangedMatching(previous, current);
 
-    if (!previousSameAsCurrent) {
+    if (hasDocumentChanged) {
       this.versionsService.addDocumentVersionAttributes(previous, documentValues);
     }
-
-    Collection<Map<String, AttributeValue>> previousList =
-        !previous.isEmpty() ? Arrays.asList(previous) : Collections.emptyList();
 
     List<Map<String, AttributeValue>> folderIndex =
         this.folderIndexProcessor.generateIndex(siteId, document);
@@ -1316,9 +1365,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .append(this.documentTableName, documentValues).appends(this.documentTableName, tagValues)
         .appends(this.documentTableName, folderIndex);
 
-    String documentVersionsTableName = this.versionsService.getDocumentVersionsTableName();
-    if (documentVersionsTableName != null) {
-      writeBuilder = writeBuilder.appends(documentVersionsTableName, previousList);
+    if (hasDocumentChanged) {
+      writeBuilder = writeBuilder.appends(documentVersionsTableName, Arrays.asList(previous));
     }
 
     if (writeBuilder.batchWriteItem(this.dbClient)) {

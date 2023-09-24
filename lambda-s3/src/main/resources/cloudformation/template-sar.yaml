@@ -29,7 +29,11 @@ Parameters:
     Default: "core"
     Type: String
     AllowedValues: ["core", "enterprise"]
-    
+
+  Partition:
+    Description: The partition in which the resource is located. A partition is a group of AWS Regions
+    Type: String
+
 Resources:
 
   SnsDocumentEventArnParameter:
@@ -369,7 +373,7 @@ Resources:
       SourceArn: 
         Fn::Join:
         - ''
-        - - 'arn:aws:s3:::'
+        - - Fn::Sub: "arn:${Partition}:s3:::"
           - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
 
   DocumentsS3UpdateLogGroup:
@@ -594,7 +598,7 @@ Resources:
       SourceArn:
         Fn::Join:
         - ''
-        - - 'arn:aws:s3:::'
+        - - Fn::Sub: "arn:${Partition}:s3:::"
           - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
 
   S3LambdaRole:
@@ -621,8 +625,7 @@ Resources:
           - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
-      
+      - Fn::Sub: "arn:${Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
   S3LambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
     Properties: 
@@ -645,11 +648,11 @@ Resources:
             Resource:
             - Fn::Join:
               - ''
-              - - 'arn:aws:s3:::'
+              - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
             - Fn::Join:
               - ''
-              - - 'arn:aws:s3:::'
+              - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
           - Effect: Allow
             Action:
@@ -659,12 +662,12 @@ Resources:
             Resource:
             - Fn::Join:
               - ''
-              - - 'arn:aws:s3:::'
+              - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
                 - '/*'
             - Fn::Join:
               - ''
-              - - 'arn:aws:s3:::'
+              - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
                 - '/*'
           - Effect: Allow
@@ -678,18 +681,18 @@ Resources:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
             Resource: 
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}"
           - Effect: Allow
             Action:
             - dynamodb:Query
             - dynamodb:Scan
             Resource:
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Documents}/index/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
             Resource:
-            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
+            - Fn::Sub: "arn:${Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncs}"
           - Effect: Allow
             Action:
             - sqs:ReceiveMessage
@@ -711,13 +714,13 @@ Resources:
             Action:
             - ssm:GetParameter
             Resource: 
-            - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Fn::Sub: "arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
           - Effect: Allow
             Action:
             - execute-api:Invoke
             - execute-api:ManageConnections
             Resource: 
-            - arn:aws:execute-api:*:*:*            
+            - Fn::Sub: "arn:${Partition}:execute-api:*:*:*"            
 
   DocumentsParameter:
     Type: AWS::SSM::Parameter

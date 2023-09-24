@@ -69,18 +69,6 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public abstract class AbstractRestApiRequestHandler implements RequestStreamHandler {
 
-  /** {@link ApiAuthorizerType}. */
-  private static ApiAuthorizerType authorizerType = ApiAuthorizerType.COGNITO;
-
-  /**
-   * Set AuthorizerType.
-   * 
-   * @param type {@link ApiAuthorizerType}
-   */
-  protected static void setAuthorizerType(final ApiAuthorizerType type) {
-    authorizerType = type;
-  }
-
   /** {@link Gson}. */
   protected Gson gson = GsonUtil.getInstance();
 
@@ -540,7 +528,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       }
 
       ApiAuthorization authorization =
-          new ApiAuthorizationBuilder(authorizerType).interceptors(interceptor).build(event);
+          new ApiAuthorizationBuilder().interceptors(interceptor).build(event);
       log(logger, event, authorization);
 
       ApiRequestHandlerInterceptor requestInterceptor =
