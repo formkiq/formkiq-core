@@ -51,8 +51,6 @@ import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.amazonaws.services.lambda.runtime.LambdaRuntime;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -90,8 +88,6 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 /** Implementation of the {@link DocumentService}. */
 public class DocumentServiceImpl implements DocumentService, DbKeys {
 
-  /** {@link LambdaLogger}. */
-  private LambdaLogger logger = LambdaRuntime.getLogger();
   /** Maximum number of Records DynamoDb can be queries for at a time. */
   private static final int MAX_QUERY_RECORDS = 100;
   /** {@link DynamoDbClient}. */
@@ -1051,17 +1047,12 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
         AttributeValue av = previous.get(e.getKey());
         if (av == null || !e.getValue().equals(av)) {
-          this.logger.log("key: " + e.getKey() + " expect: " + e.getValue() + " got: " + av);
           changed = true;
           break;
         }
       }
     }
-
-    this.logger.log("IS CHANGED MATCHING: " + changed);
-    this.logger.log("previous: " + previous);
-    this.logger.log("current: " + current);
-    this.logger.log("------------");
+    
     return changed;
   }
 

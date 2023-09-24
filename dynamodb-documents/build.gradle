@@ -19,7 +19,6 @@ dependencies {
 
 	annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.4.0'
 
-	implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.2'
 	implementation project(':aws-dynamodb')
 	implementation project(':document-events')
 	implementation project(':fkq-plugins')
