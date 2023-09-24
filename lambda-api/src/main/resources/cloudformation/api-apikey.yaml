@@ -3425,6 +3425,21 @@ Resources:
                   description: "List of document tags"
                   items:
                     $ref: "#/components/schemas/AddDocumentTag"
+            DocumentMetadata:
+              description: "Document Metadata (use either 'value' or 'values' not both)"
+              properties:
+                key:
+                  type: "string"
+                  description: "Metadata key"
+                value:
+                  type: "string"
+                  description: "Metadata value"
+                values:
+                  type: "array"
+                  description: "Metadata values"
+                  items:
+                    type: "string"
+                    description: "Metadata value"
             AddDocumentMetadata:
               required:
               - "key"
@@ -3742,6 +3757,11 @@ Resources:
                   $ref: "#/components/schemas/DocumentSearchMatchTag"
                 tags:
                   type: "object"
+                metadata:
+                  type: "array"
+                  description: "List of document Metadata"
+                  items:
+                    $ref: "#/components/schemas/DocumentMetadata"
             DocumentSearchMatchTag:
               type: "object"
               properties:
