@@ -125,6 +125,12 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     this.dynamoDb = new DynamoDbServiceImpl(connection, documentsTable);
   }
 
+  private void checkParentId(final FolderIndexRecord record, final String parentId) {
+    if (record.parentDocumentId() == null) {
+      record.parentDocumentId(parentId);
+    }
+  }
+
   /**
    * Create Folder.
    * 
@@ -391,6 +397,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
       list.add(new FolderIndexRecordExtended(record, isRecordChanged));
 
+      checkParentId(record, parentId);
+
       if (record.documentId() != null) {
         parentId = record.documentId();
       }
@@ -417,20 +425,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     Map<String, FolderIndexRecord> map = getFolderByDocumentIds(siteId, Arrays.asList(documentId));
     return map.containsKey(documentId) ? map.get(documentId) : null;
-  }
-
-  /**
-   * Query GSI1 for Folder by DocumentId.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link QueryResponse}
-   */
-  private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
-    FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
-    String pk = record.pkGsi1(siteId);
-    QueryResponse response = this.dynamoDb.queryIndex(GSI1, AttributeValue.fromS(pk), null, 1);
-    return response;
   }
 
   @Override
@@ -724,6 +718,20 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       throw new RuntimeException(
           String.format("Unsupported move %s to %s", sourceType, targetType));
     }
+  }
+
+  /**
+   * Query GSI1 for Folder by DocumentId.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link QueryResponse}
+   */
+  private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
+    FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
+    String pk = record.pkGsi1(siteId);
+    QueryResponse response = this.dynamoDb.queryIndex(GSI1, AttributeValue.fromS(pk), null, 1);
+    return response;
   }
 
   /**
