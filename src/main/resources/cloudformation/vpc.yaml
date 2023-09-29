@@ -135,6 +135,9 @@ Resources:
         Ref: PublicSubnet1Cidr
       MapPublicIpOnLaunch: true
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ PublicSubnet1 (${PublicSubnet1Cidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
@@ -155,6 +158,9 @@ Resources:
         Ref: PublicSubnet2Cidr
       MapPublicIpOnLaunch: true
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ PublicSubnet2 (${PublicSubnet2Cidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
@@ -175,6 +181,9 @@ Resources:
         Ref: PublicSubnet3Cidr
       MapPublicIpOnLaunch: true
       Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "FormKiQ PublicSubnet3 (${PublicSubnet3Cidr})"
         - Key: Application
           Value: FormKiQ
         - Key: StackName
