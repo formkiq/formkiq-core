@@ -82,6 +82,8 @@ jar.dependsOn npmInstall
 
 task npmtest {
   onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
+  inputs.dir("src/main/resources/js")
+  outputs.dir("${buildDir}/resources/main/js/coverage")
   doLast {
     exec {
 	  workingDir "${buildDir}/resources/main/js"
@@ -89,6 +91,8 @@ task npmtest {
 	}
   }
 }
+
+npmtest.dependsOn compileIntegrationJava,checkstyleIntegration,spotbugsIntegration
 
 task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml")

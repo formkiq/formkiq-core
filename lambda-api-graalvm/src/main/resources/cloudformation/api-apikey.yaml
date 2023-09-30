@@ -2210,8 +2210,8 @@ Resources:
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
               responses:
@@ -2429,8 +2429,8 @@ Resources:
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -2495,8 +2495,8 @@ Resources:
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
               requestBody:
                 required: true
                 content:
@@ -3241,11 +3241,11 @@ Resources:
                 next:
                   type: "string"
                   description: "Next page of results token"
-                versions:
+                documents:
                   type: "array"
                   description: "List of document versions"
                   items:
-                    $ref: "#/components/schemas/DocumentItemVersion"
+                    $ref: "#/components/schemas/DocumentVersion"
             AddFolderRequest:
               type: "object"
               properties:
@@ -3870,7 +3870,7 @@ Resources:
                 content:
                   type: "string"
                   description: "Document content"
-            DocumentItemVersion:
+            DocumentVersion:
               type: "object"
               properties:
                 path:
@@ -3897,12 +3897,15 @@ Resources:
                 contentLength:
                   type: "integer"
                   description: "Document size"
-                versionId:
+                version:
                   type: "string"
                   description: "Document version"
                 versionKey:
                   type: "string"
                   description: "Document Version Identifier"
+                s3version:
+                  type: "string"
+                  description: "Document storage version"
             GetDocumentTagResponse:
               required:
               - "key"
@@ -4197,15 +4200,15 @@ Resources:
                 belongsToDocumentId:
                   type: "string"
                   description: "Parent Document Identifier"
+                matchedTag:
+                  $ref: "#/components/schemas/DocumentSearchMatchTag"
+                tags:
+                  type: "object"
                 metadata:
                   type: "array"
                   description: "List of document Metadata"
                   items:
                     $ref: "#/components/schemas/DocumentMetadata"
-                matchedTag:
-                  $ref: "#/components/schemas/DocumentSearchMatchTag"
-                tags:
-                  type: "object"
             DocumentSearchMatchTag:
               type: "object"
               properties:
@@ -5200,7 +5203,7 @@ Resources:
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5214,7 +5217,7 @@ Resources:
               payloadFormatVersion: "1.0"
             ocrLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5228,7 +5231,7 @@ Resources:
               payloadFormatVersion: "1.0"
             antivirusLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5242,7 +5245,7 @@ Resources:
               payloadFormatVersion: "1.0"
             searchLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5256,7 +5259,7 @@ Resources:
               payloadFormatVersion: "1.0"            
             fulltextLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5270,7 +5273,7 @@ Resources:
               payloadFormatVersion: "1.0"
             onlyOfficeLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5284,7 +5287,7 @@ Resources:
               payloadFormatVersion: "1.0"
             esignatureLambdaApi200:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "200"
@@ -5298,7 +5301,7 @@ Resources:
               payloadFormatVersion: "1.0"
             lambdaApi201:
               uri:
-                Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
+                Fn::Sub: "arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequests.Arn}/invocations"
               responses:
                 default:
                   statusCode: "201"
