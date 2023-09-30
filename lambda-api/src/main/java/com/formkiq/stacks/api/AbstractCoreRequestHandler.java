@@ -158,9 +158,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
     isEnablePublicUrls = isEnablePublicUrls(serviceCache);
 
-    setAuthorizerType(
-        ApiAuthorizerType.valueOf(serviceCache.environment("USER_AUTHENTICATION").toUpperCase()));
-
     buildUrlMap();
   }
 
@@ -225,72 +222,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new GroupsUsersRequestHandler());
     addRequestHandler(new WorkflowsRequestHandler());
     addRequestHandler(new WorkflowsIdRequestHandler());
-  }
-
-  /**
-   * Setup Api Request Handlers.
-   *
-   * @param map {@link Map}
-   * @param region {@link Region}
-   * @param credentialsProvider {@link AwsCredentialsProvider}
-   * @param awsServiceEndpoints {@link Map} {@link URI}
-   * @param schemaEvents {@link DocumentTagSchemaPlugin}
-   */
-  public static void configureHandler(final Map<String, String> map, final Region region,
-      final AwsCredentialsProvider credentialsProvider, final Map<String, URI> awsServiceEndpoints,
-      final DocumentTagSchemaPlugin schemaEvents) {
-
-    final boolean enableAwsXray = "true".equals(map.get("ENABLE_AWS_X_RAY"));
-
-    DynamoDbConnectionBuilder db = new DynamoDbConnectionBuilder(enableAwsXray).setRegion(region)
-        .setCredentials(credentialsProvider)
-        .setEndpointOverride(awsServiceEndpoints.get("dynamodb"));
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(db));
-
-    SsmConnectionBuilder ssm = new SsmConnectionBuilder(enableAwsXray).setRegion(region)
-        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("ssm"));
-    AwsServiceCache.register(SsmConnectionBuilder.class,
-        new ClassServiceExtension<SsmConnectionBuilder>(ssm));
-
-    SqsConnectionBuilder sqs = new SqsConnectionBuilder(enableAwsXray).setRegion(region)
-        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sqs"));
-    AwsServiceCache.register(SqsConnectionBuilder.class,
-        new ClassServiceExtension<SqsConnectionBuilder>(sqs));
-
-    AwsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-
-    if (credentialsProvider != null) {
-      AwsServiceCache.register(AwsCredentials.class,
-          new ClassServiceExtension<>(credentialsProvider.resolveCredentials()));
-    }
-
-    SnsConnectionBuilder sns = new SnsConnectionBuilder(enableAwsXray).setRegion(region)
-        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("sns"));
-
-    S3ConnectionBuilder s3 = new S3ConnectionBuilder(enableAwsXray).setRegion(region)
-        .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
-
-    registerExtensions(schemaEvents, s3, sns);
-
-    awsServices = new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
-
-    if (awsServices.hasModule("typesense")) {
-      AwsCredentials creds = awsServices.getExtension(AwsCredentials.class);
-      AwsServiceCache.register(TypeSenseService.class,
-          new TypeSenseServiceExtension(region, creds));
-    }
-
-    isEnablePublicUrls = isEnablePublicUrls(map);
-  }
-
-  /**
-   * Get {@link AwsServiceCache}.
-   *
-   * @return {@link AwsServiceCache}
-   */
-  public static AwsServiceCache getAwsServicesCache() {
-    return awsServices;
   }
 
   /**
