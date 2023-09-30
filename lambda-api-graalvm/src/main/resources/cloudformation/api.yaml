@@ -3288,6 +3288,37 @@ Resources:
                   description: "Workflow steps"
                   items:
                     $ref: "#/components/schemas/WorkflowStep"
+            WorkflowStep:
+              type: "object"
+              properties:
+                id:
+                  type: "string"
+                  description: "Step identifier"
+                type:
+                  type: "string"
+                  description: "Workflow step type"
+                  enum:
+                    - action
+                    - approvalQueue
+                action:
+                  $ref: "#/components/schemas/DocumentAction"
+                queue:
+                  $ref: "#/components/schemas/WorkflowQueue"
+            WorkflowQueue:
+              type: object
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of queue"
+                ifApprovedStepId:
+                  type: "string"
+                  description: "If approved goto step id"
+                ifRejectedStepId:
+                  type: "string"
+                  description: "If rejected goto step id"
+                approvalGroups:
+                  items:
+                    type: "string"
             WorkflowSummary:
               type: "object"
               properties:
@@ -4850,8 +4881,8 @@ Resources:
                 steps:
                   description: "Workflow steps"
                   items:
-                    $ref: "#/components/schemas/WorkflowStep"
-            WorkflowStep:
+                    $ref: "#/components/schemas/AddWorkflowStep"
+            AddWorkflowStep:
               type: "object"
               required:
                 - id
