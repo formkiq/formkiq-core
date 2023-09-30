@@ -2208,8 +2208,8 @@
               tags:
               - Documents
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/shareKeyParam'
               responses:
@@ -2427,8 +2427,8 @@
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
               responses:
                 "200":
                   $ref: '#/components/responses/200Cors'
@@ -2493,8 +2493,8 @@
               tags:
               - Webhooks
               parameters:
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/webhookIdParam'
+              - $ref: '#/components/parameters/siteIdParam'
               requestBody:
                 required: true
                 content:
@@ -4198,11 +4198,6 @@
                 belongsToDocumentId:
                   type: string
                   description: Parent Document Identifier
-                metadata:
-                  type: array
-                  description: List of document Metadata
-                  items:
-                    $ref: '#/components/schemas/DocumentMetadata'
                 matchedTag:
                   $ref: '#/components/schemas/DocumentSearchMatchTag'
                 tags:
@@ -5197,7 +5192,7 @@
               x-amazon-apigateway-authorizer:
                 identitySource: $request.header.Authorization
                 authorizerUri:
-                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
                 authorizerResultTtlInSeconds: 300
                 authorizerPayloadFormatVersion: "2.0"
                 enableSimpleResponses: true
