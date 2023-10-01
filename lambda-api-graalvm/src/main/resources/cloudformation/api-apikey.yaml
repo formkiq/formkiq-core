@@ -4517,6 +4517,7 @@ Resources:
                     - WEBHOOK
                     - DOCUMENTTAGGING
                     - NOTIFICATION
+                    - WAIT
                 parameters:
                   $ref: "#/components/schemas/AddActionParameters"
             AddActionParameters:
