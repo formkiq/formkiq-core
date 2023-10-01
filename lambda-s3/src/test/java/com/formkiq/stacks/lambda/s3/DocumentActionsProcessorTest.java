@@ -75,6 +75,7 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionParameters;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -300,8 +301,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testWaitAction01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
+      final int limit = 100;
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.WAIT));
+      String name = "testqueue#" + documentId;
+
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.WAIT)
+          .parameters(Map.of(ActionParameters.PARAMETER_WAIT_NAME, name)));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -314,6 +319,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
+      PaginationResults<String> documentIds =
+          actionsService.findDocuments(siteId, ActionType.WAIT, name, null, limit);
+      assertEquals(1, documentIds.getResults().size());
+      assertEquals(documentId, documentIds.getResults().get(0));
     }
   }
 
