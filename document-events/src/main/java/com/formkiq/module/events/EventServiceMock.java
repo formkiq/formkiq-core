@@ -40,6 +40,14 @@ public class EventServiceMock implements EventService {
   private List<FolderEvent> folderEvents = new ArrayList<FolderEvent>();
 
   /**
+   * Clear Events.
+   */
+  public void clear() {
+    this.folderEvents.clear();
+    this.documentEvents.clear();
+  }
+
+  /**
    * Get {@link List} {@link DocumentEvent}.
    * 
    * @return {@link List} {@link DocumentEvent}
