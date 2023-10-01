@@ -1777,7 +1777,7 @@ Resources:
           /workflows/queue/{queueName}/documents:
             get:
               operationId: WorkflowQueueDocuments
-              summary: Document search
+              summary: Get list of documents in queue
               description: List documents in Workflow Queue; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Workflows
@@ -1805,34 +1805,6 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
           /documents/{documentId}/workflow/{workflowId}:
-            get:
-              operationId: DocumentWorkflow
-              summary: Document search
-              description: Get document workflow status; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Workflows
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/workflowIdParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/DocumentWorkflowResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
             post:
               operationId: AddDocumentWorkflow
               summary: Add document workflow
@@ -1843,12 +1815,6 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/AddDocumentWorkflowRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1863,6 +1829,90 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddDocumentWorkflowResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /documents/{documentId}/workflow/{workflowId}/approve:
+            post:
+              operationId: AddDocumentWorkflowApproval
+              summary: Approve document in approval queue
+              description: Approve document in approval queue; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentWorkflowApprovalResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /documents/{documentId}/workflow/{workflowId}/reject:
+            post:
+              operationId: AddDocumentWorkflowReject
+              summary: Reject document in approval queue
+              description: Reject document in approval queue; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentWorkflowRejectResponse'
                 '400':
                   description: 400 BAD REQUEST
                   headers:
@@ -3282,7 +3332,6 @@ Resources:
                   description: "Workflow description"
                   type: "string"
                 config:
-                  description: "Workflow configuration"
                   $ref: "#/components/schemas/WorkflowConfig"
                 steps:
                   description: "Workflow steps"
@@ -4104,25 +4153,6 @@ Resources:
                   description: "List of search result documents"
                   items:
                     $ref: "#/components/schemas/SearchResultDocument"
-            DocumentWorkflowResponse:
-              type: "object"
-              properties:
-                steps:
-                  description: "Document Workflow steps"
-                  items:
-                    $ref: "#/components/schemas/DocumentWorkflowStep"
-            DocumentWorkflowStep:
-              type: "object"
-              properties:
-                id:
-                  type: "string"
-                  description: "Step identifier"
-                status:
-                  type: "string"
-                  description: "Workflow step status"
-                  enum:
-                    - COMPLETE
-                    - FAILED
             WorkflowQueueDocumentsResponse:
               type: "object"
               properties:
@@ -4853,20 +4883,6 @@ Resources:
                   type: "string"
                 previous:
                   type: "string"
-            AddDocumentWorkflowRequest:
-              type: "object"
-              required:
-                - stepId
-              properties:
-                stepId:
-                  description: "Step identifier"
-                  type: "string"
-                status:
-                  type: "string"
-                  description: "Workflow step status"
-                  enum:
-                    - COMPLETE
-                    - FAILED
             AddWorkflowRequest:
               type: "object"
               required:
@@ -4880,7 +4896,6 @@ Resources:
                   description: "Workflow description"
                   type: "string"
                 config:
-                  description: "Workflow configuration"
                   $ref: "#/components/schemas/WorkflowConfig"
                 steps:
                   description: "Workflow steps"
@@ -4939,6 +4954,18 @@ Resources:
                   type: "string"
                   description: "Workflow Identifier"
             AddDocumentWorkflowResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            AddDocumentWorkflowApprovalResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
+            AddDocumentWorkflowRejectResponse:
               type: "object"
               properties:
                 message:
