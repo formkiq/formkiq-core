@@ -39,6 +39,8 @@ public enum ActionType {
   NOTIFICATION,
   /** OCR. */
   OCR,
+  /** Wait. */
+  WAIT,
   /** WebHook. */
   WEBHOOK;
 }

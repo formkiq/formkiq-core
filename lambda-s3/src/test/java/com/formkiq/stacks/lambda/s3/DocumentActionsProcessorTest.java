@@ -292,6 +292,32 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Wait Action.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testWaitAction01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.WAIT));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+    }
+  }
+
+  /**
    * Handle documentTagging ChatApt Action.
    * 
    * @throws Exception Exception

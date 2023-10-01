@@ -135,11 +135,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private S3Service s3Service;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache preInitServiceCache;
-  /** {@link AwsServiceCache}. */
-  private AwsServiceCache serviceCache;
-  /** {@link TypeSenseService}. */
-  private TypeSenseService typesense = null;
-
   static {
 
     if (System.getenv().containsKey("AWS_REGION")) {
@@ -175,6 +170,20 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
     awsServiceCache.register(SesService.class, new SesServiceExtension());
+  }
+
+  /** {@link AwsServiceCache}. */
+  private AwsServiceCache serviceCache;
+
+  /** {@link TypeSenseService}. */
+  private TypeSenseService typesense = null;
+
+  /**
+   * constructor.
+   * 
+   */
+  public DocumentActionsProcessor() {
+    this(preInitServiceCache);
   }
 
   /**
@@ -222,14 +231,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     this.formkiqClient = new FormKiqClientV1(this.fkqConnection);
     this.serviceCache = awsServiceCache;
-  }
-
-  /**
-   * constructor.
-   * 
-   */
-  public DocumentActionsProcessor() {
-    this(preInitServiceCache);
   }
 
   /**
@@ -429,7 +430,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     boolean updateComplete = false;
     logAction(logger, "action start", siteId, documentId, action);
 
-    if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
+    if (ActionType.WAIT.equals(action.type())) {
+      updateComplete = true;
+    } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
 
       DocumentTaggingAction dtAction = new DocumentTaggingAction(this.serviceCache);
       dtAction.run(logger, siteId, documentId, action);
@@ -474,11 +477,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     logAction(logger, "action complete", siteId, documentId, action);
 
     if (updateComplete) {
-      List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
-          action.type(), ActionStatus.COMPLETE);
-
-      action.status(ActionStatus.COMPLETE);
-      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      updateComplete(siteId, documentId, action);
     }
   }
 
@@ -669,6 +668,24 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } catch (URISyntaxException e) {
       throw new IOException(e);
+    }
+  }
+
+  /**
+   * Update Complete Action.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   */
+  private void updateComplete(final String siteId, final String documentId, final Action action) {
+    List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
+        action.type(), ActionStatus.COMPLETE);
+
+    action.status(ActionStatus.COMPLETE);
+
+    if (!ActionType.WAIT.equals(action.type())) {
+      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
     }
   }
 
