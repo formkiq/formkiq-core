@@ -3,26 +3,24 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.module.actions;
 
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_WAIT_NAME;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,10 +34,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
@@ -252,7 +250,6 @@ public class ActionsServiceDynamoDbTest {
    * Test save more than 10 actions. TODO enable in 1.13
    */
   @Test
-  @Disabled
   public void testSave02() {
     // given
     final int numberOfActions = 15;
@@ -281,6 +278,41 @@ public class ActionsServiceDynamoDbTest {
   }
 
   /**
+   * Test WAIT Action.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testSave03() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String userId0 = "joe";
+      String name = "test94832";
+      String documentId = UUID.randomUUID().toString();
+
+      Action action0 = new Action().type(ActionType.WAIT).userId(userId0)
+          .parameters(Map.of(PARAMETER_WAIT_NAME, name));
+
+      // when
+      service.saveActions(siteId, documentId, Arrays.asList(action0));
+
+      // then
+      assertEquals("{waitName=test94832}",
+          service.getActionParameters(siteId, documentId, ActionType.WAIT).toString());
+
+      List<Action> results = service.getActions(siteId, documentId);
+      assertEquals(1, results.size());
+      assertEquals(ActionStatus.PENDING, results.get(0).status());
+      assertEquals(ActionType.WAIT, results.get(0).type());
+      assertEquals(userId0, results.get(0).userId());
+      assertEquals("{waitName=test94832}", results.get(0).parameters().toString());
+
+      assertEquals(0,
+          service.findDocuments(siteId, ActionType.WAIT, name, null, 2).getResults().size());
+    }
+  }
+
+  /**
    * Update Action Status.
    */
   @Test
@@ -299,6 +331,60 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
+    }
+  }
+
+  /**
+   * Update WAIT Action COMPLETE Status.
+   */
+  @Test
+  public void testUpdateActionStatus02() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int limit = 10;
+      String name = "queue1234";
+      String documentId = UUID.randomUUID().toString();
+      String userId0 = "joe";
+      Action action0 = new Action().type(ActionType.WAIT).userId(userId0)
+          .parameters(Map.of(PARAMETER_WAIT_NAME, name));
+      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
+
+      // when
+      service.updateActionStatus(siteId, documentId, ActionType.WAIT, ActionStatus.COMPLETE);
+
+      // then
+      assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
+      PaginationResults<String> docs =
+          service.findDocuments(siteId, ActionType.WAIT, name, null, limit);
+      assertEquals(1, docs.getResults().size());
+    }
+  }
+
+  /**
+   * Update WAIT Action FAILED Status.
+   */
+  @Test
+  public void testUpdateActionStatus03() {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      final int limit = 10;
+      String name = "queue1234";
+      String documentId = UUID.randomUUID().toString();
+      String userId0 = "joe";
+      Action action0 = new Action().type(ActionType.WAIT).userId(userId0)
+          .parameters(Map.of(PARAMETER_WAIT_NAME, name));
+      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
+
+      // when
+      service.updateActionStatus(siteId, documentId, ActionType.WAIT, ActionStatus.FAILED);
+
+      // then
+      assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());
+      PaginationResults<String> docs =
+          service.findDocuments(siteId, ActionType.WAIT, name, null, limit);
+      assertEquals(0, docs.getResults().size());
     }
   }
 }
