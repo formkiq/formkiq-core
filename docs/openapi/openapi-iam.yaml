@@ -1834,7 +1834,7 @@
             post:
               operationId: AddDocumentWorkflow
               summary: Add document workflow
-              description: Creates a document workflow step status; ONLY available with FormKiQ Pro and Enterprise
+              description: Creates a document workflow; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Workflows
               parameters:
@@ -4565,6 +4565,9 @@
                   type: string
                 tags:
                   description: 'DocumentTagging: Comma-deliminted list of keywords to generate tags for'
+                  type: string
+                waitName:
+                  description: Name of WAIT action
                   type: string
             AddDocumentOcrRequest:
               type: object

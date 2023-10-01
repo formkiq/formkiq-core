@@ -24,9 +24,12 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +38,16 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.PaginationMapToken;
+import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.QueryConfig;
+import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionParameters;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -58,8 +69,12 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  */
 public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
+  /** {@link SimpleDateFormat} in ISO Standard format. */
+  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Document Table Name. */
   private String documentTableName;
 
@@ -78,6 +93,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
+    this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
   }
 
   /**
@@ -103,6 +119,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     addS(valueMap, "documentId", documentId);
     addS(valueMap, "userId", action.userId());
     addM(valueMap, "parameters", action.parameters());
+
     return valueMap;
   }
 
@@ -131,6 +148,23 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
       index++;
     }
+  }
+
+  @Override
+  public PaginationResults<String> findDocuments(final String siteId, final ActionType type,
+      final String name, final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+    String pk = createDatabaseKey(siteId, "action#" + type + "#" + name);
+    String sk = "action#";
+
+    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
+    QueryResponse response =
+        this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
+
+    List<String> list =
+        response.items().stream().map(i -> i.get("documentId").s()).collect(Collectors.toList());
+
+    PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
+    return new PaginationResults<>(list, pagination);
   }
 
   @Override
@@ -284,6 +318,18 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, AttributeValueUpdate> values = new HashMap<>();
     values.put("status", AttributeValueUpdate.builder()
         .value(AttributeValue.builder().s(action.status().name()).build()).build());
+
+    if (ActionType.WAIT.equals(action.type()) && ActionStatus.COMPLETE.equals(action.status())) {
+      String waitName = action.parameters().get(ActionParameters.PARAMETER_WAIT_NAME);
+
+      String pkGsi1 = createDatabaseKey(siteId, "action#" + action.type() + "#" + waitName);
+      String skGsi1 = "action#" + this.df.format(new Date());
+
+      values.put(GSI1_PK,
+          AttributeValueUpdate.builder().value(AttributeValue.builder().s(pkGsi1).build()).build());
+      values.put(GSI1_SK,
+          AttributeValueUpdate.builder().value(AttributeValue.builder().s(skGsi1).build()).build());
+    }
 
     this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
         .attributeUpdates(values).build());

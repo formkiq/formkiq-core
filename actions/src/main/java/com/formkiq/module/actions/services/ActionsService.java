@@ -25,6 +25,7 @@ package com.formkiq.module.actions.services;
 
 import java.util.List;
 import java.util.Map;
+import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -44,6 +45,19 @@ public interface ActionsService {
    * @param documentId {@link String}
    */
   void deleteActions(String siteId, String documentId);
+
+  /**
+   * Find Documents.
+   * 
+   * @param siteId {@link String}
+   * @param type {@link ActionType}
+   * @param name {@link String}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link PaginationResults}
+   */
+  PaginationResults<String> findDocuments(String siteId, ActionType type, String name,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
    * Get Action Parameters.

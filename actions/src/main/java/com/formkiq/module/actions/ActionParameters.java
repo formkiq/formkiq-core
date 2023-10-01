@@ -45,4 +45,7 @@ public interface ActionParameters {
 
   /** Notification Html Parameter. */
   String PARAMETER_NOTIFICATION_HTML = "notificationHtml";
+
+  /** Wait Name Parameter. */
+  String PARAMETER_WAIT_NAME = "waitName";
 }

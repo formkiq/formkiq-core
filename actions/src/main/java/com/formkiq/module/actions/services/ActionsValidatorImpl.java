@@ -30,6 +30,7 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_WAIT_NAME;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -136,6 +137,15 @@ public class ActionsValidatorImpl implements ActionsValidator {
     }
   }
 
+  private void validateWait(final Action action, final Collection<ValidationError> errors) {
+
+    Map<String, String> parameters = getParameters(action);
+    if (!hasValue(parameters, PARAMETER_WAIT_NAME)) {
+      errors.add(new ValidationErrorImpl().key(PARAMETER_WAIT_NAME)
+          .error("'" + PARAMETER_WAIT_NAME + "' is required"));
+    }
+  }
+
   @Override
   public Collection<ValidationError> validation(final Action action, final DynamicObject configs) {
     Collection<ValidationError> errors = new ArrayList<>();
@@ -161,6 +171,8 @@ public class ActionsValidatorImpl implements ActionsValidator {
           validateDocumentTagging(configs, parameters, errors);
         } else if (ActionType.NOTIFICATION.equals(action.type())) {
           validateNotificationEmail(configs, action, errors);
+        } else if (ActionType.WAIT.equals(action.type())) {
+          validateWait(action, errors);
         }
       }
     }
