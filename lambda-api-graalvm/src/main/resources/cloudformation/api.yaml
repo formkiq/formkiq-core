@@ -1846,7 +1846,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /documents/{documentId}/workflow/{workflowId}/approve:
+          /documents/{documentId}/workflow/{workflowId}/approve/{queueName}:
             post:
               operationId: AddDocumentWorkflowApproval
               summary: Approve document in approval queue
@@ -1857,6 +1857,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
+              - $ref: '#/components/parameters/queueNameParam'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1888,7 +1889,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /documents/{documentId}/workflow/{workflowId}/reject:
+          /documents/{documentId}/workflow/{workflowId}/reject/{queueName}:
             post:
               operationId: AddDocumentWorkflowReject
               summary: Reject document in approval queue
@@ -1899,6 +1900,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
+              - $ref: '#/components/parameters/queueNameParam'
               responses:
                 '201':
                   description: 201 CREATED
