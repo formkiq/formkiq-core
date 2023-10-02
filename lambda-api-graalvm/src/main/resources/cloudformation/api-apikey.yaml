@@ -3345,12 +3345,6 @@ Resources:
                 id:
                   type: "string"
                   description: "Step identifier"
-                type:
-                  type: "string"
-                  description: "Workflow step type"
-                  enum:
-                    - action
-                    - approvalQueue
                 action:
                   $ref: "#/components/schemas/DocumentAction"
                 queue:
