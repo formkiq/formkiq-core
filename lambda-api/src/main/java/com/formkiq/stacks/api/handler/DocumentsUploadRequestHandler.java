@@ -136,6 +136,7 @@ public class DocumentsUploadRequestHandler
         ActionsService actionsService = awsservice.getExtension(ActionsService.class);
         List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
             .collect(Collectors.toList());
+        actions.forEach(a -> a.userId(username));
         actionsService.saveActions(siteId, documentId, actions);
       }
 

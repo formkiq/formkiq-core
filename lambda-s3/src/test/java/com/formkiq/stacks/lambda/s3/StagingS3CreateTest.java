@@ -1275,7 +1275,7 @@ public class StagingS3CreateTest implements DbKeys {
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
 
       actionsService.saveAction(siteId, documentId,
-          new Action().type(ActionType.FULLTEXT).status(ActionStatus.COMPLETE), 0);
+          new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE), 0);
 
       TimeUnit.SECONDS.sleep(1);
 
