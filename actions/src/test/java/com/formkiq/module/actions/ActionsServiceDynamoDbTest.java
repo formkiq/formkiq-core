@@ -341,7 +341,6 @@ public class ActionsServiceDynamoDbTest {
   public void testUpdateActionStatus02() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      final int limit = 10;
       String name = "queue1234";
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
@@ -355,9 +354,6 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs =
-          service.findDocuments(siteId, ActionType.WAIT, name, null, limit);
-      assertEquals(1, docs.getResults().size());
     }
   }
 

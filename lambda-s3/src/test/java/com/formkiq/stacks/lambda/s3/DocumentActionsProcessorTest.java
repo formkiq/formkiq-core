@@ -274,8 +274,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -301,11 +301,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testWaitAction01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      final int limit = 100;
       String documentId = UUID.randomUUID().toString();
       String name = "testqueue#" + documentId;
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.WAIT)
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.WAIT).userId("joe")
           .parameters(Map.of(ActionParameters.PARAMETER_WAIT_NAME, name)));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -319,10 +318,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> documentIds =
-          actionsService.findDocuments(siteId, ActionType.WAIT, name, null, limit);
-      assertEquals(1, documentIds.getResults().size());
-      assertEquals(documentId, documentIds.getResults().get(0));
     }
   }
 
@@ -352,8 +347,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -402,8 +397,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -448,8 +443,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -519,8 +514,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -588,8 +583,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING).parameters(Map.of("engine",
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -657,7 +652,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions = Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING)
-          .parameters(Map.of("engine", "chatgpt", "tags",
+          .userId("joe").parameters(Map.of("engine", "chatgpt", "tags",
               "document type,meeting date,chairperson,secretary,board members,resolutions")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -728,7 +723,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR)
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe")
           .parameters(Map.of("addPdfDetectedCharactersAsText", "true")));
       actionsService.saveActions(siteId, documentId, actions);
 
@@ -768,7 +763,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -808,7 +803,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -840,7 +835,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -875,8 +870,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         item.setContentType("application/pdf");
         documentService.saveDocument(siteId, item, null);
 
-        List<Action> actions = Arrays.asList(
-            new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
+        List<Action> actions = Arrays.asList(new Action().type(ActionType.WEBHOOK).userId("joe")
+            .parameters(Map.of("url", URL + "/callback")));
         actionsService.saveActions(siteId, documentId, actions);
 
         Map<String, Object> map =
@@ -939,9 +934,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 DocumentTagType.SYSTEMDEFINED));
         documentService.saveDocument(siteId, item, tags);
 
-        List<Action> actions =
-            Arrays.asList(new Action().type(ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE),
-                new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback")));
+        List<Action> actions = Arrays.asList(
+            new Action().type(ActionType.ANTIVIRUS).userId("joe").status(ActionStatus.COMPLETE),
+            new Action().type(ActionType.WEBHOOK).userId("joe")
+                .parameters(Map.of("url", URL + "/callback")));
         actionsService.saveActions(siteId, documentId, actions);
 
         Map<String, Object> map =
@@ -1005,7 +1001,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -1049,9 +1045,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         documentService.saveDocument(siteId, item, null);
 
         List<Action> actions = Arrays.asList(
-            new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK)
+            new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK).userId("joe")
                 .parameters(Map.of("url", URL + "/callback")),
-            new Action().type(ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2")));
+            new Action().type(ActionType.WEBHOOK).userId("joe")
+                .parameters(Map.of("url", URL + "/callback2")));
         actionsService.saveActions(siteId, documentId, actions);
 
         Map<String, Object> map =

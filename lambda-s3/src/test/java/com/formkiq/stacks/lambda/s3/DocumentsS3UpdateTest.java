@@ -961,8 +961,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      actionsService.saveActions(siteId, doc.getDocumentId(),
-          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE)));
+      actionsService.saveActions(siteId, doc.getDocumentId(), Arrays
+          .asList(new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.COMPLETE)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -1069,8 +1069,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       doc.setUserId("joe");
       doc.setPath("test.txt");
       service.saveDocumentItemWithTag(siteId, doc);
-      actionsService.saveActions(siteId, doc.getDocumentId(),
-          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING)));
+      actionsService.saveActions(siteId, doc.getDocumentId(), Arrays
+          .asList(new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.RUNNING)));
 
       addS3File(key, "pdf", false, "testdata");
 

@@ -489,7 +489,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processEvent(final LambdaLogger logger, final DocumentEvent event)
+  public void processEvent(final LambdaLogger logger, final DocumentEvent event)
       throws IOException, InterruptedException {
 
     if (ACTIONS.equals(event.type())) {

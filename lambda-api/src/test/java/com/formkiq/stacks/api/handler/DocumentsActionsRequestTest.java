@@ -112,7 +112,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      this.service.saveActions(siteId, documentId, Arrays.asList(new Action()
+      this.service.saveActions(siteId, documentId, Arrays.asList(new Action().userId("joe")
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
       // when
@@ -143,7 +143,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       String documentId = saveDocument(siteId);
 
       this.service.saveActions(siteId, documentId,
-          Arrays.asList(new Action().status(ActionStatus.COMPLETE)
+          Arrays.asList(new Action().userId("joe").status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(

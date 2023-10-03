@@ -3,33 +3,28 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,10 +39,8 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionParameters;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -73,8 +66,6 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   private DynamoDbService db;
   /** {@link DynamoDbClient}. */
   private DynamoDbClient dbClient;
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Document Table Name. */
   private String documentTableName;
 
@@ -96,38 +87,11 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
   }
 
-  /**
-   * Build {@link Map} {@link AttributeValue}.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param action {@link Action}
-   * @param idx int
-   * @return {@link Map}
-   */
-  private Map<String, AttributeValue> buildValueMap(final String siteId, final String documentId,
-      final Action action, final int idx) {
-
-    Map<String, AttributeValue> valueMap = new HashMap<>();
-
-    String pk = getPk(siteId, documentId);
-    String sk = getSk(action, idx);
-    addS(valueMap, PK, pk);
-    addS(valueMap, SK, sk);
-    addS(valueMap, "type", action.type().name());
-    addS(valueMap, "status", action.status().name());
-    addS(valueMap, "documentId", documentId);
-    addS(valueMap, "userId", action.userId());
-    addM(valueMap, "parameters", action.parameters());
-
-    return valueMap;
-  }
-
   private void deleteAction(final String siteId, final String documentId, final Action action,
       final int index) {
 
-    String pk = getPk(siteId, documentId);
-    String sk = getSk(action, index);
+    String pk = null;// getPk(siteId, documentId);
+    String sk = null;// getSk(action, index);
 
     Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
         AttributeValue.builder().s(sk).build());
@@ -183,28 +147,6 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     return queryActions(siteId, documentId, null, null);
   }
 
-  /**
-   * Get Pk.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link String}
-   */
-  private String getPk(final String siteId, final String documentId) {
-    return createDatabaseKey(siteId, PREFIX_DOCS + documentId);
-  }
-
-  /**
-   * Get Sk.
-   * 
-   * @param action {@link Action}
-   * @param idx int
-   * @return {@link String}
-   */
-  private String getSk(final Action action, final int idx) {
-    return "action" + TAG_DELIMINATOR + idx + TAG_DELIMINATOR + action.type().name();
-  }
-
   @Override
   public boolean hasActions(final String siteId, final String documentId) {
     List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK), null);
@@ -241,7 +183,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   private List<Action> queryActions(final String siteId, final String documentId,
       final List<String> projectionExpression, final Integer limit) {
 
-    String pk = getPk(siteId, documentId);
+    String pk = new Action().documentId(documentId).pk(siteId);
     String sk = "action" + TAG_DELIMINATOR;
 
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
@@ -273,7 +215,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   public void saveAction(final String siteId, final String documentId, final Action action,
       final int index) {
 
-    Map<String, AttributeValue> valueMap = buildValueMap(siteId, documentId, action, index);
+    action.documentId(documentId);
+    action.index(index);
+
+    Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
     this.dbClient
         .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(valueMap).build());
   }
@@ -288,7 +233,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     for (Action action : actions) {
 
-      Map<String, AttributeValue> valueMap = buildValueMap(siteId, documentId, action, idx);
+      action.documentId(documentId);
+      action.index(idx);
+
+      Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
 
       values.add(valueMap);
       idx++;
@@ -309,8 +257,11 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   public void updateActionStatus(final String siteId, final String documentId, final Action action,
       final int index) {
 
-    String pk = getPk(siteId, documentId);
-    String sk = getSk(action, index);
+    action.documentId(documentId);
+    action.index(index);
+
+    String pk = action.pk(siteId);
+    String sk = action.sk();
 
     Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
         AttributeValue.builder().s(sk).build());
@@ -318,18 +269,6 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, AttributeValueUpdate> values = new HashMap<>();
     values.put("status", AttributeValueUpdate.builder()
         .value(AttributeValue.builder().s(action.status().name()).build()).build());
-
-    if (ActionType.WAIT.equals(action.type()) && ActionStatus.COMPLETE.equals(action.status())) {
-      String waitName = action.parameters().get(ActionParameters.PARAMETER_WAIT_NAME);
-
-      String pkGsi1 = createDatabaseKey(siteId, "action#" + action.type() + "#" + waitName);
-      String skGsi1 = "action#" + this.df.format(new Date());
-
-      values.put(GSI1_PK,
-          AttributeValueUpdate.builder().value(AttributeValue.builder().s(pkGsi1).build()).build());
-      values.put(GSI1_SK,
-          AttributeValueUpdate.builder().value(AttributeValue.builder().s(skGsi1).build()).build());
-    }
 
     this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
         .attributeUpdates(values).build());

@@ -9,10 +9,7 @@
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
-	
-		<subpackage name="executors">
-			<allow pkg="com.formkiq.module.actions" />
-		</subpackage>
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
 		
 		<subpackage name="services">
 			<allow pkg="java.text" />

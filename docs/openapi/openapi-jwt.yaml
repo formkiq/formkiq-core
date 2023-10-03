@@ -1774,7 +1774,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /workflows/queue/{queueName}/documents:
             get:
-              operationId: WorkflowQueueDocuments
+              operationId: GetWorkflowQueueDocuments
               summary: Get list of documents in queue
               description: List documents in Workflow Queue; ONLY available with FormKiQ Pro and Enterprise
               tags:
@@ -4157,8 +4157,8 @@
                   type: array
                   description: List of search result documents
                   items:
-                    $ref: '#/components/schemas/QueueDocument'
-            QueueDocument:
+                    $ref: '#/components/schemas/Document'
+            Document:
               type: object
               properties:
                 siteId:
@@ -4289,40 +4289,7 @@
                   type: array
                   description: List of documents
                   items:
-                    $ref: '#/components/schemas/DocumentItemResult'
-            DocumentItemResult:
-              type: object
-              properties:
-                siteId:
-                  type: string
-                  description: Site Identifier
-                path:
-                  type: string
-                  description: Path or Name of document
-                insertedDate:
-                  type: string
-                  description: Inserted Timestamp
-                lastModifiedDate:
-                  type: string
-                  description: Last Modified Timestamp
-                checksum:
-                  type: string
-                  description: Document checksum, changes when document file changes
-                documentId:
-                  type: string
-                  description: Document Identifier
-                contentType:
-                  type: string
-                  description: Document Content-Type
-                userId:
-                  type: string
-                  description: User who added document
-                contentLength:
-                  type: integer
-                  description: Document size
-                versionId:
-                  type: string
-                  description: Document version
+                    $ref: '#/components/schemas/Document'
             GetWebhooksResponse:
               type: object
               properties:
@@ -4906,9 +4873,6 @@
                 type:
                   type: string
                   description: Workflow step type
-                  enum:
-                  - action
-                  - approvalQueue
                 action:
                   $ref: '#/components/schemas/AddAction'
                 queue:

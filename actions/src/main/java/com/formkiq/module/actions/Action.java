@@ -23,19 +23,37 @@
  */
 package com.formkiq.module.actions;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamodbRecord;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Action.
  */
-public class Action {
+public class Action implements DynamodbRecord<Action>, DbKeys {
 
+  /** DocumentId. */
+  private String documentId;
+  /** Index. */
+  private int index = -1;
   /** Action Parameters. */
   private Map<String, String> parameters;
+  /** PK GSI 1. */
+  private String pkGsi1;
+  /** SK GSI 1. */
+  private String skGsi1;
   /** Is Action Completed. */
   private ActionStatus status;
+
+
   /** Type of Action. */
   private ActionType type;
+
   /** UserId. */
   private String userId;
 
@@ -44,6 +62,87 @@ public class Action {
    */
   public Action() {
     this.status = ActionStatus.PENDING;
+  }
+
+  /**
+   * Get DocumentId.
+   * 
+   * @return {@link String}
+   */
+  public String documentId() {
+    return this.documentId;
+  }
+
+  /**
+   * Set Document Id.
+   * 
+   * @param id {@link String}
+   * @return {@link Action}
+   */
+  public Action documentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
+  @Override
+  public Map<String, AttributeValue> getAttributes(final String siteId) {
+
+    Map<String, AttributeValue> attrs =
+        new HashMap<>(Map.of(DbKeys.PK, fromS(pk(siteId)), DbKeys.SK, fromS(sk()), "type",
+            fromS(this.type.name()), "status", fromS(this.status.name()), "documentId",
+            fromS(this.documentId), "userId", fromS(this.userId)));
+
+    addM(attrs, "parameters", this.parameters);
+
+    return attrs;
+  }
+
+  @Override
+  public Action getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
+
+    Action record = new Action().documentId(ss(attrs, "documentId"))
+        .status(ActionStatus.valueOf(ss(attrs, "status")))
+        .type(ActionType.valueOf(ss(attrs, "type"))).userId(ss(attrs, "userId"));
+
+    record.parameters(attrs.get("parameters").m().entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+
+    this.index = Integer.parseInt(attrs.get(SK).s().split(TAG_DELIMINATOR)[1]);
+
+    return record;
+  }
+
+  /**
+   * Set GSI 1.
+   * 
+   * @param pk {@link String}
+   * @param sk {@link String}
+   * @return {@link Action}
+   */
+  public Action gsi1(final String pk, final String sk) {
+    this.pkGsi1 = pk;
+    this.skGsi1 = sk;
+    return this;
+  }
+
+  /**
+   * Get Index.
+   * 
+   * @return int
+   */
+  public int index() {
+    return this.index;
+  }
+
+  /**
+   * Set Index.
+   * 
+   * @param idx int
+   * @return {@link Action}
+   */
+  public Action index(final int idx) {
+    this.index = idx;
+    return this;
   }
 
   /**
@@ -64,6 +163,42 @@ public class Action {
   public Action parameters(final Map<String, String> map) {
     this.parameters = map;
     return this;
+  }
+
+  @Override
+  public String pk(final String siteId) {
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+    return createDatabaseKey(siteId, PREFIX_DOCS + this.documentId);
+  }
+
+  @Override
+  public String pkGsi1(final String siteId) {
+    return this.pkGsi1;
+  }
+
+  @Override
+  public String pkGsi2(final String siteId) {
+    return null;
+  }
+
+  @Override
+  public String sk() {
+    if (this.index == -1) {
+      throw new IllegalArgumentException("'index' is required");
+    }
+    return "action" + TAG_DELIMINATOR + this.index + TAG_DELIMINATOR + this.type.name();
+  }
+
+  @Override
+  public String skGsi1() {
+    return this.skGsi1;
+  }
+
+  @Override
+  public String skGsi2() {
+    return null;
   }
 
   /**
