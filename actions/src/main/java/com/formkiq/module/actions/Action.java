@@ -24,6 +24,7 @@
 package com.formkiq.module.actions;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.text.SimpleDateFormat;
@@ -44,7 +45,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   /** DocumentId. */
   private String documentId;
   /** Index. */
-  private int index = -1;
+  private String index = null;
   /** Action Metadata. */
   private Map<String, String> metadata;
   /** Action Parameters. */
@@ -119,7 +120,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     record.metadata(attrs.get("metadata").m().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
 
-    this.index = Integer.parseInt(attrs.get(SK).s().split(TAG_DELIMINATOR)[1]);
+    this.index = attrs.get(SK).s().split(TAG_DELIMINATOR)[1];
 
     return record;
   }
@@ -127,9 +128,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   /**
    * Get Index.
    * 
-   * @return int
+   * @return {@link String}
    */
-  public int index() {
+  public String index() {
     return this.index;
   }
 
@@ -139,7 +140,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    * @param idx int
    * @return {@link Action}
    */
-  public Action index(final int idx) {
+  public Action index(final String idx) {
     this.index = idx;
     return this;
   }
@@ -212,7 +213,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   @Override
   public String sk() {
-    if (this.index == -1) {
+    if (isEmpty(this.index)) {
       throw new IllegalArgumentException("'index' is required");
     }
     return "action" + TAG_DELIMINATOR + this.index + TAG_DELIMINATOR + this.type.name();
