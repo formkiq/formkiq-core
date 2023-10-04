@@ -113,9 +113,26 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public PaginationResults<String> findDocuments(final String siteId, final ActionType type,
-      final String name, final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
-    String pk = createDatabaseKey(siteId, "action#" + type + "#" + name);
+  public Action findActionInQueue(final String siteId, final String documentId,
+      final String queueName) {
+    String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
+    String sk = "action#" + documentId + "#";
+
+    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
+    QueryResponse response = this.db.queryBeginsWith(config, fromS(pk), fromS(sk), null, 1);
+
+    Action action = null;
+    if (!response.items().isEmpty()) {
+      action = new Action().getFromAttributes(siteId, response.items().get(0));
+    }
+
+    return action;
+  }
+
+  @Override
+  public PaginationResults<String> findDocumentsInQueue(final String siteId, final String queueName,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+    String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
     String sk = "action#";
 
     QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
