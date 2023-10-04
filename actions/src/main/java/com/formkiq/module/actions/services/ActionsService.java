@@ -47,16 +47,25 @@ public interface ActionsService {
   void deleteActions(String siteId, String documentId);
 
   /**
-   * Find Documents.
+   * Find Document in Queue.
    * 
    * @param siteId {@link String}
-   * @param type {@link ActionType}
-   * @param name {@link String}
+   * @param documentId {@link String}
+   * @param queueName {@link String}
+   * @return {@link Action}
+   */
+  Action findActionInQueue(String siteId, String documentId, String queueName);
+
+  /**
+   * Find Documents in Queue.
+   * 
+   * @param siteId {@link String}
+   * @param queueName {@link String}
    * @param exclusiveStartKey {@link Map}
    * @param limit int
    * @return {@link PaginationResults}
    */
-  PaginationResults<String> findDocuments(String siteId, ActionType type, String name,
+  PaginationResults<String> findDocumentsInQueue(String siteId, String queueName,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**

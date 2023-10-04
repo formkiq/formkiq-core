@@ -24,6 +24,7 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
@@ -307,8 +308,8 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(userId0, results.get(0).userId());
       assertEquals("{queueName=test94832}", results.get(0).parameters().toString());
 
-      assertEquals(0,
-          service.findDocuments(siteId, ActionType.QUEUE, name, null, 2).getResults().size());
+      assertEquals(0, service.findDocumentsInQueue(siteId, name, null, 2).getResults().size());
+      assertNull(service.findActionInQueue(siteId, documentId, name));
     }
   }
 
@@ -355,17 +356,18 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs =
-          service.findDocuments(siteId, ActionType.QUEUE, name, null, limit);
+      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, limit);
       assertEquals(1, docs.getResults().size());
+      assertNotNull(service.findActionInQueue(siteId, documentId, name));
 
       // when
       service.updateActionStatus(siteId, documentId, ActionType.QUEUE, ActionStatus.COMPLETE);
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
-      docs = service.findDocuments(siteId, ActionType.QUEUE, name, null, limit);
+      docs = service.findDocumentsInQueue(siteId, name, null, limit);
       assertEquals(0, docs.getResults().size());
+      assertNull(service.findActionInQueue(siteId, documentId, name));
     }
   }
 
@@ -390,9 +392,9 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs =
-          service.findDocuments(siteId, ActionType.QUEUE, name, null, limit);
+      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, limit);
       assertEquals(0, docs.getResults().size());
+      assertNull(service.findActionInQueue(siteId, documentId, name));
     }
   }
 }

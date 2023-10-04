@@ -110,15 +110,25 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   @Override
   public Action getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
 
-    Action record = new Action().documentId(ss(attrs, "documentId"))
-        .status(ActionStatus.valueOf(ss(attrs, "status")))
-        .type(ActionType.valueOf(ss(attrs, "type"))).userId(ss(attrs, "userId"));
+    Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"));
 
-    record.parameters(attrs.get("parameters").m().entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+    if (attrs.containsKey("status")) {
+      record.status(ActionStatus.valueOf(ss(attrs, "status")));
+    }
 
-    record.metadata(attrs.get("metadata").m().entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+    if (attrs.containsKey("type")) {
+      record.type(ActionType.valueOf(ss(attrs, "type")));
+    }
+
+    if (attrs.containsKey("parameterse")) {
+      record.parameters(attrs.get("parameters").m().entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+    }
+
+    if (attrs.containsKey("metadata")) {
+      record.metadata(attrs.get("metadata").m().entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+    }
 
     this.index = attrs.get(SK).s().split(TAG_DELIMINATOR)[1];
 
@@ -225,7 +235,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     String sk = null;
     if (this.status.equals(ActionStatus.IN_QUEUE)) {
       SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-      sk = "action#" + df.format(new Date());
+      sk = "action#" + this.documentId + "#" + df.format(new Date());
     }
 
     return sk;
