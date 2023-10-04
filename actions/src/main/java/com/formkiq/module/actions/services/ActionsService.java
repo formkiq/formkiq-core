@@ -112,6 +112,14 @@ public interface ActionsService {
    * Save {@link Action}.
    * 
    * @param siteId {@link String}
+   * @param action {@link Action}
+   */
+  void saveAction(String siteId, Action action);
+
+  /**
+   * Save {@link Action}.
+   * 
+   * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
    * @param index int

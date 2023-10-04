@@ -3892,16 +3892,6 @@ Resources:
                   items:
                     type: "string"
                     description: "Metadata value"
-            ActionMetadata:
-              type: "object"
-              description: "Action Metadata"
-              properties:
-                key:
-                  type: "string"
-                  description: "Metadata key"
-                value:
-                  type: "string"
-                  description: "Metadata value"
             AddDocumentMetadata:
               required:
               - "key"
@@ -4392,11 +4382,13 @@ Resources:
                 parameters:
                   type: "object"
                   description: Action parameters
+                  additionalProperties:
+                    type: string
                 metadata:
-                  type: "array"
-                  description: "List of action metadata"
-                  items:
-                    $ref: "#/components/schemas/ActionMetadata"
+                  type: "object"
+                  description: Action metadata
+                  additionalProperties:
+                    type: string
             GetDocumentOcrResponse:
               type: object
               properties:

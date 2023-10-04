@@ -54,7 +54,6 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   private ActionStatus status;
   /** Type of Action. */
   private ActionType type;
-
   /** UserId. */
   private String userId;
 
@@ -120,7 +119,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       record.type(ActionType.valueOf(ss(attrs, "type")));
     }
 
-    if (attrs.containsKey("parameterse")) {
+    if (attrs.containsKey("parameters")) {
       record.parameters(attrs.get("parameters").m().entrySet().stream()
           .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
     }
@@ -130,7 +129,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
           .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
     }
 
-    this.index = attrs.get(SK).s().split(TAG_DELIMINATOR)[1];
+    if (attrs.containsKey(SK)) {
+      record.index(attrs.get(SK).s().split(TAG_DELIMINATOR)[1]);
+    }
 
     return record;
   }

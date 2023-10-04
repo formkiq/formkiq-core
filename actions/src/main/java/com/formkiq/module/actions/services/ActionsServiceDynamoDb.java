@@ -123,7 +123,9 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     Action action = null;
     if (!response.items().isEmpty()) {
-      action = new Action().getFromAttributes(siteId, response.items().get(0));
+      Map<String, AttributeValue> attrs = response.items().get(0);
+      attrs = this.db.get(attrs.get(PK), attrs.get(SK));
+      action = new Action().getFromAttributes(siteId, attrs);
     }
 
     return action;
@@ -222,8 +224,16 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     QueryResponse result = this.dbClient.query(q.build());
 
-    AttributeValueToAction transform = new AttributeValueToAction();
-    return result.items().stream().map(r -> transform.apply(r)).collect(Collectors.toList());
+    return result.items().stream().map(a -> new Action().getFromAttributes(siteId, a))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public void saveAction(final String siteId, final Action action) {
+
+    Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
+    this.dbClient
+        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(valueMap).build());
   }
 
   @Override
