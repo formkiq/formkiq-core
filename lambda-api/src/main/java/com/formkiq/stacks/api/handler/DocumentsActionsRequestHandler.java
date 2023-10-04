@@ -84,6 +84,7 @@ public class DocumentsActionsRequestHandler
       map.put("status", action.status().name().toLowerCase());
       map.put("type", action.type().name().toLowerCase());
       map.put("parameters", action.parameters());
+      map.put("metadata", action.metadata());
       list.add(map);
     }
 
