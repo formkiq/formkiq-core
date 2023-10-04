@@ -23,7 +23,7 @@
  */
 package com.formkiq.module.actions.services;
 
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_WAIT_NAME;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
@@ -124,7 +124,7 @@ class ActionsValidatorTest {
   @Test
   void testValidation06() {
     // given
-    Action action = new Action().type(ActionType.WAIT);
+    Action action = new Action().type(ActionType.QUEUE);
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when
@@ -134,15 +134,15 @@ class ActionsValidatorTest {
     assertEquals(1, errors.size());
 
     ValidationError error = errors.iterator().next();
-    assertEquals(PARAMETER_WAIT_NAME, error.key());
-    assertEquals("'" + PARAMETER_WAIT_NAME + "' is required", error.error());
+    assertEquals(PARAMETER_QUEUE_NAME, error.key());
+    assertEquals("'" + PARAMETER_QUEUE_NAME + "' is required", error.error());
   }
 
   @Test
   void testValidation07() {
     // given
     Action action =
-        new Action().type(ActionType.WAIT).parameters(Map.of(PARAMETER_WAIT_NAME, "Testqueue"));
+        new Action().type(ActionType.QUEUE).parameters(Map.of(PARAMETER_QUEUE_NAME, "Testqueue"));
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when

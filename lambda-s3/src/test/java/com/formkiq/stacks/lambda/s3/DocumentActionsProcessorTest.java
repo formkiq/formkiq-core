@@ -293,19 +293,19 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Wait Action.
+   * Handle Queue Action.
    * 
    * @throws Exception Exception
    */
   @Test
-  public void testWaitAction01() throws Exception {
+  public void testQueueAction01() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
       String documentId = UUID.randomUUID().toString();
       String name = "testqueue#" + documentId;
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.WAIT).userId("joe")
-          .parameters(Map.of(ActionParameters.PARAMETER_WAIT_NAME, name)));
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe")
+          .parameters(Map.of(ActionParameters.PARAMETER_QUEUE_NAME, name)));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -316,7 +316,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      assertEquals(ActionStatus.COMPLETE,
+      assertEquals(ActionStatus.IN_QUEUE,
           actionsService.getActions(siteId, documentId).get(0).status());
     }
   }

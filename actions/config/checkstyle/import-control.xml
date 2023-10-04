@@ -6,7 +6,10 @@
 <import-control pkg="com.formkiq.module">
 	
 	<subpackage name="actions">
+		
+		<allow pkg="com.formkiq.module.actions" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />

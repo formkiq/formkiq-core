@@ -33,6 +33,8 @@ public enum ActionStatus {
   COMPLETE,
   /** FAILED. */
   FAILED,
+  /** In Queue. */
+  IN_QUEUE,
   /** Pending. */
   PENDING,
   /** Running. */

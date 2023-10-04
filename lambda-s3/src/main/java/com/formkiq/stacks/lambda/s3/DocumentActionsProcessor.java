@@ -428,9 +428,12 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       throws IOException, InterruptedException {
 
     boolean updateComplete = false;
+    ActionStatus completeStatus = ActionStatus.COMPLETE;
+
     logAction(logger, "action start", siteId, documentId, action);
 
-    if (ActionType.WAIT.equals(action.type())) {
+    if (ActionType.QUEUE.equals(action.type())) {
+      completeStatus = ActionStatus.IN_QUEUE;
       updateComplete = true;
     } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
 
@@ -477,7 +480,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     logAction(logger, "action complete", siteId, documentId, action);
 
     if (updateComplete) {
-      updateComplete(siteId, documentId, action);
+      updateComplete(siteId, documentId, action, completeStatus);
     }
   }
 
@@ -677,14 +680,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
+   * @param completeStatus {@link ActionStatus}
    */
-  private void updateComplete(final String siteId, final String documentId, final Action action) {
-    List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
-        action.type(), ActionStatus.COMPLETE);
+  private void updateComplete(final String siteId, final String documentId, final Action action,
+      final ActionStatus completeStatus) {
 
-    action.status(ActionStatus.COMPLETE);
+    List<Action> updatedActions =
+        this.actionsService.updateActionStatus(siteId, documentId, action.type(), completeStatus);
 
-    if (!ActionType.WAIT.equals(action.type())) {
+    action.status(completeStatus);
+
+    if (!ActionType.QUEUE.equals(action.type())) {
       this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
     }
   }

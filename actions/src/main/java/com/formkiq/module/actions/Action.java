@@ -24,12 +24,16 @@
 package com.formkiq.module.actions;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -41,16 +45,12 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   private String documentId;
   /** Index. */
   private int index = -1;
+  /** Action Metadata. */
+  private Map<String, String> metadata;
   /** Action Parameters. */
   private Map<String, String> parameters;
-  /** PK GSI 1. */
-  private String pkGsi1;
-  /** SK GSI 1. */
-  private String skGsi1;
   /** Is Action Completed. */
   private ActionStatus status;
-
-
   /** Type of Action. */
   private ActionType type;
 
@@ -93,6 +93,15 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
             fromS(this.documentId), "userId", fromS(this.userId)));
 
     addM(attrs, "parameters", this.parameters);
+    addM(attrs, "metadata", this.metadata);
+
+    String pkGsi1 = pkGsi1(siteId);
+    String skGsi1 = skGsi1();
+
+    if (pkGsi1 != null && skGsi1 != null) {
+      attrs.put(GSI1_PK, fromS(pkGsi1));
+      attrs.put(GSI1_SK, fromS(skGsi1));
+    }
 
     return attrs;
   }
@@ -107,22 +116,12 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     record.parameters(attrs.get("parameters").m().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
 
+    record.metadata(attrs.get("metadata").m().entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+
     this.index = Integer.parseInt(attrs.get(SK).s().split(TAG_DELIMINATOR)[1]);
 
     return record;
-  }
-
-  /**
-   * Set GSI 1.
-   * 
-   * @param pk {@link String}
-   * @param sk {@link String}
-   * @return {@link Action}
-   */
-  public Action gsi1(final String pk, final String sk) {
-    this.pkGsi1 = pk;
-    this.skGsi1 = sk;
-    return this;
   }
 
   /**
@@ -142,6 +141,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action index(final int idx) {
     this.index = idx;
+    return this;
+  }
+
+  /**
+   * Get Action Metadata.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, String> metadata() {
+    return this.metadata;
+  }
+
+  /**
+   * Set Action Metadata.
+   * 
+   * @param map {@link Map}
+   * @return {@link Action}
+   */
+  public Action metadata(final Map<String, String> map) {
+    this.metadata = map;
     return this;
   }
 
@@ -175,7 +194,15 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   @Override
   public String pkGsi1(final String siteId) {
-    return this.pkGsi1;
+
+    String pk = null;
+
+    if (this.status.equals(ActionStatus.IN_QUEUE)) {
+      String queueName = this.parameters.get(PARAMETER_QUEUE_NAME);
+      pk = createDatabaseKey(siteId, "action#" + this.type + "#" + queueName);
+    }
+
+    return pk;
   }
 
   @Override
@@ -193,7 +220,14 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   @Override
   public String skGsi1() {
-    return this.skGsi1;
+
+    String sk = null;
+    if (this.status.equals(ActionStatus.IN_QUEUE)) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      sk = "action#" + df.format(new Date());
+    }
+
+    return sk;
   }
 
   @Override
