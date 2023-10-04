@@ -5224,7 +5224,7 @@ Resources:
               x-amazon-apigateway-authorizer:
                 identitySource: $request.header.Authorization
                 authorizerUri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
                 authorizerResultTtlInSeconds: 300
                 authorizerPayloadFormatVersion: "2.0"
                 enableSimpleResponses: true
