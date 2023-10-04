@@ -153,7 +153,6 @@ task buildTemplate {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "*"
-		  exclude "module-documentevent.yaml"
 	      into "${buildDir}/modules"
 	    }
 		exec {
