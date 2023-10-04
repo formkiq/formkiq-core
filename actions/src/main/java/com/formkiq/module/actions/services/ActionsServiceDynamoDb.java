@@ -214,7 +214,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       final int index) {
 
     action.documentId(documentId);
-    action.index(index);
+    action.index("" + index);
 
     Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
     this.dbClient
@@ -232,7 +232,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     for (Action action : actions) {
 
       action.documentId(documentId);
-      action.index(idx);
+      action.index("" + idx);
 
       Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
 
@@ -256,7 +256,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       final int index) {
 
     action.documentId(documentId);
-    action.index(index);
+    action.index("" + index);
 
     this.db.putItem(action.getAttributes(siteId));
   }
