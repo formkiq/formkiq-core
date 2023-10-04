@@ -3890,6 +3890,16 @@
                   items:
                     type: string
                     description: Metadata value
+            ActionMetadata:
+              type: object
+              description: Action Metadata
+              properties:
+                key:
+                  type: string
+                  description: Metadata key
+                value:
+                  type: string
+                  description: Metadata value
             AddDocumentMetadata:
               required:
               - key
@@ -4380,6 +4390,11 @@
                 parameters:
                   type: object
                   description: Action parameters
+                metadata:
+                  type: array
+                  description: List of action metadata
+                  items:
+                    $ref: '#/components/schemas/ActionMetadata'
             GetDocumentOcrResponse:
               type: object
               properties:
@@ -4507,7 +4522,7 @@
                   - WEBHOOK
                   - DOCUMENTTAGGING
                   - NOTIFICATION
-                  - WAIT
+                  - QUEUE
                 parameters:
                   $ref: '#/components/schemas/AddActionParameters'
             AddActionParameters:
@@ -4559,8 +4574,8 @@
                 tags:
                   description: 'DocumentTagging: Comma-deliminted list of keywords to generate tags for'
                   type: string
-                waitName:
-                  description: Name of WAIT action
+                queueName:
+                  description: Name of Queue action
                   type: string
             AddDocumentOcrRequest:
               type: object

@@ -45,14 +45,12 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
@@ -260,18 +258,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     action.documentId(documentId);
     action.index(index);
 
-    String pk = action.pk(siteId);
-    String sk = action.sk();
-
-    Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
-        AttributeValue.builder().s(sk).build());
-
-    Map<String, AttributeValueUpdate> values = new HashMap<>();
-    values.put("status", AttributeValueUpdate.builder()
-        .value(AttributeValue.builder().s(action.status().name()).build()).build());
-
-    this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
-        .attributeUpdates(values).build());
+    this.db.putItem(action.getAttributes(siteId));
   }
 
   @Override
