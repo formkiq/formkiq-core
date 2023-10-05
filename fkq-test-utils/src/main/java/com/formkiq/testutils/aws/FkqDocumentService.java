@@ -272,7 +272,6 @@ public class FkqDocumentService {
   /**
    * Wait for Actions to Complete.
    * 
-   * <<<<<<< HEAD
    * 
    * @param client {@link ApiClient}
    * @param siteId {@link String}
@@ -288,8 +287,6 @@ public class FkqDocumentService {
 
   /**
    * Wait for Actions to Complete.
-   * 
-   * ======= >>>>>>> d3e8d3f (update)
    * 
    * @param client {@link FormKiqClientV1}
    * @param siteId {@link String}
