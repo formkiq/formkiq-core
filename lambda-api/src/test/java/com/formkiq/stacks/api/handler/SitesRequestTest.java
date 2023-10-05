@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.Site;
 import com.formkiq.stacks.dynamodb.ConfigService;
@@ -209,5 +212,26 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals(1, sites.size());
     assertEquals(siteId, sites.get(0).getSiteId());
     assertEquals("READ_WRITE", sites.get(0).getPermission().toString());
+  }
+
+  /**
+   * Get /sites with 'authentication_only' role.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetSites05() throws Exception {
+    // given
+    String siteId = "authentication_only";
+    setBearerToken(siteId);
+
+    // when
+    try {
+      this.systemApi.getSites();
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(SC_FORBIDDEN.getStatusCode(), e.getCode());
+    }
   }
 }

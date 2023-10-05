@@ -80,6 +80,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GroupExistsException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
@@ -166,7 +167,7 @@ public abstract class AbstractApiTest {
    * @param username {@link String}
    * @param groupNames {@link List} {@link String}
    */
-  private static void addAndLoginCognito(final String username, final List<String> groupNames) {
+  protected static void addAndLoginCognito(final String username, final List<String> groupNames) {
     if (!adminCognitoIdentityProviderService.isUserExists(username)) {
 
       adminCognitoIdentityProviderService.addUser(username, TEMP_USER_PASSWORD);
@@ -174,7 +175,8 @@ public abstract class AbstractApiTest {
           USER_PASSWORD);
 
       for (String groupName : groupNames) {
-        if (!groupName.startsWith(DEFAULT_SITE_ID)) {
+        if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
+
           adminCognitoIdentityProviderService.addGroup(groupName);
         }
         adminCognitoIdentityProviderService.addUserToGroup(username, groupName);
