@@ -23,19 +23,26 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.UserManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetGroupsResponse;
 import com.formkiq.client.model.GetUsersInGroupResponse;
 import com.formkiq.client.model.Group;
 import com.formkiq.client.model.User;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
 /**
  * Process Urls.
@@ -110,6 +117,33 @@ public class CognitoRequestTest extends AbstractApiTest {
       assertNotNull(user.getUserStatus());
       assertNotNull(user.getInsertedDate());
       assertNotNull(user.getLastModifiedDate());
+    }
+  }
+
+  /**
+   * Test 'authentication_only' cognito group.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAuthenticationOnly() throws ApiException {
+    // given
+    String username = "noaccess1@formkiq.com";
+    addAndLoginCognito(username, Arrays.asList("authentication_only"));
+    AuthenticationResultType token = login(username, USER_PASSWORD);
+
+    ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(getRootHttpUrl());
+    jwtClient.addDefaultHeader("Authorization", token.accessToken());
+
+    DocumentsApi api = new DocumentsApi(jwtClient);
+
+    // when
+    try {
+      api.getDocuments(null, null, null, null, null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(SC_FORBIDDEN.getStatusCode(), e.getCode());
     }
   }
 }
