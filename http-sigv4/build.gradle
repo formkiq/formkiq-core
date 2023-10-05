@@ -6,3 +6,8 @@ dependencies {
   implementation group: 'software.amazon.awssdk', name: 'http-client-spi', version: '2.20.140'
   api group: 'software.amazon.awssdk', name: 'auth', version: '2.20.140'
 }
+
+test {
+  failFast = true
+  useJUnitPlatform() 
+}

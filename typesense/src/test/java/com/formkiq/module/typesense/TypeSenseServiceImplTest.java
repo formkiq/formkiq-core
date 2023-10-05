@@ -34,6 +34,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.testutils.aws.TypeSenseExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -46,11 +48,14 @@ class TypeSenseServiceImplTest {
 
   /** {@link TypeSenseService}. */
   private TypeSenseService service;
+  /** {@link AwsCredentials}. */
+  private AwsCredentials credentials = AwsBasicCredentials.create("ABC", "XYZ");
 
   @BeforeEach
   public void beforeEach() {
-    this.service = new TypeSenseServiceImpl(
-        "http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY, Region.US_EAST_1, null);
+    this.service =
+        new TypeSenseServiceImpl("http://localhost:" + TypeSenseExtension.getMappedPort(), API_KEY,
+            Region.US_EAST_1, this.credentials);
   }
 
   /**
@@ -66,7 +71,7 @@ class TypeSenseServiceImplTest {
       final int maxResults = 10;
 
       // when
-      this.service.addDocument(siteId, documentId,
+      this.service.addOrUpdateDocument(siteId, documentId,
           Map.of("text", "/something/else/My Document.pdf"));
 
       // then

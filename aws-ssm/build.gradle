@@ -19,5 +19,6 @@ dependencies {
 }
 
 test {
-	useJUnitPlatform()
+  failFast = true
+  useJUnitPlatform() 
 }
