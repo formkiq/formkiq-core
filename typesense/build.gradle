@@ -9,3 +9,8 @@ dependencies {
 	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.19.0'
 	testImplementation project(':fkq-test-utils')
 }
+
+test {
+  failFast = true
+  useJUnitPlatform() 
+}
