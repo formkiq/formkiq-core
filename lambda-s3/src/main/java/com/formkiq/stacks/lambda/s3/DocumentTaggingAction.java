@@ -348,7 +348,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
     Map<String, Object> payload = new HashMap<>();
 
-    payload.put("model", "text-davinci-003");
+    payload.put("model", "gpt-3.5-turbo-instruct");
     payload.put("max_tokens", CHAT_GPT_MAX_TOKENS);
     payload.put("temperature", CHAT_GPT_TEMPERATURE);
     payload.put("top_p", CHAT_GPT_TOP_P);
