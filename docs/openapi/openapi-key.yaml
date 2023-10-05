@@ -4188,9 +4188,15 @@
                 contentLength:
                   type: integer
                   description: Document size
-                versionId:
+                version:
                   type: string
                   description: Document version
+                versionKey:
+                  type: string
+                  description: Document Version Identifier
+                s3version:
+                  type: string
+                  description: Document storage version
                 belongsToDocumentId:
                   type: string
                   description: Parent Document Identifier
@@ -5221,7 +5227,7 @@
               x-amazon-apigateway-authorizer:
                 identitySource: $request.header.Authorization
                 authorizerUri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
                 authorizerResultTtlInSeconds: 300
                 authorizerPayloadFormatVersion: "2.0"
                 enableSimpleResponses: true

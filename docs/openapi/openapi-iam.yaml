@@ -4188,9 +4188,15 @@
                 contentLength:
                   type: integer
                   description: Document size
-                versionId:
+                version:
                   type: string
                   description: Document version
+                versionKey:
+                  type: string
+                  description: Document Version Identifier
+                s3version:
+                  type: string
+                  description: Document storage version
                 belongsToDocumentId:
                   type: string
                   description: Parent Document Identifier
