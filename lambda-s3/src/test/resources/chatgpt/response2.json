@@ -2,7 +2,7 @@
     "id": "cmpl-7IU7G5A8SPa6N35I1R0o5hjmVpfjM",
     "object": "text_completion",
     "created": 1684640026,
-    "model": "text-davinci-003",
+    "model": "gpt-3.5-turbo-instruct",
     "choices":
     [
         {
