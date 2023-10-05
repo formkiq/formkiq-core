@@ -334,6 +334,8 @@ public class ApiAuthorizationBuilder {
         groups.add(DEFAULT_SITE_ID);
       }
     }
+
+    groups.remove("authentication_only");
     return groups;
   }
 }

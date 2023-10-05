@@ -129,6 +129,15 @@ Resources:
         - Arn
       UserPoolId: 
         Ref: CognitoUserPool
+        
+  AuthenticationOnlyGroup:
+    Type: "AWS::Cognito::UserPoolGroup"    
+    Properties:
+      Precedence: 0
+      GroupName: "authentication_only"
+      Description: "Authentication only group access"
+      UserPoolId: 
+        Ref: CognitoUserPool
   
   AdminGroupParameter:
     Type: AWS::SSM::Parameter
