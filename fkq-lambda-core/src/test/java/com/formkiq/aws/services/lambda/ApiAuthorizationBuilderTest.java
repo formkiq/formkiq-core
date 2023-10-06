@@ -419,7 +419,7 @@ class ApiAuthorizationBuilderTest {
         api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
     assertEquals("no groups", api0.accessSummary());
   }
-  
+
   /**
    * Basic 'authentication_only' access.
    */
@@ -433,10 +433,10 @@ class ApiAuthorizationBuilderTest {
     ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
 
     // then
-    assertNull(api0.siteId());
-    assertEquals("", String.join(",", api0.siteIds()));
-    assertEquals("",
+    assertEquals("finance", api0.siteId());
+    assertEquals("finance", String.join(",", api0.siteIds()));
+    assertEquals("READ,WRITE,DELETE",
         api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
-    assertEquals("no groups", api0.accessSummary());
+    assertEquals("groups: finance (DELETE,READ,WRITE)", api0.accessSummary());
   }
 }
