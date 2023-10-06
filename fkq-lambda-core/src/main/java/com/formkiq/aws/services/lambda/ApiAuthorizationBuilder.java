@@ -335,7 +335,10 @@ public class ApiAuthorizationBuilder {
       }
     }
 
-    groups.remove("authentication_only");
+    if (groups.contains("authentication_only")) {
+      groups.clear();
+    }
+
     return groups;
   }
 }

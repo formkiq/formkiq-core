@@ -419,4 +419,24 @@ class ApiAuthorizationBuilderTest {
         api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
     assertEquals("no groups", api0.accessSummary());
   }
+  
+  /**
+   * Basic 'authentication_only' access.
+   */
+  @Test
+  void testApiAuthorizer13() throws Exception {
+    // given
+    String s0 = "[finance authentication_only]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+
+    // when
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.siteId());
+    assertEquals("", String.join(",", api0.siteIds()));
+    assertEquals("",
+        api0.permissions().stream().map(p -> p.name()).collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.accessSummary());
+  }
 }
