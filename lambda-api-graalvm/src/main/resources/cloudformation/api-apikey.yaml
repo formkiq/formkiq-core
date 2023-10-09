@@ -3370,7 +3370,7 @@ Resources:
                 name:
                   type: "string"
                   description: "Name of Workflow"
-                documentId:
+                workflowId:
                   type: "string"
                   description: "Workflow identifier"
                 description:
