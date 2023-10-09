@@ -227,6 +227,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     if (isEmpty(this.index)) {
       throw new IllegalArgumentException("'index' is required");
     }
+    if (this.type == null) {
+      throw new IllegalArgumentException("'type' is required");
+    }
     return "action" + TAG_DELIMINATOR + this.index + TAG_DELIMINATOR + this.type.name();
   }
 

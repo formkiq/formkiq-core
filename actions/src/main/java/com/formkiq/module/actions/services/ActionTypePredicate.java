@@ -23,25 +23,31 @@
  */
 package com.formkiq.module.actions.services;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
+import java.util.function.Predicate;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
 
 /**
  * 
- * Unit Tests for {@link NextActionPredicate}.
+ * {@link Predicate} for finding {@link Action} with {@link ActionType}.
  *
  */
-public class NextActionPredicateTest {
+public class ActionTypePredicate implements Predicate<Action> {
 
-  @Test
-  void test() {
-    assertTrue(new NextActionPredicate().test(new Action()));
-    assertTrue(new NextActionPredicate().test(new Action().status(ActionStatus.PENDING)));
-    assertFalse(new NextActionPredicate().test(new Action().status(ActionStatus.COMPLETE)));
-    assertFalse(new NextActionPredicate().test(new Action().status(ActionStatus.SKIPPED)));
-    assertTrue(new NextActionPredicate().test(new Action().status(ActionStatus.FAILED)));
+  /** {@link ActionType}. */
+  private ActionType type;
+
+  /**
+   * constructor.
+   * 
+   * @param actionType {@link ActionType}
+   */
+  public ActionTypePredicate(final ActionType actionType) {
+    this.type = actionType;
+  }
+
+  @Override
+  public boolean test(final Action a) {
+    return this.type.equals(a.type());
   }
 }

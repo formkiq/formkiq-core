@@ -227,23 +227,22 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public Map<String, AttributeValue> updateFields(final AttributeValue pk, final AttributeValue sk,
-      final Map<String, AttributeValue> updateValues) {
-    return updateFields(this.tableName, pk, sk, updateValues);
+  public Map<String, AttributeValue> updateItem(final AttributeValue pk, final AttributeValue sk,
+      final Map<String, AttributeValueUpdate> updateValues) {
+    Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
+    return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.tableName).key(dbKey)
+        .attributeUpdates(updateValues).build()).attributes();
   }
 
-  private Map<String, AttributeValue> updateFields(final String dynamoDbTable,
-      final AttributeValue pk, final AttributeValue sk,
+  @Override
+  public Map<String, AttributeValue> updateValues(final AttributeValue pk, final AttributeValue sk,
       final Map<String, AttributeValue> updateValues) {
-
-    Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
 
     Map<String, AttributeValueUpdate> values = new HashMap<>();
     updateValues.forEach((key, value) -> {
       values.put(key, AttributeValueUpdate.builder().value(value).build());
     });
 
-    return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(dynamoDbTable).key(dbKey)
-        .attributeUpdates(values).build()).attributes();
+    return updateItem(pk, sk, values);
   }
 }

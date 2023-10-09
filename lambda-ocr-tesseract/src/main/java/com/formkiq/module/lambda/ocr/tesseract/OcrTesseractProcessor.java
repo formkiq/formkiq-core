@@ -47,8 +47,11 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsMessageRecord;
 import com.formkiq.aws.sqs.SqsMessageRecords;
+import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
+import com.formkiq.module.actions.services.ActionTypePredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
@@ -239,7 +242,14 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
 
       ActionsService actionsService = this.awsServices.getExtension(ActionsService.class);
-      actionsService.updateActionStatus(siteId, documentId, ActionType.OCR, ActionStatus.FAILED);
+      List<Action> actions = actionsService.getActions(siteId, documentId);
+      Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
+          .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
+
+      if (o.isPresent()) {
+        o.get().status(ActionStatus.FAILED);
+        actionsService.updateActionStatus(siteId, documentId, o.get());
+      }
     }
   }
 

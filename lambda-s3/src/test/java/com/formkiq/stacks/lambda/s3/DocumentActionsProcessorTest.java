@@ -1071,6 +1071,54 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle FAILED and PENDING action.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @Test
+  public void testHandle09() throws IOException, URISyntaxException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("application/pdf");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions = Arrays.asList(
+          new Action().status(ActionStatus.FAILED).type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback")),
+          new Action().type(ActionType.WEBHOOK).userId("joe")
+              .parameters(Map.of("url", URL + "/callback2")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      actions = actionsService.getActions(siteId, documentId);
+
+      assertEquals(2, actions.size());
+      Action action = actions.get(0);
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertNotNull(action.insertedDate());
+
+      action = actions.get(1);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      HttpRequest lastRequest = callback.getLastRequest();
+      assertNotNull(lastRequest);
+    }
+  }
+  
+  /**
    * Handle Fulltext that needs OCR Action.
    * 
    * @throws IOException IOException

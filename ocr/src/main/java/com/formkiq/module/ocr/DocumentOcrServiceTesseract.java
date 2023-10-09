@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -50,6 +51,8 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
+import com.formkiq.module.actions.services.ActionTypePredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -321,14 +324,20 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     ActionStatus actionStatus = OcrScanStatus.FAILED.equals(status) ? ActionStatus.FAILED
         : OcrScanStatus.SKIPPED.equals(status) ? ActionStatus.SKIPPED : ActionStatus.COMPLETE;
 
-    ActionsService actions = awsservice.getExtension(ActionsService.class);
+    ActionsService service = awsservice.getExtension(ActionsService.class);
 
-    List<Action> actionlist =
-        actions.updateActionStatus(siteId, documentId, ActionType.OCR, actionStatus);
+    List<Action> actions = service.getActions(siteId, documentId);
+    Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
+        .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
+
+    if (o.isPresent()) {
+      o.get().status(actionStatus);
+      service.updateActionStatus(siteId, documentId, o.get());
+    }
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);
-    notificationService.publishNextActionEvent(actionlist, siteId, documentId);
+    notificationService.publishNextActionEvent(actions, siteId, documentId);
   }
 
   @Override
@@ -339,7 +348,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     Map<String, AttributeValue> attributeValues =
         Map.of("ocrStatus", AttributeValue.builder().s(status.name().toLowerCase()).build());
 
-    this.db.updateFields(pkvalues.get(PK), pkvalues.get(SK), attributeValues);
+    this.db.updateValues(pkvalues.get(PK), pkvalues.get(SK), attributeValues);
   }
 
   /**

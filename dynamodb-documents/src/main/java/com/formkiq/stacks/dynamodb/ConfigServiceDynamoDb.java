@@ -107,7 +107,7 @@ public class ConfigServiceDynamoDb implements ConfigService, DbKeys {
       fields.remove(PK);
       fields.remove(SK);
 
-      this.db.updateFields(item.get(PK), item.get(SK), fields);
+      this.db.updateValues(item.get(PK), item.get(SK), fields);
     } else {
       this.db.putItem(item);
     }

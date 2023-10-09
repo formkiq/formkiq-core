@@ -41,10 +41,11 @@ import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
@@ -279,35 +280,22 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public void updateActionStatus(final String siteId, final String documentId, final Action action,
-      final int index) {
+  public void updateActionStatus(final String siteId, final String documentId,
+      final Action action) {
 
-    action.documentId(documentId);
-    action.index("" + index);
+    Map<String, AttributeValue> attrs = action.getAttributes(siteId);
 
-    this.db.putItem(action.getAttributes(siteId));
-  }
+    Map<String, AttributeValueUpdate> updates = new HashMap<>();
+    updates.put("status", AttributeValueUpdate.builder().value(attrs.get("status")).build());
 
-  @Override
-  public List<Action> updateActionStatus(final String siteId, final String documentId,
-      final ActionType type, final ActionStatus status) {
-
-    int idx = 0;
-
-    List<Action> actionlist = getActions(siteId, documentId);
-
-    for (Action action : actionlist) {
-
-      boolean finished = ActionStatus.COMPLETE.equals(action.status())
-          || ActionStatus.SKIPPED.equals(action.status());
-
-      if (!finished && action.type().equals(type)) {
-        action.status(status);
-        updateActionStatus(siteId, documentId, action, idx);
-      }
-      idx++;
+    if (attrs.containsKey(GSI1_PK) && attrs.containsKey(GSI1_SK)) {
+      updates.put(GSI1_PK, AttributeValueUpdate.builder().value(attrs.get(GSI1_PK)).build());
+      updates.put(GSI1_SK, AttributeValueUpdate.builder().value(attrs.get(GSI1_SK)).build());
+    } else {
+      updates.put(GSI1_PK, AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
+      updates.put(GSI1_SK, AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
     }
 
-    return actionlist;
+    this.db.updateItem(attrs.get(PK), attrs.get(SK), updates);
   }
 }
