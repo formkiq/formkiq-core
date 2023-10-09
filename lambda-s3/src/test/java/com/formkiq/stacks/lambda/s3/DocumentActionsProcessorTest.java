@@ -741,8 +741,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
 
-      assertEquals(ActionStatus.RUNNING,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
     }
   }
 
@@ -779,8 +781,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -819,8 +823,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = gson.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -848,7 +854,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(1, actions.size());
-      assertEquals(ActionStatus.FAILED, actions.get(0).status());
+      Action action = actions.get(0);
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
     }
   }
 
@@ -906,8 +915,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(documents.get(0).get("lastModifiedDate"));
         assertNotNull(documents.get(0).get("url"));
 
-        assertEquals(ActionStatus.COMPLETE,
-            actionsService.getActions(siteId, documentId).get(0).status());
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
       }
     }
   }
@@ -970,8 +981,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals("CLEAN", documents.get(0).get("status"));
         assertEquals("2022-01-01", documents.get(0).get("timestamp"));
 
-        assertEquals(ActionStatus.COMPLETE,
-            actionsService.getActions(siteId, documentId).get(0).status());
+        Action action = actionsService.getActions(siteId, documentId).get(1);
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
       }
     }
   }

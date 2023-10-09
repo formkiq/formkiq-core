@@ -25,6 +25,7 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
@@ -232,6 +234,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   @Override
   public void saveAction(final String siteId, final Action action) {
 
+    if (action.insertedDate() == null) {
+      action.insertedDate(new Date());
+    }
+
     Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
     this.dbClient
         .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(valueMap).build());
@@ -243,6 +249,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     action.documentId(documentId);
     action.index("" + index);
+
+    if (action.insertedDate() == null) {
+      action.insertedDate(new Date());
+    }
 
     Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
     this.dbClient
@@ -261,6 +271,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
       action.documentId(documentId);
       action.index("" + idx);
+
+      if (action.insertedDate() == null) {
+        action.insertedDate(new Date());
+      }
 
       Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
 
@@ -283,10 +297,20 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   public void updateActionStatus(final String siteId, final String documentId,
       final Action action) {
 
+    if (ActionStatus.COMPLETE.equals(action.status())
+        || ActionStatus.FAILED.equals(action.status())) {
+      action.completedDate(new Date());
+    }
+
     Map<String, AttributeValue> attrs = action.getAttributes(siteId);
 
     Map<String, AttributeValueUpdate> updates = new HashMap<>();
     updates.put("status", AttributeValueUpdate.builder().value(attrs.get("status")).build());
+
+    if (action.completedDate() != null) {
+      updates.put("completedDate",
+          AttributeValueUpdate.builder().value(attrs.get("completedDate")).build());
+    }
 
     if (attrs.containsKey(GSI1_PK) && attrs.containsKey(GSI1_SK)) {
       updates.put(GSI1_PK, AttributeValueUpdate.builder().value(attrs.get(GSI1_PK)).build());

@@ -4385,6 +4385,12 @@ Resources:
                 userId:
                   type: "string"
                   description: "User who requested the Action"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                completedDate:
+                  type: "string"
+                  description: "Completed Timestamp"
                 parameters:
                   type: "object"
                   description: Action parameters

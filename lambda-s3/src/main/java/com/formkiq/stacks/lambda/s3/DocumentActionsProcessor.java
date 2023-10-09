@@ -131,6 +131,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private S3Service s3Service;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache preInitServiceCache;
+
   static {
 
     if (System.getenv().containsKey("AWS_REGION")) {
@@ -528,7 +529,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
           this.actionsService.updateActionStatus(siteId, documentId, action);
         }
-
 
       } else {
         logger

@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -42,10 +43,14 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  */
 public class Action implements DynamodbRecord<Action>, DbKeys {
 
+  /** Record Completed date. */
+  private Date completedDate;
   /** DocumentId. */
   private String documentId;
   /** Index. */
   private String index = null;
+  /** Record inserted date. */
+  private Date insertedDate;
   /** Action Metadata. */
   private Map<String, String> metadata;
   /** Action Parameters. */
@@ -62,6 +67,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action() {
     this.status = ActionStatus.PENDING;
+  }
+
+  /**
+   * Get Completed Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date completedDate() {
+    return this.completedDate;
+  }
+
+  /**
+   * Set Completed Date.
+   * 
+   * @param date {@link Date}
+   * @return {@link Action}
+   */
+  public Action completedDate(final Date date) {
+    this.completedDate = date;
+    return this;
   }
 
   /**
@@ -103,6 +128,16 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put(GSI1_SK, fromS(skGsi1));
     }
 
+    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+
+    if (this.insertedDate != null) {
+      attrs.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
+    }
+
+    if (this.completedDate != null) {
+      attrs.put("completedDate", AttributeValue.fromS(df.format(this.completedDate)));
+    }
+
     return attrs;
   }
 
@@ -133,6 +168,24 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       record.index(attrs.get(SK).s().split(TAG_DELIMINATOR)[1]);
     }
 
+    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+
+    if (attrs.containsKey("inserteddate")) {
+      try {
+        record = record.insertedDate(df.parse(ss(attrs, "inserteddate")));
+      } catch (ParseException e) {
+        // ignore
+      }
+    }
+
+    if (attrs.containsKey("completedDate")) {
+      try {
+        record = record.completedDate(df.parse(ss(attrs, "completedDate")));
+      } catch (ParseException e) {
+        // ignore
+      }
+    }
+
     return record;
   }
 
@@ -153,6 +206,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action index(final String idx) {
     this.index = idx;
+    return this;
+  }
+
+  /**
+   * Get Inserted Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date insertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Set Inserted Date.
+   * 
+   * @param date {@link Date}
+   * @return {@link Action}
+   */
+  public Action insertedDate(final Date date) {
+    this.insertedDate = date;
     return this;
   }
 
