@@ -1605,6 +1605,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    this.dbService.updateFields(keys.get(PK), keys.get(SK), attributes);
+    this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
   }
 }

@@ -124,7 +124,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe"));
+      List<Action> actions = Arrays
+          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
@@ -163,7 +164,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe"));
+      List<Action> actions = Arrays
+          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
@@ -210,7 +212,8 @@ class OcrTesseractProcessorTest {
       String documentId = UUID.randomUUID().toString();
       String jobId = UUID.randomUUID().toString();
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe"));
+      List<Action> actions = Arrays
+          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)

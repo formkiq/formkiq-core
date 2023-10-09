@@ -143,19 +143,6 @@ public interface ActionsService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param action {@link Action}
-   * @param index int
    */
-  void updateActionStatus(String siteId, String documentId, Action action, int index);
-
-  /**
-   * Updates {@link ActionStatus}.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param type {@link ActionType}
-   * @param status {@link ActionStatus}
-   * @return {@link List} {@link Action}
-   */
-  List<Action> updateActionStatus(String siteId, String documentId, ActionType type,
-      ActionStatus status);
+  void updateActionStatus(String siteId, String documentId, Action action);
 }

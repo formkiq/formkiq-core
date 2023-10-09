@@ -239,7 +239,8 @@ public class ActionsServiceDynamoDbTest {
       action0.status(ActionStatus.FAILED);
 
       // when
-      service.updateActionStatus(siteId, documentId0, action0, 0);
+      // service.updateActionStatus(siteId, documentId0, action0, 0);
+      service.updateActionStatus(siteId, documentId0, action0);
 
       // then
       results = service.getActions(siteId, documentId0);
@@ -327,8 +328,10 @@ public class ActionsServiceDynamoDbTest {
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
+      action0.status(ActionStatus.COMPLETE);
+
       // when
-      service.updateActionStatus(siteId, documentId, ActionType.OCR, ActionStatus.COMPLETE);
+      service.updateActionStatus(siteId, documentId, action0);
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
@@ -351,17 +354,20 @@ public class ActionsServiceDynamoDbTest {
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
+      action0.status(ActionStatus.IN_QUEUE);
+
       // when
-      service.updateActionStatus(siteId, documentId, ActionType.QUEUE, ActionStatus.IN_QUEUE);
+      service.updateActionStatus(siteId, documentId, action0);
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
       PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, limit);
       assertEquals(1, docs.getResults().size());
       assertNotNull(service.findActionInQueue(siteId, documentId, name));
+      action0.status(ActionStatus.COMPLETE);
 
       // when
-      service.updateActionStatus(siteId, documentId, ActionType.QUEUE, ActionStatus.COMPLETE);
+      service.updateActionStatus(siteId, documentId, action0);
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
@@ -387,8 +393,10 @@ public class ActionsServiceDynamoDbTest {
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
+      action0.status(ActionStatus.FAILED);
+
       // when
-      service.updateActionStatus(siteId, documentId, ActionType.QUEUE, ActionStatus.FAILED);
+      service.updateActionStatus(siteId, documentId, action0);
 
       // then
       assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());

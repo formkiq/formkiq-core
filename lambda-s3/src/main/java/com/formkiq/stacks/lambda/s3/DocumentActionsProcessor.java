@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -78,7 +75,6 @@ import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
-import com.formkiq.module.actions.services.NextActionPredicate;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
@@ -140,9 +136,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (System.getenv().containsKey("AWS_REGION")) {
       preInitServiceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
-          .build();
+              .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                  new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
+                  new SesAwsServiceRegistry())
+              .build();
 
       initialize(preInitServiceCache);
     }
@@ -467,7 +464,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.WEBHOOK.equals(action.type())) {
 
-      sendWebhook(siteId, documentId, action);
+      sendWebhook(siteId, documentId, actions, action);
 
     } else if (ActionType.NOTIFICATION.equals(action.type())) {
 
@@ -480,7 +477,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     logAction(logger, "action complete", siteId, documentId, action);
 
     if (updateComplete) {
-      updateComplete(siteId, documentId, action, completeStatus);
+      updateComplete(siteId, documentId, actions, action, completeStatus);
     }
   }
 
@@ -504,19 +501,20 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
-      Optional<Action> o = actions.stream().filter(new NextActionPredicate()).findFirst();
+      Optional<Action> o =
+          actions.stream().filter((new ActionStatusPredicate(ActionStatus.PENDING))).findFirst();
 
       if (running.isPresent()) {
 
-        logger.log(String.format("ACTIONS already RUNNING for  SiteId %s Document %s", siteId,
-            documentId));
+        logger.log(
+            String.format("ACTIONS already RUNNING for SiteId %s Document %s", siteId, documentId));
 
       } else if (o.isPresent()) {
 
         Action action = o.get();
-        ActionStatus status = ActionStatus.RUNNING;
+        action.status(ActionStatus.RUNNING);
 
-        this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
+        this.actionsService.updateActionStatus(siteId, documentId, action);
 
         try {
 
@@ -524,12 +522,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         } catch (Exception e) {
           e.printStackTrace();
-          status = ActionStatus.FAILED;
-          action.status(status);
+          action.status(ActionStatus.FAILED);
 
           logger.log(String.format("Updating Action Status to %s", action.status()));
 
-          this.actionsService.updateActionStatus(siteId, documentId, o.get().type(), status);
+          this.actionsService.updateActionStatus(siteId, documentId, action);
         }
 
 
@@ -566,14 +563,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         status = ActionStatus.FAILED;
       }
 
-      List<Action> updatedActions =
-          this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
-
-      if (ActionStatus.COMPLETE.equals(status)) {
-        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
-      }
-
-      action.status(status);
+      // List<Action> updatedActions =
+      // this.actionsService.updateActionStxatus(siteId, documentId, ActionType.FULLTEXT, status);
+      //
+      // if (ActionStatus.COMPLETE.equals(status)) {
+      // this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      // }
+      //
+      // action.status(status);
 
     } else if (actions.stream().filter(a -> a.type().equals(ActionType.OCR)).findAny().isEmpty()) {
 
@@ -585,6 +582,13 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
     } else {
       throw new IOException("no OCR document found");
+    }
+
+    action.status(status);
+    this.actionsService.updateActionStatus(siteId, documentId, action);
+
+    if (ActionStatus.COMPLETE.equals(status)) {
+      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
   }
 
@@ -630,16 +634,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final String siteId, final String documentId, final Action action)
-      throws IOException, InterruptedException {
+  private void sendWebhook(final String siteId, final String documentId, final List<Action> actions,
+      final Action action) throws IOException, InterruptedException {
 
     String url = action.parameters().get("url");
-
-    List<Action> actions = this.actionsService.getActions(siteId, documentId);
 
     String body = buildWebhookBody(siteId, documentId, actions);
 
@@ -658,12 +661,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (statusCode >= statusOk && statusCode < statusRedirect) {
 
-        List<Action> updatedActions = this.actionsService.updateActionStatus(siteId, documentId,
-            ActionType.WEBHOOK, ActionStatus.COMPLETE);
-
-        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
-
-        action.status(ActionStatus.COMPLETE);
+        updateComplete(siteId, documentId, actions, action, ActionStatus.COMPLETE);
 
       } else {
         throw new IOException(url + " response status code " + statusCode);
@@ -679,19 +677,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @param completeStatus {@link ActionStatus}
    */
-  private void updateComplete(final String siteId, final String documentId, final Action action,
-      final ActionStatus completeStatus) {
-
-    List<Action> updatedActions =
-        this.actionsService.updateActionStatus(siteId, documentId, action.type(), completeStatus);
+  private void updateComplete(final String siteId, final String documentId,
+      final List<Action> actions, final Action action, final ActionStatus completeStatus) {
 
     action.status(completeStatus);
+    this.actionsService.updateActionStatus(siteId, documentId, action);
 
     if (!ActionType.QUEUE.equals(action.type())) {
-      this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
   }
 

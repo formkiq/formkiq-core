@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
@@ -132,11 +133,22 @@ public interface DynamoDbService {
   /**
    * Update DynamoDB Record.
    * 
-   * @param pk {@link String}
-   * @param sk {@link String}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
    * @param updateValues {@link Map}
    * @return {@link Map}
    */
-  Map<String, AttributeValue> updateFields(AttributeValue pk, AttributeValue sk,
+  Map<String, AttributeValue> updateItem(AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValueUpdate> updateValues);
+
+  /**
+   * Update DynamoDB Record.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param updateValues {@link Map}
+   * @return {@link Map}
+   */
+  Map<String, AttributeValue> updateValues(AttributeValue pk, AttributeValue sk,
       Map<String, AttributeValue> updateValues);
 }

@@ -640,7 +640,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
             .collect(Collectors.joining("")) + source.path();
 
     Map<String, AttributeValue> keys = keysDocument(siteId, source.documentId());
-    this.dynamoDb.updateFields(keys.get(PK), keys.get(SK),
+    this.dynamoDb.updateValues(keys.get(PK), keys.get(SK),
         Map.of("path", AttributeValue.fromS(newPath)));
 
     // update parent folder lastModifiedDate
@@ -648,7 +648,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
       String lastModifiedDate = df.format(new Date());
-      this.dynamoDb.updateFields(AttributeValue.fromS(target.pk(siteId)),
+      this.dynamoDb.updateValues(AttributeValue.fromS(target.pk(siteId)),
           AttributeValue.fromS(target.sk()),
           Map.of("lastModifiedDate", AttributeValue.fromS(lastModifiedDate)));
     }
