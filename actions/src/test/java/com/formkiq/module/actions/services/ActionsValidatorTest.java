@@ -76,7 +76,7 @@ class ActionsValidatorTest {
   @Test
   void testValidation03() {
     // given
-    Action action = new Action().type(ActionType.WEBHOOK);
+    Action action = new Action().type(ActionType.WEBHOOK).userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when
@@ -111,7 +111,7 @@ class ActionsValidatorTest {
   @Test
   void testValidation05() {
     // given
-    Action action = new Action().type(ActionType.OCR);
+    Action action = new Action().type(ActionType.OCR).userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when
@@ -124,7 +124,7 @@ class ActionsValidatorTest {
   @Test
   void testValidation06() {
     // given
-    Action action = new Action().type(ActionType.QUEUE);
+    Action action = new Action().type(ActionType.QUEUE).userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when
@@ -141,8 +141,8 @@ class ActionsValidatorTest {
   @Test
   void testValidation07() {
     // given
-    Action action =
-        new Action().type(ActionType.QUEUE).parameters(Map.of(PARAMETER_QUEUE_NAME, "Testqueue"));
+    Action action = new Action().type(ActionType.QUEUE)
+        .parameters(Map.of(PARAMETER_QUEUE_NAME, "Testqueue")).userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when

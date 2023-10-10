@@ -160,8 +160,11 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
         errors.add(new ValidationErrorImpl().key("type").error("'type' is required"));
 
-      } else {
+      } else if (isEmpty(action.userId())) {
 
+        errors.add(new ValidationErrorImpl().key("userId").error("'userId' is required"));
+
+      } else {
 
         Map<String, String> parameters = getParameters(action);
         if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
