@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -207,7 +208,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     final int status = 200;
 
-    for (String item : Arrays.asList("1", "2", "3", "4", "5")) {
+    for (String item : Arrays.asList("1", "2", "3", "4", "5", "6")) {
       String text = FileUtils.loadFile(mockServer, "/chatgpt/response" + item + ".json");
       mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item)).respond(
           org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
@@ -537,7 +538,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       int i = 0;
       assertEquals("Organization", tags.getResults().get(i).getKey());
-      assertEquals("East Repair Inc.", tags.getResults().get(i++).getValue());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
 
       assertEquals("document type", tags.getResults().get(i).getKey());
       assertEquals("Receipt", tags.getResults().get(i++).getValue());
@@ -691,6 +692,78 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       assertEquals("secretary", tags.getResults().get(i).getKey());
       assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action with a gpt-3.5-turbo-instruct model response.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testDocumentTaggingAction08() throws Exception {
+
+    initProcessor("opensearch", "chatgpt6");
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      configService.save(siteId, new DynamicObject(Map.of(CHATGPT_API_KEY, "asd")));
+
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      documentService.addTags(siteId, documentId, Arrays.asList(new DocumentTag(documentId,
+          "untagged", "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
+              "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      final int expectedSize = 5;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+
+      PaginationResults<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
+
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals(
+          "Toms & Conditions:Payment is due within 18 days."
+              + "Please make checks payable to: East Repatr Inc",
+          tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("New York, NY,Cambutdigo, MA",
+          tags.getResults().get(i++).getValues().stream().collect(Collectors.joining(",")));
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Job Smith", tags.getResults().get(i++).getValue());
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("Receipt,Frontend eaar brake cabies,New set of podal arms,Labor shrs",
+          tags.getResults().get(i++).getValues().stream().collect(Collectors.joining(",")));
     }
   }
 

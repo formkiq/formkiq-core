@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -84,5 +85,7 @@ public class DocumentsActionsRequestTest extends AbstractApiTest {
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
     assertEquals(1, response.getActions().size());
     assertEquals("complete", response.getActions().get(0).getStatus());
+    assertNotNull(response.getActions().get(0).getInsertedDate());
+    assertNotNull(response.getActions().get(0).getCompletedDate());
   }
 }

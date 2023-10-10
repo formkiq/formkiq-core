@@ -1152,10 +1152,12 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
       assertEquals("System", actions.get(0).userId());
+      assertNotNull(actions.get(0).insertedDate());
 
       assertEquals("WEBHOOK", actions.get(1).type().name());
       assertEquals("PENDING", actions.get(1).status().name());
       assertEquals("joesmith", actions.get(1).userId());
+      assertNotNull(actions.get(1).insertedDate());
 
       actions.get(0).status(ActionStatus.COMPLETE);
       actionsService.saveActions(siteId, documentId, actions);
