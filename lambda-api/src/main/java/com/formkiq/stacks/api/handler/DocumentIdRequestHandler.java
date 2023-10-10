@@ -374,7 +374,7 @@ public class DocumentIdRequestHandler
 
       validateTagSchema(awsservice, siteId, item, item.getUserId(), isUpdate);
       validateTags(item);
-      validateActions(awsservice, siteId, item);
+      validateActions(awsservice, siteId, item, authorization);
 
       putObjectToStaging(logger, awsservice, maxDocumentCount, siteId, item);
 
@@ -434,10 +434,14 @@ public class DocumentIdRequestHandler
   }
 
   private void validateActions(final AwsServiceCache awsservice, final String siteId,
-      final DynamicDocumentItem item) throws ValidationException {
+      final DynamicDocumentItem item, final ApiAuthorization authorization)
+      throws ValidationException {
 
     List<DynamicObject> objs = item.getList("actions");
     if (!objs.isEmpty()) {
+
+      objs.stream().forEach(a -> a.put("userId", authorization.username()));
+      item.put("actions", objs);
 
       ConfigService configsService = awsservice.getExtension(ConfigService.class);
       DynamicObject configs = configsService.get(siteId);
@@ -457,7 +461,7 @@ public class DocumentIdRequestHandler
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()))
             : Collections.emptyMap();
 
-        return new Action().type(type).parameters(parameters);
+        return new Action().type(type).parameters(parameters).userId(o.getString("userId"));
       }).collect(Collectors.toList());
 
       for (Action action : actions) {

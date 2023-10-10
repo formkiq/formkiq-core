@@ -1128,8 +1128,8 @@ public class StagingS3CreateTest implements DbKeys {
       this.logger.reset();
 
       data.put("actions",
-          Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId", "joesmith",
-              "parameters", Map.of("test", "1234")),
+          Arrays.asList(
+              Map.of("type", "ocr", "status", "PENDING", "parameters", Map.of("test", "1234")),
               Map.of("type", "webhook", "userId", "joesmith")));
 
       DynamicDocumentItem ditem = new DynamicDocumentItem(data);
@@ -1151,7 +1151,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(2, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
-      assertEquals("joesmith", actions.get(0).userId());
+      assertEquals("System", actions.get(0).userId());
 
       assertEquals("WEBHOOK", actions.get(1).type().name());
       assertEquals("PENDING", actions.get(1).status().name());
@@ -1161,8 +1161,8 @@ public class StagingS3CreateTest implements DbKeys {
       actionsService.saveActions(siteId, documentId, actions);
 
       // given
-      data.put("actions", Arrays.asList(Map.of("type", "ocr", "status", "PENDING", "userId",
-          "joesmith", "parameters", Map.of("test", "1234"))));
+      data.put("actions", Arrays.asList(
+          Map.of("type", "ocr", "status", "PENDING", "parameters", Map.of("test", "1234"))));
       ditem = new DynamicDocumentItem(data);
       content = gson.toJson(ditem).getBytes(UTF_8);
 
@@ -1176,7 +1176,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(1, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
-      assertEquals("joesmith", actions.get(0).userId());
+      assertEquals("System", actions.get(0).userId());
     }
   }
 
