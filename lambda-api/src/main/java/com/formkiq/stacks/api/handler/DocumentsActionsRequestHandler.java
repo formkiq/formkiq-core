@@ -85,6 +85,9 @@ public class DocumentsActionsRequestHandler
       map.put("type", action.type().name().toLowerCase());
       map.put("parameters", action.parameters());
       map.put("metadata", action.metadata());
+      map.put("insertedDate", action.insertedDate());
+      map.put("completedDate", action.completedDate());
+
       list.add(map);
     }
 

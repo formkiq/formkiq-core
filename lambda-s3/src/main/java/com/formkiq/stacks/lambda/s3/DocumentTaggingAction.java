@@ -118,8 +118,6 @@ public class DocumentTaggingAction implements DocumentAction {
   private String createChatGptPrompt(final LambdaLogger logger, final String siteId,
       final String documentId, final Action action) throws IOException {
 
-    String tags = getTags(action);
-
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
 
     DocumentContentFunction docContentFucn = new DocumentContentFunction(this.serviceCache);
@@ -137,7 +135,10 @@ public class DocumentTaggingAction implements DocumentAction {
       text = text.substring(0, CHAT_GPT_MAX_LENGTH);
     }
 
-    String prompt = "Extract the tags " + tags + " from the text below in JSON format.\n\n" + text;
+    List<String> taglist = getTagsAsList(action);
+    String tags = taglist.stream().map(t -> "\"" + t + "\"").collect(Collectors.joining(","));
+    String prompt =
+        "Extract the tags " + tags + " from the text below and return in JSON format.\n\n" + text;
 
     return prompt;
   }
@@ -296,13 +297,13 @@ public class DocumentTaggingAction implements DocumentAction {
   private Object removeQuotesFromObject(final Object o) {
     Object oo = o;
     if (oo instanceof String) {
-      oo = removeQuotes((String) oo);
+      oo = removeEndingPunctuation(removeQuotes((String) oo));
     } else if (oo instanceof Collection) {
 
       Collection<Object> list = new ArrayList<>();
       for (Object obj : (Collection<Object>) oo) {
         if (obj instanceof String) {
-          list.add(removeQuotes((String) obj));
+          list.add(removeEndingPunctuation(removeQuotes((String) obj)));
         }
       }
 

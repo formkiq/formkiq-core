@@ -1,0 +1,19 @@
+{
+    "id": "cmpl-88BgqZjP3dnp8f6KBtbwvfHacnS8Y",
+    "object": "text_completion",
+    "created": 1696962252,
+    "model": "gpt-3.5-turbo-instruct",
+    "choices": [
+        {
+            "text": "\n\n{\n  \"organization\": [\n    \"East Repair Inc.\"\n  ],\n  \"location\": [\n    \"New York, NY\",\n    \"Cambutdigo, MA\"\n  ],\n  \"person\": [\n    \"Job Smith\"\n  ],\n  \"subject\": [\n    \"Receipt\",\n    \"Frontend eaar brake cabies\",\n    \"New set of podal arms\",\n    \"Labor shrs\"\n  ],\n  \"sentiment\": [],\n  \"document type\": [\n    {\n      \"# Us.001\": {\n        \"$154.06\": {\n          \"$145,00\": \"$208\"\n        }\n      }\n    },\n    {\n      \"# Receipt Date \": {\n        \"$11/02/2019 \": \"$20/02/2019 \"\n      }\n    },\n    \n  \t\"Toms & Conditions:Payment is due within 18 days.Please make checks payable to: East Repatr Inc.\"\n    \n   ]\n}",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 221,
+        "completion_tokens": 188,
+        "total_tokens": 409
+    }
+}
