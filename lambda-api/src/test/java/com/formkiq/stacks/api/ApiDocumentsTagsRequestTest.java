@@ -1021,9 +1021,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-post-documents-documentid-tags02.json");
       addParameter(event, "siteId", siteId);
-      addParameter(event, "webnotify", "true");
+      addParameter(event, "ws", "true");
       setPathParameter(event, "documentId", documentId);
-
 
       String expected = "{" + getHeaders() + ",\"body\":\""
           + "{\\\"message\\\":\\\"Created Tag 'category'.\\\"}\",\"statusCode\":201}";
