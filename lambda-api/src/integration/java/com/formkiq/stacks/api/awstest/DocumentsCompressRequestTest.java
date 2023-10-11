@@ -118,22 +118,24 @@ public class DocumentsCompressRequestTest extends AbstractApiTest {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
       List<ApiClient> clients = getApiClients(siteId);
+      DocumentsApi documentsApi = new DocumentsApi(clients.get(0));
+
+      Map<String, String> documentIds = new HashMap<>();
+      for (int i = 0; i < fileCount; i++) {
+        String path = UUID.randomUUID() + ".txt";
+        AddDocumentRequest req =
+            new AddDocumentRequest().content(content).contentType("text/plain").path(path);
+        String documentId = documentsApi.addDocument(req, siteId, null).getDocumentId();
+        documentIds.put(path, documentId);
+      }
+
+      for (Map.Entry<String, String> e : documentIds.entrySet()) {
+        waitForDocumentContent(clients.get(0), siteId, e.getValue());
+      }
 
       for (ApiClient apiClient : clients) {
-        DocumentsApi documentsApi = new DocumentsApi(apiClient);
 
-        Map<String, String> documentIds = new HashMap<>();
-
-        for (int i = 0; i < fileCount; i++) {
-          String path = UUID.randomUUID() + ".txt";
-          AddDocumentRequest req = new AddDocumentRequest().content(content).path(path);
-          String documentId = documentsApi.addDocument(req, siteId, null).getDocumentId();
-          documentIds.put(path, documentId);
-        }
-
-        for (Map.Entry<String, String> e : documentIds.entrySet()) {
-          waitForDocumentContent(apiClient, siteId, e.getValue());
-        }
+        documentsApi = new DocumentsApi(apiClient);
 
         // when
         DocumentsCompressRequest compressReq =

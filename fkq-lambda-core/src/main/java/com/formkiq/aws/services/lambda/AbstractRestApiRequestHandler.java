@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_FORBIDDEN;
@@ -622,9 +623,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiGatewayRequestEvent event, final ApiRequestHandlerResponse resp)
       throws BadException {
 
-    String webnotify = event.getQueryStringParameter("webnotify");
+    String websocket = event.getQueryStringParameter("ws");
 
-    if ("true".equals(webnotify)) {
+    if ("true".equals(websocket)) {
 
       AwsServiceCache aws = getAwsServices();
       switch (resp.getStatus()) {
@@ -635,20 +636,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
           String body = getBodyAsString(event);
           String documentId = event.getPathParameters().get("documentId");
 
-          Map<String, String> m = new HashMap<>();
-          if (siteId != null) {
-            m.put("siteId", siteId);
-          }
-
           if (documentId != null) {
+
+            Map<String, String> m = new HashMap<>();
+            m.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
             m.put("documentId", documentId);
+            m.put("message", body);
+
+            String json = this.gson.toJson(m);
+            SqsService sqsService = aws.getExtension(SqsService.class);
+            sqsService.sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           }
-
-          m.put("message", body);
-
-          String json = this.gson.toJson(m);
-          SqsService sqsService = aws.getExtension(SqsService.class);
-          sqsService.sendMessage(aws.environment("WEBSOCKET_SQS_URL"), json);
           break;
 
         default:

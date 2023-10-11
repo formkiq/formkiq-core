@@ -332,7 +332,7 @@ public class FkqDocumentService {
     while (true) {
 
       try {
-        return api.getDocumentContent(documentId, null, siteId, null);
+        return api.getDocumentContent(documentId, siteId, null, null);
       } catch (ApiException e) {
         // ignore error
       }
