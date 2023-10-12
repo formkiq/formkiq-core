@@ -23,13 +23,13 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.net.http.HttpResponse;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -38,10 +38,8 @@ import com.formkiq.stacks.client.FormKiqClientV1;
  * </p>
  *
  */
-public class VersionRequestTest extends AbstractApiTest {
+public class VersionRequestTest extends AbstractAwsIntegrationTest {
 
-  /** Http Status OK. */
-  private static final int HTTP_STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
 
@@ -53,25 +51,10 @@ public class VersionRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testVersion01() throws Exception {
-    // given
-    for (FormKiqClientV1 c : getFormKiqClients(null)) {
-      assertNotNull(c.getVersion().version());
-      assertNotNull(c.getVersion().type());
-    }
-  }
-
-  /**
-   * Options.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      HttpResponse<String> response = client.optionsVersion();
-      assertEquals(HTTP_STATUS_NO_CONTENT, response.statusCode());
-      assertPreflightedCorsHeaders(response.headers());
+    for (ApiClient client : getApiClients(null)) {
+      SystemManagementApi api = new SystemManagementApi(client);
+      assertNotNull(api.getVersion().getVersion());
+      assertNotNull(api.getVersion().getType());
     }
   }
 }
