@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -55,6 +57,12 @@ public abstract class AbstractAwsIntegrationTest {
   private static AuthenticationResultType adminToken;
   /** FormKiQ KEY API Client. */
   private static Map<String, String> apiKeys = new HashMap<>();
+  /** Get App Environment. */
+  private static String appenvironment;
+  /** {@link String}. */
+  private static String awsprofile;
+  /** {@link Region}. */
+  private static Region awsregion;
   /** FormKiQ IAM Client. */
   private static FormKiqClientV1 clientIam;
   /** Client Token {@link FormKiqClientV1}. */
@@ -63,6 +71,10 @@ public abstract class AbstractAwsIntegrationTest {
   private static FkqCognitoService cognito;
   /** Site Id. */
   public static final String SITE_ID = "8ab6a050-1fc4-11ed-861d-0242ac120002";
+  /** {@link SqsService}. */
+  private static SqsService sqs;
+  /** {@link SsmService}. */
+  private static SsmService ssm;
   /** Cognito User Password. */
   protected static final String USER_PASSWORD = "TEMPORARY_PASSWORd1!";
 
@@ -75,7 +87,6 @@ public abstract class AbstractAwsIntegrationTest {
    */
   @BeforeAll
   public static void beforeClass() throws IOException, InterruptedException, URISyntaxException {
-
     setupServices();
 
     cognito.addUser(ADMIN_EMAIL, USER_PASSWORD);
@@ -87,6 +98,15 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
+   * Get Admin Token.
+   * 
+   * @return {@link AuthenticationResultType}
+   */
+  public static AuthenticationResultType getAdminToken() {
+    return adminToken;
+  }
+
+  /**
    * Get {@link ApiClient}.
    * 
    * @param siteId {@link String}
@@ -94,8 +114,6 @@ public abstract class AbstractAwsIntegrationTest {
    * @throws ApiException ApiException
    */
   public static List<ApiClient> getApiClients(final String siteId) throws ApiException {
-
-    String awsprofile = System.getProperty("testprofile");
 
     try (ProfileCredentialsProvider p = ProfileCredentialsProvider.create(awsprofile)) {
 
@@ -144,6 +162,33 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
+   * Get App Environment.
+   * 
+   * @return {@link String}
+   */
+  public static String getAppenvironment() {
+    return appenvironment;
+  }
+
+  /**
+   * Get Aws Profile.
+   * 
+   * @return {@link String}
+   */
+  public static String getAwsprofile() {
+    return awsprofile;
+  }
+
+  /**
+   * Get Aws Region.
+   * 
+   * @return {@link Region}
+   */
+  public static Region getAwsregion() {
+    return awsregion;
+  }
+
+  /**
    * Get {@link FkqCognitoService}.
    * 
    * @return {@link FkqCognitoService}
@@ -152,13 +197,37 @@ public abstract class AbstractAwsIntegrationTest {
     return cognito;
   }
 
+  /**
+   * Get {@link SqsService}.
+   * 
+   * @return {@link SqsService}
+   */
+  public static SqsService getSqs() {
+    return sqs;
+  }
+
+  /**
+   * Get {@link SsmService}.
+   * 
+   * @return {@link SsmService}
+   */
+  public static SsmService getSsm() {
+    return ssm;
+  }
+
   private static void setupServices() {
 
-    String awsprofile = System.getProperty("testprofile");
-    Region awsregion = Region.of(System.getProperty("testregion"));
-    String appenvironment = System.getProperty("testappenvironment");
+    System.setProperty("testprofile", "formkiqtest");
+    System.setProperty("testregion", "us-east-2");
+    System.setProperty("testappenvironment", "test3");
+
+    awsprofile = System.getProperty("testprofile");
+    awsregion = Region.of(System.getProperty("testregion"));
+    appenvironment = System.getProperty("testappenvironment");
 
     cognito = new FkqCognitoService(awsprofile, awsregion, appenvironment);
+    ssm = new FkqSsmService(awsprofile, awsregion);
+    sqs = new FkqSqsService(awsprofile, awsregion);
   }
 
   /**

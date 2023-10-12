@@ -44,6 +44,7 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
@@ -102,7 +103,7 @@ public final class TestServices {
    * @throws URISyntaxException URISyntaxException
    */
   public static void clearSqsQueue(final String queueUrl) throws URISyntaxException {
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     ReceiveMessageResponse response = sqsService.receiveMessages(queueUrl);
     while (!response.messages().isEmpty()) {
       for (Message msg : response.messages()) {
@@ -133,7 +134,7 @@ public final class TestServices {
    */
   public static String createSqsSubscriptionToSnsTopic(final String snsTopicArn)
       throws URISyntaxException {
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     SnsService snsService = new SnsService(getSnsConnection(null));
     String queueUrl = sqsService.createQueue("sqs_" + UUID.randomUUID()).queueUrl();
     String sqsQueueArn = sqsService.getQueueArn(queueUrl);
@@ -208,7 +209,7 @@ public final class TestServices {
    * @throws URISyntaxException URISyntaxException
    */
   public static List<Message> getMessagesFromSqs(final String queueUrl) throws URISyntaxException {
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     List<Message> msgs = sqsService.receiveMessages(queueUrl).messages();
     return msgs;
   }
@@ -223,7 +224,7 @@ public final class TestServices {
   public static List<Message> waitForMessagesFromSqs(final String queueUrl)
       throws URISyntaxException {
 
-    SqsService sqsService = new SqsService(getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
     List<Message> msgs = Collections.emptyList();
 
     while (msgs.isEmpty()) {
@@ -330,7 +331,7 @@ public final class TestServices {
   public static synchronized SqsService getSqsService(final SqsConnectionBuilder sqs)
       throws URISyntaxException {
     if (sqsservice == null) {
-      sqsservice = new SqsService(sqs);
+      sqsservice = new SqsServiceImpl(sqs);
     }
 
     return sqsservice;

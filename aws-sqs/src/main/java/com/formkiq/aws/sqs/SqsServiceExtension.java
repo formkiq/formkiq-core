@@ -40,7 +40,7 @@ public class SqsServiceExtension implements AwsServiceExtension<SqsService> {
   public SqsService loadService(final AwsServiceCache awsServiceCache) {
     if (this.service == null) {
       SqsConnectionBuilder connection = awsServiceCache.getExtension(SqsConnectionBuilder.class);
-      this.service = new SqsService(connection);
+      this.service = new SqsServiceImpl(connection);
     }
 
     return this.service;

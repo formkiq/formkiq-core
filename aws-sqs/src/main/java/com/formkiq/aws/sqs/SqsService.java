@@ -23,21 +23,14 @@
  */
 package com.formkiq.aws.sqs;
 
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.AddPermissionRequest;
 import software.amazon.awssdk.services.sqs.model.AddPermissionResponse;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
-import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
 import software.amazon.awssdk.services.sqs.model.DeleteQueueResponse;
-import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesResponse;
-import software.amazon.awssdk.services.sqs.model.ListQueuesRequest;
 import software.amazon.awssdk.services.sqs.model.ListQueuesResponse;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
@@ -46,20 +39,7 @@ import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
  * SQS Service.
  *
  */
-public class SqsService {
-
-  /** {@link SqsClient}. */
-  private SqsClient sqsClient;
-
-  /**
-   * constructor.
-   * 
-   * @param connection {@link SqsConnectionBuilder}
-   * 
-   */
-  public SqsService(final SqsConnectionBuilder connection) {
-    this.sqsClient = connection.build();
-  }
+public interface SqsService {
 
   /**
    * Add Permission.
@@ -67,9 +47,7 @@ public class SqsService {
    * @param request {@link AddPermissionRequest}
    * @return {@link AddPermissionResponse}
    */
-  public AddPermissionResponse addPermission(final AddPermissionRequest request) {
-    return this.sqsClient.addPermission(request);
-  }
+  AddPermissionResponse addPermission(AddPermissionRequest request);
 
   /**
    * Create SQS Queue.
@@ -77,9 +55,7 @@ public class SqsService {
    * @param request {@link CreateQueueRequest}
    * @return {@link CreateQueueResponse}
    */
-  public CreateQueueResponse createQueue(final CreateQueueRequest request) {
-    return this.sqsClient.createQueue(request);
-  }
+  CreateQueueResponse createQueue(CreateQueueRequest request);
 
   /**
    * Create SQS Queue.
@@ -87,9 +63,7 @@ public class SqsService {
    * @param queueName {@link String}
    * @return {@link CreateQueueResponse}
    */
-  public CreateQueueResponse createQueue(final String queueName) {
-    return createQueue(CreateQueueRequest.builder().queueName(queueName).build());
-  }
+  CreateQueueResponse createQueue(String queueName);
 
   /**
    * Delete SQS Message.
@@ -97,10 +71,7 @@ public class SqsService {
    * @param queueUrl {@link String}
    * @param receiptHandle {@link String}
    */
-  public void deleteMessage(final String queueUrl, final String receiptHandle) {
-    this.sqsClient.deleteMessage(
-        DeleteMessageRequest.builder().queueUrl(queueUrl).receiptHandle(receiptHandle).build());
-  }
+  void deleteMessage(String queueUrl, String receiptHandle);
 
   /**
    * Delete SQS Queue.
@@ -108,9 +79,7 @@ public class SqsService {
    * @param queueUrl {@link String}
    * @return {@link DeleteQueueResponse}
    */
-  public DeleteQueueResponse deleteQueue(final String queueUrl) {
-    return this.sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build());
-  }
+  DeleteQueueResponse deleteQueue(String queueUrl);
 
   /**
    * Whether SQS Queue exists.
@@ -118,11 +87,7 @@ public class SqsService {
    * @param queueName {@link String}
    * @return boolean
    */
-  public boolean exists(final String queueName) {
-    ListQueuesResponse response =
-        this.sqsClient.listQueues(ListQueuesRequest.builder().queueNamePrefix(queueName).build());
-    return response.queueUrls().stream().filter(q -> q.equals(queueName)).findFirst().isPresent();
-  }
+  boolean exists(String queueName);
 
   /**
    * Get SQS Queue Arn.
@@ -130,12 +95,7 @@ public class SqsService {
    * @param queueUrl {@link String}
    * @return {@link GetQueueAttributesResponse}
    */
-  public String getQueueArn(final String queueUrl) {
-    return this.sqsClient
-        .getQueueAttributes(GetQueueAttributesRequest.builder()
-            .attributeNamesWithStrings("QueueArn").queueUrl(queueUrl).build())
-        .attributesAsStrings().get("QueueArn");
-  }
+  String getQueueArn(String queueUrl);
 
   /**
    * List SQS Queues by Prefix.
@@ -143,10 +103,7 @@ public class SqsService {
    * @param queueNamePrefix {@link String}
    * @return {@link ListQueuesResponse}
    */
-  public ListQueuesResponse listQueues(final String queueNamePrefix) {
-    return this.sqsClient
-        .listQueues(ListQueuesRequest.builder().queueNamePrefix(queueNamePrefix).build());
-  }
+  ListQueuesResponse listQueues(String queueNamePrefix);
 
   /**
    * Receives SQS Messages from a queueUrl.
@@ -154,12 +111,7 @@ public class SqsService {
    * @param queueUrl {@link String}
    * @return {@link ReceiveMessageResponse}
    */
-  public ReceiveMessageResponse receiveMessages(final String queueUrl) {
-    ReceiveMessageResponse response =
-        this.sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build());
-
-    return response;
-  }
+  ReceiveMessageResponse receiveMessages(String queueUrl);
 
   /**
    * Send Message to SQS.
@@ -168,11 +120,7 @@ public class SqsService {
    * @param message {@link String}
    * @return {@link SendMessageResponse}
    */
-  public SendMessageResponse sendMessage(final String queueUrl, final String message) {
-    SendMessageResponse response = this.sqsClient
-        .sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody(message).build());
-    return response;
-  }
+  SendMessageResponse sendMessage(String queueUrl, String message);
 
   /**
    * Set Queue Attributes.
@@ -180,7 +128,5 @@ public class SqsService {
    * @param request {@link SetQueueAttributesRequest}
    * @return {@link SetQueueAttributesResponse}
    */
-  public SetQueueAttributesResponse setQueueAttributes(final SetQueueAttributesRequest request) {
-    return this.sqsClient.setQueueAttributes(request);
-  }
+  SetQueueAttributesResponse setQueueAttributes(SetQueueAttributesRequest request);
 }
