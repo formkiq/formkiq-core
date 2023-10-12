@@ -35,8 +35,7 @@ import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.SetConfigRequest;
-import com.formkiq.client.model.SetConfigResponse;
+import com.formkiq.client.model.UpdateConfigurationResponse;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import com.formkiq.stacks.client.models.Configuration;
 import com.formkiq.stacks.client.requests.UpdateConfigurationRequest;
@@ -182,13 +181,14 @@ public class ConfigurationRequestTest extends AbstractApiTest {
 
     String adminEmail =
         getParameterStoreValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
-    SetConfigRequest req = new SetConfigRequest().notificationEmail(adminEmail);
+    com.formkiq.client.model.UpdateConfigurationRequest req =
+        new com.formkiq.client.model.UpdateConfigurationRequest().notificationEmail(adminEmail);
 
     for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
       SystemManagementApi api = new SystemManagementApi(client);
 
       // when
-      SetConfigResponse updateConfiguration = api.updateConfiguration(req, siteId);
+      UpdateConfigurationResponse updateConfiguration = api.updateConfiguration(req, siteId);
 
       // then
       assertEquals("Config saved", updateConfiguration.getMessage());
@@ -207,7 +207,8 @@ public class ConfigurationRequestTest extends AbstractApiTest {
     List<ApiClient> clients = getApiClients(null);
 
     String email = "test@formkiq.com";
-    SetConfigRequest req = new SetConfigRequest().notificationEmail(email);
+    com.formkiq.client.model.UpdateConfigurationRequest req =
+        new com.formkiq.client.model.UpdateConfigurationRequest().notificationEmail(email);
 
     for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
       SystemManagementApi api = new SystemManagementApi(client);

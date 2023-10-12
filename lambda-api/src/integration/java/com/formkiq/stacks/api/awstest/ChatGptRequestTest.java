@@ -24,27 +24,33 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
-import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.AddDocumentAction;
-import com.formkiq.stacks.client.models.Configuration;
-import com.formkiq.stacks.client.models.DocumentActionType;
-import com.formkiq.stacks.client.models.DocumentTags;
-import com.formkiq.stacks.client.requests.AddDocumentActionRequest;
-import com.formkiq.stacks.client.requests.GetDocumentTagsRequest;
-import com.formkiq.stacks.client.requests.UpdateConfigurationRequest;
+import com.formkiq.client.api.DocumentActionsApi;
+import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddAction.TypeEnum;
+import com.formkiq.client.model.AddActionParameters;
+import com.formkiq.client.model.AddActionParameters.EngineEnum;
+import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.GetDocumentTagsResponse;
+import com.formkiq.client.model.UpdateConfigurationRequest;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.utils.IoUtils;
 
 /**
@@ -52,25 +58,27 @@ import software.amazon.awssdk.utils.IoUtils;
  * Integration Test for creating an OCR / ChatGPT actions.
  *
  */
-public class ChatGptRequestTest extends AbstractApiTest {
+public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 120;
 
   @BeforeAll
-  public static void beforeClass() throws IOException {
-    AbstractApiTest.beforeClass();
+  public static void beforeClass() throws IOException, InterruptedException, URISyntaxException {
+    AbstractAwsIntegrationTest.beforeClass();
 
     if (System.getProperty("testchatgptapikey") == null) {
       throw new IOException("key not set");
     }
 
-    FormKiqClientV1 client = getFormKiqClients(null).get(0);
-    Configuration config = new Configuration();
-    config.chatGptApiKey(System.getProperty("testchatgptapikey"));
     try {
-      client.updateConfiguration(new UpdateConfigurationRequest().config(config));
-    } catch (InterruptedException e) {
+      ApiClient apiClient = getApiClients(null).get(0);
+      SystemManagementApi api = new SystemManagementApi(apiClient);
+
+      api.updateConfiguration(
+          new UpdateConfigurationRequest().chatGptApiKey(System.getProperty("testchatgptapikey")),
+          null);
+    } catch (ApiException e) {
       throw new IOException(e);
     }
   }
@@ -86,32 +94,44 @@ public class ChatGptRequestTest extends AbstractApiTest {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      List<FormKiqClientV1> clients = getFormKiqClients(siteId);
-      FormKiqClientV1 client = clients.get(0);
+      List<ApiClient> clients = getApiClients(siteId);
+      ApiClient client = clients.get(0);
 
       byte[] content = toBytes("/ocr/receipt.png");
-      String documentId = addDocument(client, siteId, "receipt.png", content, "image/png");
+      String documentId = addDocument(client, siteId, "receipt.png", content, "image/png", null);
+
       waitForDocumentContent(client, siteId, documentId);
 
+      DocumentActionsApi api = new DocumentActionsApi(client);
+      String actionTags = "organization,location,person,subject,sentiment,document type";
+
       // when
-      AddDocumentActionRequest addReq =
-          new AddDocumentActionRequest().siteId(siteId).documentId(documentId)
-              .actions(Arrays.asList(new AddDocumentAction().type(DocumentActionType.OCR),
-                  new AddDocumentAction().type(DocumentActionType.DOCUMENTTAGGING)
-                      .parameters(Map.of("engine", "chatgpt", "tags",
-                          "organization,location,person,subject,sentiment,document type"))));
-      client.addDocumentAction(addReq);
+      // AddDocumentActionRequest addReq =
+      // new AddDocumentActionRequest().siteId(siteId).documentId(documentId)
+      // .actions(Arrays.asList(new AddDocumentAction().type(DocumentActionType.OCR),
+      // new AddDocumentAction().type(DocumentActionType.DOCUMENTTAGGING)
+      // .parameters(Map.of("engine", "chatgpt", "tags",
+      // "organization,location,person,subject,sentiment,document type"))));
+      // client.addDocumentAction(addReq);
+
+      api.addDocumentActions(documentId, siteId,
+          new AddDocumentActionsRequest().actions(Arrays.asList(new AddAction().type(TypeEnum.OCR),
+              new AddAction().type(TypeEnum.DOCUMENTTAGGING).parameters(
+                  new AddActionParameters().engine(EngineEnum.CHATGPT).tags(actionTags)))));
 
       // then
-      waitForActionsComplete(client, siteId, documentId, DocumentActionType.DOCUMENTTAGGING);
+      waitForActions(client, siteId, documentId, ActionStatus.COMPLETE.name());
 
-      GetDocumentTagsRequest tagsReq =
-          new GetDocumentTagsRequest().siteId(siteId).documentId(documentId);
-      DocumentTags tags = client.getDocumentTags(tagsReq);
+      DocumentTagsApi tagsApi = new DocumentTagsApi(client);
+
+      // GetDocumentTagsRequest tagsReq =
+      // new GetDocumentTagsRequest().siteId(siteId).documentId(documentId);
+      GetDocumentTagsResponse tags =
+          tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
       assertTrue(
-          tags.tags().stream().filter(r -> r.key().equals("untagged")).findFirst().isEmpty());
+          tags.getTags().stream().filter(r -> r.getKey().equals("untagged")).findFirst().isEmpty());
 
-      assertTrue(tags.tags().stream().filter(r -> r.key().toLowerCase().equals("person"))
+      assertTrue(tags.getTags().stream().filter(r -> r.getKey().toLowerCase().equals("person"))
           .findFirst().isPresent());
     }
   }

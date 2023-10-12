@@ -39,7 +39,7 @@ import com.formkiq.client.model.AddAction.TypeEnum;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.GetDocumentActionsResponse;
-import com.formkiq.client.model.SetConfigRequest;
+import com.formkiq.client.model.UpdateConfigurationRequest;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
@@ -65,7 +65,7 @@ public class DocumentsActionsRequestTest extends AbstractApiTest {
 
     String adminEmail =
         getParameterStoreValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
-    SetConfigRequest req = new SetConfigRequest().notificationEmail(adminEmail);
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
 
     SystemManagementApi api = new SystemManagementApi(client);
     api.updateConfiguration(req, siteId);

@@ -30,6 +30,7 @@ import com.formkiq.stacks.client.FormKiqClientConnection;
 import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
@@ -205,6 +206,16 @@ public class FkqCognitoService {
   }
 
   /**
+   * Get User.
+   * 
+   * @param username {@link String}
+   * @return {@link AdminGetUserResponse}
+   */
+  public AdminGetUserResponse getUser(final String username) {
+    return this.service.getUser(username);
+  }
+
+  /**
    * Does Cognito User Exist.
    * 
    * @param email {@link String}
@@ -223,5 +234,17 @@ public class FkqCognitoService {
    */
   public AuthenticationResultType login(final String email, final String password) {
     return this.service.login(email, password);
+  }
+
+  /**
+   * Login User in NEW_PASSWORD_REQUIRED status.
+   * 
+   * @param email {@link String}
+   * @param password {@link String}
+   * @param newpassword {@link String}
+   */
+  public void loginWithNewPassword(final String email, final String password,
+      final String newpassword) {
+    this.service.loginWithNewPassword(email, password, newpassword);
   }
 }

@@ -26,13 +26,13 @@ package com.formkiq.stacks.api.awstest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.net.http.HttpResponse;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.Sites;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetSitesResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -41,10 +41,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
  * </p>
  *
  */
-public class SitesRequestTest extends AbstractApiTest {
+public class SitesRequestTest extends AbstractAwsIntegrationTest {
 
-  /** Http Status OK. */
-  private static final int HTTP_STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
 
@@ -57,30 +55,20 @@ public class SitesRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testSites01() throws Exception {
     // given
-    AuthenticationResultType token = login(USER_EMAIL, USER_PASSWORD);
-    putParameter("/formkiq/" + getAppenvironment() + "/maildomain", "tryformkiq.com");
-    FormKiqClientV1 client = createHttpClient(token);
+    for (ApiClient apiClient : getApiClients(null)) {
 
-    // when
-    Sites sites = client.getSites();
-    // then
-    assertEquals(1, sites.sites().size());
-    assertNotNull(sites.sites().get(0).siteId());
-    assertEquals("READ_WRITE", sites.sites().get(0).permission());
-    assertTrue(sites.sites().get(0).uploadEmail().endsWith("@tryformkiq.com"));
-  }
+      getSsm().putParameter("/formkiq/" + getAppenvironment() + "/maildomain", "tryformkiq.com");
 
-  /**
-   * Options.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      HttpResponse<String> response = client.optionsSites();
-      assertEquals(HTTP_STATUS_NO_CONTENT, response.statusCode());
-      assertPreflightedCorsHeaders(response.headers());
+      SystemManagementApi api = new SystemManagementApi(apiClient);
+
+      // when
+      GetSitesResponse sites = api.getSites();
+
+      // then
+      assertEquals(1, sites.getSites().size());
+      assertNotNull(sites.getSites().get(0).getSiteId());
+      assertEquals("READ_WRITE", sites.getSites().get(0).getPermission().toString());
+      assertTrue(sites.getSites().get(0).getUploadEmail().endsWith("@tryformkiq.com"));
     }
   }
 }

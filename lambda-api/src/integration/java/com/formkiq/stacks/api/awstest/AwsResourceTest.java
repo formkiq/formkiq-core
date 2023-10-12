@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,39 +32,87 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.cognito.CognitoIdentityConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.GetDocumentsRequest;
+import com.formkiq.aws.cognito.CognitoIdentityService;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.Document;
+import com.formkiq.client.model.GetDocumentsResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.cognitoidentity.model.Credentials;
-import software.amazon.awssdk.services.cognitoidentity.model.NotAuthorizedException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
 /**
  * Test CloudFormation.
  */
-public class AwsResourceTest extends AbstractApiTest {
-
+public class AwsResourceTest extends AbstractAwsIntegrationTest {
+  /** Temporary Cognito Password. */
+  private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 80;
   /** Temporary Cognito Password. */
   private static final String USER_TEMP_PASSWORD = "TEMPORARY_PASSWORd1!";
+  /** Cognito User Pool Id. */
+  private static String cognitoUserPoolId;
+  /** Cognito Client Id. */
+  private static String cognitoClientId;
+  /** Cognito Identity Pool. */
+  private static String cognitoIdentitypool;
+  /** Cognito User Email. */
+  private static final String READONLY_EMAIL = "readonly@formkiq.com";
+  /** Cognito User Email. */
+  private static final String USER_EMAIL = "testuser@formkiq.com";
+  /** Cognito FINANCE User Email. */
+  private static final String FINANCE_EMAIL = "testfinance@formkiq.com";
+
+  /**
+   * BeforeAll.
+   * 
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @BeforeAll
+  public static void beforeAll() throws IOException, InterruptedException, URISyntaxException {
+    AbstractAwsIntegrationTest.beforeClass();
+
+    cognitoUserPoolId =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/cognito/UserPoolId");
+
+    cognitoClientId =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/cognito/UserPoolClientId");
+
+    cognitoIdentitypool =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/cognito/IdentityPoolId");
+
+    addAndLoginCognito(READONLY_EMAIL, Arrays.asList("default_read"));
+    addAndLoginCognito(USER_EMAIL, Arrays.asList(DEFAULT_SITE_ID));
+    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
+  }
 
   /**
    * Test Having Admin add new user to group.
@@ -73,15 +123,15 @@ public class AwsResourceTest extends AbstractApiTest {
     // given
     String email = UUID.randomUUID() + "@formkiq.com";
     String group =
-        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/cognito/AdminGroup");
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/cognito/AdminGroup");
     Credentials cred = getAdminCognitoIdentityService().getCredentials(getAdminToken());
 
     AwsCredentials basic =
         AwsSessionCredentials.create(cred.accessKeyId(), cred.secretKey(), cred.sessionToken());
 
     CognitoIdentityProviderConnectionBuilder userBuilder =
-        new CognitoIdentityProviderConnectionBuilder(getCognitoClientId(), getCognitoUserPoolId())
-            .setRegion(getAwsRegion()).setCredentials(StaticCredentialsProvider.create(basic));
+        new CognitoIdentityProviderConnectionBuilder(cognitoClientId, cognitoUserPoolId)
+            .setRegion(getAwsregion()).setCredentials(StaticCredentialsProvider.create(basic));
 
     CognitoIdentityProviderService userCognitoService =
         new CognitoIdentityProviderService(userBuilder);
@@ -93,43 +143,41 @@ public class AwsResourceTest extends AbstractApiTest {
     // then
     GetUserResponse user = userCognitoService.getUser(getAdminToken());
     assertNotNull(user.username());
-    assertEquals("testadminuser@formkiq.com", user.userAttributes().stream()
+    assertEquals("testadminuser123@formkiq.com", user.userAttributes().stream()
         .filter(f -> f.name().equals("email")).findFirst().get().value());
+  }
+
+  private CognitoIdentityService getAdminCognitoIdentityService() {
+
+    CognitoIdentityConnectionBuilder adminIdentityBuilder =
+        new CognitoIdentityConnectionBuilder(cognitoClientId, cognitoUserPoolId,
+            cognitoIdentitypool).setCredentials(getAwsprofile()).setRegion(getAwsregion());
+
+    return new CognitoIdentityService(adminIdentityBuilder);
   }
 
   /**
    * Tests hitting apirequesthandler.
    * 
-   * @throws IOException IOException
-   * @throws URISyntaxException URISyntaxException
-   * @throws InterruptedException InterruptedException
+   * @throws ApiException ApiException
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testApiDocuments01() throws IOException, URISyntaxException, InterruptedException {
+  public void testApiDocuments01() throws ApiException {
     // given
-    final int year = 2019;
-    final int month = 8;
-    final int day = 15;
-    LocalDate localDate = LocalDate.of(year, month, day);
+    for (ApiClient apiClient : getApiClients(null)) {
 
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
       // given
-      Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-      GetDocumentsRequest request = new GetDocumentsRequest().date(date).tz("+0500");
+      DocumentsApi api = new DocumentsApi(apiClient);
 
       // when
-      HttpResponse<String> response = client.getDocumentsAsHttpResponse(request);
+      GetDocumentsResponse documents =
+          api.getDocuments("2010-01-01", "+0500", null, null, null, null);
 
       // then
-      assertRequestCorsHeaders(response.headers());
-      final int status = 200;
-      assertEquals(status, response.statusCode());
-      assertEquals("{\"documents\":[]}", response.body());
+      assertTrue(documents.getDocuments().isEmpty());
     }
   }
-
-
 
   /**
    * Tests Getting a Presign URL which will create a record in DynamoDB for the document. Then we 1)
@@ -137,33 +185,32 @@ public class AwsResourceTest extends AbstractApiTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPresignedUrl01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    // for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (ApiClient apiClient : getApiClients(null)) {
       // given
-      final String documentId = addDocumentWithoutFile(client, null, null);
+      String siteId = null;
+      DocumentsApi api = new DocumentsApi(apiClient);
+      final String documentId = addDocument(apiClient, siteId, "test.txt",
+          "content".getBytes(StandardCharsets.UTF_8), "text/plain", null);
 
       try {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
         Date lastHour =
             Date.from(LocalDateTime.now().minusHours(1).atZone(ZoneId.systemDefault()).toInstant());
         String tz = String.format("%tz", Instant.now().atZone(ZoneId.systemDefault()));
 
-        GetDocumentsRequest request = new GetDocumentsRequest().date(lastHour).tz(tz);
-        List<Map<String, Map<String, String>>> list = Collections.emptyList();
+        List<Document> list = Collections.emptyList();
 
         // when
         while (list.isEmpty()) {
-          HttpResponse<String> response = client.getDocumentsAsHttpResponse(request);
+          GetDocumentsResponse documents =
+              api.getDocuments(df.format(lastHour), tz, null, null, siteId, null);
 
           // then
-          final int status = 200;
-          assertRequestCorsHeaders(response.headers());
-          assertEquals(status, response.statusCode());
-
-          Map<String, Object> map = toMap(response);
-          list = (List<Map<String, Map<String, String>>>) map.get("documents");
+          list = documents.getDocuments();
 
           if (list.isEmpty()) {
             TimeUnit.SECONDS.sleep(1);
@@ -171,10 +218,10 @@ public class AwsResourceTest extends AbstractApiTest {
         }
 
         assertFalse(list.isEmpty());
-        assertNotNull(list.get(0).get("documentId"));
+        assertNotNull(list.get(0).getDocumentId());
 
       } finally {
-        deleteDocument(client, documentId);
+        api.deleteDocument(documentId, siteId);
       }
     }
   }
@@ -185,18 +232,20 @@ public class AwsResourceTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testSsmParameters() {
-    assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl")
-        .endsWith(getAwsRegion() + ".amazonaws.com"));
     assertTrue(
-        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl")
-            .endsWith(getAwsRegion() + ".amazonaws.com"));
-    assertTrue(getParameterStoreValue("/formkiq/" + getAppenvironment() + "/api/DocumentsIamUrl")
-        .endsWith(getAwsRegion() + ".amazonaws.com"));
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/api/DocumentsHttpUrl")
+            .endsWith(getAwsregion() + ".amazonaws.com"));
+    assertTrue(getSsm()
+        .getParameterValue("/formkiq/" + getAppenvironment() + "/api/DocumentsPublicHttpUrl")
+        .endsWith(getAwsregion() + ".amazonaws.com"));
     assertTrue(
-        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/lambda/DocumentsApiRequests")
-            .contains("-DocumentsApiRequests"));
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/api/DocumentsIamUrl")
+            .endsWith(getAwsregion() + ".amazonaws.com"));
+    assertTrue(getSsm()
+        .getParameterValue("/formkiq/" + getAppenvironment() + "/lambda/DocumentsApiRequests")
+        .contains("-DocumentsApiRequests"));
     assertEquals("Admins",
-        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/cognito/AdminGroup"));
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/cognito/AdminGroup"));
   }
 
   /**
@@ -235,6 +284,40 @@ public class AwsResourceTest extends AbstractApiTest {
       fail();
     } catch (NotAuthorizedException e) {
       assertTrue(true);
+    }
+  }
+
+  private AuthenticationResultType login(final String username, final String password) {
+    return getCognito().login(username, password);
+  }
+
+  /**
+   * Add User and/or Login Cognito.
+   * 
+   * @param username {@link String}
+   * @param groupNames {@link List} {@link String}
+   */
+  protected static void addAndLoginCognito(final String username, final List<String> groupNames) {
+
+    if (!getCognito().isUserExists(username)) {
+
+      getCognito().addUser(username, TEMP_USER_PASSWORD);
+      getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+
+      for (String groupName : groupNames) {
+        if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
+
+          getCognito().addGroup(groupName);
+        }
+        getCognito().addUserToGroup(username, groupName);
+      }
+
+    } else {
+
+      AdminGetUserResponse user = getCognito().getUser(username);
+      if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
+        getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+      }
     }
   }
 }

@@ -33,8 +33,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetConfigurationResponse;
-import com.formkiq.client.model.SetConfigRequest;
-import com.formkiq.client.model.SetConfigResponse;
+import com.formkiq.client.model.UpdateConfigurationRequest;
+import com.formkiq.client.model.UpdateConfigurationResponse;
 import com.formkiq.stacks.dynamodb.ConfigService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -61,8 +61,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     // when
-    SetConfigResponse updateConfig = this.systemApi
-        .updateConfiguration(new SetConfigRequest().chatGptApiKey("anothervalue"), siteId);
+    UpdateConfigurationResponse updateConfig = this.systemApi.updateConfiguration(
+        new UpdateConfigurationRequest().chatGptApiKey("anothervalue"), siteId);
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
@@ -166,11 +166,11 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    SetConfigRequest config = new SetConfigRequest().chatGptApiKey("anotherkey")
+    UpdateConfigurationRequest config = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when
-    SetConfigResponse configResponse = this.systemApi.updateConfiguration(config, siteId);
+    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(config, siteId);
     GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
 
     // then
@@ -195,7 +195,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "default";
     setBearerToken(group);
 
-    SetConfigRequest config = new SetConfigRequest().chatGptApiKey("anotherkey")
+    UpdateConfigurationRequest config = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when

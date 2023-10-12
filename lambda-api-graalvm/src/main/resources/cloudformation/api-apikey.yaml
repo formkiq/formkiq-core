@@ -208,7 +208,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/SetConfigRequest'
+                      $ref: '#/components/schemas/UpdateConfigurationRequest'
                     examples:
                       Config:
                         value:
@@ -230,7 +230,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/SetConfigResponse'
+                        $ref: '#/components/schemas/UpdateConfigurationResponse'
                 '400':
                   description: 400 OK
                   content:
@@ -4636,7 +4636,7 @@ Resources:
                   description: "List of installed modules"
                   items:
                     type: "string"
-            SetConfigRequest:
+            UpdateConfigurationRequest:
               type: "object"
               properties:
                 chatGptApiKey:
@@ -4654,7 +4654,7 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications"
-            SetConfigResponse:
+            UpdateConfigurationResponse:
               type: object
               properties:
                 message:
