@@ -80,6 +80,7 @@ import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.actions.Action;
@@ -189,7 +190,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     snsBuilder = TestServices.getSnsConnection(null);
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
-    sqsService = new SqsService(sqsBuilder);
+    sqsService = new SqsServiceImpl(sqsBuilder);
 
     if (!sqsService.exists(ERROR_SQS_QUEUE)) {
       sqsService.createQueue(ERROR_SQS_QUEUE);

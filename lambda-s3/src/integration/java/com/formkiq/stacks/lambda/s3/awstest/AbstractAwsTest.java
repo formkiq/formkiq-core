@@ -34,6 +34,7 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
@@ -114,7 +115,7 @@ public abstract class AbstractAwsTest {
     snsBuilder =
         new SnsConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
-    sqsService = new SqsService(sqsBuilder);
+    sqsService = new SqsServiceImpl(sqsBuilder);
     s3Service = new S3Service(s3Builder);
     ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);

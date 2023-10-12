@@ -61,6 +61,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -109,7 +110,7 @@ public abstract class AbstractRequestHandler {
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
     ssmService.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    SqsService sqsService = new SqsService(TestServices.getSqsConnection(null));
+    SqsService sqsService = new SqsServiceImpl(TestServices.getSqsConnection(null));
     if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }

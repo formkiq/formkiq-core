@@ -42,6 +42,7 @@ import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceImpl;
@@ -125,7 +126,7 @@ public class EmailSendingTest {
         new S3ConnectionBuilder(enableAwsXray).setCredentials(awsprofile).setRegion(awsregion);
 
     s3Service = new S3Service(s3Builder);
-    sqsService = new SqsService(sqsConnection);
+    sqsService = new SqsServiceImpl(sqsConnection);
     SsmService ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
 

@@ -40,6 +40,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import com.formkiq.client.model.GetDocumentResponse;
@@ -215,6 +216,49 @@ public class FkqDocumentService {
     return client.addDocument(new AddDocumentRequest().siteId(siteId).document(new AddDocument()
         .path(path).content(content).contentType(contentType).tags(tags).actions(actions)))
         .documentId();
+  }
+
+  /**
+   * Add Document.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param content {@link String}
+   * @param contentType {@link String}
+   * @param tags {@link List} {@link com.formkiq.client.model.AddDocumentTag}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public static String addDocumentWithTags(final ApiClient apiClient, final String siteId,
+      final String path, final String content, final String contentType,
+      final List<com.formkiq.client.model.AddDocumentTag> tags) throws ApiException {
+
+    DocumentsApi api = new DocumentsApi(apiClient);
+    com.formkiq.client.model.AddDocumentRequest req =
+        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
+            .path(path).tags(tags);
+    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    return response.getDocumentId();
+  }
+
+  /**
+   * Add Document Tag.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param key {@link String}
+   * @param value {@link String}
+   * @throws ApiException ApiException
+   */
+  public static void addDocumentTag(final ApiClient apiClient, final String siteId,
+      final String documentId, final String key, final String value) throws ApiException {
+
+    DocumentTagsApi api = new DocumentTagsApi(apiClient);
+    AddDocumentTagsRequest req = new AddDocumentTagsRequest()
+        .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key(key).value(value));
+    api.addDocumentTags(documentId, req, siteId, "true");
   }
 
   /**

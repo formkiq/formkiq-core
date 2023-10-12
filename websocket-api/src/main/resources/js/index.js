@@ -27,11 +27,17 @@ const api = new AWS.ApiGatewayManagementApi({
 var ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
 
 exports.handler = async (event) => {
-  console.log(event);
+
+  if (process.env.DEBUG == "true") { 
+    console.log(event);
+  }
 
   const route = event != null && event.requestContext != null && event.requestContext.routeKey != null 
     ? event.requestContext.routeKey
     : "";
+
+  let obj = {"route": route};
+  console.log(JSON.stringify(obj));
 
   switch (route) {
     case '$connect':
@@ -77,9 +83,17 @@ async function processMessages(siteId, message) {
 
   return ddb.query(params).promise().then((data) => {
 
+    if (process.env.DEBUG == "true") {
+      console.log("found: " + data.Items.length + " connections");
+    }
+
     let list = [];
     data.Items.forEach(item => {
-      console.log("connectionId: " + item.connectionId.S);
+
+      if (process.env.DEBUG == "true") {
+        console.log("sending to connection: " + item.connectionId.S);
+      }
+
       list.push(replyToMessage(message, item.connectionId.S));
     });
 
