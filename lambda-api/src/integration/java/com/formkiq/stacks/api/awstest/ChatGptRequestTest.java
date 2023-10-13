@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActions;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,22 +99,14 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
       ApiClient client = clients.get(0);
 
       byte[] content = toBytes("/ocr/receipt.png");
-      String documentId = addDocument(client, siteId, "receipt.png", content, "image/png", null);
 
+      String documentId = addDocument(client, siteId, "receipt.png", content, "image/png", null);
       waitForDocumentContent(client, siteId, documentId);
 
       DocumentActionsApi api = new DocumentActionsApi(client);
       String actionTags = "organization,location,person,subject,sentiment,document type";
 
       // when
-      // AddDocumentActionRequest addReq =
-      // new AddDocumentActionRequest().siteId(siteId).documentId(documentId)
-      // .actions(Arrays.asList(new AddDocumentAction().type(DocumentActionType.OCR),
-      // new AddDocumentAction().type(DocumentActionType.DOCUMENTTAGGING)
-      // .parameters(Map.of("engine", "chatgpt", "tags",
-      // "organization,location,person,subject,sentiment,document type"))));
-      // client.addDocumentAction(addReq);
-
       api.addDocumentActions(documentId, siteId,
           new AddDocumentActionsRequest().actions(Arrays.asList(new AddAction().type(TypeEnum.OCR),
               new AddAction().type(TypeEnum.DOCUMENTTAGGING).parameters(
@@ -124,15 +117,15 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentTagsApi tagsApi = new DocumentTagsApi(client);
 
-      // GetDocumentTagsRequest tagsReq =
-      // new GetDocumentTagsRequest().siteId(siteId).documentId(documentId);
+      waitForDocumentTag(client, siteId, documentId, "organization");
       GetDocumentTagsResponse tags =
           tagsApi.getDocumentTags(documentId, siteId, null, null, null, null);
+
       assertTrue(
           tags.getTags().stream().filter(r -> r.getKey().equals("untagged")).findFirst().isEmpty());
 
-      assertTrue(tags.getTags().stream().filter(r -> r.getKey().toLowerCase().equals("person"))
-          .findFirst().isPresent());
+      assertTrue(tags.getTags().stream()
+          .filter(r -> r.getKey().toLowerCase().equals("organization")).findFirst().isPresent());
     }
   }
 

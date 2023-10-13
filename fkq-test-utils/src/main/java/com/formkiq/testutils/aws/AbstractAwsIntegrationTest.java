@@ -42,7 +42,9 @@ import com.formkiq.stacks.client.FormKiqClientV1;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
 /**
  * 
@@ -75,8 +77,40 @@ public abstract class AbstractAwsIntegrationTest {
   private static SqsService sqs;
   /** {@link SsmService}. */
   private static SsmService ssm;
+  /** Temporary Cognito Password. */
+  private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
   /** Cognito User Password. */
   protected static final String USER_PASSWORD = "TEMPORARY_PASSWORd1!";
+
+  /**
+   * Add User and/or Login Cognito.
+   * 
+   * @param username {@link String}
+   * @param groupNames {@link List} {@link String}
+   */
+  public static void addAndLoginCognito(final String username, final List<String> groupNames) {
+
+    if (!getCognito().isUserExists(username)) {
+
+      getCognito().addUser(username, USER_PASSWORD);
+      // getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+
+      for (String groupName : groupNames) {
+        if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
+
+          getCognito().addGroup(groupName);
+        }
+        getCognito().addUserToGroup(username, groupName);
+      }
+
+    } else {
+
+      AdminGetUserResponse user = getCognito().getUser(username);
+      if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
+        getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
+      }
+    }
+  }
 
   /**
    * beforeclass.
@@ -217,6 +251,10 @@ public abstract class AbstractAwsIntegrationTest {
 
   private static void setupServices() {
 
+    System.setProperty("testprofile", "formkiqtest");
+    System.setProperty("testregion", "us-east-2");
+    System.setProperty("testappenvironment", "test3");
+
     awsprofile = System.getProperty("testprofile");
     awsregion = Region.of(System.getProperty("testregion"));
     appenvironment = System.getProperty("testappenvironment");
@@ -224,6 +262,20 @@ public abstract class AbstractAwsIntegrationTest {
     cognito = new FkqCognitoService(awsprofile, awsregion, appenvironment);
     ssm = new FkqSsmService(awsprofile, awsregion);
     sqs = new FkqSqsService(awsprofile, awsregion);
+  }
+
+  /**
+   * Get Api Client for User.
+   * 
+   * @param email {@link String}
+   * @param password {@link String}
+   * @return {@link ApiClient}
+   */
+  public ApiClient getApiClientForUser(final String email, final String password) {
+    AuthenticationResultType token = getCognito().login(email, password);
+    ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootJwtUrl());
+    jwtClient.addDefaultHeader("Authorization", token.accessToken());
+    return jwtClient;
   }
 
   /**

@@ -3451,7 +3451,7 @@ Resources:
                   type: "array"
                   description: "List of tags"
                   items:
-                    $ref: "#/components/schemas/GetDocumentTagResponse"
+                    $ref: "#/components/schemas/DocumentTag"
             SetDocumentVersionRequest:
               type: "object"
               properties:
@@ -3990,9 +3990,34 @@ Resources:
                 s3version:
                   type: "string"
                   description: "Document storage version"
+            DocumentTag:
+              type: "object"
+              properties:
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                documentId:
+                  type: "string"
+                  description: "Document Identifier"
+                type:
+                  type: "string"
+                  description: "Tag type"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                value:
+                  type: "string"
+                  description: "Tag value"
+                values:
+                  type: "array"
+                  description: "Tag values"
+                  items:
+                    type: "string"
+                    description: "Tag value"
+                key:
+                  type: "string"
+                  description: "Tag key"
             GetDocumentTagResponse:
-              required:
-              - "key"
               type: "object"
               properties:
                 insertedDate:
@@ -4134,6 +4159,7 @@ Resources:
                   enum:
                     - METADATA
                     - TAG
+                    - CONTENT
                 syncDate:
                   type: "string"
                   description: "Timestamp of synchronization"
@@ -4433,6 +4459,9 @@ Resources:
                 documentId:
                   type: "string"
                   description: "Document Identifier"
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
             AddDocumentActionsResponse:
               type: object
               properties:

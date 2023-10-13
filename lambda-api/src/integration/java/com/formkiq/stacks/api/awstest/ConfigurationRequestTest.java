@@ -26,20 +26,19 @@ package com.formkiq.stacks.api.awstest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.GetConfigurationResponse;
+import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.Configuration;
-import com.formkiq.stacks.client.requests.UpdateConfigurationRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -48,10 +47,13 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
  * </p>
  *
  */
-public class ConfigurationRequestTest extends AbstractApiTest {
+public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
+
+  /** Cognito FINANCE User Email. */
+  private static final String FINANCE_EMAIL = "test13555@formkiq.com";
 
   /**
    * Test GET /configuration.
@@ -61,71 +63,71 @@ public class ConfigurationRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGetConfiguration01() throws Exception {
-
     // given
+    String siteId = null;
     final int expected = 3;
-    List<FormKiqClientV1> clients = getFormKiqClients(null);
+    List<ApiClient> clients = getApiClients(siteId);
     assertEquals(expected, clients.size());
 
-    for (FormKiqClientV1 client : Arrays.asList(clients.get(0), clients.get(1))) {
+    for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
+
+      SystemManagementApi api = new SystemManagementApi(client);
 
       // when
-      Configuration c = client.getConfiguration();
+      GetConfigurationResponse c = api.getConfiguration(siteId);
 
       // then
-      assertNotNull(c.chatGptApiKey());
+      assertNotNull(c.getChatGptApiKey());
     }
 
     // given
-    FormKiqClientV1 fc = clients.get(2);
+    ApiClient fc = clients.get(2);
+    SystemManagementApi api = new SystemManagementApi(fc);
 
     // when
-    Configuration configuation = fc.getConfiguration();
+    GetConfigurationResponse c = api.getConfiguration(siteId);
 
     // then
-    assertEquals("", configuation.maxContentLengthBytes());
-    assertEquals("", configuation.maxDocuments());
+    assertEquals("", c.getMaxContentLengthBytes());
+    assertEquals("", c.getMaxDocuments());
   }
 
   /**
-   * Test GET /configuration as readuser user.
+   * Test GET /configuration and PATCH /configuration as readuser user.
    * 
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGetConfiguration02() throws Exception {
     // given
-    AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
-    FormKiqClientV1 client = createHttpClient(token);
+    String siteId = null;
+    String chatGptApiKey = "1239123123";
+    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("default_read"));
+
+    List<ApiClient> apiClients = getApiClients(siteId);
+    SystemManagementApi api = new SystemManagementApi(apiClients.get(0));
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey(chatGptApiKey);
+    api.updateConfiguration(req, siteId);
+
+    assertEquals("1239*******3123", api.getConfiguration(siteId).getChatGptApiKey());
+
+    ApiClient readOnlyClient = getApiClientForUser(FINANCE_EMAIL, USER_PASSWORD);
+    api = new SystemManagementApi(readOnlyClient);
 
     // when
-    Configuration configuation = client.getConfiguration();
+    GetConfigurationResponse configuation = api.getConfiguration(siteId);
 
     // then
-    assertEquals("", configuation.maxContentLengthBytes());
-    assertEquals("", configuation.maxDocuments());
-  }
+    assertEquals("1239*******3123", configuation.getChatGptApiKey());
 
-  /**
-   * Test PATCH /configuration as readuser user.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testPatchConfiguration01() throws Exception {
-    // given
-    AuthenticationResultType token = login(FINANCE_EMAIL, USER_PASSWORD);
-    FormKiqClientV1 client = createHttpClient(token);
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest().config(new Configuration());
+    // when - update config
+    try {
+      api.updateConfiguration(req, siteId);
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_FORBIDDEN.getStatusCode(), e.getCode());
+    }
 
-    // when
-    HttpResponse<String> response = client.updateConfigurationAsHttpResponse(req);
-
-    // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
   }
 
   /**
@@ -138,34 +140,38 @@ public class ConfigurationRequestTest extends AbstractApiTest {
   public void testPatchConfiguration02() throws Exception {
     // given
     final int expected = 3;
-    List<FormKiqClientV1> clients = getFormKiqClients(null);
+    String siteId = null;
+    List<ApiClient> clients = getApiClients(null);
     assertEquals(expected, clients.size());
 
     String chatGptKey = "aklsdjsalkdjsakldjsadjadad";
-    UpdateConfigurationRequest req =
-        new UpdateConfigurationRequest().config(new Configuration().chatGptApiKey(chatGptKey));
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey(chatGptKey);
 
-    for (FormKiqClientV1 client : Arrays.asList(clients.get(0), clients.get(1))) {
+    for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
+      SystemManagementApi api = new SystemManagementApi(client);
+
       // when
-      HttpResponse<String> response = client.updateConfigurationAsHttpResponse(req);
+      UpdateConfigurationResponse response = api.updateConfiguration(req, siteId);
 
       // then
-      assertEquals("200", String.valueOf(response.statusCode()));
-      assertEquals("{\"message\":\"Config saved\"}", response.body());
+      assertEquals("Config saved", response.getMessage());
 
-      Configuration configuration = client.getConfiguration();
-      assertEquals("akls*******adad", configuration.chatGptApiKey());
+      GetConfigurationResponse config = api.getConfiguration(siteId);
+      assertEquals("akls*******adad", config.getChatGptApiKey());
     }
 
     // given
-    FormKiqClientV1 client = clients.get(2);
+    ApiClient client = clients.get(2);
+    SystemManagementApi api = new SystemManagementApi(client);
 
     // when
-    HttpResponse<String> response = client.updateConfigurationAsHttpResponse(req);
-
-    // then
-    assertEquals("401", String.valueOf(response.statusCode()));
-    assertEquals("{\"message\":\"user is unauthorized\"}", response.body());
+    try {
+      api.updateConfiguration(req, siteId);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
   }
 
   /**
@@ -180,9 +186,8 @@ public class ConfigurationRequestTest extends AbstractApiTest {
     List<ApiClient> clients = getApiClients(null);
 
     String adminEmail =
-        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
-    com.formkiq.client.model.UpdateConfigurationRequest req =
-        new com.formkiq.client.model.UpdateConfigurationRequest().notificationEmail(adminEmail);
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
 
     for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
       SystemManagementApi api = new SystemManagementApi(client);
@@ -207,8 +212,7 @@ public class ConfigurationRequestTest extends AbstractApiTest {
     List<ApiClient> clients = getApiClients(null);
 
     String email = "test@formkiq.com";
-    com.formkiq.client.model.UpdateConfigurationRequest req =
-        new com.formkiq.client.model.UpdateConfigurationRequest().notificationEmail(email);
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(email);
 
     for (ApiClient client : Arrays.asList(clients.get(0), clients.get(1))) {
       SystemManagementApi api = new SystemManagementApi(client);
