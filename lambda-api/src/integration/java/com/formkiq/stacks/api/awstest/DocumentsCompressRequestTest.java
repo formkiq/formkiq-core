@@ -59,6 +59,7 @@ import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.FileGenerator;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * 
@@ -66,7 +67,7 @@ import com.formkiq.testutils.FileGenerator;
  *
  */
 @Execution(ExecutionMode.CONCURRENT)
-public class DocumentsCompressRequestTest extends AbstractApiTest {
+public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
 
   /** 1024 Constant. */
   private static final int MB = 1024;

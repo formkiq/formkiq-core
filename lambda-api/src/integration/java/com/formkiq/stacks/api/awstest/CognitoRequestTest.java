@@ -42,7 +42,7 @@ import com.formkiq.client.model.GetGroupsResponse;
 import com.formkiq.client.model.GetUsersInGroupResponse;
 import com.formkiq.client.model.Group;
 import com.formkiq.client.model.User;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -51,7 +51,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.Authenticat
  * </p>
  *
  */
-public class CognitoRequestTest extends AbstractApiTest {
+public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
@@ -130,10 +130,8 @@ public class CognitoRequestTest extends AbstractApiTest {
     // given
     String username = "noaccess1@formkiq.com";
     addAndLoginCognito(username, Arrays.asList("authentication_only"));
-    AuthenticationResultType token = login(username, USER_PASSWORD);
 
-    ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(getRootHttpUrl());
-    jwtClient.addDefaultHeader("Authorization", token.accessToken());
+    ApiClient jwtClient = getApiClientForUser(username, USER_PASSWORD);
 
     DocumentsApi api = new DocumentsApi(jwtClient);
 

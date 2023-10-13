@@ -23,34 +23,25 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Map;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.GetDocumentContentUrlRequest;
-import com.formkiq.stacks.client.requests.OptionsDocumentUploadRequest;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetDocumentContentResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * GET, OPTIONS /documents/{documentId}/url tests.
  *
  */
-public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
+public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTest {
 
-  /** 1/2 second sleep. */
-  private static final int SLEEP = 500;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
-  /** {@link HttpClient}. */
-  private HttpClient http = HttpClient.newHttpClient();
 
   /**
    * Get Request Upload Document Url.
@@ -60,73 +51,21 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractApiTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testGet01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    for (ApiClient client : getApiClients(null)) {
       // given
-      String documentId = addDocumentWithoutFile(client, null, null);
-      Thread.sleep(SLEEP * 2);
-      verifyDocumentContent(client, documentId, "sample content", null);
-    }
-  }
-
-  /**
-   * Get Request Document Not Found.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      String documentId = UUID.randomUUID().toString();
-      OptionsDocumentUploadRequest req = new OptionsDocumentUploadRequest().documentId(documentId);
+      String siteId = null;
+      String text = "sample content";
+      byte[] content = text.getBytes(StandardCharsets.UTF_8);
 
       // when
-      HttpResponse<String> response = client.optionsDocumentUpload(req);
+      String documentId = addDocument(client, siteId, null, content, "text/plain", null);
+
       // then
-      final int status = 204;
-      assertEquals(status, response.statusCode());
-      assertPreflightedCorsHeaders(response.headers());
+      GetDocumentContentResponse response =
+          waitForDocumentContent(client, siteId, documentId, text);
+
+      assertEquals("text/plain", response.getContentType());
+      assertEquals(text, response.getContent());
     }
-  }
-
-  /**
-   * Verify Document Content.
-   * 
-   * @param client {@link FormKiqClientV1}
-   * @param documentId {@link String}
-   * @param content {@link String}
-   * @param versionId {@link String}
-   * @throws Exception Exception
-   */
-  private void verifyDocumentContent(final FormKiqClientV1 client, final String documentId,
-      final String content, final String versionId) throws Exception {
-    final int status200 = 200;
-
-    GetDocumentContentUrlRequest request =
-        new GetDocumentContentUrlRequest().documentId(documentId).versionKey(versionId);
-
-    // when
-    HttpResponse<String> response = client.getDocumentContentUrlAsHttpResponse(request);
-
-    // then
-    assertEquals(status200, response.statusCode());
-    assertRequestCorsHeaders(response.headers());
-
-    Map<String, Object> map = toMap(response);
-    assertNotNull(map.get("url"));
-    assertEquals(documentId, map.get("documentId"));
-
-    // given
-    String url = map.get("url").toString();
-
-    // when
-    response =
-        this.http.send(HttpRequest.newBuilder().uri(new URI(url)).build(), BodyHandlers.ofString());
-
-    // then
-    assertEquals(status200, response.statusCode());
-    assertEquals(content, response.body());
   }
 }

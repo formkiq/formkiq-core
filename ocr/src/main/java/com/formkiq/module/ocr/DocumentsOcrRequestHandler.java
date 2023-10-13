@@ -241,7 +241,6 @@ public class DocumentsOcrRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
@@ -253,6 +252,7 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.convert(logger, awsservice, request, siteId, documentId, userId);
 
+    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 

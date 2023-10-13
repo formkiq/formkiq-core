@@ -40,12 +40,13 @@ import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * GET, POST /documents/{documentId}/actions tests.
  *
  */
-public class DocumentsActionsRequestTest extends AbstractApiTest {
+public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 90;
@@ -64,7 +65,7 @@ public class DocumentsActionsRequestTest extends AbstractApiTest {
     ApiClient client = clients.get(0);
 
     String adminEmail =
-        getParameterStoreValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().notificationEmail(adminEmail);
 
     SystemManagementApi api = new SystemManagementApi(client);

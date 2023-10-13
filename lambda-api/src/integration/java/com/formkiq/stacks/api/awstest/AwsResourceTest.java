@@ -60,18 +60,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.cognitoidentity.model.Credentials;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
 /**
  * Test CloudFormation.
  */
 public class AwsResourceTest extends AbstractAwsIntegrationTest {
-  /** Temporary Cognito Password. */
-  private static final String TEMP_USER_PASSWORD = "TEMPORARY_PASSWORd1!";
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 80;
   /** Temporary Cognito Password. */
@@ -188,7 +184,6 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testPresignedUrl01() throws Exception {
-    // for (FormKiqClientV1 client : getFormKiqClients(null)) {
     for (ApiClient apiClient : getApiClients(null)) {
       // given
       String siteId = null;
@@ -289,35 +284,5 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
 
   private AuthenticationResultType login(final String username, final String password) {
     return getCognito().login(username, password);
-  }
-
-  /**
-   * Add User and/or Login Cognito.
-   * 
-   * @param username {@link String}
-   * @param groupNames {@link List} {@link String}
-   */
-  protected static void addAndLoginCognito(final String username, final List<String> groupNames) {
-
-    if (!getCognito().isUserExists(username)) {
-
-      getCognito().addUser(username, TEMP_USER_PASSWORD);
-      getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
-
-      for (String groupName : groupNames) {
-        if (!groupName.startsWith(DEFAULT_SITE_ID) && !"authentication_only".equals(groupName)) {
-
-          getCognito().addGroup(groupName);
-        }
-        getCognito().addUserToGroup(username, groupName);
-      }
-
-    } else {
-
-      AdminGetUserResponse user = getCognito().getUser(username);
-      if (UserStatusType.FORCE_CHANGE_PASSWORD.equals(user.userStatus())) {
-        getCognito().loginWithNewPassword(username, TEMP_USER_PASSWORD, USER_PASSWORD);
-      }
-    }
   }
 }

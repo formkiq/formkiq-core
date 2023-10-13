@@ -103,8 +103,11 @@ public class FkqDocumentService {
         api.getDocumentUpload(path, siteId, Integer.valueOf(content.length), null, shareKey);
     String s3url = response.getUrl();
 
-    http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)
-        .method("PUT", BodyPublishers.ofByteArray(content)).build(), BodyHandlers.ofString());
+    if (content.length > 0) {
+      http.send(HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType)
+          .method("PUT", BodyPublishers.ofByteArray(content)).build(), BodyHandlers.ofString());
+    }
+
     return response.getDocumentId();
   }
 
@@ -144,7 +147,9 @@ public class FkqDocumentService {
    * @throws IOException IOException
    * @throws URISyntaxException URISyntaxException
    * @throws InterruptedException InterruptedException
+   * @deprecated do no used
    */
+  @Deprecated
   public static String addDocument(final FormKiqClientV1 client, final String siteId,
       final String path, final byte[] content, final String contentType)
       throws IOException, URISyntaxException, InterruptedException {
@@ -166,6 +171,25 @@ public class FkqDocumentService {
     }
 
     throw new IOException("unexpected response " + response.statusCode());
+  }
+
+  /**
+   * Add Document Tag.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param key {@link String}
+   * @param value {@link String}
+   * @throws ApiException ApiException
+   */
+  public static void addDocumentTag(final ApiClient apiClient, final String siteId,
+      final String documentId, final String key, final String value) throws ApiException {
+
+    DocumentTagsApi api = new DocumentTagsApi(apiClient);
+    AddDocumentTagsRequest req = new AddDocumentTagsRequest()
+        .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key(key).value(value));
+    api.addDocumentTags(documentId, req, siteId, "true");
   }
 
   /**
@@ -240,25 +264,6 @@ public class FkqDocumentService {
             .path(path).tags(tags);
     AddDocumentResponse response = api.addDocument(req, siteId, null);
     return response.getDocumentId();
-  }
-
-  /**
-   * Add Document Tag.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param key {@link String}
-   * @param value {@link String}
-   * @throws ApiException ApiException
-   */
-  public static void addDocumentTag(final ApiClient apiClient, final String siteId,
-      final String documentId, final String key, final String value) throws ApiException {
-
-    DocumentTagsApi api = new DocumentTagsApi(apiClient);
-    AddDocumentTagsRequest req = new AddDocumentTagsRequest()
-        .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key(key).value(value));
-    api.addDocumentTags(documentId, req, siteId, "true");
   }
 
   /**
@@ -338,7 +343,9 @@ public class FkqDocumentService {
    * @param actionType {@link DocumentActionType}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
+   * @deprecated do no used
    */
+  @Deprecated
   public static void waitForActionsComplete(final FormKiqClientV1 client, final String siteId,
       final String documentId, final DocumentActionType actionType)
       throws IOException, InterruptedException {
@@ -362,7 +369,7 @@ public class FkqDocumentService {
   /**
    * Wait For Document Content.
    * 
-   * @param client {@link FormKiqClientV1}
+   * @param client {@link ApiClient}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link GetDocumentContentResponse}
@@ -370,13 +377,34 @@ public class FkqDocumentService {
    */
   public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
       final String siteId, final String documentId) throws InterruptedException {
+    return waitForDocumentContent(client, siteId, documentId, null);
+  }
+
+  /**
+   * Wait For Document Content.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param content {@link String}
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentContentResponse waitForDocumentContent(final ApiClient client,
+      final String siteId, final String documentId, final String content)
+      throws InterruptedException {
 
     DocumentsApi api = new DocumentsApi(client);
 
     while (true) {
 
       try {
-        return api.getDocumentContent(documentId, siteId, null, null);
+        GetDocumentContentResponse response =
+            api.getDocumentContent(documentId, siteId, null, null);
+        if (content == null || (content.equals(response.getContent()))) {
+          return response;
+        }
+
       } catch (ApiException e) {
         // ignore error
       }
@@ -394,7 +422,9 @@ public class FkqDocumentService {
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
+   * @deprecated do no used
    */
+  @Deprecated
   public static void waitForDocumentContent(final FormKiqClientV1 client, final String siteId,
       final String documentId) throws IOException, InterruptedException, URISyntaxException {
 
@@ -422,7 +452,9 @@ public class FkqDocumentService {
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
+   * @deprecated do no used
    */
+  @Deprecated
   public static void waitForDocumentContent(final FormKiqClientV1 client, final String siteId,
       final String documentId, final String content)
       throws IOException, InterruptedException, URISyntaxException {
@@ -543,8 +575,10 @@ public class FkqDocumentService {
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
+   * @deprecated do no used
    */
   @SuppressWarnings("unchecked")
+  @Deprecated
   public void waitForDocumentContentType(final FormKiqClientV1 client, final String siteId,
       final String documentId) throws IOException, InterruptedException, URISyntaxException {
 
