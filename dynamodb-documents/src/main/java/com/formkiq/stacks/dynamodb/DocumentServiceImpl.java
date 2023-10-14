@@ -60,6 +60,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
@@ -230,6 +231,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public boolean deleteDocument(final String siteId, final String documentId) {
 
+    boolean deleted = false;
     Map<String, AttributeValue> startkey = null;
 
     this.versionsService.deleteAllVersionIds(this.dbClient, siteId, documentId);
@@ -238,26 +240,26 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     deleteFolderIndex(siteId, item);
 
+    final int limit = 100;
+    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+
     do {
-      Map<String, AttributeValue> values =
-          queryKeys(keysGeneric(siteId, PREFIX_DOCS + documentId, null));
+      Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
+      QueryResponse response =
+          this.dbService.queryBeginsWith(config, keys.get(PK), null, startkey, limit);
 
-      QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
-          .keyConditionExpression(PK + " = :pk").expressionAttributeValues(values)
-          .limit(Integer.valueOf(MAX_RESULTS)).build();
+      List<Map<String, AttributeValue>> attrs =
+          response.items().stream().collect(Collectors.toList());
 
-      QueryResponse response = this.dbClient.query(q);
-      List<Map<String, AttributeValue>> results = response.items();
-
-      for (Map<String, AttributeValue> map : results) {
-        deleteItem(Map.of("PK", map.get("PK"), "SK", map.get("SK")));
+      if (this.dbService.deleteItems(attrs)) {
+        deleted = true;
       }
 
       startkey = response.lastEvaluatedKey();
 
     } while (startkey != null && !startkey.isEmpty());
 
-    return deleteItem(keysDocument(siteId, documentId, Optional.empty()));
+    return deleted;
   }
 
   @Override

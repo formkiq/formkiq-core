@@ -3472,9 +3472,9 @@ Resources:
                   type: "string"
                   description: "Full text search"
                 meta:
-                  $ref: "#/components/schemas/DocumentSearchItemMeta"              
+                  $ref: "#/components/schemas/DocumentSearchMeta"              
                 tag:
-                  $ref: "#/components/schemas/DocumentSearchItemTag"
+                  $ref: "#/components/schemas/DocumentSearchTag"
                 documentIds:
                   type: array
                   description: "List of DocumentIds to filter search results on"
@@ -3682,7 +3682,7 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
-            DocumentSearchItemMeta:
+            DocumentSearchMeta:
               type: "object"
               properties:
                 folder:
@@ -3699,7 +3699,7 @@ Resources:
                 indexFilterBeginsWith:
                   type: "string"
                   description: "Returns index records that begins with a particular substring"
-            DocumentSearchItemTag:
+            DocumentSearchTag:
               required:
               - "key"
               type: "object"
@@ -4301,6 +4301,7 @@ Resources:
                   $ref: "#/components/schemas/DocumentSearchMatchTag"
                 tags:
                   type: "object"
+                  additionalProperties: true
                 metadata:
                   type: "array"
                   description: "List of document Metadata"

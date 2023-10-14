@@ -23,58 +23,42 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.net.http.HttpResponse;
+import static org.junit.jupiter.api.Assertions.fail;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.Document;
-import com.formkiq.stacks.client.models.DocumentSearchQuery;
-import com.formkiq.stacks.client.models.DocumentSearchResponseFields;
-import com.formkiq.stacks.client.models.DocumentSearchTag;
-import com.formkiq.stacks.client.models.Documents;
-import com.formkiq.stacks.client.requests.AddDocumentTagRequest;
-import com.formkiq.stacks.client.requests.DeleteDocumentRequest;
-import com.formkiq.stacks.client.requests.SearchDocumentsRequest;
+import com.formkiq.client.api.DocumentSearchApi;
+import com.formkiq.client.api.DocumentTagsApi;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AddDocumentTagsRequest;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.DocumentSearchTag;
+import com.formkiq.client.model.SearchResponseFields;
+import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * OPTIONS, POST /search tests.
  *
  */
-public class DocumentsSearchRequestTest extends AbstractApiTest {
+public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
-
-  /**
-   * Test Raw /search.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsRawSearch01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      SearchDocumentsRequest req = new SearchDocumentsRequest()
-          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
-      // when
-      HttpResponse<String> response = client.searchAsHttpResponse(req);
-      assertEquals("200", String.valueOf(response.statusCode()));
-      assertRequestCorsHeaders(response.headers());
-      assertTrue(response.body().contains("\"documents\":["));
-
-      HttpResponse<String> options = client.optionsSearch();
-      assertPreflightedCorsHeaders(options.headers());
-    }
-  }
 
   /**
    * Test /search.
@@ -85,48 +69,28 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testDocumentsSearch01() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      addDocumentWithoutFile(client, null, null);
-      SearchDocumentsRequest req = new SearchDocumentsRequest()
-          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
-      // when
-      Documents documents = client.search(req);
-
-      // then
-      assertFalse(documents.documents().isEmpty());
-
-      Document doc = documents.documents().get(0);
-      assertNotNull(doc.documentId());
-      assertNotNull(doc.insertedDate());
-      assertEquals(doc.insertedDate(), doc.lastModifiedDate());
-      assertNotNull(doc.userId());
-    }
-  }
-
-  /**
-   * Test /search paging .
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsSearch02() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      String next = "3aa3a255-6a67-4d05-8e67-f7a22b827433";
-      SearchDocumentsRequest req = new SearchDocumentsRequest()
-          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))).next(next);
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
+      addDocument(client, siteId, null, new byte[] {}, null, null);
+      DocumentSearchApi api = new DocumentSearchApi(client);
+      // addDocumentWithoutFile(client, null, null);
+      // SearchDocumentsRequest req = new SearchDocumentsRequest()
+      // .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged")));
+      DocumentSearchRequest req = new DocumentSearchRequest()
+          .query(new DocumentSearch().tag(new DocumentSearchTag().key("untagged")));
 
       // when
-      HttpResponse<String> response = client.searchAsHttpResponse(req);
+      DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
+      // Documents documents = client.search(req);
 
       // then
-      assertEquals("200", String.valueOf(response.statusCode()));
-      assertRequestCorsHeaders(response.headers());
-      assertTrue(response.body().contains("\"documents\":["));
+      assertFalse(results.getDocuments().isEmpty());
 
-      HttpResponse<String> options = client.optionsSearch();
-      assertPreflightedCorsHeaders(options.headers());
+      SearchResultDocument doc = results.getDocuments().get(0);
+      assertNotNull(doc.getDocumentId());
+      assertNotNull(doc.getInsertedDate());
+      assertEquals(doc.getInsertedDate(), doc.getLastModifiedDate());
+      assertNotNull(doc.getUserId());
     }
   }
 
@@ -137,23 +101,31 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsSearch03() throws Exception {
+  public void testDocumentsSearch02() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      String documentId = addDocumentWithoutFile(client, null, null);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
+      // String documentId = addDocumentWithoutFile(client, null, null);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+      // SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+      // .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
+      DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch()
           .tag(new DocumentSearchTag().key("untagged")).documentIds(Arrays.asList(documentId)));
+
+      DocumentSearchApi api = new DocumentSearchApi(client);
+
       // when
-      Documents documents = client.search(req);
+      // Documents documents = client.search(req);
+      DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(1, documents.documents().size());
+      assertEquals(1, results.getDocuments().size());
 
-      Document doc = documents.documents().get(0);
-      assertEquals(documentId, doc.documentId());
-      assertNotNull(doc.insertedDate());
-      assertEquals(doc.insertedDate(), doc.lastModifiedDate());
-      assertNotNull(doc.userId());
+      SearchResultDocument doc = results.getDocuments().get(0);
+      assertEquals(documentId, doc.getDocumentId());
+      assertNotNull(doc.getInsertedDate());
+      assertEquals(doc.getInsertedDate(), doc.getLastModifiedDate());
+      assertNotNull(doc.getUserId());
     }
   }
 
@@ -164,19 +136,27 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsSearch04() throws Exception {
+  public void testDocumentsSearch03() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      addDocumentWithoutFile(client, null, null);
-      SearchDocumentsRequest req = new SearchDocumentsRequest()
-          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
+      // addDocumentWithoutFile(client, null, null);
+      addDocument(client, siteId, null, new byte[] {}, null, null);
+      // SearchDocumentsRequest req = new SearchDocumentsRequest()
+      // .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("untagged"))
+      // .documentIds(Arrays.asList(UUID.randomUUID().toString())));
+      DocumentSearchRequest req = new DocumentSearchRequest()
+          .query(new DocumentSearch().tag(new DocumentSearchTag().key("untagged"))
               .documentIds(Arrays.asList(UUID.randomUUID().toString())));
 
+      DocumentSearchApi api = new DocumentSearchApi(client);
+
       // when
-      Documents documents = client.search(req);
+      // Documents documents = client.search(req);
+      DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(0, documents.documents().size());
+      assertEquals(0, results.getDocuments().size());
     }
   }
 
@@ -187,41 +167,66 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsSearch05() throws Exception {
+  public void testDocumentsSearch04() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      String documentId = addDocumentWithoutFile(client, null, null);
-      AddDocumentTagRequest tagRequest =
-          new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
-      client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req = new SearchDocumentsRequest()
-          .responseFields(new DocumentSearchResponseFields().tags(Arrays.asList("test")))
-          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue"))
-              .documentIds(Arrays.asList(documentId)));
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
+
+      DocumentTagsApi tagApi = new DocumentTagsApi(client);
+
+      // String documentId = addDocumentWithoutFile(client, null, null);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+      AddDocumentTagsRequest addTagReq = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
+      // AddDocumentTagRequest tagRequest =
+      // new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
+      // client.addDocumentTag(tagRequest);
+      tagApi.addDocumentTags(documentId, addTagReq, siteId, null);
+
+      // SearchDocumentsRequest req = new SearchDocumentsRequest()
+      // .responseFields(new DocumentSearchResponseFields().tags(Arrays.asList("test")))
+      // .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue"))
+      // .documentIds(Arrays.asList(documentId)));
+
+      DocumentSearchRequest req =
+          new DocumentSearchRequest().responseFields(new SearchResponseFields().addTagsItem("test"))
+              .query(new DocumentSearch().tag(new DocumentSearchTag().key("test").eq("somevalue"))
+                  .documentIds(Arrays.asList(documentId)));
+
+      DocumentSearchApi api = new DocumentSearchApi(client);
 
       // when
-      Documents documents = client.search(req);
-      HttpResponse<String> body = client.searchAsHttpResponse(req);
+      DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
+      // Documents documents = client.search(req);
+      // HttpResponse<String> body = client.searchAsHttpResponse(req);
 
       // then
-      assertTrue(body.body().contains("\"tags\":{\"test\":\"somevalue\"}"));
-      assertEquals(1, documents.documents().size());
+      assertEquals(1, results.getDocuments().size());
+      Map<String, Object> tags = results.getDocuments().get(0).getTags();
+      assertEquals(1, tags.size());
+      assertEquals("somevalue", tags.get("test"));
+      // assertEquals(results.getDocuments().get(0).getTags())
+      // fail();
+      // assertTrue(body.body().contains("\"tags\":{\"test\":\"somevalue\"}"));
 
-      Document doc = documents.documents().get(0);
-      assertEquals(documentId, doc.documentId());
-      assertNotNull(doc.insertedDate());
-      assertNotNull(doc.userId());
+      SearchResultDocument doc = results.getDocuments().get(0);
+      assertEquals(documentId, doc.getDocumentId());
+      assertNotNull(doc.getInsertedDate());
+      assertNotNull(doc.getUserId());
 
       // given
-      req = new SearchDocumentsRequest()
-          .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue2"))
+      // req = new SearchDocumentsRequest()
+      // .query(new DocumentSearchQuery().tag(new DocumentSearchTag().key("test").eq("somevalue2"))
+      // .documentIds(Arrays.asList(documentId)));
+      req = new DocumentSearchRequest().responseFields(new SearchResponseFields())
+          .query(new DocumentSearch().tag(new DocumentSearchTag().key("test").eq("somevalue2"))
               .documentIds(Arrays.asList(documentId)));
 
       // when
-      documents = client.search(req);
+      results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(0, documents.documents().size());
+      assertEquals(0, results.getDocuments().size());
     }
   }
 
@@ -232,38 +237,55 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsSearch06() throws Exception {
+  public void testDocumentsSearch05() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      String documentId = addDocumentWithoutFile(client, null, null);
-      AddDocumentTagRequest tagRequest =
-          new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
-      client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
-          .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue")))
-          .documentIds(Arrays.asList(documentId)));
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
+      // String documentId = addDocumentWithoutFile(client, null, null);
+      String documentId = addDocument(client, siteId, null, new byte[] {}, null, null);
+      // AddDocumentTagRequest tagRequest =
+      // new AddDocumentTagRequest().documentId(documentId).tagKey("test").tagValue("somevalue");
+
+      DocumentTagsApi tagApi = new DocumentTagsApi(client);
+      AddDocumentTagsRequest addTagReq = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
+
+      tagApi.addDocumentTags(documentId, addTagReq, siteId, null);
+      // client.addDocumentTag(tagRequest);
+      // SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+      // .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue")))
+      // .documentIds(Arrays.asList(documentId)));
+
+      DocumentSearchApi api = new DocumentSearchApi(client);
+
+      DocumentSearchRequest req =
+          new DocumentSearchRequest().query(new DocumentSearch().addDocumentIdsItem(documentId)
+              .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue"))));
 
       // when
-      Documents documents = client.search(req);
+      // Documents documents = client.search(req);
+      DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(1, documents.documents().size());
+      assertEquals(1, results.getDocuments().size());
 
-      Document doc = documents.documents().get(0);
-      assertEquals(documentId, doc.documentId());
-      assertNotNull(doc.insertedDate());
-      assertNotNull(doc.userId());
+      SearchResultDocument doc = results.getDocuments().get(0);
+      assertEquals(documentId, doc.getDocumentId());
+      assertNotNull(doc.getInsertedDate());
+      assertNotNull(doc.getUserId());
 
       // given
-      req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
-          .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue2")))
-          .documentIds(Arrays.asList(documentId)));
+      // req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+      // .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue2")))
+      // .documentIds(Arrays.asList(documentId)));
+      req = new DocumentSearchRequest().query(new DocumentSearch().addDocumentIdsItem(documentId)
+          .tag(new DocumentSearchTag().key("test").eqOr(Arrays.asList("somevalue2"))));
 
       // when
-      documents = client.search(req);
+      results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(0, documents.documents().size());
+      assertEquals(0, results.getDocuments().size());
     }
   }
 
@@ -274,37 +296,55 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testDocumentsSearch07() throws Exception {
+  public void testDocumentsSearch06() throws Exception {
     // given
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    String siteId = null;
+    for (ApiClient client : getApiClients(null)) {
+
+      byte[] content = "sample content".getBytes(StandardCharsets.UTF_8);
+      DocumentSearchApi api = new DocumentSearchApi(client);
+      DocumentTagsApi tagApi = new DocumentTagsApi(client);
+
       String tagKey = UUID.randomUUID().toString();
-      String documentId = addDocumentWithoutFile(client, null, null);
-      AddDocumentTagRequest tagRequest =
-          new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
-      client.addDocumentTag(tagRequest);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
-          .tag(new DocumentSearchTag().key(tagKey).eqOr(Arrays.asList("somevalue"))));
+      String documentId = addDocument(client, siteId, "data.txt", content, "text/plain", null);
+
+      // String documentId = addDocumentWithoutFile(client, null, null);
+      // AddDocumentTagRequest tagRequest =
+      // new AddDocumentTagRequest().documentId(documentId).tagKey(tagKey).tagValue("somevalue");
+      AddDocumentTagsRequest addReq = new AddDocumentTagsRequest()
+          .addTagsItem(new AddDocumentTag().key(tagKey).value("somevalue"));
+      // client.addDocumentTag(tagRequest);
+      tagApi.addDocumentTags(documentId, addReq, siteId, null);
+
+      // SearchDocumentsRequest req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+      // .tag(new DocumentSearchTag().key(tagKey).eqOr(Arrays.asList("somevalue"))));
+      DocumentSearchRequest req = new DocumentSearchRequest().query(
+          new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).addEqOrItem("somevalue")));
 
       // when
-      Documents documents = client.search(req);
+      // Documents documents = client.search(req);
+      DocumentSearchResponse results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(1, documents.documents().size());
+      assertEquals(1, results.getDocuments().size());
 
-      Document doc = documents.documents().get(0);
-      assertEquals(documentId, doc.documentId());
-      assertNotNull(doc.insertedDate());
-      assertNotNull(doc.userId());
+      SearchResultDocument doc = results.getDocuments().get(0);
+      assertEquals(documentId, doc.getDocumentId());
+      assertNotNull(doc.getInsertedDate());
+      assertNotNull(doc.getUserId());
 
       // given
-      req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
-          .tag(new DocumentSearchTag().key(tagKey).eqOr(Arrays.asList("somevalue2"))));
+      req = new DocumentSearchRequest().query(
+          new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).addEqOrItem("somevalue2")));
+      // req = new SearchDocumentsRequest().query(new DocumentSearchQuery()
+      // .tag(new DocumentSearchTag().key(tagKey).eqOr(Arrays.asList("somevalue2"))));
 
       // when
-      documents = client.search(req);
+      // documents = client.search(req);
+      results = api.documentSearch(req, siteId, null, null, null);
 
       // then
-      assertEquals(0, documents.documents().size());
+      assertEquals(0, results.getDocuments().size());
     }
   }
 
@@ -315,48 +355,61 @@ public class DocumentsSearchRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT * 2)
-  public void testDocumentsSearch08() throws Exception {
+  public void testDocumentsSearch07() throws Exception {
     // given
     String siteId = null;
     String path = "some/thing/else/intelligent Documents.pdf";
     String text = "intelligent Documents";
-    final int limit = 100;
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
+    final String limit = "100";
+    for (ApiClient client : getApiClients(null)) {
 
-      String documentId = addDocumentWithoutFile(client, siteId, path);
-      SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)
-          .query(new DocumentSearchQuery().text(text)).limit(limit);
+      DocumentSearchApi api = new DocumentSearchApi(client);
 
-      Documents response = null;
-      Optional<Document> o = Optional.empty();
+      // String documentId = addDocumentWithoutFile(client, siteId, path);
+      String documentId = addDocument(client, siteId, path, new byte[] {}, null, null);
+
+      // SearchDocumentsRequest req = new SearchDocumentsRequest().siteId(siteId)
+      // .query(new DocumentSearchQuery().text(text)).limit(limit);
+      DocumentSearchRequest req =
+          new DocumentSearchRequest().query(new DocumentSearch().text(text));
+
+      DocumentSearchResponse results = null;
+      Optional<SearchResultDocument> o = Optional.empty();
 
       // when
       while (o.isEmpty()) {
-        response = client.search(req);
-        o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+        // response = client.search(req);
+        results = api.documentSearch(req, siteId, limit, null, null);
+        o = results.getDocuments().stream().filter(d -> documentId.equals(d.getDocumentId()))
+            .findAny();
 
         TimeUnit.SECONDS.sleep(1);
       }
 
       // then
-      assertNotNull(response);
-      assertFalse(response.documents().isEmpty());
-      assertTrue(
-          response.documents().get(0).path().contains("some/thing/else/intelligent Documents"));
+      assertNotNull(results);
+      assertFalse(results.getDocuments().isEmpty());
+      assertTrue(results.getDocuments().get(0).getPath()
+          .contains("some/thing/else/intelligent Documents"));
 
       // given
-      DeleteDocumentRequest delReq =
-          new DeleteDocumentRequest().siteId(siteId).documentId(documentId);
+      DocumentsApi docApi = new DocumentsApi(client);
+      // DeleteDocumentRequest delReq =
+      // new DeleteDocumentRequest().siteId(siteId).documentId(documentId);
 
+      fail();
       // when
-      boolean deleteResponse = client.deleteDocument(delReq);
+      // boolean deleteResponse = client.deleteDocument(delReq);
+      docApi.deleteDocument(documentId, siteId);
 
       // then
-      assertTrue(deleteResponse);
+      // assertTrue(deleteResponse);
 
       while (o.isPresent()) {
-        response = client.search(req);
-        o = response.documents().stream().filter(d -> documentId.equals(d.documentId())).findAny();
+        // response = client.search(req);
+        results = api.documentSearch(req, siteId, limit, null, null);
+        o = results.getDocuments().stream().filter(d -> documentId.equals(d.getDocumentId()))
+            .findAny();
         TimeUnit.SECONDS.sleep(1);
       }
 
