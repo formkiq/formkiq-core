@@ -197,6 +197,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
+  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
@@ -212,10 +213,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       setPathParameter(event, "documentId", documentId);
 
       // when
-      handleRequest(event);
+      String response = handleRequest(event);
 
       // then
       assertNull(getDocumentService().findDocument(siteId, documentId));
+
+      Map<String, String> m = fromJson(response, Map.class);
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
     }
   }
 

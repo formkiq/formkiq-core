@@ -38,6 +38,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
@@ -96,6 +97,24 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
         .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
     return !response.attributes().isEmpty();
+  }
+
+  @Override
+  public boolean deleteItems(final Collection<Map<String, AttributeValue>> attrs) {
+
+    boolean deleted = false;
+
+    if (!attrs.isEmpty()) {
+
+      List<WriteRequest> writes = attrs.stream().map(
+          a -> WriteRequest.builder().deleteRequest(DeleteRequest.builder().key(a).build()).build())
+          .collect(Collectors.toList());
+
+      WriteRequestBuilder builder = new WriteRequestBuilder().append(this.tableName, writes);
+      deleted = builder.batchWriteItem(this.dbClient);
+    }
+
+    return deleted;
   }
 
   @Override
@@ -199,7 +218,12 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
     String expression = gsi + PK + " = :pk and begins_with(" + gsi + SK + ",:sk)";
 
-    Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
+    if (sk == null) {
+      expression = gsi + PK + " = :pk";
+    }
+
+    Map<String, AttributeValue> values =
+        sk != null ? Map.of(":pk", pk, ":sk", sk) : Map.of(":pk", pk);
 
     QueryRequest q =
         QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)

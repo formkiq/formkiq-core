@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -44,6 +45,14 @@ public interface DynamoDbService {
    * @return boolean
    */
   boolean deleteItem(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Delete Items.
+   * 
+   * @param attrs {@link Collection} {@link Map} {@link AttributeValue}
+   * @return boolena
+   */
+  boolean deleteItems(Collection<Map<String, AttributeValue>> attrs);
 
   /**
    * Whether Database Record Exists.
