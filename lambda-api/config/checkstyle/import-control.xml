@@ -101,6 +101,9 @@
 				<allow pkg="java.lang.reflect" />
 			</subpackage>
 
+			<subpackage name="awstest">
+				<allow pkg="com.formkiq.testutils.aws" />
+			</subpackage>
 		</subpackage>
 	</subpackage>
 </import-control>
