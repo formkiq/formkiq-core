@@ -2311,7 +2311,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/DocumentId'
+                        $ref: '#/components/schemas/AddDocumentResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
           /public/webhooks/{webhooks+}:
@@ -3572,6 +3572,14 @@
                   description: List of child documents
                   items:
                     $ref: '#/components/schemas/ChildDocument'
+                belongsToDocumentId:
+                  type: string
+                  description: Parent Document Identifier
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/DocumentMetadata'
             ChildDocument:
               required:
               - documentId
@@ -3952,6 +3960,16 @@
                 content:
                   type: string
                   description: Document content
+                tags:
+                  type: array
+                  description: List of document tags
+                  items:
+                    $ref: '#/components/schemas/AddDocumentTag'
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/AddDocumentMetadata'
             DocumentVersion:
               type: object
               properties:
