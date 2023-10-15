@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.stacks.dynamodb.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.ConfigService.WEBHOOK_TIME_TO_LIVE;
@@ -81,7 +83,7 @@ public class WebhooksRequestHandler
       }
 
       map.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-      map.put("id", m.getString("documentId"));
+      map.put("webhookId", m.getString("documentId"));
       map.put("name", m.getString("path"));
       map.put("url", u);
       map.put("insertedDate", m.getString("inserteddate"));
@@ -167,19 +169,9 @@ public class WebhooksRequestHandler
 
     String id = saveWebhook(event, authorization, awsservice, siteId, o);
 
-    return response(logger, event, authorization, awsservice, id);
-  }
-
-  private ApiRequestHandlerResponse response(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String webhookId) throws Exception {
-
-    setPathParameter(event, "webhookId", webhookId);
-
-    WebhooksIdRequestHandler h = new WebhooksIdRequestHandler();
-    ApiRequestHandlerResponse response = h.get(logger, event, authorization, awsservice);
-
-    return response;
+    ApiMapResponse resp = new ApiMapResponse(
+        Map.of("webhookId", id, "siteId", isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId));
+    return new ApiRequestHandlerResponse(SC_CREATED, resp);
   }
 
   private String saveWebhook(final ApiGatewayRequestEvent event,

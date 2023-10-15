@@ -41,13 +41,14 @@ import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * 
  * GET/POST/DELETE /folders integration tests.
  *
  */
-public class FoldersRequestTest extends AbstractApiTest {
+public class FoldersRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;

@@ -43,6 +43,7 @@ import com.formkiq.client.model.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestUpdate;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -51,7 +52,7 @@ import com.formkiq.client.model.UpdateMatchingDocumentTagsResponse;
  * </p>
  *
  */
-public class DocumentsTagsRequestTest extends AbstractApiTest {
+public class DocumentsTagsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
