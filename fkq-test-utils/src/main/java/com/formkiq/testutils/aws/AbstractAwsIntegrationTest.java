@@ -251,10 +251,6 @@ public abstract class AbstractAwsIntegrationTest {
 
   private static void setupServices() {
 
-    System.setProperty("testprofile", "formkiqtest");
-    System.setProperty("testregion", "us-east-2");
-    System.setProperty("testappenvironment", "test3");
-
     awsprofile = System.getProperty("testprofile");
     awsregion = Region.of(System.getProperty("testregion"));
     appenvironment = System.getProperty("testappenvironment");
