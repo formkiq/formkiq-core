@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
-import static com.formkiq.testutils.aws.FkqDocumentService.*;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,8 +62,6 @@ public class PublicWebhooksRequestTest extends AbstractAwsIntegrationTest {
 
   /** Http Status OK. */
   private static final int STATUS_OK = 200;
-  /** Http Status No Content. */
-  private static final int STATUS_NO_CONTENT = 204;
   /** Http Status BAD. */
   private static final int STATUS_BAD = 400;
   /** Http Status Unauthorized. */
