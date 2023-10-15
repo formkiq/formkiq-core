@@ -2555,7 +2555,7 @@ Resources:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/GetDocumentTagResponse'
+                      $ref: '#/components/schemas/AddWebhookTagRequest'
                     examples:
                       Add_Key_Only_Tag:
                         value:
@@ -3494,7 +3494,7 @@ Resources:
             AddWebhookResponse:
               type: "object"
               properties:
-                id:
+                webhookId:
                   type: "string"
                 siteId:
                   type: "string"
@@ -4035,6 +4035,21 @@ Resources:
                 key:
                   type: "string"
                   description: "Tag key"
+            AddWebhookTagRequest:
+              type: "object"
+              properties:
+                value:
+                  type: "string"
+                  description: "Tag value"
+                values:
+                  type: "array"
+                  description: "Tag values"
+                  items:
+                    type: "string"
+                    description: "Tag value"
+                key:
+                  type: "string"
+                  description: "Tag key"
             GetDocumentTagResponse:
               type: "object"
               properties:
@@ -4374,12 +4389,15 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
-                id:
+                webhookId:
                   type: "string"
                   description: "Webhook Identifier"
                 userId:
                   type: "string"
                   description: "User who added document"
+                enabled:
+                  type: "string"
+                  description: "Is webhook enabled"
             GetWebhookTagsResponse:
               type: "object"
               properties:

@@ -25,18 +25,16 @@ package com.formkiq.stacks.api.awstest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.models.WebhookTag;
-import com.formkiq.stacks.client.models.WebhookTags;
-import com.formkiq.stacks.client.requests.AddWebhookRequest;
-import com.formkiq.stacks.client.requests.AddWebhookTagRequest;
-import com.formkiq.stacks.client.requests.GetWebhookTagsRequest;
-import com.formkiq.stacks.client.requests.OptionsWebhookTagsRequest;
+import com.formkiq.client.api.WebhooksApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddWebhookRequest;
+import com.formkiq.client.model.AddWebhookResponse;
+import com.formkiq.client.model.AddWebhookTagRequest;
+import com.formkiq.client.model.GetWebhookTagsResponse;
+import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
  * Process Urls.
@@ -45,27 +43,10 @@ import com.formkiq.stacks.client.requests.OptionsWebhookTagsRequest;
  * </p>
  *
  */
-public class WebhookTagsRequestTest extends AbstractApiTest {
+public class WebhookTagsRequestTest extends AbstractAwsIntegrationTest {
 
-  /** Http Status OK. */
-  private static final int STATUS_NO_CONTENT = 204;
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
-
-  /**
-   * /webhooks/{webhookId}/tags Options.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testOptions01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      OptionsWebhookTagsRequest req =
-          new OptionsWebhookTagsRequest().webhookId(UUID.randomUUID().toString());
-      assertEquals(STATUS_NO_CONTENT, client.optionsWebhookTags(req).statusCode());
-    }
-  }
 
   /**
    * Test POST /webhooks/{webhookId}/tags.
@@ -74,36 +55,32 @@ public class WebhookTagsRequestTest extends AbstractApiTest {
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
-  public void testPublicWebhooks01() throws Exception {
-    for (FormKiqClientV1 client : getFormKiqClients(null)) {
-      // given
-      String id = client.addWebhook(new AddWebhookRequest().name("paypal")).id();
+  public void testwebhookTags01() throws Exception {
+    // given
+    String siteId = null;
+    for (ApiClient client : getApiClients(siteId)) {
+      WebhooksApi api = new WebhooksApi(client);
+      AddWebhookResponse addWebhook =
+          api.addWebhook(new AddWebhookRequest().name("paypal"), siteId);
+      String webhookId = addWebhook.getWebhookId();
 
-      AddWebhookTagRequest req =
-          new AddWebhookTagRequest().tagKey("category").tagValue("person").webhookId(id);
+      AddWebhookTagRequest req = new AddWebhookTagRequest().key("category").value("person");
 
-      // when
-      boolean result = client.addWebhookTag(req);
-
-      // then
-      assertTrue(result);
-
-      // given
-      GetWebhookTagsRequest get = new GetWebhookTagsRequest().webhookId(id);
+      api.addWebhookTag(webhookId, req, siteId);
 
       // when
-      WebhookTags tags = client.getWebhookTags(get);
+      GetWebhookTagsResponse response = api.getWebhookTags(webhookId, siteId);
 
       // then
-      assertEquals(1, tags.tags().size());
-      WebhookTag tag = tags.tags().get(0);
+      assertEquals(1, response.getTags().size());
+      com.formkiq.client.model.WebhookTag tag = response.getTags().get(0);
 
-      assertEquals("category", tag.key());
-      assertNotNull(tag.insertedDate());
-      assertEquals("USERDEFINED", tag.type());
-      assertNotNull(tag.userId());
-      assertEquals("person", tag.value());
-      assertEquals(id, tag.webhookId());
+      assertEquals("category", tag.getKey());
+      assertNotNull(tag.getInsertedDate());
+      assertEquals("USERDEFINED", tag.getType());
+      assertNotNull(tag.getUserId());
+      assertEquals("person", tag.getValue());
+      assertEquals(webhookId, tag.getWebhookId());
     }
   }
 }
