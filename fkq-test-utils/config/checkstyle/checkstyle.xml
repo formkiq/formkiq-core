@@ -187,6 +187,10 @@
       <property name="format" value="System\.out\.println"/>
       <property name="illegalPattern" value="true"/>
     </module>
+    <module name="Regexp">
+      <property name="format" value="System\.setProperty"/>
+      <property name="illegalPattern" value="true"/>
+    </module>
     <module name="JavadocStyle"/>
     <module name="JavadocVariable"/>
     <module name="LocalFinalVariableName"/>
