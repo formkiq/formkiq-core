@@ -42,6 +42,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -74,6 +75,10 @@ public class DocumentIdContentRequestHandler
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     DynamoDbConnectionBuilder connection = awsservice.getExtension(DynamoDbConnectionBuilder.class);
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
+
+    if (versionKey != null) {
+      throwIfNull(versionId, new BadException("invalid 'versionKey'"));
+    }
 
     ApiResponse response = null;
 
