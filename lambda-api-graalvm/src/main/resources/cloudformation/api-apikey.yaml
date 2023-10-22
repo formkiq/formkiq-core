@@ -1444,6 +1444,7 @@ Resources:
               tags:
               - Document Versions
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/versionKeyPath'
               - $ref: '#/components/parameters/shareKeyParam'
