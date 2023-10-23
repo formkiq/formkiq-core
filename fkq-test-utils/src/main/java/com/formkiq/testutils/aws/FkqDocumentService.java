@@ -80,6 +80,31 @@ public class FkqDocumentService {
   private static final int STATUS_OK = 200;
 
   /**
+   * Add Document.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param data byte[]
+   * @param contentType {@link String}
+   * @param actions {@link List} {@link AddAction}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public static String addDocument(final ApiClient apiClient, final String siteId,
+      final String path, final byte[] data, final String contentType, final List<AddAction> actions)
+      throws ApiException {
+
+    DocumentsApi api = new DocumentsApi(apiClient);
+    String content = Base64.getEncoder().encodeToString(data);
+    com.formkiq.client.model.AddDocumentRequest req =
+        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
+            .isBase64(Boolean.TRUE).path(path).actions(actions);
+    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    return response.getDocumentId();
+  }
+
+  /**
    * Add "file" but this just creates DynamoDB record and the S3 file.
    * 
    * @param apiClient {@link ApiClient}
