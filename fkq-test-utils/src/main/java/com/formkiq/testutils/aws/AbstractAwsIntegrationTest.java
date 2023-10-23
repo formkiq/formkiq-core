@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.api.SystemManagementApi;
@@ -71,6 +72,8 @@ public abstract class AbstractAwsIntegrationTest {
   private static FormKiqClientV1 clientToken;
   /** {@link FkqCognitoService}. */
   private static FkqCognitoService cognito;
+  /** {@link S3Service}. */
+  private static S3Service s3;
   /** Site Id. */
   public static final String SITE_ID = "8ab6a050-1fc4-11ed-861d-0242ac120002";
   /** {@link SqsService}. */
@@ -232,6 +235,15 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
+   * Get {@link S3Service}.
+   * 
+   * @return {@link S3Service}
+   */
+  public static S3Service getS3() {
+    return s3;
+  }
+
+  /**
    * Get {@link SqsService}.
    * 
    * @return {@link SqsService}
@@ -258,6 +270,7 @@ public abstract class AbstractAwsIntegrationTest {
     cognito = new FkqCognitoService(awsprofile, awsregion, appenvironment);
     ssm = new FkqSsmService(awsprofile, awsregion);
     sqs = new FkqSqsService(awsprofile, awsregion);
+    s3 = new FkqS3Service(awsprofile, awsregion);
   }
 
   /**
