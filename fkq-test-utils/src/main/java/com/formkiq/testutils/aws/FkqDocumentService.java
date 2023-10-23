@@ -88,18 +88,19 @@ public class FkqDocumentService {
    * @param data byte[]
    * @param contentType {@link String}
    * @param actions {@link List} {@link AddAction}
+   * @param tags {@link com.formkiq.client.model.AddDocumentTag}
    * @return {@link String}
    * @throws ApiException ApiException
    */
   public static String addDocument(final ApiClient apiClient, final String siteId,
-      final String path, final byte[] data, final String contentType, final List<AddAction> actions)
-      throws ApiException {
+      final String path, final byte[] data, final String contentType, final List<AddAction> actions,
+      final List<com.formkiq.client.model.AddDocumentTag> tags) throws ApiException {
 
     DocumentsApi api = new DocumentsApi(apiClient);
     String content = Base64.getEncoder().encodeToString(data);
     com.formkiq.client.model.AddDocumentRequest req =
         new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
-            .isBase64(Boolean.TRUE).path(path).actions(actions);
+            .isBase64(Boolean.TRUE).path(path).actions(actions).tags(tags);
     AddDocumentResponse response = api.addDocument(req, siteId, null);
     return response.getDocumentId();
   }
