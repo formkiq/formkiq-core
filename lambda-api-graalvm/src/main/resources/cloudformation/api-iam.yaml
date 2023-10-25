@@ -1856,9 +1856,9 @@ Resources:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
           /documents/{documentId}/workflow/{workflowId}/decisions:
             post:
-              operationId: AddDocumentWorkflowApproval
-              summary: Approve document in approval queue
-              description: Approve document in approval queue; ONLY available with FormKiQ Pro and Enterprise
+              operationId: AddDocumentWorkflowDecisions
+              summary: Approve/Reject document in approval queue
+              description: Approve/Reject document in approval queue; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Workflows
               parameters:
@@ -1885,49 +1885,6 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddDocumentWorkflowDecisionsResponse'
-                '400':
-                  description: 400 BAD REQUEST
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /documents/{documentId}/workflow/{workflowId}/reject/{queueName}:
-            post:
-              operationId: AddDocumentWorkflowReject
-              summary: Reject document in approval queue
-              description: Reject document in approval queue; ONLY available with FormKiQ Pro and Enterprise
-              tags:
-              - Document Workflows
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/workflowIdParam'
-              - $ref: '#/components/parameters/queueNameParam'
-              responses:
-                '201':
-                  description: 201 CREATED
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/AddDocumentWorkflowRejectResponse'
                 '400':
                   description: 400 BAD REQUEST
                   headers:
@@ -5048,12 +5005,6 @@ Resources:
                     - APPROVE
                     - REJECT
             AddDocumentWorkflowDecisionsResponse:
-              type: "object"
-              properties:
-                message:
-                  type: "string"
-                  description: "Result message"
-            AddDocumentWorkflowRejectResponse:
               type: "object"
               properties:
                 message:
