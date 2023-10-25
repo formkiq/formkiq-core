@@ -1816,7 +1816,6 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
-              - $ref: '#/components/parameters/workflowIdParam'
               requestBody:
                 required: true
                 content:
