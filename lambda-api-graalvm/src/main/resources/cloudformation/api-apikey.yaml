@@ -1776,7 +1776,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /workflows/queue/{queueName}/documents:
+          /queues/{queueName}/documents:
             get:
               operationId: GetWorkflowQueueDocuments
               summary: Get list of documents in queue
@@ -1806,7 +1806,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
-          /documents/{documentId}/workflow/{workflowId}:
+          /documents/{documentId}/workflows:
             post:
               operationId: AddDocumentWorkflow
               summary: Add document workflow
@@ -1817,6 +1817,12 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentWorkflowRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1848,7 +1854,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-          /documents/{documentId}/workflow/{workflowId}/approve/{queueName}:
+          /documents/{documentId}/workflow/{workflowId}/decisions:
             post:
               operationId: AddDocumentWorkflowApproval
               summary: Approve document in approval queue
@@ -1859,7 +1865,12 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
               - $ref: '#/components/parameters/workflowIdParam'
-              - $ref: '#/components/parameters/queueNameParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentWorkflowDecisionsRequest'
               responses:
                 '201':
                   description: 201 CREATED
@@ -1873,7 +1884,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/AddDocumentWorkflowApprovalResponse'
+                        $ref: '#/components/schemas/AddDocumentWorkflowDecisionsResponse'
                 '400':
                   description: 400 BAD REQUEST
                   headers:
@@ -4955,7 +4966,8 @@ Resources:
                 config:
                   $ref: "#/components/schemas/WorkflowConfig"
                 steps:
-                  description: "Workflow steps"
+                  type: "array"
+                  description: "Workflow Steps"
                   items:
                     $ref: "#/components/schemas/AddWorkflowStep"
             AddWorkflowStep:
@@ -5007,13 +5019,35 @@ Resources:
                 workflowId:
                   type: "string"
                   description: "Workflow Identifier"
+            AddDocumentWorkflowRequest:
+              type: "object"
+              required:
+                - workflowId
+              properties:
+                workflowId:
+                  type: "string"
+                  description: "Workflow Identifier"
             AddDocumentWorkflowResponse:
               type: "object"
               properties:
                 message:
                   type: "string"
                   description: "Result message"
-            AddDocumentWorkflowApprovalResponse:
+            AddDocumentWorkflowDecisionsRequest:
+              type: "object"
+              required:
+                - queueName
+                - decision
+              properties:
+                queueName:
+                  type: "string"
+                  description: "Name of Queue"
+                decision:
+                  type: "string"
+                  enum:
+                    - APPROVE
+                    - REJECT
+            AddDocumentWorkflowDecisionsResponse:
               type: "object"
               properties:
                 message:
