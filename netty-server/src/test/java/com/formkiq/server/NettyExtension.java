@@ -40,6 +40,8 @@ import com.formkiq.testutils.aws.DynamoDbTestServices;
  */
 public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
 
+  /** API Key. */
+  static final String API_KEY = "testapikey";
   /** Http Server Port. */
   static final int BASE_HTTP_SERVER_PORT = 8080;
   /** Millisecond Factor. */
@@ -61,6 +63,7 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
     params.add("--s3-url=" + MinioTestServices.getEndpoint());
     params.add("--minio-access-key=" + MinioTestServices.ACCESS_KEY);
     params.add("--minio-secret-key=" + MinioTestServices.SECRET_KEY);
+    params.add("--api-key=" + API_KEY);
 
     this.serverThread = new Thread(() -> {
       try {

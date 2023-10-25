@@ -30,7 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -66,7 +68,8 @@ public class HttpServerTest {
   private static final String BASE_URL = "http://localhost:" + BASE_HTTP_SERVER_PORT;
 
   /** {@link ApiClient}. */
-  private ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL);
+  private ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL)
+      .addDefaultHeader("Authorization", NettyExtension.API_KEY);
 
   /** {@link DocumentsApi}. */
   private DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
@@ -128,12 +131,30 @@ public class HttpServerTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
   void testInvalidEndpoint() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/hello")).build();
+    HttpRequest request = HttpRequest.newBuilder().header("Authorization", NettyExtension.API_KEY)
+        .uri(new URI(BASE_URL + "/hello")).build();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
     assertEquals("{\"message\":\"/hello not found\"}", response.body());
+  }
+
+  /**
+   * Test unauthorized endpoints.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  void testUnAuthorizedEndpoint() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/hello")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+    assertEquals("request not supported", response.body());
   }
 
   /**
@@ -146,7 +167,8 @@ public class HttpServerTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
   void testSites() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/sites")).build();
+    HttpRequest request = HttpRequest.newBuilder().header("Authorization", NettyExtension.API_KEY)
+        .uri(new URI(BASE_URL + "/sites")).build();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -171,7 +193,8 @@ public class HttpServerTest {
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
   void testVersions() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/version")).build();
+    HttpRequest request = HttpRequest.newBuilder().header("Authorization", NettyExtension.API_KEY)
+        .uri(new URI(BASE_URL + "/version")).build();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -181,5 +204,30 @@ public class HttpServerTest {
     assertEquals("core", results.get("type"));
     assertEquals("",
         ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
+  }
+
+  /**
+   * Test cognito-idp initiate-auth.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  void testCognitoInitAuth() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    Map<String, Object> body =
+        Map.of("AuthFlow", "USER_SRP_AUTH", "ClientId", "1nol56jeud98ime8nq1", "AuthParameters",
+            Map.of("USERNAME", "test@formkiq.com", "SRP_A", "af39f9fb33313c20e3dd9e"));
+    byte[] content = this.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
+    HttpRequest request = HttpRequest.newBuilder()
+        .header("X-Amz-Target", "AWSCognitoIdentityProviderService.InitiateAuth")
+        .POST(BodyPublishers.ofByteArray(content)).uri(new URI(BASE_URL + "/")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
+    assertEquals("PASSWORD_VERIFIER", results.get("ChallengeName"));
   }
 }

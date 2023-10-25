@@ -77,6 +77,10 @@ public class HttpServer {
     minioSecretKey.setRequired(true);
     options.addOption(minioSecretKey);
 
+    Option apiKey = new Option(null, "api-key", true, "API Key");
+    apiKey.setRequired(true);
+    options.addOption(apiKey);
+
     return options;
   }
 

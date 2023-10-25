@@ -205,7 +205,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     }
   }
 
-  private Map<String, String> getEnvironment() {
+  private Map<String, String> getEnvironment(final CommandLine commandLine) {
     Map<String, String> env = new HashMap<>();
     env.put("USER_AUTHENTICATION", "cognito");
     env.put("VERSION", "1.13");
@@ -218,7 +218,9 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("SNS_DOCUMENT_EVENT", "");
     env.put("DEBUG", "false");
+    env.put("API_KEY", commandLine.getOptionValue("api-key"));
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+
     return env;
   }
 
@@ -252,11 +254,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   private void setupHandler(final CommandLine commandLine,
       final AwsCredentialsProvider credentialsProvider) {
 
-    String minioAccessKey = commandLine.getOptionValue("minio-access-key");
-    String minioSecretKey = commandLine.getOptionValue("minio-secret-key");
-    String s3Url = commandLine.getOptionValue("s3-url");
-
-    Map<String, String> env = getEnvironment();
+    Map<String, String> env = getEnvironment(commandLine);
 
     try {
 
@@ -277,6 +275,10 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         schema.createCacheTable(CACHE_TABLE);
       }
 
+      String minioAccessKey = commandLine.getOptionValue("minio-access-key");
+      String minioSecretKey = commandLine.getOptionValue("minio-secret-key");
+      String s3Url = commandLine.getOptionValue("s3-url");
+
       createS3Buckets(minioAccessKey, minioSecretKey, s3Url);
 
     } catch (IOException e) {
@@ -293,7 +295,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   private void setupS3Lambda(final CommandLine command,
       final AwsCredentialsProvider credentialsProvider) {
 
-    Map<String, String> env = getEnvironment();
+    Map<String, String> env = getEnvironment(command);
     Map<String, URI> endpoints = getEndpoints(command);
 
     AwsServiceCache serviceCache = new AwsServiceCacheBuilder(env, endpoints, credentialsProvider)
