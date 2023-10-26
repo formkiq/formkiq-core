@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.12.1
+          version: 1.12.2
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -4043,6 +4043,12 @@
                 ocrParseTypes:
                   type: string
                   description: 'OCR: Parse types - TEXT, FORMS, TABLES'
+                ocrEngine:
+                  type: string
+                  description: 'OCR: Engine to use for Optical character recognition'
+                  enum:
+                  - TESSERACT
+                  - TEXTRACT
                 addPdfDetectedCharactersAsText:
                   type: boolean
                   description: 'OCR: For the rewriting of the PDF document, converting any image text to searchable text'

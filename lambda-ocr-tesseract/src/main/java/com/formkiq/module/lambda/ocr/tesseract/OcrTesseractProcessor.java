@@ -24,14 +24,6 @@
 package com.formkiq.module.lambda.ocr.tesseract;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_BMP;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_GIF;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_JPEG;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_JPG;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_PNG;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_TIF;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_TIFF;
-import static com.formkiq.aws.dynamodb.objects.MimeType.MIME_WEBP;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -68,7 +61,6 @@ import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.sourceforge.tess4j.TesseractException;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.utils.IoUtils;
@@ -76,9 +68,6 @@ import software.amazon.awssdk.utils.IoUtils;
 /** {@link RequestHandler} for handling DynamoDb to Tesseract OCR Processor. */
 public class OcrTesseractProcessor implements RequestStreamHandler {
 
-  /** Supported Mime Type. */
-  private static final List<MimeType> SUPPORTED = Arrays.asList(MIME_PNG, MIME_JPEG, MIME_JPG,
-      MIME_TIF, MIME_TIFF, MIME_GIF, MIME_WEBP, MIME_BMP);
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsServices;
   /** Documents S3 Bucket. */
@@ -89,8 +78,8 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
   private String ocrDocumentsBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
-  /** {@link TesseractWrapper}. */
-  private TesseractWrapper tesseract;
+  /** {@link List} {@link FormatConverter}. */
+  private List<FormatConverter> converters;
 
   /**
    * constructor.
@@ -124,7 +113,8 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
     this.s3Service = new S3Service(s3Connection);
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.ocrDocumentsBucket = map.get("OCR_S3_BUCKET");
-    this.tesseract = tesseractWrapper;
+    this.converters = Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
+        new PdfFormatConverter(), new TesseractFormatConverter(tesseractWrapper));
 
     this.awsServices =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
@@ -175,6 +165,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
 
   private void processRecord(final LambdaLogger logger, final DocumentOcrService ocrService,
       final OcrSqsMessage sqsMessage) {
+
     String siteId = sqsMessage.siteId();
     String documentId = sqsMessage.documentId();
     String jobId = sqsMessage.jobId();
@@ -190,7 +181,10 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
 
       MimeType mt = MimeType.fromContentType(contentType);
 
-      if (!SUPPORTED.contains(mt)) {
+      Optional<FormatConverter> fc =
+          this.converters.stream().filter(c -> c.isSupported(mt)).findFirst();
+
+      if (fc.isEmpty()) {
         throw new IOException("unsupported Content-Type: " + contentType);
       }
 
@@ -207,7 +201,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
           IoUtils.copy(is, fileOs);
         }
 
-        String text = this.tesseract.doOcr(file);
+        String text = fc.get().convert(file);
 
         String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
         this.s3Service.putObject(this.ocrDocumentsBucket, ocrS3Key,
@@ -225,7 +219,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
         }
       }
 
-    } catch (IOException | TesseractException | RuntimeException e) {
+    } catch (IOException | RuntimeException e) {
       e.printStackTrace();
       ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
       logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));

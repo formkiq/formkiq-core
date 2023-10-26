@@ -106,6 +106,19 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     return valueMap;
   }
 
+  private void deleteAction(final String siteId, final String documentId, final Action action,
+      final int index) {
+
+    String pk = getPk(siteId, documentId);
+    String sk = getSk(action, index);
+
+    Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
+        AttributeValue.builder().s(sk).build());
+
+    this.dbClient
+        .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+  }
+
   @Override
   public void deleteActions(final String siteId, final String documentId) {
 
@@ -114,14 +127,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     int index = 0;
     for (Action action : actions) {
 
-      String pk = getPk(siteId, documentId);
-      String sk = getSk(action, index);
-
-      Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
-          AttributeValue.builder().s(sk).build());
-
-      this.dbClient.deleteItem(
-          DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+      deleteAction(siteId, documentId, action, index);
 
       index++;
     }
@@ -169,6 +175,24 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   public boolean hasActions(final String siteId, final String documentId) {
     List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK), null);
     return !actions.isEmpty();
+  }
+
+  @Override
+  public void insertBeforeAction(final String siteId, final String documentId,
+      final List<Action> actions, final Action currentAction, final Action insertedAction) {
+
+    int pos = actions.indexOf(currentAction);
+
+    saveAction(siteId, documentId, insertedAction, pos);
+
+    for (int i = pos; i < actions.size(); i++) {
+
+      Action action = actions.get(i);
+      deleteAction(siteId, documentId, action, i);
+
+      pos++;
+      saveAction(siteId, documentId, action, pos);
+    }
   }
 
   /**

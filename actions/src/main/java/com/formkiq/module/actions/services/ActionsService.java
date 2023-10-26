@@ -74,15 +74,16 @@ public interface ActionsService {
   boolean hasActions(String siteId, String documentId);
 
   /**
-   * Save {@link List} {@link Action}.
+   * Insert {@link Action}.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
-   * @return {@link List} {@link Map}
+   * @param currentAction {@link Action}
+   * @param insertedAction {@link Action}
    */
-  List<Map<String, AttributeValue>> saveActions(String siteId, String documentId,
-      List<Action> actions);
+  void insertBeforeAction(String siteId, String documentId, List<Action> actions,
+      Action currentAction, Action insertedAction);
 
   /**
    * Save {@link Action}.
@@ -93,6 +94,17 @@ public interface ActionsService {
    * @param index int
    */
   void saveAction(String siteId, String documentId, Action action, int index);
+
+  /**
+   * Save {@link List} {@link Action}.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
+   * @return {@link List} {@link Map}
+   */
+  List<Map<String, AttributeValue>> saveActions(String siteId, String documentId,
+      List<Action> actions);
 
   /**
    * Update {@link Action} {@link ActionStatus}.

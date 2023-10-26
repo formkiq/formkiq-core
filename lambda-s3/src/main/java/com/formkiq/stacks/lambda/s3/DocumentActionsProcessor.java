@@ -412,12 +412,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
   private void processAction(final LambdaLogger logger, final String siteId,
-      final String documentId, final Action action) throws IOException, InterruptedException {
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
 
     logAction(logger, "action start", siteId, documentId, action);
 
@@ -446,7 +448,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      processFulltext(logger, siteId, documentId, action);
+      processFulltext(logger, siteId, documentId, actions, action);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
@@ -498,7 +500,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         try {
 
-          processAction(logger, siteId, documentId, action);
+          processAction(logger, siteId, documentId, actions, action);
 
         } catch (Exception e) {
           e.printStackTrace();
@@ -521,7 +523,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   }
 
   private void processFulltext(final LambdaLogger logger, final String siteId,
-      final String documentId, final Action action) throws IOException, InterruptedException {
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
+
     ActionStatus status = ActionStatus.COMPLETE;
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     debug(logger, siteId, item);
@@ -531,24 +535,35 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     List<String> contentUrls =
         documentContentFunc.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
 
-    boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
+    if (contentUrls.size() > 0) {
+      boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
 
-    if (moduleFulltext) {
-      updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
-    } else if (this.typesense != null) {
-      updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+      if (moduleFulltext) {
+        updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
+      } else if (this.typesense != null) {
+        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+      } else {
+        status = ActionStatus.FAILED;
+      }
+
+      List<Action> updatedActions =
+          this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
+
+      if (ActionStatus.COMPLETE.equals(status)) {
+        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      }
+
+      action.status(status);
+
     } else {
-      status = ActionStatus.FAILED;
-    }
 
-    List<Action> updatedActions =
-        this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
+      Action ocrAction =
+          new Action().type(ActionType.OCR).parameters(Map.of("ocrEngine", "tesseract"));
+      this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
 
-    if (ActionStatus.COMPLETE.equals(status)) {
+      List<Action> updatedActions = this.actionsService.getActions(siteId, documentId);
       this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
     }
-
-    action.status(status);
   }
 
   /**

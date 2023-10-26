@@ -64,6 +64,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
@@ -127,12 +128,18 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static DocumentActionsProcessor processor;
   /** {@link S3Service}. */
   private static S3Service s3Service;
+  /** Sns Document Event. */
+  private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
+  /** Sns Document Event Topic Arn. */
+  private static String snsDocumentEventTopicArn;
   /** {@link SsmService}. */
   private static SsmService ssmService;
   /** {@link TypeSenseService}. */
   private static TypeSenseService typesense;
   /** Test server URL. */
   private static final String URL = "http://localhost:" + PORT;
+  /** Document Id with OCR. */
+  private static final String DOCUMENT_ID_OCR = UUID.randomUUID().toString();
 
   /**
    * After Class.
@@ -173,6 +180,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, credentials);
 
     configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+
+    SnsService sns = new SnsService(TestServices.getSnsConnection(null));
+    snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();
   }
 
   /**
@@ -192,6 +202,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           org.mockserver.model.HttpResponse.response(text).withStatusCode(Integer.valueOf(status)));
     }
 
+    mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
+        .respond(org.mockserver.model.HttpResponse
+            .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
     mockServer.when(request().withMethod("PATCH")).respond(callback);
     mockServer.when(request().withMethod("POST")).respond(callback);
     mockServer.when(request().withMethod("PUT")).respond(callback);
@@ -206,6 +219,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     env.put("MODULE_" + module, "true");
+    env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
 
@@ -731,9 +745,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testHandle03() throws IOException, URISyntaxException {
 
+    // given
+    String documentId = DOCUMENT_ID_OCR;
+
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      String documentId = UUID.randomUUID().toString();
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("application/pdf");
@@ -1001,6 +1016,43 @@ public class DocumentActionsProcessorTest implements DbKeys {
         HttpRequest lastRequest = callback.getLastRequest();
         assertNull(lastRequest);
       }
+    }
+  }
+
+  /**
+   * Handle Fulltext that needs OCR Action.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @Test
+  public void testHandleFulltext01() throws IOException, URISyntaxException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("application/pdf");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(2, list.size());
+      assertEquals(ActionType.OCR, list.get(0).type());
+      assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
+      assertEquals(ActionStatus.PENDING, list.get(0).status());
+      assertEquals(ActionType.FULLTEXT, list.get(1).type());
+      assertEquals(ActionStatus.PENDING, list.get(1).status());
     }
   }
 }
