@@ -32,6 +32,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -87,7 +88,7 @@ public class DocumentContentFunction {
   private List<String> findContentUrls(final LambdaLogger logger, final String siteId,
       final DocumentItem item) throws IOException {
 
-    List<String> urls = null;
+    List<String> urls = Collections.emptyList();
     String documentId = item.getDocumentId();
     String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
 
