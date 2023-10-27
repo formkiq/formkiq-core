@@ -137,9 +137,17 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
         response = addDocument(siteId, documentId, data);
 
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
+
       } else if (is409(response) || is429(response)) {
 
         response = updateDocument(siteId, documentId, data);
+
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
 
       } else {
         throw new IOException(response.body());
