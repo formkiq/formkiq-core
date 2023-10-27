@@ -9,6 +9,8 @@
 		<allow pkg="java.io" />
 		<allow pkg="java.util" />
 		
+		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		
 		<allow pkg="java.net" />
 		<allow pkg="java.net.http" />
 		<allow pkg="java.nio.charset" />

@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.LambdaRuntime;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.JsonService;
@@ -123,19 +125,26 @@ public class TypeSenseServiceImpl implements TypeSenseService {
   public HttpResponse<String> addOrUpdateDocument(final String siteId, final String documentId,
       final Map<String, Object> data) throws IOException {
 
+    LambdaLogger logger = LambdaRuntime.getLogger();
+
     HttpResponse<String> response = addDocument(siteId, documentId, data);
+    logger.log("adddocument: " + response.statusCode() + " " + response.body());
 
     if (!is2XX(response)) {
+
+      logger.log("is2XX: " + response.statusCode() + " " + response.body());
 
       if (is404(response)) {
 
         response = addCollection(siteId);
+        logger.log("is404: " + response.statusCode() + " " + response.body());
 
         if (!is2XX(response)) {
           throw new IOException(response.body());
         }
 
         response = addDocument(siteId, documentId, data);
+        logger.log("addDocument2: " + response.statusCode() + " " + response.body());
 
         if (!is2XX(response)) {
           throw new IOException(response.body());
@@ -144,6 +153,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
       } else if (is409(response) || is429(response)) {
 
         response = updateDocument(siteId, documentId, data);
+        logger.log("updateDocument: " + response.statusCode() + " " + response.body());
 
         if (!is2XX(response)) {
           throw new IOException(response.body());
@@ -154,6 +164,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
       }
     }
 
+    logger.log("final response: " + response.statusCode() + " " + response.body());
     return response;
   }
 
