@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -42,7 +41,32 @@ public class DocumentMapToDocument
     implements Function<Map<String, ? extends Object>, Map<String, Object>> {
 
   /** Fields to Process. */
-  private static final List<String> FIELDS = Arrays.asList("documentId", "path", "userId");
+  private static final List<String> FIELDS =
+      Arrays.asList("documentId", "path", "content", "contentType");
+
+  @SuppressWarnings("unchecked")
+  private String getValue(final Object obj) {
+    String value = null;
+
+    if (obj != null) {
+
+      if (obj instanceof AttributeValue) {
+
+        AttributeValue av = (AttributeValue) obj;
+        value = av.s();
+
+      } else if (obj instanceof Map) {
+
+        Map<String, Object> values = (Map<String, Object>) obj;
+        value = values.get("S").toString();
+
+      } else if (obj instanceof String) {
+        value = obj.toString();
+      }
+    }
+
+    return value;
+  }
 
   @SuppressWarnings("unchecked")
   @Override
@@ -53,24 +77,10 @@ public class DocumentMapToDocument
     for (String field : FIELDS) {
 
       Object ob = data.get(field);
+      String value = getValue(ob);
 
-      if (ob != null) {
-
-        String value = null;
-
-        if (ob instanceof AttributeValue) {
-
-          AttributeValue av = (AttributeValue) ob;
-          value = av.s();
-
-        } else {
-          Map<String, Object> values = (Map<String, Object>) data.get(field);
-          value = values.get("S").toString();
-        }
-
-        if (!Strings.isEmpty(value)) {
-          document.put(field, value);
-        }
+      if (value != null) {
+        document.put(field, value);
       }
     }
 
@@ -79,13 +89,23 @@ public class DocumentMapToDocument
             .map(e -> e.getKey()).collect(Collectors.toList());
 
     metadata.forEach(m -> {
-      Map<String, Object> values = (Map<String, Object>) data.get(m);
 
-      if (values.containsKey("S")) {
-        String value = values.get("S").toString();
-        document.put(m, value);
-      }
+      Map<String, Object> obj = (Map<String, Object>) data.get(m);
+      String value = getValue(obj);
+      String key = m.replaceAll("md#", "metadata#");
+      document.put(key, value);
     });
+
+    if (data.containsKey("metadata")) {
+      List<Map<String, String>> list = (List<Map<String, String>>) data.get("metadata");
+      for (Map<String, String> map : list) {
+        String key = map.get("key");
+        String value = map.get("value");
+        document.put("metadata#" + key, value != null ? value : "");
+      }
+    }
+
+    document.put("metadata#", "");
 
     return document;
   }

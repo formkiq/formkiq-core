@@ -51,13 +51,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -107,7 +104,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -122,8 +118,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link ActionsService}. */
   private ActionsService actionsService;
-  /** {@link DynamoDbService}. */
-  private DynamoDbService dbService;
   /** {@link DocumentService}. */
   private DocumentService documentService;
   /** IAM Documents Url. */
@@ -197,7 +191,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     this.s3Service = this.serviceCache.getExtension(S3Service.class);
     this.documentService = this.serviceCache.getExtension(DocumentService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
-    this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.notificationService = this.serviceCache.getExtension(ActionsNotificationService.class);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
@@ -701,20 +694,21 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     try {
 
-      Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-      Map<String, AttributeValue> data = this.dbService.get(keys.get(PK), keys.get(SK));
+      // Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+      // Map<String, AttributeValue> data = this.dbService.get(keys.get(PK), keys.get(SK));
+      String content = getContent(logger, dcFunc, action, contentUrls);
+      Map<String, String> data = Map.of("content", content);
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
-      document = new DocumentToFulltextDocument().apply(document);
-
-      StringBuilder sb =
-          document.containsKey("text") ? new StringBuilder(document.get("text").toString())
-              : new StringBuilder();
-
-      String content = getContent(logger, dcFunc, action, contentUrls);
-      sb.append(" ");
-      sb.append(content);
-      document.put("text", sb.toString());
+      //
+      // StringBuilder sb =
+      // document.containsKey("content") ? new StringBuilder(document.get("content").toString())
+      // : new StringBuilder();
+      //
+      //
+      // sb.append(" ");
+      // sb.append(content);
+      // document.put("text", sb.toString());
 
       HttpResponse<String> response =
           this.typesense.addOrUpdateDocument(siteId, documentId, document);

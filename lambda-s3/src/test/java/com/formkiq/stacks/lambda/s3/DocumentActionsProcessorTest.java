@@ -973,7 +973,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Map<String, String> body = gson.fromJson(response.body(), Map.class);
       assertEquals(documentId, body.get("id"));
-      assertEquals(documentId + " joe " + content, body.get("text"));
+      assertEquals(content, body.get("content"));
     }
   }
 
