@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
-import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
