@@ -717,22 +717,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       sb.append(content);
       document.put("text", sb.toString());
 
-      HttpResponse<String> response = this.typesense.updateDocument(siteId, documentId, document);
+      HttpResponse<String> response =
+          this.typesense.addOrUpdateDocument(siteId, documentId, document);
 
       if (!is2XX(response)) {
-        response = this.typesense.addDocument(siteId, documentId, document);
-
-        if (is404(response)) {
-          response = this.typesense.addCollection(siteId);
-
-          if (is2XX(response)) {
-            response = this.typesense.addDocument(siteId, documentId, document);
-          }
-
-          if (!is2XX(response)) {
-            throw new IOException(response.body());
-          }
-        }
+        throw new IOException(response.body());
       }
 
     } catch (URISyntaxException | InterruptedException e) {
