@@ -128,7 +128,6 @@ public class DocumentsFulltextRequestTest extends AbstractApiTest {
 
       byte[] data = toBytes("/ocr/sample.pdf");
       String documentId = addDocument(client, siteId, "sample.pdf", data, "application/pdf");
-      System.out.println("documentId: " + documentId);
       waitForDocumentContent(client, siteId, documentId);
 
       AddDocumentActionRequest addReq =
