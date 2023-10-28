@@ -45,6 +45,7 @@ import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.sqs.SqsMessageRecord;
 import com.formkiq.aws.sqs.SqsMessageRecords;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -57,6 +58,7 @@ import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
+import com.formkiq.module.ocr.FormatConverter;
 import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
 import com.google.gson.Gson;
@@ -73,7 +75,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
   /** Documents S3 Bucket. */
   private String documentsBucket;
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  protected Gson gson = new GsonBuilder().create();
   /** {@link String}. */
   private String ocrDocumentsBucket;
   /** {@link S3Service}. */
@@ -94,7 +96,8 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
         new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
             .setCredentials(EnvironmentVariableCredentialsProvider.create())
             .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new TesseractWrapperImpl());
+        Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
+            new TesseractFormatConverter(new TesseractWrapperImpl())));
   }
 
   /**
@@ -104,17 +107,16 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    * @param dbConnection {@link DynamoDbConnectionBuilder}
    * @param s3Connection {@link S3ConnectionBuilder}
    * @param snsConnection {@link SnsConnectionBuilder}
-   * @param tesseractWrapper {@link TesseractWrapper}
+   * @param formatConverters {@link List} {@link FormatConverter}
    */
   public OcrTesseractProcessor(final Map<String, String> map,
       final DynamoDbConnectionBuilder dbConnection, final S3ConnectionBuilder s3Connection,
-      final SnsConnectionBuilder snsConnection, final TesseractWrapper tesseractWrapper) {
+      final SnsConnectionBuilder snsConnection, final List<FormatConverter> formatConverters) {
 
     this.s3Service = new S3Service(s3Connection);
     this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
     this.ocrDocumentsBucket = map.get("OCR_S3_BUCKET");
-    this.converters = Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
-        new PdfFormatConverter(), new TesseractFormatConverter(tesseractWrapper));
+    this.converters = formatConverters;
 
     this.awsServices =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
@@ -157,10 +159,15 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
 
     records.records().forEach(record -> {
 
-      OcrSqsMessage sqsMessage = this.gson.fromJson(record.body(), OcrSqsMessage.class);
+      OcrSqsMessage sqsMessage = getSqsMessage(record);
       processRecord(logger, ocrService, sqsMessage);
 
     });
+  }
+
+  protected OcrSqsMessage getSqsMessage(final SqsMessageRecord record) {
+    OcrSqsMessage sqsMessage = this.gson.fromJson(record.body(), OcrSqsMessage.class);
+    return sqsMessage;
   }
 
   private void processRecord(final LambdaLogger logger, final DocumentOcrService ocrService,
@@ -175,7 +182,6 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
         "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\"}",
         siteId, documentId, jobId, contentType);
     logger.log(s);
-
 
     try {
 
@@ -201,7 +207,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
           IoUtils.copy(is, fileOs);
         }
 
-        String text = fc.get().convert(file);
+        String text = fc.get().convert(sqsMessage, file);
 
         String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
         this.s3Service.putObject(this.ocrDocumentsBucket, ocrS3Key,

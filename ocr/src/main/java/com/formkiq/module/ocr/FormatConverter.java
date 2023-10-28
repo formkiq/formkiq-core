@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambda.ocr.tesseract;
+package com.formkiq.module.ocr;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,11 +35,12 @@ public interface FormatConverter {
   /**
    * Convert File.
    * 
+   * @param sqsMessage {@link OcrSqsMessage}
    * @param file {@link File}
    * @return {@link String}
    * @throws IOException IOException
    */
-  String convert(File file) throws IOException;
+  String convert(OcrSqsMessage sqsMessage, File file) throws IOException;
 
   /**
    * Is {@link MimeType} supported in converter.

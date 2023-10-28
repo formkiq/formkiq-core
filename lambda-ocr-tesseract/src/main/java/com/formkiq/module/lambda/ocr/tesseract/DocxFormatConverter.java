@@ -30,6 +30,8 @@ import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.OcrSqsMessage;
 
 /**
  * DOCX {@link FormatConverter}.
@@ -42,7 +44,7 @@ public class DocxFormatConverter implements FormatConverter {
   }
 
   @Override
-  public String convert(final File file) throws IOException {
+  public String convert(final OcrSqsMessage sqsMessage, final File file) throws IOException {
 
     try {
 

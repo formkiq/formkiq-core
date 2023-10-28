@@ -28,6 +28,8 @@ import java.io.IOException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.OcrSqsMessage;
 
 /**
  * DOCX {@link FormatConverter}.
@@ -40,7 +42,7 @@ public class PdfFormatConverter implements FormatConverter {
   }
 
   @Override
-  public String convert(final File file) throws IOException {
+  public String convert(final OcrSqsMessage sqsMessage, final File file) throws IOException {
     try (PDDocument document = PDDocument.load(file)) {
       PDFTextStripper pdfTextStripper = new PDFTextStripper();
       return pdfTextStripper.getText(document);

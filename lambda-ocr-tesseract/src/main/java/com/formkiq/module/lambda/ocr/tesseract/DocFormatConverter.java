@@ -29,6 +29,8 @@ import java.io.IOException;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.OcrSqsMessage;
 
 /**
  * DOCX {@link FormatConverter}.
@@ -41,7 +43,7 @@ public class DocFormatConverter implements FormatConverter {
   }
 
   @Override
-  public String convert(final File file) throws IOException {
+  public String convert(final OcrSqsMessage sqsMessage, final File file) throws IOException {
 
     HWPFDocument document = new HWPFDocument(new FileInputStream(file));
     try (WordExtractor extractor = new WordExtractor(document)) {
