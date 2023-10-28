@@ -1052,7 +1052,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         }
       }
     }
-    
+
     return changed;
   }
 

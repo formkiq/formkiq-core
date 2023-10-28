@@ -288,7 +288,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Get Content from {@link Action}.
    * 
-   * @param logger {@link LambdaLogger}
    * @param dcFunc {@link DocumentContentFunction}
    * @param action {@link Action}
    * @param contentUrls {@link List} {@link String}
@@ -297,19 +296,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private String getContent(final LambdaLogger logger, final DocumentContentFunction dcFunc,
-      final Action action, final List<String> contentUrls)
-      throws URISyntaxException, IOException, InterruptedException {
+  private String getContent(final DocumentContentFunction dcFunc, final Action action,
+      final List<String> contentUrls) throws URISyntaxException, IOException, InterruptedException {
 
     StringBuilder sb = dcFunc.getContentUrls(contentUrls);
-    logger.log("SB: " + sb);
 
     int characterMax = getCharacterMax(action);
-    logger.log("characterMax: " + characterMax);
+
     String content =
         characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
             : sb.toString();
-    logger.log("CONTENT: " + content);
+
     return content;
   }
 
@@ -536,9 +533,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       if (moduleFulltext) {
         updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
       } else if (this.typesense != null) {
-        logger.log("UPDATING TYPESENSE");
-        logger.log("UPDATING contentUrls: " + contentUrls.size());
-        updateTypesense(logger, documentContentFunc, siteId, documentId, action, contentUrls);
+        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
       } else {
         status = ActionStatus.FAILED;
       }
@@ -680,7 +675,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Update Typesense Content.
    * 
-   * @param logger {@link LambdaLogger}
    * @param dcFunc {@link DocumentContentFunction}
    * @param siteId {@link String}
    * @param documentId {@link String}
@@ -688,27 +682,16 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param contentUrls {@link List} {@link String}
    * @throws IOException IOException
    */
-  private void updateTypesense(final LambdaLogger logger, final DocumentContentFunction dcFunc,
-      final String siteId, final String documentId, final Action action,
-      final List<String> contentUrls) throws IOException {
+  private void updateTypesense(final DocumentContentFunction dcFunc, final String siteId,
+      final String documentId, final Action action, final List<String> contentUrls)
+      throws IOException {
 
     try {
 
-      // Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-      // Map<String, AttributeValue> data = this.dbService.get(keys.get(PK), keys.get(SK));
-      String content = getContent(logger, dcFunc, action, contentUrls);
+      String content = getContent(dcFunc, action, contentUrls);
       Map<String, String> data = Map.of("content", content);
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
-      //
-      // StringBuilder sb =
-      // document.containsKey("content") ? new StringBuilder(document.get("content").toString())
-      // : new StringBuilder();
-      //
-      //
-      // sb.append(" ");
-      // sb.append(content);
-      // document.put("text", sb.toString());
 
       HttpResponse<String> response =
           this.typesense.addOrUpdateDocument(siteId, documentId, document);
