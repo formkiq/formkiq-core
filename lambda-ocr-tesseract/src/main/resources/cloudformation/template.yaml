@@ -56,7 +56,7 @@ Resources:
     DependsOn:
     - OcrLambdaRolePolicy
     Properties:
-      Handler: com.formkiq.module.lambda.ocr.tesseract.OcrOcrProcessor
+      Handler: com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor
       Description: Lambda function to convert document to Tesseract
       Runtime: java11
       Timeout: 
