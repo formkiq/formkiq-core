@@ -618,7 +618,7 @@ Resources:
     DependsOn:
       - CoreApi
     Properties:
-      Location: ocr-tesseract/template.yaml
+      Location: ocr/template.yaml
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment

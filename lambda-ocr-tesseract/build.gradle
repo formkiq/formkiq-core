@@ -86,15 +86,15 @@ task assembleTemplate {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "template*"
-	      into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	      into "${buildDir}/distributions/formkiq-core/sam/ocr"
 	    }
 	    copy {
 		  from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	      into "${buildDir}/distributions/formkiq-core/sam/ocr"
 	    }
 	    copy {
 		  from layout.projectDirectory.file("${buildDir}/layer-tesseract-${tesseract_version}.zip")
-	      into "${buildDir}/distributions/formkiq-core/sam/ocr-tesseract"
+	      into "${buildDir}/distributions/formkiq-core/sam/ocr"
 	    }
 	}
 }
