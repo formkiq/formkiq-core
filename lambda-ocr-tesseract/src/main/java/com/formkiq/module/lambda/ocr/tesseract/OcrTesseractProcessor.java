@@ -72,6 +72,8 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
 
   /** {@link AwsServiceCache}. */
   private AwsServiceCache awsServices;
+  /** {@link List} {@link FormatConverter}. */
+  private List<FormatConverter> converters;
   /** Documents S3 Bucket. */
   private String documentsBucket;
   /** {@link Gson}. */
@@ -80,8 +82,6 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
   private String ocrDocumentsBucket;
   /** {@link S3Service}. */
   private S3Service s3Service;
-  /** {@link List} {@link FormatConverter}. */
-  private List<FormatConverter> converters;
 
   /**
    * constructor.
@@ -121,15 +121,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
     this.awsServices =
         new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
 
-    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbConnection));
-    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Connection));
-    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
-
-    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsConnection));
-    AwsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    register(dbConnection, s3Connection, snsConnection);
   }
 
   /**
@@ -139,6 +131,11 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    */
   public AwsServiceCache getAwsServices() {
     return this.awsServices;
+  }
+
+  protected OcrSqsMessage getSqsMessage(final SqsMessageRecord record) {
+    OcrSqsMessage sqsMessage = this.gson.fromJson(record.body(), OcrSqsMessage.class);
+    return sqsMessage;
   }
 
   @Override
@@ -165,9 +162,23 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
     });
   }
 
-  protected OcrSqsMessage getSqsMessage(final SqsMessageRecord record) {
-    OcrSqsMessage sqsMessage = this.gson.fromJson(record.body(), OcrSqsMessage.class);
-    return sqsMessage;
+  protected File loadFile(final String siteId, final String documentId, final MimeType mt)
+      throws IOException {
+    String tmpDirectory =
+        new File("/tmp").exists() ? "/tmp/" : System.getProperty("java.io.tmpdir") + "\\";
+    String documentS3Key = createS3Key(siteId, documentId);
+    File file =
+        new File(tmpDirectory + documentS3Key.replaceAll("/", "_") + "." + mt.getExtension());
+
+    try (InputStream is =
+        this.s3Service.getContentAsInputStream(this.documentsBucket, documentS3Key)) {
+
+      try (OutputStream fileOs = new FileOutputStream(file)) {
+        IoUtils.copy(is, fileOs);
+      }
+    }
+
+    return file;
   }
 
   private void processRecord(final LambdaLogger logger, final DocumentOcrService ocrService,
@@ -228,22 +239,23 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
     }
   }
 
-  protected File loadFile(final String siteId, final String documentId, final MimeType mt)
-      throws IOException {
-    String tmpDirectory =
-        new File("/tmp").exists() ? "/tmp/" : System.getProperty("java.io.tmpdir") + "\\";
-    String documentS3Key = createS3Key(siteId, documentId);
-    File file =
-        new File(tmpDirectory + documentS3Key.replaceAll("/", "_") + "." + mt.getExtension());
+  /**
+   * Register Compoments.
+   * 
+   * @param dbConnection {@link DynamoDbConnectionBuilder}
+   * @param s3Connection {@link S3ConnectionBuilder}
+   * @param snsConnection {@link SnsConnectionBuilder}
+   */
+  protected void register(final DynamoDbConnectionBuilder dbConnection,
+      final S3ConnectionBuilder s3Connection, final SnsConnectionBuilder snsConnection) {
+    AwsServiceCache.register(DynamoDbConnectionBuilder.class,
+        new DynamoDbConnectionBuilderExtension(dbConnection));
+    AwsServiceCache.register(S3Service.class, new S3ServiceExtension(s3Connection));
+    AwsServiceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    AwsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
 
-    try (InputStream is =
-        this.s3Service.getContentAsInputStream(this.documentsBucket, documentS3Key)) {
-
-      try (OutputStream fileOs = new FileOutputStream(file)) {
-        IoUtils.copy(is, fileOs);
-      }
-    }
-
-    return file;
+    AwsServiceCache.register(EventService.class, new EventServiceSnsExtension(snsConnection));
+    AwsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
   }
 }
