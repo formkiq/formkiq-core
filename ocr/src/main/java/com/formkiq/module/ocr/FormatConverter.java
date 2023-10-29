@@ -45,8 +45,9 @@ public interface FormatConverter {
   /**
    * Is {@link MimeType} supported in converter.
    * 
+   * @param sqsMessage {@link OcrSqsMessage}
    * @param mineType {@link MimeType}
    * @return boolean
    */
-  boolean isSupported(MimeType mineType);
+  boolean isSupported(OcrSqsMessage sqsMessage, MimeType mineType);
 }

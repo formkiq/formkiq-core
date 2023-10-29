@@ -37,7 +37,7 @@ import com.formkiq.module.ocr.OcrSqsMessage;
 public class PdfFormatConverter implements FormatConverter {
 
   @Override
-  public boolean isSupported(final MimeType mineType) {
+  public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
     return MimeType.MIME_PDF.equals(mineType);
   }
 

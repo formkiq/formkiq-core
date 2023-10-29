@@ -72,7 +72,7 @@ public class TesseractFormatConverter implements FormatConverter {
   }
 
   @Override
-  public boolean isSupported(final MimeType mineType) {
+  public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
     return SUPPORTED.contains(mineType);
   }
 }

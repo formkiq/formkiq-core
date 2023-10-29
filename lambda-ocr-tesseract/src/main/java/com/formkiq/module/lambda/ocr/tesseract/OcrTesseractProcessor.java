@@ -188,7 +188,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       MimeType mt = MimeType.fromContentType(contentType);
 
       Optional<FormatConverter> fc =
-          this.converters.stream().filter(c -> c.isSupported(mt)).findFirst();
+          this.converters.stream().filter(c -> c.isSupported(sqsMessage, mt)).findFirst();
 
       if (fc.isEmpty()) {
         throw new IOException("unsupported Content-Type: " + contentType);
