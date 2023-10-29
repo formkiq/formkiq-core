@@ -1055,4 +1055,44 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.PENDING, list.get(1).status());
     }
   }
+
+
+  /**
+   * Handle Fulltext that needs OCR Action.
+   * 
+   * @throws IOException IOException
+   * @throws URISyntaxException URISyntaxException
+   */
+  @Test
+  public void testHandleFulltext02() throws IOException, URISyntaxException {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("application/pdf");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE),
+              new Action().type(ActionType.FULLTEXT));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      Map<String, Object> map =
+          loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
+              documentId, "default", siteId != null ? siteId : "default");
+
+      // when
+      processor.handleRequest(map, this.context);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(2, list.size());
+      assertEquals(ActionType.OCR, list.get(0).type());
+      assertNull(list.get(0).parameters());
+      assertEquals(ActionStatus.COMPLETE, list.get(0).status());
+      assertEquals(ActionType.FULLTEXT, list.get(1).type());
+      assertEquals(ActionStatus.FAILED, list.get(1).status());
+    }
+  }
 }

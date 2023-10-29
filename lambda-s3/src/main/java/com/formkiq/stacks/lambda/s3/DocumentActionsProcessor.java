@@ -547,7 +547,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       action.status(status);
 
-    } else {
+    } else if (actions.stream().filter(a -> a.type().equals(ActionType.OCR)).findAny().isEmpty()) {
 
       Action ocrAction =
           new Action().type(ActionType.OCR).parameters(Map.of("ocrEngine", "tesseract"));
@@ -555,6 +555,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       List<Action> updatedActions = this.actionsService.getActions(siteId, documentId);
       this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+    } else {
+      throw new IOException("no OCR document found");
     }
   }
 

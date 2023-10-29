@@ -171,6 +171,10 @@ public class DocumentContentFunction {
   public List<String> getContentUrls(final LambdaLogger logger, final String siteId,
       final DocumentItem item) throws IOException {
     List<String> contentUrls = findContentUrls(logger, siteId, item);
+
+    if (logger != null) {
+      logger.log("FOUND: " + contentUrls.size() + " content urls");
+    }
     return contentUrls;
   }
 
