@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.ocr.FormatConverter;
 import com.formkiq.module.ocr.OcrSqsMessage;
 import net.sourceforge.tess4j.TesseractException;
@@ -63,7 +64,8 @@ public class TesseractFormatConverter implements FormatConverter {
   }
 
   @Override
-  public String convert(final OcrSqsMessage sqsMessage, final File file) throws IOException {
+  public String convert(final AwsServiceCache awsServices, final OcrSqsMessage sqsMessage,
+      final File file) throws IOException {
     try {
       return this.tesseract.doOcr(file);
     } catch (TesseractException e) {

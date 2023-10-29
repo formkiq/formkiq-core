@@ -26,6 +26,7 @@ package com.formkiq.module.ocr;
 import java.io.File;
 import java.io.IOException;
 import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 /**
  * Interface for File Conversion.
@@ -35,12 +36,14 @@ public interface FormatConverter {
   /**
    * Convert File.
    * 
+   * @param awsServices {@link AwsServiceCache}
    * @param sqsMessage {@link OcrSqsMessage}
    * @param file {@link File}
    * @return {@link String}
    * @throws IOException IOException
    */
-  String convert(OcrSqsMessage sqsMessage, File file) throws IOException;
+  String convert(AwsServiceCache awsServices, OcrSqsMessage sqsMessage, File file)
+      throws IOException;
 
   /**
    * Is {@link MimeType} supported in converter.
