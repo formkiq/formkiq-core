@@ -150,9 +150,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
       String jobId = convertDocument(awsservice, request, siteId, documentId, s3key,
           documentS3toConvert, contentType);
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId).engine(getOcrEngine())
-          .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
-          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText());
+      Ocr ocr =
+          new Ocr().siteId(siteId).documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
+              .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
+              .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText());
 
       save(ocr);
     }
@@ -218,7 +219,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     return obj;
   }
 
-  protected OcrEngine getOcrEngine() {
+  protected OcrEngine getOcrEngine(final OcrRequest request) {
     return OcrEngine.TESSERACT;
   }
 
@@ -364,8 +365,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     OcrScanStatus status = OcrScanStatus.SKIPPED;
 
-    Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId).engine(getOcrEngine())
-        .status(status).contentType(contentType).userId(userId);
+    Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
+        .engine(getOcrEngine(null)).status(status).contentType(contentType).userId(userId);
 
     save(ocr);
 
