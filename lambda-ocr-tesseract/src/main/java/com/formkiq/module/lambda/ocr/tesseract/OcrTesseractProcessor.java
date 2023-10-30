@@ -162,8 +162,11 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
     });
   }
 
-  protected File loadFile(final String siteId, final String documentId, final MimeType mt)
-      throws IOException {
+  protected File loadFile(final OcrSqsMessage sqsMessage, final MimeType mt) throws IOException {
+
+    String siteId = sqsMessage.siteId();
+    String documentId = sqsMessage.documentId();
+
     String tmpDirectory =
         new File("/tmp").exists() ? "/tmp/" : System.getProperty("java.io.tmpdir") + "\\";
     String documentS3Key = createS3Key(siteId, documentId);
@@ -205,7 +208,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
         throw new IOException("unsupported Content-Type: " + contentType);
       }
 
-      File file = loadFile(siteId, documentId, mt);
+      File file = loadFile(sqsMessage, mt);
 
       try {
 
