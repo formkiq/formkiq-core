@@ -43,7 +43,7 @@ public class TypeSenseExtension
   /** Default DynamoDB Port. */
   private static final int DEFAULT_PORT = 8108;
   /** Type Sense Image. */
-  private static DockerImageName image = DockerImageName.parse("typesense/typesense:0.23.1");
+  private static DockerImageName image = DockerImageName.parse("typesense/typesense:0.25.1");
   /** Mapped Port. */
   private static Integer mappedPort = null;
 

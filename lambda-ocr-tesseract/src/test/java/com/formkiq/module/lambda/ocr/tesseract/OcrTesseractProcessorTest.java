@@ -28,6 +28,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -94,9 +95,12 @@ class OcrTesseractProcessorTest {
     SnsConnectionBuilder sns = TestServices.getSnsConnection(null);
 
     TesseractWrapperData wrapper = new TesseractWrapperData(OCR_TEXT);
-    processor = new OcrTesseractProcessor(Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE,
-        "DOCUMENTS_S3_BUCKET", BUCKET_NAME, "OCR_S3_BUCKET", OCR_BUCKET_NAME), dbConnection,
-        s3Connection, sns, wrapper);
+    processor = new OcrTesseractProcessor(
+        Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "DOCUMENTS_S3_BUCKET", BUCKET_NAME,
+            "OCR_S3_BUCKET", OCR_BUCKET_NAME),
+        dbConnection, s3Connection, sns,
+        Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
+            new TesseractFormatConverter(wrapper)));
 
     AwsServiceCache awsServices = processor.getAwsServices();
     ocrService = awsServices.getExtension(DocumentOcrService.class);
@@ -232,4 +236,151 @@ class OcrTesseractProcessorTest {
     }
   }
 
+  /**
+   * Test Successful DOCX OCR.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest04() throws Exception {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      String jobId = UUID.randomUUID().toString();
+
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      String documentS3Key = createS3Key(siteId, documentId);
+      try (InputStream is =
+          LambdaContextRecorder.class.getResourceAsStream("/file-sample_100kB.docx")) {
+        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_DOCX.getContentType());
+      }
+
+      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
+          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
+      ocrService.save(ocr);
+
+      SqsMessageRecord record =
+          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
+              "jobId", jobId, "contentType", MimeType.MIME_DOCX.getContentType())));
+      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      DynamicObject obj = ocrService.get(siteId, documentId);
+      assertEquals("successful", obj.get("ocrStatus"));
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
+          .contains("Vestibulum neque massa"));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful DOC OCR.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest05() throws Exception {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      String jobId = UUID.randomUUID().toString();
+
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      String documentS3Key = createS3Key(siteId, documentId);
+      try (InputStream is =
+          LambdaContextRecorder.class.getResourceAsStream("/file-sample_100kB.doc")) {
+        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_DOC.getContentType());
+      }
+
+      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
+          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
+      ocrService.save(ocr);
+
+      SqsMessageRecord record =
+          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
+              "jobId", jobId, "contentType", MimeType.MIME_DOC.getContentType())));
+      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      DynamicObject obj = ocrService.get(siteId, documentId);
+      assertEquals("successful", obj.get("ocrStatus"));
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
+          .contains("Vestibulum neque massa"));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful application/pdf OCR.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest06() throws Exception {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      String jobId = UUID.randomUUID().toString();
+
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR));
+      actionsService.saveActions(siteId, documentId, actions);
+
+      String documentS3Key = createS3Key(siteId, documentId);
+      try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/sample.pdf")) {
+        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
+      }
+
+      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
+          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
+      ocrService.save(ocr);
+
+      SqsMessageRecord record =
+          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
+              "jobId", jobId, "contentType", MimeType.MIME_PDF.getContentType())));
+      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      DynamicObject obj = ocrService.get(siteId, documentId);
+      assertEquals("successful", obj.get("ocrStatus"));
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
 }

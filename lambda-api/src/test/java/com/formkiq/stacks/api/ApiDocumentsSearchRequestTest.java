@@ -39,7 +39,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
@@ -64,8 +63,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
 
   /** Match Tag element count. */
   private static final int MATCH_COUNT = 3;
-  /** {@link DocumentToFulltextDocument}. */
-  private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
 
   private void saveDocument(final String siteId, final String documentId, final String path)
       throws Exception {
@@ -77,7 +74,6 @@ public class ApiDocumentsSearchRequestTest extends AbstractRequestHandler {
     Map<String, Object> data = Map.of("documentId", Map.of("S", item.getDocumentId()), "path",
         Map.of("S", item.getPath()));
     Map<String, Object> document = new DocumentMapToDocument().apply(data);
-    document = this.fulltext.apply(document);
 
     TypesenseProcessor processor = new TypesenseProcessor(getMap(),
         DynamoDbTestServices.getDynamoDbConnection(), AwsBasicCredentials.create("asd", path));

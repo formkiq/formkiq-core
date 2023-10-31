@@ -28,8 +28,9 @@ import static com.formkiq.module.http.HttpResponseStatus.is2XX;
 import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
+import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -57,7 +58,8 @@ public class DocumentsFulltextRequestHandler
    */
   private Map<String, Object> buildDocumentFromRequestBody(final Map<String, Object> body)
       throws BadException {
-    DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
+
+    DocumentMapToDocument fulltext = new DocumentMapToDocument();
     Map<String, Object> document = fulltext.apply(body);
 
     if (body.containsKey("contentUrls")) {
@@ -67,13 +69,6 @@ public class DocumentsFulltextRequestHandler
     if (body.containsKey("tags")) {
       throw new BadException("'tags' are not supported with Typesense");
     }
-
-    String text = document.get("text").toString();
-    if (body.containsKey("content")) {
-      text += body.get("content");
-    }
-
-    body.put("text", text);
 
     return document;
   }
@@ -121,9 +116,15 @@ public class DocumentsFulltextRequestHandler
       Map<String, Object> body = GSON.fromJson(response.body(), Map.class);
       body.put("documentId", body.get("id"));
       body.remove("id");
+      body.remove("metadata#");
 
-      body.put("content", body.get("text"));
-      body.remove("text");
+      Map<String, Object> metadata =
+          body.entrySet().stream().filter(e -> e.getKey().startsWith("metadata#")).collect(
+              Collectors.toMap(e -> e.getKey().replaceAll("metadata#", ""), Map.Entry::getValue));
+
+      metadata.keySet().forEach(k -> body.remove("metadata#" + k));
+
+      body.put("metadata", metadata);
 
       ApiMapResponse resp = new ApiMapResponse();
       resp.setMap(body);

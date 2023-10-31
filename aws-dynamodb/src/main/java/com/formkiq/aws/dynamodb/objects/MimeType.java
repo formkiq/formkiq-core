@@ -31,6 +31,8 @@ public enum MimeType {
 
   /** image/bmp. */
   MIME_BMP("image/bmp"),
+  /** application/msword. */
+  MIME_DOC("application/msword"),
   /** application/vnd.openxmlformats-officedocument.wordprocessingml.document. */
   MIME_DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
   /** image/gif. */

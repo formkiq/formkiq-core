@@ -28,12 +28,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -142,6 +145,47 @@ public class ActionsServiceDynamoDbTest {
   }
 
   /**
+   * Test Inserting OCR into fulltext list.
+   */
+  @Test
+  public void testInsertAction01() {
+    // given
+    String documentId = UUID.randomUUID().toString();
+    String user = "joe";
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      Action action0 = new Action().type(ActionType.DOCUMENTTAGGING).userId(user)
+          .parameters(Map.of("tags", "type")).status(ActionStatus.COMPLETE);
+
+      Action action1 = new Action().type(ActionType.FULLTEXT).userId(user);
+      Action insertedAction = new Action().type(ActionType.OCR).userId(user);
+
+      List<Action> actions = Arrays.asList(action0, action1);
+      service.saveActions(siteId, documentId, actions);
+      assertEquals(2, service.getActions(siteId, documentId).size());
+
+      // when
+      service.insertBeforeAction(siteId, documentId, actions, action1, insertedAction);
+
+      // then
+      final int expected = 3;
+      List<Action> list = service.getActions(siteId, documentId);
+      assertEquals(expected, list.size());
+
+      int i = 0;
+      assertEquals(ActionType.DOCUMENTTAGGING, list.get(i).type());
+      assertEquals(ActionStatus.COMPLETE, list.get(i++).status());
+
+      assertEquals(ActionType.OCR, list.get(i).type());
+      assertEquals(ActionStatus.PENDING, list.get(i++).status());
+
+      assertEquals(ActionType.FULLTEXT, list.get(i).type());
+      assertEquals(ActionStatus.PENDING, list.get(i++).status());
+    }
+  }
+
+  /**
    * Test Action.
    * 
    * @throws Exception Exception
@@ -201,6 +245,38 @@ public class ActionsServiceDynamoDbTest {
       // then
       results = service.getActions(siteId, documentId0);
       assertEquals(ActionStatus.FAILED, results.get(0).status());
+    }
+  }
+
+  /**
+   * Test save more than 10 actions. TODO enable in 1.13
+   */
+  @Test
+  @Disabled
+  public void testSave02() {
+    // given
+    final int numberOfActions = 15;
+    String documentId = UUID.randomUUID().toString();
+    String user = "joe";
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      List<Action> actions = new ArrayList<>();
+      for (int i = 0; i < numberOfActions; i++) {
+        actions.add(new Action().type(ActionType.DOCUMENTTAGGING).userId(user)
+            .parameters(Map.of("tags", "" + i)));
+      }
+
+      // when
+      service.saveActions(siteId, documentId, actions);
+
+      // then
+      int i = 0;
+      List<Action> list = service.getActions(siteId, documentId);
+      Iterator<Action> itr = list.iterator();
+      while (itr.hasNext()) {
+        assertEquals("" + i, itr.next().parameters().get("tags"));
+        i++;
+      }
     }
   }
 

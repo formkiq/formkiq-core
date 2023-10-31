@@ -165,6 +165,7 @@ class TypesenseProcessorTest {
    * 
    * @throws Exception Exception
    */
+  @SuppressWarnings("unchecked")
   @Test
   void testHandleRequest02() throws Exception {
     // given
@@ -179,6 +180,16 @@ class TypesenseProcessorTest {
     List<String> documents = service.searchFulltext(siteId, "some.pdf", MAX);
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
+
+    final int expected = 4;
+    String s = service.getDocument(siteId, documentId).body();
+    Map<String, Object> data = GSON.fromJson(s, Map.class);
+
+    assertEquals(expected, data.size());
+    assertEquals(documentId, data.get("id"));
+    assertEquals("bleh/some.pdf", data.get("path"));
+    assertEquals("text/plain", data.get("contentType"));
+    assertEquals("", data.get("metadata#"));
 
     PaginationResults<DocumentSync> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());

@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ import com.formkiq.client.api.CustomIndexApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
+import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.DeleteFulltextResponse;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
@@ -105,6 +107,7 @@ public class ApiDocumentsFulltextRequestTest {
    *
    * @throws Exception an error has occurred
    */
+  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentFulltext02() throws Exception {
     String content = "some content";
@@ -115,7 +118,10 @@ public class ApiDocumentsFulltextRequestTest {
       setBearerToken(siteId);
 
       SetDocumentFulltextRequest req =
-          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
+          new SetDocumentFulltextRequest()
+              .metadata(Arrays.asList(new AddDocumentMetadata().key("mykey").value("myvalue"),
+                  new AddDocumentMetadata().key("mykey2")))
+              .content(content).contentType("text/plain");
 
       // when
       SetDocumentFulltextResponse putResponse =
@@ -128,6 +134,10 @@ public class ApiDocumentsFulltextRequestTest {
           this.searchApi.getDocumentFulltext(documentId, siteId, null);
       assertEquals("text/plain", response.getContentType());
       assertEquals(content, response.getContent());
+      Map<String, Object> metadata = (Map<String, Object>) response.getMetadata();
+      assertEquals(2, metadata.size());
+      assertEquals("myvalue", metadata.get("mykey"));
+      assertEquals("", metadata.get("mykey2"));
     }
   }
 
@@ -249,6 +259,4 @@ public class ApiDocumentsFulltextRequestTest {
       assertEquals("Add document to Typesense", putResponse.getMessage());
     }
   }
-
-  // contentUrls
 }

@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static com.formkiq.module.http.HttpResponseStatus.is2XX;
-import static com.formkiq.module.http.HttpResponseStatus.is404;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -52,13 +51,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -108,7 +104,6 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -123,8 +118,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link ActionsService}. */
   private ActionsService actionsService;
-  /** {@link DynamoDbService}. */
-  private DynamoDbService dbService;
   /** {@link DocumentService}. */
   private DocumentService documentService;
   /** IAM Documents Url. */
@@ -198,7 +191,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     this.s3Service = this.serviceCache.getExtension(S3Service.class);
     this.documentService = this.serviceCache.getExtension(DocumentService.class);
     this.actionsService = new ActionsServiceDynamoDb(dbBuilder, map.get("DOCUMENTS_TABLE"));
-    this.dbService = new DynamoDbServiceImpl(dbBuilder, map.get("DOCUMENTS_TABLE"));
     this.notificationService = this.serviceCache.getExtension(ActionsNotificationService.class);
 
     String appEnvironment = map.get("APP_ENVIRONMENT");
@@ -412,12 +404,14 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
   private void processAction(final LambdaLogger logger, final String siteId,
-      final String documentId, final Action action) throws IOException, InterruptedException {
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
 
     logAction(logger, "action start", siteId, documentId, action);
 
@@ -439,14 +433,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           action.parameters() != null ? action.parameters() : new HashMap<>();
       String addPdfDetectedCharactersAsText =
           parameters.getOrDefault("addPdfDetectedCharactersAsText", "false");
+      String ocrEngine = parameters.get("ocrEngine");
 
-      this.formkiqClient.addDocumentOcr(
-          new AddDocumentOcrRequest().siteId(siteId).documentId(documentId).parseTypes(parseTypes)
-              .addPdfDetectedCharactersAsText("true".equals(addPdfDetectedCharactersAsText)));
+      this.formkiqClient.addDocumentOcr(new AddDocumentOcrRequest().siteId(siteId)
+          .documentId(documentId).parseTypes(parseTypes).ocrEngine(ocrEngine)
+          .addPdfDetectedCharactersAsText("true".equals(addPdfDetectedCharactersAsText)));
 
     } else if (ActionType.FULLTEXT.equals(action.type())) {
 
-      processFulltext(logger, siteId, documentId, action);
+      processFulltext(logger, siteId, documentId, actions, action);
 
     } else if (ActionType.ANTIVIRUS.equals(action.type())) {
 
@@ -498,7 +493,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
         try {
 
-          processAction(logger, siteId, documentId, action);
+          processAction(logger, siteId, documentId, actions, action);
 
         } catch (Exception e) {
           e.printStackTrace();
@@ -521,7 +516,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   }
 
   private void processFulltext(final LambdaLogger logger, final String siteId,
-      final String documentId, final Action action) throws IOException, InterruptedException {
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
+
     ActionStatus status = ActionStatus.COMPLETE;
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     debug(logger, siteId, item);
@@ -531,24 +528,37 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     List<String> contentUrls =
         documentContentFunc.getContentUrls(this.serviceCache.debug() ? logger : null, siteId, item);
 
-    boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
+    if (contentUrls.size() > 0) {
+      boolean moduleFulltext = this.serviceCache.hasModule("opensearch");
 
-    if (moduleFulltext) {
-      updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
-    } else if (this.typesense != null) {
-      updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
-    } else {
-      status = ActionStatus.FAILED;
-    }
+      if (moduleFulltext) {
+        updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
+      } else if (this.typesense != null) {
+        updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+      } else {
+        status = ActionStatus.FAILED;
+      }
 
-    List<Action> updatedActions =
-        this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
+      List<Action> updatedActions =
+          this.actionsService.updateActionStatus(siteId, documentId, ActionType.FULLTEXT, status);
 
-    if (ActionStatus.COMPLETE.equals(status)) {
+      if (ActionStatus.COMPLETE.equals(status)) {
+        this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      }
+
+      action.status(status);
+
+    } else if (actions.stream().filter(a -> a.type().equals(ActionType.OCR)).findAny().isEmpty()) {
+
+      Action ocrAction =
+          new Action().type(ActionType.OCR).parameters(Map.of("ocrEngine", "tesseract"));
+      this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
+
+      List<Action> updatedActions = this.actionsService.getActions(siteId, documentId);
       this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+    } else {
+      throw new IOException("no OCR document found");
     }
-
-    action.status(status);
   }
 
   /**
@@ -681,37 +691,16 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     try {
 
-      Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-      Map<String, AttributeValue> data = this.dbService.get(keys.get(PK), keys.get(SK));
+      String content = getContent(dcFunc, action, contentUrls);
+      Map<String, String> data = Map.of("content", content);
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
-      document = new DocumentToFulltextDocument().apply(document);
 
-      StringBuilder sb =
-          document.containsKey("text") ? new StringBuilder(document.get("text").toString())
-              : new StringBuilder();
-
-      String content = getContent(dcFunc, action, contentUrls);
-      sb.append(" ");
-      sb.append(content);
-      document.put("text", sb.toString());
-
-      HttpResponse<String> response = this.typesense.updateDocument(siteId, documentId, document);
+      HttpResponse<String> response =
+          this.typesense.addOrUpdateDocument(siteId, documentId, document);
 
       if (!is2XX(response)) {
-        response = this.typesense.addDocument(siteId, documentId, document);
-
-        if (is404(response)) {
-          response = this.typesense.addCollection(siteId);
-
-          if (is2XX(response)) {
-            response = this.typesense.addDocument(siteId, documentId, document);
-          }
-
-          if (!is2XX(response)) {
-            throw new IOException(response.body());
-          }
-        }
+        throw new IOException(response.body());
       }
 
     } catch (URISyntaxException | InterruptedException e) {

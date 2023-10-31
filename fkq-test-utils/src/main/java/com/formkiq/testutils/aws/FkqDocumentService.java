@@ -36,10 +36,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
@@ -202,6 +204,60 @@ public class FkqDocumentService {
   public static Map<String, Object> toMap(final HttpResponse<String> response) throws IOException {
     Map<String, Object> m = gson.fromJson(response.body(), Map.class);
     return m;
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actionStatus {@link String}
+   * @return {@link GetDocumentActionsResponse}
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentActionsResponse waitForActions(final ApiClient client,
+      final String siteId, final String documentId, final String actionStatus)
+      throws ApiException, InterruptedException {
+
+    GetDocumentActionsResponse response = null;
+    DocumentActionsApi api = new DocumentActionsApi(client);
+
+    Optional<com.formkiq.client.model.DocumentAction> o = Optional.empty();
+
+    while (o.isEmpty()) {
+
+      try {
+        response = api.getDocumentActions(documentId, siteId, null);
+
+        o = response.getActions().stream().filter(a -> a.getStatus().equalsIgnoreCase(actionStatus))
+            .findAny();
+      } catch (ApiException e) {
+        // ignore
+      }
+
+      if (o.isEmpty()) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+    }
+
+    return response;
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link GetDocumentActionsResponse}
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentActionsResponse waitForActionsComplete(final ApiClient client,
+      final String siteId, final String documentId) throws ApiException, InterruptedException {
+    return waitForActions(client, siteId, documentId, "COMPLETE");
   }
 
   /**

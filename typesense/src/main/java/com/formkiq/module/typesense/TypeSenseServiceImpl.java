@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -89,8 +90,14 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     String site = getCollectionName(siteId);
     String url = String.format("%s/collections", this.host);
 
-    String payload = "{\"name\":\"" + site + "\",\"fields\":[{\"name\":\".*\",\"type\":\"auto\"}]}";
+    Map<String, Object> schema = Map.of("name", site, "enable_nested_fields", Boolean.TRUE,
+        "token_separators", Arrays.asList("/"), "fields",
+        Arrays.asList(Map.of("name", "path", "type", "string", "optional", Boolean.TRUE),
+            Map.of("name", "tags#.*", "type", "string", "optional", Boolean.TRUE),
+            Map.of("name", "metadata#.*", "type", "string", "optional", Boolean.TRUE),
+            Map.of("name", "content", "type", "string", "optional", Boolean.TRUE)));
 
+    String payload = this.json.toJson(schema);
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response = this.service.post(url, Optional.of(headers), payload);
@@ -137,9 +144,17 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
         response = addDocument(siteId, documentId, data);
 
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
+
       } else if (is409(response) || is429(response)) {
 
         response = updateDocument(siteId, documentId, data);
+
+        if (!is2XX(response)) {
+          throw new IOException(response.body());
+        }
 
       } else {
         throw new IOException(response.body());
@@ -209,8 +224,8 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     String site = getCollectionName(siteId);
 
-    String url = String.format("%s/collections/%s/documents/search?q=%s&query_by=text&per_page=%s",
-        this.host, encode(site), encode(text), "" + maxResults);
+    String url = String.format("%s/collections/%s/documents/search?q=%s&query_by=%s&per_page=%s",
+        this.host, encode(site), encode(text), encode("content,path,metadata#*"), "" + maxResults);
 
     HttpHeaders headers = getHeader();
 

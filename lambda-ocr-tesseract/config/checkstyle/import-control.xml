@@ -31,6 +31,17 @@
 
 				<allow pkg="net.sourceforge.tess4j" />
 
+				<allow pkg="org.apache.poi.hwpf" />
+				<allow pkg="org.apache.poi.hwpf.extractor" />
+				
+				<allow pkg="org.apache.poi.openxml4j.exceptions" />
+				<allow pkg="org.apache.poi.openxml4j.opc" />
+				<allow pkg="org.apache.poi.xwpf.extractor" />
+				<allow pkg="org.apache.poi.xwpf.usermodel" />
+				
+				<allow pkg="org.apache.pdfbox.pdmodel" />
+				<allow pkg="org.apache.pdfbox.text" />
+
 				<allow pkg="software.amazon.awssdk.auth.credentials" />
 				<allow pkg="software.amazon.awssdk.regions" />
 				<allow pkg="software.amazon.awssdk.utils" />

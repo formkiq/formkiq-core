@@ -44,7 +44,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.model.DocumentToFulltextDocument;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
@@ -64,8 +63,6 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   /** Debug. */
   private boolean debug;
 
-  /** {@link DocumentToFulltextDocument}. */
-  private DocumentToFulltextDocument fulltext = new DocumentToFulltextDocument();
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link DocumentSyncService}. */
@@ -366,7 +363,6 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       }
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
-      document = this.fulltext.apply(document);
       addOrUpdate(siteId, documentId, document, userId, s3VersionChanged);
     } else if (this.debug) {
       logger.log("skipping dynamodb record");

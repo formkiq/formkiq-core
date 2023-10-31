@@ -3,7 +3,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FormKiQ - Tesseract
+Description: FormKiQ - OCR
     
 Parameters:
     
@@ -36,11 +36,11 @@ Parameters:
 
 Resources:
 
-  TesseractProcessorLogGroup:
+  OcrProcessorLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: 
-        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${TesseractProcessor}"
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/${OcrProcessor}"
       RetentionInDays: 90
 
   TesseractLayer:
@@ -51,14 +51,14 @@ Resources:
         Fn::Sub: "${AWS::StackName}-${AppEnvironment}-tesseract-layer"
       ContentUri: ./layer-tesseract-5.3.1.zip
       
-  TesseractProcessor:
+  OcrProcessor:
     Type: AWS::Serverless::Function
     DependsOn:
-    - TesseractLambdaRolePolicy
+    - OcrLambdaRolePolicy
     Properties:
       Handler: com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor
       Description: Lambda function to convert document to Tesseract
-      Runtime: java11
+      Runtime: java17
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -86,7 +86,7 @@ Resources:
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
       Role: 
         Fn::GetAtt:
-        - TesseractLambdaRole
+        - OcrLambdaRole
         - Arn
       Tags:
         AppEnvironment: 
@@ -103,15 +103,15 @@ Resources:
               Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/OcrQueueArn}}"
             BatchSize: 1
 
-  TesseractProcessorParameter:
+  OcrProcessorParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: "Lambda for processing records for Tesseract"
+      Description: "Lambda for processing records for OCR"
       Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/TesseractProcessor"
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/OcrProcessor"
       Type: String
       Value:
-        Ref: TesseractProcessor
+        Ref: OcrProcessor
       Tags:
         Application: 
           Fn::Sub: "FormKiQ ${FormKiQType}"
@@ -120,13 +120,13 @@ Resources:
         StackName: 
           Fn::Sub: "${AWS::StackName}"
           
-  TesseractLambdaRolePolicy: 
+  OcrLambdaRolePolicy: 
     Type: "AWS::IAM::Policy"
     Properties: 
-      PolicyName: Tesseract-lambdarole
+      PolicyName: Ocr-lambdarole
       Roles: 
         - 
-          Ref: "TesseractLambdaRole"
+          Ref: "OcrLambdaRole"
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -139,12 +139,21 @@ Resources:
           - Effect: Allow
             Action:
             - s3:GetObject
+            - s3:PutObject
             Resource:
               Fn::Join:
               - ''
               - - Fn::Sub: "arn:${Partition}:s3:::"
                 - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
                 - "/*"
+          - Effect: Allow
+            Action:
+            - s3:ListBucket
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
           - Effect: Allow
             Action:
             - s3:GetObject
@@ -177,7 +186,7 @@ Resources:
             - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
 
             
-  TesseractLambdaRole:
+  OcrLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       Tags:

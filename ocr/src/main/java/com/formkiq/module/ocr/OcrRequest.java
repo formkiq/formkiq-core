@@ -37,6 +37,8 @@ public class OcrRequest {
 
   /** Add Pdf Detected Characeters as Text. */
   private boolean addPdfDetectedCharactersAsText = false;
+  /** {@link String}. */
+  private String ocrEngine;
   /** Parse Types. */
   private List<String> parseTypes;
 
@@ -45,6 +47,15 @@ public class OcrRequest {
    */
   public OcrRequest() {
 
+  }
+
+  /**
+   * Get Ocr Engine.
+   * 
+   * @return {@link String}
+   */
+  public String getOcrEngine() {
+    return this.ocrEngine;
   }
 
   /**
@@ -72,6 +83,17 @@ public class OcrRequest {
    */
   public void setAddPdfDetectedCharactersAsText(final boolean bool) {
     this.addPdfDetectedCharactersAsText = bool;
+  }
+
+  /**
+   * Get Ocr Engine.
+   * 
+   * @param engine {@link String}
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrEngine(final String engine) {
+    this.ocrEngine = engine;
+    return this;
   }
 
   /**
