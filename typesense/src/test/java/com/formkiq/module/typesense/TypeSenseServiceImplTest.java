@@ -70,9 +70,11 @@ class TypeSenseServiceImplTest {
       String documentId = UUID.randomUUID().toString();
       final int maxResults = 10;
 
+      Map<String, Object> apply =
+          Map.of("path", "/something/else/My Document.pdf", "metadata#", "");
+
       // when
-      this.service.addOrUpdateDocument(siteId, documentId,
-          Map.of("text", "/something/else/My Document.pdf"));
+      this.service.addOrUpdateDocument(siteId, documentId, apply);
 
       // then
       List<String> documentIds = this.service.searchFulltext(siteId, "My Document", maxResults);
@@ -85,7 +87,7 @@ class TypeSenseServiceImplTest {
       String text = "Newstuff.pdf";
 
       // when
-      this.service.updateDocument(siteId, documentId, Map.of("text", text));
+      this.service.updateDocument(siteId, documentId, Map.of("path", text));
 
       // then
       documentIds = this.service.searchFulltext(siteId, "My Document", maxResults);
