@@ -78,12 +78,12 @@ task buildTesseractLayer(type: Zip) {
 	dependsOn updateTesseractFiles
     from "${buildDir}/tesseract"
     archiveFileName.set("layer-tesseract-5.3.1.zip")
-    destinationDirectory = file("${buildDir}/distributions/ocr-tesseract")
+    destinationDirectory = file("${buildDir}/distributions/ocr")
 }
 
 task buildTemplate {
 	inputs.files("src/main/resources/cloudformation/template.yaml")
-	outputs.files("${buildDir}/distributions/ocr-tesseract/template.yaml")
+	outputs.files("${buildDir}/distributions/ocr/template.yaml")
   //dependsOn buildZip, buildTesseractLayer  
   //outputs.upToDateWhen { false }
   
@@ -91,7 +91,7 @@ task buildTemplate {
 		copy {
 		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
 		  include "template*"
-	      into "${buildDir}/distributions/ocr-tesseract"
+	      into "${buildDir}/distributions/ocr"
 	    }
 	    //copy {
 		  //from layout.projectDirectory.file("${buildDir}/${moduleName}.zip")
@@ -109,7 +109,7 @@ distZip.dependsOn buildTemplate, buildTesseractLayer
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "ocr-tesseract/${moduleName}.zip"
+    archiveFileName = "ocr/${moduleName}.zip"
 }
 
 distributions {
