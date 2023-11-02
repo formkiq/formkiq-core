@@ -38,13 +38,13 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsMessageRecord;
 import com.formkiq.aws.sqs.SqsMessageRecords;
 import com.formkiq.module.actions.Action;
@@ -59,7 +59,7 @@ import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.FormatConverter;
@@ -68,7 +68,6 @@ import com.formkiq.module.ocr.OcrSqsMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.utils.IoUtils;
 
 /** {@link RequestHandler} for handling DynamoDb to Tesseract OCR Processor. */
@@ -92,14 +91,12 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    * 
    */
   public OcrTesseractProcessor() {
-    this(System.getenv(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        new SnsConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setCredentials(EnvironmentVariableCredentialsProvider.create())
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
+    this(
+        new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+            EnvironmentVariableCredentialsProvider.create())
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry())
+            .build(),
         Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
             new TesseractFormatConverter(new TesseractWrapperImpl())));
   }
@@ -107,25 +104,18 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
   /**
    * constructor.
    *
-   * @param map {@link Map}
-   * @param dbConnection {@link DynamoDbConnectionBuilder}
-   * @param s3Connection {@link S3ConnectionBuilder}
-   * @param snsConnection {@link SnsConnectionBuilder}
+   * @param services {@link DynamoDbConnectionBuilder}
    * @param formatConverters {@link List} {@link FormatConverter}
    */
-  public OcrTesseractProcessor(final Map<String, String> map,
-      final DynamoDbConnectionBuilder dbConnection, final S3ConnectionBuilder s3Connection,
-      final SnsConnectionBuilder snsConnection, final List<FormatConverter> formatConverters) {
+  public OcrTesseractProcessor(final AwsServiceCache services,
+      final List<FormatConverter> formatConverters) {
 
-    this.s3Service = new S3Service(s3Connection);
-    this.documentsBucket = map.get("DOCUMENTS_S3_BUCKET");
-    this.ocrDocumentsBucket = map.get("OCR_S3_BUCKET");
+    this.documentsBucket = services.environment("DOCUMENTS_S3_BUCKET");
+    this.ocrDocumentsBucket = services.environment("OCR_S3_BUCKET");
     this.converters = formatConverters;
 
-    this.awsServices =
-        new AwsServiceCache().environment(map).debug("true".equals(map.get("DEBUG")));
-
-    register(dbConnection, s3Connection, snsConnection);
+    register(services);
+    this.awsServices = services;
   }
 
   /**
@@ -256,25 +246,17 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
   /**
    * Register Compoments.
    * 
-   * @param dbConnection {@link DynamoDbConnectionBuilder}
-   * @param s3Connection {@link S3ConnectionBuilder}
-   * @param snsConnection {@link SnsConnectionBuilder}
+   * @param services {@link AwsServiceCache}
    */
-  protected void register(final DynamoDbConnectionBuilder dbConnection,
-      final S3ConnectionBuilder s3Connection, final SnsConnectionBuilder snsConnection) {
+  protected void register(final AwsServiceCache services) {
 
-    this.awsServices.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbConnection));
-    this.awsServices.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3Connection));
-    this.awsServices.register(SnsConnectionBuilder.class,
-        new ClassServiceExtension<SnsConnectionBuilder>(snsConnection));
-    this.awsServices.register(S3Service.class, new S3ServiceExtension());
-    this.awsServices.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    this.awsServices.register(ActionsService.class, new ActionsServiceExtension());
+    services.register(S3Service.class, new S3ServiceExtension());
+    services.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    services.register(ActionsService.class, new ActionsServiceExtension());
 
-    this.awsServices.register(EventService.class, new EventServiceSnsExtension());
-    this.awsServices.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    services.register(EventService.class, new EventServiceSnsExtension());
+    services.register(ActionsNotificationService.class, new ActionsNotificationServiceExtension());
+
+    this.s3Service = services.getExtension(S3Service.class);
   }
 }

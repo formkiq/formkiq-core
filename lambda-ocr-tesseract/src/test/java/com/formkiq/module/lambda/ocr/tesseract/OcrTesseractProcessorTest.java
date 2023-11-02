@@ -25,6 +25,7 @@ package com.formkiq.module.lambda.ocr.tesseract;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,11 +42,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.aws.sns.SnsConnectionBuilder;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsMessageRecord;
 import com.formkiq.aws.sqs.SqsMessageRecords;
 import com.formkiq.module.actions.Action;
@@ -53,17 +54,20 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.Ocr;
 import com.formkiq.module.ocr.OcrEngine;
 import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
@@ -90,22 +94,25 @@ class OcrTesseractProcessorTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
-    DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    S3ConnectionBuilder s3Connection = TestServices.getS3Connection(null);
-    SnsConnectionBuilder sns = TestServices.getSnsConnection(null);
+    Map<String, String> map = Map.of("AWS_REGION", AWS_REGION.toString(), "DOCUMENTS_TABLE",
+        DOCUMENTS_TABLE, "DOCUMENTS_S3_BUCKET", BUCKET_NAME, "OCR_S3_BUCKET", OCR_BUCKET_NAME,
+        "SNS_DOCUMENT_EVENT", "");
+
+    AwsCredentialsProvider cred = StaticCredentialsProvider
+        .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+
+    AwsServiceCache services = new AwsServiceCacheBuilder(map, TestServices.getEndpointMap(), cred)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry())
+        .build();
 
     TesseractWrapperData wrapper = new TesseractWrapperData(OCR_TEXT);
-    processor = new OcrTesseractProcessor(
-        Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE, "DOCUMENTS_S3_BUCKET", BUCKET_NAME,
-            "OCR_S3_BUCKET", OCR_BUCKET_NAME, "SNS_DOCUMENT_EVENT", ""),
-        dbConnection, s3Connection, sns,
-        Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
-            new TesseractFormatConverter(wrapper)));
+    processor = new OcrTesseractProcessor(services, Arrays.asList(new DocxFormatConverter(),
+        new DocFormatConverter(), new PdfFormatConverter(), new TesseractFormatConverter(wrapper)));
 
-    AwsServiceCache awsServices = processor.getAwsServices();
-    ocrService = awsServices.getExtension(DocumentOcrService.class);
-    s3 = awsServices.getExtension(S3Service.class);
-    actionsService = awsServices.getExtension(ActionsService.class);
+    ocrService = services.getExtension(DocumentOcrService.class);
+    s3 = services.getExtension(S3Service.class);
+    actionsService = services.getExtension(ActionsService.class);
   }
 
   /** {@link Context}. */
