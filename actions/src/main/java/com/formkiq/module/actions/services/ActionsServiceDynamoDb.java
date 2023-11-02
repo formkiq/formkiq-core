@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.module.actions.services;
 
@@ -42,6 +45,7 @@ import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionIndexComparator;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -88,15 +92,12 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
   }
 
-  private void deleteAction(final String siteId, final String documentId, final Action action,
-      final int index) {
-
-    String pk = null;// getPk(siteId, documentId);
-    String sk = null;// getSk(action, index);
+  private void deleteAction(final String siteId, final Action action) {
+    String pk = action.pk(siteId);
+    String sk = action.sk();
 
     Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
         AttributeValue.builder().s(sk).build());
-
     this.dbClient
         .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
   }
@@ -106,12 +107,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     List<Action> actions = queryActions(siteId, documentId, Arrays.asList(PK, SK, "type"), null);
 
-    int index = 0;
     for (Action action : actions) {
 
-      deleteAction(siteId, documentId, action, index);
-
-      index++;
+      action.documentId(documentId);
+      deleteAction(siteId, action);
     }
   }
 
@@ -184,7 +183,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     for (int i = pos; i < actions.size(); i++) {
 
       Action action = actions.get(i);
-      deleteAction(siteId, documentId, action, i);
+      deleteAction(siteId, action);
 
       pos++;
       saveAction(siteId, documentId, action, pos);
@@ -228,7 +227,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     QueryResponse result = this.dbClient.query(q.build());
 
     return result.items().stream().map(a -> new Action().getFromAttributes(siteId, a))
-        .collect(Collectors.toList());
+        .sorted(new ActionIndexComparator()).collect(Collectors.toList());
   }
 
   @Override

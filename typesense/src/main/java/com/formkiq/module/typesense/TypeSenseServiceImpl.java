@@ -89,7 +89,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     String site = getCollectionName(siteId);
     String url = String.format("%s/collections", this.host);
-
+    System.out.println("addCollection: " + url);
     Map<String, Object> schema = Map.of("name", site, "enable_nested_fields", Boolean.TRUE,
         "token_separators", Arrays.asList("/"), "fields",
         Arrays.asList(Map.of("name", "path", "type", "string", "optional", Boolean.TRUE),
@@ -98,6 +98,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
             Map.of("name", "content", "type", "string", "optional", Boolean.TRUE)));
 
     String payload = this.json.toJson(schema);
+    System.out.println("addCollection: " + payload);
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response = this.service.post(url, Optional.of(headers), payload);
@@ -112,12 +113,12 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     Map<String, Object> payload = new HashMap<>(data);
     payload.put("id", documentId);
     payload.remove("documentId");
-
     String site = getCollectionName(siteId);
 
     String url =
         String.format("%s/collections/%s/documents", this.host, encode(getCollectionName(site)));
-
+    System.out.println("addDocument: " + url);
+    System.out.println("addDocument: " + payload);
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response =
@@ -130,6 +131,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
   public HttpResponse<String> addOrUpdateDocument(final String siteId, final String documentId,
       final Map<String, Object> data) throws IOException {
 
+    System.out.println("data: " + data);
     HttpResponse<String> response = addDocument(siteId, documentId, data);
 
     if (!is2XX(response)) {
@@ -226,7 +228,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     String url = String.format("%s/collections/%s/documents/search?q=%s&query_by=%s&per_page=%s",
         this.host, encode(site), encode(text), encode("content,path,metadata#*"), "" + maxResults);
-
+    System.out.println("SEARCH: " + url);
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response = this.service.get(url, Optional.of(headers));
