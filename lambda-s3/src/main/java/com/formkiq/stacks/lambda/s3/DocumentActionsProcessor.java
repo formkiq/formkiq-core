@@ -3,20 +3,23 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.formkiq.stacks.lambda.s3;
 
@@ -137,10 +140,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (System.getenv().containsKey("AWS_REGION")) {
       preInitServiceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-              .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-                  new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
-                  new SesAwsServiceRegistry())
-              .build();
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
+          .build();
 
       initialize(preInitServiceCache);
     }
@@ -543,7 +545,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final String documentId, final List<Action> actions, final Action action)
       throws IOException, InterruptedException {
 
-    ActionStatus status = ActionStatus.COMPLETE;
+    ActionStatus status = ActionStatus.PENDING;
     DocumentItem item = this.documentService.findDocument(siteId, documentId);
     debug(logger, siteId, item);
 
@@ -557,25 +559,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (moduleFulltext) {
         updateOpensearchFulltext(logger, siteId, documentId, action, contentUrls);
+        status = ActionStatus.COMPLETE;
       } else if (this.typesense != null) {
         updateTypesense(documentContentFunc, siteId, documentId, action, contentUrls);
+        status = ActionStatus.COMPLETE;
       } else {
         status = ActionStatus.FAILED;
       }
 
-      // List<Action> updatedActions =
-      // this.actionsService.updateActionStxatus(siteId, documentId, ActionType.FULLTEXT, status);
-      //
-      // if (ActionStatus.COMPLETE.equals(status)) {
-      // this.notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
-      // }
-      //
-      // action.status(status);
-
     } else if (actions.stream().filter(a -> a.type().equals(ActionType.OCR)).findAny().isEmpty()) {
 
-      Action ocrAction =
-          new Action().type(ActionType.OCR).parameters(Map.of("ocrEngine", "tesseract"));
+      Action ocrAction = new Action().userId("System").type(ActionType.OCR)
+          .parameters(Map.of("ocrEngine", "tesseract"));
       this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
 
       List<Action> updatedActions = this.actionsService.getActions(siteId, documentId);
@@ -586,10 +581,6 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     action.status(status);
     this.actionsService.updateActionStatus(siteId, documentId, action);
-
-    if (ActionStatus.COMPLETE.equals(status)) {
-      this.notificationService.publishNextActionEvent(actions, siteId, documentId);
-    }
   }
 
   /**

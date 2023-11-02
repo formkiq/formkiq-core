@@ -1203,7 +1203,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(lastRequest);
     }
   }
-  
+
   /**
    * Handle Fulltext that needs OCR Action.
    * 
@@ -1220,7 +1220,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT));
+      List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
@@ -1258,9 +1258,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       item.setContentType("application/pdf");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions =
-          Arrays.asList(new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE),
-              new Action().type(ActionType.FULLTEXT));
+      List<Action> actions = Arrays.asList(
+          new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE).userId("joe"),
+          new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =

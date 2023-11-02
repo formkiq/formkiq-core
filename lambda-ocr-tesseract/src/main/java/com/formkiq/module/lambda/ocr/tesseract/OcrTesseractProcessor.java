@@ -262,7 +262,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    */
   protected void register(final DynamoDbConnectionBuilder dbConnection,
       final S3ConnectionBuilder s3Connection, final SnsConnectionBuilder snsConnection) {
-        
+
     this.awsServices.register(DynamoDbConnectionBuilder.class,
         new DynamoDbConnectionBuilderExtension(dbConnection));
     this.awsServices.register(S3ConnectionBuilder.class,
