@@ -23,10 +23,12 @@
  */
 package com.formkiq.server;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,6 +42,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
   /** {@link List} {@link HttpRequestHandler}. */
   private List<HttpRequestHandler> handlers;
+  /** {@link NotSupportedHttpRequestHandler}. */
+  private NotSupportedHttpRequestHandler notSupported = new NotSupportedHttpRequestHandler();
 
   /**
    * constructor.
@@ -51,13 +55,17 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
   public HttpServerHandler(final NettyRequestHandler requestHandler,
       final StagingS3Create stagingS3Create, final DocumentsS3Update documentS3Update) {
 
-    String apiKey = requestHandler.getAwsServices().environment("API_KEY");
+    AwsServiceCache awsServices = requestHandler.getAwsServices();
+    String apiKey = awsServices.environment("API_KEY");
+    String adminUser = awsServices.environment("ADMIN_USERNAME");
+    String adminPassword = awsServices.environment("ADMIN_PASSWORD");
+
     Collection<String> urls = requestHandler.getUrlMap().keySet();
 
     this.handlers = Arrays.asList(new OptionsHttpRequestHandler(),
         new MinioS3HttpRequestHandler(stagingS3Create, documentS3Update),
         new ApiGatewayHttpRequestHandler(requestHandler, apiKey, urls),
-        new CognitoHttpRequestHandler());
+        new AuthenticationLoginHttpRequestHandler(adminUser, adminPassword, apiKey));
   }
 
   @Override
@@ -66,10 +74,17 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     Optional<HttpRequestHandler> o =
         this.handlers.stream().filter(h -> h.isSupported(req)).findFirst();
+
     if (!o.isEmpty()) {
-      o.get().handle(ctx, req);
+
+      try {
+        o.get().handle(ctx, req);
+      } catch (IOException e) {
+        this.notSupported.handle(ctx, req);
+      }
+
     } else {
-      new NotSupportedHttpRequestHandler().handle(ctx, req);
+      this.notSupported.handle(ctx, req);
     }
   }
 

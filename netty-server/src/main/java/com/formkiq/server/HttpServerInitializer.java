@@ -31,11 +31,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.schema.DocumentSchema;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
@@ -45,12 +48,12 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SmsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceNoOpExtension;
+import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
-
 import io.minio.BucketExistsArgs;
 import io.minio.GetBucketNotificationArgs;
 import io.minio.MakeBucketArgs;
@@ -77,13 +80,18 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 
 /**
  * {@link ChannelInitializer} for Http Server.
  */
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
+  /** AWS Region. */
+  private static final Region AWS_REGION = Region.US_EAST_1;
   /** Cache Table. */
   private static final String CACHE_TABLE = "Cache";
   /** Document Syncs Table Name. */
@@ -92,16 +100,24 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   private static final String DOCUMENTS_BUCKET = "documents";
   /** Documents Table. */
   private static final String DOCUMENTS_TABLE = "Documents";
+  /** Initial Time Delay. */
+  private static final int INITIAL_TIME_DELAY_IN_SECONDS = 0;
   /** Max Content Length. */
   private static final int MAX_CONTENT_LENGTH = 5242880;
+  /** Scheduled Time Delay. */
+  private static final int SCHEDULED_TIME_DELAY_IN_SECONDS = 5;
   /** Documents Stating S3 Bucket. */
   private static final String STAGING_DOCUMENTS_BUCKET = "stagingdocuments";
+  /** {@link ScheduledExecutorService}. */
+  private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
   /** {@link NettyRequestHandler}. */
   private NettyRequestHandler handler;
   /** {@link StagingS3Create}. */
   private StagingS3Create s3Create;
   /** {@link DocumentsS3Update}. */
   private DocumentsS3Update s3Update;
+  /** {@link DynamoDbStreamToTypesense}. */
+  private DynamoDbStreamToTypesense streams;
 
   /**
    * constructor.
@@ -116,8 +132,33 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider
         .create(AwsBasicCredentials.create(minioAccessKey, minioSecretKey));
 
-    setupHandler(commandLine, credentialsProvider);
+    Map<String, URI> awsServiceEndpoints = getEndpoints(commandLine);
+
+    setupHandler(commandLine, credentialsProvider, awsServiceEndpoints);
     setupS3Lambda(commandLine, credentialsProvider);
+    setupStreamToHttpEndpoint(credentialsProvider, awsServiceEndpoints);
+  }
+
+  private void setupStreamToHttpEndpoint(final AwsCredentialsProvider credentialsProvider,
+      final Map<String, URI> awsServiceEndpoints) {
+
+    AwsServiceCache aws = this.handler.getAwsServices();
+    DynamoDbConnectionBuilder db = aws.getExtension(DynamoDbConnectionBuilder.class);
+
+    try (DynamoDbClient dbClient = db.build()) {
+      DescribeTableResponse response =
+          dbClient.describeTable(DescribeTableRequest.builder().tableName(DOCUMENTS_TABLE).build());
+      String streamArn = response.table().latestStreamArn();
+
+      TypesenseProcessor processor = new TypesenseProcessor(this.handler.getAwsServices());
+
+      this.streams = new DynamoDbStreamToTypesense(AWS_REGION, credentialsProvider, streamArn,
+          awsServiceEndpoints.get("dynamodb"), processor);
+
+      // Schedule a task to read the stream every 5 seconds
+      this.executorService.scheduleWithFixedDelay(() -> this.streams.run(),
+          INITIAL_TIME_DELAY_IN_SECONDS, SCHEDULED_TIME_DELAY_IN_SECONDS, TimeUnit.SECONDS);
+    }
   }
 
   /**
@@ -206,6 +247,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
   }
 
   private Map<String, String> getEnvironment(final CommandLine commandLine) {
+
     Map<String, String> env = new HashMap<>();
     env.put("USER_AUTHENTICATION", "cognito");
     env.put("VERSION", "1.13");
@@ -214,12 +256,32 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     env.put("CACHE_TABLE", CACHE_TABLE);
     env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
     env.put("STAGE_DOCUMENTS_S3_BUCKET", STAGING_DOCUMENTS_BUCKET);
-    env.put("AWS_REGION", "us-east-1");
+    env.put("AWS_REGION", AWS_REGION.id());
     env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("SNS_DOCUMENT_EVENT", "");
     env.put("DEBUG", "false");
-    env.put("API_KEY", commandLine.getOptionValue("api-key"));
+
+    env.put("MODULE_typesense", "true");
+    env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));
+    env.put("TYPESENSE_API_KEY", commandLine.getOptionValue("typesense-api-key"));
+
+    String apiKey = commandLine.getOptionValue("api-key");
+    if (Strings.isEmpty(apiKey)) {
+      apiKey = UUID.randomUUID().toString();
+    }
+
+    env.put("API_KEY", apiKey);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+
+    String adminUsername = commandLine.getOptionValue("admin-username");
+    if (!Strings.isEmpty(adminUsername)) {
+      env.put("ADMIN_USERNAME", adminUsername);
+    }
+
+    String adminPassword = commandLine.getOptionValue("admin-password");
+    if (!Strings.isEmpty(adminPassword)) {
+      env.put("ADMIN_PASSWORD", adminPassword);
+    }
 
     return env;
   }
@@ -250,15 +312,15 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
    * 
    * @param commandLine {@link CommandLine}
    * @param credentialsProvider {@link AwsCredentialsProvider}
+   * @param awsServiceEndpoints {@link Map}
    */
   private void setupHandler(final CommandLine commandLine,
-      final AwsCredentialsProvider credentialsProvider) {
+      final AwsCredentialsProvider credentialsProvider,
+      final Map<String, URI> awsServiceEndpoints) {
 
     Map<String, String> env = getEnvironment(commandLine);
 
     try {
-
-      Map<String, URI> awsServiceEndpoints = getEndpoints(commandLine);
 
       this.handler = new NettyRequestHandler(env, awsServiceEndpoints, credentialsProvider);
 
@@ -270,6 +332,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
       DynamoDbConnectionBuilder db = aws.getExtension(DynamoDbConnectionBuilder.class);
 
       try (DynamoDbClient dbClient = db.build()) {
+
         DocumentSchema schema = new DocumentSchema(dbClient);
         schema.createDocumentsTable(DOCUMENTS_TABLE);
         schema.createCacheTable(CACHE_TABLE);
@@ -305,5 +368,24 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     this.s3Create = new StagingS3Create(serviceCache);
     this.s3Update = new DocumentsS3Update(serviceCache);
+  }
+
+  /**
+   * Shutdown Http Server.
+   */
+  public void shutdownGracefully() {
+    try {
+      this.executorService.awaitTermination(1, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    if (this.streams != null) {
+      try {
+        this.streams.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
   }
 }

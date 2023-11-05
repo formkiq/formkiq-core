@@ -39,16 +39,16 @@ public class OptionsHttpRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(final ChannelHandlerContext ctx, final FullHttpRequest request) {
+
     HttpHeaders headers = new DefaultHttpHeaders();
     headers.add("Access-Control-Allow-Headers", "*");
     headers.add("Access-Control-Allow-Methods", "*");
     headers.add("Access-Control-Allow-Origin", "*");
-    headers.add("Content-Type", "application/json");
 
     DefaultFullHttpResponse response = buildResponse(HttpResponseStatus.OK, "ok");
     HttpUtil.setContentLength(response, response.content().readableBytes());
 
-    response.headers().set(headers);
+    response.headers().add(headers);
 
     ctx.writeAndFlush(response);
   }

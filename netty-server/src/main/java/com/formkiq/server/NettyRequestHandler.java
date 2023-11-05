@@ -54,7 +54,6 @@ public class NettyRequestHandler extends AbstractCoreRequestHandler {
   public NettyRequestHandler(final Map<String, String> env,
       final Map<String, URI> awsServiceEndpoints,
       final AwsCredentialsProvider credentialsProvider) {
-
     this.serviceCache = new AwsServiceCacheBuilder(env, awsServiceEndpoints, credentialsProvider)
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SmsAwsServiceRegistry())

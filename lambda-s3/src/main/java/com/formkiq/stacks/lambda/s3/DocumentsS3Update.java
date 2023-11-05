@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
@@ -526,12 +525,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         attributes.put("contentLength", AttributeValue.fromN("" + contentLength));
       }
 
-      attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
-
-      logger.log("updating document " + createDatabaseKey(siteId, documentId));
-
-      if (debug) {
-        logger.log("document attributes " + attributes);
+      if (resp.getVersionId() != null) {
+        attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
       }
 
       this.service.updateDocument(siteId, documentId, attributes, isChecksumChanged);

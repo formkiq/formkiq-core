@@ -86,15 +86,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
     Map<String, String> env = new HashMap<>();
     env.put("AWS_REGION", Region.US_EAST_1.id());
-    // env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
-    // env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
-    // env.put("SNS_CREATE_TOPIC", snsCreateTopic);
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    // env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    // env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    // env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    // env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-    // env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
@@ -106,18 +98,6 @@ class ApiKeyAuthorizerRequestHandlerTest {
     processor = new ApiKeyAuthorizerRequestHandler(awsServices);
     apiKeysService = awsServices.getExtension(ApiKeysService.class);
   }
-  //
-  // @BeforeAll
-  // public static void beforeAll() throws Exception {
-  //
-  // DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
-  //
-  // processor = new ApiKeyAuthorizerRequestHandler(Map.of("DOCUMENTS_TABLE", DOCUMENTS_TABLE),
-  // dbConnection);
-  //
-  // AwsServiceCache awsServices = processor.getAwsServices();
-  // apiKeysService = awsServices.getExtension(ApiKeysService.class);
-  // }
 
   /** {@link Context}. */
   private Context context = new LambdaContextRecorder();

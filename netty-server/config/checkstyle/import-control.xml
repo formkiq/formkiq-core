@@ -30,6 +30,7 @@
 		<allow pkg="com.formkiq.aws.sns" />
 		<allow pkg="com.formkiq.aws.sqs" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
+		<allow pkg="com.formkiq.module.lambda.typesense" />
 		<allow pkg="com.formkiq.stacks.lambda.s3" />
 		
 		<allow pkg="org.apache.commons.cli" />

@@ -78,8 +78,21 @@ public class HttpServer {
     options.addOption(minioSecretKey);
 
     Option apiKey = new Option(null, "api-key", true, "API Key");
-    apiKey.setRequired(true);
     options.addOption(apiKey);
+
+    Option adminUser = new Option(null, "admin-username", true, "Admin Username");
+    options.addOption(adminUser);
+
+    Option adminPassword = new Option(null, "admin-password", true, "Admin Password");
+    options.addOption(adminPassword);
+
+    Option typesenseHost = new Option(null, "typesense-host", true, "Typesense Host");
+    typesenseHost.setRequired(true);
+    options.addOption(typesenseHost);
+
+    Option typesenseApiKey = new Option(null, "typesense-api-key", true, "Typesense Api Key");
+    typesenseApiKey.setRequired(true);
+    options.addOption(typesenseApiKey);
 
     return options;
   }
@@ -154,6 +167,7 @@ public class HttpServer {
    */
   public Channel run() throws InterruptedException {
 
+    HttpServerInitializer childHandler = null;
     EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     EventLoopGroup workerGroup = new NioEventLoopGroup();
 
@@ -163,7 +177,9 @@ public class HttpServer {
       b.group(bossGroup, workerGroup);
       b.channel(NioServerSocketChannel.class);
       b.handler(new LoggingHandler(LogLevel.INFO));
-      b.childHandler(new HttpServerInitializer(this.commandLine));
+
+      childHandler = new HttpServerInitializer(this.commandLine);
+      b.childHandler(childHandler);
 
       Channel ch = b.bind(this.port).sync().channel();
 
@@ -175,6 +191,11 @@ public class HttpServer {
       return ch;
 
     } finally {
+
+      if (childHandler != null) {
+        childHandler.shutdownGracefully();
+      }
+
       bossGroup.shutdownGracefully();
       workerGroup.shutdownGracefully();
     }

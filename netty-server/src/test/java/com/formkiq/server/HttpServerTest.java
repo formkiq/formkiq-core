@@ -25,6 +25,7 @@ package com.formkiq.server;
 
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentFulltext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URI;
@@ -45,9 +46,11 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -57,15 +60,16 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(MinioExtension.class)
+@ExtendWith(TypesenseExtension.class)
 @ExtendWith(NettyExtension.class)
 public class HttpServerTest {
 
-  /** Test Time. */
-  private static final int TEST_TIME = 30;
   /** Http Server Port. */
   private static final int BASE_HTTP_SERVER_PORT = 8080;
   /** Base Url. */
   private static final String BASE_URL = "http://localhost:" + BASE_HTTP_SERVER_PORT;
+  /** Test Time. */
+  private static final int TEST_TIME = 30;
 
   /** {@link ApiClient}. */
   private ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL)
@@ -76,6 +80,13 @@ public class HttpServerTest {
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+
+  private void assertCorsHeaders(final HttpResponse<String> response) {
+    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+        response.headers().firstValue("access-control-allow-headers").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-methods").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-origin").get());
+  }
 
   /**
    * Test add documents.
@@ -88,7 +99,9 @@ public class HttpServerTest {
     // given
     String siteId = null;
     String content = UUID.randomUUID().toString();
-    AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
+    String path = "sometest123.txt";
+    AddDocumentRequest req =
+        new AddDocumentRequest().path(path).content(content).contentType("text/plain");
 
     // when
     AddDocumentResponse addDocument = this.documentsApi.addDocument(req, siteId, null);
@@ -103,6 +116,10 @@ public class HttpServerTest {
 
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, siteId, documentId);
     assertEquals(content.length(), response.getContentLength().intValue());
+
+    GetDocumentFulltextResponse fulltext =
+        waitForDocumentFulltext(this.apiClient, siteId, documentId);
+    assertEquals(path, fulltext.getPath());
   }
 
   /**
@@ -141,20 +158,54 @@ public class HttpServerTest {
   }
 
   /**
-   * Test unauthorized endpoints.
+   * Test /login failed.
    * 
    * @throws Exception Exception
    */
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
-  void testUnAuthorizedEndpoint() throws Exception {
+  void testLoginFailed() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/hello")).build();
+    Map<String, Object> body = Map.of("username", "jsmith", "password", "12345");
+    byte[] content = this.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
+    HttpRequest request = HttpRequest.newBuilder().POST(BodyPublishers.ofByteArray(content))
+        .uri(new URI(BASE_URL + "/login")).build();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
-    assertEquals("request not supported", response.body());
+    assertEquals(
+        "{\"code\":\"NotAuthorizedException\",\"message\":\"Incorrect username or password.\"}",
+        response.body());
+  }
+
+  /**
+   * Test /login ok.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  void testLoginOk() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    Map<String, Object> body = Map.of("username", NettyExtension.ADMIN_USERNAME, "password",
+        NettyExtension.ADMIN_PASSWORD);
+    byte[] content = this.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
+    HttpRequest request = HttpRequest.newBuilder().POST(BodyPublishers.ofByteArray(content))
+        .uri(new URI(BASE_URL + "/login")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
+
+    results = (Map<String, Object>) results.get("AuthenticationResult");
+
+    assertEquals(NettyExtension.API_KEY, results.get("AccessToken"));
+    assertEquals(NettyExtension.API_KEY, results.get("IdToken"));
+    assertEquals("", results.get("RefreshToken"));
+    assertCorsHeaders(response);
   }
 
   /**
@@ -173,6 +224,7 @@ public class HttpServerTest {
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    assertCorsHeaders(response);
     Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
     assertEquals("admin", results.get("username"));
 
@@ -181,6 +233,23 @@ public class HttpServerTest {
     assertEquals("[DELETE, READ, WRITE]", sites.get(0).get("permissions").toString());
     assertEquals("default", sites.get(0).get("siteId"));
     assertEquals("READ_WRITE", sites.get(0).get("permission"));
+  }
+
+  /**
+   * Test unauthorized endpoints.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
+  void testUnAuthorizedEndpoint() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest request = HttpRequest.newBuilder().uri(new URI(BASE_URL + "/hello")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+    assertEquals("request not supported", response.body());
   }
 
   /**
@@ -199,35 +268,32 @@ public class HttpServerTest {
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    assertCorsHeaders(response);
     Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
     assertEquals("1.13", results.get("version"));
     assertEquals("core", results.get("type"));
-    assertEquals("",
+    assertEquals("typesense",
         ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
   }
 
   /**
-   * Test cognito-idp initiate-auth.
+   * Test Options.
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIME)
-  void testCognitoInitAuth() throws Exception {
+  void testOptions() throws Exception {
     HttpClient client = HttpClient.newHttpClient();
-    Map<String, Object> body =
-        Map.of("AuthFlow", "USER_SRP_AUTH", "ClientId", "1nol56jeud98ime8nq1", "AuthParameters",
-            Map.of("USERNAME", "test@formkiq.com", "SRP_A", "af39f9fb33313c20e3dd9e"));
-    byte[] content = this.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
-    HttpRequest request = HttpRequest.newBuilder()
-        .header("X-Amz-Target", "AWSCognitoIdentityProviderService.InitiateAuth")
-        .POST(BodyPublishers.ofByteArray(content)).uri(new URI(BASE_URL + "/")).build();
+    HttpRequest request =
+        HttpRequest.newBuilder().method("OPTIONS", BodyPublishers.ofByteArray(new byte[] {}))
+            .uri(new URI(BASE_URL + "/version")).build();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
-    assertEquals("PASSWORD_VERIFIER", results.get("ChallengeName"));
+    assertEquals("*", response.headers().firstValue("access-control-allow-headers").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-methods").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-origin").get());
   }
 }

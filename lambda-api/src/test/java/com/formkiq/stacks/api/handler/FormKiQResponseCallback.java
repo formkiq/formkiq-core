@@ -32,7 +32,7 @@ import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,7 +56,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.AbstractFormKiqApiResponseCallback;
 import com.formkiq.testutils.aws.TestServices;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -145,7 +145,7 @@ public class FormKiQResponseCallback extends AbstractFormKiqApiResponseCallback 
       map.put("USER_AUTHENTICATION", "cognito");
       map.put("WEBSOCKET_SQS_URL",
           TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
-      map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
+      map.put("TYPESENSE_HOST", "http://localhost:" + TypesenseExtension.getMappedPort());
       map.put("TYPESENSE_API_KEY", API_KEY);
       map.put("MODULE_typesense", "true");
       map.put("SQS_DOCUMENT_EVENT_URL", sqsDocumentEventUrl);

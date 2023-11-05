@@ -34,12 +34,17 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.TypesenseExtension;
 
 /**
  * JUnit Extension for Netty Server.
  */
 public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
 
+  /** API Key. */
+  static final String ADMIN_USERNAME = "testapikey";
+  /** API Key. */
+  static final String ADMIN_PASSWORD = "testapikey";
   /** API Key. */
   static final String API_KEY = "testapikey";
   /** Http Server Port. */
@@ -63,7 +68,11 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
     params.add("--s3-url=" + MinioTestServices.getEndpoint());
     params.add("--minio-access-key=" + MinioTestServices.ACCESS_KEY);
     params.add("--minio-secret-key=" + MinioTestServices.SECRET_KEY);
+    params.add("--admin-username=" + ADMIN_USERNAME);
+    params.add("--admin-password=" + ADMIN_PASSWORD);
     params.add("--api-key=" + API_KEY);
+    params.add("--typesense-host=http://localhost:" + TypesenseExtension.getMappedPort());
+    params.add("--typesense-api-key=" + TypesenseExtension.API_KEY);
 
     this.serverThread = new Thread(() -> {
       try {

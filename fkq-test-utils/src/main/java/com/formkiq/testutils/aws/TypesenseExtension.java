@@ -35,13 +35,13 @@ import org.testcontainers.utility.DockerImageName;
  * JUnit 5 Extension for TypeSense.
  *
  */
-public class TypeSenseExtension
+public class TypesenseExtension
     implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
   /** Test API Key. */
   public static final String API_KEY = "Hu1234s212AdxdZ";
   /** Default DynamoDB Port. */
-  private static final int DEFAULT_PORT = 8108;
+  public static final int DEFAULT_PORT = 8108;
   /** Type Sense Image. */
   private static DockerImageName image = DockerImageName.parse("typesense/typesense:0.25.1");
   /** Mapped Port. */

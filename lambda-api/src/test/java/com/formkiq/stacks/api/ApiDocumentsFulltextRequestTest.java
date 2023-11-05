@@ -49,12 +49,12 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.aws.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 
 /** Unit Tests for request /documents/{documentId}/fulltext. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 public class ApiDocumentsFulltextRequestTest {
   /** {@link FormKiQResponseCallback}. */
   private static final FormKiQResponseCallback CALLBACK = new FormKiQResponseCallback();

@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.schema;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
@@ -35,6 +36,8 @@ import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
+import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 
 /**
  * DocumentSchema.
@@ -89,8 +92,11 @@ public class DocumentSchema {
    * Create Documents Table.
    * 
    * @param tableName {@link String}
+   * @return {@link CreateTableResponse}
    */
-  public void createDocumentsTable(final String tableName) {
+  public CreateTableResponse createDocumentsTable(final String tableName) {
+
+    CreateTableResponse response = null;
 
     if (!isTableExists(tableName)) {
       KeySchemaElement pk =
@@ -136,15 +142,18 @@ public class DocumentSchema {
               .readCapacityUnits(this.capacity).build())
           .build();
 
-      CreateTableRequest table =
-          CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
-              .attributeDefinitions(a1, a2, a3, a4, a5, a6).globalSecondaryIndexes(si1, si2)
-              .provisionedThroughput(ProvisionedThroughput.builder()
-                  .writeCapacityUnits(this.capacity).readCapacityUnits(this.capacity).build())
-              .build();
+      CreateTableRequest table = CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
+          .attributeDefinitions(a1, a2, a3, a4, a5, a6).globalSecondaryIndexes(si1, si2)
+          .streamSpecification(StreamSpecification.builder().streamEnabled(Boolean.TRUE)
+              .streamViewType(StreamViewType.NEW_AND_OLD_IMAGES).build())
+          .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(this.capacity)
+              .readCapacityUnits(this.capacity).build())
+          .build();
 
-      this.db.createTable(table);
+      response = this.db.createTable(table);
     }
+
+    return response;
   }
 
   /**
