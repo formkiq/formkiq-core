@@ -336,6 +336,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         DocumentSchema schema = new DocumentSchema(dbClient);
         schema.createDocumentsTable(DOCUMENTS_TABLE);
         schema.createCacheTable(CACHE_TABLE);
+        schema.createDocumentSyncsTable(DOCUMENT_SYNCS_TABLE);
       }
 
       String minioAccessKey = commandLine.getOptionValue("minio-access-key");
