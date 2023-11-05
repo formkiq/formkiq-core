@@ -27,6 +27,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,24 +55,16 @@ import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClie
  */
 public class DynamoDbStreamToTypesense implements Closeable {
 
-  // /** {@link AwsCredentialsProvider}. */
-  // private AwsCredentialsProvider credentialsProvider;
-  // /** {@link URI}. */
-  // private URI dynamodbUri;
-  // /** {@link String}. */
-  // private String httpEndpoint;
-  // /** {@link Region}. */
-  // private Region region;
-  /** Shard Map. */
-  // private Map<String, String> shardIteratorMap = new HashMap<>();
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().create();
+  /** {@link Map}. */
+  private Map<String, String> nextShardIteratorMap = new HashMap<>();
+  /** {@link TypesenseProcessor}. */
+  private TypesenseProcessor processor;
   /** {@link String}. */
   private String streamArn;
   /** {@link DynamoDbStreamsAsyncClient}. */
   private DynamoDbStreamsAsyncClient streamsClient = null;
-  /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
-  /** {@link TypesenseProcessor}. */
-  private TypesenseProcessor processor;
 
   /**
    * constructor.
@@ -91,7 +84,6 @@ public class DynamoDbStreamToTypesense implements Closeable {
 
     this.streamsClient = DynamoDbStreamsAsyncClient.builder().endpointOverride(dynamodbUri)
         .region(awsRegion).credentialsProvider(awsCredentialsProvider).build();
-
   }
 
   @Override
@@ -109,58 +101,57 @@ public class DynamoDbStreamToTypesense implements Closeable {
     return this.streamsClient.getShardIterator(getShardIteratorRequest).join().shardIterator();
   }
 
+  private List<Shard> getShards() {
+
+    List<Shard> shards = Collections.emptyList();
+    try {
+      DescribeStreamRequest streamRequest =
+          DescribeStreamRequest.builder().streamArn(this.streamArn).build();
+
+      DescribeStreamResponse streamResponse =
+          this.streamsClient.describeStream(streamRequest).get();
+      shards = streamResponse.streamDescription().shards();
+
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
+
+    return shards;
+  }
+
   /**
    * Run Stream Poller.
    */
   public void run() {
 
-    try {
-      // Describe the stream to get shard information
-      DescribeStreamRequest streamRequest =
-          DescribeStreamRequest.builder().streamArn(this.streamArn).build();
-      DescribeStreamResponse streamResponse =
-          this.streamsClient.describeStream(streamRequest).get();
+    // Describe the stream to get shard information
+    List<Shard> shards = getShards();
 
-      // Iterate through each shard in the stream
-      for (Shard shard : streamResponse.streamDescription().shards()) {
+    // Iterate through each shard in the stream
+    for (Shard shard : shards) {
 
-        String shardId = shard.shardId();
+      String shardId = shard.shardId();
 
-        String iteratorType = ShardIteratorType.TRIM_HORIZON.toString();
-        GetRecordsRequest getRecordsRequest = GetRecordsRequest.builder()
-            .shardIterator(getShardIterator(shardId, iteratorType)).build();
+      try {
+        String shardIterator = this.nextShardIteratorMap.get(shardId);
+        if (shardIterator == null) {
+
+          String iteratorType = ShardIteratorType.TRIM_HORIZON.toString();
+          shardIterator = getShardIterator(shardId, iteratorType);
+        }
+
+        GetRecordsRequest getRecordsRequest =
+            GetRecordsRequest.builder().shardIterator(shardIterator).build();
 
         GetRecordsResponse getRecordsResponse =
-            this.streamsClient.getRecords(getRecordsRequest).join();
+            this.streamsClient.getRecords(getRecordsRequest).get();
+
         List<software.amazon.awssdk.services.dynamodb.model.Record> records =
             getRecordsResponse.records();
 
         for (software.amazon.awssdk.services.dynamodb.model.Record record : records) {
 
-          Map<String, Object> dynamodb = new HashMap<>();
-          dynamodb.put("Keys", record.dynamodb().keys());
-
-          if (!record.dynamodb().newImage().isEmpty()) {
-            Map<String, AttributeValue> newImage = record.dynamodb().newImage();
-            String json = this.gson.toJson(newImage);
-            dynamodb.put("NewImage", this.gson.fromJson(json, Map.class));
-          }
-
-          if (!record.dynamodb().newImage().isEmpty()) {
-            Map<String, AttributeValue> oldImage = record.dynamodb().oldImage();
-            String json = this.gson.toJson(oldImage);
-            dynamodb.put("OldImage", this.gson.fromJson(json, Map.class));
-          }
-
-          Map<String, Object> map = new HashMap<>();
-          map.put("eventID", record.eventID());
-          map.put("eventName", record.eventNameAsString());
-          map.put("eventVersion", record.eventVersion());
-          map.put("eventSource", record.eventSource());
-          map.put("awsRegion", record.awsRegion());
-          map.put("dynamodb", dynamodb);
-
-          map = Map.of("Records", Arrays.asList(map));
+          Map<String, Object> map = transform(record);
 
           Context context = new LambdaContext(UUID.randomUUID().toString());
 
@@ -172,12 +163,43 @@ public class DynamoDbStreamToTypesense implements Closeable {
         }
 
         // Update the shard iterator
-        getRecordsRequest = getRecordsRequest.toBuilder()
-            .shardIterator(getRecordsResponse.nextShardIterator()).build();
+        String nextShardIterator = getRecordsResponse.nextShardIterator();
+        this.nextShardIteratorMap.put(shardId, nextShardIterator);
+
+      } catch (InterruptedException | ExecutionException e) {
+        this.nextShardIteratorMap.remove(shardId);
+        e.printStackTrace();
       }
-    } catch (InterruptedException | ExecutionException e) {
-      e.printStackTrace();
     }
+  }
+
+  private Map<String, Object> transform(
+      final software.amazon.awssdk.services.dynamodb.model.Record record) {
+    Map<String, Object> dynamodb = new HashMap<>();
+    dynamodb.put("Keys", record.dynamodb().keys());
+
+    if (!record.dynamodb().newImage().isEmpty()) {
+      Map<String, AttributeValue> newImage = record.dynamodb().newImage();
+      String json = this.gson.toJson(newImage);
+      dynamodb.put("NewImage", this.gson.fromJson(json, Map.class));
+    }
+
+    if (!record.dynamodb().newImage().isEmpty()) {
+      Map<String, AttributeValue> oldImage = record.dynamodb().oldImage();
+      String json = this.gson.toJson(oldImage);
+      dynamodb.put("OldImage", this.gson.fromJson(json, Map.class));
+    }
+
+    Map<String, Object> map = new HashMap<>();
+    map.put("eventID", record.eventID());
+    map.put("eventName", record.eventNameAsString());
+    map.put("eventVersion", record.eventVersion());
+    map.put("eventSource", record.eventSource());
+    map.put("awsRegion", record.awsRegion());
+    map.put("dynamodb", dynamodb);
+
+    map = Map.of("Records", Arrays.asList(map));
+    return map;
   }
 }
 
