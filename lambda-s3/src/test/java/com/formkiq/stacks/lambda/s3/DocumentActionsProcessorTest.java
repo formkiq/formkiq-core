@@ -30,7 +30,7 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -98,7 +98,7 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import joptsimple.internal.Strings;
@@ -111,7 +111,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
-@ExtendWith(TypeSenseExtension.class)
+@ExtendWith(TypesenseExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
   /** {@link ActionsService}. */
@@ -184,7 +184,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
 
-    String typeSenseHost = "http://localhost:" + TypeSenseExtension.getMappedPort();
+    String typeSenseHost = "http://localhost:" + TypesenseExtension.getMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
         typeSenseHost);
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);

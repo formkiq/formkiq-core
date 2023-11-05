@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentsApi;
@@ -46,6 +47,7 @@ import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentContentResponse;
+import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
@@ -550,6 +552,33 @@ public class FkqDocumentService {
         if (response.getContentLength() != null) {
           return response;
         }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
+   * Wait For Document Content.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentFulltextResponse waitForDocumentFulltext(final ApiClient client,
+      final String siteId, final String documentId) throws InterruptedException {
+
+    AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
+
+    while (true) {
+
+      try {
+        return api.getDocumentFulltext(documentId, siteId, null);
 
       } catch (ApiException e) {
         // ignore error

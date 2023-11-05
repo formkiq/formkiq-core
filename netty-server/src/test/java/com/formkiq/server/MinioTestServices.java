@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 
 /**
@@ -44,9 +43,9 @@ public final class MinioTestServices {
   /** Default Minio Console. */
   private static final Integer DEFAULT_CONSOLE_PORT = Integer.valueOf(9090);
   /** Minio Access Key. */
-  static final String ACCESS_KEY = UUID.randomUUID().toString();
+  static final String ACCESS_KEY = "minioadmin";
   /** Minio Secret Key. */
-  static final String SECRET_KEY = UUID.randomUUID().toString();
+  static final String SECRET_KEY = "minioadmin";
   /** DynamoDB Local {@link GenericContainer}. */
   private static GenericContainer<?> minioContainer;
 

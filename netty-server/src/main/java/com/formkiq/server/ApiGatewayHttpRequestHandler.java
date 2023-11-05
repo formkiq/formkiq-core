@@ -90,6 +90,12 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     DefaultFullHttpResponse response =
         new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.parseLine(statusCode),
             Unpooled.copiedBuffer(body, StandardCharsets.UTF_8));
+
+    Map<String, String> headers = (Map<String, String>) map.get("headers");
+    for (Map.Entry<String, String> e : headers.entrySet()) {
+      response.headers().add(e.getKey(), e.getValue());
+    }
+
     return response;
   }
 

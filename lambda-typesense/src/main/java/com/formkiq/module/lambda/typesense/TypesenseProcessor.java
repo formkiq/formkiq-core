@@ -39,65 +39,68 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
-import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
-import com.formkiq.stacks.dynamodb.DocumentSyncServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestHandler} for handling DynamoDb to Typesense Processor. */
 @Reflectable
 public class TypesenseProcessor implements RequestHandler<Map<String, Object>, Void> {
 
-  /** Debug. */
-  private boolean debug;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+
+  static {
+
+    if (System.getenv().containsKey("AWS_REGION")) {
+      serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+          EnvironmentVariableCredentialsProvider.create())
+          .addService(new DynamoDbAwsServiceRegistry()).build();
+
+      initialize(serviceCache);
+    }
+  }
+
+  /**
+   * Initialize.
+   * 
+   * @param awsServices {@link AwsServiceCache}
+   */
+  public static void initialize(final AwsServiceCache awsServices) {
+
+    awsServices.register(TypeSenseService.class, new TypeSenseServiceExtension());
+    awsServices.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    serviceCache = awsServices;
+  }
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-  /** {@link DocumentSyncService}. */
-  private DocumentSyncService syncService;
-  /** {@link TypeSenseService}. */
-  private TypeSenseService typeSenseService;
+
+  /**
+   * constructor.
+   */
+  public TypesenseProcessor() {}
 
   /**
    * constructor.
    * 
+   * @param awsServices {@link AwsServiceCache}
    */
-  public TypesenseProcessor() {
-    this(System.getenv(),
-        new DynamoDbConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("AWS_REGION"))),
-        EnvironmentVariableCredentialsProvider.create().resolveCredentials());
-  }
-
-  /**
-   * constructor.
-   *
-   * @param map {@link Map}
-   * @param dbConnection {@link DynamoDbConnectionBuilder}
-   * @param credentials {@link AwsCredentials}
-   */
-  public TypesenseProcessor(final Map<String, String> map,
-      final DynamoDbConnectionBuilder dbConnection, final AwsCredentials credentials) {
-
-    Region region = Region.of(map.get("AWS_REGION"));
-
-    this.typeSenseService = new TypeSenseServiceImpl(map.get("TYPESENSE_HOST"),
-        map.get("TYPESENSE_API_KEY"), region, credentials);
-    this.syncService =
-        new DocumentSyncServiceDynamoDb(dbConnection, map.get("DOCUMENT_SYNC_TABLE"));
-    this.debug = "true".equals(map.get("DEBUG"));
+  public TypesenseProcessor(final AwsServiceCache awsServices) {
+    initialize(awsServices);
   }
 
   private void addDocumentSync(final HttpResponse<String> response, final String siteId,
@@ -113,8 +116,9 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     String message = added ? DocumentSyncService.MESSAGE_ADDED_METADATA
         : DocumentSyncService.MESSAGE_UPDATED_METADATA;
 
-    this.syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status,
-        syncType, userId, message);
+    DocumentSyncService syncService = serviceCache.getExtension(DocumentSyncService.class);
+    syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE, status, syncType,
+        userId, message);
   }
 
   /**
@@ -131,8 +135,9 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       final Map<String, Object> data, final String userId, final boolean s3VersionChanged)
       throws IOException {
 
-    HttpResponse<String> response =
-        this.typeSenseService.addOrUpdateDocument(siteId, documentId, data);
+    TypeSenseService typeSenseService = serviceCache.getExtension(TypeSenseService.class);
+
+    HttpResponse<String> response = typeSenseService.addOrUpdateDocument(siteId, documentId, data);
 
     if (is2XX(response)) {
 
@@ -151,7 +156,12 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    * @param documentId {@link String}
    */
   private void deleteSyncs(final String siteId, final String documentId) {
-    this.syncService.deleteAll(siteId, documentId);
+    DocumentSyncService syncService = serviceCache.getExtension(DocumentSyncService.class);
+    syncService.deleteAll(siteId, documentId);
+  }
+
+  private String getAttributeStringValue(final Map<String, String> field) {
+    return field.containsKey("S") ? field.get("S") : field.get("s");
   }
 
   /**
@@ -175,7 +185,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
           : Collections.emptyMap();
     }
 
-    return field.get("S");
+    return getAttributeStringValue(field);
   }
 
   /**
@@ -197,7 +207,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
     LambdaLogger logger = context.getLogger();
 
-    if (this.debug) {
+    if (serviceCache.debug()) {
       String json = this.gson.toJson(map);
       logger.log(json);
     }
@@ -211,8 +221,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
   @SuppressWarnings("unchecked")
   private boolean isDocumentSk(final Map<String, Object> data) {
     Map<String, String> map = (Map<String, String>) data.get(SK);
-    boolean isDocument = map.containsKey("S") && map.get("S").equals("document");
-    return isDocument;
+    String sk = getAttributeStringValue(map);
+    return "document".equals(sk);
   }
 
   private boolean isS3VersionChanged(final String eventName, final Map<String, Object> oldImage,
@@ -312,7 +322,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
       final Map<String, Object> oldImage) throws IOException {
     boolean isDocument = isDocumentSk(oldImage);
     if (isDocument) {
-      this.typeSenseService.deleteDocument(siteId, documentId);
+      TypeSenseService typeSenseService = serviceCache.getExtension(TypeSenseService.class);
+      typeSenseService.deleteDocument(siteId, documentId);
       deleteSyncs(siteId, documentId);
     }
   }
@@ -358,13 +369,13 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
 
     if (isDocument) {
 
-      if (this.debug) {
+      if (serviceCache.debug()) {
         logger.log("writing to index: " + data);
       }
 
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
       addOrUpdate(siteId, documentId, document, userId, s3VersionChanged);
-    } else if (this.debug) {
+    } else if (serviceCache.debug()) {
       logger.log("skipping dynamodb record");
     }
   }

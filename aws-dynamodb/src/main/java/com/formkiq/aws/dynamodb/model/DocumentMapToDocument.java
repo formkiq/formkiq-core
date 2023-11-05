@@ -58,7 +58,11 @@ public class DocumentMapToDocument
       } else if (obj instanceof Map) {
 
         Map<String, Object> values = (Map<String, Object>) obj;
-        value = values.get("S").toString();
+        if (values.containsKey("S")) {
+          value = values.get("S").toString();
+        } else if (values.containsKey("s")) {
+          value = values.get("s").toString();
+        }
 
       } else if (obj instanceof String) {
         value = obj.toString();

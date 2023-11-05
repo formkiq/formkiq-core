@@ -124,8 +124,6 @@ import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.stacks.dynamodb.WebhooksServiceExtension;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * 
@@ -151,9 +149,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     registerExtensions(serviceCache, plugin);
 
     if (serviceCache.hasModule("typesense")) {
-      Region region = serviceCache.region();
-      AwsCredentials creds = serviceCache.getExtension(AwsCredentials.class);
-      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension(region, creds));
+      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
     }
 
     isEnablePublicUrls = isEnablePublicUrls(serviceCache);

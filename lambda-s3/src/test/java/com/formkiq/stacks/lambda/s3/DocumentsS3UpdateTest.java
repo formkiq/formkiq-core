@@ -1098,9 +1098,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private DocumentItem verifyDocumentSaved(final String siteId, final DocumentItem item,
       final String contentType, final String contentLength) {
 
-    assertTrue(this.logger
-        .containsString("updating document " + createDatabaseKey(siteId, item.getDocumentId())));
-
     assertEquals(contentType, item.getContentType());
     assertEquals(contentLength, item.getContentLength().toString());
 

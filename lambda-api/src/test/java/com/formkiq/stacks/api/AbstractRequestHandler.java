@@ -32,7 +32,7 @@ import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
-import static com.formkiq.testutils.aws.TypeSenseExtension.API_KEY;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import java.io.ByteArrayInputStream;
@@ -73,7 +73,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.formkiq.testutils.aws.LambdaLoggerRecorder;
 import com.formkiq.testutils.aws.TestServices;
-import com.formkiq.testutils.aws.TypeSenseExtension;
+import com.formkiq.testutils.aws.TypesenseExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
@@ -257,7 +257,7 @@ public abstract class AbstractRequestHandler {
     this.map.put("USER_AUTHENTICATION", userAuthentication);
     this.map.put("WEBSOCKET_SQS_URL",
         TestServices.getSqsWebsocketQueueUrl(TestServices.getSqsConnection(null)));
-    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypeSenseExtension.getMappedPort());
+    this.map.put("TYPESENSE_HOST", "http://localhost:" + TypesenseExtension.getMappedPort());
     this.map.put("TYPESENSE_API_KEY", API_KEY);
 
     createApiRequestHandler(this.map);
