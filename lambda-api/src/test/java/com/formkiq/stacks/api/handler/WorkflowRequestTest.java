@@ -31,6 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddQueueRequest;
 import com.formkiq.client.model.AddWorkflowRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -41,12 +42,12 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 public class WorkflowRequestTest extends AbstractApiClientRequestTest {
 
   /**
-   * Get /workflows.
+   * POST /queues.
    *
    * @throws Exception an error has occurred
    */
   @Test
-  public void testGetWorkflows() throws Exception {
+  public void testAddQueues() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -54,7 +55,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
 
       try {
         // when
-        this.workflowApi.getWorkflows(null, null, siteId);
+        this.workflowApi.addQueue(new AddQueueRequest(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -88,12 +89,12 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Get /workflows/{workflowId}.
+   * DELETE /queue/{queueId}.
    *
    * @throws Exception an error has occurred
    */
   @Test
-  public void testGetWorkflow() throws Exception {
+  public void testDeleteQueue() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
@@ -101,7 +102,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
 
       try {
         // when
-        this.workflowApi.getWorkflow(UUID.randomUUID().toString(), siteId);
+        this.workflowApi.deleteQueue("1", siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -125,6 +126,121 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
       try {
         // when
         this.workflowApi.deleteWorkflow(UUID.randomUUID().toString(), siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+
+  /**
+   * GET /queue/{queueId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetQueue() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      try {
+        // when
+        this.workflowApi.getQueue("1", siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+
+  /**
+   * GET /queues/{queueId}/documents.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetQueueDocuments() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      try {
+        // when
+        this.workflowApi.getWorkflowQueueDocuments("1", siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+
+  /**
+   * GET /queues.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetQueues() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      try {
+        // when
+        this.workflowApi.getQueues(siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+
+  /**
+   * Get /workflows/{workflowId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetWorkflow() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      try {
+        // when
+        this.workflowApi.getWorkflow(UUID.randomUUID().toString(), siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+
+  /**
+   * Get /workflows.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetWorkflows() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      try {
+        // when
+        this.workflowApi.getWorkflows(null, null, siteId);
         fail();
       } catch (ApiException e) {
         // then

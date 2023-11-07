@@ -30,7 +30,7 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_ID;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -140,9 +140,9 @@ public class ActionsValidatorImpl implements ActionsValidator {
   private void validateWait(final Action action, final Collection<ValidationError> errors) {
 
     Map<String, String> parameters = getParameters(action);
-    if (!hasValue(parameters, PARAMETER_QUEUE_NAME)) {
-      errors.add(new ValidationErrorImpl().key(PARAMETER_QUEUE_NAME)
-          .error("'" + PARAMETER_QUEUE_NAME + "' is required"));
+    if (!hasValue(parameters, PARAMETER_QUEUE_ID)) {
+      errors.add(new ValidationErrorImpl().key(PARAMETER_QUEUE_ID)
+          .error("'" + PARAMETER_QUEUE_ID + "' is required"));
     }
   }
 

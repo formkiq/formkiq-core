@@ -23,7 +23,7 @@
  */
 package com.formkiq.module.actions;
 
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_NAME;
+import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_ID;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -296,13 +296,13 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
 
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .parameters(Map.of(PARAMETER_QUEUE_NAME, name));
+          .parameters(Map.of(PARAMETER_QUEUE_ID, name));
 
       // when
       service.saveActions(siteId, documentId, Arrays.asList(action0));
 
       // then
-      assertEquals("{queueName=test94832}",
+      assertEquals("{queueId=test94832}",
           service.getActionParameters(siteId, documentId, ActionType.QUEUE).toString());
 
       List<Action> results = service.getActions(siteId, documentId);
@@ -310,7 +310,7 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(ActionStatus.PENDING, results.get(0).status());
       assertEquals(ActionType.QUEUE, results.get(0).type());
       assertEquals(userId0, results.get(0).userId());
-      assertEquals("{queueName=test94832}", results.get(0).parameters().toString());
+      assertEquals("{queueId=test94832}", results.get(0).parameters().toString());
 
       assertEquals(0, service.findDocumentsInQueue(siteId, name, null, 2).getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
@@ -353,7 +353,7 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .parameters(Map.of(PARAMETER_QUEUE_NAME, name));
+          .parameters(Map.of(PARAMETER_QUEUE_ID, name));
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
@@ -392,7 +392,7 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .parameters(Map.of(PARAMETER_QUEUE_NAME, name));
+          .parameters(Map.of(PARAMETER_QUEUE_ID, name));
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
