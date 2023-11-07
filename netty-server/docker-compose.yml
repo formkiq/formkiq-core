@@ -1,14 +1,14 @@
 version: '3.8'
 services:
 
-#  console:
-#    image: formkiq/document-console:3.2.4-SNAPSHOT
-#    ports:
-#      - "80:80"
-#    environment:
-#      HTTP_API_URL: http://localhost:8080
-#      COGNITO_API_URL: http://localhost:8080
-#      COGNITO_ENDPOINT_OVERRIDE: http://localhost:8080
+  console:
+    image: formkiq/document-console:3.2.4-SNAPSHOT-20231107
+    ports:
+      - "80:80"
+    environment:
+      HTTP_API_URL: http://localhost:8080
+      COGNITO_API_URL: http://localhost:8080
+      COGNITO_ENDPOINT_OVERRIDE: http://localhost:8080
   
   typesense:
     image: typesense/typesense:0.25.1
@@ -19,7 +19,7 @@ services:
     command: '--data-dir /data --api-key=xyz --enable-cors'
     
   formkiq:
-    image: formkiq/api-server:1.13.0-SNAPSHOT
+    image: formkiq/api-server:1.13.0-SNAPSHOT-20231107
     depends_on:
       - minio
       - dynamodb
