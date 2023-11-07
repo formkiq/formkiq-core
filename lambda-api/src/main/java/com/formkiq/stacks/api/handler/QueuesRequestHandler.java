@@ -21,31 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.stacks.api.handler;
 
-/**
- * Action Parameters.
- */
-public interface ActionParameters {
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 
-  /** Notification To Parameter. */
-  String PARAMETER_NOTIFICATION_TO_CC = "notificationToCc";
+/** {@link ApiGatewayRequestHandler} for "/queues". */
+public class QueuesRequestHandler extends AbstractPaymentRequiredRequestHandler {
 
-  /** Notification To Parameter. */
-  String PARAMETER_NOTIFICATION_TO_BCC = "notificationToBcc";
+  /** {@link QueuesRequestHandler} URL. */
+  public static final String URL = "/queues";
 
-  /** Notification Type Parameter. */
-  String PARAMETER_NOTIFICATION_TYPE = "notificationType";
+  /**
+   * constructor.
+   *
+   */
+  public QueuesRequestHandler() {}
 
-  /** Notification Subject Parameter. */
-  String PARAMETER_NOTIFICATION_SUBJECT = "notificationSubject";
-
-  /** Notification Text Parameter. */
-  String PARAMETER_NOTIFICATION_TEXT = "notificationText";
-
-  /** Notification Html Parameter. */
-  String PARAMETER_NOTIFICATION_HTML = "notificationHtml";
-
-  /** Queue Name Parameter. */
-  String PARAMETER_QUEUE_ID = "queueId";
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
 }

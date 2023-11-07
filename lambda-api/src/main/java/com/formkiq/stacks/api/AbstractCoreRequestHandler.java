@@ -94,6 +94,9 @@ import com.formkiq.stacks.api.handler.OnlyOfficeSaveRequestHandler;
 import com.formkiq.stacks.api.handler.PrivateWebhooksRequestHandler;
 import com.formkiq.stacks.api.handler.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.PublicWebhooksRequestHandler;
+import com.formkiq.stacks.api.handler.QueueDocumentsRequestHandler;
+import com.formkiq.stacks.api.handler.QueueIdRequestHandler;
+import com.formkiq.stacks.api.handler.QueuesRequestHandler;
 import com.formkiq.stacks.api.handler.SearchFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.SitesRequestHandler;
@@ -138,32 +141,20 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
   /**
-   * Initialize.
-   * 
-   * @param serviceCache {@link AwsServiceCache}
-   * @param plugin {@link DocumentTagSchemaPlugin}
-   */
-  public static void initialize(final AwsServiceCache serviceCache,
-      final DocumentTagSchemaPlugin plugin) {
-
-    registerExtensions(serviceCache, plugin);
-
-    if (serviceCache.hasModule("typesense")) {
-      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
-    }
-
-    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
-
-    buildUrlMap();
-  }
-
-  /**
    * Add Url Request Handler Mapping.
    * 
    * @param handler {@link ApiGatewayRequestHandler}
    */
   public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
     URL_MAP.put(handler.getRequestUrl(), handler);
+  }
+
+  private static void addWorkflowEndpoints() {
+    addRequestHandler(new WorkflowsRequestHandler());
+    addRequestHandler(new WorkflowsIdRequestHandler());
+    addRequestHandler(new QueuesRequestHandler());
+    addRequestHandler(new QueueIdRequestHandler());
+    addRequestHandler(new QueueDocumentsRequestHandler());
   }
 
   /**
@@ -216,8 +207,27 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
     addRequestHandler(new GroupsRequestHandler());
     addRequestHandler(new GroupsUsersRequestHandler());
-    addRequestHandler(new WorkflowsRequestHandler());
-    addRequestHandler(new WorkflowsIdRequestHandler());
+    addWorkflowEndpoints();
+  }
+
+  /**
+   * Initialize.
+   * 
+   * @param serviceCache {@link AwsServiceCache}
+   * @param plugin {@link DocumentTagSchemaPlugin}
+   */
+  public static void initialize(final AwsServiceCache serviceCache,
+      final DocumentTagSchemaPlugin plugin) {
+
+    registerExtensions(serviceCache, plugin);
+
+    if (serviceCache.hasModule("typesense")) {
+      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
+    }
+
+    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
+
+    buildUrlMap();
   }
 
   /**

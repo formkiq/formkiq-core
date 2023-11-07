@@ -1776,7 +1776,139 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /queues/{queueName}/documents:
+          /queues:
+            get:
+              operationId: GetQueues
+              summary: Get queues
+              description: Get a listing of queues; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              tags:
+              - Document Workflows
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetQueuesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            post:
+              operationId: AddQueue
+              summary: Add queue
+              description: Creates a new Queue; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddQueueRequest'
+              responses:
+                '201':
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddQueueResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+          /queues/{queueId}:
+            get:
+              operationId: GetQueue
+              summary: Get queue
+              description: Get a queue; ONLY available with FormKiQ Enterprise
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/queueIdParam'
+              tags:
+              - Document Workflows
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetQueueResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            delete:
+              operationId: DeleteQueue
+              summary: Delete queue
+              description: Delete a Queue; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/queueIdParam'
+              responses:
+                '200':
+                  description: "200 OK"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: "string"
+                  content:
+                    application/json:
+                      schema:
+                        "$ref": "#/components/schemas/DeleteQueueResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /queues/{queueId}/documents:
             get:
               operationId: GetWorkflowQueueDocuments
               summary: Get list of documents in queue
@@ -1785,7 +1917,7 @@ Resources:
               - Document Workflows
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/queueNameParam'
+              - $ref: '#/components/parameters/queueIdParam'
               - $ref: '#/components/parameters/limitParam'
               - $ref: '#/components/parameters/nextParam'
               responses:
@@ -3083,10 +3215,10 @@ Resources:
               required: true
               schema:
                 type: string
-            queueNameParam:
-              name: queueName
+            queueIdParam:
+              name: queueId
               in: path
-              description: Queue Name
+              description: Queue Id
               required: true
               schema:
                 type: string
@@ -3289,6 +3421,26 @@ Resources:
                 indexKey:
                   type: "string"
                   description: "Folder Index Key"
+            GetQueuesResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                queues:
+                  type: "array"
+                  description: "List of queues"
+                  items:
+                    $ref: "#/components/schemas/Queue"
+            Queue:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                  description: "Name of Queue"
+                queueId:
+                  type: "string"
+                  description: "Queue identifier"
             GetWorkflowsResponse:
               type: "object"
               properties:
@@ -3300,6 +3452,12 @@ Resources:
                   description: "List of workflows"
                   items:
                     $ref: "#/components/schemas/WorkflowSummary"
+            GetQueueResponse:
+              type: "object"
+              properties:
+                name:
+                  description: "Queue name"
+                  type: "string"
             GetWorkflowResponse:
               type: "object"
               properties:
@@ -3309,8 +3467,6 @@ Resources:
                 description:
                   description: "Workflow description"
                   type: "string"
-                config:
-                  $ref: "#/components/schemas/WorkflowConfig"
                 steps:
                   description: "Workflow steps"
                   items:
@@ -3328,9 +3484,9 @@ Resources:
             WorkflowQueue:
               type: object
               properties:
-                name:
+                queueId:
                   type: "string"
-                  description: "Name of queue"
+                  description: "Queue Id"
                 ifApprovedStepId:
                   type: "string"
                   description: "If approved goto step id"
@@ -4715,6 +4871,12 @@ Resources:
                 apiKey:
                   type: "string"
                   description: "API Key Identifier"
+            DeleteQueueResponse:
+              type: object
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
             DeleteWorkflowResponse:
               type: object
               properties:
@@ -4907,6 +5069,14 @@ Resources:
                   type: "string"
                 previous:
                   type: "string"
+            AddQueueRequest:
+              type: "object"
+              required:
+                - name
+              properties:
+                name:
+                  description: "Queue name"
+                  type: "string"
             AddWorkflowRequest:
               type: "object"
               required:
@@ -4919,8 +5089,6 @@ Resources:
                 description:
                   description: "Workflow description"
                   type: "string"
-                config:
-                  $ref: "#/components/schemas/WorkflowConfig"
                 steps:
                   type: "array"
                   description: "Workflow Steps"
@@ -4947,9 +5115,9 @@ Resources:
               required:
                 - name
               properties:
-                name:
+                queueId:
                   type: "string"
-                  description: "Name of queue"
+                  description: "Queue Identifier"
                 ifApprovedStepId:
                   type: "string"
                   description: "If approved goto step id"
@@ -4959,16 +5127,12 @@ Resources:
                 approvalGroups:
                   items:
                     type: "string"
-            WorkflowConfig:
+            AddQueueResponse:
               type: "object"
               properties:
-                notificationType:
+                queueId:
                   type: "string"
-                  description: "Notification Type"
-                  default: "email"
-                  enum:
-                    - email
-                    - none
+                  description: "Queue Identifier"
             AddWorkflowResponse:
               type: "object"
               properties:
@@ -4992,12 +5156,12 @@ Resources:
             AddDocumentWorkflowDecisionsRequest:
               type: "object"
               required:
-                - queueName
+                - queueId
                 - decision
               properties:
-                queueName:
+                queueId:
                   type: "string"
-                  description: "Name of Queue"
+                  description: "Queue Identifier"
                 decision:
                   type: "string"
                   enum:

@@ -306,7 +306,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String name = "testqueue#" + documentId;
 
       List<Action> actions = Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe")
-          .parameters(Map.of(ActionParameters.PARAMETER_QUEUE_NAME, name)));
+          .parameters(Map.of(ActionParameters.PARAMETER_QUEUE_ID, name)));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =
