@@ -5159,6 +5159,9 @@
                 queueId:
                   type: string
                   description: Queue Identifier
+                comments:
+                  type: string
+                  description: Workflow decision comments
                 decision:
                   type: string
                   enum:
