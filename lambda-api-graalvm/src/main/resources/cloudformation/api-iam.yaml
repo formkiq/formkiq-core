@@ -4798,6 +4798,12 @@ Resources:
                 addPdfDetectedCharactersAsText:
                   type: "boolean"
                   description: "Rewrite PDF document, converting any Image text to searchable text"
+                ocrEngine:
+                  type: "string"
+                  description: "OCR: Engine to use for Optical character recognition"
+                  enum:
+                    - TESSERACT
+                    - TEXTRACT
             SetDocumentOcrRequest:
               required:
               - "content"

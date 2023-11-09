@@ -33,8 +33,10 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
@@ -42,9 +44,8 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.module.http.HttpService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.client.FormKiqClientV1;
-import com.formkiq.stacks.client.requests.GetDocumentOcrRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -57,12 +58,14 @@ public class DocumentContentFunction {
 
   /** S3 Documents Bucket. */
   private String documentsBucket;
-  /** {@link FormKiqClientV1}. */
-  private FormKiqClientV1 formkiqClient;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
   /** {@link S3Service}. */
   private S3Service s3Service;
+  /** {@link HttpService}. */
+  private HttpService http;
+  /** {@link String}. */
+  private String documentsIamUrl;
 
   /**
    * constructor.
@@ -71,8 +74,9 @@ public class DocumentContentFunction {
    */
   public DocumentContentFunction(final AwsServiceCache serviceCache) {
     this.s3Service = serviceCache.getExtension(S3Service.class);
-    this.formkiqClient = serviceCache.getExtension(FormKiqClientV1.class);
     this.documentsBucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
+    this.documentsIamUrl = serviceCache.environment("documentsIamUrl");
+    this.http = serviceCache.getExtension(HttpService.class);
   }
 
   /**
@@ -107,27 +111,38 @@ public class DocumentContentFunction {
 
     } else {
 
-      GetDocumentOcrRequest req = new GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
+      Map<String, String> parameters = new HashMap<>();
+      parameters.put("contentUrl", "true");
+      parameters.put("text", "true");
 
-      req.addQueryParameter("contentUrl", "true");
-      req.addQueryParameter("text", "true");
-
-      try {
-        HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
-
-        if (logger != null) {
-          logger.log("GET /documents/{documentId}/ocr response: " + response.body());
-        }
-
-        Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
-
-        if (map != null && map.containsKey("contentUrls")) {
-          urls = (List<String>) map.get("contentUrls");
-        }
-
-      } catch (InterruptedException e) {
-        throw new IOException(e);
+      if (siteId != null) {
+        parameters.put("siteId", siteId);
       }
+
+      String url = this.documentsIamUrl + "/documents/" + documentId + "/ocr";
+      // GetDocumentOcrRequest req = new
+      // GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
+
+      // req.addQueryParameter("contentUrl", "true");
+      // req.addQueryParameter("text", "true");
+
+      // try {
+      HttpResponse<String> response = this.http.get(url, Optional.empty(), Optional.of(parameters));
+      // HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
+
+      if (logger != null) {
+        logger.log("GET /documents/{documentId}/ocr response: " + response.body());
+      }
+
+      Map<String, Object> map = this.gson.fromJson(response.body(), Map.class);
+
+      if (map != null && map.containsKey("contentUrls")) {
+        urls = (List<String>) map.get("contentUrls");
+      }
+
+      // } catch (InterruptedException e) {
+      // throw new IOException(e);
+      // }
     }
 
     return urls;

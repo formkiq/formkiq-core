@@ -378,8 +378,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     this.context = new LambdaContextRecorder();
     this.logger = (LambdaLoggerRecorder) this.context.getLogger();
-    // this.handler = new DocumentsS3Update(map, null, dbBuilder, s3Builder, ssmBuilder,
-    // snsBuilder);
 
     for (String queue : Arrays.asList(sqsDocumentEventUrl)) {
       ReceiveMessageResponse response = sqsService.receiveMessages(queue);

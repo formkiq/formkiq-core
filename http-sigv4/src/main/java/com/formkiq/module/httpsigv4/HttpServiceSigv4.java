@@ -88,15 +88,23 @@ public class HttpServiceSigv4 implements HttpService {
    * @param uri URI
    * @param method {@link SdkHttpMethod}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Map}
    * @param payload {@link String}
    * @return {@link SdkHttpFullRequest.Builder}
    * @throws IOException IOException
    */
   private SdkHttpFullRequest.Builder buildRequest(final String uri, final SdkHttpMethod method,
-      final Optional<HttpHeaders> headers, final Optional<String> payload) throws IOException {
+      final Optional<HttpHeaders> headers, final Optional<Map<String, String>> parameters,
+      final Optional<String> payload) throws IOException {
 
     SdkHttpFullRequest.Builder requestBuilder =
         SdkHttpFullRequest.builder().uri(toUri(uri)).method(method);
+
+    if (parameters.isPresent()) {
+      for (Map.Entry<String, String> e : parameters.get().entrySet()) {
+        requestBuilder.appendRawQueryParameter(e.getKey(), e.getValue());
+      }
+    }
 
     if (headers.isPresent()) {
       for (Map.Entry<String, String> e : headers.get().getAll().entrySet()) {
@@ -113,11 +121,11 @@ public class HttpServiceSigv4 implements HttpService {
   }
 
   @Override
-  public HttpResponse<String> delete(final String url, final Optional<HttpHeaders> headers)
-      throws IOException {
+  public HttpResponse<String> delete(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
 
     SdkHttpFullRequest.Builder request =
-        buildRequest(url, SdkHttpMethod.DELETE, headers, Optional.empty());
+        buildRequest(url, SdkHttpMethod.DELETE, headers, parameters, Optional.empty());
     SdkHttpFullRequest req = sign(request);
     return execute(req);
   }
@@ -168,36 +176,45 @@ public class HttpServiceSigv4 implements HttpService {
   }
 
   @Override
-  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers)
-      throws IOException {
+  public HttpResponse<String> get(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
     SdkHttpFullRequest.Builder request =
-        buildRequest(url, SdkHttpMethod.GET, headers, Optional.empty());
+        buildRequest(url, SdkHttpMethod.GET, headers, parameters, Optional.empty());
     SdkHttpFullRequest req = sign(request);
     return execute(req);
   }
 
   @Override
   public HttpResponse<String> patch(final String url, final Optional<HttpHeaders> headers,
-      final String payload) throws IOException {
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
     SdkHttpFullRequest.Builder request =
-        buildRequest(url, SdkHttpMethod.PATCH, headers, Optional.of(payload));
+        buildRequest(url, SdkHttpMethod.PATCH, headers, parameters, Optional.of(payload));
     SdkHttpFullRequest req = sign(request);
     return execute(req);
   }
 
   @Override
   public HttpResponse<String> post(final String url, final Optional<HttpHeaders> headers,
-      final String payload) throws IOException {
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
     SdkHttpFullRequest.Builder request =
-        buildRequest(url, SdkHttpMethod.POST, headers, Optional.of(payload));
+        buildRequest(url, SdkHttpMethod.POST, headers, parameters, Optional.of(payload));
     SdkHttpFullRequest req = sign(request);
     return execute(req);
   }
 
   @Override
   public HttpResponse<String> put(final String url, final Optional<HttpHeaders> headers,
-      final Path payload) throws IOException {
+      final Optional<Map<String, String>> parameters, final Path payload) throws IOException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public HttpResponse<String> put(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters, final String payload) throws IOException {
+    SdkHttpFullRequest.Builder request =
+        buildRequest(url, SdkHttpMethod.PUT, headers, parameters, Optional.of(payload));
+    SdkHttpFullRequest req = sign(request);
+    return execute(req);
   }
 
   /**

@@ -101,7 +101,8 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response = this.service.post(url, Optional.of(headers), payload);
+    HttpResponse<String> response =
+        this.service.post(url, Optional.of(headers), Optional.empty(), payload);
 
     return response;
   }
@@ -121,7 +122,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response =
-        this.service.post(url, Optional.of(headers), this.json.toJson(payload));
+        this.service.post(url, Optional.of(headers), Optional.empty(), this.json.toJson(payload));
 
     return response;
   }
@@ -174,7 +175,8 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response = this.service.delete(url, Optional.of(headers));
+    HttpResponse<String> response =
+        this.service.delete(url, Optional.of(headers), Optional.empty());
 
     return response;
   }
@@ -202,7 +204,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response = this.service.get(url, Optional.of(headers));
+    HttpResponse<String> response = this.service.get(url, Optional.of(headers), Optional.empty());
 
     return response;
   }
@@ -229,7 +231,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
 
     HttpHeaders headers = getHeader();
 
-    HttpResponse<String> response = this.service.get(url, Optional.of(headers));
+    HttpResponse<String> response = this.service.get(url, Optional.of(headers), Optional.empty());
 
     List<String> list = Collections.emptyList();
 
@@ -269,7 +271,7 @@ public class TypeSenseServiceImpl implements TypeSenseService {
     HttpHeaders headers = getHeader();
 
     HttpResponse<String> response =
-        this.service.patch(url, Optional.of(headers), this.json.toJson(payload));
+        this.service.patch(url, Optional.of(headers), Optional.empty(), this.json.toJson(payload));
 
     return response;
   }
