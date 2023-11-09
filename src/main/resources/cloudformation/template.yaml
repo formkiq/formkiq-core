@@ -212,6 +212,10 @@ Resources:
     Properties:
       Location: storage/template.yaml
       Parameters:
+        TypesenseApiKey:
+          Ref: TypesenseApiKey
+        VpcStackName:
+          Ref: VpcStackName
         AppEnvironment: 
           Ref: AppEnvironment
         Partition:
