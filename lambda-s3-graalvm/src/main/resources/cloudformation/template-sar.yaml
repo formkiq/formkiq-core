@@ -33,6 +33,25 @@ Parameters:
   Partition:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
+    
+Conditions:
+        
+  HasVpcStackName:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: VpcStackName
+        - ''
+
+  HasTypesenseApiKey:
+    Fn::Not:
+      - Fn::Equals: 
+        - Ref: TypesenseApiKey
+        - ''
+        
+  CreateTypesenseResources: 
+    Fn::And:
+      - Condition: HasVpcStackName
+      - Condition: HasTypesenseApiKey
 
 Resources:
 
@@ -267,6 +286,11 @@ Resources:
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
           CHATGPT_API_COMPLETIONS_URL: "https://api.openai.com/v1/completions"
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -328,6 +352,11 @@ Resources:
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
@@ -414,6 +443,11 @@ Resources:
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          MODULE_typesense:
+            Fn::If:
+            - CreateTypesenseResources
+            - "true"
+            - "false"
       Role: 
         Fn::GetAtt:
         - S3LambdaRole
