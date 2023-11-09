@@ -50,8 +50,9 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
   @Test
   public void testPostPublicDocuments01() throws Exception {
     // given
-    setEnvironment("ENABLE_PUBLIC_URLS", "true");
-    createApiRequestHandler(getMap());
+    Map<String, String> map = new HashMap<>(getMap());
+    map.put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(map);
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-documents03.json");
     event.getRequestContext().setAuthorizer(new HashMap<>());
@@ -92,8 +93,9 @@ public class ApiDocumentsPublicDocumentsRequestTest extends AbstractRequestHandl
   @Test
   public void testPostPublicForms02() throws Exception {
     // given
-    setEnvironment("ENABLE_PUBLIC_URLS", "true");
-    createApiRequestHandler(getMap());
+    Map<String, String> map = new HashMap<>(getMap());
+    map.put("ENABLE_PUBLIC_URLS", "true");
+    createApiRequestHandler(map);
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-post-public-documents03.json");
     setCognitoGroup(event, "admins");
