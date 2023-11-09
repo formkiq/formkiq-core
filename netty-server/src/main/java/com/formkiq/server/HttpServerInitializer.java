@@ -260,6 +260,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("SNS_DOCUMENT_EVENT", "");
     env.put("DEBUG", "false");
+    env.put("DOCUMENTS_IAM_URL", "http://localhost:8080");
 
     env.put("MODULE_typesense", "true");
     env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));

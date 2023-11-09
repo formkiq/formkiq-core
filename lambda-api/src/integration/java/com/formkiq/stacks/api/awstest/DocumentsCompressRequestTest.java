@@ -184,10 +184,10 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     HttpResponse<String> response1 =
-        this.http.put(upload1.getUrl(), Optional.empty(), file1.toPath());
+        this.http.put(upload1.getUrl(), Optional.empty(), Optional.empty(), file1.toPath());
 
     HttpResponse<String> response2 =
-        this.http.put(upload2.getUrl(), Optional.empty(), file2.toPath());
+        this.http.put(upload2.getUrl(), Optional.empty(), Optional.empty(), file2.toPath());
 
     // then
     assertTrue(HttpResponseStatus.is2XX(response1));

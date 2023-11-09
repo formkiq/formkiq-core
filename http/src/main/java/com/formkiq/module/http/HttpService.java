@@ -26,6 +26,7 @@ package com.formkiq.module.http;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,54 +41,74 @@ public interface HttpService {
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> delete(String url, Optional<HttpHeaders> headers) throws IOException;
+  HttpResponse<String> delete(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters) throws IOException;
 
   /**
-   * GET HTTP Request and return a {@link String}.
+   * GET HTTP Request and return a {@link HttpResponse}.
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> get(String url, Optional<HttpHeaders> headers) throws IOException;
+  HttpResponse<String> get(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters) throws IOException;
 
   /**
-   * Patch HTTP Request and return a {@link String}.
+   * Patch HTTP Request and return a {@link HttpResponse}.
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
    * @param payload {@link String}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> patch(String url, Optional<HttpHeaders> headers, String payload)
-      throws IOException;
+  HttpResponse<String> patch(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters, String payload) throws IOException;
 
   /**
-   * Post HTTP Request and return a {@link String}.
+   * Post HTTP Request and return a {@link HttpResponse}.
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
    * @param payload {@link String}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> post(String url, Optional<HttpHeaders> headers, String payload)
-      throws IOException;
+  HttpResponse<String> post(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters, String payload) throws IOException;
 
   /**
-   * Post HTTP Request and return a {@link String}.
+   * Put HTTP Request and return a {@link HttpResponse}.
    * 
    * @param url {@link String}
    * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
+   * @param payload {@link Path}
+   * @return {@link HttpResponse} {@link Path}
+   * @throws IOException IOException
+   */
+  HttpResponse<String> put(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters, Path payload) throws IOException;
+
+  /**
+   * Put HTTP Request and return a {@link HttpResponse}.
+   * 
+   * @param url {@link String}
+   * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
    * @param payload {@link Path}
    * @return {@link HttpResponse} {@link String}
    * @throws IOException IOException
    */
-  HttpResponse<String> put(String url, Optional<HttpHeaders> headers, Path payload)
-      throws IOException;
+  HttpResponse<String> put(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters, String payload) throws IOException;
 }

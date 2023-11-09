@@ -358,7 +358,8 @@ public class DocumentTaggingAction implements DocumentAction {
     payload.put("prompt", createChatGptPrompt(logger, siteId, documentId, action));
 
     String url = this.serviceCache.environment("CHATGPT_API_COMPLETIONS_URL");
-    HttpResponse<String> response = this.http.post(url, headers, this.gson.toJson(payload));
+    HttpResponse<String> response =
+        this.http.post(url, headers, Optional.empty(), this.gson.toJson(payload));
     logger.log(String.format("{\"engine\":\"%s\",\"statusCode\":\"%s\",\"body\":\"%s\"}", "chatgpt",
         String.valueOf(response.statusCode()), response.body()));
 
