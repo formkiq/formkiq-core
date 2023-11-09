@@ -128,7 +128,7 @@ public class AwsServiceCache {
    * @return {@link AwsServiceCache}
    */
   public AwsServiceCache environment(final Map<String, String> map) {
-    this.environment = map;
+    this.environment = new HashMap<>(map);
     this.formKiQType = map.containsKey("FormKiQType") ? map.get("FormKiQType") : "core";
     return this;
   }

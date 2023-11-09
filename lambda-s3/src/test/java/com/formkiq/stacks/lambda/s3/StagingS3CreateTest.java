@@ -245,8 +245,8 @@ public class StagingS3CreateTest implements DbKeys {
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
-    awsServices =
-        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
+    awsServices = new AwsServiceCacheBuilder(Collections.unmodifiableMap(env),
+        TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
                 new SmsAwsServiceRegistry())
