@@ -33,6 +33,14 @@ Parameters:
   Partition:
     Description: The partition in which the resource is located. A partition is a group of AWS Regions
     Type: String
+
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name 
+    
+  TypesenseApiKey:
+    Type: String
+    Description: TypeSense API Key
     
 Conditions:
         
