@@ -108,6 +108,7 @@ public class DocumentsActionsRequestHandler
     return "/documents/{documentId}/actions";
   }
 
+
   @SuppressWarnings("unchecked")
   @Override
   public ApiRequestHandlerResponse post(final LambdaLogger logger,
@@ -126,36 +127,53 @@ public class DocumentsActionsRequestHandler
     List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
     List<Action> actions = toActions(list, userId);
 
-    ActionsValidator validator = new ActionsValidatorImpl();
+    validate(awsservice, siteId, actions);
 
-    ConfigService configsService = awsservice.getExtension(ConfigService.class);
-    DynamicObject configs = configsService.get(siteId);
-    List<Collection<ValidationError>> errors = validator.validation(actions, configs);
+    ActionsService service = awsservice.getExtension(ActionsService.class);
+    int idx = service.getActions(siteId, documentId).size();
 
-    Optional<Collection<ValidationError>> firstError =
-        errors.stream().filter(e -> !e.isEmpty()).findFirst();
-
-    if (firstError.isEmpty()) {
-
-      ActionsService service = awsservice.getExtension(ActionsService.class);
-      int idx = service.getActions(siteId, documentId).size();
-
-      for (Action a : actions) {
-        service.saveAction(siteId, documentId, a, idx);
-        idx++;
-      }
-
-      ActionsNotificationService notificationService =
-          awsservice.getExtension(ActionsNotificationService.class);
-      notificationService.publishNextActionEvent(actions, siteId, documentId);
-
-      ApiMapResponse resp = new ApiMapResponse();
-      resp.setMap(Map.of("message", "Actions saved"));
-      return new ApiRequestHandlerResponse(SC_OK, resp);
-
+    for (Action a : actions) {
+      service.saveAction(siteId, documentId, a, idx);
+      idx++;
     }
 
-    throw new ValidationException(firstError.get());
+    ActionsNotificationService notificationService =
+        awsservice.getExtension(ActionsNotificationService.class);
+    notificationService.publishNextActionEvent(actions, siteId, documentId);
+
+    ApiMapResponse resp = new ApiMapResponse();
+    resp.setMap(Map.of("message", "Actions saved"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public ApiRequestHandlerResponse put(final LambdaLogger logger,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.siteId();
+    String documentId = event.getPathParameters().get("documentId");
+    String userId = authorization.username();
+
+    DocumentItem item = getDocument(awsservice, siteId, documentId);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
+
+    Map<String, Object> body = fromBodyToMap(event);
+
+    List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
+    List<Action> actions = toActions(list, userId);
+
+    validate(awsservice, siteId, actions);
+
+    ActionsService service = awsservice.getExtension(ActionsService.class);
+    service.deleteActions(siteId, documentId);
+
+    service.saveActions(siteId, documentId, actions);
+
+    ApiMapResponse resp = new ApiMapResponse();
+    resp.setMap(Map.of("message", "Actions saved"));
+    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 
   @SuppressWarnings("unchecked")
@@ -180,5 +198,21 @@ public class DocumentsActionsRequestHandler
     });
 
     return actions;
+  }
+
+  private void validate(final AwsServiceCache awsservice, final String siteId,
+      final List<Action> actions) throws ValidationException {
+    ActionsValidator validator = new ActionsValidatorImpl();
+
+    ConfigService configsService = awsservice.getExtension(ConfigService.class);
+    DynamicObject configs = configsService.get(siteId);
+    List<Collection<ValidationError>> errors = validator.validation(actions, configs);
+
+    Optional<Collection<ValidationError>> firstError =
+        errors.stream().filter(e -> !e.isEmpty()).findFirst();
+
+    if (!firstError.isEmpty()) {
+      throw new ValidationException(firstError.get());
+    }
   }
 }

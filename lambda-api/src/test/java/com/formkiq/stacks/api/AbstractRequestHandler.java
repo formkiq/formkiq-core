@@ -209,8 +209,6 @@ public abstract class AbstractRequestHandler {
 
     createApiRequestHandler("cognito");
 
-    // this.awsServices = handler.getAwsServices();
-
     SqsService sqsservice = this.awsServices.getExtension(SqsService.class);
 
     for (String queue : Arrays.asList(TestServices.getSqsDocumentFormatsQueueUrl(null))) {
@@ -544,7 +542,7 @@ public abstract class AbstractRequestHandler {
    * @param value {@link String}
    */
   public void setEnvironment(final String key, final String value) {
-    this.map.put(key, value);
+    this.awsServices.environment().put(key, value);
   }
 
   /**
