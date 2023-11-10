@@ -32,10 +32,12 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -328,7 +330,7 @@ public class FkqDocumentService {
     GetDocumentActionsResponse response = null;
     DocumentActionsApi api = new DocumentActionsApi(client);
 
-    Optional<com.formkiq.client.model.DocumentAction> o = Optional.empty();
+    List<com.formkiq.client.model.DocumentAction> o = Collections.emptyList();
 
     while (o.isEmpty()) {
 
@@ -336,7 +338,12 @@ public class FkqDocumentService {
         response = api.getDocumentActions(documentId, siteId, null);
 
         o = response.getActions().stream().filter(a -> a.getStatus().equalsIgnoreCase(actionStatus))
-            .findAny();
+            .collect(Collectors.toList());
+
+        if (response.getActions().size() != o.size()) {
+          o = Collections.emptyList();
+        }
+
       } catch (ApiException e) {
         // ignore
       }

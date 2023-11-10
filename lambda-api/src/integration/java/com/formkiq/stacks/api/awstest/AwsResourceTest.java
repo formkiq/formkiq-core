@@ -60,9 +60,10 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.cognitoidentity.model.Credentials;
+import software.amazon.awssdk.services.cognitoidentity.model.NotAuthorizedException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
+
 
 /**
  * Test CloudFormation.
@@ -79,11 +80,13 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
   /** Cognito Identity Pool. */
   private static String cognitoIdentitypool;
   /** Cognito User Email. */
-  private static final String READONLY_EMAIL = "readonly@formkiq.com";
+  private static final String READONLY_EMAIL = "readonly5857@formkiq.com";
   /** Cognito User Email. */
-  private static final String USER_EMAIL = "testuser@formkiq.com";
+  private static final String USER_EMAIL = "testuser5857@formkiq.com";
   /** Cognito FINANCE User Email. */
-  private static final String FINANCE_EMAIL = "testfinance@formkiq.com";
+  private static final String FINANCE_EMAIL = "testfinance5857@formkiq.com";
+  /** Finance Group. */
+  private static final String FINANCE_GROUP = "testfinance5857";
 
   /**
    * BeforeAll.
@@ -107,7 +110,7 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
 
     addAndLoginCognito(READONLY_EMAIL, Arrays.asList("default_read"));
     addAndLoginCognito(USER_EMAIL, Arrays.asList(DEFAULT_SITE_ID));
-    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList("finance"));
+    addAndLoginCognito(FINANCE_EMAIL, Arrays.asList(FINANCE_GROUP));
   }
 
   /**
