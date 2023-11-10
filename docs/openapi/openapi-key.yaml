@@ -1651,6 +1651,7 @@
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/nextParam'
               - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/statusParam'
               tags:
               - Document Workflows
               responses:
@@ -1770,6 +1771,51 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/DeleteWorkflowResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+            put:
+              operationId: SetWorkflow
+              summary: Add workflow
+              description: Set a Workflow details; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetWorkflowRequest'
+              responses:
+                "200":
+                  description: 20) OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetWorkflowResponse'
+                "400":
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3170,6 +3216,13 @@
               required: true
               schema:
                 type: string
+            statusParam:
+              name: status
+              in: query
+              description: Filters Status
+              required: false
+              schema:
+                type: string
             limitParam:
               name: limit
               in: query
@@ -3465,6 +3518,11 @@
                 description:
                   description: Workflow description
                   type: string
+                status:
+                  type: string
+                  enum:
+                  - ACTIVE
+                  - INACTIVE
                 steps:
                   description: Workflow steps
                   items:
@@ -3512,6 +3570,12 @@
                 userId:
                   type: string
                   description: User who created workflow
+                status:
+                  type: string
+                  enum:
+                  - ACTIVE
+                  - INACTIVE
+                  description: Type of Document
             GetUserSharesResponse:
               type: object
               properties:
@@ -5080,6 +5144,28 @@
                 name:
                   description: Queue name
                   type: string
+            SetWorkflowRequest:
+              type: object
+              required:
+              - name
+              - steps
+              properties:
+                name:
+                  description: Workflow name
+                  type: string
+                description:
+                  description: Workflow description
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - ACTIVE
+                  - INACTIVE
+                steps:
+                  type: array
+                  description: Workflow Steps
+                  items:
+                    $ref: '#/components/schemas/AddWorkflowStep'
             AddWorkflowRequest:
               type: object
               required:
@@ -5092,6 +5178,11 @@
                 description:
                   description: Workflow description
                   type: string
+                status:
+                  type: string
+                  enum:
+                  - ACTIVE
+                  - INACTIVE
                 steps:
                   type: array
                   description: Workflow Steps
@@ -5136,6 +5227,12 @@
                 queueId:
                   type: string
                   description: Queue Identifier
+            SetWorkflowResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Result message
             AddWorkflowResponse:
               type: object
               properties:
@@ -5458,16 +5555,18 @@
                   description: Message response
           securitySchemes:
             ApiAuthorization:
-              type: oauth2
-              flows: {}
+              type: apiKey
+              name: Authorization
+              in: header
+              x-amazon-apigateway-authtype: Custom API Key
               x-amazon-apigateway-authorizer:
-                type: jwt
-                jwtConfiguration:
-                  issuer:
-                    Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-                  audience:
-                  - Fn::Sub: ${CognitoUserPoolClient}
                 identitySource: $request.header.Authorization
+                authorizerUri:
+                  Fn::Sub: arn:${Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+                authorizerResultTtlInSeconds: 300
+                authorizerPayloadFormatVersion: "2.0"
+                enableSimpleResponses: true
+                type: request
           x-amazon-apigateway-integrations:
             lambdaApi200:
               uri:
