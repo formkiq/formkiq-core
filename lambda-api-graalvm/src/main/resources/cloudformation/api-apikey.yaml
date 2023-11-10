@@ -1785,6 +1785,7 @@ Resources:
               - Document Workflows
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
               requestBody:
                 required: true
                 content:
@@ -3224,7 +3225,10 @@ Resources:
               description: Filters Status
               required: false
               schema:
-                type: string            
+                type: string
+                enum:
+                  - ACTIVE
+                  - INACTIVE
             limitParam:
               name: limit
               in: query
@@ -5151,6 +5155,7 @@ Resources:
               type: "object"
               required:
                 - name
+                - status
                 - steps
               properties:
                 name:
@@ -5173,6 +5178,7 @@ Resources:
               type: "object"
               required:
                 - name
+                - status
                 - steps
               properties:
                 name:

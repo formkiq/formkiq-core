@@ -240,7 +240,7 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
 
       try {
         // when
-        this.workflowApi.getWorkflows(null, null, siteId);
+        this.workflowApi.getWorkflows(siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
