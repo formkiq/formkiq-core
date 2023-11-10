@@ -50,8 +50,6 @@ import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.GetDocumentActionsResponse;
-import com.formkiq.client.model.SetDocumentActionsRequest;
-import com.formkiq.client.model.SetDocumentActionsResponse;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -355,77 +353,6 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       List<Action> actions = this.service.getActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals(ActionType.NOTIFICATION, actions.get(0).type());
-    }
-  }
-
-  /**
-   * PUT /documents/{documentId}/actions request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePutDocumentActions01() throws Exception {
-
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
-
-      this.service.saveActions(siteId, documentId,
-          Arrays.asList(new Action().userId("joe").status(ActionStatus.COMPLETE)
-              .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
-
-      GetDocumentActionsResponse actions =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
-      assertEquals(1, actions.getActions().size());
-      assertEquals("fulltext", actions.getActions().get(0).getType());
-
-      SetDocumentActionsRequest req = new SetDocumentActionsRequest().actions(Arrays.asList(
-          new AddAction().type(TypeEnum.OCR)
-              .parameters(new AddActionParameters().ocrParseTypes("text")),
-          new AddAction().type(TypeEnum.WEBHOOK)
-              .parameters(new AddActionParameters().url("https://localhost"))));
-
-      // when
-      SetDocumentActionsResponse response =
-          this.documentActionsApi.setDocumentActions(documentId, siteId, req);
-
-      // then
-      assertEquals("Actions saved", response.getMessage());
-
-      actions = this.documentActionsApi.getDocumentActions(documentId, siteId, null);
-      assertEquals(2, actions.getActions().size());
-      assertEquals("ocr", actions.getActions().get(0).getType());
-      assertEquals("webhook", actions.getActions().get(1).getType());
-    }
-  }
-
-  /**
-   * PUT /documents/{documentId}/actions request validation error.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePutDocumentActions02() throws Exception {
-
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-      // given
-      setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
-
-      SetDocumentActionsRequest req =
-          new SetDocumentActionsRequest().actions(Arrays.asList(new AddAction()));
-
-      // when
-      try {
-        this.documentActionsApi.setDocumentActions(documentId, siteId, req);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
-            e.getResponseBody());
-      }
-
     }
   }
 }

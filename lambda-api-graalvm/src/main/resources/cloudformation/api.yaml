@@ -1254,45 +1254,6 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-            put:
-              operationId: SetDocumentActions
-              summary: Set document action
-              description: Set one or more actions to a document; this replaces previous actions
-              tags:
-              - Document Actions
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              requestBody:
-                required: false
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/SetDocumentActionsRequest'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/SetDocumentActionsResponse'
-                '400':
-                  description: 400 OK
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/ValidationErrorsResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /documents/{documentId}/ocr:
             get:
               operationId: GetDocumentOcr
@@ -4662,12 +4623,6 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
-            SetDocumentActionsResponse:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Document Action message                  
             AddDocumentActionsResponse:
               type: object
               properties:
@@ -4749,14 +4704,6 @@ Resources:
                 message:
                   type: string
                   description: Antivirus processing message
-            SetDocumentActionsRequest:
-              type: object
-              properties:
-                actions:
-                  type: array
-                  description: "List of Actions"
-                  items:
-                    $ref: "#/components/schemas/AddAction"
             AddDocumentActionsRequest:
               type: object
               properties:
