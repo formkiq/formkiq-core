@@ -147,36 +147,6 @@ public class DocumentsActionsRequestHandler
   }
 
   @SuppressWarnings("unchecked")
-  @Override
-  public ApiRequestHandlerResponse put(final LambdaLogger logger,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.siteId();
-    String documentId = event.getPathParameters().get("documentId");
-    String userId = authorization.username();
-
-    DocumentItem item = getDocument(awsservice, siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
-
-    Map<String, Object> body = fromBodyToMap(event);
-
-    List<Map<String, Object>> list = (List<Map<String, Object>>) body.get("actions");
-    List<Action> actions = toActions(list, userId);
-
-    validate(awsservice, siteId, actions);
-
-    ActionsService service = awsservice.getExtension(ActionsService.class);
-    service.deleteActions(siteId, documentId);
-
-    service.saveActions(siteId, documentId, actions);
-
-    ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Actions saved"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
-  }
-
-  @SuppressWarnings("unchecked")
   private List<Action> toActions(final List<Map<String, Object>> list, final String userId) {
     List<Action> actions = new ArrayList<>(list.size());
 
