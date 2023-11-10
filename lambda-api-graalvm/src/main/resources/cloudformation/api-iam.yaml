@@ -1653,6 +1653,7 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/nextParam'
               - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/statusParam'
               tags:
               - Document Workflows
               responses:
@@ -1772,6 +1773,51 @@ Resources:
                     application/json:
                       schema:
                         "$ref": "#/components/schemas/DeleteWorkflowResponse"
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+            put:
+              operationId: SetWorkflow
+              summary: Add workflow
+              description: Set a Workflow details; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetWorkflowRequest'
+              responses:
+                '200':
+                  description: 20) OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetWorkflowResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3172,6 +3218,13 @@ Resources:
               required: true
               schema:
                 type: string
+            statusParam:
+              name: status
+              in: query
+              description: Filters Status
+              required: false
+              schema:
+                type: string            
             limitParam:
               name: limit
               in: query
@@ -3467,6 +3520,11 @@ Resources:
                 description:
                   description: "Workflow description"
                   type: "string"
+                status:
+                  type: "string"
+                  enum:
+                    - ACTIVE
+                    - INACTIVE
                 steps:
                   description: "Workflow steps"
                   items:
@@ -3514,6 +3572,12 @@ Resources:
                 userId:
                   type: "string"
                   description: "User who created workflow"
+                status:
+                  type: "string"
+                  enum:
+                    - ACTIVE
+                    - INACTIVE
+                  description: "Type of Document"
             GetUserSharesResponse:
               type: "object"
               properties:
@@ -5083,6 +5147,28 @@ Resources:
                 name:
                   description: "Queue name"
                   type: "string"
+            SetWorkflowRequest:
+              type: "object"
+              required:
+                - name
+                - steps
+              properties:
+                name:
+                  description: "Workflow name"
+                  type: "string"
+                description:
+                  description: "Workflow description"
+                  type: "string"
+                status:
+                  type: "string"
+                  enum:
+                    - ACTIVE
+                    - INACTIVE
+                steps:
+                  type: "array"
+                  description: "Workflow Steps"
+                  items:
+                    $ref: "#/components/schemas/AddWorkflowStep"
             AddWorkflowRequest:
               type: "object"
               required:
@@ -5095,6 +5181,11 @@ Resources:
                 description:
                   description: "Workflow description"
                   type: "string"
+                status:
+                  type: "string"
+                  enum:
+                    - ACTIVE
+                    - INACTIVE
                 steps:
                   type: "array"
                   description: "Workflow Steps"
@@ -5139,6 +5230,12 @@ Resources:
                 queueId:
                   type: "string"
                   description: "Queue Identifier"
+            SetWorkflowResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Result message"
             AddWorkflowResponse:
               type: "object"
               properties:
