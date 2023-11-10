@@ -126,6 +126,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
     }
   }
 
@@ -152,7 +153,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       // then
       fail();
     } catch (ApiException e) {
-      assertEquals(ApiResponseStatus.SC_FORBIDDEN.getStatusCode(), e.getCode());
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
     }
   }
 
