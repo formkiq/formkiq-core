@@ -1783,6 +1783,7 @@
               - Document Workflows
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
               requestBody:
                 required: true
                 content:
@@ -3223,6 +3224,9 @@
               required: false
               schema:
                 type: string
+                enum:
+                - ACTIVE
+                - INACTIVE
             limitParam:
               name: limit
               in: query
@@ -5148,6 +5152,7 @@
               type: object
               required:
               - name
+              - status
               - steps
               properties:
                 name:
@@ -5170,6 +5175,7 @@
               type: object
               required:
               - name
+              - status
               - steps
               properties:
                 name:
