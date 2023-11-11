@@ -36,6 +36,18 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public interface DynamodbRecord<T> {
 
   /**
+   * Convert {@link Map} {@link AttributeValue}.
+   * 
+   * @param attrs {@link Map} {@link AttributeValue}
+   * @param key {@link String}
+   * @return {@link Boolean}
+   */
+  default Boolean bb(final Map<String, AttributeValue> attrs, final String key) {
+    AttributeValue av = attrs.get(key);
+    return av != null ? av.bool() : null;
+  }
+
+  /**
    * Get {@link AttributeValue} {@link Map}.
    * 
    * @param siteId {@link String}
