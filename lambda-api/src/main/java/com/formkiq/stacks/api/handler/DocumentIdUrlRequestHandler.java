@@ -38,6 +38,7 @@ import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
@@ -148,13 +149,16 @@ public class DocumentIdUrlRequestHandler
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 
+    String filename = Strings.getFilename(item.getPath());
     PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), inline);
+        new PresignGetUrlConfig().contentDispositionByPath(filename, inline);
 
     if (contentType == null || contentType.equals(item.getContentType())) {
 
-      logger.log("Found default format " + contentType + " for siteId: " + siteId + " documentId: "
-          + documentId);
+      if (awsservice.debug()) {
+        logger.log("Found default format " + contentType + " for siteId: " + siteId
+            + " documentId: " + documentId);
+      }
 
       config.contentType(item.getContentType());
       String s3key = createS3Key(siteId, documentId);
