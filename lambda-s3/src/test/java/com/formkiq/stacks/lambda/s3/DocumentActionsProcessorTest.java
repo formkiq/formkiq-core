@@ -288,8 +288,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      assertEquals(ActionStatus.FAILED,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(1, list.size());
+      assertEquals(ActionStatus.FAILED, list.get(0).status());
+      assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
     }
   }
 
@@ -411,8 +413,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      assertEquals(ActionStatus.FAILED,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(1, list.size());
+      assertEquals(ActionStatus.FAILED, list.get(0).status());
+      assertEquals("Unknown engine: unknown", list.get(0).message());
     }
   }
 
@@ -929,6 +933,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(1, actions.size());
       Action action = actions.get(0);
       assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.model."
+          + "DocumentItem.getDocumentId()\" because \"item\" is null", action.message());
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
     }
@@ -1276,8 +1282,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionType.OCR, list.get(0).type());
       assertNull(list.get(0).parameters());
       assertEquals(ActionStatus.COMPLETE, list.get(0).status());
+      assertNull(list.get(0).message());
       assertEquals(ActionType.FULLTEXT, list.get(1).type());
       assertEquals(ActionStatus.FAILED, list.get(1).status());
+      assertEquals("no OCR document found", list.get(1).message());
     }
   }
 }

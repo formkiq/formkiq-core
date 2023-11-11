@@ -306,6 +306,10 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, AttributeValueUpdate> updates = new HashMap<>();
     updates.put("status", AttributeValueUpdate.builder().value(attrs.get("status")).build());
 
+    if (action.message() != null) {
+      updates.put("message", AttributeValueUpdate.builder().value(attrs.get("message")).build());
+    }
+
     if (action.completedDate() != null) {
       updates.put("completedDate",
           AttributeValueUpdate.builder().value(attrs.get("completedDate")).build());
