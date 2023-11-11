@@ -27,6 +27,7 @@ import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -81,7 +82,9 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
         setPathParameter(event, "documentId", documentId);
         addHeader(event, "Content-Type", contentType);
 
+        String filename = "file_" + UUID.randomUUID() + ".pdf";
         DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+        item.setPath("/somepath/" + filename);
         if ("text/plain".equals(contentType)) {
           item.setContentType(contentType);
         }
@@ -100,6 +103,9 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
         assertEquals(getHeaders(),
             "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
         ApiUrlResponse resp = fromJson(m.get("body"), ApiUrlResponse.class);
+
+        URI uri = new URI(resp.getUrl());
+        assertTrue(uri.getQuery().contains("filename=\"" + filename + "\""));
 
         assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
         assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
