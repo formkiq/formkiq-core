@@ -44,7 +44,7 @@ public interface DynamodbRecord<T> {
    */
   default Boolean bb(final Map<String, AttributeValue> attrs, final String key) {
     AttributeValue av = attrs.get(key);
-    return av != null ? av.bool() : null;
+    return av != null ? av.bool() : Boolean.FALSE;
   }
 
   /**
