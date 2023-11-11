@@ -3524,6 +3524,9 @@ Resources:
                 description:
                   description: "Workflow description"
                   type: "string"
+                inUse:
+                  type: "boolean"
+                  description: "Whether the Workflow is in use"
                 status:
                   type: "string"
                   enum:
@@ -3576,6 +3579,9 @@ Resources:
                 userId:
                   type: "string"
                   description: "User who created workflow"
+                inUse:
+                  type: "boolean"
+                  description: "Whether the Workflow is in use"
                 status:
                   type: "string"
                   enum:
