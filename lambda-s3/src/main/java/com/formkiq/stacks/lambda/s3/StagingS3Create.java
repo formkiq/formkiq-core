@@ -156,14 +156,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** {@link ActionsService}. */
   private static ActionsService actionsService;
-  // /** App Environment. */
-  // private static String appEnvironment;
-  // /** {@link AwsServiceCache}. */
-  // private AwsServiceCache awsservices;
   /** {@link String}. */
   private static String documentsBucket;
-  // /** IAM Documents Url. */
-  // private String documentsIamUrl = null;
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcesor;
   /** {@link Gson}. */
@@ -340,36 +334,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     return doc;
   }
 
-  // /**
-  // * Build connection to the IAM API url.
-  // */
-  // private void createFormKiQConnectionIfNeeded() {
-  //
-  // if (this.documentsIamUrl == null) {
-  // final int cacheTime = 5;
-  // SsmConnectionBuilder ssmConnection =
-  // this.awsservices.getExtension(SsmConnectionBuilder.class);
-  // SsmService ssmService = new SsmServiceCache(ssmConnection, cacheTime, TimeUnit.MINUTES);
-  //
-  // try (SsmClient ssmClient = ssmConnection.build()) {
-  // this.documentsIamUrl =
-  // ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
-  // }
-  // }
-
-  // if (this.formkiqClient == null) {
-  // FormKiqClientConnection fkqConnection =
-  // new FormKiqClientConnection(this.documentsIamUrl).region(this.awsservices.region());
-  //
-  // AwsCredentials credentials = this.awsservices.getExtension(AwsCredentials.class);
-  // if (credentials != null) {
-  // fkqConnection = fkqConnection.credentials(credentials);
-  // }
-  //
-  // this.formkiqClient = new FormKiqClientV1(fkqConnection);
-  // }
-  // }
-
   /**
    * Delete S3 Object.
    *
@@ -514,22 +478,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (!tags.isEmpty()) {
 
-      // List<AddDocumentTag> addTags = tags.stream().map(t -> {
-      //
-      // List<String> values = t.containsKey("values") ? values = t.getStringList("values") : null;
-      //
-      // AddDocumentTag tag =
-      // new AddDocumentTag().key(t.getString("key")).value(t.getString("value")).values(values);
-      //
-      // return tag;
-      //
-      // }).collect(Collectors.toList());
-
       String documentId = doc.getDocumentId();
-      // AddDocumentTagRequest req =
-      // new AddDocumentTagRequest().siteId(siteId).documentId(documentId).tags(addTags);
-
-      // String url = en
       String url =
           serviceCache.environment("DOCUMENTS_IAM_URL") + "/documents/" + documentId + "/tags";
       HttpService http = serviceCache.getExtension(HttpService.class);

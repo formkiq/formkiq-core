@@ -4649,6 +4649,9 @@
                 type:
                   type: string
                   description: Type of Document Action
+                message:
+                  type: string
+                  description: Action message information
                 userId:
                   type: string
                   description: User who requested the Action

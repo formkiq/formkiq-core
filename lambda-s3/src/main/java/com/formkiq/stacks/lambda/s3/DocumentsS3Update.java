@@ -489,9 +489,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           String u =
               serviceCache.environment("DOCUMENTS_IAM_URL") + "/documents/" + documentId + "/ocr";
           HttpResponse<String> response = http.delete(u, Optional.empty(), parameters);
-          // HttpResponse<String> deleteDocumentHttpResponse =
-          // fkClient.deleteDocumentOcrAsHttpResponse(
-          // new DeleteDocumentOcrRequest().siteId(siteId).documentId(documentId));
+
           checkResponse("ocr", siteId, documentId, response);
         }
 
@@ -499,9 +497,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
           String u = serviceCache.environment("DOCUMENTS_IAM_URL") + "/documents/" + documentId
               + "/fulltext";
           HttpResponse<String> response = http.delete(u, Optional.empty(), parameters);
-          // HttpResponse<String> deleteDocumentFulltext =
-          // fkClient.deleteDocumentFulltextAsHttpResponse(
-          // new DeleteDocumentFulltextRequest().siteId(siteId).documentId(documentId));
+
           checkResponse("opensearch", siteId, documentId, response);
         }
       }

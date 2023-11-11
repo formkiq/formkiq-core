@@ -51,6 +51,8 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   private String index = null;
   /** Record inserted date. */
   private Date insertedDate;
+  /** Action Message. */
+  private String message;
   /** Action Metadata. */
   private Map<String, String> metadata;
   /** Action Parameters. */
@@ -138,13 +140,18 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put("completedDate", AttributeValue.fromS(df.format(this.completedDate)));
     }
 
+    if (this.message != null) {
+      attrs.put("message", fromS(this.message));
+    }
+
     return attrs;
   }
 
   @Override
   public Action getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
 
-    Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"));
+    Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))
+        .message(ss(attrs, "message"));
 
     if (attrs.containsKey("status")) {
       record.status(ActionStatus.valueOf(ss(attrs, "status")));
@@ -226,6 +233,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action insertedDate(final Date date) {
     this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Get Action Message.
+   * 
+   * @return {@link String}
+   */
+  public String message() {
+    return this.message;
+  }
+
+  /**
+   * Set Action Message.
+   * 
+   * @param actionMessage {@link String}
+   * @return {@link Action}
+   */
+  public Action message(final String actionMessage) {
+    this.message = actionMessage;
     return this;
   }
 
