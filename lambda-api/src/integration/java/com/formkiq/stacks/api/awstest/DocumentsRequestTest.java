@@ -229,7 +229,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       String date = this.df.format(new Date());
 
       // when
-      GetDocumentsResponse response = api.getDocuments(date, null, null, null, null, null);
+      GetDocumentsResponse response = api.getDocuments(null, null, date, null, null, null, null);
 
       // then
       assertNotNull(response.getDocuments());
@@ -252,14 +252,15 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     DocumentsApi api = new DocumentsApi(client);
 
     // when
-    GetDocumentsResponse responseNoSiteId = api.getDocuments(null, null, null, null, null, null);
+    GetDocumentsResponse responseNoSiteId =
+        api.getDocuments(null, null, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
     try {
-      api.getDocuments(null, null, null, null, siteId, null);
+      api.getDocuments(siteId, null, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -286,14 +287,15 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     String date = this.df.format(new Date());
 
     // when
-    GetDocumentsResponse responseNoSiteId = api.getDocuments(date, null, null, null, null, null);
+    GetDocumentsResponse responseNoSiteId =
+        api.getDocuments(null, null, date, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
     try {
-      api.getDocuments(date, null, null, null, siteId, null);
+      api.getDocuments(siteId, null, date, null, null, null, null);
     } catch (ApiException e) {
       assertEquals(STATUS_FORBIDDEN, e.getCode());
       assertEquals("{\"message\":\"fkq access denied (groups: default (DELETE,READ,WRITE))\"}",
@@ -317,8 +319,10 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     String date = this.df.format(new Date());
 
     // when
-    GetDocumentsResponse responseNoSiteId = api.getDocuments(date, null, null, null, null, null);
-    GetDocumentsResponse responseSiteId = api.getDocuments(date, null, null, null, siteId, null);
+    GetDocumentsResponse responseNoSiteId =
+        api.getDocuments(null, null, date, null, null, null, null);
+    GetDocumentsResponse responseSiteId =
+        api.getDocuments(siteId, null, date, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
@@ -341,8 +345,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     String date = this.df.format(new Date());
 
     // when
-    GetDocumentsResponse results0 = api.getDocuments(date, null, null, null, null, null);
-    GetDocumentsResponse results1 = api.getDocuments(date, null, null, null, siteId, null);
+    GetDocumentsResponse results0 = api.getDocuments(null, null, date, null, null, null, null);
+    GetDocumentsResponse results1 = api.getDocuments(siteId, null, date, null, null, null, null);
 
     // then
     assertNotNull(results0.getDocuments());

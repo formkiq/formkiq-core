@@ -59,6 +59,8 @@ public class ActionsServiceDynamoDbTest {
 
   /** {@link DocumentService}. */
   private static DocumentService documentService;
+  /** Limit. */
+  private static final int LIMIT = 10;
   /** {@link ActionsService}. */
   private static ActionsService service;
 
@@ -242,7 +244,6 @@ public class ActionsServiceDynamoDbTest {
       action0.status(ActionStatus.FAILED);
 
       // when
-      // service.updateActionStatus(siteId, documentId0, action0, 0);
       service.updateActionStatus(siteId, documentId0, action0);
 
       // then
@@ -338,6 +339,9 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
+      PaginationResults<String> results =
+          service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
+      assertEquals(0, results.getResults().size());
     }
   }
 
@@ -348,7 +352,6 @@ public class ActionsServiceDynamoDbTest {
   public void testUpdateActionStatus02() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      final int limit = 10;
       String name = "queue1234";
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
@@ -364,9 +367,16 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, limit);
+      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(1, docs.getResults().size());
       assertNotNull(service.findActionInQueue(siteId, documentId, name));
+
+      PaginationResults<String> results =
+          service.findDocumentsWithStatus(siteId, ActionStatus.IN_QUEUE, null, LIMIT);
+      assertEquals(1, results.getResults().size());
+      assertEquals(documentId, results.getResults().get(0));
+
+      // given
       action0.status(ActionStatus.COMPLETE);
 
       // when
@@ -374,9 +384,12 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
-      docs = service.findDocumentsInQueue(siteId, name, null, limit);
+      docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
+
+      results = service.findDocumentsWithStatus(siteId, ActionStatus.COMPLETE, null, LIMIT);
+      assertEquals(0, results.getResults().size());
     }
   }
 
@@ -387,7 +400,6 @@ public class ActionsServiceDynamoDbTest {
   public void testUpdateActionStatus03() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      final int limit = 10;
       String name = "queue1234";
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
@@ -403,9 +415,17 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, limit);
+      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
+
+      PaginationResults<String> results =
+          service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
+      assertEquals(1, results.getResults().size());
+      assertEquals(documentId, results.getResults().get(0));
+
+      results = service.findDocumentsWithStatus(siteId, ActionStatus.PENDING, null, LIMIT);
+      assertEquals(0, results.getResults().size());
     }
   }
 }

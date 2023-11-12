@@ -337,7 +337,8 @@ public class FkqDocumentService {
       try {
         response = api.getDocumentActions(documentId, siteId, null);
 
-        o = response.getActions().stream().filter(a -> a.getStatus().equalsIgnoreCase(actionStatus))
+        o = response.getActions().stream()
+            .filter(a -> a.getStatus().name().equalsIgnoreCase(actionStatus))
             .collect(Collectors.toList());
 
         if (response.getActions().size() != o.size()) {

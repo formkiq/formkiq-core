@@ -134,7 +134,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
         GetDocumentActionsResponse actions =
             actionsApi.getDocumentActions(documentId, siteId, null);
         assertEquals(1, actions.getActions().size());
-        assertEquals("complete", actions.getActions().get(0).getStatus());
+        assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());
       }
     }
   }

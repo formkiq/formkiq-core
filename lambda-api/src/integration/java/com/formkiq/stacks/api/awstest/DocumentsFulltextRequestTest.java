@@ -91,10 +91,10 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
 
       GetDocumentActionsResponse actions = api.getDocumentActions(documentId, siteId, null);
       assertEquals(2, actions.getActions().size());
-      assertEquals("ocr", actions.getActions().get(0).getType());
-      assertEquals("complete", actions.getActions().get(0).getStatus());
-      assertEquals("fulltext", actions.getActions().get(1).getType());
-      assertEquals("complete", actions.getActions().get(1).getStatus());
+      assertEquals("OCR", actions.getActions().get(0).getType().name());
+      assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());
+      assertEquals("FULLTEXT", actions.getActions().get(1).getType().name());
+      assertEquals("COMPLETE", actions.getActions().get(1).getStatus().name());
 
       AdvancedDocumentSearchApi searchApi = new AdvancedDocumentSearchApi(client);
       GetDocumentFulltextResponse fullText =

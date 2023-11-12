@@ -37,9 +37,11 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -49,9 +51,12 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.services.CacheService;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents". */
 public class DocumentsRequestHandler
@@ -78,7 +83,6 @@ public class DocumentsRequestHandler
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice) throws Exception {
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
     ApiPagination pagination = getPagination(cacheService, event);
@@ -86,34 +90,79 @@ public class DocumentsRequestHandler
     final int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
     final PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    String tz = getParameter(event, "tz");
-    String dateString = getParameter(event, "date");
-
-    ZonedDateTime date = transformToDate(logger, awsservice, documentService, dateString, tz);
-
-    if (awsservice.debug()) {
-      logger.log("search for document using date: " + date);
-    }
+    ActionStatus actionStatus = getActionStatus(event);
 
     String siteId = authorization.siteId();
-    final PaginationResults<DocumentItem> results =
-        documentService.findDocumentsByDate(siteId, date, ptoken, limit);
 
-    ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
-
-    List<DocumentItem> documents = subList(results.getResults(), limit);
-
-    List<DynamicDocumentItem> items = documents.stream()
-        .map(m -> new DocumentItemToDynamicDocumentItem().apply(m)).collect(Collectors.toList());
-    items.forEach(i -> i.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID));
-
+    ApiPagination current = null;
     Map<String, Object> map = new HashMap<>();
-    map.put("documents", items);
-    map.put("previous", current.getPrevious());
-    map.put("next", current.hasNext() ? current.getNext() : null);
 
+    if (actionStatus != null) {
+
+      ActionsService actions = awsservice.getExtension(ActionsService.class);
+
+      PaginationToAttributeValue pav = new PaginationToAttributeValue();
+      Map<String, AttributeValue> token = pav.apply(ptoken);
+
+      PaginationResults<String> results =
+          actions.findDocumentsWithStatus(siteId, actionStatus, token, limit);
+
+      List<Map<String, String>> documents = results.getResults().stream()
+          .map(r -> Map.of("documentId", r)).collect(Collectors.toList());
+
+      current = createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+      map.put("documents", documents);
+
+    } else {
+
+      String tz = getParameter(event, "tz");
+      String dateString = getParameter(event, "date");
+
+      DocumentService documentService = awsservice.getExtension(DocumentService.class);
+      ZonedDateTime date = transformToDate(logger, awsservice, documentService, dateString, tz);
+
+      if (awsservice.debug()) {
+        logger.log("search for document using date: " + date);
+      }
+
+      final PaginationResults<DocumentItem> results =
+          documentService.findDocumentsByDate(siteId, date, ptoken, limit);
+
+      current = createPagination(cacheService, event, pagination, results.getToken(), limit);
+
+      List<DocumentItem> documents = subList(results.getResults(), limit);
+
+      List<DynamicDocumentItem> items = documents.stream()
+          .map(m -> new DocumentItemToDynamicDocumentItem().apply(m)).collect(Collectors.toList());
+      items.forEach(i -> i.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID));
+
+      map.put("documents", items);
+      map.put("previous", current.getPrevious());
+    }
+
+    map.put("next", current.hasNext() ? current.getNext() : null);
     return new ApiRequestHandlerResponse(SC_OK, new ApiMapResponse(map));
+  }
+
+  private ActionStatus getActionStatus(final ApiGatewayRequestEvent event) throws BadException {
+
+    ActionStatus status = null;
+    String actionStatus = getParameter(event, "actionStatus");
+
+    if (!Strings.isEmpty(actionStatus)) {
+      try {
+        status = ActionStatus.valueOf(actionStatus.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new BadException("invalid actionStatus '" + actionStatus + "'");
+      }
+    }
+
+    if (ActionStatus.COMPLETE.equals(status)) {
+      throw new BadException("invalid actionStatus '" + actionStatus + "'");
+    }
+
+    return status;
   }
 
   @Override

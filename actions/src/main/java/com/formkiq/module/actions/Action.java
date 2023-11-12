@@ -130,6 +130,14 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put(GSI1_SK, fromS(skGsi1));
     }
 
+    String pkGsi2 = pkGsi2(siteId);
+    String skGsi2 = skGsi2();
+
+    if (pkGsi2 != null && skGsi2 != null) {
+      attrs.put(GSI2_PK, fromS(pkGsi2));
+      attrs.put(GSI2_SK, fromS(skGsi2));
+    }
+
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
     if (this.insertedDate != null) {
@@ -319,7 +327,12 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   @Override
   public String pkGsi2(final String siteId) {
-    return null;
+    String pk = null;
+
+    if (!ActionStatus.COMPLETE.equals(this.status)) {
+      pk = createDatabaseKey(siteId, "actions#" + this.status + "#");
+    }
+    return pk;
   }
 
   @Override
@@ -347,7 +360,14 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   @Override
   public String skGsi2() {
-    return null;
+
+    String sk = null;
+
+    if (!ActionStatus.COMPLETE.equals(this.status)) {
+      sk = "action#" + this.documentId;
+    }
+
+    return sk;
   }
 
   /**

@@ -64,6 +64,9 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPlugin;
 import com.formkiq.plugins.tagschema.DocumentTagSchemaPluginExtension;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -768,6 +771,85 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals(1, documents.size());
       assertTrue(documents.get(0).getString("insertedDate").startsWith("" + year));
       assertTrue(documents.get(0).getString("lastModifiedDate").startsWith("" + year));
+    }
+  }
+
+  /**
+   * Get /documents request with "actionStatus".
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocuments15() throws Exception {
+
+    ActionsService actions = getAwsServices().getExtension(ActionsService.class);
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(Long.valueOf(contentLength));
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
+      addParameter(event, "siteId", siteId);
+      addParameter(event, "actionStatus", "pending");
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      actions.saveAction(siteId,
+          new Action().index("0").type(ActionType.OCR).documentId(documentId).userId("joe"));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+
+      List<DynamicObject> documents = resp.getList("documents");
+      assertEquals(1, documents.size());
+      assertEquals(documentId, documents.get(0).get("documentId"));
+      assertNull(documents.get(0).get("insertedDate"));
+      assertNull(documents.get(0).get("lastModifiedDate"));
+      assertNull(documents.get(0).get("userId"));
+    }
+  }
+
+  /**
+   * Get /documents request with invalid "actionStatus".
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocuments16() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = UUID.randomUUID().toString();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(Long.valueOf(contentLength));
+
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
+      addParameter(event, "siteId", siteId);
+      addParameter(event, "actionStatus", "nothing");
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"invalid actionStatus 'nothing'\"}", m.get("body"));
     }
   }
 
