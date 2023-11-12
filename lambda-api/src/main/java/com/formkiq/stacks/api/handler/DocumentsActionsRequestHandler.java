@@ -81,8 +81,8 @@ public class DocumentsActionsRequestHandler
     for (Action action : actions) {
       Map<String, Object> map = new HashMap<>();
       map.put("userId", action.userId());
-      map.put("status", action.status().name().toLowerCase());
-      map.put("type", action.type().name().toLowerCase());
+      map.put("status", action.status().name());
+      map.put("type", action.type().name());
       map.put("parameters", action.parameters());
       map.put("metadata", action.metadata());
       map.put("insertedDate", action.insertedDate());

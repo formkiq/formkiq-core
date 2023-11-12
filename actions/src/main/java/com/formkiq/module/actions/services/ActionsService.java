@@ -57,6 +57,18 @@ public interface ActionsService {
   Action findActionInQueue(String siteId, String documentId, String queueName);
 
   /**
+   * Find Documents with FAILED status.
+   * 
+   * @param siteId {@link String}
+   * @param status {@link ActionStatus}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link PaginationResults}
+   */
+  PaginationResults<String> findDocumentsWithStatus(String siteId, ActionStatus status,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
    * Find Documents in Queue.
    * 
    * @param siteId {@link String}

@@ -328,6 +328,18 @@
               description: Returns a list of the most recent documents added, ordered by inserted, descending
               summary: Get Documents listing
               parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - name: actionStatus
+                in: query
+                description: Fetch documents with an action status
+                schema:
+                  type: string
+                  enum:
+                  - FAILED
+                  - IN_QUEUE
+                  - PENDING
+                  - RUNNING
+                  - SKIPPED
               - name: date
                 in: query
                 description: Fetch documents inserted on a certain date (yyyy-MM-dd)
@@ -348,7 +360,6 @@
                 description: Previous page of results token
                 schema:
                   type: string
-              - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/limitParam'
               responses:
                 "200":
@@ -373,7 +384,12 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
             post:
               operationId: AddDocument
-              description: Creates a new document; body may include document content if less than 5 MB
+              description: |-
+                Creates a new document; body may include document content if less than 5 MB
+
+                See POST /documents/{documentId}/tags for adding tags to document schema
+
+                See POST /documents/{documentId}/actions for adding actions to document schema
               summary: Add new document
               tags:
               - Documents
@@ -1216,7 +1232,27 @@
             post:
               operationId: AddDocumentActions
               summary: Add document action
-              description: Add one or more actions to a document; this appends actions and does not replace previous actions
+              description: |-
+                Add one or more actions to a document; this appends actions and does not replace previous actions
+
+                ### Action Parameters
+
+                | ActionType | Parameter | Description |
+                | -------- | ------- | ------- |
+                | OCR  | ocrParseTypes | Ocr Parsing strategy to use |
+                | OCR | ocrEngine     | Ocr Engine to use |
+                | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text |
+                | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination |
+                | DOCUMENTTAGGING    | engine    | Tagging Engine to use |
+                | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords |
+                | WEBHOOK    | url    | Webhook URL |
+                | NOTIFICATION    | notificationType | Type of Notification |
+                | NOTIFICATION    | notificationToCc    | Notification Carbon Copy |
+                | NOTIFICATION    | notificationToBcc    | Notification Blind Carbon Copy |
+                | NOTIFICATION    | notificationSubject    | Notification Subject |
+                | NOTIFICATION    | notificationText    | Notification as Text |
+                | NOTIFICATION    | notificationHtml    | Notification as Html |
+                | QUEUE    | queueName    | Name of Queue |
               tags:
               - Document Actions
               parameters:
@@ -2434,7 +2470,12 @@
             post:
               operationId: PublicAddDocument
               summary: Public add document
-              description: Allow unauthenticated creation of new documents; must be enabled during installation (disabled by default)
+              description: |-
+                Allow unauthenticated creation of new documents; must be enabled during installation (disabled by default)
+
+                See POST /documents/{documentId}/tags for adding tags to document schema
+
+                See POST /documents/{documentId}/actions for adding actions to document schema
               tags:
               - Public
               parameters:
@@ -4646,9 +4687,24 @@
                 status:
                   type: string
                   description: Status of the Document Action
+                  enum:
+                  - COMPLETE
+                  - FAILED
+                  - IN_QUEUE
+                  - PENDING
+                  - RUNNING
+                  - SKIPPED
                 type:
                   type: string
                   description: Type of Document Action
+                  enum:
+                  - ANTIVIRUS
+                  - DOCUMENTTAGGING
+                  - FULLTEXT
+                  - NOTIFICATION
+                  - OCR
+                  - QUEUE
+                  - WEBHOOK
                 message:
                   type: string
                   description: Action message information

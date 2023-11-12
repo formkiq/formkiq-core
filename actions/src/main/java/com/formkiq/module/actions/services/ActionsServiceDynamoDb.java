@@ -28,6 +28,7 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -131,6 +132,33 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     }
 
     return action;
+  }
+
+  @Override
+  public PaginationResults<String> findDocumentsWithStatus(final String siteId,
+      final ActionStatus status, final Map<String, AttributeValue> exclusiveStartKey,
+      final int limit) {
+
+    Action a = new Action().status(status);
+    String pk = a.pkGsi2(siteId);
+    String sk = "action#";
+
+    PaginationMapToken pagination = null;
+    List<String> list = Collections.emptyList();
+
+    if (pk != null) {
+
+      QueryConfig config = new QueryConfig().indexName(GSI2).scanIndexForward(Boolean.TRUE);
+      QueryResponse response =
+          this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
+
+      list =
+          response.items().stream().map(i -> i.get("documentId").s()).collect(Collectors.toList());
+      pagination = new QueryResponseToPagination().apply(response);
+    }
+
+    return new PaginationResults<>(list, pagination);
+
   }
 
   @Override
@@ -315,12 +343,19 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
           AttributeValueUpdate.builder().value(attrs.get("completedDate")).build());
     }
 
-    if (attrs.containsKey(GSI1_PK) && attrs.containsKey(GSI1_SK)) {
-      updates.put(GSI1_PK, AttributeValueUpdate.builder().value(attrs.get(GSI1_PK)).build());
-      updates.put(GSI1_SK, AttributeValueUpdate.builder().value(attrs.get(GSI1_SK)).build());
-    } else {
-      updates.put(GSI1_PK, AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
-      updates.put(GSI1_SK, AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
+    for (String index : Arrays.asList(GSI1, GSI2)) {
+
+      if (attrs.containsKey(index + PK) && attrs.containsKey(index + SK)) {
+        updates.put(index + PK,
+            AttributeValueUpdate.builder().value(attrs.get(index + PK)).build());
+        updates.put(index + SK,
+            AttributeValueUpdate.builder().value(attrs.get(index + SK)).build());
+      } else {
+        updates.put(index + PK,
+            AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
+        updates.put(index + SK,
+            AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
+      }
     }
 
     this.db.updateItem(attrs.get(PK), attrs.get(SK), updates);
