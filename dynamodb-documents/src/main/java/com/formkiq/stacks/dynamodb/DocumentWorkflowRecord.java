@@ -202,7 +202,7 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     if (this.workflowId == null) {
       throw new IllegalArgumentException("'workflowId' is required");
     }
-    return "wf#" + this.workflowName + "#" + this.workflowId;
+    return "wf#" + this.workflowId;
   }
 
   @Override
