@@ -36,7 +36,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  *
  */
 @Reflectable
-public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKeys {
+public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRecord>, DbKeys {
 
   /** Document Workflow Status. */
   @Reflectable
@@ -67,9 +67,9 @@ public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKey
    * Set Action PK.
    * 
    * @param pk {@link String}
-   * @return {@link DocumentWorkflow}
+   * @return {@link DocumentWorkflowRecord}
    */
-  public DocumentWorkflow actionPk(final String pk) {
+  public DocumentWorkflowRecord actionPk(final String pk) {
     this.actionPk = pk;
     return this;
   }
@@ -87,9 +87,9 @@ public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKey
    * Set Action SK.
    * 
    * @param sk {@link String}
-   * @return {@link DocumentWorkflow}
+   * @return {@link DocumentWorkflowRecord}
    */
-  public DocumentWorkflow actionSk(final String sk) {
+  public DocumentWorkflowRecord actionSk(final String sk) {
     this.actionSk = sk;
     return this;
   }
@@ -107,9 +107,9 @@ public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKey
    * Set Document Id.
    * 
    * @param id {@link String}
-   * @return {@link DocumentWorkflow}
+   * @return {@link DocumentWorkflowRecord}
    */
-  public DocumentWorkflow documentId(final String id) {
+  public DocumentWorkflowRecord documentId(final String id) {
     this.documentId = id;
     return this;
   }
@@ -130,10 +130,10 @@ public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKey
   }
 
   @Override
-  public DocumentWorkflow getFromAttributes(final String siteIdParam,
+  public DocumentWorkflowRecord getFromAttributes(final String siteIdParam,
       final Map<String, AttributeValue> attrs) {
 
-    DocumentWorkflow record = new DocumentWorkflow().documentId(ss(attrs, "documentId"))
+    DocumentWorkflowRecord record = new DocumentWorkflowRecord().documentId(ss(attrs, "documentId"))
         .workflowId(ss(attrs, "workflowId")).status(ss(attrs, "status"))
         .actionPk(ss(attrs, "actionPk")).actionSk(ss(attrs, "actionSk"));
 
@@ -189,9 +189,9 @@ public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKey
    * Set Status.
    * 
    * @param workflowStatus {@link String}
-   * @return {@link DocumentWorkflow}
+   * @return {@link DocumentWorkflowRecord}
    */
-  public DocumentWorkflow status(final String workflowStatus) {
+  public DocumentWorkflowRecord status(final String workflowStatus) {
     this.status = workflowStatus;
     return this;
   }
@@ -209,9 +209,9 @@ public class DocumentWorkflow implements DynamodbRecord<DocumentWorkflow>, DbKey
    * Set Workflow Id.
    * 
    * @param id {@link String}
-   * @return {@link DocumentWorkflow}
+   * @return {@link DocumentWorkflowRecord}
    */
-  public DocumentWorkflow workflowId(final String id) {
+  public DocumentWorkflowRecord workflowId(final String id) {
     this.workflowId = id;
     return this;
   }
