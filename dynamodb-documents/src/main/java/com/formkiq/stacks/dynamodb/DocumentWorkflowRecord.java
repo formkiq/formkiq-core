@@ -44,6 +44,9 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
   /** Document Workflow Status. */
   @Reflectable
   private String actionSk;
+  /** Cuurent Workflow Step. */
+  @Reflectable
+  private String currentStepId;
   /** DocumentId. */
   @Reflectable
   private String documentId;
@@ -53,35 +56,15 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
   /** DocumentId. */
   @Reflectable
   private String workflowId;
-  /** Cuurent Workflow Step. */
+  /** Cuurent Workflow Name. */
   @Reflectable
-  private String currentStepId;
+  private String workflowName;
 
   /**
    * constructor.
    */
   public DocumentWorkflowRecord() {
 
-  }
-
-  /**
-   * Get Current Step Id.
-   * 
-   * @return {@link String}
-   */
-  public String currentStepId() {
-    return this.currentStepId;
-  }
-
-  /**
-   * Set Current Step Id.
-   * 
-   * @param stepId {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord currentStepId(final String stepId) {
-    this.currentStepId = stepId;
-    return this;
   }
 
   /**
@@ -125,6 +108,26 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
   }
 
   /**
+   * Get Current Step Id.
+   * 
+   * @return {@link String}
+   */
+  public String currentStepId() {
+    return this.currentStepId;
+  }
+
+  /**
+   * Set Current Step Id.
+   * 
+   * @param stepId {@link String}
+   * @return {@link DocumentWorkflowRecord}
+   */
+  public DocumentWorkflowRecord currentStepId(final String stepId) {
+    this.currentStepId = stepId;
+    return this;
+  }
+
+  /**
    * Get Document Id.
    * 
    * @return {@link String}
@@ -152,6 +155,7 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     map.put(DbKeys.SK, AttributeValue.fromS(sk()));
     map.put("documentId", AttributeValue.fromS(this.documentId));
     map.put("workflowId", AttributeValue.fromS(this.workflowId));
+    map.put("workflowName", AttributeValue.fromS(this.workflowName));
     map.put("status", AttributeValue.fromS(this.status));
     map.put("actionPk", AttributeValue.fromS(this.actionPk));
     map.put("actionSk", AttributeValue.fromS(this.actionSk));
@@ -165,8 +169,8 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
     DocumentWorkflowRecord record = new DocumentWorkflowRecord().documentId(ss(attrs, "documentId"))
         .workflowId(ss(attrs, "workflowId")).status(ss(attrs, "status"))
-        .actionPk(ss(attrs, "actionPk")).actionSk(ss(attrs, "actionSk"))
-        .currentStepId(ss(attrs, "currentStepId"));
+        .workflowName(ss(attrs, "workflowName")).actionPk(ss(attrs, "actionPk"))
+        .actionSk(ss(attrs, "actionSk")).currentStepId(ss(attrs, "currentStepId"));
 
     return record;
   }
@@ -191,10 +195,10 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
   @Override
   public String sk() {
-    if (this.workflowId == null) {
-      throw new IllegalArgumentException("'workflowId' is required");
+    if (this.workflowId == null || this.workflowName == null) {
+      throw new IllegalArgumentException("'workflowId' and 'workflowName' is required");
     }
-    return "wf#" + this.workflowId;
+    return "wf#" + this.workflowName + "#" + this.workflowId;
   }
 
   @Override
@@ -244,6 +248,26 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
    */
   public DocumentWorkflowRecord workflowId(final String id) {
     this.workflowId = id;
+    return this;
+  }
+
+  /**
+   * Get Workflow Name.
+   * 
+   * @return {@link String}
+   */
+  public String workflowName() {
+    return this.workflowName;
+  }
+
+  /**
+   * Set Workflow Name.
+   * 
+   * @param name {@link String}
+   * @return {@link DocumentWorkflowRecord}
+   */
+  public DocumentWorkflowRecord workflowName(final String name) {
+    this.workflowName = name;
     return this;
   }
 }
