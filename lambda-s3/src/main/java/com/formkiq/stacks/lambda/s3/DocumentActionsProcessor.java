@@ -100,6 +100,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
@@ -121,9 +122,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (System.getenv().containsKey("AWS_REGION")) {
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
-          .build();
+              .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                  new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
+                  new SesAwsServiceRegistry())
+              .build();
 
       initialize(serviceCache);
     }
@@ -735,11 +737,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           status = "FAILED";
         }
 
-        DocumentWorkflowRecord r = new DocumentWorkflowRecord().documentId(documentId)
-            .workflowId(workflowId).status(status).currentStepId(stepId).actionPk(action.pk(siteId))
-            .actionSk(action.sk());
+        DocumentWorkflowRecord r =
+            new DocumentWorkflowRecord().documentId(documentId).workflowId(workflowId);
 
         DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+
+        Map<String, AttributeValue> attrs =
+            db.get(AttributeValue.fromS(r.pk(siteId)), AttributeValue.fromS(r.sk()));
+
+        r = new DocumentWorkflowRecord().getFromAttributes(siteId, attrs).status(status)
+            .currentStepId(stepId).actionPk(action.pk(siteId)).actionSk(action.sk());
+
         db.putItem(r.getAttributes(siteId));
       }
     }
