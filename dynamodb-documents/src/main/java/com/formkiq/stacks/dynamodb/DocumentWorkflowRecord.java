@@ -3,23 +3,20 @@
  * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.formkiq.stacks.dynamodb;
 
@@ -160,6 +157,10 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     map.put("actionPk", AttributeValue.fromS(this.actionPk));
     map.put("actionSk", AttributeValue.fromS(this.actionSk));
     map.put("currentStepId", AttributeValue.fromS(this.currentStepId));
+
+    map.put(DbKeys.GSI1_PK, AttributeValue.fromS(pkGsi1(siteIdParam)));
+    map.put(DbKeys.GSI1_SK, AttributeValue.fromS(skGsi1()));
+
     return map;
   }
 
@@ -185,7 +186,10 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
   @Override
   public String pkGsi1(final String siteId) {
-    return null;
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+    return "wfdoc#" + this.documentId;
   }
 
   @Override
@@ -195,15 +199,18 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
   @Override
   public String sk() {
-    if (this.workflowId == null || this.workflowName == null) {
-      throw new IllegalArgumentException("'workflowId' and 'workflowName' is required");
+    if (this.workflowId == null) {
+      throw new IllegalArgumentException("'workflowId' is required");
     }
     return "wf#" + this.workflowName + "#" + this.workflowId;
   }
 
   @Override
   public String skGsi1() {
-    return null;
+    if (this.workflowId == null || this.workflowName == null) {
+      throw new IllegalArgumentException("'workflowId' and 'workflowName' is required");
+    }
+    return "wf#" + this.workflowName + "#" + this.workflowId;
   }
 
   @Override
