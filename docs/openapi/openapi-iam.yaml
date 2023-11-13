@@ -2021,9 +2021,9 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
           /documents/{documentId}/workflows:
             get:
-              operationId: GetDocumentWorkflow
-              summary: Get document workflow
-              description: Gets a document workflow; ONLY available with FormKiQ Pro and Enterprise
+              operationId: GetDocumentWorkflows
+              summary: Get document workflows
+              description: Gets a document workflows; ONLY available with FormKiQ Pro and Enterprise
               tags:
               - Document Workflows
               parameters:
@@ -2042,7 +2042,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetDocumentWorkflowResponse'
+                        $ref: '#/components/schemas/GetDocumentWorkflowsResponse'
                 "400":
                   description: 400 BAD REQUEST
                   headers:
@@ -2106,6 +2106,48 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+          /documents/{documentId}/workflows/{workflowId}:
+            get:
+              operationId: GetDocumentWorkflow
+              summary: Get document workflow
+              description: Gets a document workflow; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              responses:
+                "200":
+                  description: 200 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentWorkflowResponse'
+                "400":
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/{documentId}/workflow/{workflowId}/decisions:
             post:
               operationId: AddDocumentWorkflowDecisions
@@ -5358,7 +5400,7 @@
                 workflowId:
                   type: string
                   description: Workflow Identifier
-            GetDocumentWorkflowResponse:
+            GetDocumentWorkflowsResponse:
               type: object
               properties:
                 workflows:
@@ -5368,6 +5410,11 @@
                     $ref: '#/components/schemas/Workflow'
                 next:
                   type: string
+            GetDocumentWorkflowResponse:
+              type: object
+              properties:
+                workflow:
+                  $ref: '#/components/schemas/Workflow'
             Workflow:
               type: object
               properties:
