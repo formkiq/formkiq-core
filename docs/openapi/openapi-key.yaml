@@ -5436,6 +5436,7 @@
                   enum:
                   - COMPLETE
                   - IN_PROGRESS
+                  - FAILED
             AddDocumentWorkflowResponse:
               type: object
               properties:
