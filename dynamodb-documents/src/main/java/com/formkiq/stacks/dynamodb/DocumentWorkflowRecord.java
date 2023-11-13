@@ -53,6 +53,36 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
   /** DocumentId. */
   @Reflectable
   private String workflowId;
+  /** Cuurent Workflow Step. */
+  @Reflectable
+  private String currentStepId;
+
+  /**
+   * constructor.
+   */
+  public DocumentWorkflowRecord() {
+
+  }
+
+  /**
+   * Get Current Step Id.
+   * 
+   * @return {@link String}
+   */
+  public String currentStepId() {
+    return this.currentStepId;
+  }
+
+  /**
+   * Set Current Step Id.
+   * 
+   * @param stepId {@link String}
+   * @return {@link DocumentWorkflowRecord}
+   */
+  public DocumentWorkflowRecord currentStepId(final String stepId) {
+    this.currentStepId = stepId;
+    return this;
+  }
 
   /**
    * Get Action PK.
@@ -125,7 +155,7 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     map.put("status", AttributeValue.fromS(this.status));
     map.put("actionPk", AttributeValue.fromS(this.actionPk));
     map.put("actionSk", AttributeValue.fromS(this.actionSk));
-
+    map.put("currentStepId", AttributeValue.fromS(this.currentStepId));
     return map;
   }
 
@@ -135,7 +165,8 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
     DocumentWorkflowRecord record = new DocumentWorkflowRecord().documentId(ss(attrs, "documentId"))
         .workflowId(ss(attrs, "workflowId")).status(ss(attrs, "status"))
-        .actionPk(ss(attrs, "actionPk")).actionSk(ss(attrs, "actionSk"));
+        .actionPk(ss(attrs, "actionPk")).actionSk(ss(attrs, "actionSk"))
+        .currentStepId(ss(attrs, "currentStepId"));
 
     return record;
   }
