@@ -95,6 +95,7 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentWorkflowRecord;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -104,6 +105,12 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 @Reflectable
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
 
+  /** Workflow Id Parameter. */
+  private static final String PARAMETER_WORKFLOW_ID = "workflowId";
+  /** Workflow Step IdParameter. */
+  private static final String PARAMETER_WORKFLOW_STEP_ID = "workflowStepId";
+  /** Workflow Step IdParameter. */
+  private static final String PARAMETER_WORKFLOW_LAST_STEP = "workflowStepLast";
   /** Default Maximum for Typesense Content. */
   private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link AwsServiceCache}. */
@@ -509,6 +516,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
           action.status(ActionStatus.FAILED);
           action.message(e.getMessage());
 
+          updateDocumentWorkflow(siteId, documentId, action);
+
           logger.log(String.format("Updating Action Status to %s", action.status()));
 
           actionsService.updateActionStatus(siteId, documentId, action);
@@ -701,8 +710,38 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     action.status(completeStatus);
     getActionsService().updateActionStatus(siteId, documentId, action);
 
+    updateDocumentWorkflow(siteId, documentId, action);
+
     if (!ActionType.QUEUE.equals(action.type())) {
       getNotificationService().publishNextActionEvent(actions, siteId, documentId);
+    }
+  }
+
+  private void updateDocumentWorkflow(final String siteId, final String documentId,
+      final Action action) {
+
+    if (action.parameters() != null) {
+
+      if (action.parameters().containsKey(PARAMETER_WORKFLOW_ID)
+          && action.parameters().containsKey(PARAMETER_WORKFLOW_STEP_ID)) {
+
+        String workflowId = action.parameters().get(PARAMETER_WORKFLOW_ID);
+        String stepId = action.parameters().get(PARAMETER_WORKFLOW_STEP_ID);
+
+        String status = action.parameters().containsKey(PARAMETER_WORKFLOW_LAST_STEP) ? "COMPLETE"
+            : "IN_PROGRESS";
+
+        if (ActionStatus.FAILED.equals(action.status())) {
+          status = "FAILED";
+        }
+
+        DocumentWorkflowRecord r = new DocumentWorkflowRecord().documentId(documentId)
+            .workflowId(workflowId).status(status).currentStepId(stepId).actionPk(action.pk(siteId))
+            .actionSk(action.sk());
+
+        DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+        db.putItem(r.getAttributes(siteId));
+      }
     }
   }
 
