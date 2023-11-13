@@ -2022,6 +2022,46 @@ Resources:
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
           /documents/{documentId}/workflows:
+            get:
+              operationId: GetDocumentWorkflow
+              summary: Get document workflow
+              description: Gets a document workflow; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentWorkflowResponse'
+                '400':
+                  description: 400 BAD REQUEST
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
             post:
               operationId: AddDocumentWorkflow
               summary: Add document workflow
@@ -5321,6 +5361,37 @@ Resources:
                 workflowId:
                   type: "string"
                   description: "Workflow Identifier"
+            GetDocumentWorkflowResponse:
+              type: "object"
+              properties:
+                workflows:
+                  type: "array"
+                  description: "List of Workflows"
+                  items:
+                    $ref: "#/components/schemas/Workflow"
+                next:
+                  type: "string"
+            Workflow:
+              type: "object"
+              properties:
+                workflowId:
+                  type: "string"
+                  description: Workflow identifier
+                name:
+                  type: "string"
+                  description: Workflow name
+                description:
+                  type: "string"
+                  description: Workflow description
+                currentStepId:
+                  type: "string"
+                  description: The current step workflow is on
+                status:
+                  type: "string"
+                  description: Workflow status
+                  enum:
+                    - COMPLETE
+                    - IN_PROGRESS
             AddDocumentWorkflowResponse:
               type: "object"
               properties:
