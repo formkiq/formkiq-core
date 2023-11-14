@@ -227,6 +227,29 @@ public class WorkflowRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * GET /workflows/{workflowId}/documents.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetWorkflowDocuments() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+
+      setBearerToken(siteId);
+
+      try {
+        // when
+        this.workflowApi.getWorkflowDocuments(UUID.randomUUID().toString(), siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
+      }
+    }
+  }
+
+  /**
    * Get /workflows.
    *
    * @throws Exception an error has occurred
