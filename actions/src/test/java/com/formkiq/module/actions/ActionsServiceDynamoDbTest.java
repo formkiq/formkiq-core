@@ -23,7 +23,7 @@
  */
 package com.formkiq.module.actions;
 
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_ID;
+import static com.formkiq.module.actions.ActionParameters.METADATA_QUEUE_ID;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -214,10 +214,6 @@ public class ActionsServiceDynamoDbTest {
       service.saveActions(siteId, documentId1, Arrays.asList(action1));
 
       // then
-      assertEquals("{test=1234}",
-          service.getActionParameters(siteId, documentId0, ActionType.OCR).toString());
-      assertNull(service.getActionParameters(siteId, documentId1, ActionType.OCR));
-
       assertEquals(1, list.size());
       if (siteId != null) {
         assertEquals(siteId + "/docs#" + documentId0, list.get(0).get("PK").s());
@@ -297,21 +293,18 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
 
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .parameters(Map.of(PARAMETER_QUEUE_ID, name));
+          .metadata(Map.of(METADATA_QUEUE_ID, name));
 
       // when
       service.saveActions(siteId, documentId, Arrays.asList(action0));
 
       // then
-      assertEquals("{queueId=test94832}",
-          service.getActionParameters(siteId, documentId, ActionType.QUEUE).toString());
-
       List<Action> results = service.getActions(siteId, documentId);
       assertEquals(1, results.size());
       assertEquals(ActionStatus.PENDING, results.get(0).status());
       assertEquals(ActionType.QUEUE, results.get(0).type());
       assertEquals(userId0, results.get(0).userId());
-      assertEquals("{queueId=test94832}", results.get(0).parameters().toString());
+      assertEquals("{queueId=test94832}", results.get(0).metadata().toString());
 
       assertEquals(0, service.findDocumentsInQueue(siteId, name, null, 2).getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
@@ -356,7 +349,7 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .parameters(Map.of(PARAMETER_QUEUE_ID, name));
+          .metadata(Map.of(METADATA_QUEUE_ID, name));
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
@@ -367,8 +360,9 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
+      PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(1, docs.getResults().size());
+      assertEquals(name, docs.getResults().get(0).metadata().get(METADATA_QUEUE_ID));
       assertNotNull(service.findActionInQueue(siteId, documentId, name));
 
       PaginationResults<String> results =
@@ -404,7 +398,7 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .parameters(Map.of(PARAMETER_QUEUE_ID, name));
+          .metadata(Map.of(METADATA_QUEUE_ID, name));
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
@@ -415,7 +409,7 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
+      PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
 

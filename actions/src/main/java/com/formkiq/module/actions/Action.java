@@ -25,7 +25,7 @@ package com.formkiq.module.actions;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_ID;
+import static com.formkiq.module.actions.ActionParameters.METADATA_QUEUE_ID;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -318,7 +318,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     String pk = null;
 
     if (this.status.equals(ActionStatus.IN_QUEUE)) {
-      String queueId = this.parameters.get(PARAMETER_QUEUE_ID);
+      String queueId = this.metadata.get(METADATA_QUEUE_ID);
       pk = createDatabaseKey(siteId, "action#" + this.type + "#" + queueId);
     }
 

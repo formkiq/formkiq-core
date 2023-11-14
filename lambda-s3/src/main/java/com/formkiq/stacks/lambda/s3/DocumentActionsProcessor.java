@@ -122,10 +122,9 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (System.getenv().containsKey("AWS_REGION")) {
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-              .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-                  new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
-                  new SesAwsServiceRegistry())
-              .build();
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
+          .build();
 
       initialize(serviceCache);
     }

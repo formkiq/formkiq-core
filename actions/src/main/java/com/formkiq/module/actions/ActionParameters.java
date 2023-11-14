@@ -46,6 +46,6 @@ public interface ActionParameters {
   /** Notification Html Parameter. */
   String PARAMETER_NOTIFICATION_HTML = "notificationHtml";
 
-  /** Queue Name Parameter. */
-  String PARAMETER_QUEUE_ID = "queueId";
+  /** Queue Name MetaData. */
+  String METADATA_QUEUE_ID = "queueId";
 }

@@ -23,7 +23,7 @@
  */
 package com.formkiq.module.actions.services;
 
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_QUEUE_ID;
+import static com.formkiq.module.actions.ActionParameters.METADATA_QUEUE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.Arrays;
@@ -134,15 +134,15 @@ class ActionsValidatorTest {
     assertEquals(1, errors.size());
 
     ValidationError error = errors.iterator().next();
-    assertEquals(PARAMETER_QUEUE_ID, error.key());
-    assertEquals("'" + PARAMETER_QUEUE_ID + "' is required", error.error());
+    assertEquals(METADATA_QUEUE_ID, error.key());
+    assertEquals("'" + METADATA_QUEUE_ID + "' is required", error.error());
   }
 
   @Test
   void testValidation07() {
     // given
     Action action = new Action().type(ActionType.QUEUE)
-        .parameters(Map.of(PARAMETER_QUEUE_ID, "Testqueue")).userId("joe");
+        .metadata(Map.of(METADATA_QUEUE_ID, "Testqueue")).userId("joe");
     DynamicObject obj = new DynamicObject(Map.of());
 
     // when

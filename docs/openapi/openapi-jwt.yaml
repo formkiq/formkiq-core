@@ -1857,6 +1857,36 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /workflows/{workflowId}/documents:
+            get:
+              operationId: GetWorkflowDocuments
+              summary: Get list of documents in workflow
+              description: List documents in Workflow; ONLY available with FormKiQ Pro and Enterprise
+              tags:
+              - Document Workflows
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/workflowIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetWorkflowDocumentsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/searchLambdaApi200'
           /queues:
             get:
               operationId: GetQueues
@@ -2014,7 +2044,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/WorkflowQueueDocumentsResponse'
+                        $ref: '#/components/schemas/GetWorkflowQueueDocumentsResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -4535,7 +4565,7 @@
                   description: List of search result documents
                   items:
                     $ref: '#/components/schemas/SearchResultDocument'
-            WorkflowQueueDocumentsResponse:
+            GetWorkflowQueueDocumentsResponse:
               type: object
               properties:
                 next:
@@ -4545,7 +4575,68 @@
                   type: array
                   description: List of search result documents
                   items:
-                    $ref: '#/components/schemas/Document'
+                    $ref: '#/components/schemas/WorkflowDocument'
+            GetWorkflowDocumentsResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                documents:
+                  type: array
+                  description: List of search result documents
+                  items:
+                    $ref: '#/components/schemas/WorkflowDocument'
+            WorkflowDocument:
+              type: object
+              properties:
+                workflowId:
+                  type: string
+                  description: Workflow identifier
+                currentStepId:
+                  type: string
+                  description: The current step workflow is on
+                path:
+                  type: string
+                  description: Path or Name of document
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                lastModifiedDate:
+                  type: string
+                  description: Last Modified Timestamp
+                checksum:
+                  type: string
+                  description: Document checksum, changes when document file changes
+                documentId:
+                  type: string
+                  description: Document Identifier
+                contentType:
+                  type: string
+                  description: Document Content-Type
+                userId:
+                  type: string
+                  description: User who added document
+                contentLength:
+                  type: integer
+                  description: Document size
+                version:
+                  type: string
+                  description: Document version
+                versionKey:
+                  type: string
+                  description: Document Version Identifier
+                s3version:
+                  type: string
+                  description: Document storage version
+                belongsToDocumentId:
+                  type: string
+                  description: Parent Document Identifier
+                metadata:
+                  type: array
+                  description: List of document Metadata
+                  items:
+                    $ref: '#/components/schemas/DocumentMetadata'
             Document:
               type: object
               properties:
