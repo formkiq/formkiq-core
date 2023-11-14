@@ -23,11 +23,15 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.util.Map;
+
 /**
  * Batch Get Configuration.
  */
 public class BatchGetConfig {
 
+  /** {@link Map}. */
+  private Map<String, String> expressionAttributeNames;
   /** Projection Expression. */
   private String projectionExpression;
 
@@ -36,6 +40,26 @@ public class BatchGetConfig {
    */
   public BatchGetConfig() {
 
+  }
+
+  /**
+   * Get Expression Attribute Names.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, String> expressionAttributeNames() {
+    return this.expressionAttributeNames;
+  }
+
+  /**
+   * Set Expression Attribute Names.
+   * 
+   * @param attributeNames {@link Map}
+   * @return {@link BatchGetConfig}
+   */
+  public BatchGetConfig expressionAttributeNames(final Map<String, String> attributeNames) {
+    this.expressionAttributeNames = attributeNames;
+    return this;
   }
 
   /**
@@ -57,4 +81,5 @@ public class BatchGetConfig {
     this.projectionExpression = projection;
     return this;
   }
+
 }
