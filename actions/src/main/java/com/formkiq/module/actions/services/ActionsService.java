@@ -28,7 +28,6 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -75,20 +74,10 @@ public interface ActionsService {
    * @param queueName {@link String}
    * @param exclusiveStartKey {@link Map}
    * @param limit int
-   * @return {@link PaginationResults}
+   * @return {@link PaginationResults} {@link Action}
    */
-  PaginationResults<String> findDocumentsInQueue(String siteId, String queueName,
+  PaginationResults<Action> findDocumentsInQueue(String siteId, String queueName,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
-
-  /**
-   * Get Action Parameters.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param type {@link ActionType}
-   * @return {@link Map}
-   */
-  Map<String, String> getActionParameters(String siteId, String documentId, ActionType type);
 
   /**
    * Get {@link List} {@link Action} for a document.

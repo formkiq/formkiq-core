@@ -33,7 +33,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -162,7 +161,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public PaginationResults<String> findDocumentsInQueue(final String siteId, final String queueName,
+  public PaginationResults<Action> findDocumentsInQueue(final String siteId, final String queueName,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
     String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
     String sk = "action#";
@@ -171,22 +170,14 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     QueryResponse response =
         this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
 
-    List<String> list =
-        response.items().stream().map(i -> i.get("documentId").s()).collect(Collectors.toList());
+    List<Map<String, AttributeValue>> keys = response.items().stream()
+        .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
+
+    List<Action> list = this.db.getBatch(keys).stream()
+        .map(a -> new Action().getFromAttributes(siteId, a)).collect(Collectors.toList());
 
     PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
     return new PaginationResults<>(list, pagination);
-  }
-
-  @Override
-  public Map<String, String> getActionParameters(final String siteId, final String documentId,
-      final ActionType type) {
-
-    List<Action> actions = Objects
-        .notNull(queryActions(siteId, documentId, Arrays.asList("type", "parameters"), null));
-
-    Optional<Action> op = actions.stream().filter(a -> a.type().equals(type)).findFirst();
-    return op.isPresent() ? op.get().parameters() : null;
   }
 
   @Override
