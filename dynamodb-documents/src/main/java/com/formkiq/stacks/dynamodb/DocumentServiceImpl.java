@@ -51,6 +51,7 @@ import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -560,13 +561,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
     List<DocumentItem> results = null;
+    BatchGetConfig config = new BatchGetConfig();
 
     if (!ids.isEmpty()) {
 
       List<Map<String, AttributeValue>> keys = ids.stream()
           .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
 
-      Collection<List<Map<String, AttributeValue>>> values = getBatch(keys).values();
+      Collection<List<Map<String, AttributeValue>>> values = getBatch(config, keys).values();
       List<Map<String, AttributeValue>> result =
           !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
 
@@ -868,13 +870,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
    * Get Batch Keys.
    * 
    * @param keys {@link List} {@link Map} {@link AttributeValue}
+   * @param config {@link BatchGetConfig}
    * @return {@link Map}
    */
-  private Map<String, List<Map<String, AttributeValue>>> getBatch(
+  private Map<String, List<Map<String, AttributeValue>>> getBatch(final BatchGetConfig config,
       final Collection<Map<String, AttributeValue>> keys) {
     ReadRequestBuilder builder = new ReadRequestBuilder();
     builder.append(this.documentTableName, keys);
-    return builder.batchReadItems(this.dbClient);
+    return builder.batchReadItems(this.dbClient, config);
   }
 
   /**

@@ -141,7 +141,8 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> getBatch(final List<Map<String, AttributeValue>> keys) {
+  public List<Map<String, AttributeValue>> getBatch(final BatchGetConfig config,
+      final List<Map<String, AttributeValue>> keys) {
 
     List<Map<String, AttributeValue>> list = Collections.emptyList();
 
@@ -151,7 +152,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
       builder.append(this.tableName, keys);
 
       Map<String, List<Map<String, AttributeValue>>> batchReadItems =
-          builder.batchReadItems(this.dbClient);
+          builder.batchReadItems(this.dbClient, config);
 
       list = batchReadItems.get(this.tableName);
 

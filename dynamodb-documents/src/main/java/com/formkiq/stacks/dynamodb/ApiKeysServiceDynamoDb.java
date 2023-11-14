@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -155,9 +156,10 @@ public class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
     List<Map<String, AttributeValue>> attrs = response.items().stream()
         .map(m -> Map.of(PK, m.get(PK), SK, m.get(SK))).collect(Collectors.toList());
 
-    List<ApiKey> apiKeys =
-        this.db.getBatch(attrs).stream().map(a -> new ApiKey().getFromAttributes(siteId, a))
-            .map(a -> a.apiKey(mask(a.apiKey()))).collect(Collectors.toList());
+    BatchGetConfig batchConfig = new BatchGetConfig();
+    List<ApiKey> apiKeys = this.db.getBatch(batchConfig, attrs).stream()
+        .map(a -> new ApiKey().getFromAttributes(siteId, a)).map(a -> a.apiKey(mask(a.apiKey())))
+        .collect(Collectors.toList());
 
     return new PaginationResults<ApiKey>(apiKeys, new QueryResponseToPagination().apply(response));
   }
