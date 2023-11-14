@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -79,7 +80,8 @@ public class ConfigServiceDynamoDb implements ConfigService, DbKeys {
       keys.add(keysGeneric(null, PREFIX_CONFIG, DEFAULT_SITE_ID));
     }
 
-    List<Map<String, AttributeValue>> list = this.db.getBatch(keys);
+    BatchGetConfig config = new BatchGetConfig();
+    List<Map<String, AttributeValue>> list = this.db.getBatch(config, keys);
 
     Optional<Map<String, AttributeValue>> map = Optional.empty();
     if (!list.isEmpty()) {

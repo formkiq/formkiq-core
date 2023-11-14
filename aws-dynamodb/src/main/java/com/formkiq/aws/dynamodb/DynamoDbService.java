@@ -85,10 +85,12 @@ public interface DynamoDbService {
   /**
    * Batch Get a number of Keys.
    * 
+   * @param config {@link BatchGetConfig}
    * @param keys {@link List}
    * @return {@link List}
    */
-  List<Map<String, AttributeValue>> getBatch(List<Map<String, AttributeValue>> keys);
+  List<Map<String, AttributeValue>> getBatch(BatchGetConfig config,
+      List<Map<String, AttributeValue>> keys);
 
   /**
    * Put DynamoDb Record.

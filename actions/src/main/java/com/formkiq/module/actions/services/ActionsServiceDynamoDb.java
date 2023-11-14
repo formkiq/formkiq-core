@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
+import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -163,6 +164,8 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   @Override
   public PaginationResults<Action> findDocumentsInQueue(final String siteId, final String queueName,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+
+    BatchGetConfig batchConfig = new BatchGetConfig();
     String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
     String sk = "action#";
 
@@ -173,7 +176,7 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     List<Map<String, AttributeValue>> keys = response.items().stream()
         .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
 
-    List<Action> list = this.db.getBatch(keys).stream()
+    List<Action> list = this.db.getBatch(batchConfig, keys).stream()
         .map(a -> new Action().getFromAttributes(siteId, a)).collect(Collectors.toList());
 
     PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
