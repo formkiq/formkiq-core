@@ -106,12 +106,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Reflectable
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
 
-  /** Workflow Id Metadata. */
-  private static final String METADATA_WORKFLOW_ID = "workflowId";
-  /** Workflow Step Id Metadata. */
-  private static final String METADATA_WORKFLOW_STEP_ID = "workflowStepId";
-  /** Workflow Last Step Metadata. */
-  private static final String METADATA_WORKFLOW_LAST_STEP = "workflowStepLast";
   /** Default Maximum for Typesense Content. */
   private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link AwsServiceCache}. */
@@ -122,9 +116,10 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     if (System.getenv().containsKey("AWS_REGION")) {
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-              new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(), new SesAwsServiceRegistry())
-          .build();
+              .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                  new SnsAwsServiceRegistry(), new SmsAwsServiceRegistry(),
+                  new SesAwsServiceRegistry())
+              .build();
 
       initialize(serviceCache);
     }
@@ -721,34 +716,29 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void updateDocumentWorkflow(final String siteId, final String documentId,
       final Action action) {
 
-    if (action.metadata() != null) {
+    if (!isEmpty(action.workflowId()) && !isEmpty(action.workflowStepId())) {
 
-      if (action.metadata().containsKey(METADATA_WORKFLOW_ID)
-          && action.metadata().containsKey(METADATA_WORKFLOW_STEP_ID)) {
+      String workflowId = action.workflowId();
+      String stepId = action.workflowStepId();
 
-        String workflowId = action.metadata().get(METADATA_WORKFLOW_ID);
-        String stepId = action.metadata().get(METADATA_WORKFLOW_STEP_ID);
+      String status = !isEmpty(action.workflowLastStep()) ? "COMPLETE" : "IN_PROGRESS";
 
-        String status =
-            action.metadata().containsKey(METADATA_WORKFLOW_LAST_STEP) ? "COMPLETE" : "IN_PROGRESS";
-
-        if (ActionStatus.FAILED.equals(action.status())) {
-          status = "FAILED";
-        }
-
-        DocumentWorkflowRecord r =
-            new DocumentWorkflowRecord().documentId(documentId).workflowId(workflowId);
-
-        DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
-
-        Map<String, AttributeValue> attrs =
-            db.get(AttributeValue.fromS(r.pk(siteId)), AttributeValue.fromS(r.sk()));
-
-        r = new DocumentWorkflowRecord().getFromAttributes(siteId, attrs).status(status)
-            .currentStepId(stepId).actionPk(action.pk(siteId)).actionSk(action.sk());
-
-        db.putItem(r.getAttributes(siteId));
+      if (ActionStatus.FAILED.equals(action.status())) {
+        status = "FAILED";
       }
+
+      DocumentWorkflowRecord r =
+          new DocumentWorkflowRecord().documentId(documentId).workflowId(workflowId);
+
+      DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+
+      Map<String, AttributeValue> attrs =
+          db.get(AttributeValue.fromS(r.pk(siteId)), AttributeValue.fromS(r.sk()));
+
+      r = new DocumentWorkflowRecord().getFromAttributes(siteId, attrs).status(status)
+          .currentStepId(stepId).actionPk(action.pk(siteId)).actionSk(action.sk());
+
+      db.putItem(r.getAttributes(siteId));
     }
   }
 
