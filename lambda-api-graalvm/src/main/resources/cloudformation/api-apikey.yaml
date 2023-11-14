@@ -4586,14 +4586,14 @@ Resources:
                   description: "Next page of results token"
                 documents:
                   type: "array"
-                  description: "List of search result documents"
+                  description: "List of workflow documents"
                   items:
-                    $ref: "#/components/schemas/WorkflowDocument"
+                    $ref: "#/components/schemas/Document"
             WorkflowDocument:
               type: "object"
               properties:
                 workflow:
-                  $ref: "#/components/schemas/Workflow"
+                  $ref: "#/components/schemas/WorkflowSummary"
                 document:
                   $ref: "#/components/schemas/Document"
             Document:
@@ -5456,17 +5456,17 @@ Resources:
               properties:
                 workflows:
                   type: "array"
-                  description: "List of Workflows"
+                  description: "List of Document Workflows"
                   items:
-                    $ref: "#/components/schemas/Workflow"
+                    $ref: "#/components/schemas/DocumentWorkflow"
                 next:
                   type: "string"
             GetDocumentWorkflowResponse:
               type: "object"
               properties:
                 workflow:
-                  $ref: "#/components/schemas/Workflow"
-            Workflow:
+                  $ref: "#/components/schemas/DocumentWorkflow"
+            DocumentWorkflow:
               type: "object"
               properties:
                 workflowId:

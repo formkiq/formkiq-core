@@ -129,8 +129,9 @@ public class ReadRequestBuilder {
     BatchGetItemResponse batchResponse = null;
 
     if (!keys.isEmpty()) {
-      Map<String, KeysAndAttributes> requestedItems = Map.of(tableName, KeysAndAttributes.builder()
-          .keys(keys).projectionExpression(config.projectionExpression()).build());
+      Map<String, KeysAndAttributes> requestedItems = Map.of(tableName,
+          KeysAndAttributes.builder().keys(keys).projectionExpression(config.projectionExpression())
+              .expressionAttributeNames(config.expressionAttributeNames()).build());
 
       BatchGetItemRequest batchReq =
           BatchGetItemRequest.builder().requestItems(requestedItems).build();
