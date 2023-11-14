@@ -164,6 +164,9 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
     map.put(DbKeys.GSI1_PK, AttributeValue.fromS(pkGsi1(siteIdParam)));
     map.put(DbKeys.GSI1_SK, AttributeValue.fromS(skGsi1()));
 
+    map.put(DbKeys.GSI2_PK, AttributeValue.fromS(pkGsi2(siteIdParam)));
+    map.put(DbKeys.GSI2_SK, AttributeValue.fromS(skGsi2()));
+
     return map;
   }
 
@@ -197,7 +200,10 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
   @Override
   public String pkGsi2(final String siteId) {
-    return null;
+    if (this.workflowId == null) {
+      throw new IllegalArgumentException("'workflowId' is required");
+    }
+    return "wf#" + this.workflowId;
   }
 
   @Override
@@ -218,7 +224,10 @@ public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRe
 
   @Override
   public String skGsi2() {
-    return null;
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+    return "wfdoc#" + this.documentId;
   }
 
   /**
