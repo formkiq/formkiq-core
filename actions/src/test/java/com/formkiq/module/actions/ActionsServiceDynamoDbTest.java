@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.actions;
 
-import static com.formkiq.module.actions.ActionParameters.METADATA_QUEUE_ID;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -292,8 +291,7 @@ public class ActionsServiceDynamoDbTest {
       String name = "test94832";
       String documentId = UUID.randomUUID().toString();
 
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .metadata(Map.of(METADATA_QUEUE_ID, name));
+      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
 
       // when
       service.saveActions(siteId, documentId, Arrays.asList(action0));
@@ -304,7 +302,7 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(ActionStatus.PENDING, results.get(0).status());
       assertEquals(ActionType.QUEUE, results.get(0).type());
       assertEquals(userId0, results.get(0).userId());
-      assertEquals("{queueId=test94832}", results.get(0).metadata().toString());
+      assertEquals("test94832", results.get(0).queueId());
 
       assertEquals(0, service.findDocumentsInQueue(siteId, name, null, 2).getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
@@ -348,8 +346,7 @@ public class ActionsServiceDynamoDbTest {
       String name = "queue1234";
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .metadata(Map.of(METADATA_QUEUE_ID, name));
+      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
@@ -362,7 +359,7 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
       PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(1, docs.getResults().size());
-      assertEquals(name, docs.getResults().get(0).metadata().get(METADATA_QUEUE_ID));
+      assertEquals(name, docs.getResults().get(0).queueId());
       assertNotNull(service.findActionInQueue(siteId, documentId, name));
 
       PaginationResults<String> results =
@@ -397,8 +394,7 @@ public class ActionsServiceDynamoDbTest {
       String name = "queue1234";
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0)
-          .metadata(Map.of(METADATA_QUEUE_ID, name));
+      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 

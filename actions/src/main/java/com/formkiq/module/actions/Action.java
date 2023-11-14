@@ -25,7 +25,6 @@ package com.formkiq.module.actions;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionParameters.METADATA_QUEUE_ID;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -57,12 +56,20 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   private Map<String, String> metadata;
   /** Action Parameters. */
   private Map<String, String> parameters;
+  /** QueueId. */
+  private String queueId;
   /** Is Action Completed. */
   private ActionStatus status;
   /** Type of Action. */
   private ActionType type;
   /** UserId. */
   private String userId;
+  /** WorkflowId. */
+  private String workflowId;
+  /** Workflow Last Step. */
+  private String workflowLastStep;
+  /** Workflow Step Id. */
+  private String workflowStepId;
 
   /**
    * constructor.
@@ -148,9 +155,11 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put("completedDate", AttributeValue.fromS(df.format(this.completedDate)));
     }
 
-    if (this.message != null) {
-      attrs.put("message", fromS(this.message));
-    }
+    addS(attrs, "message", this.message);
+    addS(attrs, "queueId", this.queueId);
+    addS(attrs, "workflowId", this.workflowId);
+    addS(attrs, "workflowLastStep", this.workflowLastStep);
+    addS(attrs, "workflowStepId", this.workflowStepId);
 
     return attrs;
   }
@@ -159,7 +168,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   public Action getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
 
     Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))
-        .message(ss(attrs, "message"));
+        .message(ss(attrs, "message")).queueId(ss(attrs, "queueId"))
+        .workflowId(ss(attrs, "workflowId")).workflowLastStep(ss(attrs, "workflowLastStep"))
+        .workflowStepId(ss(attrs, "workflowStepId"));
 
     if (attrs.containsKey("status")) {
       record.status(ActionStatus.valueOf(ss(attrs, "status")));
@@ -318,8 +329,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     String pk = null;
 
     if (this.status.equals(ActionStatus.IN_QUEUE)) {
-      String queueId = this.metadata.get(METADATA_QUEUE_ID);
-      pk = createDatabaseKey(siteId, "action#" + this.type + "#" + queueId);
+      pk = createDatabaseKey(siteId, "action#" + this.type + "#" + this.queueId);
     }
 
     return pk;
@@ -333,6 +343,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       pk = createDatabaseKey(siteId, "actions#" + this.status + "#");
     }
     return pk;
+  }
+
+  /**
+   * Get Queue Id.
+   * 
+   * @return {@link String}
+   */
+  public String queueId() {
+    return this.queueId;
+  }
+
+  /**
+   * Set Queue Id.
+   * 
+   * @param id {@link String}
+   * @return {@link Action}
+   */
+  public Action queueId(final String id) {
+    this.queueId = id;
+    return this;
   }
 
   @Override
@@ -427,6 +457,66 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action userId(final String user) {
     this.userId = user;
+    return this;
+  }
+
+  /**
+   * Get Workflow Id.
+   * 
+   * @return {@link String}
+   */
+  public String workflowId() {
+    return this.workflowId;
+  }
+
+  /**
+   * Get Workflow Id.
+   * 
+   * @param id {@link String}
+   * @return {@link Action}
+   */
+  public Action workflowId(final String id) {
+    this.workflowId = id;
+    return this;
+  }
+
+  /**
+   * Get Workflow Last Step.
+   * 
+   * @return {@link String}
+   */
+  public String workflowLastStep() {
+    return this.workflowLastStep;
+  }
+
+  /**
+   * Set Workflow Last Step.
+   * 
+   * @param lastStep {@link String}
+   * @return {@link Action}
+   */
+  public Action workflowLastStep(final String lastStep) {
+    this.workflowLastStep = lastStep;
+    return this;
+  }
+
+  /**
+   * Get Workflow Step id.
+   * 
+   * @return {@link String}
+   */
+  public String workflowStepId() {
+    return this.workflowStepId;
+  }
+
+  /**
+   * Get Workflow Step id.
+   * 
+   * @param stepId {@link String}
+   * @return {@link Action}
+   */
+  public Action workflowStepId(final String stepId) {
+    this.workflowStepId = stepId;
     return this;
   }
 }

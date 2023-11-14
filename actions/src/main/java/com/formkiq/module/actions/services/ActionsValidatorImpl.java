@@ -30,7 +30,6 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
 import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
-import static com.formkiq.module.actions.ActionParameters.METADATA_QUEUE_ID;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,12 +59,6 @@ public class ActionsValidatorImpl implements ActionsValidator {
     Map<String, String> parameters =
         action.parameters() != null ? action.parameters() : Collections.emptyMap();
     return parameters;
-  }
-
-  private Map<String, String> getMetadata(final Action action) {
-    Map<String, String> metadata =
-        action.metadata() != null ? action.metadata() : Collections.emptyMap();
-    return metadata;
   }
 
   private boolean hasValue(final Map<String, String> parameters, final String key) {
@@ -145,10 +138,8 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   private void validateWait(final Action action, final Collection<ValidationError> errors) {
 
-    Map<String, String> metadata = getMetadata(action);
-    if (!hasValue(metadata, METADATA_QUEUE_ID)) {
-      errors.add(new ValidationErrorImpl().key(METADATA_QUEUE_ID)
-          .error("'" + METADATA_QUEUE_ID + "' is required"));
+    if (isEmpty(action.queueId())) {
+      errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' is required"));
     }
   }
 

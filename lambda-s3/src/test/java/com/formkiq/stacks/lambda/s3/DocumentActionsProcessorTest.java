@@ -76,7 +76,6 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionParameters;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -307,8 +306,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = UUID.randomUUID().toString();
       String name = "testqueue#" + documentId;
 
-      List<Action> actions = Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe")
-          .metadata(Map.of(ActionParameters.METADATA_QUEUE_ID, name)));
+      List<Action> actions =
+          Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
       actionsService.saveActions(siteId, documentId, actions);
 
       Map<String, Object> map =

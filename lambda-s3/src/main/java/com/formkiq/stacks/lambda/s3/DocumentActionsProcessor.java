@@ -106,12 +106,12 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Reflectable
 public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
 
-  /** Workflow Id Parameter. */
-  private static final String PARAMETER_WORKFLOW_ID = "workflowId";
-  /** Workflow Step IdParameter. */
-  private static final String PARAMETER_WORKFLOW_STEP_ID = "workflowStepId";
-  /** Workflow Step IdParameter. */
-  private static final String PARAMETER_WORKFLOW_LAST_STEP = "workflowStepLast";
+  /** Workflow Id Metadata. */
+  private static final String METADATA_WORKFLOW_ID = "workflowId";
+  /** Workflow Step Id Metadata. */
+  private static final String METADATA_WORKFLOW_STEP_ID = "workflowStepId";
+  /** Workflow Last Step Metadata. */
+  private static final String METADATA_WORKFLOW_LAST_STEP = "workflowStepLast";
   /** Default Maximum for Typesense Content. */
   private static final int DEFAULT_TYPESENSE_CHARACTER_MAX = 32768;
   /** {@link AwsServiceCache}. */
@@ -721,16 +721,16 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void updateDocumentWorkflow(final String siteId, final String documentId,
       final Action action) {
 
-    if (action.parameters() != null) {
+    if (action.metadata() != null) {
 
-      if (action.parameters().containsKey(PARAMETER_WORKFLOW_ID)
-          && action.parameters().containsKey(PARAMETER_WORKFLOW_STEP_ID)) {
+      if (action.metadata().containsKey(METADATA_WORKFLOW_ID)
+          && action.metadata().containsKey(METADATA_WORKFLOW_STEP_ID)) {
 
-        String workflowId = action.parameters().get(PARAMETER_WORKFLOW_ID);
-        String stepId = action.parameters().get(PARAMETER_WORKFLOW_STEP_ID);
+        String workflowId = action.metadata().get(METADATA_WORKFLOW_ID);
+        String stepId = action.metadata().get(METADATA_WORKFLOW_STEP_ID);
 
-        String status = action.parameters().containsKey(PARAMETER_WORKFLOW_LAST_STEP) ? "COMPLETE"
-            : "IN_PROGRESS";
+        String status =
+            action.metadata().containsKey(METADATA_WORKFLOW_LAST_STEP) ? "COMPLETE" : "IN_PROGRESS";
 
         if (ActionStatus.FAILED.equals(action.status())) {
           status = "FAILED";
