@@ -40,7 +40,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -137,7 +137,7 @@ public class DocumentsIdUploadRequestHandler
     String key = !isDefaultSiteId(siteId) ? siteId + "/" + documentId : documentId;
     Duration duration = caculateDuration(query);
     Optional<Long> contentLength = calculateContentLength(awsservice, query, siteId);
-    S3Service s3Service = awsservice.getExtension(S3Service.class);
+    S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
 
     Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
     URL url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,

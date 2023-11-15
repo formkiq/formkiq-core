@@ -38,6 +38,7 @@ import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -55,7 +56,7 @@ import com.formkiq.validation.ValidationException;
 public class DocumentsCompressRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  private String getArchiveDownloadUrl(final S3Service s3, final String stagingBucket,
+  private String getArchiveDownloadUrl(final S3PresignerService s3, final String stagingBucket,
       final String objectPath) {
     final String zipContentType = "application/zip";
     Duration duration = Duration.ofHours(1);
@@ -107,6 +108,7 @@ public class DocumentsCompressRequestHandler
     String compressionTaskS3Key = getS3Key(siteId, documentId, false);
 
     S3Service s3 = awsServices.getExtension(S3Service.class);
+    S3PresignerService s3Presigner = awsServices.getExtension(S3PresignerService.class);
     DynamicObject requestBodyObject = fromBodyToDynamicObject(event);
 
     DocumentService documentService = awsServices.getExtension(DocumentService.class);
@@ -114,7 +116,7 @@ public class DocumentsCompressRequestHandler
 
     String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String downloadUrl =
-        getArchiveDownloadUrl(s3, stagingBucket, getS3Key(siteId, documentId, true));
+        getArchiveDownloadUrl(s3Presigner, stagingBucket, getS3Key(siteId, documentId, true));
 
     DynamicObject taskObject = getS3TaskObject(requestBodyObject, siteId, documentId, downloadUrl);
 

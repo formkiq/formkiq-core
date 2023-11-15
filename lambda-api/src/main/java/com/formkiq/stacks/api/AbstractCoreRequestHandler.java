@@ -30,6 +30,8 @@ import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.cognito.CognitoIdentityProviderServiceExtension;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
@@ -260,6 +262,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(ActionsService.class, new ActionsServiceExtension());
     serviceCache.register(SsmService.class, new SsmServiceExtension());
     serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     serviceCache.register(SqsService.class, new SqsServiceExtension());
     serviceCache.register(DocumentTagSchemaPlugin.class,
         new DocumentTagSchemaPluginExtension(schemaEvents));

@@ -91,7 +91,7 @@ import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
   /** AWS Region. */
-  private static final Region AWS_REGION = Region.US_EAST_1;
+  private static final Region AWS_REGION = Region.US_EAST_2;
   /** Cache Table. */
   private static final String CACHE_TABLE = "Cache";
   /** Document Syncs Table Name. */
@@ -236,10 +236,11 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     String dynamoDbUrl = commandLine.getOptionValue("dynamodb-url");
     String s3Url = commandLine.getOptionValue("s3-url");
+    String s3PresignerUrl = commandLine.getOptionValue("s3-presigner-url");
 
     try {
-      Map<String, URI> awsServiceEndpoints =
-          Map.of("dynamodb", new URI(dynamoDbUrl), "s3", new URI(s3Url));
+      Map<String, URI> awsServiceEndpoints = Map.of("dynamodb", new URI(dynamoDbUrl), "s3",
+          new URI(s3Url), "s3presigner", new URI(s3PresignerUrl));
       return awsServiceEndpoints;
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);

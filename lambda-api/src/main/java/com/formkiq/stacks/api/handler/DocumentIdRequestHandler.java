@@ -52,6 +52,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -241,7 +242,7 @@ public class DocumentIdRequestHandler
     if (documentId != null) {
       Duration duration = Duration.ofHours(DEFAULT_DURATION_HOURS);
       String key = createS3Key(siteId, documentId);
-      S3Service s3Service = awsservice.getExtension(S3Service.class);
+      S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
 
       Map<String, String> map = Map.of("checksum", UUID.randomUUID().toString());
       url = s3Service.presignPutUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), key, duration,

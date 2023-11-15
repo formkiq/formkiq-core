@@ -26,16 +26,12 @@ package com.formkiq.aws.s3;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
-import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -69,15 +65,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.model.VersioningConfiguration;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedUploadPartRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignRequest;
 import software.amazon.awssdk.utils.IoUtils;
 
 /**
@@ -127,8 +115,6 @@ public class S3Service {
     return byteArray;
   }
 
-  /** {@link S3ConnectionBuilder}. */
-  private S3ConnectionBuilder builder;
   /** {@link S3Client}. */
   private S3Client s3Client;
 
@@ -139,9 +125,7 @@ public class S3Service {
    */
   public S3Service(final S3ConnectionBuilder s3connectionBuilder) {
     this.s3Client = s3connectionBuilder.build();
-    this.builder = s3connectionBuilder;
   }
-
 
   /**
    * Copy S3 Object.
@@ -393,105 +377,6 @@ public class S3Service {
 
     ListObjectsResponse listObjects = this.s3Client.listObjects(listbuilder.build());
     return listObjects;
-  }
-
-  /**
-   * Generate a S3 Signed Url for getting an object.
-   *
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param duration {@link Duration}
-   * @param versionId {@link String}
-   * @param config {@link PresignGetUrlConfig}
-   * @return {@link URL}
-   */
-  public URL presignGetUrl(final String bucket, final String key, final Duration duration,
-      final String versionId, final PresignGetUrlConfig config) {
-
-    try (S3Presigner signer = this.builder.buildPresigner()) {
-
-      GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key)
-          .versionId(versionId).responseContentType(config.contentType())
-          .responseContentDisposition(config.contentDisposition()).build();
-
-      GetObjectPresignRequest getRequest = GetObjectPresignRequest.builder()
-          .signatureDuration(duration).getObjectRequest(getObjectRequest).build();
-
-      PresignedGetObjectRequest req = signer.presignGetObject(getRequest);
-      URL url = req.url();
-
-      return url;
-    }
-  }
-
-  /**
-   * Generate a S3 Signed Url for creating an object using POST request.
-   *
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param duration {@link Duration}
-   * @param contentLength {@link Optional} {@link Long}
-   * @return {@link URL}
-   */
-  public URL presignPostUrl(final String bucket, final String key, final Duration duration,
-      final Optional<Long> contentLength) {
-
-    try (S3Presigner signer = this.builder.buildPresigner()) {
-
-      UploadPartRequest.Builder uploadBuilder = UploadPartRequest.builder().bucket(bucket).key(key);
-
-      if (contentLength.isPresent()) {
-        uploadBuilder = uploadBuilder.contentLength(contentLength.get());
-      }
-
-      UploadPartPresignRequest prereq = UploadPartPresignRequest.builder()
-          .signatureDuration(duration).uploadPartRequest(uploadBuilder.build()).build();
-
-      PresignedUploadPartRequest req = signer.presignUploadPart(prereq);
-      return req.url();
-    }
-  }
-
-  /**
-   * Generate a S3 Signed Url for creating an object using PUT request.
-   *
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param duration {@link Duration}
-   * @param contentLength {@link Optional} {@link Long}
-   * @param metadata {@link Map}
-   * @return {@link URL}
-   */
-  public URL presignPutUrl(final String bucket, final String key, final Duration duration,
-      final Optional<Long> contentLength, final Map<String, String> metadata) {
-
-    try (S3Presigner signer = this.builder.buildPresigner()) {
-
-      PutObjectRequest.Builder putObjectRequest =
-          PutObjectRequest.builder().bucket(bucket).key(key);
-
-      if (contentLength.isPresent()) {
-        putObjectRequest = putObjectRequest.contentLength(contentLength.get());
-      }
-
-      if (metadata != null) {
-        AwsRequestOverrideConfiguration.Builder override =
-            AwsRequestOverrideConfiguration.builder();
-
-        for (Map.Entry<String, String> e : metadata.entrySet()) {
-          override = override.putRawQueryParameter(e.getKey(), e.getValue());
-        }
-        putObjectRequest = putObjectRequest.overrideConfiguration(override.build());
-      }
-
-      PutObjectPresignRequest putRequest = PutObjectPresignRequest.builder()
-          .signatureDuration(duration).putObjectRequest(putObjectRequest.build()).build();
-
-      PresignedPutObjectRequest req = signer.presignPutObject(putRequest);
-      URL url = req.url();
-
-      return url;
-    }
   }
 
   /**

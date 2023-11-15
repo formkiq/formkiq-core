@@ -69,6 +69,10 @@ public class HttpServer {
     s3.setRequired(true);
     options.addOption(s3);
 
+    Option s3presigner = new Option(null, "s3-presigner-url", true, "s3 presigner url");
+    s3presigner.setRequired(true);
+    options.addOption(s3presigner);
+
     Option minioAccessKey = new Option(null, "minio-access-key", true, "Minio Access Key");
     minioAccessKey.setRequired(true);
     options.addOption(minioAccessKey);

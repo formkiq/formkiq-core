@@ -33,8 +33,6 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner.Builder;
 
 /**
  * 
@@ -45,8 +43,6 @@ public class S3ConnectionBuilder {
 
   /** {@link S3ClientBuilder}. */
   private S3ClientBuilder builder;
-  /** Builder. */
-  private Builder presignerBuilder;
   /** S3 Region. */
   private Region region;
   /** {@link S3Client}. */
@@ -71,7 +67,6 @@ public class S3ConnectionBuilder {
     this.builder = S3Client.builder().overrideConfiguration(clientConfig.build())
         .httpClientBuilder(UrlConnectionHttpClient.builder())
         .credentialsProvider(EnvironmentVariableCredentialsProvider.create());
-    this.presignerBuilder = S3Presigner.builder();
   }
 
   /**
@@ -82,15 +77,6 @@ public class S3ConnectionBuilder {
   public S3Client build() {
     initS3Client();
     return this.s3Client;
-  }
-
-  /**
-   * Build {@link S3Presigner}.
-   * 
-   * @return {@link S3Presigner}s
-   */
-  public S3Presigner buildPresigner() {
-    return this.presignerBuilder.build();
   }
 
   /**
@@ -119,7 +105,6 @@ public class S3ConnectionBuilder {
    */
   public S3ConnectionBuilder setCredentials(final AwsCredentialsProvider cred) {
     this.builder = this.builder.credentialsProvider(cred);
-    this.presignerBuilder = this.presignerBuilder.credentialsProvider(cred);
     return this;
   }
 
@@ -144,7 +129,6 @@ public class S3ConnectionBuilder {
    */
   public S3ConnectionBuilder setEndpointOverride(final URI endpoint) {
     this.builder = this.builder.endpointOverride(endpoint);
-    this.presignerBuilder = this.presignerBuilder.endpointOverride(endpoint);
     return this;
   }
 
@@ -157,7 +141,6 @@ public class S3ConnectionBuilder {
   public S3ConnectionBuilder setRegion(final Region r) {
     this.region = r;
     this.builder = this.builder.region(this.region);
-    this.presignerBuilder = this.presignerBuilder.region(this.region);
     return this;
   }
 }

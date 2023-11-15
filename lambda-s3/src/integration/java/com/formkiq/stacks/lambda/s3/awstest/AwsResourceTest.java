@@ -297,8 +297,8 @@ public class AwsResourceTest extends AbstractAwsTest {
         getDocumentService().saveDocumentItemWithTag(null, doc);
 
         // when
-        URL url = getS3Service().presignPutUrl(getDocumentsbucketname(), key, Duration.ofHours(1),
-            Optional.empty(), null);
+        URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
+            Duration.ofHours(1), Optional.empty(), null);
         HttpResponse<String> put =
             http.send(
                 HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
