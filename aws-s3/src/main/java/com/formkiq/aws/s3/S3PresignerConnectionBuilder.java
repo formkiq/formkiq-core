@@ -55,8 +55,19 @@ public class S3PresignerConnectionBuilder {
    * @return {@link S3Presigner}s
    */
   public S3Presigner build() {
+    return this.presignerBuilder.build();
+  }
+
+  /**
+   * Enable Path Style Access.
+   * 
+   * @param enabled {@link Boolean}
+   * @return {@link S3PresignerConnectionBuilder}
+   */
+  public S3PresignerConnectionBuilder pathStyleAccessEnabled(final Boolean enabled) {
     S3Configuration conf = S3Configuration.builder().pathStyleAccessEnabled(Boolean.TRUE).build();
-    return this.presignerBuilder.serviceConfiguration(conf).build();
+    this.presignerBuilder = this.presignerBuilder.serviceConfiguration(conf);
+    return this;
   }
 
   /**

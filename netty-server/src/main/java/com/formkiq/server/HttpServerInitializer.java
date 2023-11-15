@@ -262,6 +262,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     env.put("SNS_DOCUMENT_EVENT", "");
     env.put("DEBUG", "false");
     env.put("DOCUMENTS_IAM_URL", "http://localhost:8080");
+    env.put("PATH_STYLE_ACCESS_ENABLED", "true");
 
     env.put("MODULE_typesense", "true");
     env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));
