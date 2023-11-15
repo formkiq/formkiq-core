@@ -51,6 +51,10 @@ public class S3AwsServiceRegistry implements AwsServiceRegistry {
         .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
         .setEndpointOverride(awsServiceEndpoints.get("s3presigner"));
 
+    if ("true".equals(serviceCache.environment("PATH_STYLE_ACCESS_ENABLED"))) {
+      s3Presigner = s3Presigner.pathStyleAccessEnabled(Boolean.TRUE);
+    }
+
     serviceCache.register(S3PresignerConnectionBuilder.class,
         new ClassServiceExtension<S3PresignerConnectionBuilder>(s3Presigner));
   }
