@@ -191,7 +191,9 @@ public class DocumentIdRequestHandler
     String siteId = authorization.siteId();
     String documentId = event.getPathParameters().get("documentId");
 
-    logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
+    if (awsservice.debug()) {
+      logger.log("deleting object " + documentId + " from bucket '" + documentBucket + "'");
+    }
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
     DocumentItem item = service.findDocument(siteId, documentId);
@@ -206,12 +208,10 @@ public class DocumentIdRequestHandler
 
       if (md.isObjectExists()) {
         s3Service.deleteObject(documentBucket, s3Key, null);
+      }
 
-      } else {
-
-        if (!service.deleteDocument(siteId, documentId)) {
-          throw new NotFoundException("Document " + documentId + " not found.");
-        }
+      if (!service.deleteDocument(siteId, documentId)) {
+        throw new NotFoundException("Document " + documentId + " not found.");
       }
 
       ApiResponse resp = new ApiMessageResponse("'" + documentId + "' object deleted");

@@ -192,6 +192,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
 
       assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key, null).isObjectExists());
+      assertNull(getDocumentService().findDocument(siteId, documentId));
     }
   }
 
