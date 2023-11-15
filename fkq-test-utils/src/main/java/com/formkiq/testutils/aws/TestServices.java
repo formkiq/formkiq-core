@@ -182,6 +182,7 @@ public final class TestServices {
    */
   public static Map<String, URI> getEndpointMap() {
     Map<String, URI> endpoints = Map.of("dynamodb", DynamoDbTestServices.getEndpoint(), "s3",
+        TestServices.getEndpoint(Service.S3, null), "s3presigner",
         TestServices.getEndpoint(Service.S3, null), "ssm",
         TestServices.getEndpoint(Service.SSM, null), "sqs",
         TestServices.getEndpoint(Service.SQS, null), "sns",

@@ -29,6 +29,8 @@ import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3PresignerConnectionBuilder;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
@@ -65,6 +67,8 @@ public abstract class AbstractAwsTest {
   private static DocumentService documentService;
   /** App Edition Name. */
   private static String edition;
+  /** {@link S3PresignerService}. */
+  private static S3PresignerService s3PresignerService;
   /** {@link S3Service}. */
   private static S3Service s3Service;
   /** {@link DocumentSearchService}. */
@@ -117,6 +121,8 @@ public abstract class AbstractAwsTest {
 
     sqsService = new SqsServiceImpl(sqsBuilder);
     s3Service = new S3Service(s3Builder);
+    s3PresignerService = new S3PresignerService(
+        new S3PresignerConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion));
     ssmService = new SsmServiceImpl(ssmBuilder);
     snsService = new SnsService(snsBuilder);
 
@@ -184,6 +190,15 @@ public abstract class AbstractAwsTest {
    */
   public static String getEdition() {
     return edition;
+  }
+
+  /**
+   * Get {@link S3PresignerService}.
+   * 
+   * @return {@link S3PresignerService}
+   */
+  public static S3PresignerService getS3PresignerService() {
+    return s3PresignerService;
   }
 
   /**

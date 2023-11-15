@@ -38,6 +38,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -176,6 +177,7 @@ public class DocumentsOcrRequestHandler
       final DocumentOcrService ocrService, final S3Service s3, final List<String> s3Keys,
       final boolean textOnly) {
 
+
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
     List<String> newS3Keys = new ArrayList<>();
 
@@ -195,9 +197,11 @@ public class DocumentsOcrRequestHandler
       newS3Keys.addAll(s3Keys);
     }
 
+    S3PresignerService s3Presigner = awsservice.getExtension(S3PresignerService.class);
     PresignGetUrlConfig config = new PresignGetUrlConfig();
-    List<String> contentUrls = newS3Keys.stream().map(
-        s3key -> s3.presignGetUrl(ocrBucket, s3key, Duration.ofHours(1), null, config).toString())
+    List<String> contentUrls = newS3Keys
+        .stream().map(s3key -> s3Presigner
+            .presignGetUrl(ocrBucket, s3key, Duration.ofHours(1), null, config).toString())
         .collect(Collectors.toList());
     return contentUrls;
   }

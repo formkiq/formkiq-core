@@ -59,6 +59,8 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
@@ -134,6 +136,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(SsmService.class, new SsmServiceExtension());
     awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+    awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
@@ -349,8 +352,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
         new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
     String s3key = createS3Key(siteId, documentId);
 
-    S3Service s3Service = serviceCache.getExtension(S3Service.class);
-    return s3Service.presignGetUrl(documentsBucket, s3key, duration, null, config);
+    S3PresignerService s3Presigner = serviceCache.getExtension(S3PresignerService.class);
+    return s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
   }
 
   @SuppressWarnings("unchecked")

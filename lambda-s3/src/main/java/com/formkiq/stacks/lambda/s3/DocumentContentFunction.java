@@ -43,7 +43,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
-import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.google.gson.Gson;
@@ -60,8 +60,8 @@ public class DocumentContentFunction {
   private String documentsBucket;
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
-  /** {@link S3Service}. */
-  private S3Service s3Service;
+  /** {@link S3PresignerService}. */
+  private S3PresignerService s3Service;
   /** {@link HttpService}. */
   private HttpService http;
   /** {@link String}. */
@@ -73,7 +73,7 @@ public class DocumentContentFunction {
    * @param serviceCache {@link AwsServiceCache}
    */
   public DocumentContentFunction(final AwsServiceCache serviceCache) {
-    this.s3Service = serviceCache.getExtension(S3Service.class);
+    this.s3Service = serviceCache.getExtension(S3PresignerService.class);
     this.documentsBucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
     this.documentsIamUrl = serviceCache.environment("documentsIamUrl");
     this.http = serviceCache.getExtension(HttpService.class);
@@ -120,15 +120,8 @@ public class DocumentContentFunction {
       }
 
       String url = this.documentsIamUrl + "/documents/" + documentId + "/ocr";
-      // GetDocumentOcrRequest req = new
-      // GetDocumentOcrRequest().siteId(siteId).documentId(documentId);
 
-      // req.addQueryParameter("contentUrl", "true");
-      // req.addQueryParameter("text", "true");
-
-      // try {
       HttpResponse<String> response = this.http.get(url, Optional.empty(), Optional.of(parameters));
-      // HttpResponse<String> response = this.formkiqClient.getDocumentOcrAsHttpResponse(req);
 
       if (logger != null) {
         logger.log("GET /documents/{documentId}/ocr response: " + response.body());
@@ -139,10 +132,6 @@ public class DocumentContentFunction {
       if (map != null && map.containsKey("contentUrls")) {
         urls = (List<String>) map.get("contentUrls");
       }
-
-      // } catch (InterruptedException e) {
-      // throw new IOException(e);
-      // }
     }
 
     return urls;

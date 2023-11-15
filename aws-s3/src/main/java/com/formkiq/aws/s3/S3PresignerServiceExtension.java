@@ -23,35 +23,33 @@
  */
 package com.formkiq.aws.s3;
 
-import java.net.URI;
-import java.util.Map;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceRegistry;
-import com.formkiq.module.lambdaservices.ClassServiceExtension;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
 /**
- * S3 {@link AwsServiceRegistry}.
+ * 
+ * {@link AwsServiceExtension} for {@link S3PresignerService}.
+ *
  */
-public class S3AwsServiceRegistry implements AwsServiceRegistry {
+public class S3PresignerServiceExtension implements AwsServiceExtension<S3PresignerService> {
+
+  /** {@link S3PresignerService}. */
+  private S3PresignerService service;
+
+  /**
+   * constructor.
+   */
+  public S3PresignerServiceExtension() {}
 
   @Override
-  public void initService(final AwsServiceCache serviceCache,
-      final Map<String, URI> awsServiceEndpoints,
-      final AwsCredentialsProvider credentialsProvider) {
+  public S3PresignerService loadService(final AwsServiceCache awsServiceCache) {
 
-    S3ConnectionBuilder s3 =
-        new S3ConnectionBuilder(serviceCache.enableXray()).setRegion(serviceCache.region())
-            .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
+    if (this.service == null) {
+      S3PresignerConnectionBuilder connection =
+          awsServiceCache.getExtension(S3PresignerConnectionBuilder.class);
+      this.service = new S3PresignerService(connection);
+    }
 
-    serviceCache.register(S3ConnectionBuilder.class,
-        new ClassServiceExtension<S3ConnectionBuilder>(s3));
-
-    S3PresignerConnectionBuilder s3Presigner = new S3PresignerConnectionBuilder()
-        .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
-        .setEndpointOverride(awsServiceEndpoints.get("s3presigner"));
-
-    serviceCache.register(S3PresignerConnectionBuilder.class,
-        new ClassServiceExtension<S3PresignerConnectionBuilder>(s3Presigner));
+    return this.service;
   }
 }
