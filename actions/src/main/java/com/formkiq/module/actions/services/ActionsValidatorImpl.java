@@ -78,13 +78,13 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
     String chatGptApiKey = configs.getString(CHATGPT_API_KEY);
     if (!parameters.containsKey("tags")) {
-      errors.add(
-          new ValidationErrorImpl().key("parameters.tags").error("'tags' parameter is required"));
+      errors.add(new ValidationErrorImpl().key("parameters.tags")
+          .error("action 'tags' parameter is required"));
     }
 
     if (!parameters.containsKey("engine")) {
       errors.add(new ValidationErrorImpl().key("parameters.engine")
-          .error("'engine' parameter is required"));
+          .error("action 'engine' parameter is required"));
     } else if (!"chatgpt".equals(parameters.getOrDefault("engine", ""))) {
       errors.add(
           new ValidationErrorImpl().key("parameters.engine").error("invalid 'engine' parameter"));
@@ -116,21 +116,21 @@ public class ActionsValidatorImpl implements ActionsValidator {
           PARAMETER_NOTIFICATION_SUBJECT)) {
         if (!hasValue(parameters, parameter)) {
           errors.add(new ValidationErrorImpl().key("parameters." + parameter)
-              .error("'" + parameter + "' parameter is required"));
+              .error("action '" + parameter + "' parameter is required"));
         }
       }
 
       if (!hasValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
           && !hasValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
         errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TO_CC)
-            .error("'" + PARAMETER_NOTIFICATION_TO_CC + "' or '" + PARAMETER_NOTIFICATION_TO_BCC
-                + "' is required"));
+            .error("action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '"
+                + PARAMETER_NOTIFICATION_TO_BCC + "' is required"));
       }
 
       if (!hasValue(parameters, PARAMETER_NOTIFICATION_TEXT)
           && !hasValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
         errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TEXT)
-            .error("'" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
+            .error("action '" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
                 + "' is required"));
       }
     }
@@ -155,18 +155,18 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
       if (action.type() == null) {
 
-        errors.add(new ValidationErrorImpl().key("type").error("'type' is required"));
+        errors.add(new ValidationErrorImpl().key("type").error("action 'type' is required"));
 
       } else if (isEmpty(action.userId())) {
 
-        errors.add(new ValidationErrorImpl().key("userId").error("'userId' is required"));
+        errors.add(new ValidationErrorImpl().key("userId").error("action 'userId' is required"));
 
       } else {
 
         Map<String, String> parameters = getParameters(action);
         if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
-          errors.add(
-              new ValidationErrorImpl().key("parameters.url").error("'url' parameter is required"));
+          errors.add(new ValidationErrorImpl().key("parameters.url")
+              .error("action 'url' parameter is required"));
         } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
           validateDocumentTagging(configs, parameters, errors);
         } else if (ActionType.NOTIFICATION.equals(action.type())) {
