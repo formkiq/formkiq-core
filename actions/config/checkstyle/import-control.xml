@@ -7,8 +7,9 @@
 	
 	<subpackage name="actions">
 		
-		<allow pkg="com.formkiq.module.actions" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.module.actions" />
+		<allow pkg="com.formkiq.graalvm.annotations" />
 		
 		<allow pkg="java.io" />
 		<allow pkg="java.text" />
