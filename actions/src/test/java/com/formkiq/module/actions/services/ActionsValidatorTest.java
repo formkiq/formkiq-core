@@ -69,7 +69,7 @@ class ActionsValidatorTest {
     assertEquals(1, errors.size());
     ValidationError error = errors.iterator().next();
     assertEquals("type", error.key());
-    assertEquals("'type' is required", error.error());
+    assertEquals("action 'type' is required", error.error());
   }
 
   @Test
@@ -85,7 +85,7 @@ class ActionsValidatorTest {
     assertEquals(1, errors.size());
     ValidationError error = errors.iterator().next();
     assertEquals("parameters.url", error.key());
-    assertEquals("'url' parameter is required", error.error());
+    assertEquals("action 'url' parameter is required", error.error());
   }
 
   @Test
@@ -104,7 +104,7 @@ class ActionsValidatorTest {
     Collection<ValidationError> errors = errorList.get(0);
     ValidationError error = errors.iterator().next();
     assertEquals("type", error.key());
-    assertEquals("'type' is required", error.error());
+    assertEquals("action 'type' is required", error.error());
   }
 
   @Test

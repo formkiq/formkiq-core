@@ -960,9 +960,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals(
-          "{\"errors\":[{\"key\":\"parameters.url\",\"error\":\"'url' parameter is required\"}]}",
-          obj.getString("body"));
+      assertEquals("{\"errors\":[{\"key\":\"parameters.url\","
+          + "\"error\":\"action 'url' parameter is required\"}]}", obj.getString("body"));
     }
   }
 
@@ -1005,7 +1004,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
           obj.getString("body"));
     }
   }
@@ -1028,7 +1027,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
           obj.getString("body"));
     }
   }

@@ -216,7 +216,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(1, validation.size());
 
         Map<String, Object> i = validation.iterator().next();
-        assertEquals("'type' is required", i.get("error"));
+        assertEquals("action 'type' is required", i.get("error"));
       }
 
       List<Action> actions = this.service.getActions(siteId, documentId);
@@ -255,10 +255,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
         Iterator<Map<String, Object>> itr = validation.iterator();
         Map<String, Object> i = itr.next();
-        assertEquals("'tags' parameter is required", i.get("error"));
+        assertEquals("action 'tags' parameter is required", i.get("error"));
 
         i = itr.next();
-        assertEquals("'engine' parameter is required", i.get("error"));
+        assertEquals("action 'engine' parameter is required", i.get("error"));
       }
 
       List<Action> actions = this.service.getActions(siteId, documentId);
