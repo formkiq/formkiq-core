@@ -23,11 +23,14 @@
  */
 package com.formkiq.module.actions;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * 
  * Supported Type of Actions.
  *
  */
+@Reflectable
 public enum ActionType {
   /** AntiVirus. */
   ANTIVIRUS,
