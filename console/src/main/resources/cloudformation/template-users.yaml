@@ -93,6 +93,7 @@ Resources:
     Condition: IsNotGovCloud
     DependsOn:
     - ConsoleAdminUser
+    - DefaultGroup
     Properties: 
       GroupName: "default"
       Username: 
