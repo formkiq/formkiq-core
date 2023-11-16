@@ -5396,17 +5396,10 @@ Resources:
               type: "object"
               required:
                 - id
-                - type
               properties:
                 id:
                   type: "string"
                   description: "Step identifier"
-                type:
-                  type: "string"
-                  description: "Workflow step type"
-                  enum:
-                    - ACTION
-                    - QUEUE
                 action:
                   $ref: "#/components/schemas/AddAction"
                 queue:
