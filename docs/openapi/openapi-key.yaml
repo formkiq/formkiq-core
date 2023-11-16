@@ -5401,6 +5401,9 @@
                 type:
                   type: string
                   description: Workflow step type
+                  enum:
+                  - ACTION
+                  - QUEUE
                 action:
                   $ref: '#/components/schemas/AddAction'
                 queue:

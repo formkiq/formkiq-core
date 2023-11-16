@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -43,32 +44,46 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class Action implements DynamodbRecord<Action>, DbKeys {
 
   /** Record Completed date. */
+  @Reflectable
   private Date completedDate;
   /** DocumentId. */
+  @Reflectable
   private String documentId;
   /** Index. */
+  @Reflectable
   private String index = null;
   /** Record inserted date. */
+  @Reflectable
   private Date insertedDate;
   /** Action Message. */
+  @Reflectable
   private String message;
   /** Action Metadata. */
+  @Reflectable
   private Map<String, String> metadata;
   /** Action Parameters. */
+  @Reflectable
   private Map<String, String> parameters;
   /** QueueId. */
+  @Reflectable
   private String queueId;
   /** Is Action Completed. */
+  @Reflectable
   private ActionStatus status;
   /** Type of Action. */
+  @Reflectable
   private ActionType type;
   /** UserId. */
+  @Reflectable
   private String userId;
   /** WorkflowId. */
+  @Reflectable
   private String workflowId;
   /** Workflow Last Step. */
+  @Reflectable
   private String workflowLastStep;
   /** Workflow Step Id. */
+  @Reflectable
   private String workflowStepId;
 
   /**
