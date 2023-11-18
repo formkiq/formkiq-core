@@ -133,7 +133,7 @@ Resources:
       CorsConfiguration:
         CorsRules:
         -  AllowedOrigins: ["*"]
-           AllowedMethods: ["PUT", "POST"]
+           AllowedMethods: ["PUT", "POST", "GET"]
            AllowedHeaders: ["*"]
       NotificationConfiguration:
         LambdaConfigurations:
