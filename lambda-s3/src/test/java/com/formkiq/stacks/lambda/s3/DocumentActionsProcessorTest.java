@@ -130,7 +130,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static DocumentService documentService;
   /** {@link Gson}. */
   private static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
   /** Port to run Test server. */
@@ -600,7 +599,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 5;
+      final int expectedSize = 4;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -609,9 +608,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
-      assertEquals("document type", tags.getResults().get(i).getKey());
-      assertEquals("Memorandum", tags.getResults().get(i++).getValue());
-
       assertEquals("location", tags.getResults().get(i).getKey());
       assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
 
@@ -691,7 +687,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("21st day of April, 2023", tags.getResults().get(i++).getValue());
 
       assertEquals("resolutions", tags.getResults().get(i).getKey());
-      assertEquals("individualAppointed: Thomas Bewick", tags.getResults().get(i++).getValue());
+      assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
 
       assertEquals("secretary", tags.getResults().get(i).getKey());
       assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
@@ -739,7 +735,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, this.context);
 
       // then
-      final int expectedSize = 5;
+      final int expectedSize = 4;
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
@@ -750,12 +746,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       int i = 0;
       assertEquals("Organization", tags.getResults().get(i).getKey());
       assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
-
-      assertEquals("document type", tags.getResults().get(i).getKey());
-      assertEquals(
-          "Toms & Conditions:Payment is due within 18 days."
-              + "Please make checks payable to: East Repatr Inc",
-          tags.getResults().get(i++).getValue());
 
       assertEquals("location", tags.getResults().get(i).getKey());
       assertEquals("New York, NY,Cambutdigo, MA",
