@@ -1,19 +1,25 @@
 {
-    "id": "cmpl-88BgqZjP3dnp8f6KBtbwvfHacnS8Y",
-    "object": "text_completion",
-    "created": 1696962252,
-    "model": "gpt-3.5-turbo-instruct",
+    "id": "chatcmpl-8LwgeVk8glvGvaDqo9ZrMK5Mdd2j4",
+    "object": "chat.completion",
+    "created": 1700241172,
+    "model": "gpt-3.5-turbo-0613",
     "choices": [
         {
-            "text": "\n\n{\n  \"organization\": [\n    \"East Repair Inc.\"\n  ],\n  \"location\": [\n    \"New York, NY\",\n    \"Cambutdigo, MA\"\n  ],\n  \"person\": [\n    \"Job Smith\"\n  ],\n  \"subject\": [\n    \"Receipt\",\n    \"Frontend eaar brake cabies\",\n    \"New set of podal arms\",\n    \"Labor shrs\"\n  ],\n  \"sentiment\": [],\n  \"document type\": [\n    {\n      \"# Us.001\": {\n        \"$154.06\": {\n          \"$145,00\": \"$208\"\n        }\n      }\n    },\n    {\n      \"# Receipt Date \": {\n        \"$11/02/2019 \": \"$20/02/2019 \"\n      }\n    },\n    \n  \t\"Toms & Conditions:Payment is due within 18 days.Please make checks payable to: East Repatr Inc.\"\n    \n   ]\n}",
             "index": 0,
-            "logprobs": null,
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_text_data",
+                    "arguments": "{\n  \"organization\": [\"East Repair Inc.\"],\n  \"location\": [\"New York, NY\",\"Cambutdigo, MA\"],\n  \"person\": [\"Job Smith\"],\n  \"subject\":  [\"Receipt\",\"Frontend eaar brake cabies\",\"New set of podal arms\",\"Labor shrs\"],\n  \"sentiment\": []\n,\n  \"document type\": []\n}"
+                }
+            },
             "finish_reason": "stop"
         }
     ],
     "usage": {
-        "prompt_tokens": 221,
-        "completion_tokens": 188,
-        "total_tokens": 409
+        "prompt_tokens": 306,
+        "completion_tokens": 47,
+        "total_tokens": 353
     }
 }

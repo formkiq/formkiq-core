@@ -1,22 +1,25 @@
 {
-    "id": "cmpl-7HOmfBlUrif1MEDOLEFEtJ44A9iGq",
-    "object": "text_completion",
-    "created": 1684381201,
-    "model": "gpt-3.5-turbo-instruct",
-    "choices":
-    [
+    "id": "chatcmpl-8LwgeVk8glvGvaDqo9ZrMK5Mdd2j4",
+    "object": "chat.completion",
+    "created": 1700241172,
+    "model": "gpt-3.5-turbo-0613",
+    "choices": [
         {
-            "text": "\n\n{\n    \"Organization\": [\"Great Auk Enterprises\"],\n    \"Location\": [\"YellowBelly Brewery Pub, St. Johns, NL\"],\n    \"Person\": [\"Thomas Bewick\", \"Ketill Ketilsson\", \"Farley Mowat\", \"Aaron Thomas\"], \n    \"Subject\": [\"MINUTES OF A MEETING OF DIRECTORS\"], \n    \"Sentiment\": [], \n    \"Document Type\": [\"Memorandum\"] \n}",
             "index": 0,
-            "logprobs": null,
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_text_data",
+                    "arguments": "{\n  \"Organization\": [\"Great Auk Enterprises\"],\n  \"Location\": [\"YellowBelly Brewery Pub, St. Johns, NL\"],\n  \"Person\": [\"Thomas Bewick\", \"Ketill Ketilsson\", \"Farley Mowat\", \"Aaron Thomas\"],\n  \"Subject\": [\"MINUTES OF A MEETING OF DIRECTORS\"],\n  \"Sentiment\": []\n,\n  \"Document Type\": [\"Memorandum\"]\n}"
+                }
+            },
             "finish_reason": "stop"
         }
     ],
-    "usage":
-    {
-        "prompt_tokens": 255,
-        "completion_tokens": 106,
-        "total_tokens": 361
+    "usage": {
+        "prompt_tokens": 306,
+        "completion_tokens": 47,
+        "total_tokens": 353
     }
 }
-

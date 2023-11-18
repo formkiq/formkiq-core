@@ -1,21 +1,25 @@
 {
-    "id": "cmpl-7bwGRyeJOxasYu6ucPx5tP0pH1ohf",
-    "object": "text_completion",
-    "created": 1689276459,
-    "model": "gpt-3.5-turbo-instruct",
-    "choices":
-    [
+    "id": "chatcmpl-8LwgeVk8glvGvaDqo9ZrMK5Mdd2j4",
+    "object": "chat.completion",
+    "created": 1700241172,
+    "model": "gpt-3.5-turbo-0613",
+    "choices": [
         {
-            "text": " board: Thomas Bewick, Ketill Ketilsson, and Farley Mowat.\n\n{\n \"documentType\": \"Minutes of the Director's Meeting\",\n \"meetingDate\": \"21st day of April, 2023\", \n \"chairperson\": \"Thomas Bewick\", \n \"secretary\": \"Aaron Thomas\", \n \"boardMembers\": [\"Thomas Bewick\",\"Ketill Ketilsson\",\"Farley Mowat\"], \n \"resolutions\": [{\"individualAppointed\":\"Thomas Bewick\"}] \n}",
             "index": 0,
-            "logprobs": null,
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_text_data",
+                    "arguments": "{\n  \"board\": [\"'Thomas Bewick'\", \"'Ketill Ketilsson'\", \"'Farley Mowat.'\"],\n  \"document type\": [\"Minutes of the Director's Meeting\"],\n  \"meeting date\": [\"21st day of April, 2023\"],\n  \"chairperson\":  [\"Thomas Bewick\"],\n  \"secretary\": [\"Aaron Thomas\"]\n,\n  \"board members\": [\"Thomas Bewick\",\"Ketill Ketilsson\",\"Farley Mowat\"],\"resolutions\":[\"Thomas Bewick\"]\n}"
+                }
+            },
             "finish_reason": "stop"
         }
     ],
-    "usage":
-    {
-        "prompt_tokens": 477,
-        "completion_tokens": 127,
-        "total_tokens": 604
+    "usage": {
+        "prompt_tokens": 306,
+        "completion_tokens": 47,
+        "total_tokens": 353
     }
 }
