@@ -1074,7 +1074,15 @@ Resources:
             post:
               operationId: DocumentSearch
               summary: Document search
-              description: Document search query request; documents are searched primarily using a document tag key and optional tag value, or if Typesense is enabled, searches on the document path and versioned metadata is also available. An optional documentIds parameter is also available in the DocumentSearchBody to filter, with up to 100 documentIds accepted.
+              description: |-
+                Document search query request; 
+                
+                Supports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be "exacted" or "begins_with" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).
+                
+                If Typesense is enabled, full text search is supported through the "text" parameter. Full text search will look for the text in the "content" and/or document "meta data".
+                
+                See requestBody examples below for commmon examples.
+                
               tags:
               - Document Search
               parameters:
@@ -1117,6 +1125,10 @@ Resources:
                               key: category
                               eq: person
                             documentIds: ["1", "2"]
+                      Typesense_Fulltext_Search:
+                        value:
+                          query:
+                            text: "my search text"
               responses:
                 '200':
                   description: 200 OK
