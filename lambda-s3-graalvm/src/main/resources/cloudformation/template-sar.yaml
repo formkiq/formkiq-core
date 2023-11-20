@@ -136,11 +136,11 @@ Resources:
            AllowedMethods: ["PUT", "POST", "GET"]
            AllowedHeaders: ["*"]
       NotificationConfiguration:
-        LambdaConfigurations:
+        QueueConfigurations:
         - Event: 's3:ObjectCreated:*'
-          Function: 
+          Queue: 
             Fn::GetAtt:
-            - StagingS3Create
+            - DocumentsStagingQueue
             - Arn
       LifecycleConfiguration:
         Rules:
@@ -318,7 +318,7 @@ Resources:
               Fn::GetAtt: 
               - DocumentActionsQueue
               - Arn
-            BatchSize: 10          
+            BatchSize: 1          
 
   StagingS3CreateLogGroup:
     Type: AWS::Logs::LogGroup
@@ -376,6 +376,15 @@ Resources:
           Fn::Sub: "FormKiQ ${FormKiQType}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
+      Events:
+        CreateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: 
+              Fn::GetAtt: 
+              - DocumentsStagingQueue
+              - Arn
+            BatchSize: 1
 
   StagingCreateObjectParameter:
     Type: AWS::SSM::Parameter
@@ -393,25 +402,6 @@ Resources:
           Fn::Sub: "${AppEnvironment}"
         StackName: 
           Fn::Sub: "${AWS::StackName}"
-        
-  StagingCreateObjectPermission:
-    DependsOn:
-    - StagingS3Create
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: 
-        Fn::GetAtt: 
-        - StagingS3Create
-        - Arn
-      Principal: s3.amazonaws.com
-      SourceAccount: 
-        Fn::Sub: "${AWS::AccountId}"
-      SourceArn: 
-        Fn::Join:
-        - ''
-        - - Fn::Sub: "arn:${Partition}:s3:::"
-          - Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
 
   DocumentsS3UpdateLogGroup:
     Type: AWS::Logs::LogGroup
@@ -475,12 +465,56 @@ Resources:
               Fn::GetAtt: 
               - DocumentsUpdateQueue
               - Arn
-            BatchSize: 10
+            BatchSize: 1
 
   DocumentActionsQueue:
     Type: "AWS::SQS::Queue"
     Properties:
-      VisibilityTimeout: 120
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - DocumentsDeadLetterQueue
+            - Arn
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+
+  DocumentsStagingQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 300
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - DocumentsDeadLetterQueue
+            - Arn
+      Tags:
+          - Key: "Application"
+            Value: 
+              Fn::Sub: "FormKiQ ${FormKiQType}"      
+          - Key: "AppEnvironment"
+            Value: 
+              Fn::Sub: "${AppEnvironment}"
+          - Key: "StackName"
+            Value: 
+              Fn::Sub: "${AWS::StackName}"
+
+  DocumentsDeadLetterQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      VisibilityTimeout: 300
       ReceiveMessageWaitTimeSeconds: 20
       Tags:
           - Key: "Application"
@@ -492,12 +526,18 @@ Resources:
           - Key: "StackName"
             Value: 
               Fn::Sub: "${AWS::StackName}"
-              
+
   DocumentsUpdateQueue:
     Type: "AWS::SQS::Queue"
     Properties:
-      VisibilityTimeout: 120
+      VisibilityTimeout: 300
       ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - DocumentsDeadLetterQueue
+            - Arn
       Tags:
           - Key: "Application"
             Value: 
@@ -565,6 +605,33 @@ Resources:
       TopicArn:
         Ref: SnsDocumentEvent
       FilterPolicy: '{"type": ["actions"]}'      
+
+  DocumentsStagingQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: 
+    - DocumentsStagingQueue
+    - SnsDocumentEvent
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: QueuePolicy
+        Statement:
+        - Sid: s3SendMessagesToQueue
+          Effect: Allow
+          Principal:
+            Service: s3.amazonaws.com
+          Action: 
+            - sqs:SendMessage
+          Resource: 
+            Fn::GetAtt: 
+            - DocumentsStagingQueue
+            - Arn
+          Condition:
+            StringEquals:
+              aws:SourceAccount: 
+                Ref: AWS::AccountId
+      Queues:
+      - Ref: DocumentsStagingQueue
       
   DocumentsUpdateQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -750,6 +817,9 @@ Resources:
               - Arn
             - Fn::GetAtt: 
               - DocumentsUpdateQueue
+              - Arn
+            - Fn::GetAtt: 
+              - DocumentsStagingQueue
               - Arn
           - Effect: Allow
             Action:
