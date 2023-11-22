@@ -1079,7 +1079,7 @@ Resources:
                 
                 Supports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be "exacted" or "begins_with" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).
                 
-                If Typesense is enabled, full text search is supported through the "text" parameter. Full text search will look for the text in the "content" and/or document "meta data".
+                If Typesense is enabled, full text search is supported through the "text" parameter. Full text search will look for the text in the "content" and/or document "metadata".
                 
                 See requestBody examples below for commmon examples.
                 
