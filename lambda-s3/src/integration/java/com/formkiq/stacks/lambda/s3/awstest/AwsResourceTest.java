@@ -67,6 +67,7 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.s3.model.Event;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
+import software.amazon.awssdk.services.s3.model.QueueConfiguration;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
@@ -143,6 +144,14 @@ public class AwsResourceTest extends AbstractAwsTest {
 
   /** {@link Gson}. */
   private Gson gson = new GsonBuilder().create();
+
+  private void assertQueueConfigurations(final QueueConfiguration q, final String arn,
+      final String event) {
+    assertTrue(q.queueArn().contains(arn));
+    assertEquals(1, q.events().size());
+    Event e = q.events().get(0);
+    assertEquals(event, e.toString());
+  }
 
   /**
    * Create SQS Queue.
@@ -397,11 +406,11 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
     assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
 
-    assertEquals(0, response1.queueConfigurations().size());
-    assertEquals(1, response1.lambdaFunctionConfigurations().size());
+    assertEquals(1, response1.queueConfigurations().size());
+    assertEquals(0, response1.lambdaFunctionConfigurations().size());
 
-    assertLambdaFunctionConfigurations(response1.lambdaFunctionConfigurations().get(0),
-        "StagingS3Create", "s3:ObjectCreated:*");
+    assertQueueConfigurations(response1.queueConfigurations().get(0), "DocumentsStagingQueue",
+        "s3:ObjectCreated:*");
   }
 
   /**
@@ -460,11 +469,11 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertLambdaFunctionConfigurations(list.get(0), "DocumentsS3Update", "s3:ObjectCreated:*");
     assertLambdaFunctionConfigurations(list.get(1), "DocumentsS3Update", "s3:ObjectRemoved:*");
 
-    assertEquals(0, response1.queueConfigurations().size());
-    assertEquals(1, response1.lambdaFunctionConfigurations().size());
+    assertEquals(1, response1.queueConfigurations().size());
+    assertEquals(0, response1.lambdaFunctionConfigurations().size());
 
-    assertLambdaFunctionConfigurations(response1.lambdaFunctionConfigurations().get(0),
-        "StagingS3Create", "s3:ObjectCreated:*");
+    assertQueueConfigurations(response1.queueConfigurations().get(0), "DocumentsStagingQueue",
+        "s3:ObjectCreated:*");
   }
 
   /**
