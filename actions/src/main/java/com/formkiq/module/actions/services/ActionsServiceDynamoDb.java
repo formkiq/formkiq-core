@@ -24,6 +24,7 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +50,7 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionIndexComparator;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.DocumentWorkflowRecord;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -353,5 +355,29 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     }
 
     this.db.updateItem(attrs.get(PK), attrs.get(SK), updates);
+  }
+
+  @Override
+  public void updateDocumentWorkflowStatus(final String siteId, final String documentId,
+      final Action action) {
+    String workflowId = action.workflowId();
+    String stepId = action.workflowStepId();
+
+    String status = !isEmpty(action.workflowLastStep()) ? "COMPLETE" : "IN_PROGRESS";
+
+    if (ActionStatus.FAILED.equals(action.status())) {
+      status = "FAILED";
+    }
+
+    DocumentWorkflowRecord r =
+        new DocumentWorkflowRecord().documentId(documentId).workflowId(workflowId);
+
+    Map<String, AttributeValue> attrs =
+        this.db.get(AttributeValue.fromS(r.pk(siteId)), AttributeValue.fromS(r.sk()));
+
+    r = new DocumentWorkflowRecord().getFromAttributes(siteId, attrs).status(status)
+        .currentStepId(stepId).actionPk(action.pk(siteId)).actionSk(action.sk());
+
+    this.db.putItem(r.getAttributes(siteId));
   }
 }

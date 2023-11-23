@@ -5429,7 +5429,6 @@ Resources:
                   description: "Approved Action"
                   enum:
                     - CONTINUE
-                    - REMAIN
                     - WORKFLOW
                     - EXIT
                 rejectAction:
@@ -5437,7 +5436,6 @@ Resources:
                   description: "Approved Action"
                   enum:
                     - CONTINUE
-                    - REMAIN
                     - WORKFLOW
                     - EXIT
                 rejectWorkflowId:
@@ -5457,7 +5455,6 @@ Resources:
                   description: "Approved Action"
                   enum:
                     - CONTINUE
-                    - REMAIN
                     - WORKFLOW
                     - EXIT
                 rejectAction:
@@ -5465,7 +5462,6 @@ Resources:
                   description: "Approved Action"
                   enum:
                     - CONTINUE
-                    - REMAIN
                     - WORKFLOW
                     - EXIT
                 rejectWorkflowId:

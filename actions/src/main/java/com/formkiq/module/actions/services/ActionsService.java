@@ -146,4 +146,13 @@ public interface ActionsService {
    * @param action {@link Action}
    */
   void updateActionStatus(String siteId, String documentId, Action action);
+
+  /**
+   * Update Document Workflow Status.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param action {@link Action}
+   */
+  void updateDocumentWorkflowStatus(String siteId, String documentId, Action action);
 }

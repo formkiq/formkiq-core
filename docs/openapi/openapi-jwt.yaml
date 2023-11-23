@@ -5418,7 +5418,6 @@
                   description: Approved Action
                   enum:
                   - CONTINUE
-                  - REMAIN
                   - WORKFLOW
                   - EXIT
                 rejectAction:
@@ -5426,7 +5425,6 @@
                   description: Approved Action
                   enum:
                   - CONTINUE
-                  - REMAIN
                   - WORKFLOW
                   - EXIT
                 rejectWorkflowId:
@@ -5446,7 +5444,6 @@
                   description: Approved Action
                   enum:
                   - CONTINUE
-                  - REMAIN
                   - WORKFLOW
                   - EXIT
                 rejectAction:
@@ -5454,7 +5451,6 @@
                   description: Approved Action
                   enum:
                   - CONTINUE
-                  - REMAIN
                   - WORKFLOW
                   - EXIT
                 rejectWorkflowId:
