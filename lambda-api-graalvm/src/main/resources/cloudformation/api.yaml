@@ -3704,25 +3704,21 @@ Resources:
             WorkflowStep:
               type: "object"
               properties:
-                id:
+                stepId:
                   type: "string"
-                  description: "Step identifier"
+                  description: "Workflow Step Identifier"
                 action:
                   $ref: "#/components/schemas/DocumentAction"
                 queue:
                   $ref: "#/components/schemas/WorkflowQueue"
+                decision:
+                  $ref: "#/components/schemas/WorkflowStepDecision"
             WorkflowQueue:
               type: object
               properties:
                 queueId:
                   type: "string"
                   description: "Queue Id"
-                ifApprovedStepId:
-                  type: "string"
-                  description: "If approved goto step id"
-                ifRejectedStepId:
-                  type: "string"
-                  description: "If rejected goto step id"
                 approvalGroups:
                   items:
                     type: "string"
@@ -4849,6 +4845,15 @@ Resources:
                     - OCR
                     - QUEUE
                     - WEBHOOK
+                queueId:
+                  type: string
+                  description: Queue Id
+                workflowId:
+                  type: string
+                  description: Workflow Id
+                workflowStepId:
+                  type: string
+                  description: Workflow Step Id
                 message:
                   type: string
                   description: Action message information
@@ -5406,30 +5411,74 @@ Resources:
                     $ref: "#/components/schemas/AddWorkflowStep"
             AddWorkflowStep:
               type: "object"
-              required:
-                - id
               properties:
-                id:
-                  type: "string"
-                  description: "Step identifier"
                 action:
                   $ref: "#/components/schemas/AddAction"
                 queue:
-                  $ref: "#/components/schemas/AddQueue"
-            AddQueue:
+                  $ref: "#/components/schemas/AddWorkflowStepQueue"
+                decision:
+                  $ref: "#/components/schemas/AddWorkflowStepDecision"
+            WorkflowStepDecision:
+              type: object
+              properties:
+                approvedWorkflowId:
+                  type: "string"
+                  description: "Workflow to goto when approved"
+                approvedAction:
+                  type: "string"
+                  description: "Approved Action"
+                  enum:
+                    - CONTINUE
+                    - REMAIN
+                    - WORKFLOW
+                    - EXIT
+                rejectAction:
+                  type: "string"
+                  description: "Approved Action"
+                  enum:
+                    - CONTINUE
+                    - REMAIN
+                    - WORKFLOW
+                    - EXIT
+                rejectWorkflowId:
+                  type: "string"
+                  description: "Workflow to goto when rejected"
+            AddWorkflowStepDecision:
+              required:
+                - approvedAction
+                - rejectAction
+              type: object
+              properties:
+                approvedWorkflowId:
+                  type: "string"
+                  description: "Workflow to goto when approved"
+                approvedAction:
+                  type: "string"
+                  description: "Approved Action"
+                  enum:
+                    - CONTINUE
+                    - REMAIN
+                    - WORKFLOW
+                    - EXIT
+                rejectAction:
+                  type: "string"
+                  description: "Approved Action"
+                  enum:
+                    - CONTINUE
+                    - REMAIN
+                    - WORKFLOW
+                    - EXIT
+                rejectWorkflowId:
+                  type: "string"
+                  description: "Workflow to goto when rejected"
+            AddWorkflowStepQueue:
               type: object
               required:
-                - name
+                - queueId
               properties:
                 queueId:
                   type: "string"
                   description: "Queue Identifier"
-                ifApprovedStepId:
-                  type: "string"
-                  description: "If approved goto step id"
-                ifRejectedStepId:
-                  type: "string"
-                  description: "If rejected goto step id"
                 approvalGroups:
                   items:
                     type: "string"
@@ -5508,9 +5557,9 @@ Resources:
                 - queueId
                 - decision
               properties:
-                queueId:
+                stepId:
                   type: "string"
-                  description: "Queue Identifier"
+                  description: "Workflow Step Identifier"
                 comments:
                   type: "string"
                   description: "Workflow decision comments"
