@@ -50,10 +50,10 @@ public interface ActionsService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param queueName {@link String}
+   * @param queueId {@link String}
    * @return {@link Action}
    */
-  Action findActionInQueue(String siteId, String documentId, String queueName);
+  Action findActionInQueue(String siteId, String documentId, String queueId);
 
   /**
    * Find Documents with FAILED status.
@@ -71,12 +71,12 @@ public interface ActionsService {
    * Find Documents in Queue.
    * 
    * @param siteId {@link String}
-   * @param queueName {@link String}
+   * @param queueId {@link String}
    * @param exclusiveStartKey {@link Map}
    * @param limit int
    * @return {@link PaginationResults} {@link Action}
    */
-  PaginationResults<Action> findDocumentsInQueue(String siteId, String queueName,
+  PaginationResults<Action> findDocumentsInQueue(String siteId, String queueId,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**

@@ -343,10 +343,10 @@ public class ActionsServiceDynamoDbTest {
   public void testUpdateActionStatus02() {
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
       // given
-      String name = "queue1234";
+      String queueId = "queue1234";
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
+      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(queueId);
       service.saveActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
@@ -357,10 +357,10 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
+      PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, queueId, null, LIMIT);
       assertEquals(1, docs.getResults().size());
-      assertEquals(name, docs.getResults().get(0).queueId());
-      assertNotNull(service.findActionInQueue(siteId, documentId, name));
+      assertEquals(queueId, docs.getResults().get(0).queueId());
+      assertNotNull(service.findActionInQueue(siteId, documentId, queueId));
 
       PaginationResults<String> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.IN_QUEUE, null, LIMIT);
@@ -375,9 +375,9 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
-      docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
+      docs = service.findDocumentsInQueue(siteId, queueId, null, LIMIT);
       assertEquals(0, docs.getResults().size());
-      assertNull(service.findActionInQueue(siteId, documentId, name));
+      assertNull(service.findActionInQueue(siteId, documentId, queueId));
 
       results = service.findDocumentsWithStatus(siteId, ActionStatus.COMPLETE, null, LIMIT);
       assertEquals(0, results.getResults().size());
