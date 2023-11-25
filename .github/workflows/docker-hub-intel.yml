@@ -44,6 +44,7 @@ jobs:
         env:
           formKiQVersion: ${{ github.event.inputs.version }}
         with:
+          platforms: linux/amd64,linux/arm/v7
           build-arg: CONSOLE_VERSION=${{ env.PACKAGE_VERSION }}
           context: .
           file: ./netty-server/build/dockerfile/Dockerfile
