@@ -47,7 +47,7 @@ jobs:
         env:
           formKiQVersion: ${{ github.event.inputs.version }}
         with:
-          platforms: linux/amd64,linux/arm/v7
+          platforms: linux/amd64
           context: .
           file: ./netty-server/build/dockerfile/Dockerfile
           push: true
