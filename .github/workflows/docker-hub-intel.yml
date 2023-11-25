@@ -46,6 +46,6 @@ jobs:
         with:
           build-arg: CONSOLE_VERSION=${{ env.PACKAGE_VERSION }}
           context: .
-          file: ./build/build/dockerfile/Dockerfile
+          file: ./build/dockerfile/Dockerfile
           push: true
           tags: "formkiq/api-server:${{ env.formKiQVersion }}"
