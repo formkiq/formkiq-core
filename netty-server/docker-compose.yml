@@ -19,7 +19,7 @@ services:
     command: '--data-dir /data --api-key=xyz --enable-cors'
     
   formkiq:
-    image: formkiq/api-server:1.13.0-SNAPSHOT-20231114
+    image: formkiq/api-server:1.13.0-SNAPSHOT-20231125
     depends_on:
       - minio
       - dynamodb
