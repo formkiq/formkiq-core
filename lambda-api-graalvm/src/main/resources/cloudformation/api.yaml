@@ -2272,7 +2272,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        "$ref": "#/components/schemas/GetTagSchemasRequest"
+                        "$ref": "#/components/schemas/GetTagSchemasResponse"
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -2345,7 +2345,7 @@ Resources:
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/GetTagSchemaRequest'
+                        $ref: '#/components/schemas/GetTagSchemaResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -5346,7 +5346,7 @@ Resources:
                 error:
                   type: "string"
                   description: "Error Message"
-            GetTagSchemasRequest:
+            GetTagSchemasResponse:
               type: "object"
               properties:
                 schemas:
@@ -5597,7 +5597,12 @@ Resources:
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
-            GetTagSchemaRequest:
+            GetTagSchemaResponse:
+              type: "object"
+              properties:
+                tagSchema:
+                  $ref: "#/components/schemas/TagSchema"
+            TagSchema:
               type: "object"
               properties:
                 tagSchemaId:
