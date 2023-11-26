@@ -1078,7 +1078,9 @@ Resources:
                 Document search query request; 
                 
                 Supports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be "exacted" or "begins_with" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).
-                
+
+                If using Enteprise TagSchema Composite Keys feature then multiple tag(s) can be searched for.
+
                 If Typesense is enabled, full text search is supported through the "text" parameter. Full text search will look for the text in the "content" and/or document "metadata".
                 
                 See requestBody examples below for commmon examples.
@@ -3837,6 +3839,11 @@ Resources:
                   $ref: "#/components/schemas/DocumentSearchMeta"              
                 tag:
                   $ref: "#/components/schemas/DocumentSearchTag"
+                tags:
+                  type: array
+                  description: "List of Composite Key tags to filter search results on"
+                  items:
+                    $ref: "#/components/schemas/DocumentCompositeSearchTag"
                 documentIds:
                   type: array
                   description: "List of DocumentIds to filter search results on"
@@ -4085,6 +4092,17 @@ Resources:
                   description: "Searches for ANY strings that eq"
                   items:
                     type: "string"
+                key:
+                  type: "string"
+                  description: "Tag key to search"
+            DocumentCompositeSearchTag:
+              required:
+              - "key"
+              type: "object"
+              properties:
+                eq:
+                  type: "string"
+                  description: "Searches for strings that eq"
                 key:
                   type: "string"
                   description: "Tag key to search"
@@ -4712,6 +4730,9 @@ Resources:
                   description: "Parent Document Identifier"
                 matchedTag:
                   $ref: "#/components/schemas/DocumentSearchMatchTag"
+                matchedTags:
+                  items:
+                    $ref: "#/components/schemas/DocumentSearchMatchTag"
                 tags:
                   type: "object"
                   additionalProperties: true
