@@ -115,7 +115,7 @@ public class ActionsServiceDynamoDbTest {
       service.saveActions(siteId, documentId, Arrays.asList(action0));
 
       // when
-      documentService.deleteDocument(siteId, documentId);
+      documentService.deleteDocument(siteId, documentId, false);
 
       // then
       List<Action> actions = service.getActions(siteId, documentId);

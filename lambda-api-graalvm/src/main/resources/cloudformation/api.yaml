@@ -355,6 +355,7 @@ Resources:
                     - PENDING
                     - RUNNING
                     - SKIPPED
+              - $ref: '#/components/parameters/documentSearchDeleted'
               - name: "date"
                 in: "query"
                 description: "Fetch documents inserted on a certain date (yyyy-MM-dd)"
@@ -573,6 +574,11 @@ Resources:
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
+              - name: "softDelete"
+                in: "query"
+                description: "Whether to soft delete document"
+                schema:
+                  type: "boolean"
               responses:
                 '200':
                   $ref: '#/components/responses/200Cors'
@@ -1032,6 +1038,34 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/GetDocumentUrlResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/restore:
+            put:
+              operationId: SetDocumentRestore
+              summary: Restore soft deleted document
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              description: Restores a soft deleted document
+              tags:
+              - Documents
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetDocumentRestoreResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3365,6 +3399,12 @@ Resources:
               required: false
               schema:
                 type: string
+            documentSearchDeleted:
+              name: "deleted"
+              in: "query"
+              description: "Fetch soft deleted documents"
+              schema:
+                type: "boolean"
             wsParam:
               name: ws
               in: query
@@ -4206,6 +4246,12 @@ Resources:
                       - READ
                       - WRITE
                       - DELETE
+            SetDocumentRestoreResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                  description: "Document Document restore message"
             AddFolderShareResponse:
               type: "object"
               properties:

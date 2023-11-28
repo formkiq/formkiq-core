@@ -525,7 +525,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       Boolean newCompositeTags = item.getBoolean("newCompositeTags");
 
       if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-        // createFormKiQConnectionIfNeeded();
         postDocumentTags(siteId, item);
       }
 

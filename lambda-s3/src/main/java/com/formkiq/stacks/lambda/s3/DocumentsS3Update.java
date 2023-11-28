@@ -502,7 +502,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         }
       }
 
-      service.deleteDocument(siteId, documentId);
+      service.deleteDocument(siteId, documentId, false);
 
       DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", documentId));
 

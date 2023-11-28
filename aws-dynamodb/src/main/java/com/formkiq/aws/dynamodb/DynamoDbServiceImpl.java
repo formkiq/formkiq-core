@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
@@ -168,6 +170,30 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
   private String getKey(final Map<String, AttributeValue> attr) {
     return attr.get(PK).s() + "#" + attr.get(SK).s();
+  }
+
+  @Override
+  public boolean moveItems(final Collection<Map<String, AttributeValue>> attrs,
+      final MoveAttributeFunction func) {
+
+    List<WriteRequest> writes = new ArrayList<>();
+
+    for (Map<String, AttributeValue> attr : attrs) {
+
+      Map<String, AttributeValue> newAttr = func.transform(attr);
+
+      Map<String, AttributeValue> key = Map.of(PK, attr.get(PK), SK, attr.get(SK));
+      WriteRequest del =
+          WriteRequest.builder().deleteRequest(DeleteRequest.builder().key(key).build()).build();
+      writes.add(del);
+
+      WriteRequest add =
+          WriteRequest.builder().putRequest(PutRequest.builder().item(newAttr).build()).build();
+      writes.add(add);
+    }
+
+    WriteRequestBuilder builder = new WriteRequestBuilder().append(this.tableName, writes);
+    return builder.batchWriteItem(this.dbClient);
   }
 
   @Override

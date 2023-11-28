@@ -548,8 +548,8 @@ class FolderIndexProcessorTest implements DbKeys {
         doc = results.getResults().get(0);
         assertEquals("directory1/test2.pdf", doc.get("path"));
 
-        service.deleteDocument(siteId, item0.getDocumentId());
-        service.deleteDocument(siteId, item1.getDocumentId());
+        service.deleteDocument(siteId, item0.getDocumentId(), false);
+        service.deleteDocument(siteId, item1.getDocumentId(), false);
 
         List<Message> messages = getMessagesFromSqs(sqsQueueUrl);
         assertEquals(0, messages.size());

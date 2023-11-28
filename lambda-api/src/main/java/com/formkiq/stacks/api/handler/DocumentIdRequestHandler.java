@@ -199,18 +199,22 @@ public class DocumentIdRequestHandler
     DocumentItem item = service.findDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
+    boolean softDelete = "true".equals(event.getQueryStringParameter("softDelete"));
+
     try {
 
-      S3Service s3Service = awsservice.getExtension(S3Service.class);
+      if (!softDelete) {
+        S3Service s3Service = awsservice.getExtension(S3Service.class);
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
+        String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+        S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
 
-      if (md.isObjectExists()) {
-        s3Service.deleteObject(documentBucket, s3Key, null);
+        if (md.isObjectExists()) {
+          s3Service.deleteObject(documentBucket, s3Key, null);
+        }
       }
 
-      if (!service.deleteDocument(siteId, documentId)) {
+      if (!service.deleteDocument(siteId, documentId, softDelete)) {
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 

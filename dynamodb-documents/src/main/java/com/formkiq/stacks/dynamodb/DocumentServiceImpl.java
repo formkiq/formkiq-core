@@ -29,6 +29,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -230,10 +231,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public boolean deleteDocument(final String siteId, final String documentId) {
+  public boolean deleteDocument(final String siteId, final String documentId,
+      final boolean softDelete) {
 
     boolean deleted = false;
-    Map<String, AttributeValue> startkey = null;
 
     this.versionsService.deleteAllVersionIds(this.dbClient, siteId, documentId);
 
@@ -241,24 +242,32 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     deleteFolderIndex(siteId, item);
 
-    final int limit = 100;
-    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+    Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
+    AttributeValue pk = keys.get(PK);
+    AttributeValue sk = null;
 
-    do {
-      Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
-      QueryResponse response =
-          this.dbService.queryBeginsWith(config, keys.get(PK), null, startkey, limit);
+    List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, sk, softDelete);
 
-      List<Map<String, AttributeValue>> attrs =
-          response.items().stream().collect(Collectors.toList());
+    if (softDelete) {
 
-      if (this.dbService.deleteItems(attrs)) {
+      deleted = this.dbService.moveItems(list,
+          new DocumentDeleteMoveAttributeFunction(siteId, documentId));
+
+    } else {
+
+      pk = fromS(SOFT_DELETE + pk.s());
+      list.addAll(queryDocumentAttributes(pk, sk, false));
+
+      keys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
+      pk = keys.get(PK);
+      sk = fromS(SOFT_DELETE + "document#" + documentId);
+
+      list.addAll(queryDocumentAttributes(pk, sk, false));
+
+      if (this.dbService.deleteItems(list)) {
         deleted = true;
       }
-
-      startkey = response.lastEvaluatedKey();
-
-    } while (startkey != null && !startkey.isEmpty());
+    }
 
     return deleted;
   }
@@ -560,7 +569,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
 
-    List<DocumentItem> results = null;
+    List<DocumentItem> results = Collections.emptyList();
+
     BatchGetConfig config = new BatchGetConfig();
 
     if (!ids.isEmpty()) {
@@ -577,7 +587,9 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
           .collect(Collectors.toList());
       items = sortByIds(ids, items);
 
-      results = !items.isEmpty() ? items : null;
+      if (!items.isEmpty()) {
+        results = items;
+      }
     }
 
     return results;
@@ -818,6 +830,22 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     return findAndTransform(keys, token, maxresults, new AttributeValueToPresetTag());
   }
 
+  @Override
+  public PaginationResults<DocumentItem> findSoftDeletedDocuments(final String siteId,
+      final Map<String, AttributeValue> startkey, final int limit) {
+
+    Map<String, AttributeValue> sdKeys =
+        keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, SOFT_DELETE + "document");
+
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+    QueryResponse result =
+        this.dbService.queryBeginsWith(config, sdKeys.get(PK), sdKeys.get(SK), startkey, limit);
+
+    List<DocumentItem> items = result.items().stream()
+        .map(a -> new AttributeValueToDocumentItem().apply(a)).collect(Collectors.toList());
+    return new PaginationResults<>(items, new QueryResponseToPagination().apply(result));
+  }
+
   /**
    * Generate DynamoDB PK(s)/SK(s) to search.
    * 
@@ -988,24 +1016,6 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
-   * the previous loaded document.
-   * 
-   * @param document {@link DocumentItem}
-   * @param previous {@link Map}
-   */
-  private void updateCurrentChecksumFromPrevious(final DocumentItem document,
-      final Map<String, AttributeValue> previous) {
-    AttributeValue pchecksum = previous.get("checksum");
-    if (pchecksum != null && !isEmpty(pchecksum.s())) {
-      String checksum = document.getChecksum();
-      if (isEmpty(checksum) || isUuid(checksum)) {
-        document.setChecksum(pchecksum.s());
-      }
-    }
-  }
-
-  /**
    * Generate Save Tags DynamoDb Keys.
    * 
    * @param siteId {@link String}
@@ -1122,6 +1132,38 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     String path0 = previous.containsKey("path") ? previous.get("path").s() : "";
     String path1 = current.containsKey("path") ? current.get("path").s() : "";
     return !path1.equals(path0) && !"".equals(path0);
+  }
+
+  /**
+   * Query For Document Attributes.
+   * 
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param softDelete boolean
+   * @return {@link List} {@link Map}
+   */
+  private List<Map<String, AttributeValue>> queryDocumentAttributes(final AttributeValue pk,
+      final AttributeValue sk, final boolean softDelete) {
+
+    final int limit = 100;
+    Map<String, AttributeValue> startkey = null;
+    List<Map<String, AttributeValue>> list = new ArrayList<>();
+    QueryConfig config = new QueryConfig().projectionExpression(softDelete ? null : "PK,SK");
+
+    do {
+
+      QueryResponse response = this.dbService.queryBeginsWith(config, pk, sk, startkey, limit);
+
+      List<Map<String, AttributeValue>> attrs =
+          response.items().stream().collect(Collectors.toList());
+      list.addAll(attrs);
+
+      startkey = response.lastEvaluatedKey();
+
+    } while (startkey != null && !startkey.isEmpty());
+
+    return list;
+
   }
 
   /**
@@ -1253,6 +1295,63 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         this.dbClient.deleteItem(deleteItemRequest);
       });
     }
+  }
+
+  @Override
+  public boolean restoreSoftDeletedDocument(final String siteId, final String documentId) {
+
+    boolean restored = false;
+
+    Map<String, AttributeValue> sdKeys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
+    AttributeValue pk = sdKeys.get(PK);
+    AttributeValue sk = AttributeValue.fromS(SOFT_DELETE + "document" + "#" + documentId);
+
+    final int limit = 100;
+
+    Map<String, AttributeValue> attr = this.dbService.get(pk, sk);
+
+    if (!attr.isEmpty()) {
+
+      List<Map<String, AttributeValue>> list = new ArrayList<>();
+      list.add(attr);
+
+      Map<String, AttributeValue> startkey = null;
+      QueryConfig config = new QueryConfig();
+
+      Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
+
+      do {
+
+        QueryResponse response = this.dbService.queryBeginsWith(config,
+            fromS(SOFT_DELETE + keys.get(PK).s()), null, startkey, limit);
+
+        List<Map<String, AttributeValue>> attrs =
+            response.items().stream().collect(Collectors.toList());
+        list.addAll(attrs);
+
+        startkey = response.lastEvaluatedKey();
+
+      } while (startkey != null && !startkey.isEmpty());
+
+      restored = this.dbService.moveItems(list,
+          new DocumentRestoreMoveAttributeFunction(siteId, documentId));
+
+      String path = attr.get("path").s();
+      String userId = attr.get("userId").s();
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      item.setPath(path);
+
+      List<Map<String, AttributeValue>> folderIndex =
+          this.folderIndexProcessor.generateIndex(siteId, item);
+
+      WriteRequestBuilder writeBuilder =
+          new WriteRequestBuilder().appends(this.documentTableName, folderIndex);
+
+      writeBuilder.batchWriteItem(this.dbClient);
+    }
+
+    return restored;
   }
 
   /**
@@ -1580,6 +1679,24 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
         .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
     return documentIds.stream().map(id -> map.get(id)).filter(i -> i != null)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Because Document checksum are set in the DocumentsS3Update.class, the correct checksum maybe in
+   * the previous loaded document.
+   * 
+   * @param document {@link DocumentItem}
+   * @param previous {@link Map}
+   */
+  private void updateCurrentChecksumFromPrevious(final DocumentItem document,
+      final Map<String, AttributeValue> previous) {
+    AttributeValue pchecksum = previous.get("checksum");
+    if (pchecksum != null && !isEmpty(pchecksum.s())) {
+      String checksum = document.getChecksum();
+      if (isEmpty(checksum) || isUuid(checksum)) {
+        document.setChecksum(pchecksum.s());
+      }
+    }
   }
 
   @Override

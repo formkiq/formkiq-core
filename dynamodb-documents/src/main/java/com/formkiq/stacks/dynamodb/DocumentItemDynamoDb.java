@@ -35,6 +35,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class DocumentItemDynamoDb implements DocumentItem {
 
   /** Belongs To Document Id. */
+  @Reflectable
   private String belongsToDocumentId;
   /** Entity tag. */
   @Reflectable
@@ -49,6 +50,7 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Reflectable
   private String documentId;
   /** {@link List} {@link DocumentItem}. */
+  @Reflectable
   private List<DocumentItem> documents;
   /** Document Inserted Date. */
   @Reflectable
@@ -57,6 +59,7 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Reflectable
   private Date lastModifiedDate;
   /** {@link Collection} {@link DocumentMetadata}. */
+  @Reflectable
   private Collection<DocumentMetadata> metadata;
   /** Document Path. */
   @Reflectable

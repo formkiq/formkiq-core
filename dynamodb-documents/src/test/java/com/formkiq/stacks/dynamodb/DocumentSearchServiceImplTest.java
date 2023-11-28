@@ -798,7 +798,7 @@ public class DocumentSearchServiceImplTest {
       q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
 
       // when
-      this.service.deleteDocument(siteId, doc0.getDocumentId());
+      this.service.deleteDocument(siteId, doc0.getDocumentId(), false);
 
       // then
       results0 = this.searchService.search(siteId, q0, startkey, MAX_RESULTS);

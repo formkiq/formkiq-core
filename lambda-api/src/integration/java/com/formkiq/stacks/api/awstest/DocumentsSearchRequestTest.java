@@ -346,7 +346,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       DocumentsApi docApi = new DocumentsApi(client);
 
       // when
-      docApi.deleteDocument(documentId, siteId);
+      docApi.deleteDocument(documentId, siteId, Boolean.FALSE);
 
       // then
       while (o.isPresent()) {

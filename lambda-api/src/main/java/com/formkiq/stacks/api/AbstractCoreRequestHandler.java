@@ -63,6 +63,7 @@ import com.formkiq.stacks.api.handler.ConfigurationApiKeysRequestHandler;
 import com.formkiq.stacks.api.handler.ConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentIdRestoreRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentPermissionsKeyRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentPermissionsRequestHandler;
@@ -199,6 +200,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new WebhooksRequestHandler());
     addRequestHandler(new DocumentsRequestHandler());
     addRequestHandler(new DocumentIdRequestHandler());
+    addRequestHandler(new DocumentIdRestoreRequestHandler());
     addRequestHandler(new DocumentsCompressRequestHandler());
     addRequestHandler(new OnlyOfficeNewRequestHandler());
     addRequestHandler(new OnlyOfficeSaveRequestHandler());

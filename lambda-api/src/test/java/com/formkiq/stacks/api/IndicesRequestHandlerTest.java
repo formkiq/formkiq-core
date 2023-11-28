@@ -121,7 +121,7 @@ public class IndicesRequestHandlerTest {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
-      documentService.deleteDocument(siteId, item.getDocumentId());
+      documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
       PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);
@@ -277,7 +277,7 @@ public class IndicesRequestHandlerTest {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
-      documentService.deleteDocument(siteId, item.getDocumentId());
+      documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
       SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
       PaginationResults<DynamicDocumentItem> results = dss.search(siteId, q, null, MAX_RESULTS);

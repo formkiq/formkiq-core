@@ -163,6 +163,7 @@ public class WriteRequestBuilder {
           BatchWriteItemRequest batch =
               BatchWriteItemRequest.builder().requestItems(Map.of(e.getKey(), writelist)).build();
           dbClient.batchWriteItem(batch);
+
           write = true;
         }
       }

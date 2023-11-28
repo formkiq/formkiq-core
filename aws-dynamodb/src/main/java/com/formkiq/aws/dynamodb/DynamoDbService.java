@@ -50,7 +50,7 @@ public interface DynamoDbService {
    * Delete Items.
    * 
    * @param attrs {@link Collection} {@link Map} {@link AttributeValue}
-   * @return boolena
+   * @return boolean
    */
   boolean deleteItems(Collection<Map<String, AttributeValue>> attrs);
 
@@ -91,6 +91,15 @@ public interface DynamoDbService {
    */
   List<Map<String, AttributeValue>> getBatch(BatchGetConfig config,
       List<Map<String, AttributeValue>> keys);
+
+  /**
+   * Move Records.
+   * 
+   * @param attrs {@link Collection} {@link Map}
+   * @param func {@link MoveAttributeFunction}
+   * @return boolean
+   */
+  boolean moveItems(Collection<Map<String, AttributeValue>> attrs, MoveAttributeFunction func);
 
   /**
    * Put DynamoDb Record.
