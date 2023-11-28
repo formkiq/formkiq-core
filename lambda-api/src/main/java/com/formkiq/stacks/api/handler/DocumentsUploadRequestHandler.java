@@ -120,14 +120,20 @@ public class DocumentsUploadRequestHandler
     validateTagSchema(awsservice, siteId, item, username, tags);
 
     String urlstring = generatePresignedUrl(event, awsservice, logger, siteId, documentId);
-    logger.log("generated presign url: " + urlstring + " for document " + documentId);
+
+    if (awsservice.debug()) {
+      logger.log("generated presign url: " + urlstring + " for document " + documentId);
+    }
 
     String value = this.restrictionMaxDocuments.getValue(awsservice, siteId);
 
     if (!this.restrictionMaxDocuments.enforced(awsservice, siteId, value)) {
 
       DocumentService service = awsservice.getExtension(DocumentService.class);
-      logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+
+      if (awsservice.debug()) {
+        logger.log("saving document: " + item.getDocumentId() + " on path " + item.getPath());
+      }
 
       SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
       service.saveDocument(siteId, item, tags, options);

@@ -25,28 +25,37 @@ package com.formkiq.stacks.api;
 
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.impl.bootstrap.HttpServer;
 
 /** Unit Tests for request /documents/{documentId}/url. */
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
+
+  /** {@link HttpServer}. */
+  private HttpService http = new HttpServiceJdk11();
 
   /**
    * /documents/{documentId}/url request.
@@ -232,6 +241,105 @@ public class DocumentIdUrlGetRequestHandlerTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
       assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    }
+  }
+
+  /**
+   * /documents/{documentId}/url request deepLinkPath to another bucket.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocumentContent05() throws Exception {
+
+    if (!getS3().exists("anotherbucket")) {
+      getS3().createBucket("anotherbucket");
+    }
+
+    byte[] content = "Some data".getBytes(StandardCharsets.UTF_8);
+    getS3().putObject("anotherbucket", "somefile.txt", content, "text/plain");
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url02.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+
+      String userId = "jsmith";
+      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      doc.setDeepLinkPath("s3://anotherbucket/somefile.txt");
+      doc.setContentType("text/plain");
+      getDocumentService().saveDocument(siteId, doc, new ArrayList<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      ApiUrlResponse resp = fromJson(m.get("body"), ApiUrlResponse.class);
+
+      assertTrue(resp.getUrl().contains("/anotherbucket/"));
+      assertTrue(resp.getUrl().contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+      assertTrue(resp.getUrl().contains("X-Amz-Expires=28800"));
+      assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
+      assertNull(resp.getNext());
+      assertNull(resp.getPrevious());
+
+      if (siteId != null) {
+        assertFalse(resp.getUrl().contains("/" + siteId + "/" + documentId));
+      } else {
+        assertFalse(resp.getUrl().contains("/" + documentId));
+      }
+
+      assertTrue(resp.getUrl().contains("somefile.txt"));
+      assertEquals("Some data", getS3().getContentAsString("anotherbucket", "somefile.txt", null));
+      assertEquals("Some data",
+          this.http.get(resp.getUrl(), Optional.empty(), Optional.empty()).body());
+    }
+  }
+
+  /**
+   * /documents/{documentId}/url request deepLinkPath to http url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHandleGetDocumentContent06() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      String documentId = UUID.randomUUID().toString();
+      ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid-url02.json");
+      addParameter(event, "siteId", siteId);
+      setPathParameter(event, "documentId", documentId);
+
+      String userId = "jsmith";
+      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      doc.setDeepLinkPath("https://www.google.com/something/else.pdf");
+      doc.setContentType("application/pdf");
+      getDocumentService().saveDocument(siteId, doc, new ArrayList<>());
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, String> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("200.0", String.valueOf(m.get("statusCode")));
+      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      ApiUrlResponse resp = fromJson(m.get("body"), ApiUrlResponse.class);
+
+      assertEquals("https://www.google.com/something/else.pdf", resp.getUrl());
     }
   }
 }

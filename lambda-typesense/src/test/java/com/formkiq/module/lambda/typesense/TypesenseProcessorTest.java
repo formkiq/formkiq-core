@@ -457,4 +457,29 @@ class TypesenseProcessorTest {
     assertEquals("added Document Metadata", syncs.getResults().get(0).getMessage());
     assertNotNull(syncs.getResults().get(0).getSyncDate());
   }
+
+  /**
+   * Insert deep link path records.
+   * 
+   * @throws Exception Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHandleRequest10() throws Exception {
+    // given
+    String siteId = null;
+    String oldDocumentId = "acd4be1b-9466-4dcd-b8b8-e5b19135b460";
+    String documentId = UUID.randomUUID().toString();
+
+    Map<String, Object> map = loadRequest("/insert_deeplink.json", oldDocumentId, documentId);
+
+    // when
+    processor.handleRequest(map, this.context);
+
+    // then
+    HttpResponse<String> response = service.getDocument(siteId, documentId);
+    assertEquals("200", String.valueOf(response.statusCode()));
+    Map<String, Object> data = GSON.fromJson(response.body(), Map.class);
+    assertEquals("/somewhere/else/test.pdf", data.get("deepLinkPath"));
+  }
 }

@@ -325,7 +325,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   public List<Map<String, AttributeValue>> generateIndex(final String siteId,
       final DocumentItem item) {
 
-    List<FolderIndexRecordExtended> records = get(siteId, item.getPath(), "file", item.getUserId());
+    Date now = new Date();
+    List<FolderIndexRecordExtended> records =
+        get(siteId, item.getPath(), "file", item.getUserId(), now);
 
     if (!records.isEmpty()) {
       FolderIndexRecordExtended extended = last(records);
@@ -356,11 +358,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
   @Override
   public List<FolderIndexRecordExtended> get(final String siteId, final String path,
-      final String pathType, final String userId) {
+      final String pathType, final String userId, final Date nowTimestamp) {
 
     String parentId = "";
     String[] tokens = tokens(path);
-    Date now = new Date();
 
     int i = 0;
     int len = tokens.length;
@@ -387,8 +388,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         record.documentId(UUID.randomUUID().toString());
 
         if (!"file".equals(type)) {
-          record.insertedDate(now);
-          record.lastModifiedDate(now);
+          record.insertedDate(nowTimestamp);
+          record.lastModifiedDate(nowTimestamp);
           record.userId(userId);
         }
 
@@ -606,8 +607,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private void moveFileToFolder(final String siteId, final String sourcePath,
       final String targetPath, final String userId) throws IOException {
 
-    List<FolderIndexRecordExtended> sourceRecords = get(siteId, sourcePath, "file", userId);
-    List<FolderIndexRecordExtended> targetRecords = get(siteId, targetPath, "folder", userId);
+    Date now = new Date();
+
+    List<FolderIndexRecordExtended> sourceRecords = get(siteId, sourcePath, "file", userId, now);
+    List<FolderIndexRecordExtended> targetRecords = get(siteId, targetPath, "folder", userId, now);
 
     validateExists(sourcePath, sourceRecords);
 
@@ -669,11 +672,12 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     final int pos = targetPath.substring(0, targetPath.length() - 1).lastIndexOf("/");
     final String newTargetPath = pos > -1 ? targetPath.substring(0, pos) + "/" : "/";
     final String newPath = removeBackSlashes(pos > -1 ? targetPath.substring(pos) : targetPath);
-    // final String destinationPath =
-    // removeBackSlashes(pos > -1 ? targetPath.substring(pos) : targetPath);
 
-    List<FolderIndexRecordExtended> sourceRecords = get(siteId, sourcePath, "folder", userId);
-    List<FolderIndexRecordExtended> targetRecords = get(siteId, newTargetPath, "folder", userId);
+    Date now = new Date();
+
+    List<FolderIndexRecordExtended> sourceRecords = get(siteId, sourcePath, "folder", userId, now);
+    List<FolderIndexRecordExtended> targetRecords =
+        get(siteId, newTargetPath, "folder", userId, now);
 
     validateExists(sourcePath, sourceRecords);
 

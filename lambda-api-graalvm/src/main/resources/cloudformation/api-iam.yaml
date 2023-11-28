@@ -3954,6 +3954,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -3999,6 +4002,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -4176,6 +4182,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -4197,6 +4206,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 contentType:
                   type: "string"
                   description: "Document media type"
@@ -4379,6 +4391,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 contentType:
                   type: "string"
                   description: "Document Content-Type"
@@ -4404,6 +4419,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -4541,6 +4559,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -4570,6 +4591,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -4680,6 +4704,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -4741,6 +4768,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 insertedDate:
                   type: "string"
                   description: "Inserted Timestamp"
@@ -5008,6 +5038,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 tags:
                   type: "array"
                   description: "List of document tags"
@@ -5036,6 +5069,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                deepLinkPath:
+                  type: "string"
+                  description: "Path or Name of deep link"
                 tags:
                   type: "array"
                   description: "List of document tags"

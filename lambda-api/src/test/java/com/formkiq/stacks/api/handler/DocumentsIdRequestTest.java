@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -114,6 +115,30 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * GET /documents/{documentId} request, deeplink.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocument01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("test.txt");
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+      String documentId = response.getDocumentId();
+
+      // when
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+
+      // then
+      assertEquals("test.txt", document.getDeepLinkPath());
     }
   }
 }

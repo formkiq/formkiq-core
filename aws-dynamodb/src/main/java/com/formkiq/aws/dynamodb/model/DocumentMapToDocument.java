@@ -42,7 +42,7 @@ public class DocumentMapToDocument
 
   /** Fields to Process. */
   private static final List<String> FIELDS =
-      Arrays.asList("documentId", "path", "content", "contentType");
+      Arrays.asList("documentId", "path", "content", "contentType", "deepLinkPath");
 
   @SuppressWarnings("unchecked")
   private String getValue(final Object obj) {

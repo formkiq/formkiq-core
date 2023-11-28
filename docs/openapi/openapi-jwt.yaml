@@ -3942,6 +3942,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -3987,6 +3990,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -4164,6 +4170,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 tags:
                   type: array
                   description: List of document tags
@@ -4185,6 +4194,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 contentType:
                   type: string
                   description: Document media type
@@ -4367,6 +4379,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 contentType:
                   type: string
                   description: Document Content-Type
@@ -4392,6 +4407,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -4529,6 +4547,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -4558,6 +4579,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -4668,6 +4692,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -4729,6 +4756,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
@@ -4996,6 +5026,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 tags:
                   type: array
                   description: List of document tags
@@ -5023,6 +5056,9 @@
                 path:
                   type: string
                   description: Path or Name of document
+                deepLinkPath:
+                  type: string
+                  description: Path or Name of deep link
                 tags:
                   type: array
                   description: List of document tags

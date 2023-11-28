@@ -317,6 +317,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (hasContent) {
       doc.setContentLength(null);
       doc.setChecksum(UUID.randomUUID().toString());
+      doc.setDeepLinkPath(null);
     } else if (doc.getChecksum() == null) {
       doc.setChecksum(UUID.randomUUID().toString());
     }

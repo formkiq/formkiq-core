@@ -59,6 +59,13 @@ public interface DocumentItem {
   String getContentType();
 
   /**
+   * Get Deep Link Path.
+   * 
+   * @return {@link String}
+   */
+  String getDeepLinkPath();
+
+  /**
    * Get Document Id.
    *
    * @return {@link String}
@@ -162,6 +169,13 @@ public interface DocumentItem {
    * @param ct {@link String}
    */
   void setContentType(String ct);
+
+  /**
+   * Deep Link Path.
+   * 
+   * @param deepLinkPath {@link String}
+   */
+  void setDeepLinkPath(String deepLinkPath);
 
   /**
    * Set Document ID.

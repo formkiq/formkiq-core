@@ -72,6 +72,7 @@ import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -144,8 +145,10 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void addFolderIndex(final String siteId, final DocumentItem item) throws IOException {
 
+    Date now = item.getLastModifiedDate();
+
     List<FolderIndexRecordExtended> list =
-        this.folderIndexProcessor.get(siteId, item.getPath(), "folder", item.getUserId());
+        this.folderIndexProcessor.get(siteId, item.getPath(), "folder", item.getUserId(), now);
     List<Map<String, AttributeValue>> folderIndex = list.stream().filter(r -> r.isChanged())
         .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
 
@@ -990,6 +993,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     document.setPath(path);
     addS(pkvalues, "path", path);
 
+    updateDeepLinkPath(pkvalues, document);
+
     addS(pkvalues, "version", document.getVersion());
     addS(pkvalues, DocumentVersionService.S3VERSION_ATTRIBUTE, document.getS3version());
     addS(pkvalues, "contentType", document.getContentType());
@@ -1597,6 +1602,7 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
 
     item.setDocumentId(doc.getDocumentId());
     item.setPath(path);
+    item.setDeepLinkPath(doc.getDeepLinkPath());
     item.setContentType(doc.getContentType());
     item.setChecksum(doc.getChecksum());
     item.setContentLength(doc.getContentLength());
@@ -1604,6 +1610,8 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
     item.setTagSchemaId(doc.getTagSchemaId());
     item.setMetadata(doc.getMetadata());
+
+    updatePathFromDeepLink(item);
 
     List<DocumentTag> tags = saveDocumentItemGenerateTags(siteId, doc, date, username);
 
@@ -1699,6 +1707,15 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
+  private void updateDeepLinkPath(final Map<String, AttributeValue> pkvalues,
+      final DocumentItem document) {
+    if (!isEmpty(document.getDeepLinkPath())) {
+      addS(pkvalues, "deepLinkPath", document.getDeepLinkPath());
+    } else {
+      addS(pkvalues, "deepLinkPath", "");
+    }
+  }
+
   @Override
   public void updateDocument(final String siteId, final String documentId,
       final Map<String, AttributeValue> attributes, final boolean updateVersioning) {
@@ -1728,5 +1745,14 @@ public class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
+  }
+
+  private void updatePathFromDeepLink(final DocumentItem item) {
+    if (!isEmpty(item.getDeepLinkPath())) {
+      String filename = Strings.getFilename(item.getDeepLinkPath());
+      if (!isEmpty(filename)) {
+        item.setPath(filename);
+      }
+    }
   }
 }

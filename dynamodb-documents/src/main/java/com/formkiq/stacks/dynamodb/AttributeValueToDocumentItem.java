@@ -95,6 +95,7 @@ public class AttributeValueToDocumentItem
     item.setLastModifiedDate(lastModifiedDate != null ? lastModifiedDate : insertedDate);
 
     item.setPath(getString(map.get("path")));
+    item.setDeepLinkPath(getDeepLinkPath(map));
 
     if (map.containsKey("contentType")) {
       item.setContentType(map.get("contentType").s());
@@ -134,6 +135,14 @@ public class AttributeValueToDocumentItem
     return item;
   }
 
+  private String getDeepLinkPath(final Map<String, AttributeValue> map) {
+    return map.containsKey("deepLinkPath") ? getString(map.get("deepLinkPath")) : null;
+  }
+
+  private String getString(final AttributeValue value) {
+    return value != null ? value.s() : null;
+  }
+
   /**
    * Convert {@link Map} to {@link DocumentMetadata}.
    * 
@@ -166,9 +175,5 @@ public class AttributeValueToDocumentItem
     }
 
     return c;
-  }
-
-  private String getString(final AttributeValue value) {
-    return value != null ? value.s() : null;
   }
 }

@@ -1,0 +1,113 @@
+{
+    "Records": [
+        {
+            "eventID": "a2e11a1268fa1f98b2dd17fd95cffc0f",
+            "eventName": "INSERT",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-2",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1668301621,
+                "Keys": {
+                    "SK": {
+                        "S": "document"
+                    },
+                    "PK": {
+                        "S": "docs#acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    }
+                },
+                "NewImage": {
+                    "deepLinkPath": {
+                        "S": "/somewhere/else/test.pdf"
+                    },
+                    "lastModifiedDate": {
+                        "S": "2022-11-13T01:07:01+0000"
+                    },
+                    "inserteddate": {
+                        "S": "2022-11-13T01:07:01+0000"
+                    },
+                    "SK": {
+                        "S": "document"
+                    },
+                    "documentId": {
+                        "S": "acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    },
+                    "PK": {
+                        "S": "docs#acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    },
+                    "userId": {
+                        "S": "testadminuser@formkiq.com"
+                    }
+                    ,
+                    "md#content": {
+                        "S": "this is some content karate"
+                    }
+                },
+                "SequenceNumber": "4409700000000012453238087",
+                "SizeBytes": 299,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:1111111111111111:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+        },
+        {
+            "eventID": "782ad85de6dfde28882f31463ae95928",
+            "eventName": "INSERT",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-2",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1668301621,
+                "Keys": {
+                    "SK": {
+                        "S": "tags#untagged"
+                    },
+                    "PK": {
+                        "S": "docs#acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    }
+                },
+                "NewImage": {
+                    "GSI1PK": {
+                        "S": "tag#untagged#true"
+                    },
+                    "GSI2SK": {
+                        "S": "true#2022-11-13T01:07:01+0000#acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    },
+                    "tagValue": {
+                        "S": "true"
+                    },
+                    "GSI1SK": {
+                        "S": "2022-11-13T01:07:01+0000#acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    },
+                    "inserteddate": {
+                        "S": "2022-11-13T01:07:01+0000"
+                    },
+                    "SK": {
+                        "S": "tags#untagged"
+                    },
+                    "documentId": {
+                        "S": "acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    },
+                    "GSI2PK": {
+                        "S": "tag#untagged"
+                    },
+                    "PK": {
+                        "S": "docs#acd4be1b-9466-4dcd-b8b8-e5b19135b460"
+                    },
+                    "tagKey": {
+                        "S": "untagged"
+                    },
+                    "type": {
+                        "S": "SYSTEMDEFINED"
+                    },
+                    "userId": {
+                        "S": "testadminuser@formkiq.com"
+                    }
+                },
+                "SequenceNumber": "4409800000000012453238089",
+                "SizeBytes": 452,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-2:1111111111111111:table/formkiq-core-dev-documents/stream/2022-11-13T00:56:05.381"
+        }
+    ]
+}

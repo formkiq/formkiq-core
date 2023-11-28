@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.objects;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collection;
@@ -119,8 +121,24 @@ public class Strings {
    * @return {@link String}
    */
   public static String getFilename(final String path) {
-    int pos = path.lastIndexOf("/");
-    String name = pos > -1 ? path.substring(pos + 1) : path;
+
+    String name = getUri(path);
+    int pos = name.lastIndexOf("/");
+    name = pos > -1 ? name.substring(pos + 1) : name;
+    return name;
+  }
+
+  private static String getUri(final String path) {
+
+    String name = null;
+
+    try {
+      URI u = new URI(path);
+      name = u.getPath();
+    } catch (URISyntaxException e) {
+      name = path;
+    }
+
     return name;
   }
 

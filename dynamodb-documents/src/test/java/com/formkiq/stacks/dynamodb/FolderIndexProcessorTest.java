@@ -612,7 +612,8 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals("d2/test2.pdf", doc2.get("path"));
       assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
 
-      List<FolderIndexRecordExtended> list = index.get(siteId, source1, "file", "jsmith");
+      List<FolderIndexRecordExtended> list =
+          index.get(siteId, source1, "file", "jsmith", new Date());
       assertEquals(2, list.size());
       assertEquals("file", list.get(1).record().type());
       assertEquals("folder", list.get(0).record().type());
