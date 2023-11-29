@@ -24,9 +24,11 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
@@ -39,8 +41,10 @@ import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
@@ -106,6 +110,37 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
         // then
         assertEquals("document restored", restore.getMessage());
         assertNotNull(api.getDocument(documentId, siteId, null));
+      }
+    }
+  }
+
+  /**
+   * GET /documents/{documentId}/url deepLinkPath request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
+  public void testHandleGetDocumentUrl01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      for (ApiClient client : getApiClients(siteId)) {
+
+        DocumentsApi api = new DocumentsApi(client);
+
+        String deepLink = "https://www.google.com/sample.pdf";
+        AddDocumentRequest req =
+            new AddDocumentRequest().deepLinkPath(deepLink).contentType("application/pdf");
+        String documentId = api.addDocument(req, siteId, null).getDocumentId();
+
+        // when
+        GetDocumentResponse document = waitForDocument(client, siteId, documentId);
+
+        // then
+        assertEquals(deepLink, document.getDeepLinkPath());
+        assertTrue(document.getPath().contains("sample"));
+        assertEquals("application/pdf", document.getContentType());
       }
     }
   }
