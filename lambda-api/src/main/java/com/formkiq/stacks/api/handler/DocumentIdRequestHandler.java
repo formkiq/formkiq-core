@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -512,7 +513,8 @@ public class DocumentIdRequestHandler
 
     boolean isFolder = isFolder(item);
 
-    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()) {
+    if (!isFolder && !item.hasString("content") && item.getList("documents").isEmpty()
+        && isEmpty(item.getDeepLinkPath())) {
       throw new BadException("Invalid JSON body.");
     }
 

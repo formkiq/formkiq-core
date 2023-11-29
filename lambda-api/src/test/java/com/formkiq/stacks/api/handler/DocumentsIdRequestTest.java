@@ -23,14 +23,21 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.GetDocumentResponse;
@@ -139,6 +146,43 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("test.txt", document.getDeepLinkPath());
+    }
+  }
+
+  /**
+   * GET /documents/{documentId} request, deeplink.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddDocument01() throws Exception {
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+
+      String deepLinkPath = "http://google.com/test/sample.pdf";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().deepLinkPath(deepLinkPath).contentType("application/pdf");
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      String documentId = response.getDocumentId();
+
+      S3Service s3 = getAwsServices().getExtension(S3Service.class);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId) + ".fkb64";
+
+      String content = s3.getContentAsString(STAGE_BUCKET_NAME, s3Key, null);
+
+      GetDocumentResponse document =
+          GsonUtil.getInstance().fromJson(content, GetDocumentResponse.class);
+
+      // then
+      assertNull(document.getPath());
+      assertEquals("http://google.com/test/sample.pdf", document.getDeepLinkPath());
+      assertEquals("application/pdf", document.getContentType());
     }
   }
 }

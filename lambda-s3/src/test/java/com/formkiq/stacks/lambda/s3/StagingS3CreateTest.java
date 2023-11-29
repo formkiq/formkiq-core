@@ -1424,11 +1424,13 @@ public class StagingS3CreateTest implements DbKeys {
       item.remove("content");
       item.put("tags", Arrays.asList(Map.of("key", "category", "value", "document")));
       item.setDeepLinkPath("http://google.com/sample.pdf");
+      item.setContentType("application/pdf");
 
       processFkB64File(siteId, item, null);
       DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
       assertEquals("http://google.com/sample.pdf", doc.getDeepLinkPath());
       assertEquals("sample.pdf", doc.getPath());
+      assertEquals("application/pdf", doc.getContentType());
     }
   }
 
