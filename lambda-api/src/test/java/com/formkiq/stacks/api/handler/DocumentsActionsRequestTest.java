@@ -48,6 +48,7 @@ import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentActionsResponse;
+import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.module.actions.Action;
@@ -112,7 +113,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      this.service.saveActions(siteId, documentId, Arrays.asList(new Action().userId("joe")
+      this.service.saveNewActions(siteId, documentId, Arrays.asList(new Action().userId("joe")
           .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
       // when
@@ -142,7 +143,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      this.service.saveActions(siteId, documentId,
+      this.service.saveNewActions(siteId, documentId,
           Arrays.asList(new Action().userId("joe").status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
 
@@ -353,6 +354,137 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       List<Action> actions = this.service.getActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals(ActionType.NOTIFICATION, actions.get(0).type());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. Nothing failed
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      this.service.saveNewActions(siteId, documentId, Arrays.asList(new Action().userId("joe")
+          .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+
+      // when
+      AddDocumentActionsRetryResponse retry =
+          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      assertEquals("Actions retries", retry.getMessage());
+
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+
+      List<DocumentAction> actions = response.getActions();
+      assertEquals(1, actions.size());
+      assertEquals("OCR", actions.get(0).getType().name());
+      assertEquals("COMPLETE", actions.get(0).getStatus().name());
+      assertEquals("{test=this}", actions.get(0).getParameters().toString());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. Failed
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry02() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      this.service.saveNewActions(siteId, documentId, Arrays.asList(new Action().userId("joe")
+          .status(ActionStatus.FAILED).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+
+      // when
+      AddDocumentActionsRetryResponse retry =
+          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      assertEquals("Actions retries", retry.getMessage());
+
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+
+      List<DocumentAction> actions = response.getActions();
+      assertEquals(2, actions.size());
+      assertEquals("OCR", actions.get(0).getType().name());
+      assertEquals("FAILED_RETRY", actions.get(0).getStatus().name());
+
+      assertEquals("OCR", actions.get(1).getType().name());
+      assertEquals("PENDING", actions.get(1).getStatus().name());
+
+      // when - 2nd time
+      this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+      actions = response.getActions();
+      assertEquals(2, actions.size());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. multiple Failed
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry03() throws Exception {
+
+    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      this.service.saveNewActions(siteId, documentId,
+          Arrays.asList(new Action().userId("joe").status(ActionStatus.FAILED).type(ActionType.OCR),
+              new Action().userId("joe").status(ActionStatus.FAILED).type(ActionType.FULLTEXT)));
+
+      // when
+      AddDocumentActionsRetryResponse retry =
+          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      assertEquals("Actions retries", retry.getMessage());
+
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+
+      int i = 0;
+      final int expected = 4;
+      List<DocumentAction> actions = response.getActions();
+      assertEquals(expected, actions.size());
+      assertEquals("OCR", actions.get(i).getType().name());
+      assertEquals("FAILED_RETRY", actions.get(i++).getStatus().name());
+
+      assertEquals("FULLTEXT", actions.get(i).getType().name());
+      assertEquals("FAILED_RETRY", actions.get(i++).getStatus().name());
+
+      assertEquals("OCR", actions.get(i).getType().name());
+      assertEquals("PENDING", actions.get(i++).getStatus().name());
+
+      assertEquals("FULLTEXT", actions.get(i).getType().name());
+      assertEquals("PENDING", actions.get(i++).getStatus().name());
+
+      // when - 2nd time
+      this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null);
+      actions = response.getActions();
+      assertEquals(expected, actions.size());
     }
   }
 }

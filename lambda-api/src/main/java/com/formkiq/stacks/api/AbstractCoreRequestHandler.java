@@ -73,6 +73,7 @@ import com.formkiq.stacks.api.handler.DocumentTagsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsKeyRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentVersionsRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsActionsRequestHandler;
+import com.formkiq.stacks.api.handler.DocumentsActionsRetryRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsCompressRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestHandler;
 import com.formkiq.stacks.api.handler.DocumentsFulltextRequestTagsKeyHandler;
@@ -144,6 +145,11 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   /** Url Class Map. */
   private static final Map<String, ApiGatewayRequestHandler> URL_MAP = new HashMap<>();
 
+  private static void addGroupUsersEndpoints() {
+    addRequestHandler(new GroupsRequestHandler());
+    addRequestHandler(new GroupsUsersRequestHandler());
+  }
+
   /**
    * Add Url Request Handler Mapping.
    * 
@@ -178,6 +184,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentPermissionsKeyRequestHandler());
     addRequestHandler(new DocumentTagsRequestHandler());
     addRequestHandler(new DocumentsActionsRequestHandler());
+    addRequestHandler(new DocumentsActionsRetryRequestHandler());
     addRequestHandler(new FoldersRequestHandler());
     addRequestHandler(new FoldersIndexKeyRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
@@ -211,8 +218,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
     addRequestHandler(new EsignatureDocusignConfigRequestHandler());
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
-    addRequestHandler(new GroupsRequestHandler());
-    addRequestHandler(new GroupsUsersRequestHandler());
+    addGroupUsersEndpoints();
     addWorkflowEndpoints();
   }
 

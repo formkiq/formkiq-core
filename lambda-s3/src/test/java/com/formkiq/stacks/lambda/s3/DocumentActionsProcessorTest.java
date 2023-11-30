@@ -276,7 +276,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -307,7 +307,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<Action> actions =
           Arrays.asList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -351,7 +351,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -401,7 +401,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -449,7 +449,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -520,7 +520,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -589,7 +589,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -654,7 +654,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(new Action().type(ActionType.DOCUMENTTAGGING)
           .userId("joe").parameters(Map.of("engine", "chatgpt", "tags",
               "document type,meeting date,chairperson,secretary,board members,resolutions")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -725,7 +725,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -791,7 +791,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = UUID.randomUUID().toString();
       List<Action> actions = Arrays.asList(new Action().type(ActionType.OCR).userId("joe")
           .parameters(Map.of("addPdfDetectedCharactersAsText", "true")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -832,7 +832,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       documentService.saveDocument(siteId, item, null);
       List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -874,7 +874,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       documentService.saveDocument(siteId, item, null);
       List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -908,7 +908,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = UUID.randomUUID().toString();
       List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -949,7 +949,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         List<Action> actions = Arrays.asList(new Action().type(ActionType.WEBHOOK).userId("joe")
             .parameters(Map.of("url", URL + "/callback")));
-        actionsService.saveActions(siteId, documentId, actions);
+        actionsService.saveNewActions(siteId, documentId, actions);
 
         Map<String, Object> map =
             loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1017,7 +1017,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
             new Action().type(ActionType.ANTIVIRUS).userId("joe").status(ActionStatus.COMPLETE),
             new Action().type(ActionType.WEBHOOK).userId("joe")
                 .parameters(Map.of("url", URL + "/callback")));
-        actionsService.saveActions(siteId, documentId, actions);
+        actionsService.saveNewActions(siteId, documentId, actions);
 
         Map<String, Object> map =
             loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1083,7 +1083,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       documentService.saveDocument(siteId, item, null);
       List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1130,7 +1130,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 .parameters(Map.of("url", URL + "/callback")),
             new Action().type(ActionType.WEBHOOK).userId("joe")
                 .parameters(Map.of("url", URL + "/callback2")));
-        actionsService.saveActions(siteId, documentId, actions);
+        actionsService.saveNewActions(siteId, documentId, actions);
 
         Map<String, Object> map =
             loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1172,7 +1172,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
               .parameters(Map.of("url", URL + "/callback")),
           new Action().type(ActionType.WEBHOOK).userId("joe")
               .parameters(Map.of("url", URL + "/callback2")));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1216,7 +1216,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.saveDocument(siteId, item, null);
 
       List<Action> actions = Arrays.asList(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",
@@ -1256,7 +1256,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = Arrays.asList(
           new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE).userId("joe"),
           new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Map<String, Object> map =
           loadFileAsMap(this, "/actions-event01.json", "c2695f67-d95e-4db0-985e-574168b12e57",

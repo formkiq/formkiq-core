@@ -137,6 +137,28 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
+  public PaginationResults<Action> findDocumentsInQueue(final String siteId, final String queueName,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+
+    BatchGetConfig batchConfig = new BatchGetConfig();
+    String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
+    String sk = "action#";
+
+    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
+    QueryResponse response =
+        this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
+
+    List<Map<String, AttributeValue>> keys = response.items().stream()
+        .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
+
+    List<Action> list = this.db.getBatch(batchConfig, keys).stream()
+        .map(a -> new Action().getFromAttributes(siteId, a)).collect(Collectors.toList());
+
+    PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
+    return new PaginationResults<>(list, pagination);
+  }
+
+  @Override
   public PaginationResults<String> findDocumentsWithStatus(final String siteId,
       final ActionStatus status, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
@@ -161,28 +183,6 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     return new PaginationResults<>(list, pagination);
 
-  }
-
-  @Override
-  public PaginationResults<Action> findDocumentsInQueue(final String siteId, final String queueName,
-      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
-
-    BatchGetConfig batchConfig = new BatchGetConfig();
-    String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
-    String sk = "action#";
-
-    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
-    QueryResponse response =
-        this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
-
-    List<Map<String, AttributeValue>> keys = response.items().stream()
-        .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
-
-    List<Action> list = this.db.getBatch(batchConfig, keys).stream()
-        .map(a -> new Action().getFromAttributes(siteId, a)).collect(Collectors.toList());
-
-    PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
-    return new PaginationResults<>(list, pagination);
   }
 
   @Override
@@ -283,8 +283,28 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> saveActions(final String siteId, final String documentId,
-      final List<Action> actions) {
+  public void saveActions(final String siteId, final List<Action> actions) {
+
+    List<Map<String, AttributeValue>> values = new ArrayList<>();
+
+    for (Action action : actions) {
+
+      Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
+      values.add(valueMap);
+    }
+
+    if (!values.isEmpty()) {
+      Map<String, Collection<WriteRequest>> items =
+          new AttributeValuesToWriteRequests(this.documentTableName).apply(values);
+
+      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
+      this.dbClient.batchWriteItem(batch);
+    }
+  }
+
+  @Override
+  public List<Map<String, AttributeValue>> saveNewActions(final String siteId,
+      final String documentId, final List<Action> actions) {
 
     int idx = 0;
 

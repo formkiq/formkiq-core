@@ -355,6 +355,7 @@ Resources:
                     - PENDING
                     - RUNNING
                     - SKIPPED
+                    - FAILED_RETRY
               - $ref: '#/components/parameters/documentSearchDeleted'
               - name: "date"
                 in: "query"
@@ -1328,6 +1329,41 @@ Resources:
                     application/json:
                       schema:
                         $ref: '#/components/schemas/AddDocumentActionsResponse'
+                '400':
+                  description: 400 OK
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/actions/retry:
+            post:
+              operationId: AddDocumentRetryAction
+              summary: Retries failed document action(s)
+              description: |-
+                Retries all failed document action(s). Failed action status changes to "FAILED_RETRY" and a new "PENDING" action is created.
+              tags:
+              - Document Actions
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentActionsRetryResponse'
                 '400':
                   description: 400 OK
                   content:
@@ -4934,6 +4970,7 @@ Resources:
                     - PENDING
                     - RUNNING
                     - SKIPPED
+                    - FAILED_RETRY
                 type:
                   type: string
                   description: Type of Document Action
@@ -5004,6 +5041,12 @@ Resources:
                   type: "string"
                   description: "Inserted Timestamp"
             AddDocumentActionsResponse:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Document Action message
+            AddDocumentActionsRetryResponse:
               type: object
               properties:
                 message:

@@ -56,18 +56,6 @@ public interface ActionsService {
   Action findActionInQueue(String siteId, String documentId, String queueId);
 
   /**
-   * Find Documents with FAILED status.
-   * 
-   * @param siteId {@link String}
-   * @param status {@link ActionStatus}
-   * @param exclusiveStartKey {@link Map}
-   * @param limit int
-   * @return {@link PaginationResults}
-   */
-  PaginationResults<String> findDocumentsWithStatus(String siteId, ActionStatus status,
-      Map<String, AttributeValue> exclusiveStartKey, int limit);
-
-  /**
    * Find Documents in Queue.
    * 
    * @param siteId {@link String}
@@ -77,6 +65,18 @@ public interface ActionsService {
    * @return {@link PaginationResults} {@link Action}
    */
   PaginationResults<Action> findDocumentsInQueue(String siteId, String queueId,
+      Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Find Documents with FAILED status.
+   * 
+   * @param siteId {@link String}
+   * @param status {@link ActionStatus}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link PaginationResults}
+   */
+  PaginationResults<String> findDocumentsWithStatus(String siteId, ActionStatus status,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
@@ -128,6 +128,14 @@ public interface ActionsService {
   void saveAction(String siteId, String documentId, Action action, int index);
 
   /**
+   * Save {@link Action}.
+   * 
+   * @param siteId {@link String}
+   * @param actions {@link List} {@link Action}
+   */
+  void saveActions(String siteId, List<Action> actions);
+
+  /**
    * Save {@link List} {@link Action}.
    * 
    * @param siteId {@link String}
@@ -135,7 +143,7 @@ public interface ActionsService {
    * @param actions {@link List} {@link Action}
    * @return {@link List} {@link Map}
    */
-  List<Map<String, AttributeValue>> saveActions(String siteId, String documentId,
+  List<Map<String, AttributeValue>> saveNewActions(String siteId, String documentId,
       List<Action> actions);
 
   /**

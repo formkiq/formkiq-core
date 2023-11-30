@@ -541,7 +541,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
             .collect(Collectors.toList());
         syncs.forEach(a -> a.status(ActionStatus.PENDING));
-        actionsService.saveActions(siteId, item.getDocumentId(), actions);
+        actionsService.saveNewActions(siteId, item.getDocumentId(), actions);
 
         logger.log("publishing actions message to " + snsDocumentEvent);
         notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
@@ -717,7 +717,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       List<Action> actions =
           list.stream().map(s -> transform.apply(s)).collect(Collectors.toList());
 
-      actionsService.saveActions(siteId, doc.getDocumentId(), actions);
+      actionsService.saveNewActions(siteId, doc.getDocumentId(), actions);
     }
   }
 

@@ -143,7 +143,7 @@ public class DocumentsUploadRequestHandler
         List<Action> actions = item.getList("actions").stream().map(new DynamicObjectToAction())
             .collect(Collectors.toList());
         actions.forEach(a -> a.userId(username));
-        actionsService.saveActions(siteId, documentId, actions);
+        actionsService.saveNewActions(siteId, documentId, actions);
       }
 
       if (value != null) {

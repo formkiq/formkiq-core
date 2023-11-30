@@ -1159,7 +1159,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertNotNull(actions.get(1).insertedDate());
 
       actions.get(0).status(ActionStatus.COMPLETE);
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       // given
       data.put("actions", Arrays.asList(

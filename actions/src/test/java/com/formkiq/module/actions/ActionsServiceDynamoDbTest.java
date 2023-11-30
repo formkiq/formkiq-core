@@ -91,7 +91,7 @@ public class ActionsServiceDynamoDbTest {
       Action action0 = new Action().type(ActionType.OCR).userId(userId0);
 
       // when
-      service.saveActions(siteId, documentId0, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId0, Arrays.asList(action0));
 
       // then
       assertTrue(service.hasActions(siteId, documentId0));
@@ -112,7 +112,7 @@ public class ActionsServiceDynamoDbTest {
 
       Action action0 =
           new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId, Arrays.asList(action0));
 
       // when
       documentService.deleteDocument(siteId, documentId, false);
@@ -136,7 +136,7 @@ public class ActionsServiceDynamoDbTest {
 
       Action action0 =
           new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId, Arrays.asList(action0));
 
       // when
       service.deleteActions(siteId, documentId);
@@ -165,7 +165,7 @@ public class ActionsServiceDynamoDbTest {
       Action insertedAction = new Action().type(ActionType.OCR).userId(user);
 
       List<Action> actions = Arrays.asList(action0, action1);
-      service.saveActions(siteId, documentId, actions);
+      service.saveNewActions(siteId, documentId, actions);
       assertEquals(2, service.getActions(siteId, documentId).size());
 
       // when
@@ -209,8 +209,8 @@ public class ActionsServiceDynamoDbTest {
 
       // when
       final List<Map<String, AttributeValue>> list =
-          service.saveActions(siteId, documentId0, Arrays.asList(action0));
-      service.saveActions(siteId, documentId1, Arrays.asList(action1));
+          service.saveNewActions(siteId, documentId0, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId1, Arrays.asList(action1));
 
       // then
       assertEquals(1, list.size());
@@ -265,7 +265,7 @@ public class ActionsServiceDynamoDbTest {
       }
 
       // when
-      service.saveActions(siteId, documentId, actions);
+      service.saveNewActions(siteId, documentId, actions);
 
       // then
       int i = 0;
@@ -294,7 +294,7 @@ public class ActionsServiceDynamoDbTest {
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
 
       // when
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId, Arrays.asList(action0));
 
       // then
       List<Action> results = service.getActions(siteId, documentId);
@@ -320,7 +320,7 @@ public class ActionsServiceDynamoDbTest {
       String userId0 = "joe";
       Action action0 =
           new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
       action0.status(ActionStatus.COMPLETE);
@@ -347,7 +347,7 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(queueId);
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
       action0.status(ActionStatus.IN_QUEUE);
@@ -395,7 +395,7 @@ public class ActionsServiceDynamoDbTest {
       String documentId = UUID.randomUUID().toString();
       String userId0 = "joe";
       Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
-      service.saveActions(siteId, documentId, Arrays.asList(action0));
+      service.saveNewActions(siteId, documentId, Arrays.asList(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
       action0.status(ActionStatus.FAILED);

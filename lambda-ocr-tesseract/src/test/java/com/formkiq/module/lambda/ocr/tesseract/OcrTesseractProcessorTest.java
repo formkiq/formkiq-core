@@ -133,7 +133,7 @@ class OcrTesseractProcessorTest {
 
       List<Action> actions = Arrays
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
           .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
@@ -173,7 +173,7 @@ class OcrTesseractProcessorTest {
 
       List<Action> actions = Arrays
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
       s3.putObject(BUCKET_NAME, documentS3Key, "testdata".getBytes(StandardCharsets.UTF_8),
@@ -221,7 +221,7 @@ class OcrTesseractProcessorTest {
 
       List<Action> actions = Arrays
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
           .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
@@ -261,7 +261,7 @@ class OcrTesseractProcessorTest {
 
       List<Action> actions = Arrays
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
       try (InputStream is =
@@ -312,7 +312,7 @@ class OcrTesseractProcessorTest {
 
       List<Action> actions = Arrays
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
       try (InputStream is =
@@ -363,7 +363,7 @@ class OcrTesseractProcessorTest {
 
       List<Action> actions = Arrays
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
-      actionsService.saveActions(siteId, documentId, actions);
+      actionsService.saveNewActions(siteId, documentId, actions);
 
       String documentS3Key = createS3Key(siteId, documentId);
       try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/sample.pdf")) {
