@@ -323,6 +323,47 @@ public class FkqDocumentService {
    * @throws ApiException ApiException
    * @throws InterruptedException InterruptedException
    */
+  public static GetDocumentActionsResponse waitForAction(final ApiClient client,
+      final String siteId, final String documentId, final String actionStatus)
+      throws ApiException, InterruptedException {
+
+    GetDocumentActionsResponse response = null;
+    DocumentActionsApi api = new DocumentActionsApi(client);
+
+    List<com.formkiq.client.model.DocumentAction> o = Collections.emptyList();
+
+    while (o.isEmpty()) {
+
+      try {
+        response = api.getDocumentActions(documentId, siteId, null);
+
+        o = response.getActions().stream()
+            .filter(a -> a.getStatus().name().equalsIgnoreCase(actionStatus))
+            .collect(Collectors.toList());
+
+      } catch (ApiException e) {
+        // ignore
+      }
+
+      if (o.isEmpty()) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+    }
+
+    return response;
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actionStatus {@link String}
+   * @return {@link GetDocumentActionsResponse}
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
   public static GetDocumentActionsResponse waitForActions(final ApiClient client,
       final String siteId, final String documentId, final String actionStatus)
       throws ApiException, InterruptedException {
