@@ -171,6 +171,8 @@ Resources:
     Condition: IsNotGovCloud
     Properties:
       DistributionConfig:
+        Comment:
+          Fn::Sub: "FormKiQ Console ${ConsoleVersion}"
         Origins:
         - DomainName: 
             Fn::GetAtt:
