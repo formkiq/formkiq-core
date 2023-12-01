@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.lambda.ocr.tesseract;
+package com.formkiq.module.lambda.ocr.docx;
 
 import java.io.File;
 import java.io.FileInputStream;

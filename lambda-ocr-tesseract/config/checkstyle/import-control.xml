@@ -9,8 +9,38 @@
 	
 		<subpackage name="ocr">
 		
-			<subpackage name="tesseract">
+			<subpackage name="docx">
+				<allow pkg="java.io" />
+				<allow pkg="com.formkiq.aws.dynamodb.objects" />
+				<allow pkg="org.apache.poi.hwpf" />
+				<allow pkg="org.apache.poi.hwpf.extractor" />
 				
+				<allow pkg="org.apache.poi.openxml4j.exceptions" />
+				<allow pkg="org.apache.poi.openxml4j.opc" />
+				<allow pkg="org.apache.poi.xwpf.extractor" />
+				<allow pkg="org.apache.poi.xwpf.usermodel" />
+
+				<allow pkg="com.formkiq.module.lambdaservices" />
+				<allow pkg="com.formkiq.module.ocr" />
+				
+			</subpackage>
+			
+			<subpackage name="pdf">
+				<allow pkg="java.io" />
+				<allow pkg="java.util" />
+				
+				<allow pkg="com.formkiq.aws.dynamodb.objects" />
+				
+				<allow pkg="org.apache.pdfbox.cos" />
+				<allow pkg="org.apache.pdfbox.pdmodel" />
+				<allow pkg="org.apache.pdfbox.text" />
+				
+				<allow pkg="com.formkiq.module.lambdaservices" />
+				<allow pkg="com.formkiq.module.ocr" />
+			</subpackage>
+			
+			<subpackage name="tesseract">
+								
 				<allow pkg="com.formkiq.module.events" />
 				<allow pkg="java.io" />
 				<allow pkg="java.nio.charset" />
@@ -28,19 +58,10 @@
 				<allow pkg="com.formkiq.module.actions.services" />
 				<allow pkg="com.formkiq.module.lambdaservices" />
 				<allow pkg="com.formkiq.module.ocr" />
+				<allow pkg="com.formkiq.module.lambda.ocr.docx" />
+				<allow pkg="com.formkiq.module.lambda.ocr.pdf" />
 
 				<allow pkg="net.sourceforge.tess4j" />
-
-				<allow pkg="org.apache.poi.hwpf" />
-				<allow pkg="org.apache.poi.hwpf.extractor" />
-				
-				<allow pkg="org.apache.poi.openxml4j.exceptions" />
-				<allow pkg="org.apache.poi.openxml4j.opc" />
-				<allow pkg="org.apache.poi.xwpf.extractor" />
-				<allow pkg="org.apache.poi.xwpf.usermodel" />
-				
-				<allow pkg="org.apache.pdfbox.pdmodel" />
-				<allow pkg="org.apache.pdfbox.text" />
 
 				<allow pkg="software.amazon.awssdk.auth.credentials" />
 				<allow pkg="software.amazon.awssdk.regions" />

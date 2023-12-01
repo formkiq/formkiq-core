@@ -53,6 +53,9 @@ import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.lambda.ocr.docx.DocFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.DocxFormatConverter;
+import com.formkiq.module.lambda.ocr.pdf.PdfFormatConverter;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.ocr.DocumentOcrService;
@@ -367,6 +370,55 @@ class OcrTesseractProcessorTest {
 
       String documentS3Key = createS3Key(siteId, documentId);
       try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/sample.pdf")) {
+        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
+      }
+
+      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
+          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
+      ocrService.save(ocr);
+
+      SqsMessageRecord record =
+          new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
+              "jobId", jobId, "contentType", MimeType.MIME_PDF.getContentType())));
+      SqsMessageRecords records = new SqsMessageRecords().records(Arrays.asList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      DynamicObject obj = ocrService.get(siteId, documentId);
+      assertEquals("successful", obj.get("ocrStatus"));
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful PDF Portfolio application/pdf OCR.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequest07() throws Exception {
+    // given
+    for (String siteId : Arrays.asList("default", UUID.randomUUID().toString())) {
+
+      String documentId = UUID.randomUUID().toString();
+      String jobId = UUID.randomUUID().toString();
+
+      List<Action> actions = Arrays
+          .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      String documentS3Key = createS3Key(siteId, documentId);
+      try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/collection.pdf")) {
         s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
       }
 
