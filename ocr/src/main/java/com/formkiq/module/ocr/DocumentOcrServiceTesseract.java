@@ -148,12 +148,11 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
       String jobId = convertDocument(awsservice, request, siteId, documentId, s3key,
           documentS3toConvert, contentType);
 
-      Ocr ocr =
-          new Ocr().siteId(siteId).documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
-              .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
-              .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText());
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
+          .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
+          .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText());
 
-      save(ocr);
+      save(siteId, ocr);
     }
   }
 
@@ -268,10 +267,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public void save(final Ocr ocr) {
+  public void save(final String siteId, final Ocr ocr) {
     String fulldate = this.df.format(new Date());
 
-    Map<String, AttributeValue> pkvalues = keysDocumentOcr(ocr.siteId(), ocr.documentId());
+    Map<String, AttributeValue> pkvalues = keysDocumentOcr(siteId, ocr.documentId());
 
     addS(pkvalues, "documentId", ocr.documentId());
     addS(pkvalues, "insertedDate", fulldate);
@@ -297,10 +296,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     this.s3.putObject(this.ocrBucket, s3Key, content.getBytes(StandardCharsets.UTF_8), contentType);
 
-    Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId).engine(OcrEngine.MANUAL)
+    Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.MANUAL)
         .status(OcrScanStatus.SUCCESSFUL).contentType(contentType).userId(userId);
 
-    save(ocr);
+    save(siteId, ocr);
 
     updateOcrScanStatus(awsservice, siteId, documentId, OcrScanStatus.SUCCESSFUL);
   }
@@ -369,10 +368,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     OcrScanStatus status = OcrScanStatus.SKIPPED;
 
-    Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-        .engine(getOcrEngine(null)).status(status).contentType(contentType).userId(userId);
+    Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(null))
+        .status(status).contentType(contentType).userId(userId);
 
-    save(ocr);
+    save(siteId, ocr);
 
     updateOcrScanStatus(awsservice, siteId, documentId, status);
   }

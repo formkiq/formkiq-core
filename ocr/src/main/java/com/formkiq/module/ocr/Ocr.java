@@ -39,8 +39,6 @@ public class Ocr {
   private OcrEngine engine;
   /** Job Id. */
   private String jobId;
-  /** SiteId. */
-  private String siteId;
   /** {@link OcrScanStatus}. */
   private OcrScanStatus status;
   /** UserId. */
@@ -150,26 +148,6 @@ public class Ocr {
    */
   public Ocr jobId(final String id) {
     this.jobId = id;
-    return this;
-  }
-
-  /**
-   * Get SiteId.
-   * 
-   * @return {@link String}
-   */
-  public String siteId() {
-    return this.siteId;
-  }
-
-  /**
-   * Set SiteId.
-   * 
-   * @param id {@link String}
-   * @return {@link Ocr}
-   */
-  public Ocr siteId(final String id) {
-    this.siteId = id;
     return this;
   }
 

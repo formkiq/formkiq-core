@@ -91,9 +91,10 @@ public interface DocumentOcrService {
   /**
    * Save {@link Ocr}.
    * 
+   * @param siteId {@link String}
    * @param ocr {@link Ocr}
    */
-  void save(Ocr ocr);
+  void save(String siteId, Ocr ocr);
 
   /**
    * Set Optical character recognition of Document.

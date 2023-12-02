@@ -138,9 +138,9 @@ class OcrTesseractProcessorTest {
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record = new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId,
           "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_JPEG)));
@@ -182,9 +182,9 @@ class OcrTesseractProcessorTest {
       s3.putObject(BUCKET_NAME, documentS3Key, "testdata".getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record =
           new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
@@ -226,9 +226,9 @@ class OcrTesseractProcessorTest {
           .asList(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record = new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId,
           "documentId", documentId, "jobId", jobId, "contentType", MimeType.MIME_DOCX)));
@@ -272,9 +272,9 @@ class OcrTesseractProcessorTest {
         s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_DOCX.getContentType());
       }
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record =
           new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
@@ -323,9 +323,9 @@ class OcrTesseractProcessorTest {
         s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_DOC.getContentType());
       }
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record =
           new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
@@ -373,9 +373,9 @@ class OcrTesseractProcessorTest {
         s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
       }
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record =
           new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
@@ -422,9 +422,9 @@ class OcrTesseractProcessorTest {
         s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
       }
 
-      Ocr ocr = new Ocr().siteId(siteId).documentId(documentId).jobId(jobId)
-          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
-      ocrService.save(ocr);
+      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED);
+      ocrService.save(siteId, ocr);
 
       SqsMessageRecord record =
           new SqsMessageRecord().body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId,
