@@ -30,7 +30,10 @@
 		<allow pkg="com.itextpdf.kernel.pdf" />
 
 		<subpackage name="pdf">
-			<allow pkg="com.itextpdf.kernel.utils" />
+			<allow pkg="org.apache.pdfbox.cos" />
+			<allow pkg="org.apache.pdfbox.pdmodel" />
+			<allow pkg="org.apache.pdfbox.pdmodel.common" />
+			<allow pkg="org.apache.pdfbox.pdmodel.common.filespecification" />
 		</subpackage>
 	</subpackage>
 

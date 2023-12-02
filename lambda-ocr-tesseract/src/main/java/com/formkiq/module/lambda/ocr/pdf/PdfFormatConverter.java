@@ -25,18 +25,9 @@ package com.formkiq.module.lambda.ocr.pdf;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
-import org.apache.pdfbox.pdmodel.PDDocumentNameDictionary;
-import org.apache.pdfbox.pdmodel.PDEmbeddedFilesNameTreeNode;
-import org.apache.pdfbox.pdmodel.common.PDNameTreeNode;
-import org.apache.pdfbox.pdmodel.common.filespecification.PDComplexFileSpecification;
-import org.apache.pdfbox.pdmodel.common.filespecification.PDEmbeddedFile;
 import org.apache.pdfbox.text.PDFTextStripper;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -44,11 +35,15 @@ import com.formkiq.module.ocr.FormatConverter;
 import com.formkiq.module.ocr.FormatConverterResult;
 import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
+import com.formkiq.module.ocr.pdf.PdfPortfolio;
 
 /**
- * DOCX {@link FormatConverter}.
+ * PDF {@link FormatConverter}.
  */
 public class PdfFormatConverter implements FormatConverter {
+
+  /** {@link PdfPortfolio}. */
+  private PdfPortfolio pdfPortfolio = new PdfPortfolio();
 
   @Override
   public FormatConverterResult convert(final AwsServiceCache awsServices,
@@ -60,12 +55,23 @@ public class PdfFormatConverter implements FormatConverter {
 
     try (PDDocument document = PDDocument.load(file)) {
 
-      if (isPdfPortfolio(document)) {
+      sb.append(pdfTextStripper.getText(document));
 
-        List<Map<String, String>> texts = getPortfolioTextMap(pdfTextStripper, document);
+      if (this.pdfPortfolio.isPdfPortfolio(document)) {
 
-        for (Map<String, String> map : texts) {
-          sb.append(map.get("text"));
+        List<Map<String, Object>> pdfEmbeddedFiles =
+            this.pdfPortfolio.getPdfEmbeddedFiles(document);
+
+        for (Map<String, Object> map : pdfEmbeddedFiles) {
+          String filename = map.get("fileName").toString();
+
+          if (filename.endsWith(".pdf")) {
+            byte[] data = (byte[]) map.get("data");
+
+            try (PDDocument embeddedDocument = PDDocument.load(data)) {
+              sb.append(pdfTextStripper.getText(embeddedDocument));
+            }
+          }
         }
 
       } else {
@@ -76,79 +82,6 @@ public class PdfFormatConverter implements FormatConverter {
       String text = sb.toString();
       return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
     }
-  }
-
-  private List<Map<String, String>> extractFiles(final PDFTextStripper pdfTextStripper,
-      final Map<String, PDComplexFileSpecification> names) throws IOException {
-
-    List<Map<String, String>> list = new ArrayList<>();
-
-    for (Entry<String, PDComplexFileSpecification> e : names.entrySet()) {
-      String filename = e.getKey();
-
-      PDComplexFileSpecification fileSpec = names.get(filename);
-      PDEmbeddedFile embeddedFile = fileSpec.getEmbeddedFile();
-
-      if (filename.endsWith(".pdf")) {
-        try (PDDocument document = PDDocument.load(embeddedFile.toByteArray())) {
-          list.add(Map.of("fileName", filename, "text", pdfTextStripper.getText(document)));
-        }
-      }
-    }
-
-    return list;
-  }
-
-  /**
-   * Get {@link Map} of Portfolio and Text.
-   * 
-   * @param pdfTextStripper {@link PDFTextStripper}
-   * @param document {@link PDDocument}
-   * @return {@link Map}
-   * @throws IOException IOException
-   */
-  private List<Map<String, String>> getPortfolioTextMap(final PDFTextStripper pdfTextStripper,
-      final PDDocument document) throws IOException {
-
-    List<Map<String, String>> list = new ArrayList<>();
-
-    String text = pdfTextStripper.getText(document);
-    list.add(Map.of("fileName", "root", "text", text));
-
-    PDDocumentNameDictionary names = new PDDocumentNameDictionary(document.getDocumentCatalog());
-    PDEmbeddedFilesNameTreeNode efTree = names.getEmbeddedFiles();
-
-    if (efTree != null) {
-
-      Map<String, PDComplexFileSpecification> namesMap = efTree.getNames();
-
-      if (namesMap != null) {
-
-        list.addAll(extractFiles(pdfTextStripper, namesMap));
-
-      } else {
-
-        List<PDNameTreeNode<PDComplexFileSpecification>> kids = efTree.getKids();
-        for (PDNameTreeNode<PDComplexFileSpecification> node : kids) {
-          namesMap = node.getNames();
-          list.addAll(extractFiles(pdfTextStripper, namesMap));
-        }
-      }
-    }
-
-    return list;
-  }
-
-  /**
-   * Whether {@link PDDocument} is a Portfolio.
-   * 
-   * @param document {@link PDDocument}
-   * @return boolean
-   */
-  private boolean isPdfPortfolio(final PDDocument document) {
-    PDDocumentCatalog catalog = document.getDocumentCatalog();
-    COSDictionary cosObject = catalog.getCOSObject();
-    return cosObject.containsKey("Collection");
   }
 
   @Override

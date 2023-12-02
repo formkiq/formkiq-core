@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
@@ -64,8 +65,6 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 90;
-  /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT1 = 30;
   /** {@link FileGenerator}. */
   private FileGenerator fileGenerator = new FileGenerator();
 
@@ -114,7 +113,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
    * @throws Exception Exception
    */
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT1)
+  @Timeout(unit = TimeUnit.SECONDS, value = TEST_TIMEOUT)
   public void testAddDocumentActionsRetry01() throws Exception {
     // given
     String siteId = null;
@@ -128,7 +127,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     List<AddDocumentTag> tags = Collections.emptyList();
 
     // when
-    String documentId = addDocument(client, siteId, "retry.bin", data, null, actions, tags);
+    String documentId = addDocument(client, siteId, "retry.docx", data,
+        MimeType.MIME_DOCX.getContentType(), actions, tags);
 
     // then
     GetDocumentActionsResponse response = waitForActions(client, siteId, documentId, "FAILED");

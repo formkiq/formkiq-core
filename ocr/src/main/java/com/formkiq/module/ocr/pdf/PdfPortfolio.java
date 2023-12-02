@@ -23,24 +23,19 @@
  */
 package com.formkiq.module.ocr.pdf;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import com.itextpdf.kernel.pdf.PdfCatalog;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfNameTree;
-import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfStream;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.utils.PdfMerger;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentNameDictionary;
+import org.apache.pdfbox.pdmodel.PDEmbeddedFilesNameTreeNode;
+import org.apache.pdfbox.pdmodel.common.PDNameTreeNode;
+import org.apache.pdfbox.pdmodel.common.filespecification.PDComplexFileSpecification;
+import org.apache.pdfbox.pdmodel.common.filespecification.PDEmbeddedFile;
 
 /**
  * 
@@ -49,43 +44,141 @@ import com.itextpdf.kernel.utils.PdfMerger;
  */
 public class PdfPortfolio {
 
-  /**
-   * Get PDF Embbeded File Names.
-   * 
-   * @param pdfDoc {@link PdfDocument}
-   * @return {@link Map} {@link PdfObject}
-   */
-  private static Map<String, PdfObject> getEmbeddedFileNames(final PdfDocument pdfDoc) {
-    PdfCatalog catalog = pdfDoc.getCatalog();
-    PdfNameTree embeddedFiles = catalog.getNameTree(PdfName.EmbeddedFiles);
-    Map<String, PdfObject> names = embeddedFiles.getNames();
-    return names;
+  // /**
+  // * Get PDF Embbeded File Names.
+  // *
+  // * @param pdfDoc {@link PdfDocument}
+  // * @return {@link Map} {@link PdfObject}
+  // */
+  // private static Map<String, PdfObject> getEmbeddedFileNames(final PdfDocument pdfDoc) {
+  // PdfCatalog catalog = pdfDoc.getCatalog();
+  // PdfNameTree embeddedFiles = catalog.getNameTree(PdfName.EmbeddedFiles);
+  // Map<String, PdfObject> names = embeddedFiles.getNames();
+  // return names;
+  // }
+
+  // /**
+  // * Get {@link List} of Pdf Portfolio Byte Streams.
+  // *
+  // * @param pdfDoc {@link PdfDocument}
+  // * @return {@link List}
+  // */
+  // static List<byte[]> getPdfPortfolioByteStreams(final PdfDocument pdfDoc) {
+  //
+  // Map<String, PdfObject> names = getEmbeddedFileNames(pdfDoc);
+  //
+  // List<byte[]> list = new ArrayList<>();
+  // for (Entry<String, PdfObject> entry : names.entrySet()) {
+  //
+  // if (entry.getValue() instanceof PdfDictionary) {
+  //
+  // PdfDictionary filespecDict = (PdfDictionary) entry.getValue();
+  // PdfDictionary embeddedFileDict = filespecDict.getAsDictionary(PdfName.EF);
+  // PdfStream stream = embeddedFileDict.getAsStream(PdfName.UF);
+  // if (stream == null) {
+  // stream = embeddedFileDict.getAsStream(PdfName.F);
+  // }
+  //
+  // if (stream != null) {
+  // list.add(stream.getBytes());
+  // }
+  // }
+  // }
+  //
+  // return list;
+  // }
+
+  // /**
+  // * Is Pdf Portfolio {@link PdfDocument}.
+  // *
+  // * @param doc {@link PdfDocument}
+  // * @return boolean
+  // */
+  // public static boolean isPdfPortfolio(final PdfDocument doc) {
+  // Map<String, PdfObject> names = getEmbeddedFileNames(doc);
+  // return !names.isEmpty();
+  // }
+
+  // /**
+  // * Merge Multiple PDF Documents into a single {@link PdfDocument}.
+  // *
+  // * @param doc {@link PdfDocument}
+  // * @param os {@link OutputStream}
+  // * @throws IOException IOException
+  // */
+  // public static void mergePdfPortfolios(final PdfDocument doc, final OutputStream os)
+  // throws IOException {
+  //
+  // try (PdfWriter writer = new PdfWriter(os)) {
+  //
+  // try (PdfDocument document = new PdfDocument(writer)) {
+  // PdfMerger merger = new PdfMerger(document);
+  //
+  // List<byte[]> streams = getPdfPortfolioByteStreams(doc);
+  // for (byte[] bytes : streams) {
+  // InputStream is = new ByteArrayInputStream(bytes);
+  //
+  // try (PdfReader reader = new PdfReader(is);
+  // PdfReader setUnethicalReading = reader.setUnethicalReading(true)) {
+  //
+  // try (PdfDocument pdf = new PdfDocument(reader)) {
+  //
+  // merger.merge(pdf, 1, pdf.getNumberOfPages());
+  // }
+  // }
+  // }
+  // }
+  // }
+  // }
+
+  private List<Map<String, Object>> getPdfEmbeddedFiles(
+      final Map<String, PDComplexFileSpecification> names) throws IOException {
+
+    List<Map<String, Object>> list = new ArrayList<>();
+
+    for (Entry<String, PDComplexFileSpecification> e : names.entrySet()) {
+      String filename = e.getKey();
+
+      PDComplexFileSpecification fileSpec = names.get(filename);
+      PDEmbeddedFile embeddedFile = fileSpec.getEmbeddedFile();
+
+      list.add(Map.of("fileName", filename, "data", embeddedFile.toByteArray()));
+    }
+
+    return list;
   }
 
   /**
-   * Get {@link List} of Pdf Portfolio Byte Streams.
+   * Get {@link Map} of Portfolio and Text.
    * 
-   * @param pdfDoc {@link PdfDocument}
-   * @return {@link List}
+   * @param document {@link PDDocument}
+   * 
+   * @return {@link Map}
+   * 
+   * @throws IOException IOException
    */
-  static List<byte[]> getPdfPortfolioByteStreams(final PdfDocument pdfDoc) {
+  public List<Map<String, Object>> getPdfEmbeddedFiles(final PDDocument document)
+      throws IOException {
 
-    Map<String, PdfObject> names = getEmbeddedFileNames(pdfDoc);
+    List<Map<String, Object>> list = new ArrayList<>();
 
-    List<byte[]> list = new ArrayList<>();
-    for (Entry<String, PdfObject> entry : names.entrySet()) {
+    PDDocumentNameDictionary names = new PDDocumentNameDictionary(document.getDocumentCatalog());
+    PDEmbeddedFilesNameTreeNode efTree = names.getEmbeddedFiles();
 
-      if (entry.getValue() instanceof PdfDictionary) {
+    if (efTree != null) {
 
-        PdfDictionary filespecDict = (PdfDictionary) entry.getValue();
-        PdfDictionary embeddedFileDict = filespecDict.getAsDictionary(PdfName.EF);
-        PdfStream stream = embeddedFileDict.getAsStream(PdfName.UF);
-        if (stream == null) {
-          stream = embeddedFileDict.getAsStream(PdfName.F);
-        }
+      Map<String, PDComplexFileSpecification> namesMap = efTree.getNames();
 
-        if (stream != null) {
-          list.add(stream.getBytes());
+      if (namesMap != null) {
+
+        list.addAll(getPdfEmbeddedFiles(namesMap));
+
+      } else {
+
+        List<PDNameTreeNode<PDComplexFileSpecification>> kids = efTree.getKids();
+        for (PDNameTreeNode<PDComplexFileSpecification> node : kids) {
+          namesMap = node.getNames();
+          list.addAll(getPdfEmbeddedFiles(namesMap));
         }
       }
     }
@@ -94,45 +187,14 @@ public class PdfPortfolio {
   }
 
   /**
-   * Is Pdf Portfolio {@link PdfDocument}.
+   * Whether {@link PDDocument} is a Portfolio.
    * 
-   * @param doc {@link PdfDocument}
+   * @param document {@link PDDocument}
    * @return boolean
    */
-  public static boolean isPdfPortfolio(final PdfDocument doc) {
-    Map<String, PdfObject> names = getEmbeddedFileNames(doc);
-    return !names.isEmpty();
-  }
-
-  /**
-   * Merge Multiple PDF Documents into a single {@link PdfDocument}.
-   * 
-   * @param doc {@link PdfDocument}
-   * @param os {@link OutputStream}
-   * @throws IOException IOException
-   */
-  public static void mergePdfPortfolios(final PdfDocument doc, final OutputStream os)
-      throws IOException {
-
-    try (PdfWriter writer = new PdfWriter(os)) {
-
-      try (PdfDocument document = new PdfDocument(writer)) {
-        PdfMerger merger = new PdfMerger(document);
-
-        List<byte[]> streams = getPdfPortfolioByteStreams(doc);
-        for (byte[] bytes : streams) {
-          InputStream is = new ByteArrayInputStream(bytes);
-
-          try (PdfReader reader = new PdfReader(is);
-              PdfReader setUnethicalReading = reader.setUnethicalReading(true)) {
-
-            try (PdfDocument pdf = new PdfDocument(reader)) {
-
-              merger.merge(pdf, 1, pdf.getNumberOfPages());
-            }
-          }
-        }
-      }
-    }
+  public boolean isPdfPortfolio(final PDDocument document) {
+    PDDocumentCatalog catalog = document.getDocumentCatalog();
+    COSDictionary cosObject = catalog.getCOSObject();
+    return cosObject.containsKey("Collection");
   }
 }
