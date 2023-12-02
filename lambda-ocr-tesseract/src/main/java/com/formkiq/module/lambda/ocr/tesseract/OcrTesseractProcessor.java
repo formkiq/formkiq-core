@@ -94,31 +94,37 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    * 
    */
   public OcrTesseractProcessor() {
-    this(
-        new AwsServiceCacheBuilder(System.getenv(), Map.of(),
-            EnvironmentVariableCredentialsProvider.create())
+    this(new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+        EnvironmentVariableCredentialsProvider.create())
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry())
-            .build(),
-        Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(), new PdfFormatConverter(),
-            new TesseractFormatConverter(new TesseractWrapperImpl())));
+            .build());
   }
 
   /**
    * constructor.
    *
    * @param services {@link DynamoDbConnectionBuilder}
-   * @param formatConverters {@link List} {@link FormatConverter}
    */
-  public OcrTesseractProcessor(final AwsServiceCache services,
-      final List<FormatConverter> formatConverters) {
+  public OcrTesseractProcessor(final AwsServiceCache services) {
 
     this.documentsBucket = services.environment("DOCUMENTS_S3_BUCKET");
     this.ocrDocumentsBucket = services.environment("OCR_S3_BUCKET");
-    this.converters = formatConverters;
 
     register(services);
     this.awsServices = services;
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param services {@link AwsServiceCache}
+   * @param converterList {@link List} {@link FormatConverter}
+   */
+  public OcrTesseractProcessor(final AwsServiceCache services,
+      final List<FormatConverter> converterList) {
+    this(services);
+    this.converters = converterList;
   }
 
   /**
@@ -128,6 +134,30 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
    */
   public AwsServiceCache getAwsServices() {
     return this.awsServices;
+  }
+
+  /**
+   * Get Converters.
+   * 
+   * @return {@link List} {@link FormatConverter}
+   */
+  protected List<FormatConverter> getConverters() {
+
+    if (this.converters == null) {
+      this.converters = getDefaultConverters();
+    }
+
+    return this.converters;
+  }
+
+  /**
+   * Get Default Converters.
+   * 
+   * @return {@link List} {@link FormatConverter}
+   */
+  protected List<FormatConverter> getDefaultConverters() {
+    return Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
+        new PdfFormatConverter(), new TesseractFormatConverter(new TesseractWrapperImpl()));
   }
 
   protected OcrSqsMessage getSqsMessage(final SqsMessageRecord record) {
@@ -199,7 +229,7 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
       MimeType mt = MimeType.fromContentType(contentType);
 
       Optional<FormatConverter> fc =
-          this.converters.stream().filter(c -> c.isSupported(sqsMessage, mt)).findFirst();
+          getConverters().stream().filter(c -> c.isSupported(sqsMessage, mt)).findFirst();
 
       if (fc.isEmpty()) {
         throw new IOException("unsupported Content-Type: " + contentType);
