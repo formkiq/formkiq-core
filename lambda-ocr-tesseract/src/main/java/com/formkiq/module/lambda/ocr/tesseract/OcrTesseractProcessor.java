@@ -66,6 +66,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.FormatConverterResult;
 import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
 import com.google.gson.Gson;
@@ -239,18 +240,18 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
 
       try {
 
-        String text = fc.get().convert(this.awsServices, sqsMessage, file);
+        FormatConverterResult result = fc.get().convert(this.awsServices, sqsMessage, file);
 
-        if (text != null) {
+        if (result.text() != null) {
           String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
           this.s3Service.putObject(this.ocrDocumentsBucket, ocrS3Key,
-              text.getBytes(StandardCharsets.UTF_8), "text/plain");
+              result.text().getBytes(StandardCharsets.UTF_8), "text/plain");
         }
 
-        ocrService.updateOcrScanStatus(this.awsServices, siteId, documentId,
-            OcrScanStatus.SUCCESSFUL);
-
-        logger.log(String.format("setting OCR Scan Status: %s", OcrScanStatus.SUCCESSFUL));
+        if (OcrScanStatus.SUCCESSFUL.equals(result.status())) {
+          ocrService.updateOcrScanStatus(this.awsServices, siteId, documentId,
+              OcrScanStatus.SUCCESSFUL);
+        }
 
       } finally {
 

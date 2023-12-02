@@ -32,6 +32,8 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.FormatConverterResult;
+import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
 
 /**
@@ -45,15 +47,16 @@ public class DocxFormatConverter implements FormatConverter {
   }
 
   @Override
-  public String convert(final AwsServiceCache awsServices, final OcrSqsMessage sqsMessage,
-      final File file) throws IOException {
+  public FormatConverterResult convert(final AwsServiceCache awsServices,
+      final OcrSqsMessage sqsMessage, final File file) throws IOException {
 
     try {
 
       XWPFDocument doc = new XWPFDocument(OPCPackage.open(file));
 
       try (XWPFWordExtractor ext = new XWPFWordExtractor(doc)) {
-        return ext.getText();
+        String text = ext.getText();
+        return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
       }
     } catch (InvalidFormatException e) {
       throw new IOException(e);

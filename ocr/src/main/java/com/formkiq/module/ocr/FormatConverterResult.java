@@ -23,34 +23,60 @@
  */
 package com.formkiq.module.ocr;
 
-import java.io.File;
-import java.io.IOException;
-import com.formkiq.aws.dynamodb.objects.MimeType;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-
 /**
- * Interface for File Conversion.
+ * Format Converter Result.
  */
-public interface FormatConverter {
+public class FormatConverterResult {
+
+  /** {@link OcrScanStatus}. */
+  private OcrScanStatus status;
+  /** OCR Text. */
+  private String text;
 
   /**
-   * Convert File.
+   * constructor.
+   */
+  public FormatConverterResult() {
+
+  }
+
+  /**
+   * Get {@link OcrScanStatus}.
    * 
-   * @param awsServices {@link AwsServiceCache}
-   * @param sqsMessage {@link OcrSqsMessage}
-   * @param file {@link File}
+   * @return {@link OcrScanStatus}
+   */
+  public OcrScanStatus status() {
+    return this.status;
+  }
+
+  /**
+   * Set {@link OcrScanStatus}.
+   * 
+   * @param ocrStatus {@link OcrScanStatus}
    * @return {@link FormatConverterResult}
-   * @throws IOException IOException
    */
-  FormatConverterResult convert(AwsServiceCache awsServices, OcrSqsMessage sqsMessage, File file)
-      throws IOException;
+  public FormatConverterResult status(final OcrScanStatus ocrStatus) {
+    this.status = ocrStatus;
+    return this;
+  }
 
   /**
-   * Is {@link MimeType} supported in converter.
+   * Get Text.
    * 
-   * @param sqsMessage {@link OcrSqsMessage}
-   * @param mineType {@link MimeType}
-   * @return boolean
+   * @return {@link String}
    */
-  boolean isSupported(OcrSqsMessage sqsMessage, MimeType mineType);
+  public String text() {
+    return this.text;
+  }
+
+  /**
+   * Set OCR Text.
+   * 
+   * @param ocrText {@link String}
+   * @return {@link FormatConverterResult}
+   */
+  public FormatConverterResult text(final String ocrText) {
+    this.text = ocrText;
+    return this;
+  }
 }

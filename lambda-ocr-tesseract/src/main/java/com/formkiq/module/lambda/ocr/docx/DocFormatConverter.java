@@ -31,6 +31,8 @@ import org.apache.poi.hwpf.extractor.WordExtractor;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.ocr.FormatConverter;
+import com.formkiq.module.ocr.FormatConverterResult;
+import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.module.ocr.OcrSqsMessage;
 
 /**
@@ -44,12 +46,13 @@ public class DocFormatConverter implements FormatConverter {
   }
 
   @Override
-  public String convert(final AwsServiceCache awsServices, final OcrSqsMessage sqsMessage,
-      final File file) throws IOException {
+  public FormatConverterResult convert(final AwsServiceCache awsServices,
+      final OcrSqsMessage sqsMessage, final File file) throws IOException {
 
     HWPFDocument document = new HWPFDocument(new FileInputStream(file));
     try (WordExtractor extractor = new WordExtractor(document)) {
-      return extractor.getText();
+      String text = extractor.getText();
+      return new FormatConverterResult().text(text).status(OcrScanStatus.SUCCESSFUL);
     }
   }
 
