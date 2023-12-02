@@ -34,12 +34,19 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class OcrSqsMessage {
 
   /** Content Type. */
+  @Reflectable
   private String contentType;
   /** Document Id. */
+  @Reflectable
   private String documentId;
   /** OCR Job Id. */
+  @Reflectable
   private String jobId;
+  /** {@link OcrRequest}. */
+  @Reflectable
+  private OcrRequest request;
   /** Site Id. */
+  @Reflectable
   private String siteId;
 
   /**
@@ -106,6 +113,26 @@ public class OcrSqsMessage {
    */
   public OcrSqsMessage jobId(final String id) {
     this.jobId = id;
+    return this;
+  }
+
+  /**
+   * Get {@link OcrRequest}.
+   * 
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest request() {
+    return this.request;
+  }
+
+  /**
+   * Set {@link OcrRequest}.
+   * 
+   * @param ocrRequest {@link OcrRequest}
+   * @return {@link OcrSqsMessage}
+   */
+  public OcrSqsMessage request(final OcrRequest ocrRequest) {
+    this.request = ocrRequest;
     return this;
   }
 

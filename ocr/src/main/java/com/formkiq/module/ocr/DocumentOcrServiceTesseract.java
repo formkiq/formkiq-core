@@ -24,9 +24,6 @@
 package com.formkiq.module.ocr;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -56,11 +53,8 @@ import com.formkiq.module.actions.services.ActionTypePredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.ocr.pdf.PdfPortfolio;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -142,7 +136,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     } else {
 
-      String documentS3toConvert = updateS3ObjectIfNecessary(s3key, contentType);
+      String documentS3toConvert = null;
+      // String documentS3toConvert = updateS3ObjectIfNecessary(s3key, contentType);
 
       if (awsservice.debug()) {
         String msg = String.format("converting document %s in bucket by user %s", s3key,
@@ -181,7 +176,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     String jobId = UUID.randomUUID().toString();
 
     OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
-        .contentType(contentType);
+        .contentType(contentType).request(request);
 
     String json = this.gson.toJson(msg);
 
@@ -382,39 +377,39 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     updateOcrScanStatus(awsservice, siteId, documentId, status);
   }
 
-  /**
-   * Is {@link S3Object} a PDF, if so check if it's a PDF Portfolio.
-   * 
-   * @param s3Key {@link String}
-   * @param contentType {@link String}
-   * @return {@link String}
-   */
-  private String updateS3ObjectIfNecessary(final String s3Key, final String contentType) {
-
-    String key = s3Key;
-
-    if (contentType.contains("application/pdf")) {
-
-      try (InputStream is = this.s3.getContentAsInputStream(this.documentsBucket, key)) {
-
-        try (PdfDocument doc = new PdfDocument(new PdfReader(is))) {
-
-          if (PdfPortfolio.isPdfPortfolio(doc)) {
-
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            PdfPortfolio.mergePdfPortfolios(doc, os);
-
-            key = PREFIX_TEMP_FILES + key;
-            this.s3.putObject(this.ocrBucket, key, os.toByteArray(), "application/pdf");
-          }
-        }
-
-      } catch (IOException e) {
-        key = s3Key;
-      }
-    }
-
-    return key;
-  }
+  // /**
+  // * Is {@link S3Object} a PDF, if so check if it's a PDF Portfolio.
+  // *
+  // * @param s3Key {@link String}
+  // * @param contentType {@link String}
+  // * @return {@link String}
+  // */
+  // private String updateS3ObjectIfNecessary(final String s3Key, final String contentType) {
+  //
+  // String key = s3Key;
+  //
+  // if (contentType.contains("application/pdf")) {
+  //
+  // try (InputStream is = this.s3.getContentAsInputStream(this.documentsBucket, key)) {
+  //
+  // try (PdfDocument doc = new PdfDocument(new PdfReader(is))) {
+  //
+  // if (PdfPortfolio.isPdfPortfolio(doc)) {
+  //
+  // ByteArrayOutputStream os = new ByteArrayOutputStream();
+  // PdfPortfolio.mergePdfPortfolios(doc, os);
+  //
+  // key = PREFIX_TEMP_FILES + key;
+  // this.s3.putObject(this.ocrBucket, key, os.toByteArray(), "application/pdf");
+  // }
+  // }
+  //
+  // } catch (IOException e) {
+  // key = s3Key;
+  // }
+  // }
+  //
+  // return key;
+  // }
 
 }
