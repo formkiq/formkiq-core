@@ -41,7 +41,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -153,8 +152,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("failed", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("FAILED", obj.status().name());
 
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
@@ -198,8 +197,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("successful", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
 
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       assertEquals(OCR_TEXT, s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
@@ -241,8 +240,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("failed", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("FAILED", obj.status().name());
 
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
@@ -288,8 +287,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("successful", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
 
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
@@ -339,8 +338,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("successful", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
 
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
@@ -389,8 +388,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("successful", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
 
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
@@ -438,8 +437,8 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      DynamicObject obj = ocrService.get(siteId, documentId);
-      assertEquals("successful", obj.get("ocrStatus"));
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
 
       String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));

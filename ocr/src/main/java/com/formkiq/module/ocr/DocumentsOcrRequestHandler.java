@@ -73,17 +73,17 @@ public class DocumentsOcrRequestHandler
    * @param documentId {@link String}
    * @return {@link Map}
    */
-  private Map<String, Object> buildGetResponse(final DynamicObject obj, final String documentId) {
+  private Map<String, Object> buildGetResponse(final Ocr obj, final String documentId) {
     Map<String, Object> map = new HashMap<>();
     map.put("documentId", documentId);
 
     if (obj != null) {
 
-      map.put("insertedDate", obj.get("insertedDate"));
-      map.put("contentType", obj.get("contentType"));
-      map.put("userId", obj.get("userId"));
-      map.put("ocrEngine", obj.get("ocrEngine"));
-      map.put("ocrStatus", obj.get("ocrStatus"));
+      map.put("insertedDate", obj.insertedDate());
+      map.put("contentType", obj.contentType());
+      map.put("userId", obj.userId());
+      map.put("ocrEngine", obj.engine().name());
+      map.put("ocrStatus", obj.status().name());
     }
 
     return map;
@@ -125,7 +125,7 @@ public class DocumentsOcrRequestHandler
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 
-    DynamicObject obj = ocrService.get(siteId, documentId);
+    Ocr obj = ocrService.get(siteId, documentId);
 
     Map<String, Object> map = buildGetResponse(obj, documentId);
 
@@ -135,7 +135,7 @@ public class DocumentsOcrRequestHandler
 
         S3Service s3 = awsservice.getExtension(S3Service.class);
 
-        String jobId = obj.getString("jobId");
+        String jobId = obj.jobId();
 
         List<String> s3Keys = ocrService.getOcrS3Keys(siteId, documentId, jobId);
         if (s3Keys.isEmpty()) {

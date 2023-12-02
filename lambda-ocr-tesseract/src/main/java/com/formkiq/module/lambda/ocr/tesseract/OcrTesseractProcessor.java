@@ -96,9 +96,9 @@ public class OcrTesseractProcessor implements RequestStreamHandler {
   public OcrTesseractProcessor() {
     this(new AwsServiceCacheBuilder(System.getenv(), Map.of(),
         EnvironmentVariableCredentialsProvider.create())
-            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-                new SnsAwsServiceRegistry())
-            .build());
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+            new SnsAwsServiceRegistry())
+        .build());
   }
 
   /**

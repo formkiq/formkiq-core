@@ -25,22 +25,17 @@ package com.formkiq.module.ocr;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -68,13 +63,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
   /** Content Type APPLICATION/JSON. */
   private static final String APPLICATION_JSON = "application/json";
-  /** Document OCR Prefix. */
-  private static final String PREFIX_DOCUMENT_OCR = "ocr" + DbKeys.TAG_DELIMINATOR;
-
   /** {@link DynamoDbService}. */
   private DynamoDbService db;
-  /** {@link SimpleDateFormat} in ISO Standard format. */
-  private SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** {@link String}. */
   private String documentsBucket;
   /** {@link Gson}. */
@@ -201,19 +191,21 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public DynamicObject get(final String siteId, final String documentId) {
+  public Ocr get(final String siteId, final String documentId) {
 
-    DynamicObject obj = null;
+    Ocr ocr = new Ocr().documentId(documentId);
 
-    Map<String, AttributeValue> keys = keysDocumentOcr(siteId, documentId);
-    Map<String, AttributeValue> result = this.db.get(keys.get(PK), keys.get(SK));
+    AttributeValue pk = AttributeValue.fromS(ocr.pk(siteId));
+    AttributeValue sk = AttributeValue.fromS(ocr.sk());
+    Map<String, AttributeValue> result = this.db.get(pk, sk);
 
     if (!result.isEmpty()) {
-      AttributeValueToDynamicObject transform = new AttributeValueToDynamicObject();
-      obj = transform.apply(result);
+      ocr = new Ocr().getFromAttributes(siteId, result);
+    } else {
+      ocr = null;
     }
 
-    return obj;
+    return ocr;
   }
 
   protected OcrEngine getOcrEngine(final OcrRequest request) {
@@ -263,26 +255,13 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
    */
   private Map<String, AttributeValue> keysDocumentOcr(final String siteId,
       final String documentId) {
-    return keysGeneric(siteId, PREFIX_DOCS + documentId, PREFIX_DOCUMENT_OCR);
+    Ocr ocr = new Ocr().documentId(documentId);
+    return Map.of(PK, AttributeValue.fromS(ocr.pk(siteId)), SK, AttributeValue.fromS(ocr.sk()));
   }
 
   @Override
   public void save(final String siteId, final Ocr ocr) {
-    String fulldate = this.df.format(new Date());
-
-    Map<String, AttributeValue> pkvalues = keysDocumentOcr(siteId, ocr.documentId());
-
-    addS(pkvalues, "documentId", ocr.documentId());
-    addS(pkvalues, "insertedDate", fulldate);
-    addS(pkvalues, "contentType", ocr.contentType());
-    addS(pkvalues, "userId", ocr.userId());
-    addS(pkvalues, "jobId", ocr.jobId());
-    addS(pkvalues, "ocrEngine", ocr.engine().name().toLowerCase());
-    addS(pkvalues, "ocrStatus", ocr.status().name().toLowerCase());
-    addS(pkvalues, "addPdfDetectedCharactersAsText",
-        ocr.addPdfDetectedCharactersAsText() ? "true" : "false");
-
-    this.db.putItem(pkvalues);
+    this.db.putItem(ocr.getAttributes(siteId));
   }
 
   @Override
