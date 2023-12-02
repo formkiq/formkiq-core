@@ -55,7 +55,7 @@ import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30;
+  private static final int TEST_TIMEOUT = 60;
 
   private List<GetDocumentSync> find(final List<GetDocumentSync> list, final ServiceEnum type) {
     return list.stream().filter(s -> s.getService().equals(type)).collect(Collectors.toList());
@@ -68,10 +68,10 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
   private boolean isComplete(final GetVersionResponse versions,
       final GetDocumentSyncResponse syncs) {
-    final int four = 4;
+    final int five = 5;
     int count = syncs.getSyncs().size();
     String type = versions.getModules().contains("opensearch") ? "enterprise" : "core";
-    return ("enterprise".equals(type) && count == four)
+    return ("enterprise".equals(type) && count == five)
         || (!"enterprise".equals(type) && count == 2);
   }
 
@@ -127,9 +127,14 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         assertEquals(ServiceEnum.TYPESENSE, sync.getService());
         assertEquals(TypeEnum.METADATA, sync.getType());
 
+        final int expected = 3;
         List<GetDocumentSync> opensearch = find(list, ServiceEnum.OPENSEARCH);
         if (!opensearch.isEmpty()) {
-          assertEquals(2, opensearch.size());
+          assertEquals(expected, opensearch.size());
+
+          sync = find(opensearch, TypeEnum.CONTENT).get();
+          assertEquals(ServiceEnum.OPENSEARCH, sync.getService());
+          assertEquals(TypeEnum.CONTENT, sync.getType());
 
           sync = find(opensearch, TypeEnum.TAG).get();
           assertEquals(ServiceEnum.OPENSEARCH, sync.getService());

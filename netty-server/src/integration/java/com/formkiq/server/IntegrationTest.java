@@ -52,6 +52,14 @@ class IntegrationTest {
   /** {@link DocumentsApi}. */
   private DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
 
+  /**
+   * Set BearerToken.
+   * 
+   * @param token {@link String}
+   */
+  public void setBearerToken(final String token) {
+    this.apiClient.addDefaultHeader("Authorization", token);
+  }
 
   /**
    * Test add documents.
@@ -65,6 +73,8 @@ class IntegrationTest {
     String siteId = null;
     String content = UUID.randomUUID().toString();
     AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
+
+    setBearerToken("changeme");
 
     // when
     AddDocumentResponse addDocument = this.documentsApi.addDocument(req, siteId, null);

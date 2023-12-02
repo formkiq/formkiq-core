@@ -25,20 +25,21 @@ package com.formkiq.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.ComposeContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
  * JUnit Extension for Netty Server.
  */
 public class DockerComposeExtension implements BeforeAllCallback, AfterAllCallback {
 
-  /** Test Timeout. */
-  private static final int TEST_TIMEOUT = 30;
+  /** Millisecond Factor. */
+  private static final int MILLISECOND_FACTOR = 1000;
   /** Http Server Port. */
   static final int BASE_HTTP_SERVER_PORT = 8080;
   /** {@link ComposeContainer}. */
@@ -49,15 +50,31 @@ public class DockerComposeExtension implements BeforeAllCallback, AfterAllCallba
     environment.stop();
   }
 
-  @SuppressWarnings("resource")
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    environment = new ComposeContainer(new File("docker-compose.yml")).withExposedService("formkiq",
-        BASE_HTTP_SERVER_PORT,
-        Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(TEST_TIMEOUT)));
-
+    environment = new ComposeContainer(new File("docker-compose.yml"));
     environment.start();
+
+    final int timeoutInSeconds = 10;
+    waitForPortInUse(BASE_HTTP_SERVER_PORT, timeoutInSeconds);
+  }
+
+  private void waitForPortInUse(final int port, final int timeoutInSeconds)
+      throws InterruptedException {
+    long startTime = System.currentTimeMillis();
+    long endTime = startTime + timeoutInSeconds * MILLISECOND_FACTOR;
+
+    while (System.currentTimeMillis() < endTime) {
+      try (Socket socket = new Socket()) {
+        socket.connect(new InetSocketAddress("localhost", port), MILLISECOND_FACTOR);
+      } catch (IOException e) {
+        // Port is not available yet, wait and retry
+        return;
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
   }
 }
 

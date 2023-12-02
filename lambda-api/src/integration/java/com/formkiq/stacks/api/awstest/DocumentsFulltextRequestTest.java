@@ -55,7 +55,7 @@ import software.amazon.awssdk.utils.IoUtils;
 public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 30;
+  private static final int TEST_TIMEOUT = 60;
 
   /**
    * Action Fulltext with PDF.

@@ -4620,6 +4620,9 @@
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
+                lastModifiedDate:
+                  type: string
+                  description: Last Modified Timestamp
                 documentId:
                   type: string
                   description: Document Identifier
