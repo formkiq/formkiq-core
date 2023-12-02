@@ -131,7 +131,7 @@ public class DocumentsOcrRequestHandler
 
     if (map.containsKey("ocrStatus")) {
 
-      if (map.get("ocrStatus").equals(OcrScanStatus.SUCCESSFUL.name().toLowerCase())) {
+      if (OcrScanStatus.SUCCESSFUL.name().equalsIgnoreCase(map.get("ocrStatus").toString())) {
 
         S3Service s3 = awsservice.getExtension(S3Service.class);
 
