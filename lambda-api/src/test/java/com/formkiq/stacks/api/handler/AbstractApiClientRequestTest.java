@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.services.lambda.ApiAuthorizationBuilder.COGNITO_READ_SUFFIX;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -185,6 +186,20 @@ public abstract class AbstractApiClientRequestTest {
   public void setBearerToken(final String siteId) {
     String jwt = JwtTokenEncoder
         .encodeCognito(new String[] {siteId != null ? siteId : DEFAULT_SITE_ID}, "joesmith");
+    this.client.addDefaultHeader("Authorization", jwt);
+  }
+
+  /**
+   * Set BearerToken.
+   * 
+   * @param siteId {@link String}
+   * @param readonly boolean
+   */
+  public void setBearerToken(final String siteId, final boolean readonly) {
+    String permission = siteId != null ? siteId : DEFAULT_SITE_ID;
+    permission = readonly ? permission + COGNITO_READ_SUFFIX : permission;
+
+    String jwt = JwtTokenEncoder.encodeCognito(new String[] {permission}, "joesmith");
     this.client.addDefaultHeader("Authorization", jwt);
   }
 

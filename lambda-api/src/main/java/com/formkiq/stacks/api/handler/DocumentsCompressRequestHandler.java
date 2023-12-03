@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -45,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiMapResponse;
+import com.formkiq.aws.services.lambda.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -96,6 +98,13 @@ public class DocumentsCompressRequestHandler
     return new DynamicObject(Map.ofEntries(entry(documentIdsKey, documentIds),
         entry(compressionIdKey, compressionId), entry(downloadUrlKey, downloadUrl),
         entry(siteIdKey, siteId == null ? DEFAULT_SITE_ID : siteId)));
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.permissions().contains(ApiPermission.READ);
+    return Optional.of(Boolean.valueOf(access));
   }
 
   @Override

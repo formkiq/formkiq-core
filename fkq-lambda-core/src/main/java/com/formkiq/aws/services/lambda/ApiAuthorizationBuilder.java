@@ -43,7 +43,7 @@ public class ApiAuthorizationBuilder {
   /** Cognito Admin Group Name. */
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
-  private static final String COGNITO_READ_SUFFIX = "_read";
+  public static final String COGNITO_READ_SUFFIX = "_read";
 
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private ApiAuthorizationInterceptor interceptor = null;

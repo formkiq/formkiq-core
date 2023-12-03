@@ -91,19 +91,22 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
     // given
     for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
 
-      setBearerToken(siteId);
+      for (Boolean read : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
-      String doc1 = UUID.randomUUID().toString();
-      List<String> documentIds = Arrays.asList(doc1);
-      DocumentsCompressRequest req = new DocumentsCompressRequest().documentIds(documentIds);
+        setBearerToken(siteId, read.booleanValue());
 
-      // when
-      try {
-        this.documentsApi.compressDocuments(req, siteId);
-        fail();
-      } catch (ApiException e) {
-        assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"Document '" + doc1
-            + "' does not exist\"}]}", e.getResponseBody());
+        String doc1 = UUID.randomUUID().toString();
+        List<String> documentIds = Arrays.asList(doc1);
+        DocumentsCompressRequest req = new DocumentsCompressRequest().documentIds(documentIds);
+
+        // when
+        try {
+          this.documentsApi.compressDocuments(req, siteId);
+          fail();
+        } catch (ApiException e) {
+          assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"Document '" + doc1
+              + "' does not exist\"}]}", e.getResponseBody());
+        }
       }
     }
   }
