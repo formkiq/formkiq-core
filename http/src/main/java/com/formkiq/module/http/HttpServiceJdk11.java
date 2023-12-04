@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +57,14 @@ public class HttpServiceJdk11 implements HttpService {
     this.client = HttpClient.newHttpClient();
   }
 
+  /**
+   * constructor.
+   * 
+   * @param executor {@link Executor}
+   */
+  public HttpServiceJdk11(final Executor executor) {
+    this.client = HttpClient.newBuilder().executor(executor).build();
+  }
 
   /**
    * Build {@link Builder}.

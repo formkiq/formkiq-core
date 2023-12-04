@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -69,17 +70,41 @@ public class HttpServiceSigv4 implements HttpService {
   /**
    * constructor.
    * 
+   * @param httpClient {@link HttpClient}
    * @param region {@link Region}
    * @param awsCredentials {@link AwsCredentials}
    */
-  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials) {
-    this.client = HttpClient.newHttpClient();
+  private HttpServiceSigv4(final HttpClient httpClient, final Region region,
+      final AwsCredentials awsCredentials) {
+    this.client = httpClient;
     this.signingRegion = region;
     this.signingCredentials = awsCredentials;
 
     if (region == null || awsCredentials == null) {
       throw new IllegalArgumentException();
     }
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param region {@link Region}
+   * @param awsCredentials {@link AwsCredentials}
+   */
+  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials) {
+    this(HttpClient.newHttpClient(), region, awsCredentials);
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param region {@link Region}
+   * @param awsCredentials {@link AwsCredentials}
+   * @param executor {@link Executor}
+   */
+  public HttpServiceSigv4(final Region region, final AwsCredentials awsCredentials,
+      final Executor executor) {
+    this(HttpClient.newBuilder().executor(executor).build(), region, awsCredentials);
   }
 
   /**
