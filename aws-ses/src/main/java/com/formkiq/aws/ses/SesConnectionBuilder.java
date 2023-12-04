@@ -24,7 +24,7 @@
 package com.formkiq.aws.ses;
 
 import java.net.URI;
-import com.amazonaws.xray.interceptors.TracingInterceptor;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -57,9 +57,9 @@ public class SesConnectionBuilder {
 
     ClientOverrideConfiguration.Builder clientConfig = ClientOverrideConfiguration.builder();
 
-    if (enableAwsXray) {
-      clientConfig.addExecutionInterceptor(new TracingInterceptor());
-    }
+    // if (enableAwsXray) {
+    // clientConfig.addExecutionInterceptor(new TracingInterceptor());
+    // }
 
     this.builder = SesClient.builder().overrideConfiguration(clientConfig.build())
         .httpClientBuilder(UrlConnectionHttpClient.builder())
