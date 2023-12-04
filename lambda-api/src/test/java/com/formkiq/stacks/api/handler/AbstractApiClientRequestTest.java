@@ -39,6 +39,7 @@ import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
@@ -124,6 +125,8 @@ public abstract class AbstractApiClientRequestTest {
   protected DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
   /** {@link DocumentWorkflowsApi}. */
   protected DocumentWorkflowsApi workflowApi = new DocumentWorkflowsApi(this.client);
+  /** {@link UserActivitiesApi}. */
+  protected UserActivitiesApi userActivitiesApi = new UserActivitiesApi(this.client);
 
   /**
    * Convert JSON to Object.

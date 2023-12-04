@@ -84,6 +84,9 @@ Resources:
           - name: tagSchema
             description: Tag Schema API
             x-displayName: Tag Schema
+          - name: userActivities
+            description: User Activities API
+            x-displayName: User Activities
           - name: antivirus
             description: Antivirus API
             x-displayName: Antivirus
@@ -2664,6 +2667,100 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /userActivities:
+            get:
+              operationId: GetUserActivities
+              summary: Get user activities
+              description: Retrieve a user's activities
+              tags:
+              - User Activities
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetUserActivitesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /userActivities/{userId}:
+            get:
+              operationId: GetSpecificUserActivities
+              summary: Get user activities
+              description: Retrieve a user's activities
+              tags:
+              - User Activities
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - name: "userId"
+                in: "path"
+                description: "Fetch specific user activities"
+                required: true
+                schema:
+                  type: "string"
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetUserActivitesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /documents/{documentId}/userActivities:
+            get:
+              operationId: GetDocumentUserActivities
+              summary: Get user activities
+              description: Retrieve a user's activities
+              tags:
+              - User Activities
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/nextParam'
+              - $ref: '#/components/parameters/limitParam'
+              responses:
+                '200':
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                       $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                       $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetUserActivitesResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
           /public/documents:
             post:
               operationId: PublicAddDocument
@@ -4691,6 +4788,37 @@ Resources:
                 message:
                   type: string
                   description: Document sync message
+            GetUserActivitesResponse:
+              type: "object"
+              properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
+                syncs:
+                  type: "array"
+                  description: "List of user activities syncs"
+                  items:
+                    $ref: "#/components/schemas/UserActivity"
+            UserActivity:
+              type: "object"
+              properties:
+                activityId:
+                  type: "string"
+                  description: "Activity identifier"
+                type:
+                  type: "string"
+                  description: "The type of the activity"
+                  enum:
+                    - VIEW
+                insertedDate:
+                  type: "string"
+                  description: "Inserted Timestamp"
+                userId:
+                  type: "string"
+                  description: "User who added document"
+                timeToLive:
+                  type: "string"
+                  description: "User activity time to live"
             GetFoldersResponse:
               type: "object"
               properties:

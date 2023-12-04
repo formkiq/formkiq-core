@@ -107,6 +107,9 @@ import com.formkiq.stacks.api.handler.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasIdRequestHandler;
 import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
+import com.formkiq.stacks.api.handler.UserActivitiesDocumentIdRequestHandler;
+import com.formkiq.stacks.api.handler.UserActivitiesRequestHandler;
+import com.formkiq.stacks.api.handler.UserActivitiesUserIdRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
@@ -150,6 +153,12 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new GroupsUsersRequestHandler());
   }
 
+  private static void addOnlyOfficeEndpoints() {
+    addRequestHandler(new OnlyOfficeNewRequestHandler());
+    addRequestHandler(new OnlyOfficeSaveRequestHandler());
+    addRequestHandler(new OnlyOfficeEditRequestHandler());
+  }
+
   /**
    * Add Url Request Handler Mapping.
    * 
@@ -157,6 +166,12 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
    */
   public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
     URL_MAP.put(handler.getRequestUrl(), handler);
+  }
+
+  private static void addUserActivitiesEndpoints() {
+    addRequestHandler(new UserActivitiesRequestHandler());
+    addRequestHandler(new UserActivitiesUserIdRequestHandler());
+    addRequestHandler(new UserActivitiesDocumentIdRequestHandler());
   }
 
   private static void addWorkflowEndpoints() {
@@ -209,17 +224,16 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentIdRequestHandler());
     addRequestHandler(new DocumentIdRestoreRequestHandler());
     addRequestHandler(new DocumentsCompressRequestHandler());
-    addRequestHandler(new OnlyOfficeNewRequestHandler());
-    addRequestHandler(new OnlyOfficeSaveRequestHandler());
-    addRequestHandler(new OnlyOfficeEditRequestHandler());
     addRequestHandler(new IndicesFolderMoveRequestHandler());
     addRequestHandler(new IndicesRequestHandler());
     addRequestHandler(new IndicesSearchRequestHandler());
     addRequestHandler(new EsignatureDocusignDocumentIdRequestHandler());
     addRequestHandler(new EsignatureDocusignConfigRequestHandler());
     addRequestHandler(new UpdateDocumentMatchingRequestHandler());
+    addOnlyOfficeEndpoints();
     addGroupUsersEndpoints();
     addWorkflowEndpoints();
+    addUserActivitiesEndpoints();
   }
 
   /**
