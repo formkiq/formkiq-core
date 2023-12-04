@@ -36,7 +36,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -48,12 +47,8 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
-import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /documents/{documentId}. */
-@ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
 public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */

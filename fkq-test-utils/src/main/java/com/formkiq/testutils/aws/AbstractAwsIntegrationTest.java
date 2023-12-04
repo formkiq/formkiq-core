@@ -66,9 +66,19 @@ public abstract class AbstractAwsIntegrationTest {
   private static String awsprofile;
   /** {@link Region}. */
   private static Region awsregion;
-  /** FormKiQ IAM Client. */
+  /**
+   * FormKiQ IAM Client.
+   * 
+   * @deprecated To be removed
+   */
+  @Deprecated
   private static FormKiqClientV1 clientIam;
-  /** Client Token {@link FormKiqClientV1}. */
+  /**
+   * Client Token {@link FormKiqClientV1}.
+   * 
+   * @deprecated To be removed
+   */
+  @Deprecated
   private static FormKiqClientV1 clientToken;
   /** {@link FkqCognitoService}. */
   private static FkqCognitoService cognito;
@@ -291,7 +301,9 @@ public abstract class AbstractAwsIntegrationTest {
    * Get IAM {@link FormKiqClientV1}.
    * 
    * @return {@link FormKiqClientV1}
+   * @deprecated To be removed
    */
+  @Deprecated
   public FormKiqClientV1 getClientIam() {
     return clientIam;
   }
@@ -300,7 +312,9 @@ public abstract class AbstractAwsIntegrationTest {
    * Get {@link FormKiqClientV1}.
    * 
    * @return {@link FormKiqClientV1}
+   * @deprecated To be removed
    */
+  @Deprecated
   public List<FormKiqClientV1> getClients() {
     return Arrays.asList(clientToken, clientIam);
   }
@@ -309,7 +323,9 @@ public abstract class AbstractAwsIntegrationTest {
    * Get Token {@link FormKiqClientV1}.
    * 
    * @return {@link FormKiqClientV1}
+   * @deprecated To be removed
    */
+  @Deprecated
   public FormKiqClientV1 getClientToken() {
     return clientToken;
   }
