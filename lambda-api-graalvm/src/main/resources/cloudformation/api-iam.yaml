@@ -4305,8 +4305,6 @@ Resources:
                   items:
                     $ref: "#/components/schemas/AddDocumentTag"
             AddDocumentUploadRequest:
-              required:
-              - "content"
               type: "object"
               properties:
                 tagSchemaId:
@@ -4315,6 +4313,9 @@ Resources:
                 path:
                   type: "string"
                   description: "Path or Name of document"
+                contentType:
+                  type: "string"
+                  description: "Document media type"
                 deepLinkPath:
                   type: "string"
                   description: "Path or Name of deep link"
