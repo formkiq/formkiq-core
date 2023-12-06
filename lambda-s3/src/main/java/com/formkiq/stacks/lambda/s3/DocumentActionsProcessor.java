@@ -392,13 +392,15 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   private void logAction(final LambdaLogger logger, final String type, final String siteId,
       final String documentId, final Action action) {
 
-    String s = String.format(
-        "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"actionType\":\"%s\","
-            + "\"actionStatus\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
-        type, siteId, documentId, action.type(), action.status(), action.userId(),
-        action.parameters());
+    if (isDebug()) {
+      String s = String.format(
+          "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"actionType\":\"%s\","
+              + "\"actionStatus\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
+          type, siteId, documentId, action.type(), action.status(), action.userId(),
+          action.parameters());
 
-    logger.log(s);
+      logger.log(s);
+    }
   }
 
   /**
@@ -449,7 +451,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
     } else if (ActionType.WEBHOOK.equals(action.type())) {
 
-      sendWebhook(siteId, documentId, actions, action);
+      sendWebhook(logger, siteId, documentId, actions, action);
 
     } else if (ActionType.NOTIFICATION.equals(action.type())) {
 
@@ -462,7 +464,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     logAction(logger, "action complete", siteId, documentId, action);
 
     if (updateComplete) {
-      updateComplete(siteId, documentId, actions, action, completeStatus);
+      updateComplete(logger, siteId, documentId, actions, action, completeStatus);
     }
   }
 
@@ -570,7 +572,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       ActionsNotificationService notificationService = getNotificationService();
       List<Action> updatedActions = actionsService.getActions(siteId, documentId);
-      notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
+      boolean publishNextActionEvent =
+          notificationService.publishNextActionEvent(updatedActions, siteId, documentId);
 
     } else {
       throw new IOException("no OCR document found");
@@ -651,6 +654,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Sends Webhook.
    * 
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
@@ -658,8 +662,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final String siteId, final String documentId, final List<Action> actions,
-      final Action action) throws IOException, InterruptedException {
+  private void sendWebhook(final LambdaLogger logger, final String siteId, final String documentId,
+      final List<Action> actions, final Action action) throws IOException, InterruptedException {
 
     String url = action.parameters().get("url");
 
@@ -680,7 +684,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (statusCode >= statusOk && statusCode < statusRedirect) {
 
-        updateComplete(siteId, documentId, actions, action, ActionStatus.COMPLETE);
+        updateComplete(logger, siteId, documentId, actions, action, ActionStatus.COMPLETE);
 
       } else {
         throw new IOException(url + " response status code " + statusCode);
@@ -694,14 +698,20 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   /**
    * Update Complete Action.
    * 
+   * @param logger {@link LambdaLogger}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @param completeStatus {@link ActionStatus}
    */
-  private void updateComplete(final String siteId, final String documentId,
-      final List<Action> actions, final Action action, final ActionStatus completeStatus) {
+  private void updateComplete(final LambdaLogger logger, final String siteId,
+      final String documentId, final List<Action> actions, final Action action,
+      final ActionStatus completeStatus) {
+
+    if (isDebug()) {
+      logger.log(String.format("updating status of %s to %s", documentId, completeStatus));
+    }
 
     action.status(completeStatus);
     getActionsService().updateActionStatus(siteId, documentId, action);
@@ -709,7 +719,11 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
     updateDocumentWorkflow(siteId, documentId, action);
 
     if (!ActionType.QUEUE.equals(action.type())) {
-      getNotificationService().publishNextActionEvent(actions, siteId, documentId);
+      boolean publishNextActionEvent =
+          getNotificationService().publishNextActionEvent(actions, siteId, documentId);
+      if (isDebug() && publishNextActionEvent) {
+        logger.log(String.format("publishing next event for %s to %s", siteId, documentId));
+      }
     }
   }
 

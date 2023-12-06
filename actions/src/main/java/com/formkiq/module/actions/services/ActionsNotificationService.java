@@ -32,12 +32,23 @@ import com.formkiq.module.actions.Action;
  *
  */
 public interface ActionsNotificationService {
+
   /**
    * Publishes Next Action Event, if there's another action to process.
    * 
    * @param actions {@link List} {@link Action}
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @return boolean
    */
-  void publishNextActionEvent(List<Action> actions, String siteId, String documentId);
+  boolean publishNextActionEvent(List<Action> actions, String siteId, String documentId);
+
+  /**
+   * Publishes Next Action Event, if there's another action to process.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return boolean
+   */
+  boolean publishNextActionEvent(String siteId, String documentId);
 }

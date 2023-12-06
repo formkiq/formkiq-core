@@ -56,8 +56,10 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
   }
 
   @Override
-  public void publishNextActionEvent(final List<Action> actions, final String siteId,
+  public boolean publishNextActionEvent(final List<Action> actions, final String siteId,
       final String documentId) {
+
+    boolean publishedEvent = false;
 
     Optional<Action> o =
         actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findFirst();
@@ -67,10 +69,18 @@ public class ActionsNotificationServiceImpl implements ActionsNotificationServic
       o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.PENDING)).findFirst();
 
       if (o.isPresent()) {
-        String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
-        DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
-        this.documentEventService.publish(event);
+        publishedEvent = publishNextActionEvent(siteId, documentId);
       }
     }
+
+    return publishedEvent;
+  }
+
+  @Override
+  public boolean publishNextActionEvent(final String siteId, final String documentId) {
+    String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
+    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
+    this.documentEventService.publish(event);
+    return true;
   }
 }
