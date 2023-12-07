@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 
@@ -110,6 +111,11 @@ public class DocumentIdContentRequestHandler
 
       response =
           new ApiMapResponse(Map.of("contentUrl", url.toString(), "contentType", contentType));
+    }
+
+    if (awsservice.containsExtension(UserActivityPlugin.class)) {
+      UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
+      plugin.addViewActivity(siteId, documentId, versionKey, authorization.username());
     }
 
     return new ApiRequestHandlerResponse(SC_OK, response);

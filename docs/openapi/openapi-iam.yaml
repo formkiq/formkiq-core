@@ -4782,7 +4782,7 @@
                 next:
                   type: string
                   description: Next page of results token
-                syncs:
+                userActivities:
                   type: array
                   description: List of user activities syncs
                   items:
@@ -4804,6 +4804,9 @@
                 userId:
                   type: string
                   description: User who added document
+                versionKey:
+                  type: string
+                  description: Document Version Identifier
                 timeToLive:
                   type: string
                   description: User activity time to live

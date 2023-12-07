@@ -51,6 +51,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.api.ApiEmptyResponse;
 import com.formkiq.stacks.api.ApiUrlResponse;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
@@ -90,6 +91,13 @@ public class DocumentIdUrlRequestHandler
     String versionId = versionService.getVersionId(connection, siteId, documentId, versionKey);
 
     URL url = getS3Url(logger, authorization, awsservice, event, item, versionId, inline);
+
+    if (url != null) {
+      if (awsservice.containsExtension(UserActivityPlugin.class)) {
+        UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
+        plugin.addViewActivity(siteId, documentId, versionKey, authorization.username());
+      }
+    }
 
     return url != null
         ? new ApiRequestHandlerResponse(SC_OK, new ApiUrlResponse(url.toString(), documentId))

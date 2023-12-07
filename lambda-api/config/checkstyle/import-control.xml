@@ -86,6 +86,7 @@
 				<allow pkg="com.formkiq.module.http" />
 				<allow pkg="com.formkiq.aws.ses" />
 				<allow pkg="com.formkiq.module.ocr" />
+				<allow pkg="com.formkiq.plugins.useractivity" />
 				<allow pkg="com.formkiq.stacks.api" />
 				<allow pkg="com.formkiq.stacks.common.formats" />
 				<allow pkg="com.formkiq.stacks.common.objects" />
