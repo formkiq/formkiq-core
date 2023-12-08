@@ -91,7 +91,7 @@ public enum ApiResponseStatus {
    * @param code int
    * @return {@link ApiResponseStatus}
    */
-  public ApiResponseStatus find(final int code) {
+  public static ApiResponseStatus find(final int code) {
     for (ApiResponseStatus api : values()) {
       if (api.getStatusCode() == code) {
         return api;
