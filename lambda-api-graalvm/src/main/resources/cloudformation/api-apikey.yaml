@@ -2678,41 +2678,12 @@ Resources:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/nextParam'
               - $ref: '#/components/parameters/limitParam'
-              responses:
-                '200':
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                       $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                       $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/GetUserActivitesResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /userActivities/{userId+}:
-            get:
-              operationId: GetSpecificUserActivities
-              summary: Get user activities
-              description: Retrieve a user's activities
-              tags:
-              - User Activities
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - name: "userId+"
-                in: "path"
+              - name: "userId"
+                in: "query"
                 description: "Fetch specific user activities"
-                required: true
+                required: false
                 schema:
                   type: "string"
-              - $ref: '#/components/parameters/nextParam'
-              - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
                   description: 200 OK

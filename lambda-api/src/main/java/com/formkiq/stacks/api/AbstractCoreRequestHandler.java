@@ -109,7 +109,6 @@ import com.formkiq.stacks.api.handler.TagSchemasRequestHandler;
 import com.formkiq.stacks.api.handler.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesDocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.UserActivitiesRequestHandler;
-import com.formkiq.stacks.api.handler.UserActivitiesUserIdRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksIdRequestHandler;
 import com.formkiq.stacks.api.handler.WebhooksRequestHandler;
@@ -170,7 +169,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   private static void addUserActivitiesEndpoints() {
     addRequestHandler(new UserActivitiesRequestHandler());
-    addRequestHandler(new UserActivitiesUserIdRequestHandler());
     addRequestHandler(new UserActivitiesDocumentIdRequestHandler());
   }
 

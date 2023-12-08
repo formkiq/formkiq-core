@@ -56,30 +56,7 @@ public class UserActivitiesRequestTest extends AbstractApiClientRequestTest {
 
       try {
         // when
-        this.userActivitiesApi.getUserActivities(siteId, null, null);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(SC_PAYMENT.getStatusCode(), e.getCode());
-      }
-    }
-  }
-
-  /**
-   * GET /userActivities/{userId}.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testUserActivitiesUserId() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(null, UUID.randomUUID().toString())) {
-
-      setBearerToken(siteId);
-
-      try {
-        // when
-        this.userActivitiesApi.getSpecificUserActivities("joe", siteId, null, null);
+        this.userActivitiesApi.getUserActivities(siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
