@@ -143,7 +143,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
         actionsApi.addDocumentRetryAction(documentId, siteId);
 
     // then
-    assertEquals("Actions retries", retryResponse.getMessage());
+    assertEquals("Actions retrying", retryResponse.getMessage());
 
     response = waitForAction(client, siteId, documentId, "FAILED");
     assertEquals(2, response.getActions().size());

@@ -96,6 +96,7 @@ public class DocumentsActionsRetryRequestHandler
       a.index("" + idx);
       a.userId(userId);
       a.insertedDate(new Date());
+      a.message(null);
       idx++;
 
       list.add(a);
@@ -109,7 +110,7 @@ public class DocumentsActionsRetryRequestHandler
     notificationService.publishNextActionEvent(actions, siteId, documentId);
 
     ApiMapResponse resp = new ApiMapResponse();
-    resp.setMap(Map.of("message", "Actions retries"));
+    resp.setMap(Map.of("message", "Actions retrying"));
     return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 }

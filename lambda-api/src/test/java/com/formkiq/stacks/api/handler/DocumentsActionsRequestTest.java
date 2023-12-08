@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.stacks.dynamodb.ConfigService.CHATGPT_API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.Collection;
@@ -378,7 +379,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
-      assertEquals("Actions retries", retry.getMessage());
+      assertEquals("Actions retrying", retry.getMessage());
 
       GetDocumentActionsResponse response =
           this.documentActionsApi.getDocumentActions(documentId, siteId, null);
@@ -404,15 +405,16 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      this.service.saveNewActions(siteId, documentId, Arrays.asList(new Action().userId("joe")
-          .status(ActionStatus.FAILED).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+      this.service.saveNewActions(siteId, documentId,
+          Arrays.asList(new Action().userId("joe").status(ActionStatus.FAILED)
+              .message("some message").parameters(Map.of("test", "this")).type(ActionType.OCR)));
 
       // when
       AddDocumentActionsRetryResponse retry =
           this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
-      assertEquals("Actions retries", retry.getMessage());
+      assertEquals("Actions retrying", retry.getMessage());
 
       GetDocumentActionsResponse response =
           this.documentActionsApi.getDocumentActions(documentId, siteId, null);
@@ -421,9 +423,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(2, actions.size());
       assertEquals("OCR", actions.get(0).getType().name());
       assertEquals("FAILED_RETRY", actions.get(0).getStatus().name());
+      assertEquals("some message", actions.get(0).getMessage());
 
       assertEquals("OCR", actions.get(1).getType().name());
       assertEquals("PENDING", actions.get(1).getStatus().name());
+      assertNull(actions.get(1).getMessage());
 
       // when - 2nd time
       this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
@@ -457,7 +461,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
-      assertEquals("Actions retries", retry.getMessage());
+      assertEquals("Actions retrying", retry.getMessage());
 
       GetDocumentActionsResponse response =
           this.documentActionsApi.getDocumentActions(documentId, siteId, null);
