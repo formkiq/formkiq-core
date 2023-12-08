@@ -2696,7 +2696,7 @@ Resources:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-          /userActivities/{userId}:
+          /userActivities/{userId+}:
             get:
               operationId: GetSpecificUserActivities
               summary: Get user activities
