@@ -2692,7 +2692,7 @@
               - User Activities
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
-              - name: userId
+              - name: userId+
                 in: path
                 description: Fetch specific user activities
                 required: true
