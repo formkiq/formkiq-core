@@ -107,8 +107,8 @@
             <div class="image image-full" style="padding-left: 0; padding-right: 0; background-color: white;">
                 <div class="flex" style="padding: 1rem;">
                     <div>
-                        <h1 class="pt-1 mt-0 mb-0 md:pt-0 text-xl font-black font-brand text-red-600 focus:outline-none"><a target="_none" href="https://formkiq.com"><span style="color:#5E2500">Form</span><span style="color:#F26803">KiQ</span></a> </h1>
-                        <h4 class="text-xs mt-0 mb-0 text-proTeal-500 md:text-sm tracking-tight"> Headless Document Management </h4>
+                        <h1 class="pt-1 mt-0 mb-0 md:pt-0 text-xl font-black font-brand text-red-600 focus:outline-none"><a target="_none" href="https://formkiq.com" style="text-decoration: none"><span style="color:#5E2500">Form</span><span style="color:#F26803">KiQ</span></a> </h1>
+                        <h4 class="text-xs mt-0 mb-0 text-proTeal-500 md:text-sm tracking-tight"> Flexible Document Management </h4>
                     </div>
                 </div>
             </div>
