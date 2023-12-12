@@ -638,6 +638,41 @@ public class FkqDocumentService {
   }
 
   /**
+   * Wait For Document Content.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param content {@link String}
+   * @return {@link GetDocumentContentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentFulltextResponse waitForDocumentFulltext(final ApiClient client,
+      final String siteId, final String documentId, final String content)
+      throws InterruptedException {
+
+    GetDocumentFulltextResponse response = null;
+    AdvancedDocumentSearchApi api = new AdvancedDocumentSearchApi(client);
+
+    while (true) {
+
+      try {
+        response = api.getDocumentFulltext(documentId, siteId, null);
+        if (content.equals(response.getContent())) {
+          break;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+
+    return response;
+  }
+
+  /**
    * Wait for Document Tag.
    * 
    * @param apiClient {@link ApiClient}

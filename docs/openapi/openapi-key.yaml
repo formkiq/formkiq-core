@@ -4657,6 +4657,9 @@
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
+                lastModifiedDate:
+                  type: string
+                  description: Last Modified Timestamp
                 documentId:
                   type: string
                   description: Document Identifier
@@ -4668,6 +4671,12 @@
                   description: User who added document
                 tags:
                   type: object
+                  additionalProperties:
+                    type: object
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: object
             GetDocumentFulltextResponse:
               type: object
               properties:
