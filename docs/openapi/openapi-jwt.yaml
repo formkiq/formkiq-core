@@ -3224,7 +3224,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /esignature/docusign/{documentId}:
             post:
-              operationId: EsignatureDocusign
+              operationId: AddEsignatureDocusign
               summary: Create E-signature request
               description: Create a DocuSign E-Signature request; ONLY available with FormKiQ Enterprise
               tags:
@@ -3237,7 +3237,7 @@
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/EsignatureDocusignRequest'
+                      $ref: '#/components/schemas/AddEsignatureDocusignRequest'
               responses:
                 "200":
                   description: 200 OK
@@ -3251,7 +3251,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/EsignatureDocusignResponse'
+                        $ref: '#/components/schemas/AddEsignatureDocusignResponse'
                 "400":
                   description: 400 OK
                   content:
@@ -3264,7 +3264,7 @@
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
           /esignature/docusign/config:
             get:
-              operationId: EsignatureDocusignConfig
+              operationId: GetEsignatureDocusignConfig
               summary: Get E-signature config
               description: Get DocuSign configuration info; ONLY available with FormKiQ Enterprise
               tags:
@@ -3284,13 +3284,13 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/EsignatureDocusignConfigResponse'
+                        $ref: '#/components/schemas/GetEsignatureDocusignConfigResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
             put:
-              operationId: EsignatureSetDocusignConfig
+              operationId: SetEsignatureDocusignConfig
               summary: Set E-signature config
               description: Set DocuSign configuration, required for integration; ONLY available with FormKiQ Enterprise
               tags:
@@ -3302,7 +3302,7 @@
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/EsignatureSetDocusignConfigRequest'
+                      $ref: '#/components/schemas/SetEsignatureDocusignConfigRequest'
               responses:
                 "200":
                   description: 200 OK
@@ -3316,7 +3316,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/EsignatureSetDocusignConfigResponse'
+                        $ref: '#/components/schemas/SetEsignatureDocusignConfigResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -3341,7 +3341,7 @@
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/EsignatureDocusignResponse'
+                        $ref: '#/components/schemas/AddEsignatureDocusignResponse'
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
           /groups:
@@ -5978,7 +5978,7 @@
               properties:
                 message:
                   type: string
-            EsignatureDocusignRequest:
+            AddEsignatureDocusignRequest:
               type: object
               properties:
                 emailSubject:
@@ -6043,7 +6043,7 @@
                 positionY:
                   type: string
                   description: Element Y Position
-            EsignatureDocusignResponse:
+            AddEsignatureDocusignResponse:
               type: object
               properties:
                 redirect_url:
@@ -6052,7 +6052,7 @@
                 message:
                   type: string
                   description: Result message
-            EsignatureDocusignConfigResponse:
+            GetEsignatureDocusignConfigResponse:
               type: object
               properties:
                 configured:
@@ -6064,7 +6064,7 @@
                 clientId:
                   type: string
                   description: DocuSign Client configured
-            EsignatureSetDocusignConfigRequest:
+            SetEsignatureDocusignConfigRequest:
               type: object
               required:
               - privateKey
@@ -6080,7 +6080,7 @@
                 clientId:
                   type: string
                   description: DocuSign App Client
-            EsignatureSetDocusignConfigResponse:
+            SetEsignatureDocusignConfigResponse:
               type: object
               properties:
                 message:
