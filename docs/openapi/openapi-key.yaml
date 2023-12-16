@@ -5102,6 +5102,9 @@
                 insertedDate:
                   type: string
                   description: Inserted Timestamp
+                startDate:
+                  type: string
+                  description: Started Timestamp
                 completedDate:
                   type: string
                   description: Completed Timestamp

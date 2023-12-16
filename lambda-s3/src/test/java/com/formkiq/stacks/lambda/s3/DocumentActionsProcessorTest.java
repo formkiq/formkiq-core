@@ -808,6 +808,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNull(action.completedDate());
     }
@@ -848,6 +849,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
     }
@@ -890,6 +892,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
     }
@@ -923,6 +926,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.model."
           + "DocumentItem.getDocumentId()\" because \"item\" is null", action.message());
+      assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
     }
@@ -984,6 +988,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         Action action = actionsService.getActions(siteId, documentId).get(0);
         assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.startDate());
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
       }
@@ -1050,6 +1055,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         Action action = actionsService.getActions(siteId, documentId).get(1);
         assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.startDate());
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
       }
@@ -1186,10 +1192,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(2, actions.size());
       Action action = actions.get(0);
       assertEquals(ActionStatus.FAILED, action.status());
+      assertNull(action.startDate());
       assertNotNull(action.insertedDate());
 
       action = actions.get(1);
       assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 

@@ -26,6 +26,7 @@ package com.formkiq.module.actions.services;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +46,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionIndexComparator;
@@ -349,6 +351,12 @@ public class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     Map<String, AttributeValueUpdate> updates = new HashMap<>();
     updates.put("status", AttributeValueUpdate.builder().value(attrs.get("status")).build());
+
+    if (ActionStatus.RUNNING.equals(action.status())) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      updates.put("startDate",
+          AttributeValueUpdate.builder().value(fromS(df.format(new Date()))).build());
+    }
 
     if (action.message() != null) {
       updates.put("message", AttributeValueUpdate.builder().value(attrs.get("message")).build());

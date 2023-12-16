@@ -67,6 +67,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   /** QueueId. */
   @Reflectable
   private String queueId;
+  /** Record Start date. */
+  @Reflectable
+  private Date startDate;
   /** Is Action Completed. */
   @Reflectable
   private ActionStatus status;
@@ -170,6 +173,10 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put("completedDate", AttributeValue.fromS(df.format(this.completedDate)));
     }
 
+    if (this.startDate != null) {
+      attrs.put("startDate", AttributeValue.fromS(df.format(this.startDate)));
+    }
+
     addS(attrs, "message", this.message);
     addS(attrs, "queueId", this.queueId);
     addS(attrs, "workflowId", this.workflowId);
@@ -177,6 +184,22 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     addS(attrs, "workflowStepId", this.workflowStepId);
 
     return attrs;
+  }
+
+  private Date getDate(final SimpleDateFormat df, final Map<String, AttributeValue> attrs,
+      final String key) {
+
+    Date date = null;
+
+    if (attrs.containsKey(key)) {
+      try {
+        date = df.parse(ss(attrs, key));
+      } catch (ParseException e) {
+        // ignore
+      }
+    }
+
+    return date;
   }
 
   @Override
@@ -211,21 +234,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
     SimpleDateFormat df = DateUtil.getIsoDateFormatter();
 
-    if (attrs.containsKey("inserteddate")) {
-      try {
-        record = record.insertedDate(df.parse(ss(attrs, "inserteddate")));
-      } catch (ParseException e) {
-        // ignore
-      }
-    }
-
-    if (attrs.containsKey("completedDate")) {
-      try {
-        record = record.completedDate(df.parse(ss(attrs, "completedDate")));
-      } catch (ParseException e) {
-        // ignore
-      }
-    }
+    record = record.insertedDate(getDate(df, attrs, "inserteddate"));
+    record = record.completedDate(getDate(df, attrs, "completedDate"));
+    record = record.startDate(getDate(df, attrs, "startDate"));
 
     return record;
   }
@@ -413,6 +424,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     }
 
     return sk;
+  }
+
+  /**
+   * Get Start Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date startDate() {
+    return this.startDate;
+  }
+
+  /**
+   * Set Start Date.
+   * 
+   * @param date {@link Date}
+   * @return {@link Action}
+   */
+  public Action startDate(final Date date) {
+    this.startDate = date;
+    return this;
   }
 
   /**

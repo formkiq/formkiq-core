@@ -86,6 +86,7 @@ public class DocumentsActionsRequestHandler
       map.put("parameters", action.parameters());
       map.put("metadata", action.metadata());
       map.put("insertedDate", action.insertedDate());
+      map.put("startDate", action.startDate());
       map.put("completedDate", action.completedDate());
       map.put("message", action.message());
       map.put("workflowId", action.workflowId());

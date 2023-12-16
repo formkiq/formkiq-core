@@ -103,6 +103,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
     assertEquals(1, response.getActions().size());
     assertEquals("COMPLETE", response.getActions().get(0).getStatus().name());
+    assertNotNull(response.getActions().get(0).getStartDate());
     assertNotNull(response.getActions().get(0).getInsertedDate());
     assertNotNull(response.getActions().get(0).getCompletedDate());
   }
