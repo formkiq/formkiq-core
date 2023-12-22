@@ -1108,7 +1108,7 @@
             post:
               operationId: DocumentSearch
               summary: Document search
-              description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise TagSchema Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nSee requestBody examples below for commmon examples."
+              description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise TagSchema Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nDocumentIds parameter allows you to filter your results to a specific set of documents. \n\nSee requestBody examples below for commmon examples."
               tags:
               - Document Search
               parameters:

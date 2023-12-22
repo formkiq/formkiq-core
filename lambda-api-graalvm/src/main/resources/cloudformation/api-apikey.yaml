@@ -1121,6 +1121,8 @@ Resources:
 
                 If Typesense is enabled, full text search is supported through the "text" parameter. Full text search will look for the text in the "content" and/or document "metadata".
                 
+                DocumentIds parameter allows you to filter your results to a specific set of documents. 
+                
                 See requestBody examples below for commmon examples.
                 
               tags:
