@@ -320,6 +320,16 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   public abstract Map<String, ApiGatewayRequestHandler> getUrlMap();
 
+  /**
+   * Final Request Handler.
+   * 
+   * @param requestContext {@link Context}
+   * @param input {@link String}
+   */
+  public void handleOtherRequest(final Context requestContext, final String input) {
+    // empty
+  }
+
   @Override
   public void handleRequest(final InputStream input, final OutputStream output,
       final Context context) throws IOException {
@@ -338,12 +348,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } else {
 
-      logger.log(str);
-      LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
-      for (LambdaInputRecord record : records.getRecords()) {
-        if ("aws:sqs".equals(record.getEventSource())) {
-          handleSqsRequest(logger, awsServices, record);
+      if (str.contains("aws:sqs")) {
+        LambdaInputRecords records = this.gson.fromJson(str, LambdaInputRecords.class);
+        for (LambdaInputRecord record : records.getRecords()) {
+          if ("aws:sqs".equals(record.getEventSource())) {
+            handleSqsRequest(logger, awsServices, record);
+          }
         }
+
+      } else {
+
+        handleOtherRequest(context, str);
       }
     }
   }
