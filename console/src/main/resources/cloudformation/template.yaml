@@ -130,6 +130,8 @@ Resources:
 
   ConsoleDomainNameParameter:
     Type: AWS::SSM::Parameter
+    DependsOn:
+    - Console
     Properties:
       Description: "Console S3 Bucket Domain Name"
       Name: 
