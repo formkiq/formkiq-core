@@ -284,6 +284,9 @@ Resources:
   ConsoleBucketPolicy:
     Condition: IsNotGovCloud
     Type: "AWS::S3::BucketPolicy"
+    DependsOn:
+    - CloudFrontOriginAccessIdentity
+    - Console
     Properties: 
       Bucket: 
         Ref: Console
